@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
@@ -200,6 +201,8 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
 
   const txnTime = useRef(new Date());
   const txnId   = useRef(generateTxnId());
+
+  useEffect(() => { if (step === "success") fireSuccessConfetti(); }, [step]);
 
   const stepIndex = STEPS.indexOf(step);
 
@@ -464,6 +467,7 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
                     label="Slide to Pay Bill"
                     gradient="gradient-primary"
                     disabled={pin.length < 4}
+                    pinComplete={pin.length === 4}
                   />
                 </div>
               </div>

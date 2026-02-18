@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from "framer-motion";
 import { ChevronRight, CheckCircle2, Lock } from "lucide-react";
 import { haptics } from "@/lib/haptics";
@@ -8,6 +8,8 @@ interface SlideToConfirmProps {
   label?: string;
   gradient?: string;
   disabled?: boolean;
+  /** When true, fires an attention bounce after a 200ms delay */
+  pinComplete?: boolean;
 }
 
 const THUMB = 56;
@@ -18,11 +20,13 @@ const SlideToConfirm = ({
   label = "Slide to Confirm",
   gradient = "gradient-primary",
   disabled = false,
+  pinComplete = false,
 }: SlideToConfirmProps) => {
   const trackRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLDivElement>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [bounceTick, setBounceTick] = useState(0);
 
   const x = useMotionValue(0);
 
@@ -42,6 +46,16 @@ const SlideToConfirm = ({
     return Math.max(0, 1 - x.get() / (max * 0.4));
   });
 
+  // Fire attention bounce 200ms after PIN complete
+  useEffect(() => {
+    if (!pinComplete || disabled || confirmed) return;
+    const timer = setTimeout(() => {
+      setBounceTick((t) => t + 1);
+      haptics.light();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [pinComplete, disabled, confirmed]);
+
   const handleDragEnd = useCallback(() => {
     setIsDragging(false);
     const max = getMax();
@@ -58,6 +72,19 @@ const SlideToConfirm = ({
       haptics.light();
     }
   }, [x, onConfirm]);
+
+  // Attention bounce animation sequence: nudge right then spring back
+  const bounceSequence = async () => {
+    const max = getMax();
+    const nudge = max * 0.22;
+    await animate(x, nudge, { type: "spring", stiffness: 500, damping: 18, velocity: 8 });
+    await animate(x, 0, { type: "spring", stiffness: 420, damping: 22 });
+  };
+
+  useEffect(() => {
+    if (bounceTick === 0) return;
+    bounceSequence();
+  }, [bounceTick]);
 
   return (
     <div
