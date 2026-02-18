@@ -9,7 +9,7 @@ import {
   Phone,
   AlertCircle,
   QrCode,
-  Delete,
+  Hash,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,20 +28,34 @@ interface Contact {
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 const RECENT_CONTACTS: Contact[] = [
-  { id: "1", name: "Rahim Uddin",   phone: "01711-223344", initials: "RU", gradient: "gradient-send" },
-  { id: "2", name: "Fatema Begum",  phone: "01812-334455", initials: "FB", gradient: "gradient-cashout" },
-  { id: "3", name: "Karim Sheikh",  phone: "01900-445566", initials: "KS", gradient: "gradient-payment" },
-  { id: "4", name: "Nusrat Jahan",  phone: "01655-556677", initials: "NJ", gradient: "gradient-addmoney" },
-  { id: "5", name: "Shakil Ahmed",  phone: "01523-667788", initials: "SA", gradient: "gradient-accent" },
+  { id: "1", name: "Rahim Uddin",   phone: "01711223344", initials: "RU", gradient: "gradient-send" },
+  { id: "2", name: "Fatema Begum",  phone: "01812334455", initials: "FB", gradient: "gradient-cashout" },
+  { id: "3", name: "Karim Sheikh",  phone: "01900445566", initials: "KS", gradient: "gradient-payment" },
+  { id: "4", name: "Nusrat Jahan",  phone: "01655556677", initials: "NJ", gradient: "gradient-addmoney" },
+  { id: "5", name: "Shakil Ahmed",  phone: "01523667788", initials: "SA", gradient: "gradient-accent" },
 ];
 
 const QUICK_AMOUNTS = [100, 200, 500, 1000, 2000, 5000];
 
+// ─── Validation helpers ───────────────────────────────────────────────────────
+const WALLET_ID_RE = /^MFS-[0-9A-F]{4}-[0-9A-F]{4}$/i;
+const BD_PHONE_RE  = /^(?:\+?88)?01[3-9]\d{8}$/;
+
+const normalizePhone = (raw: string) => raw.replace(/[\s\-()]/g, "");
+
+type RecipientType = "phone" | "walletId";
+
+const detectRecipientType = (val: string): RecipientType | null => {
+  const v = val.trim();
+  if (WALLET_ID_RE.test(v)) return "walletId";
+  if (BD_PHONE_RE.test(normalizePhone(v))) return "phone";
+  return null;
+};
+
 // ─── Fee logic ────────────────────────────────────────────────────────────────
-// ৳3 flat charge for amounts > ৳100; free for ৳100 or below
 const calcSendFee = (amt: number) => (amt > 100 ? 3 : 0);
 
-// ─── Step config ─────────────────────────────────────────────────────────────
+// ─── Step config ──────────────────────────────────────────────────────────────
 const STEPS: Step[] = ["recipient", "amount", "confirm", "pin"];
 const STEP_LABELS: Record<Step, string> = {
   recipient: "Recipient",
@@ -58,20 +72,14 @@ const slideVariants = {
   exit:  (dir: number) => ({ x: dir < 0 ? "100%" : "-100%", opacity: 0 }),
 };
 
-// ─── PIN Pad ──────────────────────────────────────────────────────────────────
-const PIN_KEYS = ["1","2","3","4","5","6","7","8","9","","0","⌫"];
-
-interface PinPadProps { pin: string; onChange: (p: string) => void; error: string; }
-const PinPad = ({ pin, onChange, error }: PinPadProps) => {
-  const handleKey = (key: string) => {
-    if (key === "⌫") { onChange(pin.slice(0, -1)); return; }
-    if (key === "") return;
-    if (pin.length < 4) onChange(pin + key);
-  };
+// ─── PIN dots (no keyboard - uses native input) ───────────────────────────────
+interface PinInputProps { pin: string; onChange: (p: string) => void; error: string; }
+const PinInput = ({ pin, onChange, error }: PinInputProps) => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Dot indicators */}
       <div className="flex justify-center gap-4">
-        {[0,1,2,3].map((i) => (
+        {[0, 1, 2, 3].map((i) => (
           <motion.div
             key={i}
             animate={{ scale: pin.length > i ? 1.15 : 1 }}
@@ -87,24 +95,22 @@ const PinPad = ({ pin, onChange, error }: PinPadProps) => {
           <AlertCircle size={12} /> {error}
         </p>
       )}
-      <div className="grid grid-cols-3 gap-3 px-4">
-        {PIN_KEYS.map((key, i) => (
-          <button
-            key={i}
-            onClick={() => handleKey(key)}
-            disabled={key === ""}
-            className={`h-14 rounded-2xl text-xl font-bold transition-all active:scale-95 ${
-              key === ""
-                ? "invisible"
-                : key === "⌫"
-                ? "bg-muted text-muted-foreground"
-                : "bg-card border border-border text-foreground shadow-card hover:shadow-elevated"
-            }`}
-          >
-            {key === "⌫" ? <Delete size={20} className="mx-auto" /> : key}
-          </button>
-        ))}
-      </div>
+      {/* Native numeric input - hidden but functional */}
+      <input
+        type="password"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        maxLength={4}
+        value={pin}
+        onChange={(e) => {
+          const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+          onChange(v);
+        }}
+        autoFocus
+        className="w-full h-14 text-center text-3xl font-bold tracking-[1rem] bg-card border-2 border-border rounded-2xl focus:outline-none focus:border-primary transition-colors"
+        placeholder="••••"
+      />
+      <p className="text-center text-xs text-muted-foreground">Enter your 4-digit PIN</p>
     </div>
   );
 };
@@ -116,7 +122,8 @@ const SendMoneyFlow = ({ onClose }: SendMoneyFlowProps) => {
   const [step, setStep]           = useState<Step>("recipient");
   const [direction, setDirection] = useState(1);
   const [recipient, setRecipient] = useState<Contact | null>(null);
-  const [phoneInput, setPhoneInput] = useState("");
+  const [inputVal, setInputVal]   = useState("");   // phone OR wallet ID
+  const [inputType, setInputType] = useState<RecipientType | null>(null);
   const [amount, setAmount]       = useState("");
   const [note, setNote]           = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -141,31 +148,69 @@ const SendMoneyFlow = ({ onClose }: SendMoneyFlowProps) => {
   };
 
   const filteredContacts = RECENT_CONTACTS.filter(
-    (c) => c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.phone.includes(searchQuery),
+    (c) => c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.phone.includes(searchQuery.replace(/\D/g, "")),
   );
 
   const handleSelectContact = (c: Contact) => {
     setRecipient(c);
-    setPhoneInput(c.phone);
+    setInputVal(c.phone);
+    setInputType("phone");
     goTo("amount");
   };
 
-  const handlePhoneContinue = () => {
-    const digits = phoneInput.replace(/\D/g, "");
-    if (digits.length < 10) { setError("Please enter a valid phone number."); return; }
-    if (!recipient) {
-      setRecipient({ id: "custom", name: phoneInput, phone: phoneInput, initials: phoneInput.slice(-2), gradient: "gradient-primary" });
+  const handleInputChange = (val: string) => {
+    setInputVal(val);
+    setInputType(detectRecipientType(val));
+    setError("");
+  };
+
+  const handleContinue = () => {
+    const val = inputVal.trim();
+    const type = detectRecipientType(val);
+    if (!type) {
+      setError("Enter a valid 11-digit mobile number or Wallet ID (MFS-XXXX-XXXX).");
+      return;
     }
+    const found = RECENT_CONTACTS.find((c) => {
+      if (type === "phone") return normalizePhone(c.phone) === normalizePhone(val);
+      return false;
+    });
+    if (found) {
+      setRecipient(found);
+    } else {
+      const initials = type === "walletId"
+        ? val.slice(4, 6).toUpperCase()
+        : normalizePhone(val).slice(-2);
+      setRecipient({
+        id: "custom",
+        name: type === "walletId" ? `Wallet ${val}` : normalizePhone(val),
+        phone: type === "walletId" ? val : normalizePhone(val),
+        initials,
+        gradient: "gradient-primary",
+      });
+    }
+    setInputType(type);
     goTo("amount");
   };
 
   const handleQrScan = (result: string) => {
-    setPhoneInput(result);
-    const found = RECENT_CONTACTS.find((c) => c.phone === result);
+    const type = detectRecipientType(result);
+    setInputVal(result);
+    setInputType(type);
+    const found = RECENT_CONTACTS.find((c) => normalizePhone(c.phone) === normalizePhone(result));
     if (found) {
       setRecipient(found);
     } else {
-      setRecipient({ id: "qr", name: result, phone: result, initials: result.slice(-2), gradient: "gradient-send" });
+      const initials = type === "walletId"
+        ? result.slice(4, 6).toUpperCase()
+        : result.slice(-2);
+      setRecipient({
+        id: "qr",
+        name: type === "walletId" ? `Wallet ${result}` : result,
+        phone: result,
+        initials,
+        gradient: "gradient-send",
+      });
     }
     goTo("amount");
   };
@@ -187,18 +232,14 @@ const SendMoneyFlow = ({ onClose }: SendMoneyFlowProps) => {
     setStep("success");
   };
 
-  const BALANCE = 12450.75; // mock balance
+  const BALANCE = 12450.75;
   const amtNum = parseFloat(amount) || 0;
   const fee    = calcSendFee(amtNum);
-  // Fee source: deduct from balance if available, else from amount
   const feeFromBalance = Math.min(fee, BALANCE);
   const feeFromAmount  = parseFloat((fee - feeFromBalance).toFixed(2));
-  // Total deducted from balance = amount + feeFromBalance
   const totalFromBalance = amtNum + feeFromBalance;
-  // Recipient receives: amount - feeFromAmount
   const recipientReceives = parseFloat((amtNum - feeFromAmount).toFixed(2));
 
-  // Visible steps in progress bar (exclude success)
   const PROGRESS_STEPS: Step[] = ["recipient", "amount", "confirm", "pin"];
 
   return (
@@ -215,7 +256,6 @@ const SendMoneyFlow = ({ onClose }: SendMoneyFlowProps) => {
             </button>
             <h1 className="text-lg font-bold">Send Money</h1>
           </div>
-          {/* Step pills */}
           <div className="flex gap-2 items-center flex-wrap">
             {PROGRESS_STEPS.map((s, i) => {
               const si = PROGRESS_STEPS.indexOf(step);
@@ -255,14 +295,15 @@ const SendMoneyFlow = ({ onClose }: SendMoneyFlowProps) => {
             {step === "recipient" && (
               <div className="px-4 pt-6 pb-32 space-y-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">Mobile Number</label>
+                  <label className="text-sm font-semibold text-foreground">Mobile Number or Wallet ID</label>
                   <div className="relative">
                     <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      type="tel"
-                      placeholder="01X-XXXX-XXXX"
-                      value={phoneInput}
-                      onChange={(e) => { setPhoneInput(e.target.value); setError(""); }}
+                      type="text"
+                      inputMode="text"
+                      placeholder="01XXXXXXXXX or MFS-XXXX-XXXX"
+                      value={inputVal}
+                      onChange={(e) => handleInputChange(e.target.value)}
                       className="pl-9 pr-12 h-12 text-base bg-card border-border"
                     />
                     <button
@@ -272,10 +313,31 @@ const SendMoneyFlow = ({ onClose }: SendMoneyFlowProps) => {
                       <QrCode size={16} className="text-muted-foreground" />
                     </button>
                   </div>
+
+                  {/* live type badge */}
+                  {inputVal.trim() && (
+                    <div className="flex items-center gap-1.5">
+                      {inputType ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                          {inputType === "phone" ? <Phone size={10} /> : <Hash size={10} />}
+                          {inputType === "phone" ? "Mobile Number" : "Wallet ID"}
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground">
+                          Enter valid 11-digit number or MFS-XXXX-XXXX
+                        </span>
+                      )}
+                    </div>
+                  )}
+
                   {error && (
                     <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {error}</p>
                   )}
-                  <Button className="w-full h-11 gradient-send border-0 text-white font-semibold" onClick={handlePhoneContinue}>
+                  <Button
+                    className="w-full h-11 gradient-send border-0 text-white font-semibold"
+                    onClick={handleContinue}
+                    disabled={!inputVal.trim()}
+                  >
                     Continue
                   </Button>
                 </div>
@@ -339,6 +401,7 @@ const SendMoneyFlow = ({ onClose }: SendMoneyFlowProps) => {
                     <span className="absolute left-4 text-2xl font-bold text-muted-foreground">৳</span>
                     <input
                       type="number"
+                      inputMode="decimal"
                       placeholder="0"
                       value={amount}
                       onChange={(e) => { setAmount(e.target.value); setError(""); }}
@@ -495,10 +558,7 @@ const SendMoneyFlow = ({ onClose }: SendMoneyFlowProps) => {
                   <span className="font-bold text-foreground">৳{totalFromBalance.toLocaleString()}</span>
                 </div>
 
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold text-foreground text-center">Enter your PIN</p>
-                  <PinPad pin={pin} onChange={(p) => { setPin(p); setError(""); }} error={error} />
-                </div>
+                <PinInput pin={pin} onChange={(p) => { setPin(p); setError(""); }} error={error} />
 
                 <Button
                   className="w-full h-12 gradient-send border-0 text-white font-bold text-base"
@@ -537,7 +597,7 @@ const SendMoneyFlow = ({ onClose }: SendMoneyFlowProps) => {
                     <span>Recipient</span><span className="text-foreground font-medium">{recipient?.name}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Mobile</span><span className="text-foreground font-medium">{recipient?.phone}</span>
+                    <span>Mobile / Wallet</span><span className="text-foreground font-medium">{recipient?.phone}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                     <span>Amount</span><span className="text-foreground font-medium">৳{amtNum.toLocaleString()}</span>

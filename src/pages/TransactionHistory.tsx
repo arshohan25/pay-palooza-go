@@ -4,13 +4,14 @@ import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import {
   Search, ArrowUpRight, ArrowDownLeft, Smartphone, Zap,
   Wallet, CreditCard, X, CalendarIcon, SlidersHorizontal,
-  CheckCircle2, Copy, Hash, Tag, Clock, User, FileText,
+  CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type TxCategory = "all" | "send" | "cashout" | "payment" | "recharge" | "bill";
@@ -75,9 +76,9 @@ const relativeDate = (iso: string) => {
   return format(d, "dd MMM yyyy · h:mm a");
 };
 
-interface TransactionHistoryProps { onClose?: () => void; }
+interface TransactionHistoryProps { onClose?: () => void; onRefresh?: () => void; }
 
-const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
+const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => {
   const [activeTab, setActiveTab] = useState<TxCategory>("all");
   const [search, setSearch]       = useState("");
   const [dateFrom, setDateFrom]   = useState<Date | undefined>();
@@ -87,6 +88,16 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedTx, setSelectedTx]   = useState<Transaction | null>(null);
   const [copied, setCopied]           = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const triggerRefresh = () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    setTimeout(() => setIsRefreshing(false), 1200);
+    onRefresh?.();
+  };
+
+  usePullToRefresh({ onRefresh: triggerRefresh });
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text).catch(() => {});
@@ -118,11 +129,39 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
   return (
     <div className="flex flex-col w-full">
 
+      {/* ── Pull-to-refresh indicator ────────────────────────────────────── */}
+      <AnimatePresence>
+        {isRefreshing && (
+          <motion.div
+            key="ptr"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 40 }}
+            exit={{ opacity: 0, height: 0 }}
+            className="flex items-center justify-center gap-2 text-primary text-sm font-semibold mb-2"
+          >
+            <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}>
+              <RefreshCw size={16} />
+            </motion.div>
+            Refreshing…
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── Hero header ─────────────────────────────────────────────────── */}
       <div className="gradient-hero px-4 pt-5 pb-5 text-primary-foreground rounded-2xl mb-3 w-full box-border">
         {/* Top row */}
         <div className="flex items-center gap-2 mb-4 w-full min-w-0">
           <h1 className="text-[16px] font-bold flex-1 min-w-0 truncate">Transaction History</h1>
+          <motion.button
+            whileTap={{ scale: 0.88 }}
+            onClick={triggerRefresh}
+            className="glass-hero w-9 h-9 rounded-xl flex items-center justify-center transition-all shrink-0"
+            aria-label="Refresh"
+          >
+            <motion.div animate={isRefreshing ? { rotate: 360 } : { rotate: 0 }} transition={{ repeat: isRefreshing ? Infinity : 0, duration: 0.8, ease: "linear" }}>
+              <RefreshCw size={15} />
+            </motion.div>
+          </motion.button>
           <motion.button
             whileTap={{ scale: 0.88 }}
             onClick={() => setShowFilters((v) => !v)}
