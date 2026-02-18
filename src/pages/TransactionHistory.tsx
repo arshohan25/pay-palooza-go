@@ -116,13 +116,13 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
   const totalOut = filtered.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
 
   return (
-    <div className="flex flex-col min-h-full w-full overflow-x-hidden">
+    <div className="flex flex-col w-full">
 
       {/* ── Hero header ─────────────────────────────────────────────────── */}
-      <div className="gradient-hero px-4 pt-5 pb-5 text-primary-foreground rounded-2xl mb-3">
+      <div className="gradient-hero px-4 pt-5 pb-5 text-primary-foreground rounded-2xl mb-3 w-full box-border">
         {/* Top row */}
-        <div className="flex items-center gap-2 mb-4">
-          <h1 className="text-[16px] font-bold flex-1 truncate">Transaction History</h1>
+        <div className="flex items-center gap-2 mb-4 w-full min-w-0">
+          <h1 className="text-[16px] font-bold flex-1 min-w-0 truncate">Transaction History</h1>
           <motion.button
             whileTap={{ scale: 0.88 }}
             onClick={() => setShowFilters((v) => !v)}
@@ -137,14 +137,14 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
           </motion.button>
         </div>
 
-        {/* Summary chips — 3-col grid, no overflow */}
-        <div className="grid grid-cols-3 gap-2">
+        {/* Summary chips — strict 3-col grid */}
+        <div className="grid grid-cols-3 gap-2 w-full">
           {[
             { label: "Money In",  value: `+৳${totalIn.toLocaleString()}`,  color: "text-green-300" },
             { label: "Money Out", value: `-৳${totalOut.toLocaleString()}`, color: "text-rose-300"  },
             { label: "Count",     value: String(filtered.length),          color: "text-white"     },
           ].map(({ label, value, color }) => (
-            <div key={label} className="glass-hero rounded-2xl px-1.5 py-2.5 text-center min-w-0 overflow-hidden">
+            <div key={label} className="glass-hero rounded-2xl px-2 py-2.5 text-center min-w-0 overflow-hidden">
               <p className="text-[9px] font-semibold uppercase tracking-wide text-white/60 mb-0.5 truncate">{label}</p>
               <p className={`text-[12px] font-bold leading-tight truncate ${color}`}>{value}</p>
             </div>
@@ -311,7 +311,7 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
-            className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden"
+            className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden w-full"
           >
             {filtered.map((tx, i) => {
               const cfg      = ICON_MAP[tx.category];
@@ -322,11 +322,11 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
               return (
                 <motion.button
                   key={tx.id}
-                  initial={{ opacity: 0, x: -4 }}
-                  animate={{ opacity: 1, x: 0 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.035, ease: [0.23, 1, 0.32, 1] }}
                   onClick={() => setSelectedTx(tx)}
-                  className="w-full flex items-center gap-3 px-3 py-3.5 hover:bg-muted/40 active:bg-muted/60 transition-colors border-b border-border/50 last:border-0 text-left overflow-hidden"
+                  className="w-full flex items-center gap-3 px-3 py-3.5 hover:bg-muted/40 active:bg-muted/60 transition-colors border-b border-border/50 last:border-0 text-left"
                 >
                   {/* Icon */}
                   <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center shrink-0 ${iconClass}`}>

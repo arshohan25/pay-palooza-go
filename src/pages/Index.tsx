@@ -58,12 +58,12 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex overflow-x-hidden w-full">
       {/* ── Sidebar (md+) ── */}
       <SideNav activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* ── Main content ── */}
-      <div className="flex-1 flex flex-col md:pl-64">
+      <div className="flex-1 flex flex-col md:pl-64 min-w-0 overflow-x-hidden">
         <main className="flex-1 w-full max-w-xl mx-auto px-4 py-4 pb-32 md:pb-12 md:px-8 md:py-8 md:max-w-2xl overflow-x-hidden">
           {mainContent()}
         </main>
