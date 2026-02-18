@@ -203,8 +203,8 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     setStep("success");
   };
 
-  // Fee: ৳11.99 per ৳1000 (pro-rated per 1000)
-  const calcCashOutFee = (amt: number) => Math.ceil(amt / 1000) * 11.99;
+  // Fee: 1.19% of amount
+  const calcCashOutFee = (amt: number) => amt * 0.0119;
   const feeNum = parseFloat(amount) > 0 ? calcCashOutFee(parseFloat(amount)) : 0;
   const fee = feeNum.toFixed(2);
   const receive = parseFloat(amount) > 0 ? (parseFloat(amount) - feeNum).toFixed(2) : "0.00";
@@ -411,7 +411,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       <span className="text-foreground font-medium">৳{parseFloat(amount).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Fee (৳11.99/1000)</span>
+                      <span>Fee (1.19%)</span>
                       <span className="text-destructive font-medium">− ৳{fee}</span>
                     </div>
                     <div className="h-px bg-border" />
@@ -518,7 +518,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                     <span className="text-foreground font-medium">৳{parseFloat(amount).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Fee (৳11.99/1000)</span>
+                    <span>Fee (1.19%)</span>
                     <span className="text-foreground font-medium">৳{fee}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
