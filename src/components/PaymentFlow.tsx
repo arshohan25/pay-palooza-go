@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
+import SlideToConfirm from "@/components/SlideToConfirm";
 import {
   ChevronLeft,
   CheckCircle2,
@@ -387,13 +388,12 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
 
                 <PinInput pin={pin} onChange={(p) => { setPin(p); setError(""); }} error={error} />
 
-                <Button
-                  className="w-full h-12 gradient-payment border-0 text-white font-bold text-base"
-                  onClick={handlePinConfirm}
+                <SlideToConfirm
+                  onConfirm={handlePinConfirm}
+                  label="Slide to Pay"
+                  gradient="gradient-payment"
                   disabled={pin.length < 4}
-                >
-                  <CreditCard size={18} /> Confirm Payment
-                </Button>
+                />
               </div>
             )}
 

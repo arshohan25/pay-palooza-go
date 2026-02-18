@@ -20,7 +20,7 @@ import { BalanceCardSkeleton, QuickActionsSkeleton, TransactionListSkeleton } fr
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import BiometricAuth from "@/components/BiometricAuth";
 import InstallPrompt from "@/components/InstallPrompt";
-import SpeedDial from "@/components/SpeedDial";
+
 
 const SESSION_KEY = "mfs_authenticated";
 
@@ -154,19 +154,7 @@ const Index = () => {
       {/* PWA install prompt */}
       <InstallPrompt />
 
-      {/* ── Speed Dial FAB (home tab only, mobile) ── */}
-      <AnimatePresence>
-        {activeTab === "home" && !isLoading && (
-          <SpeedDial
-            onSendMoney={() => setShowSendMoney(true)}
-            onPayment={() => setShowPayment(true)}
-            onCashOut={() => setShowCashOut(true)}
-            onRecharge={() => setShowRecharge(true)}
-            onPayBill={() => setShowPayBill(true)}
-            onAddMoney={() => setShowAddMoney(true)}
-          />
-        )}
-      </AnimatePresence>
+      {/* SpeedDial hidden */}
     </div>
     </>
   );

@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
+import SlideToConfirm from "@/components/SlideToConfirm";
 import {
   ChevronLeft,
   Search,
@@ -466,13 +467,12 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
 
                 <PinInput pin={pin} onChange={(p) => { setPin(p); setError(""); }} error={error} />
 
-                <Button
-                  className="w-full h-12 gradient-cashout border-0 text-white font-bold text-base"
-                  onClick={handlePinConfirm}
+                <SlideToConfirm
+                  onConfirm={handlePinConfirm}
+                  label="Slide to Cash Out"
+                  gradient="gradient-cashout"
                   disabled={pin.length < 4}
-                >
-                  Confirm Cash Out
-                </Button>
+                />
               </div>
             )}
 
