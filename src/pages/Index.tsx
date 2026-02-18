@@ -11,6 +11,7 @@ import CashOutFlow from "@/components/CashOutFlow";
 import PaymentFlow from "@/components/PaymentFlow";
 import MobileRechargeFlow from "@/components/MobileRechargeFlow";
 import PayBillFlow from "@/components/PayBillFlow";
+import AddMoneyFlow from "@/components/AddMoneyFlow";
 import TransactionHistory from "@/pages/TransactionHistory";
 import AccountPage from "@/pages/AccountPage";
 
@@ -21,6 +22,7 @@ const Index = () => {
   const [showPayment, setShowPayment]     = useState(false);
   const [showRecharge, setShowRecharge]   = useState(false);
   const [showPayBill, setShowPayBill]     = useState(false);
+  const [showAddMoney, setShowAddMoney]   = useState(false);
 
   const mainContent = () => {
     if (activeTab === "home") {
@@ -34,6 +36,7 @@ const Index = () => {
             onPayment={() => setShowPayment(true)}
             onRecharge={() => setShowRecharge(true)}
             onPayBill={() => setShowPayBill(true)}
+            onAddMoney={() => setShowAddMoney(true)}
           />
           <PromoCard />
           <TransactionList onSeeAll={() => setActiveTab("history")} />
@@ -77,6 +80,7 @@ const Index = () => {
       {showPayment   && <PaymentFlow   onClose={() => setShowPayment(false)} />}
       {showRecharge  && <MobileRechargeFlow onClose={() => setShowRecharge(false)} />}
       {showPayBill   && <PayBillFlow   onClose={() => setShowPayBill(false)} />}
+      {showAddMoney  && <AddMoneyFlow  onClose={() => setShowAddMoney(false)} />}
     </div>
   );
 };
