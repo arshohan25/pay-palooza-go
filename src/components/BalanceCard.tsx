@@ -1,7 +1,8 @@
 import { Eye, EyeOff, Copy, CheckCheck, QrCode, TrendingUp } from "lucide-react";
-import { useState, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
 import UserQrModal from "@/components/UserQrModal";
+import { getBalance, onBalanceChange } from "@/lib/balanceStore";
 
 const generateUserId = () => {
   const seed = "TANVIR_HASAN_2024";
@@ -18,6 +19,26 @@ const BalanceCard = () => {
   const [copied, setCopied] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const userId = useMemo(() => generateUserId(), []);
+
+  // Animated balance
+  const motionBalance = useMotionValue(getBalance());
+  const [displayBalance, setDisplayBalance] = useState(getBalance());
+  const prevBalance = useRef(getBalance());
+
+  useEffect(() => {
+    const unsub = onBalanceChange((next) => {
+      const from = prevBalance.current;
+      prevBalance.current = next;
+      animate(motionBalance, next, {
+        duration: 1.2,
+        ease: [0.23, 1, 0.32, 1],
+        onUpdate: (v) => setDisplayBalance(v),
+      });
+    });
+    // Keep display in sync with motionValue
+    const unsubMv = motionBalance.on("change", (v) => setDisplayBalance(v));
+    return () => { unsub(); unsubMv(); };
+  }, [motionBalance]);
 
   const handleCopyId = async () => {
     try { await navigator.clipboard.writeText(userId); }
@@ -87,7 +108,7 @@ const BalanceCard = () => {
                   transition={{ duration: 0.2 }}
                   className="text-[2.2rem] sm:text-5xl font-bold tracking-tight leading-none"
                 >
-                  {showBalance ? "12,450.75" : "••••••"}
+                  {showBalance ? displayBalance.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "••••••"}
                 </motion.span>
               </AnimatePresence>
             </div>

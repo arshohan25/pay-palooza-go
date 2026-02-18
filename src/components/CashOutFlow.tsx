@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
+import { deductBalance } from "@/lib/balanceStore";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
+import ShareReceiptSheet from "@/components/ShareReceiptSheet";
 import {
   ChevronLeft,
   Search,
@@ -108,9 +110,16 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [showScanner, setShowScanner] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const txnTime = useRef(new Date());
+  const txnId   = useRef(`TXN${Date.now().toString().slice(-8)}`);
 
-  useEffect(() => { if (step === "success") fireSuccessConfetti(); }, [step]);
+  useEffect(() => {
+    if (step === "success") {
+      fireSuccessConfetti();
+      txnId.current = `TXN${Date.now().toString().slice(-8)}`;
+    }
+  }, [step]);
 
   const stepIndex = STEPS.indexOf(step);
 
@@ -176,8 +185,10 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const handlePinConfirm = () => {
     if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
     haptics.success();
-    // Mock PIN check — accept any 4-digit PIN
     txnTime.current = new Date();
+    const amtVal = parseFloat(amount) || 0;
+    const feeVal = amtVal * 0.0119;
+    deductBalance(amtVal + feeVal);
     setDirection(1);
     setStep("success");
   };
@@ -557,7 +568,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   <div className="h-px bg-border" />
                   <div className="flex justify-between font-bold text-foreground">
                     <span>Transaction ID</span>
-                    <span className="text-primary">TXN{Date.now().toString().slice(-8)}</span>
+                    <span className="text-primary">{txnId.current}</span>
                   </div>
                 </motion.div>
 
@@ -573,7 +584,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   >
                     Back to Home
                   </Button>
-                  <Button variant="outline" className="w-full h-11" onClick={onClose}>
+                  <Button variant="outline" className="w-full h-11" onClick={() => setShowShare(true)}>
                     Share Receipt
                   </Button>
                 </motion.div>
@@ -591,9 +602,31 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
         onScan={handleQrScan}
         title="Scan Agent QR"
       />
+
+      {/* Share Receipt Sheet */}
+      <ShareReceiptSheet
+        open={showShare}
+        onClose={() => setShowShare(false)}
+        receipt={{
+          title: "Cash Out Successful",
+          amount: `৳${parseFloat(amount || "0").toLocaleString()}`,
+          gradient: "gradient-cashout",
+          txnId: txnId.current,
+          rows: [
+            { label: "Agent", value: agent?.name ?? "" },
+            { label: "Agent ID", value: agent?.agentId ?? "" },
+            { label: "Amount", value: `৳${parseFloat(amount || "0").toLocaleString()}` },
+            { label: "Fee (1.19%)", value: `৳${feeNum.toFixed(2)}` },
+            { label: "You Received", value: `৳${parseFloat(receive).toLocaleString()}` },
+            { label: "Date", value: txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) },
+            { label: "Time", value: txnTime.current.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) },
+          ],
+        }}
+      />
     </div>
   );
 };
 
 export default CashOutFlow;
+
 

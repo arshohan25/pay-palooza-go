@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
+import { deductBalance } from "@/lib/balanceStore";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
+import ShareReceiptSheet from "@/components/ShareReceiptSheet";
 import {
   ChevronLeft,
   CheckCircle2,
@@ -198,6 +200,7 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
   const [pin, setPin]               = useState("");
   const [error, setError]           = useState("");
   const [billInfo, setBillInfo]     = useState<{ due: number; month: string; dueDate: string } | null>(null);
+  const [showShare, setShowShare]   = useState(false);
 
   const txnTime = useRef(new Date());
   const txnId   = useRef(generateTxnId());
@@ -241,6 +244,7 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
   const handlePinConfirm = () => {
     if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
     haptics.success();
+    deductBalance(billInfo?.due ?? 0);
     setDirection(1);
     setStep("success");
   };
@@ -541,13 +545,16 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.35 }}
-                  className="w-full"
+                  className="w-full space-y-3"
                 >
                   <Button
                     className="w-full h-11 gradient-primary border-0 text-white font-semibold"
                     onClick={onClose}
                   >
                     Done
+                  </Button>
+                  <Button variant="outline" className="w-full h-11" onClick={() => setShowShare(true)}>
+                    Share Receipt
                   </Button>
                 </motion.div>
               </div>
@@ -556,8 +563,29 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* Share Receipt Sheet */}
+      <ShareReceiptSheet
+        open={showShare}
+        onClose={() => setShowShare(false)}
+        receipt={{
+          title: "Bill Payment Successful",
+          amount: `৳${billInfo?.due.toLocaleString() ?? "0"}`,
+          gradient: billType?.gradient ?? "gradient-primary",
+          txnId: txnId.current,
+          rows: [
+            { label: "Bill Type", value: `${billType?.name ?? ""} (${provider?.name ?? ""})` },
+            { label: "Account No.", value: accountNo },
+            { label: "Bill Month", value: billInfo?.month ?? "" },
+            { label: "Fee", value: "Free" },
+            { label: "Date", value: txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) },
+            { label: "Time", value: txnTime.current.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) },
+          ],
+        }}
+      />
     </div>
   );
 };
 
 export default PayBillFlow;
+

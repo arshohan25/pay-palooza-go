@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
+import { deductBalance } from "@/lib/balanceStore";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
+import ShareReceiptSheet from "@/components/ShareReceiptSheet";
 import {
   ChevronLeft,
   CheckCircle2,
@@ -281,6 +283,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
   const [activeCategory, setActiveCategory] = useState<PackCategory>("offers");
   const [pin, setPin]             = useState("");
   const [error, setError]         = useState("");
+  const [showShare, setShowShare] = useState(false);
   const txnTime = useRef(new Date());
   const txnId   = useRef(generateTxnId());
 
@@ -350,6 +353,8 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     haptics.success();
     txnTime.current = new Date();
     txnId.current   = generateTxnId();
+    const amtVal = isCustom ? customAmountNum : (selectedPack?.price ?? 0);
+    deductBalance(amtVal);
     setDirection(1);
     setStep("success");
   };
@@ -784,6 +789,9 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                   >
                     Done
                   </Button>
+                  <Button variant="outline" className="w-full h-11" onClick={() => setShowShare(true)}>
+                    Share Receipt
+                  </Button>
                 </motion.div>
               </div>
             )}
@@ -791,8 +799,30 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* Share Receipt Sheet */}
+      <ShareReceiptSheet
+        open={showShare}
+        onClose={() => setShowShare(false)}
+        receipt={{
+          title: "Recharge Successful",
+          amount: `৳${effectivePrice}`,
+          gradient: "gradient-accent",
+          txnId: txnId.current,
+          rows: [
+            { label: "Number", value: formatPhone(phone) },
+            { label: "Operator", value: operator?.name ?? "" },
+            { label: "Pack", value: selectedPack ? selectedPack.name : "Custom Recharge" },
+            ...(selectedPack ? [{ label: "Details", value: selectedPack.details }, { label: "Validity", value: selectedPack.validity }] : []),
+            { label: "Fee", value: "Free" },
+            { label: "Date", value: txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) },
+            { label: "Time", value: txnTime.current.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) },
+          ],
+        }}
+      />
     </div>
   );
 };
 
 export default MobileRechargeFlow;
+

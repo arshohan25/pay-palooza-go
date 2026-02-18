@@ -4,7 +4,7 @@ import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import {
   Search, ArrowUpRight, ArrowDownLeft, Smartphone, Zap,
   Wallet, CreditCard, X, CalendarIcon, SlidersHorizontal,
-  CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw,
+  CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw, Share2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
+import ShareReceiptSheet from "@/components/ShareReceiptSheet";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type TxCategory = "all" | "send" | "cashout" | "payment" | "recharge" | "bill";
@@ -89,6 +90,7 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
   const [selectedTx, setSelectedTx]   = useState<Transaction | null>(null);
   const [copied, setCopied]           = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showShare, setShowShare]       = useState(false);
 
   const triggerRefresh = () => {
     if (isRefreshing) return;
@@ -489,21 +491,61 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
                     </div>
                   ))}
 
-                  {/* Amount highlight */}
+                  {/* Amount highlight + share */}
                   <div className={`mt-4 rounded-2xl p-4 flex items-center justify-between ${isCredit ? "bg-primary/10" : "bg-muted/60"}`}>
                     <span className="text-[13px] font-semibold text-muted-foreground">Total Amount</span>
                     <span className={`text-[20px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
                       {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString()}
                     </span>
                   </div>
+
+                  {/* Share button */}
+                  <motion.button
+                    whileTap={{ scale: 0.96 }}
+                    onClick={() => setShowShare(true)}
+                    className="w-full mt-2 h-11 rounded-2xl border border-border bg-muted/40 flex items-center justify-center gap-2 text-sm font-semibold text-foreground hover:bg-muted/70 transition-colors"
+                  >
+                    <Share2 size={15} /> Share Receipt
+                  </motion.button>
                 </div>
               </motion.div>
             </>
           );
         })()}
       </AnimatePresence>
+
+      {/* Share Receipt Sheet (from history detail) */}
+      {selectedTx && (() => {
+        const txDate = new Date(selectedTx.date);
+        const txId   = `TXN${selectedTx.id.toUpperCase()}${Math.floor(txDate.getTime() / 1000)}`;
+        const catLabel = CATEGORIES.find((c) => c.id === selectedTx.category)?.label ?? selectedTx.category;
+        const gradMap: Record<string, string> = {
+          send: "gradient-send", cashout: "gradient-cashout",
+          payment: "gradient-payment", recharge: "gradient-accent",
+          bill: "gradient-primary",
+        };
+        return (
+          <ShareReceiptSheet
+            open={showShare}
+            onClose={() => setShowShare(false)}
+            receipt={{
+              title: selectedTx.detail,
+              amount: `${selectedTx.amount > 0 ? "+" : "−"}৳${Math.abs(selectedTx.amount).toLocaleString()}`,
+              gradient: gradMap[selectedTx.category] ?? "gradient-primary",
+              txnId: txId,
+              rows: [
+                { label: "Party", value: selectedTx.name },
+                { label: "Category", value: catLabel },
+                { label: "Description", value: selectedTx.detail },
+                { label: "Date & Time", value: format(txDate, "dd MMM yyyy, h:mm a") },
+              ],
+            }}
+          />
+        );
+      })()}
     </div>
   );
 };
 
 export default TransactionHistory;
+
