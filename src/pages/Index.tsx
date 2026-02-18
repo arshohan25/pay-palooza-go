@@ -9,12 +9,14 @@ import SendMoneyFlow from "@/components/SendMoneyFlow";
 import CashOutFlow from "@/components/CashOutFlow";
 import PaymentFlow from "@/components/PaymentFlow";
 import MobileRechargeFlow from "@/components/MobileRechargeFlow";
+import PayBillFlow from "@/components/PayBillFlow";
 
 const Index = () => {
   const [showSendMoney, setShowSendMoney] = useState(false);
   const [showCashOut, setShowCashOut]     = useState(false);
   const [showPayment, setShowPayment]     = useState(false);
   const [showRecharge, setShowRecharge]   = useState(false);
+  const [showPayBill, setShowPayBill]     = useState(false);
 
   return (
     <div className="min-h-screen bg-background">
@@ -27,6 +29,7 @@ const Index = () => {
             onCashOut={() => setShowCashOut(true)}
             onPayment={() => setShowPayment(true)}
             onRecharge={() => setShowRecharge(true)}
+            onPayBill={() => setShowPayBill(true)}
           />
           <PromoCard />
           <TransactionList />
@@ -37,6 +40,7 @@ const Index = () => {
       {showCashOut   && <CashOutFlow   onClose={() => setShowCashOut(false)} />}
       {showPayment   && <PaymentFlow   onClose={() => setShowPayment(false)} />}
       {showRecharge  && <MobileRechargeFlow onClose={() => setShowRecharge(false)} />}
+      {showPayBill   && <PayBillFlow   onClose={() => setShowPayBill(false)} />}
     </div>
   );
 };

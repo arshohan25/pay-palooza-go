@@ -1,0 +1,575 @@
+import { useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ChevronLeft,
+  CheckCircle2,
+  AlertCircle,
+  Delete,
+  Zap,
+  Flame,
+  Droplets,
+  Wifi,
+  Tv2,
+  FileText,
+  ChevronRight,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+type Step = "type" | "account" | "bill" | "pin" | "success";
+
+interface BillType {
+  id: string;
+  name: string;
+  providers: Provider[];
+  icon: typeof Zap;
+  gradient: string;
+  accountLabel: string;
+  accountPlaceholder: string;
+  accountMaxLength: number;
+}
+
+interface Provider {
+  id: string;
+  name: string;
+  short: string;
+}
+
+// ─── Bill catalogue ───────────────────────────────────────────────────────────
+const BILL_TYPES: BillType[] = [
+  {
+    id: "electricity",
+    name: "Electricity",
+    icon: Zap,
+    gradient: "gradient-accent",
+    accountLabel: "Customer ID",
+    accountPlaceholder: "e.g. 1234567890",
+    accountMaxLength: 13,
+    providers: [
+      { id: "desco",  name: "DESCO",  short: "DE" },
+      { id: "dpdc",   name: "DPDC",   short: "DP" },
+      { id: "bpdb",   name: "BPDB",   short: "BP" },
+      { id: "wzpdcl", name: "WZPDCL", short: "WZ" },
+    ],
+  },
+  {
+    id: "gas",
+    name: "Gas",
+    icon: Flame,
+    gradient: "gradient-cashout",
+    accountLabel: "Bill Account No.",
+    accountPlaceholder: "e.g. 01-123456-00",
+    accountMaxLength: 14,
+    providers: [
+      { id: "titas",    name: "Titas Gas",    short: "TG" },
+      { id: "bakhrabad",name: "Bakhrabad Gas", short: "BG" },
+      { id: "jalalabad",name: "Jalalabad Gas", short: "JG" },
+    ],
+  },
+  {
+    id: "water",
+    name: "Water",
+    icon: Droplets,
+    gradient: "gradient-payment",
+    accountLabel: "Connection No.",
+    accountPlaceholder: "e.g. W-789012",
+    accountMaxLength: 12,
+    providers: [
+      { id: "wasa",   name: "WASA (Dhaka)",      short: "DW" },
+      { id: "cwasa",  name: "CWASA (Chittagong)", short: "CW" },
+      { id: "kwasa",  name: "KWASA (Khulna)",     short: "KW" },
+    ],
+  },
+  {
+    id: "internet",
+    name: "Internet",
+    icon: Wifi,
+    gradient: "gradient-addmoney",
+    accountLabel: "Account / User ID",
+    accountPlaceholder: "e.g. ISP-100234",
+    accountMaxLength: 15,
+    providers: [
+      { id: "link3",      name: "Link3",          short: "L3" },
+      { id: "aamranet",   name: "Aamra Networks",  short: "AN" },
+      { id: "carnival",   name: "Carnival",        short: "CN" },
+      { id: "infoland",   name: "Infoland",        short: "IL" },
+    ],
+  },
+  {
+    id: "tv",
+    name: "TV / Cable",
+    icon: Tv2,
+    gradient: "gradient-send",
+    accountLabel: "Subscriber ID",
+    accountPlaceholder: "e.g. 5678901",
+    accountMaxLength: 12,
+    providers: [
+      { id: "dishtv",  name: "Dish TV",      short: "DT" },
+      { id: "toffee",  name: "Toffee (BTCL)", short: "TF" },
+      { id: "akash",   name: "Akash DTH",    short: "AK" },
+    ],
+  },
+];
+
+// ─── Mock bill generation ────────────────────────────────────────────────────
+const generateBillAmount = (typeId: string): { due: number; month: string; dueDate: string } => {
+  const seed = Math.floor(Math.random() * 8000) + 200;
+  const amounts: Record<string, number> = {
+    electricity: 450 + (seed % 1800),
+    gas:         180 + (seed % 600),
+    water:       120 + (seed % 400),
+    internet:    500 + (seed % 1000),
+    tv:          250 + (seed % 500),
+  };
+  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const now = new Date();
+  const month = months[now.getMonth() === 0 ? 11 : now.getMonth() - 1];
+  const dueDate = new Date(now.getFullYear(), now.getMonth(), 15 + (seed % 10));
+  return {
+    due: amounts[typeId] || 500,
+    month,
+    dueDate: dueDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+  };
+};
+
+const generateTxnId = () =>
+  "BILL" + Date.now().toString(36).toUpperCase().slice(-6) + Math.random().toString(36).toUpperCase().slice(2, 4);
+
+// ─── Step config ─────────────────────────────────────────────────────────────
+const STEPS: Step[] = ["type", "account", "bill", "pin"];
+const STEP_LABELS: Record<Step, string> = {
+  type: "Bill Type", account: "Account", bill: "Details", pin: "PIN", success: "Done",
+};
+
+// ─── Slide animation ─────────────────────────────────────────────────────────
+const slideVariants = {
+  enter: (dir: number) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit:  (dir: number) => ({ x: dir < 0 ? "100%" : "-100%", opacity: 0 }),
+};
+
+// ─── PIN Pad ─────────────────────────────────────────────────────────────────
+const PIN_KEYS = ["1","2","3","4","5","6","7","8","9","","0","⌫"];
+
+interface PinPadProps { pin: string; onChange: (p: string) => void; error: string; }
+const PinPad = ({ pin, onChange, error }: PinPadProps) => {
+  const handleKey = (key: string) => {
+    if (key === "⌫") { onChange(pin.slice(0, -1)); return; }
+    if (key === "") return;
+    if (pin.length < 4) onChange(pin + key);
+  };
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-center gap-4">
+        {[0,1,2,3].map((i) => (
+          <motion.div
+            key={i}
+            animate={{ scale: pin.length > i ? 1.15 : 1 }}
+            transition={{ type: "spring", stiffness: 400, damping: 20 }}
+            className={`w-4 h-4 rounded-full border-2 transition-colors ${
+              pin.length > i ? "gradient-primary border-transparent" : "border-muted-foreground/40 bg-transparent"
+            }`}
+          />
+        ))}
+      </div>
+      {error && (
+        <p className="text-xs text-destructive flex items-center justify-center gap-1">
+          <AlertCircle size={12} /> {error}
+        </p>
+      )}
+      <div className="grid grid-cols-3 gap-3 px-4">
+        {PIN_KEYS.map((key, i) => (
+          <button
+            key={i}
+            onClick={() => handleKey(key)}
+            disabled={key === ""}
+            className={`h-14 rounded-2xl text-xl font-bold transition-all active:scale-95 ${
+              key === "" ? "invisible"
+              : key === "⌫" ? "bg-muted text-muted-foreground"
+              : "bg-card border border-border text-foreground shadow-card hover:shadow-elevated"
+            }`}
+          >
+            {key === "⌫" ? <Delete size={20} className="mx-auto" /> : key}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ─── PayBillFlow ─────────────────────────────────────────────────────────────
+interface PayBillFlowProps { onClose: () => void; }
+
+const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
+  const [step, setStep]             = useState<Step>("type");
+  const [direction, setDirection]   = useState(1);
+  const [billType, setBillType]     = useState<BillType | null>(null);
+  const [provider, setProvider]     = useState<Provider | null>(null);
+  const [accountNo, setAccountNo]   = useState("");
+  const [pin, setPin]               = useState("");
+  const [error, setError]           = useState("");
+  const [billInfo, setBillInfo]     = useState<{ due: number; month: string; dueDate: string } | null>(null);
+
+  const txnTime = useRef(new Date());
+  const txnId   = useRef(generateTxnId());
+
+  const stepIndex = STEPS.indexOf(step);
+
+  const goTo = (next: Step) => {
+    setDirection(STEPS.indexOf(next) > stepIndex ? 1 : -1);
+    setStep(next);
+    setError("");
+  };
+
+  const goBack = () => {
+    if (step === "type")    { onClose(); return; }
+    if (step === "account") { goTo("type"); return; }
+    if (step === "bill")    { goTo("account"); return; }
+    if (step === "pin")     { goTo("bill"); return; }
+  };
+
+  const handleSelectType = (bt: BillType) => {
+    setBillType(bt);
+    setProvider(null);
+    setAccountNo("");
+    goTo("account");
+  };
+
+  const handleAccountContinue = () => {
+    if (!provider) { setError("Please select a provider."); return; }
+    const trimmed = accountNo.trim();
+    if (trimmed.length < 4) { setError(`Enter a valid ${billType?.accountLabel ?? "account number"}.`); return; }
+    setBillInfo(generateBillAmount(billType!.id));
+    txnTime.current = new Date();
+    txnId.current = generateTxnId();
+    goTo("bill");
+  };
+
+  const handlePinConfirm = () => {
+    if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
+    setDirection(1);
+    setStep("success");
+  };
+
+  const FEE = 0; // bill payments are free
+
+  return (
+    <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
+      {/* Header */}
+      {step !== "success" && (
+        <div className="gradient-primary px-4 pt-12 pb-6 text-primary-foreground">
+          <div className="flex items-center gap-3 mb-5">
+            <button
+              onClick={goBack}
+              className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center active:scale-95 transition-transform"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <h1 className="text-lg font-bold">Pay Bill</h1>
+          </div>
+          {/* Step pills */}
+          <div className="flex gap-2 items-center flex-wrap">
+            {STEPS.map((s, i) => (
+              <div key={s} className="flex items-center gap-2">
+                <div
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                    i < stepIndex  ? "bg-white/30 text-white"
+                    : i === stepIndex ? "bg-white text-emerald-700"
+                    : "bg-white/10 text-white/50"
+                  }`}
+                >
+                  {i < stepIndex ? <CheckCircle2 size={12} /> : <span>{i + 1}</span>}
+                  {STEP_LABELS[s]}
+                </div>
+                {i < STEPS.length - 1 && (
+                  <div className={`h-px w-3 ${i < stepIndex ? "bg-white/50" : "bg-white/20"}`} />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Animated content */}
+      <div className="flex-1 overflow-hidden relative">
+        <AnimatePresence custom={direction} mode="popLayout">
+          <motion.div
+            key={step}
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ type: "spring", stiffness: 320, damping: 32 }}
+            className="absolute inset-0 overflow-y-auto"
+          >
+
+            {/* ── STEP 1: Bill Type ── */}
+            {step === "type" && (
+              <div className="px-4 pt-6 pb-32 space-y-3">
+                <p className="text-sm font-semibold text-foreground mb-4">Select Bill Type</p>
+                {BILL_TYPES.map((bt) => {
+                  const Icon = bt.icon;
+                  return (
+                    <motion.button
+                      key={bt.id}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleSelectType(bt)}
+                      className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card border border-border shadow-card hover:shadow-elevated active:scale-[0.98] transition-all text-left"
+                    >
+                      <div className={`${bt.gradient} w-12 h-12 rounded-xl flex items-center justify-center text-white shrink-0`}>
+                        <Icon size={22} strokeWidth={2} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-bold text-foreground">{bt.name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {bt.providers.map((p) => p.name).join(" · ")}
+                        </p>
+                      </div>
+                      <ChevronRight size={18} className="text-muted-foreground shrink-0" />
+                    </motion.button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ── STEP 2: Provider + Account ── */}
+            {step === "account" && billType && (
+              <div className="px-4 pt-6 pb-32 space-y-5">
+                {/* Bill type pill */}
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border shadow-card">
+                  <div className={`${billType.gradient} w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0`}>
+                    <billType.icon size={18} strokeWidth={2} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Bill Type</p>
+                    <p className="text-sm font-bold text-foreground">{billType.name}</p>
+                  </div>
+                </div>
+
+                {/* Provider selection */}
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-foreground">Select Provider</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {billType.providers.map((p) => {
+                      const selected = provider?.id === p.id;
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() => { setProvider(p); setError(""); }}
+                          className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
+                            selected
+                              ? "border-primary bg-primary/5 shadow-card"
+                              : "border-border bg-card hover:border-primary/40"
+                          }`}
+                        >
+                          <div className={`${billType.gradient} w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs shrink-0`}>
+                            {p.short}
+                          </div>
+                          <span className="text-xs font-semibold text-foreground leading-tight">{p.name}</span>
+                          {selected && <CheckCircle2 size={14} className="text-primary ml-auto shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Account number */}
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-foreground">{billType.accountLabel}</label>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder={billType.accountPlaceholder}
+                    value={accountNo}
+                    maxLength={billType.accountMaxLength}
+                    onChange={(e) => { setAccountNo(e.target.value); setError(""); }}
+                    className="h-12 text-base bg-card border-border font-mono tracking-wider"
+                  />
+                  {error && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertCircle size={12} /> {error}
+                    </p>
+                  )}
+                </div>
+
+                <Button
+                  className="w-full h-11 gradient-primary border-0 text-white font-semibold"
+                  onClick={handleAccountContinue}
+                >
+                  Fetch Bill
+                </Button>
+              </div>
+            )}
+
+            {/* ── STEP 3: Bill details ── */}
+            {step === "bill" && billType && provider && billInfo && (
+              <div className="px-4 pt-6 pb-32 space-y-5">
+                {/* Summary card */}
+                <div className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
+                  {/* Colored top bar */}
+                  <div className={`${billType.gradient} px-5 py-4 text-white`}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                        <billType.icon size={18} strokeWidth={2} />
+                      </div>
+                      <div>
+                        <p className="text-xs text-white/70">{provider.name}</p>
+                        <p className="text-sm font-bold">{billType.name} Bill</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Details */}
+                  <div className="px-5 py-4 space-y-3">
+                    {[
+                      { label: "Account No.",  value: accountNo },
+                      { label: "Bill Month",   value: billInfo.month },
+                      { label: "Due Date",     value: billInfo.dueDate },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">{label}</span>
+                        <span className="text-xs font-semibold text-foreground">{value}</span>
+                      </div>
+                    ))}
+
+                    <div className="border-t border-border pt-3 mt-1 flex items-center justify-between">
+                      <span className="text-sm font-semibold text-foreground">Bill Amount</span>
+                      <span className="text-2xl font-extrabold text-foreground">৳{billInfo.due.toLocaleString()}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">Service Fee</span>
+                      <span className="text-xs font-semibold text-primary">Free</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Info note */}
+                <div className="flex items-start gap-2 px-1">
+                  <FileText size={14} className="text-muted-foreground mt-0.5 shrink-0" />
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Payment will be deducted from your wallet balance. A confirmation SMS will be sent to your registered number.
+                  </p>
+                </div>
+
+                <Button
+                  className="w-full h-11 gradient-primary border-0 text-white font-semibold"
+                  onClick={() => goTo("pin")}
+                >
+                  Pay ৳{billInfo.due.toLocaleString()}
+                </Button>
+              </div>
+            )}
+
+            {/* ── STEP 4: PIN ── */}
+            {step === "pin" && billType && billInfo && (
+              <div className="px-4 pt-8 pb-32 space-y-8">
+                <div className="text-center space-y-1">
+                  <p className="text-base font-bold text-foreground">Confirm Payment</p>
+                  <p className="text-sm text-muted-foreground">
+                    Paying <span className="font-semibold text-foreground">৳{billInfo.due.toLocaleString()}</span> for {billType.name} bill
+                  </p>
+                </div>
+                <PinPad pin={pin} onChange={(p) => { setPin(p); setError(""); }} error={error} />
+                <div className="px-4">
+                  <Button
+                    className="w-full h-11 gradient-primary border-0 text-white font-semibold"
+                    onClick={handlePinConfirm}
+                    disabled={pin.length < 4}
+                  >
+                    Confirm Payment
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* ── SUCCESS ── */}
+            {step === "success" && billType && provider && billInfo && (
+              <div className="px-4 pt-10 pb-20 flex flex-col items-center gap-6">
+                {/* Success icon */}
+                <motion.div
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className={`${billType.gradient} w-24 h-24 rounded-full flex items-center justify-center shadow-elevated`}
+                >
+                  <CheckCircle2 size={48} className="text-white" />
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                  className="text-center space-y-1"
+                >
+                  <p className="text-2xl font-extrabold text-foreground">Payment Successful!</p>
+                  <p className="text-sm text-muted-foreground">{billType.name} bill paid to {provider.name}</p>
+                </motion.div>
+
+                {/* Receipt */}
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25 }}
+                  className="w-full rounded-2xl border border-border bg-card shadow-card overflow-hidden"
+                >
+                  {/* Amount band */}
+                  <div className={`${billType.gradient} px-5 py-5 text-center text-white`}>
+                    <p className="text-xs text-white/70 mb-1">Amount Paid</p>
+                    <p className="text-4xl font-extrabold">৳{billInfo.due.toLocaleString()}</p>
+                  </div>
+
+                  {/* Receipt rows */}
+                  <div className="px-5 py-4 space-y-3">
+                    {[
+                      { label: "Bill Type",    value: `${billType.name} (${provider.name})` },
+                      { label: "Account No.",  value: accountNo },
+                      { label: "Bill Month",   value: billInfo.month },
+                      { label: "Service Fee",  value: FEE === 0 ? "Free" : `৳${FEE}` },
+                      { label: "Fee Source",   value: "N/A (Free)" },
+                      { label: "Transaction ID",value: txnId.current },
+                      {
+                        label: "Date & Time",
+                        value: txnTime.current.toLocaleString("en-GB", {
+                          day: "2-digit", month: "short", year: "numeric",
+                          hour: "2-digit", minute: "2-digit",
+                        }),
+                      },
+                      { label: "Status",       value: "✓ Paid" },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="flex items-center justify-between gap-3">
+                        <span className="text-xs text-muted-foreground shrink-0">{label}</span>
+                        <span className={`text-xs font-semibold text-right break-all ${
+                          label === "Status" ? "text-primary" : "text-foreground"
+                        }`}>{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.35 }}
+                  className="w-full"
+                >
+                  <Button
+                    className="w-full h-11 gradient-primary border-0 text-white font-semibold"
+                    onClick={onClose}
+                  >
+                    Done
+                  </Button>
+                </motion.div>
+              </div>
+            )}
+
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+};
+
+export default PayBillFlow;
