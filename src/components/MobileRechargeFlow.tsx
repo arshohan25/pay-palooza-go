@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
+import SlideToConfirm from "@/components/SlideToConfirm";
 import {
   ChevronLeft,
   CheckCircle2,
@@ -687,13 +688,12 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                 <PinInput pin={pin} onChange={(p) => { setPin(p); setError(""); }} error={error} />
 
                 <div className="px-4">
-                  <Button
-                    className="w-full h-11 gradient-accent border-0 text-white font-semibold"
-                    onClick={handlePinConfirm}
+                  <SlideToConfirm
+                    onConfirm={handlePinConfirm}
+                    label="Slide to Recharge"
+                    gradient="gradient-accent"
                     disabled={pin.length < 4}
-                  >
-                    Confirm Recharge
-                  </Button>
+                  />
                 </div>
               </div>
             )}

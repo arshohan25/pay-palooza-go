@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
+import SlideToConfirm from "@/components/SlideToConfirm";
 import {
   ChevronLeft, CheckCircle2, AlertCircle,
   Landmark, CreditCard, Lock, ChevronRight,
@@ -619,12 +620,12 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                   )}
                 </div>
 
-                <Button
-                  className="w-full h-11 gradient-addmoney border-0 text-white font-semibold"
-                  onClick={handlePinConfirm}
-                >
-                  Add Money
-                </Button>
+                <SlideToConfirm
+                  onConfirm={handlePinConfirm}
+                  label="Slide to Add Money"
+                  gradient="gradient-addmoney"
+                  disabled={pin.length < 4}
+                />
               </div>
             )}
 
