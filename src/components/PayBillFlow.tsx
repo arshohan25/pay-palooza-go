@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
 import { deductBalance } from "@/lib/balanceStore";
+import { addTxnNotif } from "@/lib/txnNotifStore";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
@@ -205,7 +206,7 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
   const txnTime = useRef(new Date());
   const txnId   = useRef(generateTxnId());
 
-  useEffect(() => { if (step === "success") fireSuccessConfetti(); }, [step]);
+  useEffect(() => { if (step === "success") { fireSuccessConfetti(); addTxnNotif(); } }, [step]);
 
   const stepIndex = STEPS.indexOf(step);
 

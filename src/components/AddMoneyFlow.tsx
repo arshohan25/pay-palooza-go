@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { addBalance } from "@/lib/balanceStore";
+import { addTxnNotif } from "@/lib/txnNotifStore";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
@@ -97,7 +98,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   const txnId   = useRef(generateTxnId());
   const txnTime = useRef(new Date());
 
-  useEffect(() => { if (step === "success") fireSuccessConfetti(); }, [step]);
+  useEffect(() => { if (step === "success") { fireSuccessConfetti(); addTxnNotif(); } }, [step]);
 
   const stepIndex = STEPS.indexOf(step);
 

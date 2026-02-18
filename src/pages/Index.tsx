@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw } from "lucide-react";
+import { clearTxnNotifs } from "@/lib/txnNotifStore";
 import AppHeader from "@/components/AppHeader";
 import BalanceCard from "@/components/BalanceCard";
 import QuickActions from "@/components/QuickActions";
@@ -29,6 +30,10 @@ const Index = () => {
     () => sessionStorage.getItem(SESSION_KEY) === "1",
   );
   const [activeTab, setActiveTab]         = useState("home");
+  const handleTabChange = useCallback((tab: string) => {
+    setActiveTab(tab);
+    if (tab === "history") clearTxnNotifs();
+  }, []);
   const [showSendMoney, setShowSendMoney] = useState(false);
   const [showCashOut, setShowCashOut]     = useState(false);
   const [showPayment, setShowPayment]     = useState(false);
@@ -98,7 +103,7 @@ const Index = () => {
                 onAddMoney={() => setShowAddMoney(true)}
               />
               <PromoCard />
-              <TransactionList onSeeAll={() => setActiveTab("history")} />
+              <TransactionList onSeeAll={() => handleTabChange("history")} />
             </>
           )}
         </div>
@@ -128,7 +133,7 @@ const Index = () => {
 
       <div className="min-h-screen bg-background flex overflow-x-hidden w-full">
       {/* ── Sidebar (md+) ── */}
-      <SideNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <SideNav activeTab={activeTab} onTabChange={handleTabChange} />
 
       {/* ── Main content ── */}
       <div className="flex-1 flex flex-col md:pl-64 min-w-0 overflow-x-hidden">
@@ -141,7 +146,7 @@ const Index = () => {
       </div>
 
       {/* ── Bottom Nav (mobile only) ── */}
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
 
       {/* ── Flow overlays ── */}
       {showSendMoney && <SendMoneyFlow onClose={() => setShowSendMoney(false)} />}

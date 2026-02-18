@@ -15,7 +15,7 @@ const generateUserId = () => {
 };
 
 const BalanceCard = () => {
-  const [showBalance, setShowBalance] = useState(true);
+  const [showBalance, setShowBalance] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const userId = useMemo(() => generateUserId(), []);
@@ -27,7 +27,6 @@ const BalanceCard = () => {
 
   useEffect(() => {
     const unsub = onBalanceChange((next) => {
-      const from = prevBalance.current;
       prevBalance.current = next;
       animate(motionBalance, next, {
         duration: 1.2,
@@ -74,56 +73,15 @@ const BalanceCard = () => {
                 <span className="text-[11px] font-semibold opacity-90 tracking-wide">+2.4% this month</span>
               </div>
             </div>
-            <motion.button
-              whileTap={{ scale: 0.88 }}
-              onClick={() => setShowBalance(!showBalance)}
-              className="glass-hero w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors tap-target"
-              aria-label="Toggle balance visibility"
-            >
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.span
-                  key={showBalance ? "eye" : "eyeoff"}
-                  initial={{ opacity: 0, scale: 0.7, rotate: -10 }}
-                  animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                  exit={{ opacity: 0, scale: 0.7, rotate: 10 }}
-                  transition={{ duration: 0.18 }}
-                >
-                  {showBalance ? <Eye size={16} /> : <EyeOff size={16} />}
-                </motion.span>
-              </AnimatePresence>
-            </motion.button>
-          </div>
-
-          {/* Balance */}
-          <div className="mb-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] opacity-60 mb-1">Available Balance</p>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-semibold opacity-70">৳</span>
-              <AnimatePresence mode="wait">
-                <motion.span
-                  key={showBalance ? "shown" : "hidden"}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.2 }}
-                  className="text-[2.2rem] sm:text-5xl font-bold tracking-tight leading-none"
-                >
-                  {showBalance ? displayBalance.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "••••••"}
-                </motion.span>
-              </AnimatePresence>
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className="h-px bg-white/15 mb-4" />
-
-          {/* Wallet ID row */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.12em] opacity-50 mb-0.5">Wallet ID</p>
-              <p className="text-sm font-mono font-semibold tracking-widest opacity-90">{userId}</p>
-            </div>
             <div className="flex items-center gap-2">
+              <motion.button
+                whileTap={{ scale: 0.88 }}
+                onClick={() => setShowQr(true)}
+                className="glass-hero w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors tap-target"
+                title="Show QR Code"
+              >
+                <QrCode size={14} />
+              </motion.button>
               <motion.button
                 whileTap={{ scale: 0.88 }}
                 onClick={handleCopyId}
@@ -142,14 +100,78 @@ const BalanceCard = () => {
                   </motion.span>
                 </AnimatePresence>
               </motion.button>
-              <motion.button
-                whileTap={{ scale: 0.88 }}
-                onClick={() => setShowQr(true)}
-                className="glass-hero w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors tap-target"
-                title="Show QR Code"
-              >
-                <QrCode size={14} />
-              </motion.button>
+            </div>
+          </div>
+
+          {/* Balance — tap to reveal */}
+          <div className="mb-5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] opacity-60 mb-1">Available Balance</p>
+            <motion.button
+              className="flex items-baseline gap-1.5 group relative"
+              onClick={() => setShowBalance((v) => !v)}
+              whileTap={{ scale: 0.97 }}
+              aria-label={showBalance ? "Hide balance" : "Tap to see balance"}
+            >
+              <span className="text-xl font-semibold opacity-70">৳</span>
+
+              <AnimatePresence mode="wait">
+                {showBalance ? (
+                  <motion.span
+                    key="shown"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.2 }}
+                    className="text-[2.2rem] sm:text-5xl font-bold tracking-tight leading-none"
+                  >
+                    {displayBalance.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="hidden"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.2 }}
+                    className="relative flex items-center"
+                  >
+                    <span className="text-[2.2rem] sm:text-5xl font-bold tracking-tight leading-none opacity-30 select-none">
+                      ••••••
+                    </span>
+                    {/* "Tap to see" pill */}
+                    <motion.span
+                      initial={{ opacity: 0, scale: 0.85 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 whitespace-nowrap glass-hero rounded-xl px-3 py-1 flex items-center gap-1.5 pointer-events-none"
+                    >
+                      <Eye size={11} className="opacity-80" />
+                      <span className="text-[11px] font-semibold opacity-90">Tap to see balance</span>
+                    </motion.span>
+                  </motion.span>
+                )}
+              </AnimatePresence>
+
+              {/* Hide hint when shown */}
+              {showBalance && (
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 0.55 }}
+                  className="flex items-center gap-0.5 self-center ml-1"
+                >
+                  <EyeOff size={12} />
+                </motion.span>
+              )}
+            </motion.button>
+          </div>
+
+          {/* Divider */}
+          <div className="h-px bg-white/15 mb-4" />
+
+          {/* Wallet ID row */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.12em] opacity-50 mb-0.5">Wallet ID</p>
+              <p className="text-sm font-mono font-semibold tracking-widest opacity-90">{userId}</p>
             </div>
           </div>
         </div>

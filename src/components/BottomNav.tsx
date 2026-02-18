@@ -1,5 +1,7 @@
 import { Home, ArrowLeftRight, QrCode, Bell, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react";
+import { getTxnNotifCount, onTxnNotifChange } from "@/lib/txnNotifStore";
 
 const navItems = [
   { icon: Home,           label: "Home",    id: "home" },
@@ -15,6 +17,13 @@ interface BottomNavProps {
 }
 
 const BottomNav = ({ activeTab = "home", onTabChange }: BottomNavProps) => {
+  const [txnCount, setTxnCount] = useState(getTxnNotifCount);
+
+  useEffect(() => {
+    const unsub = onTxnNotifChange(setTxnCount);
+    return unsub;
+  }, []);
+
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 px-3 pb-3 pt-0">
       <div className="glass rounded-2xl border border-border/60 shadow-float max-w-md mx-auto">
@@ -36,6 +45,8 @@ const BottomNav = ({ activeTab = "home", onTabChange }: BottomNavProps) => {
                 </motion.button>
               );
             }
+
+            const showBadge = item.id === "history" && txnCount > 0;
 
             return (
               <motion.button
@@ -60,11 +71,31 @@ const BottomNav = ({ activeTab = "home", onTabChange }: BottomNavProps) => {
                     />
                   )}
                 </AnimatePresence>
-                <item.icon
-                  size={20}
-                  strokeWidth={isActive ? 2.5 : 1.8}
-                  className="relative z-10 transition-all duration-150"
-                />
+
+                {/* Icon wrapper with badge */}
+                <div className="relative">
+                  <item.icon
+                    size={20}
+                    strokeWidth={isActive ? 2.5 : 1.8}
+                    className="relative z-10 transition-all duration-150"
+                  />
+                  {/* Transaction badge */}
+                  <AnimatePresence>
+                    {showBadge && (
+                      <motion.span
+                        key="txn-badge"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 22 }}
+                        className="absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] px-0.5 bg-primary text-primary-foreground text-[8px] font-bold rounded-full flex items-center justify-center border-2 border-background z-20"
+                      >
+                        {txnCount > 9 ? "9+" : txnCount}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </div>
+
                 <span className={`relative z-10 text-[10px] font-semibold transition-all duration-150 ${isActive ? "opacity-100" : "opacity-70"}`}>
                   {item.label}
                 </span>

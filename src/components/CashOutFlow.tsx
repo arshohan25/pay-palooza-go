@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { deductBalance } from "@/lib/balanceStore";
+import { addTxnNotif } from "@/lib/txnNotifStore";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
@@ -117,6 +118,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   useEffect(() => {
     if (step === "success") {
       fireSuccessConfetti();
+      addTxnNotif();
       txnId.current = `TXN${Date.now().toString().slice(-8)}`;
     }
   }, [step]);

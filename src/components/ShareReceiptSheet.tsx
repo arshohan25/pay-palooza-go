@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Share2, Copy, CheckCheck, X, Download } from "lucide-react";
 import { haptics } from "@/lib/haptics";
 
 export interface ReceiptData {
-  title: string;       // e.g. "Money Sent", "Cash Out Successful"
-  amount: string;      // e.g. "৳500"
-  gradient: string;    // e.g. "gradient-send"
+  title: string;
+  amount: string;
+  gradient: string;
   rows: { label: string; value: string }[];
   txnId: string;
 }
@@ -20,6 +20,8 @@ interface ShareReceiptSheetProps {
 const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) => {
   const [copied, setCopied] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const receiptRef = useRef<HTMLDivElement>(null);
 
   const buildText = () => {
     const lines = [
@@ -83,6 +85,29 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
     }
   };
 
+  const handleDownload = async () => {
+    if (!receiptRef.current || downloading) return;
+    haptics.medium();
+    setDownloading(true);
+    try {
+      const { default: html2canvas } = await import("html2canvas");
+      const canvas = await html2canvas(receiptRef.current, {
+        backgroundColor: null,
+        scale: 3,
+        useCORS: true,
+        logging: false,
+      });
+      const link = document.createElement("a");
+      link.download = `receipt-${receipt.txnId}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch (err) {
+      console.error("Download failed", err);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <AnimatePresence>
       {open && (
@@ -127,11 +152,14 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
               {/* Header */}
               <div className="text-center pb-1">
                 <p className="text-base font-bold text-foreground">Share Receipt</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Copy or share your transaction details</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Copy, share, or save your receipt</p>
               </div>
 
-              {/* Receipt preview card */}
-              <div className="rounded-2xl border border-border overflow-hidden shadow-card">
+              {/* Receipt preview card — captured by html2canvas */}
+              <div
+                ref={receiptRef}
+                className="rounded-2xl border border-border overflow-hidden shadow-card bg-card"
+              >
                 {/* Gradient header */}
                 <div className={`${receipt.gradient} px-4 py-4 text-white text-center`}>
                   <p className="text-xs font-semibold opacity-80 mb-0.5">{receipt.title}</p>
@@ -150,7 +178,7 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
                   ))}
                 </div>
 
-                {/* Transaction ID row with copy */}
+                {/* Transaction ID row */}
                 <div className="flex items-center justify-between px-4 py-3 border-t border-border/60 bg-muted/30">
                   <div className="min-w-0">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-semibold">Transaction ID</p>
@@ -174,14 +202,19 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
                     </AnimatePresence>
                   </motion.button>
                 </div>
+
+                {/* PayWave branding footer */}
+                <div className="px-4 py-2 bg-muted/20 text-center">
+                  <p className="text-[9px] text-muted-foreground font-semibold tracking-widest uppercase">Powered by PayWave</p>
+                </div>
               </div>
 
-              {/* Action buttons */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Action buttons — 3 cols */}
+              <div className="grid grid-cols-3 gap-2">
                 <motion.button
                   whileTap={{ scale: 0.96 }}
                   onClick={handleCopyText}
-                  className="flex items-center justify-center gap-2 h-11 rounded-2xl bg-muted border border-border text-sm font-semibold text-foreground hover:bg-muted/80 transition-colors"
+                  className="flex flex-col items-center justify-center gap-1.5 h-14 rounded-2xl bg-muted border border-border text-[11px] font-semibold text-foreground hover:bg-muted/80 transition-colors"
                 >
                   <AnimatePresence mode="wait" initial={false}>
                     <motion.span
@@ -190,12 +223,36 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
                       animate={{ scale: 1, opacity: 1 }}
                       exit={{ scale: 0.7, opacity: 0 }}
                       transition={{ duration: 0.15 }}
-                      className="flex items-center gap-2"
+                      className="flex flex-col items-center gap-1"
                     >
                       {copied ? (
-                        <><CheckCheck size={15} className="text-primary" /> Copied!</>
+                        <><CheckCheck size={16} className="text-primary" /><span>Copied!</span></>
                       ) : (
-                        <><Copy size={15} /> Copy Text</>
+                        <><Copy size={16} /><span>Copy</span></>
+                      )}
+                    </motion.span>
+                  </AnimatePresence>
+                </motion.button>
+
+                <motion.button
+                  whileTap={{ scale: 0.96 }}
+                  onClick={handleDownload}
+                  disabled={downloading}
+                  className="flex flex-col items-center justify-center gap-1.5 h-14 rounded-2xl bg-muted border border-border text-[11px] font-semibold text-foreground hover:bg-muted/80 transition-colors disabled:opacity-60"
+                >
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.span
+                      key={downloading ? "loading" : "idle"}
+                      initial={{ scale: 0.7, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.7, opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                      className="flex flex-col items-center gap-1"
+                    >
+                      {downloading ? (
+                        <><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.7, ease: "linear" }}><Download size={16} /></motion.div><span>Saving…</span></>
+                      ) : (
+                        <><Download size={16} /><span>Save PNG</span></>
                       )}
                     </motion.span>
                   </AnimatePresence>
@@ -204,10 +261,10 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
                 <motion.button
                   whileTap={{ scale: 0.96 }}
                   onClick={handleNativeShare}
-                  className={`flex items-center justify-center gap-2 h-11 rounded-2xl ${receipt.gradient} text-white text-sm font-semibold shadow-card active:opacity-90 transition-opacity`}
+                  className={`flex flex-col items-center justify-center gap-1.5 h-14 rounded-2xl ${receipt.gradient} text-white text-[11px] font-semibold shadow-card active:opacity-90 transition-opacity`}
                 >
-                  <Share2 size={15} />
-                  Share
+                  <Share2 size={16} />
+                  <span>Share</span>
                 </motion.button>
               </div>
             </div>
