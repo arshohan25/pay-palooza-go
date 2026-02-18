@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import {
-  User, Phone, Copy, CheckCheck, ChevronRight,
+  Copy, CheckCheck, ChevronRight,
   Shield, Bell, Fingerprint, BarChart3, CreditCard,
   Gift, Lock, LogOut, BadgeCheck, AlertCircle,
   BellOff, Eye, Zap
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import ChangePinFlow from "@/components/ChangePinFlow";
 
 const WALLET_ID = "MFS-A3F1-9C22";
 const USER_NAME = "Tanvir Hasan";
@@ -115,6 +116,7 @@ const AccountPage = () => {
   const [promoNotifs, setPromoNotifs] = useState(true);
   const [twoFa, setTwoFa] = useState(false);
   const [hideBalance, setHideBalance] = useState(false);
+  const [showChangePin, setShowChangePin] = useState(false);
 
   const handleCopy = async () => {
     try {
@@ -135,6 +137,7 @@ const AccountPage = () => {
   const coming = (label: string) => toast.info(`${label} coming soon!`);
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -187,7 +190,7 @@ const AccountPage = () => {
           iconClass="gradient-send"
           label="Change PIN"
           sub="Update your 4-digit transaction PIN"
-          onClick={() => coming("Change PIN")}
+          onClick={() => setShowChangePin(true)}
         />
         <MenuRow
           icon={Gift}
@@ -294,6 +297,10 @@ const AccountPage = () => {
         BkashClone v1.0.0 · Made with ❤️
       </p>
     </motion.div>
+
+    {/* ── Change PIN overlay ── */}
+    {showChangePin && <ChangePinFlow onClose={() => setShowChangePin(false)} />}
+  </>
   );
 };
 
