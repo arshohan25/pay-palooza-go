@@ -3,17 +3,21 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 
 const actions = [
-  { icon: Send, label: "Send Money", gradient: "gradient-send" },
-  { icon: Wallet, label: "Cash Out", gradient: "gradient-cashout" },
-  { icon: CreditCard, label: "Payment", gradient: "gradient-payment" },
-  { icon: PlusCircle, label: "Add Money", gradient: "gradient-addmoney" },
-  { icon: Smartphone, label: "Mobile Recharge", gradient: "gradient-accent" },
-  { icon: Zap, label: "Pay Bill", gradient: "gradient-primary" },
-  { icon: ShoppingBag, label: "Shopping", gradient: "gradient-cashout" },
-  { icon: MoreHorizontal, label: "More", gradient: "gradient-payment" },
+  { icon: Send, label: "Send Money", gradient: "gradient-send", id: "send" },
+  { icon: Wallet, label: "Cash Out", gradient: "gradient-cashout", id: "cashout" },
+  { icon: CreditCard, label: "Payment", gradient: "gradient-payment", id: "payment" },
+  { icon: PlusCircle, label: "Add Money", gradient: "gradient-addmoney", id: "addmoney" },
+  { icon: Smartphone, label: "Mobile Recharge", gradient: "gradient-accent", id: "recharge" },
+  { icon: Zap, label: "Pay Bill", gradient: "gradient-primary", id: "bill" },
+  { icon: ShoppingBag, label: "Shopping", gradient: "gradient-cashout", id: "shopping" },
+  { icon: MoreHorizontal, label: "More", gradient: "gradient-payment", id: "more" },
 ];
 
-const QuickActions = () => {
+interface QuickActionsProps {
+  onSendMoney: () => void;
+}
+
+const QuickActions = ({ onSendMoney }: QuickActionsProps) => {
   return (
     <div className="grid grid-cols-4 gap-3">
       {actions.map((action, index) => (
@@ -22,7 +26,10 @@ const QuickActions = () => {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3, delay: index * 0.05 }}
-          onClick={() => toast.info(`${action.label} coming soon!`)}
+          onClick={() => {
+            if (action.id === "send") { onSendMoney(); return; }
+            toast.info(`${action.label} coming soon!`);
+          }}
           className="flex flex-col items-center gap-2 group"
         >
           <div
@@ -40,3 +47,4 @@ const QuickActions = () => {
 };
 
 export default QuickActions;
+
