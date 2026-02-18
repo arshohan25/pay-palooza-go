@@ -4,12 +4,13 @@ import {
   Copy, CheckCheck, ChevronRight,
   Shield, Bell, Fingerprint, BarChart3, CreditCard,
   Gift, Lock, LogOut, BadgeCheck, AlertCircle,
-  BellOff,
+  BellOff, Pencil,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import ChangePinFlow from "@/components/ChangePinFlow";
 import KycFlow from "@/components/KycFlow";
+import ProfileEditFlow, { getDisplayName, getDisplayPhoto } from "@/components/ProfileEditFlow";
 import LimitsPage from "@/pages/LimitsPage";
 import SpendingInsightsPage from "@/pages/SpendingInsightsPage";
 import ReferPage from "@/pages/ReferPage";
@@ -17,7 +18,6 @@ import ReferPage from "@/pages/ReferPage";
 type SubPage = "limits" | "insights" | "refer" | null;
 
 const WALLET_ID  = "MFS-A3F1-9C22";
-const USER_NAME  = "Tanvir Hasan";
 const USER_EMAIL = "tanvir@example.com";
 
 const SESSION_KEY    = "mfs_authenticated";
@@ -106,7 +106,11 @@ const AccountPage = ({ onSignOut }: AccountPageProps) => {
   const [twoFa, setTwoFa]               = useState(false);
   const [showChangePin, setShowChangePin] = useState(false);
   const [showKyc, setShowKyc]           = useState(false);
+  const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [subPage, setSubPage]           = useState<SubPage>(null);
+  // Live-update name/photo after profile edit
+  const [displayName, setDisplayNameState]   = useState(getDisplayName);
+  const [displayPhoto, setDisplayPhotoState] = useState(getDisplayPhoto);
 
   const registeredPhone = getRegisteredPhone();
 
@@ -127,6 +131,11 @@ const AccountPage = ({ onSignOut }: AccountPageProps) => {
     toast.success("Wallet ID copied!");
   };
 
+  const handleProfileSaved = () => {
+    setDisplayNameState(getDisplayName());
+    setDisplayPhotoState(getDisplayPhoto());
+  };
+
   const coming = (label: string) => toast.info(`${label} coming soon!`);
 
   return (
@@ -144,13 +153,27 @@ const AccountPage = ({ onSignOut }: AccountPageProps) => {
           <div className="absolute -bottom-10 left-4 w-32 h-32 rounded-full bg-white/4 pointer-events-none" />
 
           <div className="relative flex items-center gap-4">
-            {/* Avatar */}
-            <div className="w-16 h-16 rounded-2xl glass-hero flex items-center justify-center text-2xl font-bold text-white shrink-0">
-              T
-            </div>
+            {/* Avatar — tappable to edit profile */}
+            <button
+              onClick={() => setShowProfileEdit(true)}
+              className="relative w-16 h-16 rounded-2xl shrink-0 group active:scale-95 transition-transform"
+            >
+              {displayPhoto ? (
+                <img src={displayPhoto} alt="Profile" className="w-16 h-16 rounded-2xl object-cover" />
+              ) : (
+                <div className="w-16 h-16 rounded-2xl glass-hero flex items-center justify-center text-2xl font-bold text-white">
+                  {displayName[0]?.toUpperCase() ?? "?"}
+                </div>
+              )}
+              {/* Edit overlay */}
+              <div className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity flex items-center justify-center">
+                <Pencil size={16} className="text-white" />
+              </div>
+            </button>
+
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-[17px] font-bold">{USER_NAME}</p>
+                <p className="text-[17px] font-bold">{displayName}</p>
                 <KycBadge verified />
               </div>
               <p className="text-[13px] opacity-80 mt-0.5 font-medium">{registeredPhone ? `+880 ${registeredPhone}` : "—"}</p>
@@ -185,6 +208,7 @@ const AccountPage = ({ onSignOut }: AccountPageProps) => {
 
         {/* ── Account ── */}
         <Section title="Account">
+          <MenuRow icon={Pencil}    iconClass="gradient-hero"    label="Edit Profile"      sub="Update your name and profile photo"      onClick={() => setShowProfileEdit(true)} />
           <MenuRow icon={BadgeCheck} iconClass="gradient-primary" label="KYC Verification" sub="Full verification unlocks higher limits" onClick={() => setShowKyc(true)} />
           <MenuRow icon={Lock}       iconClass="gradient-send"    label="Change PIN"        sub="Update your 4-digit transaction PIN"    onClick={() => setShowChangePin(true)} />
           <MenuRow icon={Gift}       iconClass="gradient-accent"  label="Refer a Friend"   sub="Earn ৳50 for every successful referral" onClick={() => setSubPage("refer")} />
@@ -231,8 +255,15 @@ const AccountPage = ({ onSignOut }: AccountPageProps) => {
 
       {showChangePin && <ChangePinFlow onClose={() => setShowChangePin(false)} />}
       {showKyc && <KycFlow onClose={() => setShowKyc(false)} />}
+      {showProfileEdit && (
+        <ProfileEditFlow
+          onClose={() => setShowProfileEdit(false)}
+          onSaved={handleProfileSaved}
+        />
+      )}
     </>
   );
 };
 
 export default AccountPage;
+
