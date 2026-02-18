@@ -3,8 +3,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Fingerprint, KeyRound, AlertCircle, CheckCircle2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Demo PIN — in a real app this would be verified server-side
-const DEMO_PIN = "1234";
+// Reads the current PIN — falls back to "1234" if none set
+const PIN_STORAGE_KEY = "mfs_user_pin";
+const getPin = () => sessionStorage.getItem(PIN_STORAGE_KEY) ?? "1234";
 const SESSION_KEY = "mfs_authenticated";
 
 // ── Check WebAuthn platform authenticator availability ───────────────────────
@@ -79,7 +80,7 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
     setPin(digits);
     setPinError("");
     if (digits.length === 4) {
-      if (digits === DEMO_PIN) {
+      if (digits === getPin()) {
         setStep("success");
         sessionStorage.setItem(SESSION_KEY, "1");
         setTimeout(onAuthenticated, 900);
