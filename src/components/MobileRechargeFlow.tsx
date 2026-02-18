@@ -350,8 +350,8 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
       {/* Header */}
       {step !== "success" && (
-        <div className="gradient-accent px-4 pt-6 pb-8 text-primary-foreground">
-          <div className="flex items-center gap-3 mb-4">
+        <div className="gradient-accent px-4 pt-3 pb-3 text-primary-foreground">
+          <div className="flex items-center gap-3 mb-2">
             <button
               onClick={goBack}
               className="w-10 h-10 rounded-full bg-white/20 ring-1 ring-white/30 backdrop-blur-sm flex items-center justify-center active:scale-95 transition-transform shrink-0"
