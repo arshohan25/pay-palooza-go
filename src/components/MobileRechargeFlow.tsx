@@ -350,7 +350,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
       {/* Header */}
       {step !== "success" && (
-        <div className="gradient-accent px-4 pt-14 pb-8 text-primary-foreground">
+        <div className="gradient-accent px-4 pt-6 pb-8 text-primary-foreground">
           <div className="flex items-center gap-3 mb-4">
             <button
               onClick={goBack}
@@ -692,7 +692,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
             {/* ── SUCCESS ── */}
             {step === "success" && (selectedPack || isCustom) && (
               <div className="min-h-screen flex flex-col">
-                <div className="gradient-accent px-4 pt-16 pb-10 text-white text-center">
+                <div className="gradient-accent px-4 pt-8 pb-10 text-white text-center">
                   <motion.div
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
