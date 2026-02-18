@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, CheckCircle2, AlertCircle, Lock, ShieldCheck } from "lucide-react";
 
@@ -140,12 +141,14 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
   const stepIndex = STEPS.indexOf(step);
 
   const goTo = (next: Step, dir = 1) => {
+    haptics.medium();
     setDir(dir);
     setStep(next);
     setError("");
   };
 
   const goBack = () => {
+    haptics.medium();
     if (step === "current") { onClose(); return; }
     if (step === "new")     { setCurrentPin(""); goTo("current", -1); return; }
     if (step === "confirm") { setNewPin(""); goTo("new", -1); return; }
@@ -153,11 +156,13 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
 
   // ── Auto-advance when 4 digits entered ────────────────────────────────────
   const handleCurrentPin = (p: string) => {
+    if (p.length > currentPin.length) haptics.light();
     setCurrentPin(p);
     setError("");
     if (p.length === 4) {
       setTimeout(() => {
         if (p !== getStoredPin()) {
+          haptics.error();
           setError("Incorrect PIN. Please try again.");
           setTimeout(() => setCurrentPin(""), 600);
         } else {
@@ -169,6 +174,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
   };
 
   const handleNewPin = (p: string) => {
+    if (p.length > newPin.length) haptics.light();
     setNewPin(p);
     setError("");
     if (p.length === 4) {
@@ -176,6 +182,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
       const repeated   = ["0000","1111","2222","3333","4444","5555","6666","7777","8888","9999"];
       setTimeout(() => {
         if (sequential.includes(p) || repeated.includes(p)) {
+          haptics.error();
           setError("PIN is too simple. Avoid sequential or repeated digits.");
           setTimeout(() => setNewPin(""), 600);
         } else {
@@ -187,15 +194,18 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
   };
 
   const handleConfirmPin = (p: string) => {
+    if (p.length > confirmPin.length) haptics.light();
     setConfirmPin(p);
     setError("");
     if (p.length === 4) {
       setTimeout(() => {
         if (p !== newPin) {
+          haptics.error();
           setError("PINs don't match. Please try again.");
           setTimeout(() => setConfirmPin(""), 600);
         } else {
           // Persist new PIN
+          haptics.success();
           storePin(newPin);
           setDir(1);
           setStep("success");

@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, CheckCircle2, AlertCircle,
@@ -137,6 +138,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
 
   const handlePinConfirm = () => {
     if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
+    haptics.success();
     txnTime.current = new Date();
     txnId.current = generateTxnId();
     setDir(1);
@@ -598,6 +600,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                     value={pin}
                     onChange={(e) => {
                       const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                      if (v.length > pin.length) haptics.light();
                       setPin(v);
                       setError("");
                     }}
