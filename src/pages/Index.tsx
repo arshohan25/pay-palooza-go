@@ -19,6 +19,7 @@ import AccountPage from "@/pages/AccountPage";
 import { BalanceCardSkeleton, QuickActionsSkeleton, TransactionListSkeleton } from "@/components/HomeSkeletons";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import BiometricAuth from "@/components/BiometricAuth";
+import InstallPrompt from "@/components/InstallPrompt";
 
 const SESSION_KEY = "mfs_authenticated";
 
@@ -148,6 +149,9 @@ const Index = () => {
       {showRecharge  && <MobileRechargeFlow onClose={() => setShowRecharge(false)} />}
       {showPayBill   && <PayBillFlow   onClose={() => setShowPayBill(false)} />}
       {showAddMoney  && <AddMoneyFlow  onClose={() => setShowAddMoney(false)} />}
+
+      {/* PWA install prompt */}
+      <InstallPrompt />
     </div>
     </>
   );
