@@ -4,7 +4,7 @@ import {
   Copy, CheckCheck, ChevronRight,
   Shield, Bell, Fingerprint, BarChart3, CreditCard,
   Gift, Lock, LogOut, BadgeCheck, AlertCircle,
-  BellOff, Eye
+  BellOff,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -16,10 +16,14 @@ import ReferPage from "@/pages/ReferPage";
 
 type SubPage = "limits" | "insights" | "refer" | null;
 
-const WALLET_ID = "MFS-A3F1-9C22";
-const USER_NAME = "Tanvir Hasan";
-const USER_PHONE = "01712-345678";
+const WALLET_ID  = "MFS-A3F1-9C22";
+const USER_NAME  = "Tanvir Hasan";
 const USER_EMAIL = "tanvir@example.com";
+
+const SESSION_KEY    = "mfs_authenticated";
+const REGISTERED_KEY = "mfs_registered_phone";
+
+const getRegisteredPhone = () => localStorage.getItem(REGISTERED_KEY) ?? "";
 
 /* ─── KYC badge ─── */
 const KycBadge = ({ verified }: { verified: boolean }) =>
@@ -92,16 +96,19 @@ const ToggleRow = ({
 );
 
 /* ─── Main ─── */
-const AccountPage = () => {
+interface AccountPageProps { onSignOut?: () => void; }
+
+const AccountPage = ({ onSignOut }: AccountPageProps) => {
   const [copied, setCopied]             = useState(false);
   const [biometric, setBiometric]       = useState(false);
   const [pushNotifs, setPushNotifs]     = useState(true);
   const [promoNotifs, setPromoNotifs]   = useState(true);
   const [twoFa, setTwoFa]               = useState(false);
-  const [hideBalance, setHideBalance]   = useState(false);
   const [showChangePin, setShowChangePin] = useState(false);
   const [showKyc, setShowKyc]           = useState(false);
   const [subPage, setSubPage]           = useState<SubPage>(null);
+
+  const registeredPhone = getRegisteredPhone();
 
   if (subPage === "limits")   return <LimitsPage           onBack={() => setSubPage(null)} />;
   if (subPage === "insights") return <SpendingInsightsPage onBack={() => setSubPage(null)} />;
@@ -146,7 +153,7 @@ const AccountPage = () => {
                 <p className="text-[17px] font-bold">{USER_NAME}</p>
                 <KycBadge verified />
               </div>
-              <p className="text-[13px] opacity-80 mt-0.5 font-medium">{USER_PHONE}</p>
+              <p className="text-[13px] opacity-80 mt-0.5 font-medium">{registeredPhone ? `+880 ${registeredPhone}` : "—"}</p>
               <p className="text-[11px] opacity-55 truncate">{USER_EMAIL}</p>
             </div>
           </div>
@@ -197,14 +204,24 @@ const AccountPage = () => {
 
         {/* ── Security ── */}
         <Section title="Security & Privacy">
-          <ToggleRow icon={Fingerprint} iconClass="gradient-send"    label="Biometric Login"        sub="Use fingerprint or face ID"        checked={biometric}   onCheckedChange={(v) => { setBiometric(v); toast.success(v ? "Biometric login enabled" : "Biometric login disabled"); }} />
-          <ToggleRow icon={Shield}      iconClass="gradient-primary"  label="Two-Factor Auth"        sub="Extra OTP step on each login"      checked={twoFa}       onCheckedChange={(v) => { setTwoFa(v); toast.success(v ? "2FA enabled" : "2FA disabled"); }} />
-          <ToggleRow icon={Eye}         iconClass="gradient-cashout"  label="Hide Balance by Default" sub="Balance masked until you tap show" checked={hideBalance} onCheckedChange={setHideBalance} />
+          <ToggleRow icon={Fingerprint} iconClass="gradient-send"    label="Biometric Login"  sub="Use fingerprint or face ID"   checked={biometric}   onCheckedChange={(v) => { setBiometric(v); toast.success(v ? "Biometric login enabled" : "Biometric login disabled"); }} />
+          <ToggleRow icon={Shield}      iconClass="gradient-primary"  label="Two-Factor Auth"  sub="Extra OTP step on each login" checked={twoFa}       onCheckedChange={(v) => { setTwoFa(v); toast.success(v ? "2FA enabled" : "2FA disabled"); }} />
         </Section>
 
-        {/* ── Logout ── */}
+        {/* ── Sign Out ── */}
         <Section title="Account Actions">
-          <MenuRow icon={LogOut} iconClass="bg-destructive" label="Log Out" danger onClick={() => toast.error("Logout requires authentication integration")} right={<span />} />
+          <MenuRow
+            icon={LogOut}
+            iconClass="bg-destructive"
+            label="Sign Out"
+            sub={registeredPhone ? `Signed in as +880 ${registeredPhone}` : "Sign out of your account"}
+            danger
+            right={<span />}
+            onClick={() => {
+              sessionStorage.removeItem(SESSION_KEY);
+              onSignOut?.();
+            }}
+          />
         </Section>
 
         <p className="text-center text-[11px] text-muted-foreground pt-1 pb-2">
