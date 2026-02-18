@@ -6,6 +6,7 @@ import { addTxnNotif } from "@/lib/txnNotifStore";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
+import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
 import {
   ChevronLeft,
   CheckCircle2,
@@ -489,7 +490,10 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
             {step === "packs" && operator && operatorPacks && (
               <div className="flex flex-col h-full">
                 {/* Operator pill */}
-                <div className="px-4 pt-4 pb-3">
+                <div className="px-4 pt-2 flex justify-end">
+                  <AvailableBalanceBadge />
+                </div>
+                <div className="px-4 pb-3">
                   <div className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border shadow-card">
                     <div className={`${operator.gradient} w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0`}>
                       {operator.short}

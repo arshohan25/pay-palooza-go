@@ -6,6 +6,7 @@ import { addTxnNotif } from "@/lib/txnNotifStore";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
+import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
 import {
   ChevronLeft, CheckCircle2, AlertCircle,
   Landmark, CreditCard, Lock, ChevronRight,
@@ -239,7 +240,10 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
             {step === "amount" && (
               <div className="px-4 pt-6 pb-32 space-y-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">Enter Amount</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-semibold text-foreground">Enter Amount</label>
+                    <AvailableBalanceBadge />
+                  </div>
                   <div className="relative flex items-center">
                     <span className="absolute left-4 text-2xl font-bold text-muted-foreground">৳</span>
                     <input

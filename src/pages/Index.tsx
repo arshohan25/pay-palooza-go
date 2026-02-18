@@ -19,8 +19,8 @@ import TransactionHistory from "@/pages/TransactionHistory";
 import AccountPage from "@/pages/AccountPage";
 import { BalanceCardSkeleton, QuickActionsSkeleton, TransactionListSkeleton } from "@/components/HomeSkeletons";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
-import BiometricAuth from "@/components/BiometricAuth";
 import InstallPrompt from "@/components/InstallPrompt";
+import AuthPage from "@/pages/AuthPage";
 
 
 const SESSION_KEY = "mfs_authenticated";
@@ -127,7 +127,7 @@ const Index = () => {
     <>
       <AnimatePresence>
         {!authenticated && (
-          <BiometricAuth onAuthenticated={() => setAuthenticated(true)} />
+          <AuthPage onAuthenticated={() => setAuthenticated(true)} />
         )}
       </AnimatePresence>
 

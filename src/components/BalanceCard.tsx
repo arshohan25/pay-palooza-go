@@ -34,7 +34,6 @@ const BalanceCard = () => {
         onUpdate: (v) => setDisplayBalance(v),
       });
     });
-    // Keep display in sync with motionValue
     const unsubMv = motionBalance.on("change", (v) => setDisplayBalance(v));
     return () => { unsub(); unsubMv(); };
   }, [motionBalance]);
@@ -105,62 +104,49 @@ const BalanceCard = () => {
 
           {/* Balance — tap to reveal */}
           <div className="mb-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] opacity-60 mb-1">Available Balance</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] opacity-60 mb-2">Available Balance</p>
             <motion.button
-              className="flex items-baseline gap-1.5 group relative"
+              className="flex items-center group"
               onClick={() => setShowBalance((v) => !v)}
               whileTap={{ scale: 0.97 }}
               aria-label={showBalance ? "Hide balance" : "Tap to see balance"}
             >
-              <span className="text-xl font-semibold opacity-70">৳</span>
-
               <AnimatePresence mode="wait">
                 {showBalance ? (
-                  <motion.span
+                  <motion.div
                     key="shown"
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.2 }}
-                    className="text-[2.2rem] sm:text-5xl font-bold tracking-tight leading-none"
+                    transition={{ duration: 0.22 }}
+                    className="flex items-baseline gap-1.5"
                   >
-                    {displayBalance.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </motion.span>
+                    <span className="text-xl font-semibold opacity-70">৳</span>
+                    <span className="text-[2.2rem] sm:text-5xl font-bold tracking-tight leading-none">
+                      {displayBalance.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                    <motion.span
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 0.55 }}
+                      className="flex items-center self-center ml-1"
+                    >
+                      <EyeOff size={13} />
+                    </motion.span>
+                  </motion.div>
                 ) : (
-                  <motion.span
+                  <motion.div
                     key="hidden"
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.2 }}
-                    className="relative flex items-center"
+                    transition={{ duration: 0.22 }}
+                    className="glass-hero rounded-2xl px-4 py-2.5 flex items-center gap-2"
                   >
-                    <span className="text-[2.2rem] sm:text-5xl font-bold tracking-tight leading-none opacity-30 select-none">
-                      ••••••
-                    </span>
-                    {/* "Tap to see" pill */}
-                    <motion.span
-                      initial={{ opacity: 0, scale: 0.85 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 whitespace-nowrap glass-hero rounded-xl px-3 py-1 flex items-center gap-1.5 pointer-events-none"
-                    >
-                      <Eye size={11} className="opacity-80" />
-                      <span className="text-[11px] font-semibold opacity-90">Tap to see balance</span>
-                    </motion.span>
-                  </motion.span>
+                    <Eye size={14} className="opacity-85" />
+                    <span className="text-sm font-semibold opacity-95 tracking-wide">Tap to see balance</span>
+                  </motion.div>
                 )}
               </AnimatePresence>
-
-              {/* Hide hint when shown */}
-              {showBalance && (
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 0.55 }}
-                  className="flex items-center gap-0.5 self-center ml-1"
-                >
-                  <EyeOff size={12} />
-                </motion.span>
-              )}
             </motion.button>
           </div>
 
