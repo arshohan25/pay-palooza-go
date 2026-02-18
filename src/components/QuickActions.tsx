@@ -1,16 +1,16 @@
-import { Send, Wallet, CreditCard, PlusCircle, Smartphone, Zap, ShoppingBag, MoreHorizontal } from "lucide-react";
+import { ArrowRightLeft, Banknote, ScanLine, PiggyBank, PhoneCall, Lightbulb, ShoppingCart, LayoutGrid } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
 const actions = [
-  { icon: Send,           label: "Send",     gradient: "gradient-send",     id: "send" },
-  { icon: Wallet,         label: "Cash Out", gradient: "gradient-cashout",  id: "cashout" },
-  { icon: CreditCard,     label: "Payment",  gradient: "gradient-payment",  id: "payment" },
-  { icon: PlusCircle,     label: "Add",      gradient: "gradient-addmoney", id: "addmoney" },
-  { icon: Smartphone,     label: "Recharge", gradient: "gradient-accent",   id: "recharge" },
-  { icon: Zap,            label: "Bill Pay", gradient: "gradient-primary",  id: "bill" },
-  { icon: ShoppingBag,    label: "Shop",     gradient: "gradient-cashout",  id: "shopping" },
-  { icon: MoreHorizontal, label: "More",     gradient: "gradient-payment",  id: "more" },
+  { icon: ArrowRightLeft, label: "Send",     gradient: "gradient-send",     id: "send" },
+  { icon: Banknote,       label: "Cash Out", gradient: "gradient-cashout",  id: "cashout" },
+  { icon: ScanLine,       label: "Payment",  gradient: "gradient-payment",  id: "payment" },
+  { icon: PiggyBank,      label: "Add",      gradient: "gradient-addmoney", id: "addmoney" },
+  { icon: PhoneCall,      label: "Recharge", gradient: "gradient-accent",   id: "recharge" },
+  { icon: Lightbulb,      label: "Bill Pay", gradient: "gradient-primary",  id: "bill" },
+  { icon: ShoppingCart,   label: "Shop",     gradient: "gradient-cashout",  id: "shopping" },
+  { icon: LayoutGrid,     label: "More",     gradient: "gradient-payment",  id: "more" },
 ];
 
 interface QuickActionsProps {
