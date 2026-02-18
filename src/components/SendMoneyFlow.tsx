@@ -457,6 +457,18 @@ const SendMoneyFlow = ({ onClose }: SendMoneyFlowProps) => {
                     <span>Fee</span>
                     <span className="text-foreground font-medium">৳{fee}</span>
                   </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Date</span>
+                    <span className="text-foreground font-medium">
+                      {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Time</span>
+                    <span className="text-foreground font-medium">
+                      {new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
+                    </span>
+                  </div>
                   <div className="h-px bg-border" />
                   <div className="flex justify-between font-bold text-foreground">
                     <span>Transaction ID</span>
