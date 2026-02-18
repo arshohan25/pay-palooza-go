@@ -4,11 +4,12 @@ import {
   Copy, CheckCheck, ChevronRight,
   Shield, Bell, Fingerprint, BarChart3, CreditCard,
   Gift, Lock, LogOut, BadgeCheck, AlertCircle,
-  BellOff, Eye, Zap
+  BellOff, Eye
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import ChangePinFlow from "@/components/ChangePinFlow";
+import KycFlow from "@/components/KycFlow";
 import LimitsPage from "@/pages/LimitsPage";
 import SpendingInsightsPage from "@/pages/SpendingInsightsPage";
 import ReferPage from "@/pages/ReferPage";
@@ -122,6 +123,7 @@ const AccountPage = () => {
   const [twoFa, setTwoFa] = useState(false);
   const [hideBalance, setHideBalance] = useState(false);
   const [showChangePin, setShowChangePin] = useState(false);
+  const [showKyc, setShowKyc] = useState(false);
   const [subPage, setSubPage] = useState<SubPage>(null);
 
   // Sub-page routing
@@ -194,7 +196,7 @@ const AccountPage = () => {
           iconClass="gradient-primary"
           label="KYC Verification"
           sub="Full verification unlocks higher limits"
-          onClick={() => coming("KYC")}
+          onClick={() => setShowKyc(true)}
         />
         <MenuRow
           icon={Lock}
@@ -282,13 +284,6 @@ const AccountPage = () => {
           checked={hideBalance}
           onCheckedChange={setHideBalance}
         />
-        <MenuRow
-          icon={Zap}
-          iconClass="gradient-addmoney"
-          label="Active Sessions"
-          sub="Manage logged-in devices"
-          onClick={() => coming("Sessions")}
-        />
       </Section>
 
       {/* ── Logout ── */}
@@ -311,6 +306,9 @@ const AccountPage = () => {
 
     {/* ── Change PIN overlay ── */}
     {showChangePin && <ChangePinFlow onClose={() => setShowChangePin(false)} />}
+
+    {/* ── KYC overlay ── */}
+    {showKyc && <KycFlow onClose={() => setShowKyc(false)} />}
   </>
   );
 };
