@@ -113,7 +113,7 @@ const Index = () => {
       return <TransactionHistory onRefresh={triggerRefresh} />;
     }
     if (activeTab === "account") {
-      return <AccountPage />;
+      return <AccountPage onSignOut={() => setAuthenticated(false)} />;
     }
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-muted-foreground">
