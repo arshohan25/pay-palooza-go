@@ -1,7 +1,17 @@
-import { Bell, Search } from "lucide-react";
-import { motion } from "framer-motion";
+import { Bell, Search, Sun, Moon } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 const AppHeader = () => {
+  const { resolvedTheme, setTheme } = useTheme();
+  // avoid hydration mismatch — only render icon after mount
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const isDark = resolvedTheme === "dark";
+  const toggleTheme = () => setTheme(isDark ? "light" : "dark");
+
   return (
     <motion.header
       initial={{ opacity: 0, y: -10 }}
@@ -26,6 +36,33 @@ const AppHeader = () => {
 
       {/* Right: action buttons */}
       <div className="flex items-center gap-2">
+
+        {/* Dark mode toggle */}
+        <motion.button
+          whileTap={{ scale: 0.88 }}
+          onClick={toggleTheme}
+          className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-card border border-border/60 shadow-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:shadow-elevated transition-all duration-150 tap-target overflow-hidden"
+          aria-label="Toggle dark mode"
+        >
+          <AnimatePresence mode="wait" initial={false}>
+            {mounted && (
+              <motion.span
+                key={isDark ? "moon" : "sun"}
+                initial={{ opacity: 0, rotate: -30, scale: 0.6 }}
+                animate={{ opacity: 1, rotate: 0,   scale: 1   }}
+                exit={{   opacity: 0, rotate:  30,  scale: 0.6 }}
+                transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                className="flex items-center justify-center"
+              >
+                {isDark
+                  ? <Moon size={17} strokeWidth={2} />
+                  : <Sun  size={17} strokeWidth={2} />
+                }
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </motion.button>
+
         <motion.button
           whileTap={{ scale: 0.90 }}
           className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-card border border-border/60 shadow-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:shadow-elevated transition-all duration-150 tap-target"
@@ -33,6 +70,7 @@ const AppHeader = () => {
         >
           <Search size={17} strokeWidth={2} />
         </motion.button>
+
         <motion.button
           whileTap={{ scale: 0.90 }}
           className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-card border border-border/60 shadow-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:shadow-elevated transition-all duration-150 tap-target"
