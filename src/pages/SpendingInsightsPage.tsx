@@ -85,23 +85,24 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 40 }}
+      initial={{ opacity: 0, x: 32 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 40 }}
-      transition={{ duration: 0.3 }}
+      exit={{ opacity: 0, x: 32 }}
+      transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
       className="space-y-5 pb-6"
     >
       {/* Top bar */}
       <div className="flex items-center gap-3">
-        <button
+        <motion.button
+          whileTap={{ scale: 0.90 }}
           onClick={onBack}
-          className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center hover:bg-muted transition-colors shadow-card"
+          className="w-10 h-10 rounded-2xl bg-card border border-border/60 shadow-card flex items-center justify-center hover:bg-muted transition-colors tap-target"
         >
-          <ArrowLeft size={18} className="text-foreground" />
-        </button>
+          <ArrowLeft size={17} className="text-foreground" strokeWidth={2.2} />
+        </motion.button>
         <div>
-          <h1 className="text-lg font-bold text-foreground">Spending Insights</h1>
-          <p className="text-xs text-muted-foreground">Track your spending patterns</p>
+          <h1 className="text-[17px] font-bold text-foreground">Spending Insights</h1>
+          <p className="text-[11.5px] text-muted-foreground">Track your spending patterns</p>
         </div>
       </div>
 
@@ -109,35 +110,35 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
       <div className="grid grid-cols-2 gap-3">
         <motion.div
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-          className="bg-card rounded-2xl border border-border p-4 shadow-card"
+          className="bg-card rounded-3xl border border-border/60 p-4 shadow-card"
         >
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-7 h-7 rounded-lg gradient-cashout flex items-center justify-center">
-              <ArrowUpRight size={14} className="text-primary-foreground" />
+            <div className="w-7 h-7 rounded-xl gradient-cashout flex items-center justify-center">
+              <ArrowUpRight size={13} className="text-primary-foreground" />
             </div>
-            <span className="text-xs font-medium text-muted-foreground">Total Sent</span>
+            <span className="text-[11.5px] font-semibold text-muted-foreground">Total Sent</span>
           </div>
-          <p className="text-xl font-bold text-foreground">৳{TOTAL_SENT.toLocaleString()}</p>
+          <p className="text-[20px] font-bold text-foreground">৳{TOTAL_SENT.toLocaleString()}</p>
           <div className="flex items-center gap-1 mt-1">
             <TrendingDown size={11} className="text-destructive" />
-            <span className="text-[11px] text-destructive font-medium">+12% vs last month</span>
+            <span className="text-[11px] text-destructive font-semibold">+12% vs last month</span>
           </div>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="bg-card rounded-2xl border border-border p-4 shadow-card"
+          className="bg-card rounded-3xl border border-border/60 p-4 shadow-card"
         >
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-7 h-7 rounded-lg gradient-primary flex items-center justify-center">
-              <ArrowDownLeft size={14} className="text-primary-foreground" />
+            <div className="w-7 h-7 rounded-xl gradient-primary flex items-center justify-center">
+              <ArrowDownLeft size={13} className="text-primary-foreground" />
             </div>
-            <span className="text-xs font-medium text-muted-foreground">Total Received</span>
+            <span className="text-[11.5px] font-semibold text-muted-foreground">Total Received</span>
           </div>
-          <p className="text-xl font-bold text-foreground">৳{TOTAL_RECEIVED.toLocaleString()}</p>
+          <p className="text-[20px] font-bold text-foreground">৳{TOTAL_RECEIVED.toLocaleString()}</p>
           <div className="flex items-center gap-1 mt-1">
             <TrendingUp size={11} className="text-primary" />
-            <span className="text-[11px] text-primary font-medium">+8% vs last month</span>
+            <span className="text-[11px] text-primary font-semibold">+8% vs last month</span>
           </div>
         </motion.div>
       </div>
@@ -145,7 +146,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
       {/* Monthly bar chart */}
       <motion.div
         initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-        className="bg-card rounded-2xl border border-border shadow-card overflow-hidden"
+        className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden"
       >
         <div className="px-4 pt-4 pb-2 flex items-center justify-between">
           <p className="text-sm font-bold text-foreground">Monthly Breakdown</p>
@@ -208,7 +209,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
       {/* Donut chart */}
       <motion.div
         initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-        className="bg-card rounded-2xl border border-border shadow-card p-4"
+        className="bg-card rounded-3xl border border-border/60 shadow-card p-4"
       >
         <p className="text-sm font-bold text-foreground mb-3">Category Breakdown</p>
         <div style={{ height: 200 }}>
@@ -267,7 +268,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
       {/* Top merchants */}
       <motion.div
         initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-        className="bg-card rounded-2xl border border-border shadow-card overflow-hidden"
+        className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden"
       >
         <p className="text-sm font-bold text-foreground px-4 pt-4 pb-2">Top Merchants</p>
         {TOP_MERCHANTS.map((m, i) => {

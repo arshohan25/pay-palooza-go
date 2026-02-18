@@ -1,22 +1,44 @@
 import { motion } from "framer-motion";
-import { Gift } from "lucide-react";
+import { Gift, ChevronRight, Sparkles } from "lucide-react";
 
 const PromoCard = () => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: 0.3 }}
-      className="gradient-accent rounded-2xl p-4 flex items-center gap-4 shadow-card"
+      transition={{ duration: 0.4, delay: 0.28, ease: [0.23, 1, 0.32, 1] }}
+      className="relative overflow-hidden rounded-3xl gradient-accent shadow-card press-effect cursor-pointer group"
     >
-      <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
-        <Gift size={24} className="text-accent-foreground" />
-      </div>
-      <div className="flex-1">
-        <p className="text-sm font-bold text-accent-foreground">Cashback Offer!</p>
-        <p className="text-xs text-accent-foreground/80">
-          Get 5% cashback on mobile recharge. Limited time.
-        </p>
+      {/* Decorative blobs */}
+      <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-white/10 pointer-events-none" />
+      <div className="absolute -bottom-8 right-12 w-24 h-24 rounded-full bg-white/8 pointer-events-none" />
+
+      <div className="relative flex items-center gap-4 p-4 sm:p-5">
+        {/* Icon */}
+        <div className="glass-hero w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-200">
+          <Gift size={22} className="text-accent-foreground" />
+        </div>
+
+        {/* Text */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <Sparkles size={11} className="text-accent-foreground opacity-80" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-accent-foreground/70">
+              Limited offer
+            </span>
+          </div>
+          <p className="text-[14px] font-bold text-accent-foreground leading-snug">
+            5% Cashback on Mobile Recharge
+          </p>
+          <p className="text-[11.5px] text-accent-foreground/75 mt-0.5">
+            Valid until Feb 28 · Min ৳100
+          </p>
+        </div>
+
+        {/* Arrow */}
+        <div className="glass-hero w-8 h-8 rounded-xl flex items-center justify-center shrink-0">
+          <ChevronRight size={15} className="text-accent-foreground group-hover:translate-x-0.5 transition-transform" />
+        </div>
       </div>
     </motion.div>
   );

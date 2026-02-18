@@ -1,9 +1,8 @@
-import { Eye, EyeOff, Copy, CheckCheck, QrCode } from "lucide-react";
+import { Eye, EyeOff, Copy, CheckCheck, QrCode, TrendingUp } from "lucide-react";
 import { useState, useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import UserQrModal from "@/components/UserQrModal";
 
-// Generate a stable unique user ID from a fixed seed (would come from auth in a real app)
 const generateUserId = () => {
   const seed = "TANVIR_HASAN_2024";
   let hash = 0;
@@ -18,18 +17,14 @@ const BalanceCard = () => {
   const [showBalance, setShowBalance] = useState(true);
   const [copied, setCopied] = useState(false);
   const [showQr, setShowQr] = useState(false);
-
   const userId = useMemo(() => generateUserId(), []);
 
   const handleCopyId = async () => {
-    try {
-      await navigator.clipboard.writeText(userId);
-    } catch {
+    try { await navigator.clipboard.writeText(userId); }
+    catch {
       const el = document.createElement("textarea");
-      el.value = userId;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand("copy");
+      el.value = userId; document.body.appendChild(el);
+      el.select(); document.execCommand("copy");
       document.body.removeChild(el);
     }
     setCopied(true);
@@ -39,55 +34,102 @@ const BalanceCard = () => {
   return (
     <>
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="gradient-hero rounded-2xl p-6 text-primary-foreground shadow-glow"
+        initial={{ opacity: 0, y: 16, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+        className="relative overflow-hidden rounded-3xl gradient-hero text-primary-foreground shadow-glow-lg"
       >
-        <div className="flex items-center justify-between mb-1">
-          <p className="text-sm opacity-80">Available Balance</p>
-          <button
-            onClick={() => setShowBalance(!showBalance)}
-            className="p-1 rounded-full hover:bg-white/10 transition-colors"
-          >
-            {showBalance ? <Eye size={18} /> : <EyeOff size={18} />}
-          </button>
-        </div>
-        <div className="flex items-baseline gap-1 mb-4">
-          <span className="text-lg opacity-70">৳</span>
-          <span className="text-3xl font-bold tracking-tight">
-            {showBalance ? "12,450.75" : "••••••"}
-          </span>
-        </div>
+        {/* Decorative circles */}
+        <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/5 pointer-events-none" />
+        <div className="absolute -bottom-12 -left-6 w-48 h-48 rounded-full bg-white/5 pointer-events-none" />
+        <div className="absolute top-4 right-24 w-20 h-20 rounded-full bg-white/5 pointer-events-none" />
 
-        {/* User ID row */}
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs opacity-60">Wallet ID</p>
-            <p className="text-sm font-mono font-semibold tracking-widest opacity-90">{userId}</p>
+        <div className="relative p-5 sm:p-6">
+          {/* Top row */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="glass-hero rounded-xl px-3 py-1 flex items-center gap-1.5">
+                <TrendingUp size={12} strokeWidth={2.5} className="opacity-80" />
+                <span className="text-[11px] font-semibold opacity-90 tracking-wide">+2.4% this month</span>
+              </div>
+            </div>
+            <motion.button
+              whileTap={{ scale: 0.88 }}
+              onClick={() => setShowBalance(!showBalance)}
+              className="glass-hero w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors tap-target"
+              aria-label="Toggle balance visibility"
+            >
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key={showBalance ? "eye" : "eyeoff"}
+                  initial={{ opacity: 0, scale: 0.7, rotate: -10 }}
+                  animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                  exit={{ opacity: 0, scale: 0.7, rotate: 10 }}
+                  transition={{ duration: 0.18 }}
+                >
+                  {showBalance ? <Eye size={16} /> : <EyeOff size={16} />}
+                </motion.span>
+              </AnimatePresence>
+            </motion.button>
           </div>
-          <div className="flex items-center gap-2">
-            {/* Copy button */}
-            <motion.button
-              onClick={handleCopyId}
-              whileTap={{ scale: 0.9 }}
-              className="w-8 h-8 rounded-lg bg-white/15 backdrop-blur-sm flex items-center justify-center hover:bg-white/25 transition-colors"
-              title="Copy Wallet ID"
-            >
-              {copied
-                ? <CheckCheck size={15} className="text-white" />
-                : <Copy size={15} className="text-white" />
-              }
-            </motion.button>
-            {/* QR share button */}
-            <motion.button
-              onClick={() => setShowQr(true)}
-              whileTap={{ scale: 0.9 }}
-              className="w-8 h-8 rounded-lg bg-white/15 backdrop-blur-sm flex items-center justify-center hover:bg-white/25 transition-colors"
-              title="Show QR Code"
-            >
-              <QrCode size={15} className="text-white" />
-            </motion.button>
+
+          {/* Balance */}
+          <div className="mb-5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] opacity-60 mb-1">Available Balance</p>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-xl font-semibold opacity-70">৳</span>
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={showBalance ? "shown" : "hidden"}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2 }}
+                  className="text-[2.2rem] sm:text-5xl font-bold tracking-tight leading-none"
+                >
+                  {showBalance ? "12,450.75" : "••••••"}
+                </motion.span>
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="h-px bg-white/15 mb-4" />
+
+          {/* Wallet ID row */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.12em] opacity-50 mb-0.5">Wallet ID</p>
+              <p className="text-sm font-mono font-semibold tracking-widest opacity-90">{userId}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <motion.button
+                whileTap={{ scale: 0.88 }}
+                onClick={handleCopyId}
+                className="glass-hero w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors tap-target"
+                title="Copy Wallet ID"
+              >
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.span
+                    key={copied ? "check" : "copy"}
+                    initial={{ opacity: 0, scale: 0.7 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.7 }}
+                    transition={{ duration: 0.16 }}
+                  >
+                    {copied ? <CheckCheck size={14} /> : <Copy size={14} />}
+                  </motion.span>
+                </AnimatePresence>
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.88 }}
+                onClick={() => setShowQr(true)}
+                className="glass-hero w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors tap-target"
+                title="Show QR Code"
+              >
+                <QrCode size={14} />
+              </motion.button>
+            </div>
           </div>
         </div>
       </motion.div>
