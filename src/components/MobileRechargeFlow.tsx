@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   Smartphone,
   AlertCircle,
-  Delete,
   Zap,
   Wifi,
   Phone,
@@ -222,58 +221,41 @@ const slideVariants = {
   exit:  (dir: number) => ({ x: dir < 0 ? "100%" : "-100%", opacity: 0 }),
 };
 
-// ─── PIN Pad ─────────────────────────────────────────────────────────────────
-const PIN_KEYS = ["1","2","3","4","5","6","7","8","9","","0","⌫"];
-
-interface PinPadProps { pin: string; onChange: (p: string) => void; error: string; }
-const PinPad = ({ pin, onChange, error }: PinPadProps) => {
-  const handleKey = (key: string) => {
-    if (key === "⌫") { onChange(pin.slice(0, -1)); return; }
-    if (key === "") return;
-    if (pin.length < 4) onChange(pin + key);
-  };
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-center gap-4">
-        {[0,1,2,3].map((i) => (
-          <motion.div
-            key={i}
-            animate={{ scale: pin.length > i ? 1.15 : 1 }}
-            transition={{ type: "spring", stiffness: 400, damping: 20 }}
-            className={`w-4 h-4 rounded-full border-2 transition-colors ${
-              pin.length > i ? "gradient-accent border-transparent" : "border-muted-foreground/40 bg-transparent"
-            }`}
-          />
-        ))}
-      </div>
-      {error && (
-        <p className="text-xs text-destructive flex items-center justify-center gap-1">
-          <AlertCircle size={12} /> {error}
-        </p>
-      )}
-      <div className="grid grid-cols-3 gap-3 px-4">
-        {PIN_KEYS.map((key, i) => (
-          <button
-            key={i}
-            onClick={() => handleKey(key)}
-            disabled={key === ""}
-            className={`h-14 rounded-2xl text-xl font-bold transition-all active:scale-95 ${
-              key === ""
-                ? "invisible"
-                : key === "⌫"
-                ? "bg-muted text-muted-foreground"
-                : "bg-card border border-border text-foreground shadow-card hover:shadow-elevated"
-            }`}
-          >
-            {key === "⌫" ? <Delete size={20} className="mx-auto" /> : key}
-          </button>
-        ))}
-      </div>
+// ─── Native PIN input ─────────────────────────────────────────────────────────
+interface PinInputProps { pin: string; onChange: (p: string) => void; error: string; }
+const PinInput = ({ pin, onChange, error }: PinInputProps) => (
+  <div className="space-y-5">
+    <div className="flex justify-center gap-4">
+      {[0,1,2,3].map((i) => (
+        <motion.div
+          key={i}
+          animate={{ scale: pin.length > i ? 1.15 : 1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 20 }}
+          className={`w-5 h-5 rounded-full border-2 transition-colors ${
+            pin.length > i ? "gradient-accent border-transparent shadow-md" : "border-muted-foreground/40 bg-transparent"
+          }`}
+        />
+      ))}
     </div>
-  );
-};
+    {error && (
+      <p className="text-xs text-destructive flex items-center justify-center gap-1">
+        <AlertCircle size={12} /> {error}
+      </p>
+    )}
+    <input
+      type="password"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      maxLength={4}
+      value={pin}
+      onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 4))}
+      autoFocus
+      className="w-full h-14 text-center text-3xl font-bold tracking-[1rem] bg-card border-2 border-border rounded-2xl focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground/30"
+      placeholder="••••"
+    />
+  </div>
+);
 
-// ─── TxnID generator ─────────────────────────────────────────────────────────
 const generateTxnId = () =>
   "RCH" + Date.now().toString(36).toUpperCase().slice(-6) + Math.random().toString(36).toUpperCase().slice(2, 5);
 
@@ -368,30 +350,25 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
       {/* Header */}
       {step !== "success" && (
-        <div className="gradient-accent px-4 pt-12 pb-6 text-primary-foreground">
-          <div className="flex items-center gap-3 mb-5">
+        <div className="gradient-accent px-4 pt-14 pb-8 text-primary-foreground">
+          <div className="flex items-center gap-3 mb-4">
             <button
               onClick={goBack}
-              className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center active:scale-95 transition-transform"
+              className="w-10 h-10 rounded-full bg-white/20 ring-1 ring-white/30 backdrop-blur-sm flex items-center justify-center active:scale-95 transition-transform shrink-0"
             >
               <ChevronLeft size={20} />
             </button>
-            <h1 className="text-lg font-bold">Mobile Recharge</h1>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-extrabold tracking-tight">Mobile Recharge</h1>
+              <p className="text-xs text-white/70 mt-0.5">All Operators · Instant</p>
+            </div>
           </div>
-          <div className="flex gap-2 items-center">
-            {STEPS.map((s, i) => (
-              <div key={s} className="flex items-center gap-2">
-                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                  i < stepIndex ? "bg-white/30 text-white" : i === stepIndex ? "bg-white text-amber-600" : "bg-white/10 text-white/50"
-                }`}>
-                  {i < stepIndex ? <CheckCircle2 size={12} /> : <span>{i + 1}</span>}
-                  {STEP_LABELS[s]}
-                </div>
-                {i < STEPS.length - 1 && (
-                  <div className={`h-px w-4 ${i < stepIndex ? "bg-white/50" : "bg-white/20"}`} />
-                )}
-              </div>
-            ))}
+          <div className="h-1 rounded-full bg-white/20 overflow-hidden">
+            <motion.div
+              className="h-full bg-white rounded-full"
+              animate={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }}
+              transition={{ type: "spring", stiffness: 200, damping: 28 }}
+            />
           </div>
         </div>
       )}
@@ -698,7 +675,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                   </div>
                 </div>
 
-                <PinPad pin={pin} onChange={(p) => { setPin(p); setError(""); }} error={error} />
+                <PinInput pin={pin} onChange={(p) => { setPin(p); setError(""); }} error={error} />
 
                 <div className="px-4">
                   <Button
