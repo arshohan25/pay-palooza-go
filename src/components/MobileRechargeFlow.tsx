@@ -292,6 +292,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
   const [direction, setDirection] = useState(1);
   const [phone, setPhone]         = useState("");
   const [selectedPack, setSelectedPack] = useState<Pack | null>(null);
+  const [customAmount, setCustomAmount] = useState("");
   const [activeCategory, setActiveCategory] = useState<PackCategory>("offers");
   const [pin, setPin]             = useState("");
   const [error, setError]         = useState("");
@@ -319,17 +320,39 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     if (digits.length !== 11) { setError("Enter an 11-digit mobile number."); return; }
     if (!operator) { setError("Unable to detect operator. Please check the number."); return; }
     setSelectedPack(null);
+    setCustomAmount("");
     setActiveCategory("offers");
     goTo("packs");
   };
 
   const handlePackSelect = (pack: Pack) => {
     setSelectedPack(pack);
+    setCustomAmount("");
     setError("");
   };
 
+  const handleCustomAmountChange = (val: string) => {
+    const digits = val.replace(/\D/g, "").slice(0, 4);
+    setCustomAmount(digits);
+    if (digits) { setSelectedPack(null); }
+    setError("");
+  };
+
+  // Derived: effective price for footer/PIN/receipt
+  const customAmountNum = customAmount ? parseInt(customAmount, 10) : 0;
+  const effectivePrice  = selectedPack ? selectedPack.price : customAmountNum;
+  const effectiveName   = selectedPack ? selectedPack.name : `Custom Recharge · ৳${customAmountNum}`;
+  const isCustom        = !selectedPack && !!customAmount;
+
   const handlePackContinue = () => {
-    if (!selectedPack) { setError("Please select a pack to continue."); return; }
+    if (!selectedPack && !customAmount) {
+      setError("Please select a pack or enter a custom amount.");
+      return;
+    }
+    if (isCustom) {
+      if (customAmountNum < 20)   { setError("Minimum recharge amount is ৳20."); return; }
+      if (customAmountNum > 1000) { setError("Maximum recharge amount is ৳1,000."); return; }
+    }
     goTo("pin");
   };
 
@@ -507,7 +530,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                 </div>
 
                 {/* Pack list */}
-                <div className="flex-1 overflow-y-auto px-4 pb-36 space-y-3">
+                <div className="flex-1 overflow-y-auto px-4 pb-40 space-y-3">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={activeCategory}
@@ -527,8 +550,6 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                             className={`w-full text-left p-4 rounded-2xl border transition-all ${
                               selected
                                 ? "border-primary bg-primary/5 shadow-elevated"
-                                : pack.highlight
-                                ? "border-border bg-card shadow-card"
                                 : "border-border bg-card shadow-card"
                             }`}
                           >
@@ -564,14 +585,47 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       })}
                     </motion.div>
                   </AnimatePresence>
+
+                  {/* Custom amount */}
+                  <div className={`mt-2 rounded-2xl border-2 transition-all p-4 space-y-3 ${
+                    isCustom ? "border-primary bg-primary/5" : "border-dashed border-border bg-card"
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0
+                        border-muted-foreground/30">
+                        {isCustom && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                      </div>
+                      <p className="text-sm font-semibold text-foreground">Custom Amount</p>
+                      <span className="text-[10px] text-muted-foreground ml-auto">৳20 – ৳1,000</span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base font-bold text-muted-foreground">৳</span>
+                      <Input
+                        type="tel"
+                        inputMode="numeric"
+                        placeholder="Enter amount"
+                        value={customAmount}
+                        onChange={(e) => handleCustomAmountChange(e.target.value)}
+                        className="pl-7 h-11 text-base font-bold bg-background border-border"
+                      />
+                    </div>
+                    {customAmount && (customAmountNum < 20 || customAmountNum > 1000) && (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        <AlertCircle size={11} />
+                        {customAmountNum < 20 ? "Minimum is ৳20" : "Maximum is ৳1,000"}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Sticky footer */}
                 <div className="absolute bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border px-4 py-4 space-y-2">
-                  {selectedPack && (
+                  {(selectedPack || (isCustom && customAmountNum >= 20 && customAmountNum <= 1000)) && (
                     <div className="flex items-center justify-between text-sm px-1">
-                      <span className="text-muted-foreground font-medium">{selectedPack.name}</span>
-                      <span className="font-bold text-foreground">৳{selectedPack.price}</span>
+                      <span className="text-muted-foreground font-medium">
+                        {selectedPack ? selectedPack.name : "Custom Recharge"}
+                      </span>
+                      <span className="font-bold text-foreground">৳{effectivePrice}</span>
                     </div>
                   )}
                   {error && (
@@ -583,19 +637,23 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                     className="w-full h-11 gradient-accent border-0 text-white font-semibold"
                     onClick={handlePackContinue}
                   >
-                    {selectedPack ? `Continue · ৳${selectedPack.price}` : "Select a Pack"}
+                    {selectedPack
+                      ? `Continue · ৳${selectedPack.price}`
+                      : isCustom && customAmountNum >= 20 && customAmountNum <= 1000
+                      ? `Continue · ৳${customAmountNum}`
+                      : "Select a Pack or Enter Amount"}
                   </Button>
                 </div>
               </div>
             )}
 
             {/* ── STEP 3: PIN ── */}
-            {step === "pin" && selectedPack && (
+            {step === "pin" && (selectedPack || isCustom) && (
               <div className="px-4 pt-8 pb-32 space-y-8">
                 <div className="text-center space-y-1">
                   <p className="text-sm font-semibold text-foreground">Confirm with PIN</p>
                   <p className="text-xs text-muted-foreground">
-                    {selectedPack.name} for{" "}
+                    {effectiveName} for{" "}
                     <span className="font-bold text-foreground">{formatPhone(phone)}</span>
                   </p>
                 </div>
@@ -610,17 +668,23 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                     <span className="font-semibold text-foreground">{operator?.name}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Pack</span>
-                    <span className="font-semibold text-foreground">{selectedPack.name}</span>
+                    <span>Type</span>
+                    <span className="font-semibold text-foreground">
+                      {selectedPack ? selectedPack.name : "Custom Recharge"}
+                    </span>
                   </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Details</span>
-                    <span className="font-semibold text-foreground text-right max-w-[55%]">{selectedPack.details}</span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Validity</span>
-                    <span className="font-semibold text-foreground">{selectedPack.validity}</span>
-                  </div>
+                  {selectedPack && (
+                    <>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Details</span>
+                        <span className="font-semibold text-foreground text-right max-w-[55%]">{selectedPack.details}</span>
+                      </div>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Validity</span>
+                        <span className="font-semibold text-foreground">{selectedPack.validity}</span>
+                      </div>
+                    </>
+                  )}
                   <div className="flex justify-between text-muted-foreground">
                     <span>Service fee</span>
                     <span className="font-semibold text-primary">Free</span>
@@ -628,7 +692,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                   <div className="h-px bg-border" />
                   <div className="flex justify-between font-bold text-foreground">
                     <span>Total from balance</span>
-                    <span>৳{selectedPack.price}</span>
+                    <span>৳{effectivePrice}</span>
                   </div>
                 </div>
 
@@ -647,7 +711,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
             )}
 
             {/* ── SUCCESS ── */}
-            {step === "success" && selectedPack && (
+            {step === "success" && (selectedPack || isCustom) && (
               <div className="min-h-screen flex flex-col">
                 <div className="gradient-accent px-4 pt-16 pb-10 text-white text-center">
                   <motion.div
@@ -660,7 +724,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                   </motion.div>
                   <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
                     <p className="text-lg font-bold">Recharge Successful!</p>
-                    <p className="text-4xl font-extrabold mt-1">৳{selectedPack.price}</p>
+                    <p className="text-4xl font-extrabold mt-1">৳{effectivePrice}</p>
                     <p className="text-white/80 text-sm mt-1">{operator?.name} · {formatPhone(phone)}</p>
                   </motion.div>
                 </div>
@@ -694,17 +758,23 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       <span className="font-semibold text-foreground">{operator?.name}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Pack</span>
-                      <span className="font-semibold text-foreground">{selectedPack.name}</span>
+                      <span>Type</span>
+                      <span className="font-semibold text-foreground">
+                        {selectedPack ? selectedPack.name : "Custom Recharge"}
+                      </span>
                     </div>
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>Details</span>
-                      <span className="font-semibold text-foreground text-right max-w-[55%]">{selectedPack.details}</span>
-                    </div>
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>Validity</span>
-                      <span className="font-semibold text-foreground">{selectedPack.validity}</span>
-                    </div>
+                    {selectedPack && (
+                      <>
+                        <div className="flex justify-between text-muted-foreground">
+                          <span>Details</span>
+                          <span className="font-semibold text-foreground text-right max-w-[55%]">{selectedPack.details}</span>
+                        </div>
+                        <div className="flex justify-between text-muted-foreground">
+                          <span>Validity</span>
+                          <span className="font-semibold text-foreground">{selectedPack.validity}</span>
+                        </div>
+                      </>
+                    )}
                     <div className="flex justify-between text-muted-foreground">
                       <span>Service fee</span>
                       <span className="font-semibold text-primary">Free</span>
@@ -712,7 +782,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                     <div className="h-px bg-border" />
                     <div className="flex justify-between font-bold text-foreground">
                       <span>Deducted from balance</span>
-                      <span>৳{selectedPack.price}</span>
+                      <span>৳{effectivePrice}</span>
                     </div>
                   </div>
 
