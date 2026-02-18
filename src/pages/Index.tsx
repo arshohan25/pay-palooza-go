@@ -35,7 +35,7 @@ const Index = () => {
             onPayBill={() => setShowPayBill(true)}
           />
           <PromoCard />
-          <TransactionList />
+          <TransactionList onSeeAll={() => setActiveTab("history")} />
         </div>
       );
     }

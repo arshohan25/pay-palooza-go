@@ -12,7 +12,6 @@ import {
   X,
   CalendarIcon,
   ChevronLeft,
-  ChevronRight,
   SlidersHorizontal,
   CheckCircle2,
   Copy,
@@ -82,7 +81,7 @@ const ICON_MAP: Record<Exclude<TxCategory, "all">, { icon: typeof ArrowUpRight; 
   bill:     { icon: Zap,           debitClass: "text-orange-500 bg-orange-500/10",     creditClass: "text-primary bg-primary/10" },
 };
 
-const PAGE_SIZE = 8;
+
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const relativeDate = (iso: string) => {
@@ -105,7 +104,7 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
   const [dateTo, setDateTo]           = useState<Date | undefined>();
   const [fromOpen, setFromOpen]       = useState(false);
   const [toOpen, setToOpen]           = useState(false);
-  const [page, setPage]               = useState(1);
+  
   const [showFilters, setShowFilters] = useState(false);
   const [selectedTx, setSelectedTx]   = useState<Transaction | null>(null);
   const [copied, setCopied]           = useState(false);
@@ -132,13 +131,12 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
     });
   }, [activeTab, search, dateFrom, dateTo]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const paginated  = filtered;
 
-  // Reset page when filters change
-  const handleTabChange = (t: TxCategory) => { setActiveTab(t); setPage(1); };
-  const handleSearch    = (v: string)     => { setSearch(v);    setPage(1); };
-  const clearFilters    = () => { setDateFrom(undefined); setDateTo(undefined); setSearch(""); setActiveTab("all"); setPage(1); };
+  // Reset filters
+  const handleTabChange = (t: TxCategory) => { setActiveTab(t); };
+  const handleSearch    = (v: string)     => { setSearch(v); };
+  const clearFilters    = () => { setDateFrom(undefined); setDateTo(undefined); setSearch(""); setActiveTab("all"); };
 
   const hasActiveFilters = search || dateFrom || dateTo || activeTab !== "all";
 
@@ -237,7 +235,7 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
                   <Calendar
                     mode="single"
                     selected={dateFrom}
-                    onSelect={(d) => { setDateFrom(d); setFromOpen(false); setPage(1); }}
+                    onSelect={(d) => { setDateFrom(d); setFromOpen(false); }}
                     disabled={(d) => d > new Date()}
                     initialFocus
                     className={cn("p-3 pointer-events-auto")}
@@ -263,7 +261,7 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
                   <Calendar
                     mode="single"
                     selected={dateTo}
-                    onSelect={(d) => { setDateTo(d); setToOpen(false); setPage(1); }}
+                    onSelect={(d) => { setDateTo(d); setToOpen(false); }}
                     disabled={(d) => d > new Date() || (dateFrom ? d < dateFrom : false)}
                     initialFocus
                     className={cn("p-3 pointer-events-auto")}
@@ -273,7 +271,7 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
 
               {(dateFrom || dateTo) && (
                 <button
-                  onClick={() => { setDateFrom(undefined); setDateTo(undefined); setPage(1); }}
+                  onClick={() => { setDateFrom(undefined); setDateTo(undefined); }}
                   className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground border border-border shrink-0"
                 >
                   <X size={14} />
@@ -335,7 +333,7 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
             </motion.div>
           ) : (
             <motion.div
-              key={`${activeTab}-${page}-${search}-${dateFrom?.toISOString()}-${dateTo?.toISOString()}`}
+              key={`${activeTab}-${search}-${dateFrom?.toISOString()}-${dateTo?.toISOString()}`}
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
@@ -378,40 +376,6 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
           )}
         </AnimatePresence>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-3 mt-5">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="w-9 h-9 rounded-xl border border-border bg-card flex items-center justify-center text-muted-foreground disabled:opacity-40 active:scale-95 transition-all"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <div className="flex gap-1.5">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPage(p)}
-                  className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${
-                    p === page
-                      ? "gradient-primary text-white shadow-card"
-                      : "bg-card border border-border text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="w-9 h-9 rounded-xl border border-border bg-card flex items-center justify-center text-muted-foreground disabled:opacity-40 active:scale-95 transition-all"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        )}
       </div>
 
       {/* ── Transaction Detail Bottom Sheet ─────────────────────────────── */}

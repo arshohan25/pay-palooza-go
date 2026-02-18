@@ -49,12 +49,16 @@ const transactions = [
   },
 ];
 
-const TransactionList = () => {
+interface TransactionListProps {
+  onSeeAll?: () => void;
+}
+
+const TransactionList = ({ onSeeAll }: TransactionListProps) => {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-base font-bold text-foreground">Recent Transactions</h2>
-        <button className="text-xs font-semibold text-primary hover:underline">
+        <button onClick={onSeeAll} className="text-xs font-semibold text-primary hover:underline">
           See All
         </button>
       </div>
