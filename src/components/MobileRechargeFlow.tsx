@@ -505,6 +505,38 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                   </div>
                 </div>
 
+                {/* Custom amount – above tabs */}
+                <div className="px-4 pb-3">
+                  <div className={`rounded-2xl border-2 transition-all p-4 space-y-3 ${
+                    isCustom ? "border-primary bg-primary/5" : "border-dashed border-border bg-card"
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 border-muted-foreground/30">
+                        {isCustom && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                      </div>
+                      <p className="text-sm font-semibold text-foreground">Custom Amount</p>
+                      <span className="text-[10px] text-muted-foreground ml-auto">৳20 – ৳1,000</span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base font-bold text-muted-foreground">৳</span>
+                      <Input
+                        type="tel"
+                        inputMode="numeric"
+                        placeholder="Enter amount"
+                        value={customAmount}
+                        onChange={(e) => handleCustomAmountChange(e.target.value)}
+                        className="pl-7 h-11 text-base font-bold bg-background border-border"
+                      />
+                    </div>
+                    {customAmount && (customAmountNum < 20 || customAmountNum > 1000) && (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        <AlertCircle size={11} />
+                        {customAmountNum < 20 ? "Minimum is ৳20" : "Maximum is ৳1,000"}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
                 {/* Category tab bar */}
                 <div className="px-4 pb-2">
                   <div className="flex gap-1 overflow-x-auto scrollbar-hide pb-1">
@@ -586,36 +618,6 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                     </motion.div>
                   </AnimatePresence>
 
-                  {/* Custom amount */}
-                  <div className={`mt-2 rounded-2xl border-2 transition-all p-4 space-y-3 ${
-                    isCustom ? "border-primary bg-primary/5" : "border-dashed border-border bg-card"
-                  }`}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0
-                        border-muted-foreground/30">
-                        {isCustom && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
-                      </div>
-                      <p className="text-sm font-semibold text-foreground">Custom Amount</p>
-                      <span className="text-[10px] text-muted-foreground ml-auto">৳20 – ৳1,000</span>
-                    </div>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base font-bold text-muted-foreground">৳</span>
-                      <Input
-                        type="tel"
-                        inputMode="numeric"
-                        placeholder="Enter amount"
-                        value={customAmount}
-                        onChange={(e) => handleCustomAmountChange(e.target.value)}
-                        className="pl-7 h-11 text-base font-bold bg-background border-border"
-                      />
-                    </div>
-                    {customAmount && (customAmountNum < 20 || customAmountNum > 1000) && (
-                      <p className="text-xs text-destructive flex items-center gap-1">
-                        <AlertCircle size={11} />
-                        {customAmountNum < 20 ? "Minimum is ৳20" : "Maximum is ৳1,000"}
-                      </p>
-                    )}
-                  </div>
                 </div>
 
                 {/* Sticky footer */}
