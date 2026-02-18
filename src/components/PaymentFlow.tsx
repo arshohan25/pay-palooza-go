@@ -2,79 +2,69 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft,
-  Search,
   CheckCircle2,
-  MapPin,
-  Hash,
   AlertCircle,
   Delete,
-  Store,
+  CreditCard,
+  Hash,
   QrCode,
+  ShoppingBag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import QrScannerModal from "@/components/QrScannerModal";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-type Step = "agent" | "amount" | "pin" | "success";
+// ─── Types ────────────────────────────────────────────────────────────────────
+type Step = "merchant" | "amount" | "pin" | "success";
 
-interface Agent {
+interface Merchant {
   id: string;
   name: string;
-  agentId: string;
-  address: string;
-  distance: string;
+  merchantId: string;
+  category: string;
   initials: string;
   gradient: string;
-  rating: number;
 }
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-const NEARBY_AGENTS: Agent[] = [
-  { id: "1", name: "Karim Store", agentId: "AGT-10234", address: "Mirpur-10, Dhaka", distance: "0.2 km", initials: "KS", gradient: "gradient-cashout", rating: 4.8 },
-  { id: "2", name: "Rina Telecom", agentId: "AGT-20871", address: "Dhanmondi, Dhaka", distance: "0.5 km", initials: "RT", gradient: "gradient-payment", rating: 4.6 },
-  { id: "3", name: "Hasan Mobile", agentId: "AGT-33512", address: "Gulshan-1, Dhaka", distance: "1.1 km", initials: "HM", gradient: "gradient-addmoney", rating: 4.9 },
-  { id: "4", name: "City Point", agentId: "AGT-44780", address: "Banani, Dhaka", distance: "1.8 km", initials: "CP", gradient: "gradient-send", rating: 4.5 },
-  { id: "5", name: "Quick Cash", agentId: "AGT-55239", address: "Motijheel, Dhaka", distance: "2.3 km", initials: "QC", gradient: "gradient-accent", rating: 4.7 },
+// ─── Mock merchants ───────────────────────────────────────────────────────────
+const RECENT_MERCHANTS: Merchant[] = [
+  { id: "1", name: "Shwapno Supershop",  merchantId: "MRC-88901", category: "Grocery",     initials: "SS", gradient: "gradient-payment" },
+  { id: "2", name: "Chaldal Online",     merchantId: "MRC-22341", category: "Grocery",     initials: "CO", gradient: "gradient-addmoney" },
+  { id: "3", name: "Pathao Food",        merchantId: "MRC-55612", category: "Food",         initials: "PF", gradient: "gradient-accent" },
+  { id: "4", name: "Daraz BD",           merchantId: "MRC-71008", category: "Shopping",     initials: "DB", gradient: "gradient-cashout" },
+  { id: "5", name: "Meena Bazar",        merchantId: "MRC-39204", category: "Retail",       initials: "MB", gradient: "gradient-send" },
 ];
 
-const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 20000];
+const QUICK_AMOUNTS = [50, 100, 200, 500, 1000, 2000];
 
 // ─── Step config ─────────────────────────────────────────────────────────────
-const STEPS: Step[] = ["agent", "amount", "pin"];
+const STEPS: Step[] = ["merchant", "amount", "pin"];
 const STEP_LABELS: Record<Step, string> = {
-  agent: "Agent",
-  amount: "Amount",
-  pin: "PIN",
-  success: "Done",
+  merchant: "Merchant",
+  amount:   "Amount",
+  pin:      "PIN",
+  success:  "Done",
 };
 
 // ─── Slide animation ──────────────────────────────────────────────────────────
 const slideVariants = {
   enter: (dir: number) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0 }),
   center: { x: 0, opacity: 1 },
-  exit: (dir: number) => ({ x: dir < 0 ? "100%" : "-100%", opacity: 0 }),
+  exit:  (dir: number) => ({ x: dir < 0 ? "100%" : "-100%", opacity: 0 }),
 };
 
-// ─── PIN Pad ─────────────────────────────────────────────────────────────────
+// ─── PIN Pad ──────────────────────────────────────────────────────────────────
 const PIN_KEYS = ["1","2","3","4","5","6","7","8","9","","0","⌫"];
 
-interface PinPadProps {
-  pin: string;
-  onChange: (pin: string) => void;
-  error: string;
-}
-
+interface PinPadProps { pin: string; onChange: (p: string) => void; error: string; }
 const PinPad = ({ pin, onChange, error }: PinPadProps) => {
   const handleKey = (key: string) => {
     if (key === "⌫") { onChange(pin.slice(0, -1)); return; }
     if (key === "") return;
     if (pin.length < 4) onChange(pin + key);
   };
-
   return (
     <div className="space-y-6">
-      {/* Dots */}
       <div className="flex justify-center gap-4">
         {[0,1,2,3].map((i) => (
           <motion.div
@@ -82,21 +72,16 @@ const PinPad = ({ pin, onChange, error }: PinPadProps) => {
             animate={{ scale: pin.length > i ? 1.15 : 1 }}
             transition={{ type: "spring", stiffness: 400, damping: 20 }}
             className={`w-4 h-4 rounded-full border-2 transition-colors ${
-              pin.length > i
-                ? "gradient-cashout border-transparent"
-                : "border-muted-foreground/40 bg-transparent"
+              pin.length > i ? "gradient-payment border-transparent" : "border-muted-foreground/40 bg-transparent"
             }`}
           />
         ))}
       </div>
-
       {error && (
         <p className="text-xs text-destructive flex items-center justify-center gap-1">
           <AlertCircle size={12} /> {error}
         </p>
       )}
-
-      {/* Keypad */}
       <div className="grid grid-cols-3 gap-3 px-4">
         {PIN_KEYS.map((key, i) => (
           <button
@@ -119,20 +104,18 @@ const PinPad = ({ pin, onChange, error }: PinPadProps) => {
   );
 };
 
-// ─── CashOutFlow ──────────────────────────────────────────────────────────────
-interface CashOutFlowProps {
-  onClose: () => void;
-}
+// ─── PaymentFlow ──────────────────────────────────────────────────────────────
+interface PaymentFlowProps { onClose: () => void; }
 
-const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
-  const [step, setStep] = useState<Step>("agent");
+const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
+  const [step, setStep]           = useState<Step>("merchant");
   const [direction, setDirection] = useState(1);
-  const [agent, setAgent] = useState<Agent | null>(null);
-  const [agentIdInput, setAgentIdInput] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [amount, setAmount] = useState("");
-  const [pin, setPin] = useState("");
-  const [error, setError] = useState("");
+  const [merchant, setMerchant]   = useState<Merchant | null>(null);
+  const [merchantIdInput, setMerchantIdInput] = useState("");
+  const [amount, setAmount]       = useState("");
+  const [note, setNote]           = useState("");
+  const [pin, setPin]             = useState("");
+  const [error, setError]         = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const txnTime = useRef(new Date());
 
@@ -145,44 +128,36 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   };
 
   const goBack = () => {
-    if (step === "agent") { onClose(); return; }
-    if (step === "amount") { goTo("agent"); return; }
-    if (step === "pin") { goTo("amount"); return; }
+    if (step === "merchant") { onClose(); return; }
+    if (step === "amount")   { goTo("merchant"); return; }
+    if (step === "pin")      { goTo("amount"); return; }
   };
 
-  const filteredAgents = NEARBY_AGENTS.filter(
-    (a) =>
-      a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.agentId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.address.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
-
-  const handleSelectAgent = (a: Agent) => {
-    setAgent(a);
-    setAgentIdInput(a.agentId);
+  const handleSelectMerchant = (m: Merchant) => {
+    setMerchant(m);
+    setMerchantIdInput(m.merchantId);
     goTo("amount");
   };
 
   const handleQrScan = (result: string) => {
-    setAgentIdInput(result);
-    const found = NEARBY_AGENTS.find((a) => a.agentId.toLowerCase() === result.toLowerCase());
+    setMerchantIdInput(result);
+    const found = RECENT_MERCHANTS.find((m) => m.merchantId.toLowerCase() === result.toLowerCase());
     if (found) {
-      setAgent(found);
-      goTo("amount");
+      setMerchant(found);
     } else {
-      setAgent({ id: "qr", name: "Agent", agentId: result, address: "Unknown location", distance: "—", initials: "AG", gradient: "gradient-cashout", rating: 0 });
-      goTo("amount");
+      setMerchant({ id: "qr", name: "Merchant", merchantId: result, category: "Payment", initials: "MR", gradient: "gradient-payment" });
     }
+    goTo("amount");
   };
 
-  const handleAgentIdContinue = () => {
-    const trimmed = agentIdInput.trim();
-    if (trimmed.length < 5) { setError("Enter a valid Agent ID."); return; }
-    const found = NEARBY_AGENTS.find((a) => a.agentId.toLowerCase() === trimmed.toLowerCase());
+  const handleMerchantIdContinue = () => {
+    const trimmed = merchantIdInput.trim();
+    if (trimmed.length < 5) { setError("Enter a valid Merchant ID."); return; }
+    const found = RECENT_MERCHANTS.find((m) => m.merchantId.toLowerCase() === trimmed.toLowerCase());
     if (found) {
-      setAgent(found);
+      setMerchant(found);
     } else {
-      setAgent({ id: "custom", name: "Agent", agentId: trimmed, address: "Unknown location", distance: "—", initials: "AG", gradient: "gradient-primary", rating: 0 });
+      setMerchant({ id: "custom", name: "Merchant", merchantId: trimmed, category: "Payment", initials: "MR", gradient: "gradient-payment" });
     }
     goTo("amount");
   };
@@ -190,29 +165,26 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const handleAmountContinue = () => {
     const val = parseFloat(amount);
     if (!amount || isNaN(val) || val <= 0) { setError("Enter a valid amount."); return; }
-    if (val < 50) { setError("Minimum cash out amount is ৳50."); return; }
-    if (val > 25000) { setError("Maximum cash out amount is ৳25,000."); return; }
+    if (val < 1)     { setError("Minimum payment is ৳1."); return; }
+    if (val > 50000) { setError("Maximum payment is ৳50,000."); return; }
     goTo("pin");
   };
 
   const handlePinConfirm = () => {
     if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
-    // Mock PIN check — accept any 4-digit PIN
     txnTime.current = new Date();
     setDirection(1);
     setStep("success");
   };
 
-  // Fee: flat ৳11.99 per cash out
-  const CASH_OUT_FEE = 11.99;
-  const fee = parseFloat(amount) > 0 ? CASH_OUT_FEE.toFixed(2) : "0.00";
-  const receive = parseFloat(amount) > 0 ? (parseFloat(amount) - CASH_OUT_FEE).toFixed(2) : "0.00";
+  const amtNum = parseFloat(amount) || 0;
+  // Payment is free (no charge)
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
       {/* Header */}
       {step !== "success" && (
-        <div className="gradient-cashout px-4 pt-12 pb-6 text-primary-foreground">
+        <div className="gradient-payment px-4 pt-12 pb-6 text-primary-foreground">
           <div className="flex items-center gap-3 mb-5">
             <button
               onClick={goBack}
@@ -220,30 +192,26 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
             >
               <ChevronLeft size={20} />
             </button>
-            <h1 className="text-lg font-bold">Cash Out</h1>
+            <h1 className="text-lg font-bold">Payment</h1>
           </div>
-
           {/* Step pills */}
           <div className="flex gap-2 items-center">
-            {STEPS.map((s, i) => (
-              <div key={s} className="flex items-center gap-2">
-                <div
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                    i < stepIndex
-                      ? "bg-white/30 text-white"
-                      : i === stepIndex
-                      ? "bg-white text-emerald-700"
-                      : "bg-white/10 text-white/50"
-                  }`}
-                >
-                  {i < stepIndex ? <CheckCircle2 size={12} /> : <span>{i + 1}</span>}
-                  {STEP_LABELS[s]}
+            {STEPS.map((s, i) => {
+              const si = STEPS.indexOf(step);
+              return (
+                <div key={s} className="flex items-center gap-2">
+                  <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                    i < si ? "bg-white/30 text-white" : i === si ? "bg-white text-blue-700" : "bg-white/10 text-white/50"
+                  }`}>
+                    {i < si ? <CheckCircle2 size={12} /> : <span>{i + 1}</span>}
+                    {STEP_LABELS[s]}
+                  </div>
+                  {i < STEPS.length - 1 && (
+                    <div className={`h-px w-4 ${i < si ? "bg-white/50" : "bg-white/20"}`} />
+                  )}
                 </div>
-                {i < STEPS.length - 1 && (
-                  <div className={`h-px w-4 ${i < stepIndex ? "bg-white/50" : "bg-white/20"}`} />
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -262,19 +230,18 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
             className="absolute inset-0 overflow-y-auto"
           >
 
-            {/* ── STEP 1: Agent ── */}
-            {step === "agent" && (
+            {/* ── STEP 1: Merchant ── */}
+            {step === "merchant" && (
               <div className="px-4 pt-6 pb-32 space-y-6">
-                {/* Agent ID input */}
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">Agent ID</label>
+                  <label className="text-sm font-semibold text-foreground">Merchant ID</label>
                   <div className="relative">
                     <Hash size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       type="text"
-                      placeholder="e.g. AGT-10234"
-                      value={agentIdInput}
-                      onChange={(e) => { setAgentIdInput(e.target.value); setError(""); }}
+                      placeholder="e.g. MRC-88901"
+                      value={merchantIdInput}
+                      onChange={(e) => { setMerchantIdInput(e.target.value); setError(""); }}
                       className="pl-9 pr-12 h-12 text-base bg-card border-border uppercase"
                     />
                     <button
@@ -285,13 +252,11 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                     </button>
                   </div>
                   {error && (
-                    <p className="text-xs text-destructive flex items-center gap-1">
-                      <AlertCircle size={12} /> {error}
-                    </p>
+                    <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {error}</p>
                   )}
                   <Button
-                    className="w-full h-11 gradient-cashout border-0 text-white font-semibold"
-                    onClick={handleAgentIdContinue}
+                    className="w-full h-11 gradient-payment border-0 text-white font-semibold"
+                    onClick={handleMerchantIdContinue}
                   >
                     Continue
                   </Button>
@@ -300,43 +265,24 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                 {/* Divider */}
                 <div className="flex items-center gap-3">
                   <div className="flex-1 h-px bg-border" />
-                  <span className="text-xs text-muted-foreground flex items-center gap-1"><MapPin size={11} /> Nearby agents</span>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1"><ShoppingBag size={11} /> Recent merchants</span>
                   <div className="flex-1 h-px bg-border" />
                 </div>
 
-                {/* Search */}
-                <div className="relative">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Search agent name, ID or area…"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 bg-card border-border"
-                  />
-                </div>
-
-                {/* Agent list */}
+                {/* Merchant list */}
                 <div className="space-y-2">
-                  {filteredAgents.map((a) => (
+                  {RECENT_MERCHANTS.map((m) => (
                     <button
-                      key={a.id}
-                      onClick={() => handleSelectAgent(a)}
+                      key={m.id}
+                      onClick={() => handleSelectMerchant(m)}
                       className="w-full flex items-center gap-3 p-3 rounded-2xl bg-card border border-border shadow-card hover:shadow-elevated active:scale-[0.98] transition-all text-left"
                     >
-                      <div className={`${a.gradient} w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0`}>
-                        {a.initials}
+                      <div className={`${m.gradient} w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0`}>
+                        {m.initials}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold text-foreground truncate">{a.name}</p>
-                          {a.rating > 0 && (
-                            <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground shrink-0">⭐ {a.rating}</span>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground">{a.agentId}</p>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <MapPin size={10} /> {a.address} · {a.distance}
-                        </p>
+                        <p className="text-sm font-semibold text-foreground truncate">{m.name}</p>
+                        <p className="text-xs text-muted-foreground">{m.merchantId} · {m.category}</p>
                       </div>
                       <ChevronLeft size={16} className="text-muted-foreground rotate-180 shrink-0" />
                     </button>
@@ -348,21 +294,19 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
             {/* ── STEP 2: Amount ── */}
             {step === "amount" && (
               <div className="px-4 pt-6 pb-32 space-y-6">
-                {/* Agent pill */}
-                {agent && (
+                {merchant && (
                   <div className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border shadow-card">
-                    <div className={`${agent.gradient} w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0`}>
-                      <Store size={20} />
+                    <div className={`${merchant.gradient} w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0`}>
+                      <CreditCard size={20} />
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Cashing out at</p>
-                      <p className="text-sm font-bold text-foreground">{agent.name}</p>
-                      <p className="text-xs text-muted-foreground">{agent.agentId} · {agent.address}</p>
+                      <p className="text-xs text-muted-foreground">Paying to</p>
+                      <p className="text-sm font-bold text-foreground">{merchant.name}</p>
+                      <p className="text-xs text-muted-foreground">{merchant.merchantId} · {merchant.category}</p>
                     </div>
                   </div>
                 )}
 
-                {/* Big amount input */}
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-foreground">Enter Amount</label>
                   <div className="relative flex items-center">
@@ -376,13 +320,10 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                     />
                   </div>
                   {error && (
-                    <p className="text-xs text-destructive flex items-center gap-1">
-                      <AlertCircle size={12} /> {error}
-                    </p>
+                    <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {error}</p>
                   )}
                 </div>
 
-                {/* Quick amounts */}
                 <div className="space-y-2">
                   <p className="text-xs text-muted-foreground font-medium">Quick select</p>
                   <div className="grid grid-cols-3 gap-2">
@@ -392,7 +333,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                         onClick={() => setAmount(String(q))}
                         className={`py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 ${
                           amount === String(q)
-                            ? "gradient-cashout text-white border-transparent shadow-card"
+                            ? "gradient-payment text-white border-transparent shadow-card"
                             : "bg-card border-border text-foreground hover:border-primary/50"
                         }`}
                       >
@@ -402,29 +343,35 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   </div>
                 </div>
 
-                {/* Fee preview */}
-                {parseFloat(amount) > 0 && (
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-foreground">Note (optional)</label>
+                  <Input
+                    placeholder="Invoice / reference…"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    className="bg-card border-border"
+                  />
+                </div>
+
+                {amtNum > 0 && (
                   <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2 text-sm">
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Cash Out Amount</span>
-                      <span className="text-foreground font-medium">৳{parseFloat(amount).toLocaleString()}</span>
+                      <span>Payment Amount</span>
+                      <span className="text-foreground font-medium">৳{amtNum.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Fee (Flat)</span>
-                      <span className="text-destructive font-medium">− ৳{fee}</span>
+                      <span>Fee</span>
+                      <span className="text-primary font-semibold">Free</span>
                     </div>
                     <div className="h-px bg-border" />
                     <div className="flex justify-between font-bold text-foreground">
-                      <span>You Receive</span>
-                      <span className="text-primary">৳{parseFloat(receive).toLocaleString()}</span>
+                      <span>Total</span>
+                      <span>৳{amtNum.toLocaleString()}</span>
                     </div>
                   </div>
                 )}
 
-                <Button
-                  className="w-full h-12 gradient-cashout border-0 text-white font-semibold text-base"
-                  onClick={handleAmountContinue}
-                >
+                <Button className="w-full h-12 gradient-payment border-0 text-white font-semibold text-base" onClick={handleAmountContinue}>
                   Continue to PIN
                 </Button>
               </div>
@@ -433,29 +380,27 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
             {/* ── STEP 3: PIN ── */}
             {step === "pin" && (
               <div className="px-4 pt-6 pb-32 space-y-6">
-                {/* Summary banner */}
                 <div className="text-center space-y-1">
-                  <p className="text-sm text-muted-foreground">Cashing out</p>
-                  <p className="text-4xl font-extrabold text-foreground">৳{parseFloat(amount).toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">at <span className="font-semibold text-foreground">{agent?.name}</span></p>
+                  <p className="text-sm text-muted-foreground">Paying</p>
+                  <p className="text-4xl font-extrabold text-foreground">৳{amtNum.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">to <span className="font-semibold text-foreground">{merchant?.name}</span></p>
                 </div>
 
-                {/* Agent card */}
                 <div className="rounded-2xl bg-card border border-border shadow-card p-4 flex items-center gap-3">
-                  <div className={`${agent?.gradient} w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0`}>
-                    <Store size={18} />
+                  <div className={`${merchant?.gradient} w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0`}>
+                    <CreditCard size={18} />
                   </div>
                   <div>
-                    <p className="font-bold text-foreground text-sm">{agent?.name}</p>
-                    <p className="text-xs text-muted-foreground">{agent?.agentId} · {agent?.address}</p>
+                    <p className="font-bold text-foreground text-sm">{merchant?.name}</p>
+                    <p className="text-xs text-muted-foreground">{merchant?.merchantId} · {merchant?.category}</p>
                   </div>
                 </div>
 
-                {/* Fee row */}
-                <div className="rounded-2xl bg-muted/40 border border-border p-3 flex justify-between text-sm">
-                  <span className="text-muted-foreground">You receive after fee</span>
-                  <span className="font-bold text-primary">৳{parseFloat(receive).toLocaleString()}</span>
-                </div>
+                {note && (
+                  <div className="bg-muted/50 rounded-xl px-3 py-2 text-sm text-muted-foreground">
+                    <span className="font-medium text-foreground">Note: </span>{note}
+                  </div>
+                )}
 
                 <div className="space-y-3">
                   <p className="text-sm font-semibold text-foreground text-center">Enter your PIN</p>
@@ -463,11 +408,11 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                 </div>
 
                 <Button
-                  className="w-full h-12 gradient-cashout border-0 text-white font-bold text-base"
+                  className="w-full h-12 gradient-payment border-0 text-white font-bold text-base"
                   onClick={handlePinConfirm}
                   disabled={pin.length < 4}
                 >
-                  Confirm Cash Out
+                  <CreditCard size={18} /> Confirm Payment
                 </Button>
               </div>
             )}
@@ -479,25 +424,19 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   initial={{ scale: 0, rotate: -15 }}
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.1 }}
-                  className="w-24 h-24 gradient-cashout rounded-full flex items-center justify-center shadow-glow"
+                  className="w-24 h-24 gradient-payment rounded-full flex items-center justify-center shadow-glow"
                 >
                   <CheckCircle2 size={52} className="text-white" />
                 </motion.div>
 
-                <motion.div
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="space-y-2"
-                >
-                  <h2 className="text-2xl font-extrabold text-foreground">Cash Out Successful!</h2>
+                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="space-y-2">
+                  <h2 className="text-2xl font-extrabold text-foreground">Payment Successful!</h2>
                   <p className="text-muted-foreground text-sm">
-                    ৳{parseFloat(amount).toLocaleString()} cashed out at{" "}
-                    <span className="font-semibold text-foreground">{agent?.name}</span>
+                    ৳{amtNum.toLocaleString()} paid to{" "}
+                    <span className="font-semibold text-foreground">{merchant?.name}</span>
                   </p>
                 </motion.div>
 
-                {/* Receipt card */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -505,25 +444,25 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   className="w-full rounded-2xl bg-card border border-border shadow-elevated p-4 text-sm space-y-3"
                 >
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Agent</span>
-                    <span className="text-foreground font-medium">{agent?.name}</span>
+                    <span>Merchant</span><span className="text-foreground font-medium">{merchant?.name}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Agent ID</span>
-                    <span className="text-foreground font-medium">{agent?.agentId}</span>
+                    <span>Merchant ID</span><span className="text-foreground font-medium">{merchant?.merchantId}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Amount</span>
-                    <span className="text-foreground font-medium">৳{parseFloat(amount).toLocaleString()}</span>
+                    <span>Category</span><span className="text-foreground font-medium">{merchant?.category}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Fee (Flat)</span>
-                    <span className="text-foreground font-medium">৳{fee}</span>
+                    <span>Amount</span><span className="text-foreground font-medium">৳{amtNum.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>You Received</span>
-                    <span className="font-semibold text-primary">৳{parseFloat(receive).toLocaleString()}</span>
+                    <span>Fee</span><span className="text-primary font-semibold">Free</span>
                   </div>
+                  {note && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Note</span><span className="text-foreground font-medium">{note}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-muted-foreground">
                     <span>Date</span>
                     <span className="text-foreground font-medium">
@@ -543,25 +482,14 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   </div>
                 </motion.div>
 
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6 }}
-                  className="w-full space-y-3"
-                >
-                  <Button
-                    className="w-full h-12 gradient-cashout border-0 text-white font-semibold"
-                    onClick={onClose}
-                  >
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="w-full space-y-3">
+                  <Button className="w-full h-12 gradient-primary border-0 text-white font-semibold" onClick={onClose}>
                     Back to Home
                   </Button>
-                  <Button variant="outline" className="w-full h-11" onClick={onClose}>
-                    Share Receipt
-                  </Button>
+                  <Button variant="outline" className="w-full h-11" onClick={onClose}>Share Receipt</Button>
                 </motion.div>
               </div>
             )}
-
           </motion.div>
         </AnimatePresence>
       </div>
@@ -571,11 +499,10 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
         open={showScanner}
         onClose={() => setShowScanner(false)}
         onScan={handleQrScan}
-        title="Scan Agent QR"
+        title="Scan Merchant QR"
       />
     </div>
   );
 };
 
-export default CashOutFlow;
-
+export default PaymentFlow;

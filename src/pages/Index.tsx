@@ -7,10 +7,12 @@ import TransactionList from "@/components/TransactionList";
 import BottomNav from "@/components/BottomNav";
 import SendMoneyFlow from "@/components/SendMoneyFlow";
 import CashOutFlow from "@/components/CashOutFlow";
+import PaymentFlow from "@/components/PaymentFlow";
 
 const Index = () => {
   const [showSendMoney, setShowSendMoney] = useState(false);
-  const [showCashOut, setShowCashOut] = useState(false);
+  const [showCashOut, setShowCashOut]     = useState(false);
+  const [showPayment, setShowPayment]     = useState(false);
 
   return (
     <div className="min-h-screen bg-background">
@@ -21,21 +23,18 @@ const Index = () => {
           <QuickActions
             onSendMoney={() => setShowSendMoney(true)}
             onCashOut={() => setShowCashOut(true)}
+            onPayment={() => setShowPayment(true)}
           />
           <PromoCard />
           <TransactionList />
         </div>
       </div>
       <BottomNav />
-      {showSendMoney && (
-        <SendMoneyFlow onClose={() => setShowSendMoney(false)} />
-      )}
-      {showCashOut && (
-        <CashOutFlow onClose={() => setShowCashOut(false)} />
-      )}
+      {showSendMoney && <SendMoneyFlow onClose={() => setShowSendMoney(false)} />}
+      {showCashOut   && <CashOutFlow   onClose={() => setShowCashOut(false)} />}
+      {showPayment   && <PaymentFlow   onClose={() => setShowPayment(false)} />}
     </div>
   );
 };
 
 export default Index;
-
