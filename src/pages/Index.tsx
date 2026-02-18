@@ -154,19 +154,7 @@ const Index = () => {
       {/* PWA install prompt */}
       <InstallPrompt />
 
-      {/* ── Speed Dial FAB (home tab only, mobile) ── */}
-      <AnimatePresence>
-        {activeTab === "home" && !isLoading && (
-          <SpeedDial
-            onSendMoney={() => setShowSendMoney(true)}
-            onPayment={() => setShowPayment(true)}
-            onCashOut={() => setShowCashOut(true)}
-            onRecharge={() => setShowRecharge(true)}
-            onPayBill={() => setShowPayBill(true)}
-            onAddMoney={() => setShowAddMoney(true)}
-          />
-        )}
-      </AnimatePresence>
+      {/* Speed Dial FAB hidden */}
     </div>
     </>
   );
