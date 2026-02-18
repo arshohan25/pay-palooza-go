@@ -189,9 +189,9 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
               <p className="text-xs text-white/70 mt-0.5">Merchant &amp; QR Payments</p>
             </div>
           </div>
-          <div className="h-1 rounded-full bg-white/20 overflow-hidden">
+          <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
             <motion.div
-              className="h-full bg-white rounded-full"
+              className="h-full bg-white rounded-full shadow-[0_0_8px_2px_rgba(255,255,255,0.55)]"
               animate={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }}
               transition={{ type: "spring", stiffness: 200, damping: 28 }}
             />
@@ -210,7 +210,7 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
             animate="center"
             exit="exit"
             transition={{ type: "spring", stiffness: 320, damping: 32 }}
-            className="absolute inset-0 overflow-y-auto"
+            className="absolute inset-0 overflow-y-auto scrollbar-none"
           >
 
             {/* ── STEP 1: Merchant ── */}

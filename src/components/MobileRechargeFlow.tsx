@@ -372,9 +372,9 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
               <p className="text-xs text-white/70 mt-0.5">All Operators · Instant</p>
             </div>
           </div>
-          <div className="h-1 rounded-full bg-white/20 overflow-hidden">
+          <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
             <motion.div
-              className="h-full bg-white rounded-full"
+              className="h-full bg-white rounded-full shadow-[0_0_8px_2px_rgba(255,255,255,0.55)]"
               animate={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }}
               transition={{ type: "spring", stiffness: 200, damping: 28 }}
             />
@@ -393,7 +393,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
             animate="center"
             exit="exit"
             transition={{ type: "spring", stiffness: 320, damping: 32 }}
-            className="absolute inset-0 overflow-y-auto"
+            className="absolute inset-0 overflow-y-auto scrollbar-none"
           >
 
             {/* ── STEP 1: Number ── */}
@@ -548,7 +548,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                 </div>
 
                 {/* Pack list */}
-                <div className="flex-1 overflow-y-auto px-4 pb-40 space-y-3">
+                <div className="flex-1 overflow-y-auto scrollbar-none px-4 pb-40 space-y-3">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={activeCategory}

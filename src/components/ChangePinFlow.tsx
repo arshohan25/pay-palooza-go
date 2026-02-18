@@ -239,9 +239,9 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
               <p className="text-xs text-white/70 mt-0.5">Keep Your Account Secure</p>
             </div>
           </div>
-          <div className="h-1 rounded-full bg-white/20 overflow-hidden">
+          <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
             <motion.div
-              className="h-full bg-white rounded-full"
+              className="h-full bg-white rounded-full shadow-[0_0_8px_2px_rgba(255,255,255,0.55)]"
               animate={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }}
               transition={{ type: "spring", stiffness: 200, damping: 28 }}
             />
@@ -260,7 +260,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
             animate="center"
             exit="exit"
             transition={{ type: "spring", stiffness: 340, damping: 34 }}
-            className="absolute inset-0 overflow-y-auto flex flex-col"
+            className="absolute inset-0 overflow-y-auto scrollbar-none flex flex-col"
           >
 
             {/* ─── Current PIN ─── */}

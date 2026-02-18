@@ -241,3 +241,12 @@
   from { background-position: -200% center; }
   to   { background-position: 200% center; }
 }
+
+/* ── Hide scrollbars globally for flow screens ─────────────────────────────── */
+.scrollbar-none {
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* IE / Edge */
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;               /* Chrome / Safari / Webkit */
+}
