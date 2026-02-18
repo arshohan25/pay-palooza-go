@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
@@ -282,6 +283,8 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
   const [error, setError]         = useState("");
   const txnTime = useRef(new Date());
   const txnId   = useRef(generateTxnId());
+
+  useEffect(() => { if (step === "success") fireSuccessConfetti(); }, [step]);
 
   const stepIndex = STEPS.indexOf(step);
   const operator  = detectOperator(phone);
@@ -693,6 +696,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                     label="Slide to Recharge"
                     gradient="gradient-accent"
                     disabled={pin.length < 4}
+                    pinComplete={pin.length === 4}
                   />
                 </div>
               </div>
