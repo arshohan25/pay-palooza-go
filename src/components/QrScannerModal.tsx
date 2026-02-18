@@ -1,17 +1,15 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, QrCode, Zap } from "lucide-react";
+import { X, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface QrScannerModalProps {
   open: boolean;
   onClose: () => void;
   onScan: (result: string) => void;
-  /** Label shown in the header, e.g. "Scan Agent QR" */
   title?: string;
 }
 
-// Simulate a scan after a short delay with a mock value
 const MOCK_RESULTS: Record<string, string> = {
   recipient: "01711-223344",
   agent: "AGT-10234",
@@ -19,7 +17,6 @@ const MOCK_RESULTS: Record<string, string> = {
 };
 
 const QrScannerModal = ({ open, onClose, onScan, title = "Scan QR Code" }: QrScannerModalProps) => {
-  const [scanning, setScanning] = useState(false);
   const [detected, setDetected] = useState(false);
   const [scanType, setScanType] = useState<keyof typeof MOCK_RESULTS>("merchant");
 
@@ -30,22 +27,21 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan QR Code" }: QrSca
     else setScanType("merchant");
   }, [title]);
 
-  // Reset state on open
+  // Auto-start scan immediately when opened
   useEffect(() => {
-    if (open) { setScanning(false); setDetected(false); }
-  }, [open]);
+    if (!open) { setDetected(false); return; }
 
-  const startScan = () => {
-    setScanning(true);
-    // Simulate scan detection after 2s
-    setTimeout(() => {
+    // Auto-scan after 2s
+    const detectTimer = setTimeout(() => {
       setDetected(true);
       setTimeout(() => {
         onScan(MOCK_RESULTS[scanType]);
         onClose();
       }, 600);
     }, 2000);
-  };
+
+    return () => clearTimeout(detectTimer);
+  }, [open, scanType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <AnimatePresence>
@@ -87,16 +83,9 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan QR Code" }: QrSca
                 />
               ))}
 
-              {!scanning && !detected && (
-                <div className="flex flex-col items-center gap-3 text-white/60">
-                  <QrCode size={64} strokeWidth={1.5} />
-                  <p className="text-sm">Press scan to start</p>
-                </div>
-              )}
-
-              {scanning && !detected && (
+              {!detected && (
                 <>
-                  {/* Scanning line animation */}
+                  {/* Scanning line animation — auto plays */}
                   <motion.div
                     animate={{ top: ["10%", "90%", "10%"] }}
                     transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
@@ -119,20 +108,9 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan QR Code" }: QrSca
               )}
             </div>
 
-            {!scanning && !detected && (
-              <Button
-                className="w-full h-12 gradient-primary border-0 text-white font-semibold"
-                onClick={startScan}
-              >
-                <QrCode size={18} /> Start Scanning
-              </Button>
-            )}
-
-            {scanning && !detected && (
-              <Button variant="outline" className="w-full h-12" onClick={onClose}>
-                Cancel
-              </Button>
-            )}
+            <Button variant="outline" className="w-full h-12" onClick={onClose}>
+              Cancel
+            </Button>
           </motion.div>
         </motion.div>
       )}

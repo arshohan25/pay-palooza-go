@@ -190,8 +190,8 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const handleAmountContinue = () => {
     const val = parseFloat(amount);
     if (!amount || isNaN(val) || val <= 0) { setError("Enter a valid amount."); return; }
-    if (val < 50) { setError("Minimum cash out amount is ৳50."); return; }
-    if (val > 25000) { setError("Maximum cash out amount is ৳25,000."); return; }
+    if (val < 30) { setError("Minimum cash out amount is ৳30."); return; }
+    if (val > 50000) { setError("Maximum cash out per day is ৳50,000."); return; }
     goTo("pin");
   };
 
@@ -203,10 +203,11 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     setStep("success");
   };
 
-  // Fee: flat ৳11.99 per cash out
-  const CASH_OUT_FEE = 11.99;
-  const fee = parseFloat(amount) > 0 ? CASH_OUT_FEE.toFixed(2) : "0.00";
-  const receive = parseFloat(amount) > 0 ? (parseFloat(amount) - CASH_OUT_FEE).toFixed(2) : "0.00";
+  // Fee: ৳11.99 per ৳1000 (pro-rated per 1000)
+  const calcCashOutFee = (amt: number) => Math.ceil(amt / 1000) * 11.99;
+  const feeNum = parseFloat(amount) > 0 ? calcCashOutFee(parseFloat(amount)) : 0;
+  const fee = feeNum.toFixed(2);
+  const receive = parseFloat(amount) > 0 ? (parseFloat(amount) - feeNum).toFixed(2) : "0.00";
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
@@ -410,7 +411,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       <span className="text-foreground font-medium">৳{parseFloat(amount).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Fee (Flat)</span>
+                      <span>Fee (৳11.99/1000)</span>
                       <span className="text-destructive font-medium">− ৳{fee}</span>
                     </div>
                     <div className="h-px bg-border" />
@@ -517,7 +518,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                     <span className="text-foreground font-medium">৳{parseFloat(amount).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Fee (Flat)</span>
+                    <span>Fee (৳11.99/1000)</span>
                     <span className="text-foreground font-medium">৳{fee}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">

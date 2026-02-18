@@ -173,8 +173,8 @@ const SendMoneyFlow = ({ onClose }: SendMoneyFlowProps) => {
   const handleAmountContinue = () => {
     const val = parseFloat(amount);
     if (!amount || isNaN(val) || val <= 0) { setError("Enter a valid amount."); return; }
-    if (val < 10)    { setError("Minimum send amount is ৳10."); return; }
-    if (val > 25000) { setError("Maximum send amount is ৳25,000."); return; }
+    if (val < 0.01)  { setError("Minimum send amount is ৳0.01."); return; }
+    if (val > 50000) { setError("Maximum send per day is ৳50,000."); return; }
     goTo("confirm");
   };
 
