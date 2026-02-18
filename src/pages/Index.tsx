@@ -12,6 +12,7 @@ import PaymentFlow from "@/components/PaymentFlow";
 import MobileRechargeFlow from "@/components/MobileRechargeFlow";
 import PayBillFlow from "@/components/PayBillFlow";
 import TransactionHistory from "@/pages/TransactionHistory";
+import AccountPage from "@/pages/AccountPage";
 
 const Index = () => {
   const [activeTab, setActiveTab]         = useState("home");
@@ -41,6 +42,9 @@ const Index = () => {
     }
     if (activeTab === "history") {
       return <TransactionHistory />;
+    }
+    if (activeTab === "account") {
+      return <AccountPage />;
     }
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-muted-foreground">
