@@ -1,11 +1,11 @@
-import { ArrowUpRight, ArrowDownLeft, Smartphone, Zap, ChevronRight } from "lucide-react";
+import { ArrowUpRight, ArrowDownLeft, PhoneCall, Lightbulb, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 
 const transactions = [
   { id: 1, type: "sent",     name: "Rahim Uddin",        sub: "Send Money",          time: "Today · 2:30 PM",    amount: -500,  icon: ArrowUpRight,  color: "text-destructive", bg: "bg-destructive/10" },
   { id: 2, type: "received", name: "Salary – XYZ Corp",  sub: "Bank Transfer",       time: "Today · 10:00 AM",   amount: 25000, icon: ArrowDownLeft, color: "text-primary",     bg: "bg-primary/10" },
-  { id: 3, type: "recharge", name: "Grameenphone",       sub: "Mobile Recharge",     time: "Yesterday · 8:15 PM",amount: -200,  icon: Smartphone,    color: "text-accent",      bg: "bg-accent/10" },
-  { id: 4, type: "bill",     name: "DESCO Electricity",  sub: "Utility Bill",        time: "Yesterday · 3:45 PM",amount: -1850, icon: Zap,           color: "text-muted-foreground", bg: "bg-muted" },
+  { id: 3, type: "recharge", name: "Grameenphone",       sub: "Mobile Recharge",     time: "Yesterday · 8:15 PM",amount: -200,  icon: PhoneCall,     color: "text-accent",      bg: "bg-accent/10" },
+  { id: 4, type: "bill",     name: "DESCO Electricity",  sub: "Utility Bill",        time: "Yesterday · 3:45 PM",amount: -1850, icon: Lightbulb,     color: "text-muted-foreground", bg: "bg-muted" },
   { id: 5, type: "received", name: "Karim Ahmed",        sub: "Send Money",          time: "Feb 14 · 11:20 AM",  amount: 1200,  icon: ArrowDownLeft, color: "text-primary",     bg: "bg-primary/10" },
 ];
 

@@ -1,14 +1,14 @@
-import { Home, ArrowLeftRight, QrCode, Bell, User } from "lucide-react";
+import { LayoutDashboard, ArrowLeftRight, ScanLine, BellRing, CircleUserRound } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { getTxnNotifCount, onTxnNotifChange } from "@/lib/txnNotifStore";
 
 const navItems = [
-  { icon: Home,           label: "Home",    id: "home" },
-  { icon: ArrowLeftRight, label: "History", id: "history" },
-  { icon: QrCode,         label: "Scan",    id: "scan" },
-  { icon: Bell,           label: "Inbox",   id: "inbox" },
-  { icon: User,           label: "Account", id: "account" },
+  { icon: LayoutDashboard, label: "Home",    id: "home" },
+  { icon: ArrowLeftRight,  label: "History", id: "history" },
+  { icon: ScanLine,        label: "Scan",    id: "scan" },
+  { icon: BellRing,        label: "Inbox",   id: "inbox" },
+  { icon: CircleUserRound, label: "Account", id: "account" },
 ];
 
 interface SideNavProps {
