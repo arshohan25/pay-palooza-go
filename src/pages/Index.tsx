@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AppHeader from "@/components/AppHeader";
 import BalanceCard from "@/components/BalanceCard";
 import QuickActions from "@/components/QuickActions";
@@ -14,6 +14,7 @@ import PayBillFlow from "@/components/PayBillFlow";
 import AddMoneyFlow from "@/components/AddMoneyFlow";
 import TransactionHistory from "@/pages/TransactionHistory";
 import AccountPage from "@/pages/AccountPage";
+import { BalanceCardSkeleton, QuickActionsSkeleton, TransactionListSkeleton } from "@/components/HomeSkeletons";
 
 const Index = () => {
   const [activeTab, setActiveTab]         = useState("home");
@@ -23,23 +24,39 @@ const Index = () => {
   const [showRecharge, setShowRecharge]   = useState(false);
   const [showPayBill, setShowPayBill]     = useState(false);
   const [showAddMoney, setShowAddMoney]   = useState(false);
+  const [isLoading, setIsLoading]         = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setIsLoading(false), 1800);
+    return () => clearTimeout(t);
+  }, []);
 
   const mainContent = () => {
     if (activeTab === "home") {
       return (
         <div className="space-y-5">
           <AppHeader />
-          <BalanceCard />
-          <QuickActions
-            onSendMoney={() => setShowSendMoney(true)}
-            onCashOut={() => setShowCashOut(true)}
-            onPayment={() => setShowPayment(true)}
-            onRecharge={() => setShowRecharge(true)}
-            onPayBill={() => setShowPayBill(true)}
-            onAddMoney={() => setShowAddMoney(true)}
-          />
-          <PromoCard />
-          <TransactionList onSeeAll={() => setActiveTab("history")} />
+          {isLoading ? (
+            <>
+              <BalanceCardSkeleton />
+              <QuickActionsSkeleton />
+              <TransactionListSkeleton />
+            </>
+          ) : (
+            <>
+              <BalanceCard />
+              <QuickActions
+                onSendMoney={() => setShowSendMoney(true)}
+                onCashOut={() => setShowCashOut(true)}
+                onPayment={() => setShowPayment(true)}
+                onRecharge={() => setShowRecharge(true)}
+                onPayBill={() => setShowPayBill(true)}
+                onAddMoney={() => setShowAddMoney(true)}
+              />
+              <PromoCard />
+              <TransactionList onSeeAll={() => setActiveTab("history")} />
+            </>
+          )}
         </div>
       );
     }
