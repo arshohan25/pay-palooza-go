@@ -187,9 +187,16 @@ const SendMoneyFlow = ({ onClose }: SendMoneyFlowProps) => {
     setStep("success");
   };
 
+  const BALANCE = 12450.75; // mock balance
   const amtNum = parseFloat(amount) || 0;
   const fee    = calcSendFee(amtNum);
-  const total  = amtNum + fee;
+  // Fee source: deduct from balance if available, else from amount
+  const feeFromBalance = Math.min(fee, BALANCE);
+  const feeFromAmount  = parseFloat((fee - feeFromBalance).toFixed(2));
+  // Total deducted from balance = amount + feeFromBalance
+  const totalFromBalance = amtNum + feeFromBalance;
+  // Recipient receives: amount - feeFromAmount
+  const recipientReceives = parseFloat((amtNum - feeFromAmount).toFixed(2));
 
   // Visible steps in progress bar (exclude success)
   const PROGRESS_STEPS: Step[] = ["recipient", "amount", "confirm", "pin"];
@@ -379,15 +386,21 @@ const SendMoneyFlow = ({ onClose }: SendMoneyFlowProps) => {
                       <span className="text-foreground font-medium">৳{amtNum.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Fee</span>
+                      <span>Service Fee</span>
                       <span className="text-foreground font-medium">
                         {fee === 0 ? <span className="text-primary font-semibold">Free</span> : `৳${fee}`}
                       </span>
                     </div>
+                    {fee > 0 && (
+                      <div className="flex justify-between text-xs text-muted-foreground/70">
+                        <span>Fee source</span>
+                        <span>{feeFromBalance >= fee ? "From your balance" : feeFromBalance > 0 ? `৳${feeFromBalance} balance + ৳${feeFromAmount} from amount` : "Deducted from amount"}</span>
+                      </div>
+                    )}
                     <div className="h-px bg-border" />
                     <div className="flex justify-between font-bold text-foreground">
-                      <span>Total</span>
-                      <span>৳{total.toLocaleString()}</span>
+                      <span>Total from balance</span>
+                      <span>৳{totalFromBalance.toLocaleString()}</span>
                     </div>
                   </div>
                 )}
@@ -436,11 +449,23 @@ const SendMoneyFlow = ({ onClose }: SendMoneyFlowProps) => {
                         {fee === 0 ? <span className="text-primary font-semibold">Free</span> : `৳${fee}`}
                       </span>
                     </div>
+                    {fee > 0 && (
+                      <div className="flex justify-between text-xs">
+                        <span>Fee source</span>
+                        <span className="text-primary font-medium">{feeFromBalance >= fee ? "From balance" : feeFromBalance > 0 ? `৳${feeFromBalance} balance + ৳${feeFromAmount} from amount` : "From send amount"}</span>
+                      </div>
+                    )}
                     <div className="h-px bg-border" />
                     <div className="flex justify-between font-bold text-foreground text-base">
-                      <span>Total Deducted</span>
-                      <span>৳{total.toLocaleString()}</span>
+                      <span>Total from balance</span>
+                      <span>৳{totalFromBalance.toLocaleString()}</span>
                     </div>
+                    {feeFromAmount > 0 && (
+                      <div className="flex justify-between text-xs text-muted-foreground/70">
+                        <span>Recipient receives</span>
+                        <span>৳{recipientReceives.toLocaleString()}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -466,8 +491,8 @@ const SendMoneyFlow = ({ onClose }: SendMoneyFlowProps) => {
                 </div>
 
                 <div className="rounded-2xl bg-muted/40 border border-border p-3 flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total deducted</span>
-                  <span className="font-bold text-foreground">৳{total.toLocaleString()}</span>
+                  <span className="text-muted-foreground">Total from balance</span>
+                  <span className="font-bold text-foreground">৳{totalFromBalance.toLocaleString()}</span>
                 </div>
 
                 <div className="space-y-3">
@@ -521,6 +546,18 @@ const SendMoneyFlow = ({ onClose }: SendMoneyFlowProps) => {
                     <span>Fee</span>
                     <span className="text-foreground font-medium">{fee === 0 ? "Free" : `৳${fee}`}</span>
                   </div>
+                  {fee > 0 && (
+                    <div className="flex justify-between text-xs text-muted-foreground/70">
+                      <span>Fee deducted from</span>
+                      <span className="font-medium">{feeFromBalance >= fee ? "Balance" : feeFromBalance > 0 ? `Balance (৳${feeFromBalance}) + Amount (৳${feeFromAmount})` : "Send amount"}</span>
+                    </div>
+                  )}
+                  {feeFromAmount > 0 && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Recipient received</span>
+                      <span className="font-semibold text-primary">৳{recipientReceives.toLocaleString()}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-muted-foreground">
                     <span>Date</span>
                     <span className="text-foreground font-medium">
