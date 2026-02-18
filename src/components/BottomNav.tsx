@@ -15,7 +15,7 @@ interface BottomNavProps {
 
 const BottomNav = ({ activeTab = "home", onTabChange }: BottomNavProps) => {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-elevated z-50">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-elevated z-50">
       <div className="max-w-md mx-auto flex items-end justify-around px-2 pb-1 pt-1">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;

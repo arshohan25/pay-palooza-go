@@ -10,12 +10,18 @@ const AppHeader = () => {
       className="flex items-center justify-between py-3"
     >
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 gradient-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-lg shadow-glow">
+        {/* Logo visible on mobile only – sidebar handles desktop */}
+        <div className="md:hidden w-10 h-10 gradient-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-lg shadow-glow">
           ₿
         </div>
-        <div>
+        <div className="md:hidden">
           <p className="text-xs text-muted-foreground">Welcome back</p>
           <p className="text-sm font-bold text-foreground">Tanvir Hasan</p>
+        </div>
+        {/* Desktop greeting */}
+        <div className="hidden md:block">
+          <p className="text-xl font-bold text-foreground">Good morning, Tanvir 👋</p>
+          <p className="text-sm text-muted-foreground">Here's your financial overview</p>
         </div>
       </div>
       <div className="flex items-center gap-2">
