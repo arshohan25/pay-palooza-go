@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
+import { deductBalance } from "@/lib/balanceStore";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
+import ShareReceiptSheet from "@/components/ShareReceiptSheet";
 import {
   ChevronLeft,
   CheckCircle2,
@@ -103,9 +105,16 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
   const [pin, setPin]             = useState("");
   const [error, setError]         = useState("");
   const [showScanner, setShowScanner] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const txnTime = useRef(new Date());
+  const txnId   = useRef(`TXN${Date.now().toString().slice(-8)}`);
 
-  useEffect(() => { if (step === "success") fireSuccessConfetti(); }, [step]);
+  useEffect(() => {
+    if (step === "success") {
+      fireSuccessConfetti();
+      txnId.current = `TXN${Date.now().toString().slice(-8)}`;
+    }
+  }, [step]);
 
   const stepIndex = STEPS.indexOf(step);
 
@@ -164,6 +173,7 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
     if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
     haptics.success();
     txnTime.current = new Date();
+    deductBalance(parseFloat(amount) || 0);
     setDirection(1);
     setStep("success");
   };
@@ -462,15 +472,15 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
                   <div className="h-px bg-border" />
                   <div className="flex justify-between font-bold text-foreground">
                     <span>Transaction ID</span>
-                    <span className="text-primary">TXN{Date.now().toString().slice(-8)}</span>
+                    <span className="text-primary">{txnId.current}</span>
                   </div>
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="w-full space-y-3">
-                  <Button className="w-full h-12 gradient-primary border-0 text-white font-semibold" onClick={onClose}>
+                  <Button className="w-full h-12 gradient-payment border-0 text-white font-semibold" onClick={onClose}>
                     Back to Home
                   </Button>
-                  <Button variant="outline" className="w-full h-11" onClick={onClose}>Share Receipt</Button>
+                  <Button variant="outline" className="w-full h-11" onClick={() => setShowShare(true)}>Share Receipt</Button>
                 </motion.div>
               </div>
             )}
@@ -484,6 +494,28 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
         onClose={() => setShowScanner(false)}
         onScan={handleQrScan}
         title="Scan Merchant QR"
+      />
+
+      {/* Share Receipt Sheet */}
+      <ShareReceiptSheet
+        open={showShare}
+        onClose={() => setShowShare(false)}
+        receipt={{
+          title: "Payment Successful",
+          amount: `৳${amtNum.toLocaleString()}`,
+          gradient: "gradient-payment",
+          txnId: txnId.current,
+          rows: [
+            { label: "Merchant", value: merchant?.name ?? "" },
+            { label: "Merchant ID", value: merchant?.merchantId ?? "" },
+            { label: "Category", value: merchant?.category ?? "" },
+            { label: "Amount", value: `৳${amtNum.toLocaleString()}` },
+            { label: "Fee", value: "Free" },
+            ...(note ? [{ label: "Note", value: note }] : []),
+            { label: "Date", value: txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) },
+            { label: "Time", value: txnTime.current.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) },
+          ],
+        }}
       />
     </div>
   );

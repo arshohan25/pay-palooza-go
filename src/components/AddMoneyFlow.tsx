@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
+import { addBalance } from "@/lib/balanceStore";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
+import ShareReceiptSheet from "@/components/ShareReceiptSheet";
 import {
   ChevronLeft, CheckCircle2, AlertCircle,
   Landmark, CreditCard, Lock, ChevronRight,
@@ -90,6 +92,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   const [error, setError]     = useState("");
   // Copy state
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [showShare, setShowShare]     = useState(false);
 
   const txnId   = useRef(generateTxnId());
   const txnTime = useRef(new Date());
@@ -146,6 +149,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
     haptics.success();
     txnTime.current = new Date();
     txnId.current = generateTxnId();
+    addBalance(parseFloat(amount) || 0);
     setDir(1);
     setStep("success");
   };
@@ -707,6 +711,12 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                   >
                     Back to Home
                   </button>
+                  <button
+                    onClick={() => setShowShare(true)}
+                    className="w-full h-11 rounded-2xl border border-border bg-card text-foreground font-semibold active:scale-[0.98] transition-transform"
+                  >
+                    Share Receipt
+                  </button>
                 </motion.div>
               </div>
             )}
@@ -714,8 +724,29 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* Share Receipt Sheet */}
+      <ShareReceiptSheet
+        open={showShare}
+        onClose={() => setShowShare(false)}
+        receipt={{
+          title: "Money Added",
+          amount: `৳${(parseFloat(amount) || 0).toLocaleString()}`,
+          gradient: "gradient-addmoney",
+          txnId: txnId.current,
+          rows: [
+            { label: "Source", value: source === "bank" ? bank?.name ?? "Bank Transfer" : "Card" },
+            { label: "Amount", value: `৳${(parseFloat(amount) || 0).toLocaleString()}` },
+            { label: "Fee", value: "Free" },
+            { label: "Status", value: source === "bank" ? "Pending (up to 24h)" : "Completed" },
+            { label: "Date", value: txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) },
+            { label: "Time", value: txnTime.current.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) },
+          ],
+        }}
+      />
     </div>
   );
 };
 
 export default AddMoneyFlow;
+
