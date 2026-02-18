@@ -1,15 +1,16 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, CheckCircle2, Upload, Camera, Eye,
-  AlertCircle, ShieldCheck, CreditCard, User, RotateCcw,
-  FileCheck, Clock
+  AlertCircle, ShieldCheck, CreditCard, RotateCcw,
+  FileCheck, Clock, ScanFace, Pencil, Check, X
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Step = "nid_front" | "nid_back" | "selfie" | "review" | "submitted";
+type Step = "nid_front" | "nid_back" | "nid_details" | "selfie" | "review" | "submitted";
+type LivenessState = "idle" | "scanning" | "passed" | "failed";
 
-const STEPS: Step[] = ["nid_front", "nid_back", "selfie", "review"];
+const STEPS: Step[] = ["nid_front", "nid_back", "nid_details", "selfie", "review"];
 
 const STEP_META: Record<Step, { label: string; heading: string; sub: string }> = {
   nid_front: {
@@ -22,21 +23,22 @@ const STEP_META: Record<Step, { label: string; heading: string; sub: string }> =
     heading: "Upload NID Back",
     sub: "Now capture the back side of your National ID Card",
   },
+  nid_details: {
+    label: "NID Details",
+    heading: "Confirm NID Details",
+    sub: "We extracted the following info — please verify and correct if needed",
+  },
   selfie: {
-    label: "Selfie",
-    heading: "Take a Selfie",
-    sub: "Hold your phone at eye level in good lighting and look directly at the camera",
+    label: "Liveness",
+    heading: "Liveness Check",
+    sub: "We'll verify you're a real person — no photo upload allowed",
   },
   review: {
     label: "Review",
     heading: "Review & Submit",
     sub: "Check your documents before submitting for verification",
   },
-  submitted: {
-    label: "Done",
-    heading: "",
-    sub: "",
-  },
+  submitted: { label: "Done", heading: "", sub: "" },
 };
 
 // ─── Slide variants ───────────────────────────────────────────────────────────
@@ -111,6 +113,62 @@ const TipChip = ({ text }: { text: string }) => (
   </div>
 );
 
+// ─── Editable field ───────────────────────────────────────────────────────────
+const EditableField = ({
+  label, value, onChange, placeholder
+}: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const commit = () => {
+    onChange(draft.trim() || value);
+    setEditing(false);
+  };
+  const cancel = () => {
+    setDraft(value);
+    setEditing(false);
+  };
+
+  useEffect(() => {
+    if (editing) inputRef.current?.focus();
+  }, [editing]);
+
+  return (
+    <div className="flex flex-col gap-1">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+      {editing ? (
+        <div className="flex items-center gap-2">
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") commit(); if (e.key === "Escape") cancel(); }}
+            placeholder={placeholder}
+            className="flex-1 h-9 rounded-xl border border-primary/50 bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+          <button onClick={commit} className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground shrink-0">
+            <Check size={14} />
+          </button>
+          <button onClick={cancel} className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+            <X size={14} />
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-2 h-9 px-3 rounded-xl border border-border bg-muted/30">
+          <span className="text-sm text-foreground flex-1 truncate">{value || <span className="text-muted-foreground italic">Not extracted</span>}</span>
+          <button
+            onClick={() => { setDraft(value); setEditing(true); }}
+            className="shrink-0 text-muted-foreground hover:text-primary transition-colors"
+          >
+            <Pencil size={13} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─── Review row ───────────────────────────────────────────────────────────────
 const ReviewDoc = ({
   label, preview, onRetake, gradient, icon: Icon
@@ -140,15 +198,160 @@ const ReviewDoc = ({
   </div>
 );
 
+// ─── Liveness Check ───────────────────────────────────────────────────────────
+const LivenessCheck = ({ onPassed }: { onPassed: () => void }) => {
+  const [state, setState] = useState<LivenessState>("idle");
+  const [progress, setProgress] = useState(0);
+  const [instruction, setInstruction] = useState("Press Start to begin liveness check");
+
+  const instructions = [
+    "Look straight at the camera…",
+    "Slowly turn your head left…",
+    "Now turn your head right…",
+    "Blink twice…",
+    "Smile for the camera…",
+    "Hold still — almost done…",
+  ];
+
+  const startScan = () => {
+    setState("scanning");
+    setProgress(0);
+    let step = 0;
+    setInstruction(instructions[0]);
+
+    const interval = setInterval(() => {
+      step++;
+      setProgress(Math.round((step / instructions.length) * 100));
+      if (step < instructions.length) {
+        setInstruction(instructions[step]);
+      } else {
+        clearInterval(interval);
+        setState("passed");
+        setInstruction("Liveness verified ✓");
+        onPassed();
+      }
+    }, 900);
+  };
+
+  const scanColor = state === "passed" ? "text-primary" : state === "failed" ? "text-destructive" : "text-accent";
+
+  return (
+    <div className="flex flex-col items-center gap-6">
+      {/* Face frame */}
+      <div className="relative w-56 h-56 flex items-center justify-center">
+        {/* Animated ring */}
+        {state === "scanning" && (
+          <motion.div
+            className="absolute inset-0 rounded-full border-4 border-accent/50"
+            animate={{ rotate: 360 }}
+            transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+          />
+        )}
+        {/* Dashed oval */}
+        <div className={`absolute inset-4 rounded-full border-2 border-dashed transition-colors ${
+          state === "passed" ? "border-primary" : state === "scanning" ? "border-accent" : "border-border"
+        }`} />
+        {/* Center icon */}
+        <motion.div
+          animate={state === "scanning" ? { scale: [1, 1.06, 1] } : {}}
+          transition={{ repeat: Infinity, duration: 1 }}
+          className={`w-20 h-20 rounded-full flex items-center justify-center ${
+            state === "passed" ? "gradient-primary" : state === "scanning" ? "bg-accent/10" : "bg-muted"
+          }`}
+        >
+          {state === "passed" ? (
+            <CheckCircle2 size={40} className="text-primary-foreground" />
+          ) : (
+            <ScanFace size={40} className={scanColor} />
+          )}
+        </motion.div>
+
+        {/* Corner markers */}
+        {["top-2 left-2", "top-2 right-2", "bottom-2 left-2", "bottom-2 right-2"].map((pos, i) => (
+          <div key={i} className={`absolute ${pos} w-5 h-5 border-2 rounded-sm transition-colors ${
+            state === "passed" ? "border-primary" : state === "scanning" ? "border-accent" : "border-muted-foreground/40"
+          } ${pos.includes("right") ? "border-l-0" : "border-r-0"} ${pos.includes("bottom") ? "border-t-0" : "border-b-0"}`} />
+        ))}
+      </div>
+
+      {/* Progress bar */}
+      {state === "scanning" && (
+        <div className="w-full space-y-2">
+          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+            <motion.div
+              className="h-full gradient-accent rounded-full"
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.5 }}
+            />
+          </div>
+          <p className="text-xs text-center text-muted-foreground">{progress}% complete</p>
+        </div>
+      )}
+
+      {/* Instruction text */}
+      <AnimatePresence mode="wait">
+        <motion.p
+          key={instruction}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.25 }}
+          className={`text-sm font-semibold text-center ${
+            state === "passed" ? "text-primary" : "text-foreground"
+          }`}
+        >
+          {instruction}
+        </motion.p>
+      </AnimatePresence>
+
+      {/* No upload notice */}
+      {state === "idle" && (
+        <div className="flex items-start gap-2 rounded-xl bg-destructive/8 border border-destructive/20 px-4 py-3 w-full">
+          <AlertCircle size={14} className="text-destructive mt-0.5 shrink-0" />
+          <p className="text-xs text-destructive font-medium">
+            Direct photo upload is not allowed. You must complete the live face scan.
+          </p>
+        </div>
+      )}
+
+      {state === "idle" && (
+        <button
+          onClick={startScan}
+          className="w-full h-12 gradient-accent text-primary-foreground font-semibold rounded-2xl shadow-glow active:scale-[0.98] transition-transform"
+        >
+          Start Liveness Check
+        </button>
+      )}
+    </div>
+  );
+};
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 interface KycFlowProps { onClose: () => void; }
 
 const KycFlow = ({ onClose }: KycFlowProps) => {
-  const [step, setStep]       = useState<Step>("nid_front");
-  const [direction, setDir]   = useState(1);
+  const [step, setStep]         = useState<Step>("nid_front");
+  const [direction, setDir]     = useState(1);
   const [nidFront, setNidFront] = useState<string | null>(null);
   const [nidBack, setNidBack]   = useState<string | null>(null);
-  const [selfie, setSelfie]     = useState<string | null>(null);
+  const [livenessPassed, setLivenessPassed] = useState(false);
+
+  // Editable NID details (auto-"extracted" when NID front is uploaded)
+  const [nidName, setNidName]     = useState("");
+  const [nidNumber, setNidNumber] = useState("");
+  const [nidDob, setNidDob]       = useState("");
+
+  // Simulate OCR extraction when nidFront is set
+  const prevNidFront = useRef<string | null>(null);
+  useEffect(() => {
+    if (nidFront && nidFront !== prevNidFront.current) {
+      prevNidFront.current = nidFront;
+      // Simulate extracted data
+      setNidName("Tanvir Hasan");
+      setNidNumber("19901234567890");
+      setNidDob("01 Jan 1990");
+    }
+  }, [nidFront]);
 
   const stepIndex = STEPS.indexOf(step);
 
@@ -158,21 +361,23 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
   };
 
   const goBack = () => {
-    if (step === "nid_front") { onClose(); return; }
-    if (step === "nid_back")  { goTo("nid_front", -1); return; }
-    if (step === "selfie")    { goTo("nid_back", -1); return; }
-    if (step === "review")    { goTo("selfie", -1); return; }
+    if (step === "nid_front")   { onClose(); return; }
+    if (step === "nid_back")    { goTo("nid_front", -1); return; }
+    if (step === "nid_details") { goTo("nid_back", -1); return; }
+    if (step === "selfie")      { goTo("nid_details", -1); return; }
+    if (step === "review")      { goTo("selfie", -1); return; }
   };
 
-  const canAdvanceNidFront = !!nidFront;
-  const canAdvanceNidBack  = !!nidBack;
-  const canAdvanceSelfie   = !!selfie;
-  const canSubmit          = !!nidFront && !!nidBack && !!selfie;
+  const canAdvanceNidFront   = !!nidFront;
+  const canAdvanceNidBack    = !!nidBack;
+  const canAdvanceNidDetails = !!nidName.trim() && !!nidNumber.trim() && !!nidDob.trim();
+  const canSubmit            = !!nidFront && !!nidBack && livenessPassed;
 
   const headerGradient = (() => {
-    if (step === "nid_front") return "gradient-payment";
-    if (step === "nid_back")  return "gradient-send";
-    if (step === "selfie")    return "gradient-accent";
+    if (step === "nid_front")   return "gradient-payment";
+    if (step === "nid_back")    return "gradient-send";
+    if (step === "nid_details") return "gradient-cashout";
+    if (step === "selfie")      return "gradient-accent";
     return "gradient-primary";
   })();
 
@@ -193,21 +398,21 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
           </div>
 
           {/* Step pills */}
-          <div className="flex gap-1.5 items-center flex-wrap">
+          <div className="flex gap-1 items-center flex-wrap">
             {STEPS.map((s, i) => {
               const si = STEPS.indexOf(step);
               return (
-                <div key={s} className="flex items-center gap-1.5">
-                  <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all ${
+                <div key={s} className="flex items-center gap-1">
+                  <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold transition-all ${
                     i < si  ? "bg-white/30 text-white"
                     : i === si ? "bg-white text-foreground"
                     : "bg-white/10 text-white/50"
                   }`}>
-                    {i < si ? <CheckCircle2 size={11} /> : <span>{i + 1}</span>}
+                    {i < si ? <CheckCircle2 size={10} /> : <span>{i + 1}</span>}
                     <span>{STEP_META[s].label}</span>
                   </div>
                   {i < STEPS.length - 1 && (
-                    <div className={`h-px w-3 ${i < si ? "bg-white/50" : "bg-white/20"}`} />
+                    <div className={`h-px w-2 ${i < si ? "bg-white/50" : "bg-white/20"}`} />
                   )}
                 </div>
               );
@@ -246,7 +451,6 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                   gradient="gradient-payment"
                 />
 
-                {/* Tips */}
                 <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2">
                   <p className="text-xs font-bold text-foreground">📋 Photo Tips</p>
                   <TipChip text="Ensure all 4 corners of the card are visible" />
@@ -292,7 +496,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                 </div>
 
                 <button
-                  onClick={() => canAdvanceNidBack && goTo("selfie")}
+                  onClick={() => canAdvanceNidBack && goTo("nid_details")}
                   disabled={!canAdvanceNidBack}
                   className={`w-full h-12 rounded-2xl font-semibold text-sm transition-all active:scale-[0.98] ${
                     canAdvanceNidBack
@@ -305,7 +509,62 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
               </div>
             )}
 
-            {/* ── Selfie ── */}
+            {/* ── NID Details (editable) ── */}
+            {step === "nid_details" && (
+              <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
+                <div className="text-center space-y-1">
+                  <h2 className="text-xl font-bold text-foreground">{STEP_META.nid_details.heading}</h2>
+                  <p className="text-sm text-muted-foreground">{STEP_META.nid_details.sub}</p>
+                </div>
+
+                {/* OCR badge */}
+                <div className="flex items-center gap-2 rounded-xl bg-primary/8 border border-primary/15 px-4 py-2.5">
+                  <CheckCircle2 size={14} className="text-primary shrink-0" />
+                  <p className="text-xs text-primary font-medium">Details auto-extracted from your NID photo. Tap <Pencil size={10} className="inline" /> to correct any errors.</p>
+                </div>
+
+                {/* NID front thumbnail */}
+                {nidFront && (
+                  <img src={nidFront} alt="NID Front" className="w-full h-28 object-cover rounded-2xl border border-border" />
+                )}
+
+                {/* Editable fields */}
+                <div className="rounded-2xl bg-card border border-border shadow-card p-4 space-y-4">
+                  <EditableField
+                    label="Full Name (as on NID)"
+                    value={nidName}
+                    onChange={setNidName}
+                    placeholder="e.g. Tanvir Hasan"
+                  />
+                  <EditableField
+                    label="NID Number"
+                    value={nidNumber}
+                    onChange={setNidNumber}
+                    placeholder="e.g. 19901234567890"
+                  />
+                  <EditableField
+                    label="Date of Birth"
+                    value={nidDob}
+                    onChange={setNidDob}
+                    placeholder="e.g. 01 Jan 1990"
+                  />
+                </div>
+
+                <button
+                  onClick={() => canAdvanceNidDetails && goTo("selfie")}
+                  disabled={!canAdvanceNidDetails}
+                  className={`w-full h-12 rounded-2xl font-semibold text-sm transition-all active:scale-[0.98] ${
+                    canAdvanceNidDetails
+                      ? "gradient-cashout text-primary-foreground shadow-glow"
+                      : "bg-muted text-muted-foreground cursor-not-allowed"
+                  }`}
+                >
+                  {canAdvanceNidDetails ? "Confirm Details →" : "Fill in all fields to continue"}
+                </button>
+              </div>
+            )}
+
+            {/* ── Selfie / Liveness ── */}
             {step === "selfie" && (
               <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
                 <div className="text-center space-y-1">
@@ -313,48 +572,25 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                   <p className="text-sm text-muted-foreground">{STEP_META.selfie.sub}</p>
                 </div>
 
-                {/* Selfie frame guide */}
-                <div className="relative flex items-center justify-center">
-                  <UploadBox
-                    label="Your Selfie Photo"
-                    preview={selfie}
-                    onFile={setSelfie}
-                    icon={Camera}
-                    gradient="gradient-accent"
-                    accept="image/*"
-                  />
-                </div>
+                <LivenessCheck onPassed={() => setLivenessPassed(true)} />
 
-                {/* Face guide overlay hint */}
-                {!selfie && (
-                  <div className="flex items-center justify-center">
-                    <div className="rounded-2xl border-2 border-dashed border-accent/40 bg-accent/5 p-4 text-center space-y-1 max-w-xs">
-                      <div className="w-16 h-16 rounded-full border-2 border-dashed border-accent/50 mx-auto flex items-center justify-center">
-                        <User size={28} className="text-accent/60" />
-                      </div>
-                      <p className="text-xs text-muted-foreground">Position your face within the circle</p>
-                    </div>
-                  </div>
+                {livenessPassed && (
+                  <motion.button
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    onClick={() => goTo("review")}
+                    className="w-full h-12 gradient-primary text-primary-foreground font-semibold rounded-2xl shadow-glow active:scale-[0.98] transition-transform"
+                  >
+                    Review Documents →
+                  </motion.button>
                 )}
 
                 <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2">
-                  <p className="text-xs font-bold text-foreground">🤳 Selfie Tips</p>
-                  <TipChip text="Look directly at the camera with a neutral expression" />
+                  <p className="text-xs font-bold text-foreground">🤳 Liveness Tips</p>
+                  <TipChip text="Ensure you're in good, even lighting" />
                   <TipChip text="Remove glasses, hat, or face coverings" />
-                  <TipChip text="Ensure your face is fully visible and well-lit" />
+                  <TipChip text="Follow on-screen instructions carefully" />
                 </div>
-
-                <button
-                  onClick={() => canAdvanceSelfie && goTo("review")}
-                  disabled={!canAdvanceSelfie}
-                  className={`w-full h-12 rounded-2xl font-semibold text-sm transition-all active:scale-[0.98] ${
-                    canAdvanceSelfie
-                      ? "gradient-accent text-primary-foreground shadow-glow"
-                      : "bg-muted text-muted-foreground cursor-not-allowed"
-                  }`}
-                >
-                  {canAdvanceSelfie ? "Review Documents →" : "Upload Selfie to Continue"}
-                </button>
               </div>
             )}
 
@@ -383,13 +619,51 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                     gradient="gradient-send"
                     icon={CreditCard}
                   />
-                  <ReviewDoc
-                    label="Selfie"
-                    preview={selfie}
-                    onRetake={() => goTo("selfie", -1)}
-                    gradient="gradient-accent"
-                    icon={Camera}
-                  />
+                  {/* Liveness row */}
+                  <div className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border shadow-card">
+                    <div className="w-16 h-10 gradient-accent rounded-lg flex items-center justify-center text-primary-foreground shrink-0">
+                      <ScanFace size={18} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground">Liveness Check</p>
+                      <p className={`text-xs font-medium ${livenessPassed ? "text-primary" : "text-destructive"}`}>
+                        {livenessPassed ? "✓ Verified" : "Not completed"}
+                      </p>
+                    </div>
+                    {!livenessPassed && (
+                      <button
+                        onClick={() => goTo("selfie", -1)}
+                        className="text-xs font-semibold text-primary border border-primary/30 rounded-lg px-3 py-1.5 hover:bg-primary/5 transition-colors"
+                      >
+                        Redo
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Extracted NID details (read-only summary) */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between px-1">
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">NID Details</p>
+                    <button
+                      onClick={() => goTo("nid_details", -1)}
+                      className="flex items-center gap-1 text-xs text-primary font-semibold"
+                    >
+                      <Pencil size={11} /> Edit
+                    </button>
+                  </div>
+                  <div className="rounded-2xl bg-card border border-border shadow-card p-4 space-y-3">
+                    {[
+                      { label: "Full Name", value: nidName },
+                      { label: "NID Number", value: nidNumber },
+                      { label: "Date of Birth", value: nidDob },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="flex items-center justify-between gap-4">
+                        <p className="text-xs text-muted-foreground">{label}</p>
+                        <p className="text-sm font-semibold text-foreground text-right">{value || "—"}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Missing warning */}
@@ -401,7 +675,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                   >
                     <AlertCircle size={15} className="text-destructive mt-0.5 shrink-0" />
                     <p className="text-xs text-destructive font-medium">
-                      Please upload all required documents before submitting.
+                      Please complete all steps before submitting.
                     </p>
                   </motion.div>
                 )}
@@ -486,11 +760,11 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
 
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-xl gradient-accent flex items-center justify-center text-primary-foreground shrink-0">
-                      <Camera size={15} />
+                      <ScanFace size={15} />
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="text-sm font-semibold text-foreground">Selfie</p>
-                      <p className="text-xs text-muted-foreground">Identity photo captured</p>
+                      <p className="text-sm font-semibold text-foreground">Liveness Check</p>
+                      <p className="text-xs text-muted-foreground">Face verified successfully</p>
                     </div>
                     <CheckCircle2 size={16} className="text-primary" />
                   </div>
