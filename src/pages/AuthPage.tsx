@@ -271,13 +271,14 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     goTo("register_pin");
   }, [otp, goTo]);
 
-  const handleRegisterPin = () => {
+  const handleRegisterPin = (overrideConfirm?: string) => {
     if (pin.length < 4) { setError("PIN must be 4 digits."); return; }
     const seq = ["1234","2345","3456","4567","5678","6789","9876","8765","7654","6543","5432","4321"];
     const rep = ["0000","1111","2222","3333","4444","5555","6666","7777","8888","9999"];
     if (seq.includes(pin) || rep.includes(pin)) { setError("PIN too weak. Avoid sequential or repeated digits."); return; }
-    if (confirmPin.length < 4) { setError("Re-enter your PIN to confirm."); return; }
-    if (pin !== confirmPin) { setError("PINs do not match."); return; }
+    const confirmed = overrideConfirm ?? confirmPin;
+    if (confirmed.length < 4) { setError("Re-enter your PIN to confirm."); return; }
+    if (pin !== confirmed) { setError("PINs do not match."); return; }
     localStorage.setItem(PIN_KEY, pin);
     localStorage.setItem(DEVICE_KEY, "1");
     localStorage.setItem(REGISTERED_KEY, phone);
@@ -306,9 +307,10 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     goTo("login_pin");
   }, [otp, goTo]);
 
-  const handleLoginPin = useCallback(() => {
+  const handleLoginPin = useCallback((overridePin?: string) => {
+    const entered = overridePin ?? pin;
     const stored = getStoredPin() || "1234";
-    if (pin !== stored) {
+    if (entered !== stored) {
       haptics.error();
       setError("Incorrect PIN. Try again.");
       setTimeout(() => { setPin(""); setError(""); }, 700);
@@ -328,13 +330,14 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     goTo("forgot_pin");
   }, [otp, goTo]);
 
-  const handleForgotPin = () => {
+  const handleForgotPin = (overrideConfirm?: string) => {
     if (pin.length < 4) { setError("PIN must be 4 digits."); return; }
     const seq = ["1234","2345","3456","4567","5678","6789","9876","8765","7654","6543","5432","4321"];
     const rep = ["0000","1111","2222","3333","4444","5555","6666","7777","8888","9999"];
     if (seq.includes(pin) || rep.includes(pin)) { setError("PIN too weak. Avoid sequential or repeated digits."); return; }
-    if (confirmPin.length < 4) { setError("Re-enter your PIN to confirm."); return; }
-    if (pin !== confirmPin) { setError("PINs do not match."); return; }
+    const confirmed = overrideConfirm ?? confirmPin;
+    if (confirmed.length < 4) { setError("Re-enter your PIN to confirm."); return; }
+    if (pin !== confirmed) { setError("PINs do not match."); return; }
     localStorage.setItem(PIN_KEY, pin);
     localStorage.setItem(DEVICE_KEY, "1");
     haptics.success();
@@ -349,10 +352,10 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     if (digits.length === 6) setTimeout(onComplete, 260);
   };
 
-  const handlePinChange = (val: string, setter: (v: string) => void, cb?: () => void) => {
+  const handlePinChange = (val: string, setter: (v: string) => void, cb?: (digits: string) => void) => {
     const digits = val.replace(/\D/g, "").slice(0, 4);
     setter(digits); setError("");
-    if (cb && digits.length === 4) setTimeout(cb, 260);
+    if (cb && digits.length === 4) setTimeout(() => cb(digits), 260);
   };
 
   // ── Back navigation ────────────────────────────────────────────────────────
@@ -520,7 +523,12 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                         className="w-full h-12 bg-card border border-border text-foreground font-semibold text-sm rounded-2xl flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-card"
                         onClick={() => {
                           setPhone(""); setOtp(""); setPin(""); setConfirmPin("");
-                          goTo("login_phone");
+                          // Same trust check as primary button
+                          if (!isNewUser && getDeviceVerified() && getStoredPin()) {
+                            goTo("login_pin");
+                          } else {
+                            goTo("login_phone");
+                          }
                         }}
                       >
                         Already have an account? <span className="text-primary">Sign in</span>
@@ -663,7 +671,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                       <label className="text-xs font-bold text-muted-foreground uppercase tracking-[0.12em] px-1">Confirm PIN</label>
                       <PinDots pin={confirmPin} error={!!error && pin !== confirmPin} />
                       <PinInput value={confirmPin}
-                        onChange={(v) => handlePinChange(v, setConfirmPin, handleRegisterPin)}
+                        onChange={(v) => handlePinChange(v, setConfirmPin, (digits) => handleRegisterPin(digits))}
                         show={showPin} onToggleShow={() => setShowPin(v => !v)} />
                     </div>
 
@@ -686,7 +694,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
 
                     <button
                       className="w-full h-14 gradient-addmoney text-white font-bold text-[15px] rounded-2xl shadow-glow flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
-                      onClick={handleRegisterPin} disabled={pin.length < 4 || confirmPin.length < 4}
+                      onClick={() => handleRegisterPin()} disabled={pin.length < 4 || confirmPin.length < 4}
                     >
                       <CheckCircle2 size={17} /> Create Account
                     </button>
@@ -721,12 +729,12 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                     )}
 
                     <PinInput value={pin}
-                      onChange={(v) => handlePinChange(v, setPin, handleLoginPin)}
+                      onChange={(v) => handlePinChange(v, setPin, (digits) => handleLoginPin(digits))}
                       show={showPin} onToggleShow={() => setShowPin(v => !v)} autoFocus />
 
                     <button
                       className="w-full h-14 gradient-primary text-white font-bold text-[15px] rounded-2xl shadow-glow flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
-                      onClick={handleLoginPin} disabled={pin.length < 4}
+                      onClick={() => handleLoginPin()} disabled={pin.length < 4}
                     >
                       <ArrowRight size={17} /> Log In
                     </button>
@@ -782,7 +790,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                       <label className="text-xs font-bold text-muted-foreground uppercase tracking-[0.12em] px-1">Confirm PIN</label>
                       <PinDots pin={confirmPin} error={!!error && pin !== confirmPin} />
                       <PinInput value={confirmPin}
-                        onChange={(v) => handlePinChange(v, setConfirmPin, handleForgotPin)}
+                        onChange={(v) => handlePinChange(v, setConfirmPin, (digits) => handleForgotPin(digits))}
                         show={showPin} onToggleShow={() => setShowPin(v => !v)} />
                     </div>
 
@@ -795,7 +803,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
 
                     <button
                       className="w-full h-14 gradient-cashout text-white font-bold text-[15px] rounded-2xl flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
-                      onClick={handleForgotPin} disabled={pin.length < 4 || confirmPin.length < 4}
+                      onClick={() => handleForgotPin()} disabled={pin.length < 4 || confirmPin.length < 4}
                     >
                       <CheckCircle2 size={17} /> Reset PIN & Log In
                     </button>
