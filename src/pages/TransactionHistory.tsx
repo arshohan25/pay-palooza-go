@@ -2,24 +2,9 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import {
-  Search,
-  ArrowUpRight,
-  ArrowDownLeft,
-  Smartphone,
-  Zap,
-  Wallet,
-  CreditCard,
-  X,
-  CalendarIcon,
-  ChevronLeft,
-  SlidersHorizontal,
-  CheckCircle2,
-  Copy,
-  Hash,
-  Tag,
-  Clock,
-  User,
-  FileText,
+  Search, ArrowUpRight, ArrowDownLeft, Smartphone, Zap,
+  Wallet, CreditCard, X, CalendarIcon, SlidersHorizontal,
+  CheckCircle2, Copy, Hash, Tag, Clock, User, FileText,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -27,7 +12,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────────────────────────
 type TxCategory = "all" | "send" | "cashout" | "payment" | "recharge" | "bill";
 
 interface Transaction {
@@ -35,35 +20,34 @@ interface Transaction {
   category: Exclude<TxCategory, "all">;
   name: string;
   detail: string;
-  date: string; // ISO
-  amount: number; // positive = credit, negative = debit
+  date: string;
+  amount: number;
 }
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
+// ─── Mock data ───────────────────────────────────────────────────────────────
 const ALL_TRANSACTIONS: Transaction[] = [
-  { id: "t01", category: "send",     name: "Rahim Uddin",          detail: "Send Money",              date: "2026-02-18T14:30:00", amount: -500 },
-  { id: "t02", category: "send",     name: "Salary - XYZ Corp",    detail: "Money Received",           date: "2026-02-18T10:00:00", amount: 25000 },
-  { id: "t03", category: "recharge", name: "Grameenphone",         detail: "Mobile Recharge · 3GB Pack",date: "2026-02-17T20:15:00", amount: -199 },
-  { id: "t04", category: "bill",     name: "DESCO Electricity",    detail: "Pay Bill · Feb 2026",      date: "2026-02-17T15:45:00", amount: -1850 },
-  { id: "t05", category: "send",     name: "Karim Ahmed",          detail: "Money Received",           date: "2026-02-14T11:20:00", amount: 1200 },
-  { id: "t06", category: "cashout",  name: "Karim Store · AGT-10234", detail: "Cash Out",             date: "2026-02-13T09:30:00", amount: -5000 },
-  { id: "t07", category: "payment",  name: "Shajgoj",              detail: "Merchant Payment",        date: "2026-02-12T17:55:00", amount: -320 },
-  { id: "t08", category: "recharge", name: "Robi",                 detail: "Mobile Recharge · 2GB Pack",date: "2026-02-11T08:00:00", amount: -59 },
-  { id: "t09", category: "bill",     name: "Titas Gas",            detail: "Pay Bill · Feb 2026",      date: "2026-02-10T12:10:00", amount: -780 },
-  { id: "t10", category: "send",     name: "Nasrin Begum",         detail: "Send Money",              date: "2026-02-09T16:00:00", amount: -2000 },
-  { id: "t11", category: "payment",  name: "Daraz BD",             detail: "Merchant Payment",        date: "2026-02-08T13:25:00", amount: -1490 },
-  { id: "t12", category: "cashout",  name: "Hasan Mobile · AGT-33512", detail: "Cash Out",           date: "2026-02-07T10:40:00", amount: -3000 },
-  { id: "t13", category: "send",     name: "Farhan Islam",         detail: "Money Received",          date: "2026-02-06T09:00:00", amount: 800 },
-  { id: "t14", category: "bill",     name: "WASA (Dhaka)",         detail: "Pay Bill · Feb 2026",     date: "2026-02-05T14:00:00", amount: -450 },
-  { id: "t15", category: "recharge", name: "Banglalink",           detail: "Mobile Recharge · ৳100 Custom", date: "2026-02-04T19:30:00", amount: -100 },
-  { id: "t16", category: "payment",  name: "Pathao",               detail: "Merchant Payment",        date: "2026-02-03T08:55:00", amount: -180 },
-  { id: "t17", category: "send",     name: "Salary Bonus",         detail: "Money Received",          date: "2026-02-01T10:00:00", amount: 5000 },
-  { id: "t18", category: "bill",     name: "Link3 Internet",       detail: "Pay Bill · Feb 2026",     date: "2026-01-31T11:00:00", amount: -650 },
-  { id: "t19", category: "cashout",  name: "Rina Telecom · AGT-20871", detail: "Cash Out",           date: "2026-01-28T15:20:00", amount: -10000 },
-  { id: "t20", category: "payment",  name: "Chaldal",              detail: "Merchant Payment",        date: "2026-01-25T18:00:00", amount: -990 },
+  { id: "t01", category: "send",     name: "Rahim Uddin",               detail: "Send Money",                 date: "2026-02-18T14:30:00", amount: -500   },
+  { id: "t02", category: "send",     name: "Salary - XYZ Corp",         detail: "Money Received",             date: "2026-02-18T10:00:00", amount: 25000  },
+  { id: "t03", category: "recharge", name: "Grameenphone",              detail: "Mobile Recharge · 3GB Pack", date: "2026-02-17T20:15:00", amount: -199   },
+  { id: "t04", category: "bill",     name: "DESCO Electricity",         detail: "Pay Bill · Feb 2026",        date: "2026-02-17T15:45:00", amount: -1850  },
+  { id: "t05", category: "send",     name: "Karim Ahmed",               detail: "Money Received",             date: "2026-02-14T11:20:00", amount: 1200   },
+  { id: "t06", category: "cashout",  name: "Karim Store · AGT-10234",   detail: "Cash Out",                   date: "2026-02-13T09:30:00", amount: -5000  },
+  { id: "t07", category: "payment",  name: "Shajgoj",                   detail: "Merchant Payment",           date: "2026-02-12T17:55:00", amount: -320   },
+  { id: "t08", category: "recharge", name: "Robi",                      detail: "Mobile Recharge · 2GB Pack", date: "2026-02-11T08:00:00", amount: -59    },
+  { id: "t09", category: "bill",     name: "Titas Gas",                 detail: "Pay Bill · Feb 2026",        date: "2026-02-10T12:10:00", amount: -780   },
+  { id: "t10", category: "send",     name: "Nasrin Begum",              detail: "Send Money",                 date: "2026-02-09T16:00:00", amount: -2000  },
+  { id: "t11", category: "payment",  name: "Daraz BD",                  detail: "Merchant Payment",           date: "2026-02-08T13:25:00", amount: -1490  },
+  { id: "t12", category: "cashout",  name: "Hasan Mobile · AGT-33512",  detail: "Cash Out",                   date: "2026-02-07T10:40:00", amount: -3000  },
+  { id: "t13", category: "send",     name: "Farhan Islam",              detail: "Money Received",             date: "2026-02-06T09:00:00", amount: 800    },
+  { id: "t14", category: "bill",     name: "WASA (Dhaka)",              detail: "Pay Bill · Feb 2026",        date: "2026-02-05T14:00:00", amount: -450   },
+  { id: "t15", category: "recharge", name: "Banglalink",                detail: "Mobile Recharge · ৳100",     date: "2026-02-04T19:30:00", amount: -100   },
+  { id: "t16", category: "payment",  name: "Pathao",                    detail: "Merchant Payment",           date: "2026-02-03T08:55:00", amount: -180   },
+  { id: "t17", category: "send",     name: "Salary Bonus",              detail: "Money Received",             date: "2026-02-01T10:00:00", amount: 5000   },
+  { id: "t18", category: "bill",     name: "Link3 Internet",            detail: "Pay Bill · Feb 2026",        date: "2026-01-31T11:00:00", amount: -650   },
+  { id: "t19", category: "cashout",  name: "Rina Telecom · AGT-20871",  detail: "Cash Out",                   date: "2026-01-28T15:20:00", amount: -10000 },
+  { id: "t20", category: "payment",  name: "Chaldal",                   detail: "Merchant Payment",           date: "2026-01-25T18:00:00", amount: -990   },
 ];
 
-// ─── Category config ──────────────────────────────────────────────────────────
 const CATEGORIES: { id: TxCategory; label: string }[] = [
   { id: "all",      label: "All" },
   { id: "send",     label: "Send" },
@@ -74,37 +58,32 @@ const CATEGORIES: { id: TxCategory; label: string }[] = [
 ];
 
 const ICON_MAP: Record<Exclude<TxCategory, "all">, { icon: typeof ArrowUpRight; debitClass: string; creditClass: string }> = {
-  send:     { icon: ArrowUpRight,  debitClass: "text-destructive bg-destructive/10",  creditClass: "text-primary bg-primary/10" },
-  cashout:  { icon: Wallet,        debitClass: "text-rose-500 bg-rose-500/10",         creditClass: "text-primary bg-primary/10" },
-  payment:  { icon: CreditCard,    debitClass: "text-blue-500 bg-blue-500/10",         creditClass: "text-primary bg-primary/10" },
-  recharge: { icon: Smartphone,    debitClass: "text-accent bg-accent/10",             creditClass: "text-primary bg-primary/10" },
-  bill:     { icon: Zap,           debitClass: "text-orange-500 bg-orange-500/10",     creditClass: "text-primary bg-primary/10" },
+  send:     { icon: ArrowUpRight, debitClass: "text-destructive bg-destructive/10", creditClass: "text-primary bg-primary/10" },
+  cashout:  { icon: Wallet,       debitClass: "text-rose-500 bg-rose-500/10",       creditClass: "text-primary bg-primary/10" },
+  payment:  { icon: CreditCard,   debitClass: "text-blue-500 bg-blue-500/10",       creditClass: "text-primary bg-primary/10" },
+  recharge: { icon: Smartphone,   debitClass: "text-accent bg-accent/10",           creditClass: "text-primary bg-primary/10" },
+  bill:     { icon: Zap,          debitClass: "text-orange-500 bg-orange-500/10",   creditClass: "text-primary bg-primary/10" },
 };
 
-
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 const relativeDate = (iso: string) => {
   const d = new Date(iso);
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === today.toDateString()) return `Today, ${format(d, "h:mm a")}`;
-  if (d.toDateString() === yesterday.toDateString()) return `Yesterday, ${format(d, "h:mm a")}`;
-  return format(d, "dd MMM yyyy, h:mm a");
+  if (d.toDateString() === today.toDateString())     return `Today · ${format(d, "h:mm a")}`;
+  if (d.toDateString() === yesterday.toDateString()) return `Yesterday · ${format(d, "h:mm a")}`;
+  return format(d, "dd MMM yyyy · h:mm a");
 };
 
-// ─── TransactionHistory ───────────────────────────────────────────────────────
 interface TransactionHistoryProps { onClose?: () => void; }
 
 const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
-  const [activeTab, setActiveTab]     = useState<TxCategory>("all");
-  const [search, setSearch]           = useState("");
-  const [dateFrom, setDateFrom]       = useState<Date | undefined>();
-  const [dateTo, setDateTo]           = useState<Date | undefined>();
-  const [fromOpen, setFromOpen]       = useState(false);
-  const [toOpen, setToOpen]           = useState(false);
-  
+  const [activeTab, setActiveTab] = useState<TxCategory>("all");
+  const [search, setSearch]       = useState("");
+  const [dateFrom, setDateFrom]   = useState<Date | undefined>();
+  const [dateTo, setDateTo]       = useState<Date | undefined>();
+  const [fromOpen, setFromOpen]   = useState(false);
+  const [toOpen, setToOpen]       = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedTx, setSelectedTx]   = useState<Transaction | null>(null);
   const [copied, setCopied]           = useState(false);
@@ -115,7 +94,6 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
     setTimeout(() => setCopied(false), 1500);
   };
 
-  // ── Filter logic ──────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return ALL_TRANSACTIONS.filter((tx) => {
@@ -131,74 +109,63 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
     });
   }, [activeTab, search, dateFrom, dateTo]);
 
-  const paginated  = filtered;
-
-  // Reset filters
-  const handleTabChange = (t: TxCategory) => { setActiveTab(t); };
-  const handleSearch    = (v: string)     => { setSearch(v); };
   const clearFilters    = () => { setDateFrom(undefined); setDateTo(undefined); setSearch(""); setActiveTab("all"); };
-
   const hasActiveFilters = search || dateFrom || dateTo || activeTab !== "all";
 
-  // ── Summary ───────────────────────────────────────────────────────────────
   const totalIn  = filtered.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
   const totalOut = filtered.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
 
   return (
-    <div className="flex flex-col bg-background min-h-full">
-      {/* Header */}
-      <div className="gradient-primary px-4 pt-6 md:pt-8 pb-5 text-primary-foreground rounded-2xl mb-2">
-        <div className="flex items-center gap-3 mb-1">
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center active:scale-95 transition-transform"
-            >
-              <ChevronLeft size={20} />
-            </button>
-          )}
-          <h1 className="text-lg font-bold flex-1">Transaction History</h1>
-          <button
+    <div className="flex flex-col min-h-full">
+
+      {/* ── Hero header ─────────────────────────────────────────────────── */}
+      <div className="gradient-hero px-4 pt-5 pb-5 text-primary-foreground rounded-2xl mb-3 mx-0">
+        {/* Top row */}
+        <div className="flex items-center gap-2 mb-4">
+          <h1 className="text-[16px] font-bold flex-1 truncate">Transaction History</h1>
+          <motion.button
+            whileTap={{ scale: 0.88 }}
             onClick={() => setShowFilters((v) => !v)}
-            className={`w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition-all ${
-              showFilters || dateFrom || dateTo ? "bg-white text-primary" : "bg-white/15"
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+              showFilters || dateFrom || dateTo
+                ? "bg-white text-primary"
+                : "glass-hero"
             }`}
+            aria-label="Toggle filters"
           >
-            <SlidersHorizontal size={16} />
-          </button>
+            <SlidersHorizontal size={15} />
+          </motion.button>
         </div>
 
-        {/* Summary chips */}
-        <div className="flex gap-2 mt-3">
-          <div className="flex-1 bg-white/15 rounded-xl px-3 py-2 text-center">
-            <p className="text-[10px] text-white/70">Money In</p>
-            <p className="text-sm font-bold">+৳{totalIn.toLocaleString()}</p>
-          </div>
-          <div className="flex-1 bg-white/15 rounded-xl px-3 py-2 text-center">
-            <p className="text-[10px] text-white/70">Money Out</p>
-            <p className="text-sm font-bold">-৳{totalOut.toLocaleString()}</p>
-          </div>
-          <div className="flex-1 bg-white/15 rounded-xl px-3 py-2 text-center">
-            <p className="text-[10px] text-white/70">Transactions</p>
-            <p className="text-sm font-bold">{filtered.length}</p>
-          </div>
+        {/* Summary chips — 3-col grid, no overflow */}
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: "Money In",  value: `+৳${totalIn.toLocaleString()}`,  color: "text-green-300" },
+            { label: "Money Out", value: `-৳${totalOut.toLocaleString()}`, color: "text-rose-300"  },
+            { label: "Count",     value: filtered.length,                  color: "text-white"     },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="glass-hero rounded-2xl px-2 py-2.5 text-center">
+              <p className="text-[9.5px] font-semibold uppercase tracking-wide text-white/60 mb-0.5">{label}</p>
+              <p className={`text-[13px] font-bold leading-tight ${color}`}>{value}</p>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Search */}
-      <div className="px-4 pt-3 pb-0">
+      {/* ── Search bar ──────────────────────────────────────────────────── */}
+      <div className="mb-2">
         <div className="relative">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <Input
             placeholder="Search transactions…"
             value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="pl-9 pr-9 h-10 bg-card border-border text-sm"
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 pr-9 h-11 bg-card border-border/60 rounded-2xl text-[13px] shadow-xs"
           />
           {search && (
             <button
-              onClick={() => handleSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground tap-target"
             >
               <X size={14} />
             </button>
@@ -206,40 +173,36 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
         </div>
       </div>
 
-      {/* Date filters (collapsible) */}
+      {/* ── Date filters (collapsible) ───────────────────────────────────── */}
       <AnimatePresence>
         {showFilters && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden px-4"
+            transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
+            className="overflow-hidden mb-2"
           >
-            <div className="flex gap-2 pt-2">
+            <div className="flex gap-2 items-center">
               {/* From */}
               <Popover open={fromOpen} onOpenChange={setFromOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      "flex-1 h-9 text-xs justify-start border-border bg-card font-normal",
+                      "flex-1 h-10 text-[12px] justify-start border-border/60 bg-card rounded-2xl font-normal shadow-xs min-w-0",
                       !dateFrom && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon size={13} className="mr-1.5 shrink-0" />
-                    {dateFrom ? format(dateFrom, "dd MMM yyyy") : "From date"}
+                    <span className="truncate">{dateFrom ? format(dateFrom, "dd MMM yy") : "From"}</span>
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 z-[60]" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={dateFrom}
+                  <Calendar mode="single" selected={dateFrom}
                     onSelect={(d) => { setDateFrom(d); setFromOpen(false); }}
-                    disabled={(d) => d > new Date()}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
+                    disabled={(d) => d > new Date()} initialFocus
+                    className={cn("p-3 pointer-events-auto")} />
                 </PopoverContent>
               </Popover>
 
@@ -249,238 +212,247 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
                   <Button
                     variant="outline"
                     className={cn(
-                      "flex-1 h-9 text-xs justify-start border-border bg-card font-normal",
+                      "flex-1 h-10 text-[12px] justify-start border-border/60 bg-card rounded-2xl font-normal shadow-xs min-w-0",
                       !dateTo && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon size={13} className="mr-1.5 shrink-0" />
-                    {dateTo ? format(dateTo, "dd MMM yyyy") : "To date"}
+                    <span className="truncate">{dateTo ? format(dateTo, "dd MMM yy") : "To"}</span>
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 z-[60]" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={dateTo}
+                  <Calendar mode="single" selected={dateTo}
                     onSelect={(d) => { setDateTo(d); setToOpen(false); }}
-                    disabled={(d) => d > new Date() || (dateFrom ? d < dateFrom : false)}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
+                    disabled={(d) => d > new Date() || (dateFrom ? d < dateFrom : false)} initialFocus
+                    className={cn("p-3 pointer-events-auto")} />
                 </PopoverContent>
               </Popover>
 
               {(dateFrom || dateTo) && (
-                <button
+                <motion.button
+                  whileTap={{ scale: 0.88 }}
                   onClick={() => { setDateFrom(undefined); setDateTo(undefined); }}
-                  className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground border border-border shrink-0"
+                  className="w-10 h-10 rounded-2xl bg-muted border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground shrink-0"
                 >
                   <X size={14} />
-                </button>
+                </motion.button>
               )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Category tab bar */}
-      <div className="px-4 pt-3">
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
+      {/* ── Category tabs ─────────────────────────────────────────────────── */}
+      <div className="mb-2">
+        <div
+          className="flex gap-1.5 overflow-x-auto pb-1"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
           {CATEGORIES.map((cat) => {
             const active = activeTab === cat.id;
             return (
-              <button
+              <motion.button
                 key={cat.id}
-                onClick={() => handleTabChange(cat.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
+                whileTap={{ scale: 0.93 }}
+                onClick={() => setActiveTab(cat.id)}
+                className={`px-3 py-1.5 rounded-xl text-[12px] font-semibold whitespace-nowrap transition-all shrink-0 ${
                   active
-                    ? "gradient-primary text-white shadow-card"
-                    : "bg-card border border-border text-muted-foreground hover:text-foreground"
+                    ? "gradient-primary text-primary-foreground shadow-glow"
+                    : "bg-card border border-border/60 text-muted-foreground hover:text-foreground shadow-xs"
                 }`}
               >
                 {cat.label}
-              </button>
+              </motion.button>
             );
           })}
         </div>
       </div>
 
-      {/* Clear filters */}
+      {/* ── Active filters row ────────────────────────────────────────────── */}
       {hasActiveFilters && (
-        <div className="px-4 pt-2 flex items-center justify-between">
-          <p className="text-xs text-muted-foreground">{filtered.length} result{filtered.length !== 1 ? "s" : ""}</p>
-          <button onClick={clearFilters} className="text-xs font-semibold text-primary flex items-center gap-1">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[11.5px] text-muted-foreground font-medium">
+            {filtered.length} result{filtered.length !== 1 ? "s" : ""}
+          </p>
+          <motion.button
+            whileTap={{ scale: 0.93 }}
+            onClick={clearFilters}
+            className="text-[11.5px] font-semibold text-primary flex items-center gap-1"
+          >
             <X size={11} /> Clear all
-          </button>
+          </motion.button>
         </div>
       )}
 
-      {/* Transaction list */}
-      <div className="px-4 pt-2 pb-4">
-        <AnimatePresence mode="wait">
-          {paginated.length === 0 ? (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex flex-col items-center justify-center py-16 gap-3"
-            >
-              <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center">
-                <Search size={28} className="text-muted-foreground" />
-              </div>
-              <p className="text-sm font-semibold text-foreground">No transactions found</p>
-              <p className="text-xs text-muted-foreground text-center">Try adjusting your filters or search query</p>
-              <button onClick={clearFilters} className="text-xs font-semibold text-primary mt-1">Clear filters</button>
-            </motion.div>
-          ) : (
-            <motion.div
-              key={`${activeTab}-${search}-${dateFrom?.toISOString()}-${dateTo?.toISOString()}`}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-2"
-            >
-              {paginated.map((tx, i) => {
-                const cfg  = ICON_MAP[tx.category];
-                const Icon = cfg.icon;
-                const isCredit = tx.amount > 0;
-                const iconClass = isCredit ? cfg.creditClass : cfg.debitClass;
+      {/* ── Transaction list ──────────────────────────────────────────────── */}
+      <AnimatePresence mode="wait">
+        {filtered.length === 0 ? (
+          <motion.div
+            key="empty"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center py-16 gap-3"
+          >
+            <div className="w-16 h-16 rounded-3xl bg-muted flex items-center justify-center">
+              <Search size={26} className="text-muted-foreground" />
+            </div>
+            <p className="text-[14px] font-bold text-foreground">No transactions found</p>
+            <p className="text-[12px] text-muted-foreground text-center max-w-[220px] leading-relaxed">
+              Try adjusting your filters or search query
+            </p>
+            <button onClick={clearFilters} className="text-[12px] font-semibold text-primary mt-1">
+              Clear filters
+            </button>
+          </motion.div>
+        ) : (
+          <motion.div
+            key={`${activeTab}-${search}-${dateFrom?.toISOString()}-${dateTo?.toISOString()}`}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden"
+          >
+            {filtered.map((tx, i) => {
+              const cfg      = ICON_MAP[tx.category];
+              const Icon     = cfg.icon;
+              const isCredit = tx.amount > 0;
+              const iconClass = isCredit ? cfg.creditClass : cfg.debitClass;
 
-                return (
-                  <motion.div
-                    key={tx.id}
-                    initial={{ opacity: 0, x: -6 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.04 }}
-                    onClick={() => setSelectedTx(tx)}
-                    className="flex items-center gap-3 bg-card rounded-2xl px-4 py-3 shadow-card border border-border cursor-pointer active:scale-[0.98] transition-transform"
-                  >
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconClass}`}>
-                      {isCredit
-                        ? <ArrowDownLeft size={18} />
-                        : <Icon size={18} />
-                      }
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">{tx.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{tx.detail}</p>
-                      <p className="text-[10px] text-muted-foreground/70 mt-0.5">{relativeDate(tx.date)}</p>
-                    </div>
-                    <span className={`text-sm font-bold shrink-0 ${isCredit ? "text-primary" : "text-foreground"}`}>
-                      {isCredit ? "+" : "-"}৳{Math.abs(tx.amount).toLocaleString()}
-                    </span>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
-          )}
-        </AnimatePresence>
+              return (
+                <motion.button
+                  key={tx.id}
+                  initial={{ opacity: 0, x: -4 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.035, ease: [0.23, 1, 0.32, 1] }}
+                  onClick={() => setSelectedTx(tx)}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-muted/40 active:bg-muted/60 transition-colors border-b border-border/50 last:border-0 text-left"
+                >
+                  {/* Icon */}
+                  <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center shrink-0 ${iconClass}`}>
+                    {isCredit ? <ArrowDownLeft size={17} strokeWidth={2.2} /> : <Icon size={17} strokeWidth={2.2} />}
+                  </div>
 
-      </div>
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13.5px] font-semibold text-foreground truncate">{tx.name}</p>
+                    <p className="text-[11px] text-muted-foreground truncate mt-0.5">{tx.detail}</p>
+                    <p className="text-[10.5px] text-muted-foreground/60 mt-0.5">{relativeDate(tx.date)}</p>
+                  </div>
 
-      {/* ── Transaction Detail Bottom Sheet ─────────────────────────────── */}
+                  {/* Amount */}
+                  <span className={`text-[13.5px] font-bold shrink-0 ${isCredit ? "text-primary" : "text-foreground"}`}>
+                    {isCredit ? "+" : "−"}৳{Math.abs(tx.amount).toLocaleString()}
+                  </span>
+                </motion.button>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Spacer for bottom nav */}
+      <div className="h-4" />
+
+      {/* ── Transaction Detail Sheet ─────────────────────────────────────── */}
       <AnimatePresence>
         {selectedTx && (() => {
-          const cfg      = ICON_MAP[selectedTx.category];
-          const Icon     = cfg.icon;
-          const isCredit = selectedTx.amount > 0;
+          const cfg       = ICON_MAP[selectedTx.category];
+          const Icon      = cfg.icon;
+          const isCredit  = selectedTx.amount > 0;
           const iconClass = isCredit ? cfg.creditClass : cfg.debitClass;
-          const txDate   = new Date(selectedTx.date);
-          const txId     = `TXN${selectedTx.id.toUpperCase()}${Math.floor(txDate.getTime() / 1000)}`;
-          const catLabel = CATEGORIES.find((c) => c.id === selectedTx.category)?.label ?? selectedTx.category;
+          const txDate    = new Date(selectedTx.date);
+          const txId      = `TXN${selectedTx.id.toUpperCase()}${Math.floor(txDate.getTime() / 1000)}`;
+          const catLabel  = CATEGORIES.find((c) => c.id === selectedTx.category)?.label ?? selectedTx.category;
 
           return (
             <>
               {/* Backdrop */}
               <motion.div
                 key="detail-backdrop"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
                 className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm"
                 onClick={() => setSelectedTx(null)}
               />
 
-              {/* Sheet — bottom sheet on mobile, centered modal on desktop */}
+              {/* Sheet */}
               <motion.div
                 key="detail-sheet"
                 initial={{ y: "100%", opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: "100%", opacity: 0 }}
-                transition={{ type: "spring", stiffness: 320, damping: 32 }}
-                className="fixed bottom-0 left-0 right-0 z-[71] bg-background rounded-t-3xl shadow-2xl
+                transition={{ type: "spring", stiffness: 340, damping: 34 }}
+                className="fixed bottom-0 left-0 right-0 z-[71] bg-card rounded-t-3xl shadow-float
                            md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2
-                           md:w-full md:max-w-lg md:rounded-3xl"
+                           md:w-[90vw] md:max-w-md md:rounded-3xl"
               >
-                {/* Drag handle — mobile only */}
+                {/* Drag handle */}
                 <div className="flex justify-center pt-3 pb-1 md:hidden">
-                  <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+                  <div className="w-10 h-1 rounded-full bg-muted-foreground/25" />
                 </div>
-                {/* Extra top padding on desktop since no drag handle */}
                 <div className="hidden md:block pt-5" />
 
                 {/* Close */}
-                <button
+                <motion.button
+                  whileTap={{ scale: 0.88 }}
                   onClick={() => setSelectedTx(null)}
-                  className="absolute right-4 top-4 w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground"
+                  className="absolute right-4 top-4 w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground tap-target"
                 >
-                  <X size={16} />
-                </button>
+                  <X size={15} />
+                </motion.button>
 
-                <div className="px-5 pt-2 pb-8">
-                  {/* Icon + status */}
+                <div className="px-5 pt-2 pb-8 max-h-[85vh] overflow-y-auto">
+                  {/* Icon + amount */}
                   <div className="flex flex-col items-center mb-5">
                     <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-3 ${iconClass}`}>
-                      {isCredit ? <ArrowDownLeft size={28} /> : <Icon size={28} />}
+                      {isCredit ? <ArrowDownLeft size={26} /> : <Icon size={26} />}
                     </div>
-                    <p className="text-2xl font-bold text-foreground">
-                      {isCredit ? "+" : "-"}৳{Math.abs(selectedTx.amount).toLocaleString()}
+                    <p className="text-[26px] font-bold text-foreground">
+                      {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString()}
                     </p>
-                    <p className="text-sm text-muted-foreground mt-0.5">{selectedTx.detail}</p>
+                    <p className="text-[12.5px] text-muted-foreground mt-0.5">{selectedTx.detail}</p>
                     <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-primary/10">
-                      <CheckCircle2 size={13} className="text-primary" />
-                      <span className="text-xs font-semibold text-primary">Successful</span>
+                      <CheckCircle2 size={12} className="text-primary" />
+                      <span className="text-[11px] font-bold text-primary">Successful</span>
                     </div>
                   </div>
 
-                  {/* Divider */}
-                  <div className="h-px bg-border mb-4" />
+                  <div className="h-px bg-border/60 mb-3" />
 
                   {/* Detail rows */}
                   {[
-                    { icon: Hash,     label: "Transaction ID", value: txId,                      copy: true },
-                    { icon: User,     label: "Name / Party",   value: selectedTx.name,            copy: false },
-                    { icon: Tag,      label: "Category",       value: catLabel,                   copy: false },
-                    { icon: FileText, label: "Description",    value: selectedTx.detail,          copy: false },
+                    { icon: Hash,     label: "Transaction ID", value: txId,                                   copy: true  },
+                    { icon: User,     label: "Name / Party",   value: selectedTx.name,                        copy: false },
+                    { icon: Tag,      label: "Category",       value: catLabel,                               copy: false },
+                    { icon: FileText, label: "Description",    value: selectedTx.detail,                     copy: false },
                     { icon: Clock,    label: "Date & Time",    value: format(txDate, "dd MMM yyyy, h:mm a"), copy: false },
                   ].map(({ icon: RowIcon, label, value, copy }) => (
-                    <div key={label} className="flex items-start gap-3 py-2.5 border-b border-border/60 last:border-0">
-                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0 mt-0.5">
-                        <RowIcon size={15} className="text-muted-foreground" />
+                    <div key={label} className="flex items-start gap-3 py-2.5 border-b border-border/50 last:border-0">
+                      <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center shrink-0 mt-0.5">
+                        <RowIcon size={14} className="text-muted-foreground" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">{label}</p>
-                        <p className="text-sm font-semibold text-foreground mt-0.5 break-all">{value}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-[0.1em] font-semibold">{label}</p>
+                        <p className="text-[13px] font-semibold text-foreground mt-0.5 break-all leading-snug">{value}</p>
                       </div>
                       {copy && (
-                        <button
+                        <motion.button
+                          whileTap={{ scale: 0.88 }}
                           onClick={() => handleCopy(value)}
-                          className="shrink-0 w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-90 transition-all"
+                          className="shrink-0 w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground tap-target"
                         >
-                          {copied ? <CheckCircle2 size={14} className="text-primary" /> : <Copy size={14} />}
-                        </button>
+                          {copied ? <CheckCircle2 size={13} className="text-primary" /> : <Copy size={13} />}
+                        </motion.button>
                       )}
                     </div>
                   ))}
 
                   {/* Amount highlight */}
-                  <div className={`mt-4 rounded-2xl p-4 flex items-center justify-between ${
-                    isCredit ? "bg-primary/10" : "bg-muted"
-                  }`}>
-                    <span className="text-sm font-medium text-muted-foreground">Amount</span>
-                    <span className={`text-xl font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
-                      {isCredit ? "+" : "-"}৳{Math.abs(selectedTx.amount).toLocaleString()}
+                  <div className={`mt-4 rounded-2xl p-4 flex items-center justify-between ${isCredit ? "bg-primary/10" : "bg-muted/60"}`}>
+                    <span className="text-[13px] font-semibold text-muted-foreground">Total Amount</span>
+                    <span className={`text-[20px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
+                      {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString()}
                     </span>
                   </div>
                 </div>
