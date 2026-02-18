@@ -94,15 +94,16 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
     >
       {/* Top bar */}
       <div className="flex items-center gap-3">
-        <button
+        <motion.button
+          whileTap={{ scale: 0.90 }}
           onClick={onBack}
-          className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center hover:bg-muted transition-colors shadow-card"
+          className="w-10 h-10 rounded-2xl bg-card border border-border/60 shadow-card flex items-center justify-center hover:bg-muted transition-colors tap-target"
         >
-          <ArrowLeft size={18} className="text-foreground" />
-        </button>
+          <ArrowLeft size={17} className="text-foreground" strokeWidth={2.2} />
+        </motion.button>
         <div>
-          <h1 className="text-lg font-bold text-foreground">Refer a Friend</h1>
-          <p className="text-xs text-muted-foreground">Earn ৳{REWARD_PER_FRIEND} for every successful referral</p>
+          <h1 className="text-[17px] font-bold text-foreground">Refer a Friend</h1>
+          <p className="text-[11.5px] text-muted-foreground">Earn ৳{REWARD_PER_FRIEND} for every successful referral</p>
         </div>
       </div>
 
@@ -171,7 +172,7 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
           <motion.div
             key={label}
             initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-            className="bg-card rounded-2xl border border-border p-3 shadow-card text-center"
+          className="bg-card rounded-3xl border border-border/60 p-3 shadow-card text-center"
           >
             <div className={`w-8 h-8 rounded-xl ${cls} flex items-center justify-center mx-auto mb-2`}>
               <Icon size={15} className="text-primary-foreground" />
@@ -185,7 +186,7 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
       {/* Reward progress tracker */}
       <motion.div
         initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-        className="bg-card rounded-2xl border border-border shadow-card p-4 space-y-3"
+        className="bg-card rounded-3xl border border-border/60 shadow-card p-4 space-y-3"
       >
         <div className="flex items-center justify-between">
           <p className="text-sm font-bold text-foreground">Reward Progress</p>
@@ -230,7 +231,7 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
       {/* Referred friends list */}
       <motion.div
         initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-        className="bg-card rounded-2xl border border-border shadow-card overflow-hidden"
+        className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden"
       >
         <p className="text-sm font-bold text-foreground px-4 pt-4 pb-2">Referred Friends</p>
         {FRIENDS.map((f, i) => (
@@ -255,7 +256,7 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
       {/* How it works */}
       <motion.div
         initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-        className="bg-card rounded-2xl border border-border shadow-card p-4 space-y-3"
+        className="bg-card rounded-3xl border border-border/60 shadow-card p-4 space-y-3"
       >
         <p className="text-sm font-bold text-foreground">How it Works</p>
         {[

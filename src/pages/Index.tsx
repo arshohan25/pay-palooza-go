@@ -59,19 +59,17 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* ── Sidebar (md+) ──────────────────────────────────────── */}
+      {/* ── Sidebar (md+) ── */}
       <SideNav activeTab={activeTab} onTabChange={setActiveTab} />
 
-      {/* ── Main content area ───────────────────────────────────── */}
+      {/* ── Main content ── */}
       <div className="flex-1 flex flex-col md:pl-64">
-        {/* On mobile: scrollable padded page, bottom nav offset */}
-        {/* On desktop: centered, constrained width */}
-        <main className="flex-1 w-full max-w-2xl mx-auto px-4 py-4 pb-28 md:pb-10 md:px-8 md:py-8">
+        <main className="flex-1 w-full max-w-xl mx-auto px-4 py-4 pb-32 md:pb-12 md:px-8 md:py-8 md:max-w-2xl">
           {mainContent()}
         </main>
       </div>
 
-      {/* ── Bottom Nav (mobile only) ────────────────────────────── */}
+      {/* ── Bottom Nav (mobile only) ── */}
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* ── Flow overlays ───────────────────────────────────────── */}

@@ -1,5 +1,5 @@
 import { Home, ArrowLeftRight, QrCode, Bell, User } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
   { icon: Home,           label: "Home",    id: "home" },
@@ -16,20 +16,20 @@ interface SideNavProps {
 
 const SideNav = ({ activeTab = "home", onTabChange }: SideNavProps) => {
   return (
-    <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-64 bg-card border-r border-border shadow-card z-40">
-      {/* Logo / Brand */}
-      <div className="px-6 py-6 flex items-center gap-3 border-b border-border">
-        <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center text-primary-foreground font-bold text-lg shadow-glow">
+    <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-64 bg-card border-r border-border/60 shadow-card z-40">
+      {/* Brand */}
+      <div className="px-5 py-6 flex items-center gap-3 border-b border-border/60">
+        <div className="w-10 h-10 gradient-primary rounded-2xl flex items-center justify-center text-primary-foreground font-bold text-lg shadow-glow shrink-0">
           ₿
         </div>
         <div>
-          <p className="text-sm font-bold text-foreground">BkashClone</p>
-          <p className="text-[10px] text-muted-foreground">Mobile Financial</p>
+          <p className="text-[14px] font-bold text-foreground">BkashClone</p>
+          <p className="text-[10px] text-muted-foreground font-medium">Mobile Financial Service</p>
         </div>
       </div>
 
-      {/* Nav links */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      {/* Nav */}
+      <nav className="flex-1 px-3 py-5 space-y-0.5 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
           return (
@@ -37,29 +37,53 @@ const SideNav = ({ activeTab = "home", onTabChange }: SideNavProps) => {
               key={item.id}
               onClick={() => onTabChange?.(item.id)}
               whileTap={{ scale: 0.97 }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
+              className={`relative w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[13.5px] font-semibold transition-all duration-150 group ${
                 isActive
-                  ? "gradient-primary text-primary-foreground shadow-card"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
               }`}
             >
-              <item.icon size={19} strokeWidth={isActive ? 2.5 : 2} />
-              {item.label}
+              {/* Active bg */}
+              <AnimatePresence>
+                {isActive && (
+                  <motion.div
+                    layoutId="sidenav-indicator"
+                    className="absolute inset-0 gradient-primary rounded-2xl shadow-glow"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                  />
+                )}
+              </AnimatePresence>
+              <item.icon
+                size={18}
+                strokeWidth={isActive ? 2.5 : 2}
+                className="relative z-10 shrink-0"
+              />
+              <span className="relative z-10">{item.label}</span>
+              {/* Inbox badge */}
+              {item.id === "inbox" && !isActive && (
+                <span className="relative z-10 ml-auto w-5 h-5 bg-destructive rounded-full text-[9px] font-bold text-destructive-foreground flex items-center justify-center">
+                  3
+                </span>
+              )}
             </motion.button>
           );
         })}
       </nav>
 
-      {/* User card at bottom */}
-      <div className="px-4 pb-6">
-        <div className="bg-muted rounded-2xl px-4 py-3 flex items-center gap-3">
-          <div className="w-9 h-9 gradient-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0">
+      {/* User card */}
+      <div className="px-4 pb-5">
+        <div className="bg-muted/50 border border-border/60 rounded-2xl px-4 py-3 flex items-center gap-3">
+          <div className="w-9 h-9 gradient-primary rounded-xl flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0 shadow-glow">
             T
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-foreground truncate">Tanvir Hasan</p>
-            <p className="text-[10px] text-muted-foreground truncate">01712-345678</p>
+            <p className="text-[13px] font-bold text-foreground truncate">Tanvir Hasan</p>
+            <p className="text-[10.5px] text-muted-foreground truncate">01712-345678</p>
           </div>
+          <div className="ml-auto w-2 h-2 bg-primary rounded-full shrink-0 shadow-glow" />
         </div>
       </div>
     </aside>
