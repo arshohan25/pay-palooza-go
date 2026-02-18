@@ -15,9 +15,10 @@ const actions = [
 
 interface QuickActionsProps {
   onSendMoney: () => void;
+  onCashOut: () => void;
 }
 
-const QuickActions = ({ onSendMoney }: QuickActionsProps) => {
+const QuickActions = ({ onSendMoney, onCashOut }: QuickActionsProps) => {
   return (
     <div className="grid grid-cols-4 gap-3">
       {actions.map((action, index) => (
@@ -28,6 +29,7 @@ const QuickActions = ({ onSendMoney }: QuickActionsProps) => {
           transition={{ duration: 0.3, delay: index * 0.05 }}
           onClick={() => {
             if (action.id === "send") { onSendMoney(); return; }
+            if (action.id === "cashout") { onCashOut(); return; }
             toast.info(`${action.label} coming soon!`);
           }}
           className="flex flex-col items-center gap-2 group"

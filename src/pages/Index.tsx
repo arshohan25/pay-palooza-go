@@ -6,9 +6,11 @@ import PromoCard from "@/components/PromoCard";
 import TransactionList from "@/components/TransactionList";
 import BottomNav from "@/components/BottomNav";
 import SendMoneyFlow from "@/components/SendMoneyFlow";
+import CashOutFlow from "@/components/CashOutFlow";
 
 const Index = () => {
   const [showSendMoney, setShowSendMoney] = useState(false);
+  const [showCashOut, setShowCashOut] = useState(false);
 
   return (
     <div className="min-h-screen bg-background">
@@ -16,7 +18,10 @@ const Index = () => {
         <AppHeader />
         <div className="space-y-5">
           <BalanceCard />
-          <QuickActions onSendMoney={() => setShowSendMoney(true)} />
+          <QuickActions
+            onSendMoney={() => setShowSendMoney(true)}
+            onCashOut={() => setShowCashOut(true)}
+          />
           <PromoCard />
           <TransactionList />
         </div>
@@ -24,6 +29,9 @@ const Index = () => {
       <BottomNav />
       {showSendMoney && (
         <SendMoneyFlow onClose={() => setShowSendMoney(false)} />
+      )}
+      {showCashOut && (
+        <CashOutFlow onClose={() => setShowCashOut(false)} />
       )}
     </div>
   );
