@@ -211,37 +211,25 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
 
       {/* ── Header ── */}
       {step !== "success" && (
-        <div className={`${activeMeta.gradient} px-4 pt-12 pb-6 text-primary-foreground`}>
-          <div className="flex items-center gap-3 mb-5">
+        <div className={`${activeMeta.gradient} px-4 pt-14 pb-8 text-primary-foreground`}>
+          <div className="flex items-center gap-3 mb-4">
             <button
               onClick={goBack}
-              className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center active:scale-95 transition-transform"
+              className="w-10 h-10 rounded-full bg-white/20 ring-1 ring-white/30 backdrop-blur-sm flex items-center justify-center active:scale-95 transition-transform shrink-0"
             >
               <ChevronLeft size={20} />
             </button>
-            <h1 className="text-lg font-bold">Change PIN</h1>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-extrabold tracking-tight">Change PIN</h1>
+              <p className="text-xs text-white/70 mt-0.5">Keep Your Account Secure</p>
+            </div>
           </div>
-
-          {/* Step pills */}
-          <div className="flex gap-2 items-center">
-            {STEPS.map((s, i) => {
-              const si = STEPS.indexOf(step);
-              return (
-                <div key={s} className="flex items-center gap-2">
-                  <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                    i < si  ? "bg-white/30 text-white"
-                    : i === si ? "bg-white text-foreground"
-                    : "bg-white/10 text-white/50"
-                  }`}>
-                    {i < si ? <CheckCircle2 size={12} /> : <span>{i + 1}</span>}
-                    {STEP_META[s].label}
-                  </div>
-                  {i < STEPS.length - 1 && (
-                    <div className={`h-px w-4 ${i < si ? "bg-white/50" : "bg-white/20"}`} />
-                  )}
-                </div>
-              );
-            })}
+          <div className="h-1 rounded-full bg-white/20 overflow-hidden">
+            <motion.div
+              className="h-full bg-white rounded-full"
+              animate={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }}
+              transition={{ type: "spring", stiffness: 200, damping: 28 }}
+            />
           </div>
         </div>
       )}

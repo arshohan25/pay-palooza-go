@@ -246,33 +246,26 @@ const SendMoneyFlow = ({ onClose }: SendMoneyFlowProps) => {
     <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
       {/* Header */}
       {step !== "success" && (
-        <div className="gradient-send px-4 pt-12 pb-6 text-primary-foreground">
-          <div className="flex items-center gap-3 mb-5">
+        <div className="gradient-send px-4 pt-14 pb-8 text-primary-foreground">
+          <div className="flex items-center gap-3 mb-4">
             <button
               onClick={goBack}
-              className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center active:scale-95 transition-transform"
+              className="w-10 h-10 rounded-full bg-white/20 ring-1 ring-white/30 backdrop-blur-sm flex items-center justify-center active:scale-95 transition-transform shrink-0"
             >
               <ChevronLeft size={20} />
             </button>
-            <h1 className="text-lg font-bold">Send Money</h1>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-extrabold tracking-tight">Send Money</h1>
+              <p className="text-xs text-white/70 mt-0.5">Secure &amp; Instant Transfer</p>
+            </div>
           </div>
-          <div className="flex gap-2 items-center flex-wrap">
-            {PROGRESS_STEPS.map((s, i) => {
-              const si = PROGRESS_STEPS.indexOf(step);
-              return (
-                <div key={s} className="flex items-center gap-2">
-                  <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                    i < si ? "bg-white/30 text-white" : i === si ? "bg-white text-purple-700" : "bg-white/10 text-white/50"
-                  }`}>
-                    {i < si ? <CheckCircle2 size={12} /> : <span>{i + 1}</span>}
-                    {STEP_LABELS[s]}
-                  </div>
-                  {i < PROGRESS_STEPS.length - 1 && (
-                    <div className={`h-px w-3 ${i < si ? "bg-white/50" : "bg-white/20"}`} />
-                  )}
-                </div>
-              );
-            })}
+          {/* Slim progress bar */}
+          <div className="h-1 rounded-full bg-white/20 overflow-hidden">
+            <motion.div
+              className="h-full bg-white rounded-full"
+              animate={{ width: `${((STEPS.indexOf(step) + 1) / STEPS.length) * 100}%` }}
+              transition={{ type: "spring", stiffness: 200, damping: 28 }}
+            />
           </div>
         </div>
       )}
