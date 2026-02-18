@@ -499,7 +499,12 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                       className="w-full h-14 gradient-hero text-white font-bold text-[15px] rounded-2xl shadow-glow flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
                       onClick={() => {
                         setPhone(""); setOtp(""); setPin(""); setConfirmPin("");
-                        goTo(isNewUser ? "register_phone" : "login_phone");
+                        // Trusted device with stored PIN → skip phone entry, go straight to PIN
+                        if (!isNewUser && getDeviceVerified() && getStoredPin()) {
+                          goTo("login_pin");
+                        } else {
+                          goTo(isNewUser ? "register_phone" : "login_phone");
+                        }
                       }}
                     >
                       {isNewUser ? (
