@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { format, isWithinInterval, startOfDay, endOfDay, parseISO } from "date-fns";
+import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import {
   Search,
   ArrowUpRight,
@@ -14,6 +14,13 @@ import {
   ChevronLeft,
   ChevronRight,
   SlidersHorizontal,
+  CheckCircle2,
+  Copy,
+  Hash,
+  Tag,
+  Clock,
+  User,
+  FileText,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -100,6 +107,14 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
   const [toOpen, setToOpen]           = useState(false);
   const [page, setPage]               = useState(1);
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedTx, setSelectedTx]   = useState<Transaction | null>(null);
+  const [copied, setCopied]           = useState(false);
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   // ── Filter logic ──────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -339,7 +354,8 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
                     initial={{ opacity: 0, x: -6 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.04 }}
-                    className="flex items-center gap-3 bg-card rounded-2xl px-4 py-3 shadow-card border border-border"
+                    onClick={() => setSelectedTx(tx)}
+                    className="flex items-center gap-3 bg-card rounded-2xl px-4 py-3 shadow-card border border-border cursor-pointer active:scale-[0.98] transition-transform"
                   >
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconClass}`}>
                       {isCredit
@@ -397,6 +413,114 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
           </div>
         )}
       </div>
+
+      {/* ── Transaction Detail Bottom Sheet ─────────────────────────────── */}
+      <AnimatePresence>
+        {selectedTx && (() => {
+          const cfg      = ICON_MAP[selectedTx.category];
+          const Icon     = cfg.icon;
+          const isCredit = selectedTx.amount > 0;
+          const iconClass = isCredit ? cfg.creditClass : cfg.debitClass;
+          const txDate   = new Date(selectedTx.date);
+          const txId     = `TXN${selectedTx.id.toUpperCase()}${Math.floor(txDate.getTime() / 1000)}`;
+          const catLabel = CATEGORIES.find((c) => c.id === selectedTx.category)?.label ?? selectedTx.category;
+
+          return (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                key="detail-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm"
+                onClick={() => setSelectedTx(null)}
+              />
+
+              {/* Sheet */}
+              <motion.div
+                key="detail-sheet"
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", stiffness: 320, damping: 32 }}
+                className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-[71] bg-background rounded-t-3xl shadow-2xl pb-safe"
+              >
+                {/* Drag handle */}
+                <div className="flex justify-center pt-3 pb-1">
+                  <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+                </div>
+
+                {/* Close */}
+                <button
+                  onClick={() => setSelectedTx(null)}
+                  className="absolute right-4 top-4 w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground"
+                >
+                  <X size={16} />
+                </button>
+
+                <div className="px-5 pt-2 pb-8">
+                  {/* Icon + status */}
+                  <div className="flex flex-col items-center mb-5">
+                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-3 ${iconClass}`}>
+                      {isCredit ? <ArrowDownLeft size={28} /> : <Icon size={28} />}
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">
+                      {isCredit ? "+" : "-"}৳{Math.abs(selectedTx.amount).toLocaleString()}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-0.5">{selectedTx.detail}</p>
+                    <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-primary/10">
+                      <CheckCircle2 size={13} className="text-primary" />
+                      <span className="text-xs font-semibold text-primary">Successful</span>
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="h-px bg-border mb-4" />
+
+                  {/* Detail rows */}
+                  {[
+                    { icon: Hash,     label: "Transaction ID", value: txId,                      copy: true },
+                    { icon: User,     label: "Name / Party",   value: selectedTx.name,            copy: false },
+                    { icon: Tag,      label: "Category",       value: catLabel,                   copy: false },
+                    { icon: FileText, label: "Description",    value: selectedTx.detail,          copy: false },
+                    { icon: Clock,    label: "Date & Time",    value: format(txDate, "dd MMM yyyy, h:mm a"), copy: false },
+                  ].map(({ icon: RowIcon, label, value, copy }) => (
+                    <div key={label} className="flex items-start gap-3 py-2.5 border-b border-border/60 last:border-0">
+                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0 mt-0.5">
+                        <RowIcon size={15} className="text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">{label}</p>
+                        <p className="text-sm font-semibold text-foreground mt-0.5 break-all">{value}</p>
+                      </div>
+                      {copy && (
+                        <button
+                          onClick={() => handleCopy(value)}
+                          className="shrink-0 w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-90 transition-all"
+                        >
+                          {copied ? <CheckCircle2 size={14} className="text-primary" /> : <Copy size={14} />}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+
+                  {/* Amount highlight */}
+                  <div className={`mt-4 rounded-2xl p-4 flex items-center justify-between ${
+                    isCredit ? "bg-primary/10" : "bg-muted"
+                  }`}>
+                    <span className="text-sm font-medium text-muted-foreground">Amount</span>
+                    <span className={`text-xl font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
+                      {isCredit ? "+" : "-"}৳{Math.abs(selectedTx.amount).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          );
+        })()}
+      </AnimatePresence>
     </div>
   );
 };
