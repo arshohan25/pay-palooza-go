@@ -18,8 +18,14 @@ import TransactionHistory from "@/pages/TransactionHistory";
 import AccountPage from "@/pages/AccountPage";
 import { BalanceCardSkeleton, QuickActionsSkeleton, TransactionListSkeleton } from "@/components/HomeSkeletons";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
+import BiometricAuth from "@/components/BiometricAuth";
+
+const SESSION_KEY = "mfs_authenticated";
 
 const Index = () => {
+  const [authenticated, setAuthenticated] = useState(
+    () => sessionStorage.getItem(SESSION_KEY) === "1",
+  );
   const [activeTab, setActiveTab]         = useState("home");
   const [showSendMoney, setShowSendMoney] = useState(false);
   const [showCashOut, setShowCashOut]     = useState(false);
@@ -111,7 +117,14 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex overflow-x-hidden w-full">
+    <>
+      <AnimatePresence>
+        {!authenticated && (
+          <BiometricAuth onAuthenticated={() => setAuthenticated(true)} />
+        )}
+      </AnimatePresence>
+
+      <div className="min-h-screen bg-background flex overflow-x-hidden w-full">
       {/* ── Sidebar (md+) ── */}
       <SideNav activeTab={activeTab} onTabChange={setActiveTab} />
 
@@ -136,6 +149,7 @@ const Index = () => {
       {showPayBill   && <PayBillFlow   onClose={() => setShowPayBill(false)} />}
       {showAddMoney  && <AddMoneyFlow  onClose={() => setShowAddMoney(false)} />}
     </div>
+    </>
   );
 };
 
