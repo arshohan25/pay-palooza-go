@@ -211,7 +211,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
 
       {/* ── Header ── */}
       {step !== "success" && (
-        <div className={`${activeMeta.gradient} px-4 pt-14 pb-8 text-primary-foreground`}>
+        <div className={`${activeMeta.gradient} px-4 pt-6 pb-8 text-primary-foreground`}>
           <div className="flex items-center gap-3 mb-4">
             <button
               onClick={goBack}

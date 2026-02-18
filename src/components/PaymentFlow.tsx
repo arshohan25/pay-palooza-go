@@ -167,7 +167,7 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
     <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
       {/* Header */}
       {step !== "success" && (
-        <div className="gradient-payment px-4 pt-14 pb-8 text-primary-foreground">
+        <div className="gradient-payment px-4 pt-6 pb-8 text-primary-foreground">
           <div className="flex items-center gap-3 mb-4">
             <button
               onClick={goBack}
