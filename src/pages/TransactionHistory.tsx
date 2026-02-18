@@ -438,19 +438,23 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
                 onClick={() => setSelectedTx(null)}
               />
 
-              {/* Sheet */}
+              {/* Sheet — bottom sheet on mobile, centered modal on desktop */}
               <motion.div
                 key="detail-sheet"
-                initial={{ y: "100%" }}
-                animate={{ y: 0 }}
-                exit={{ y: "100%" }}
+                initial={{ y: "100%", opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: "100%", opacity: 0 }}
                 transition={{ type: "spring", stiffness: 320, damping: 32 }}
-                className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-[71] bg-background rounded-t-3xl shadow-2xl pb-safe"
+                className="fixed bottom-0 left-0 right-0 z-[71] bg-background rounded-t-3xl shadow-2xl
+                           md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2
+                           md:w-full md:max-w-lg md:rounded-3xl"
               >
-                {/* Drag handle */}
-                <div className="flex justify-center pt-3 pb-1">
+                {/* Drag handle — mobile only */}
+                <div className="flex justify-center pt-3 pb-1 md:hidden">
                   <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
                 </div>
+                {/* Extra top padding on desktop since no drag handle */}
+                <div className="hidden md:block pt-5" />
 
                 {/* Close */}
                 <button
