@@ -6,6 +6,7 @@ import { addTxnNotif } from "@/lib/txnNotifStore";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
+import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
 import {
   ChevronLeft,
   CheckCircle2,
@@ -399,6 +400,10 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
             {/* ── STEP 3: Bill details ── */}
             {step === "bill" && billType && provider && billInfo && (
               <div className="px-4 pt-6 pb-32 space-y-5">
+                {/* Available balance */}
+                <div className="flex justify-end">
+                  <AvailableBalanceBadge />
+                </div>
                 {/* Summary card */}
                 <div className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
                   {/* Colored top bar */}
