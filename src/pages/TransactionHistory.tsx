@@ -147,9 +147,9 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
   const totalOut = filtered.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
+    <div className="flex flex-col bg-background min-h-full">
       {/* Header */}
-      <div className="gradient-primary px-4 pt-12 pb-5 text-primary-foreground">
+      <div className="gradient-primary px-4 pt-6 md:pt-8 pb-5 text-primary-foreground rounded-2xl mb-2">
         <div className="flex items-center gap-3 mb-1">
           {onClose && (
             <button
@@ -317,7 +317,7 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
       )}
 
       {/* Transaction list */}
-      <div className="flex-1 overflow-y-auto px-4 pt-2 pb-4">
+      <div className="px-4 pt-2 pb-4">
         <AnimatePresence mode="wait">
           {paginated.length === 0 ? (
             <motion.div
@@ -340,7 +340,7 @@ const TransactionHistory = ({ onClose }: TransactionHistoryProps) => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.18 }}
-              className="space-y-2"
+              className="grid grid-cols-1 md:grid-cols-2 gap-2"
             >
               {paginated.map((tx, i) => {
                 const cfg  = ICON_MAP[tx.category];

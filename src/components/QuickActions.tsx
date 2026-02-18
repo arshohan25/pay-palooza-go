@@ -23,7 +23,7 @@ interface QuickActionsProps {
 
 const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill }: QuickActionsProps) => {
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-8 gap-3">
       {actions.map((action, index) => (
         <motion.button
           key={action.label}
