@@ -9,6 +9,11 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import ChangePinFlow from "@/components/ChangePinFlow";
+import LimitsPage from "@/pages/LimitsPage";
+import SpendingInsightsPage from "@/pages/SpendingInsightsPage";
+import ReferPage from "@/pages/ReferPage";
+
+type SubPage = "limits" | "insights" | "refer" | null;
 
 const WALLET_ID = "MFS-A3F1-9C22";
 const USER_NAME = "Tanvir Hasan";
@@ -117,6 +122,12 @@ const AccountPage = () => {
   const [twoFa, setTwoFa] = useState(false);
   const [hideBalance, setHideBalance] = useState(false);
   const [showChangePin, setShowChangePin] = useState(false);
+  const [subPage, setSubPage] = useState<SubPage>(null);
+
+  // Sub-page routing
+  if (subPage === "limits")   return <LimitsPage           onBack={() => setSubPage(null)} />;
+  if (subPage === "insights") return <SpendingInsightsPage onBack={() => setSubPage(null)} />;
+  if (subPage === "refer")    return <ReferPage            onBack={() => setSubPage(null)} />;
 
   const handleCopy = async () => {
     try {
@@ -197,7 +208,7 @@ const AccountPage = () => {
           iconClass="gradient-accent"
           label="Refer a Friend"
           sub="Earn ৳50 for every successful referral"
-          onClick={() => coming("Refer a Friend")}
+          onClick={() => setSubPage("refer")}
         />
       </Section>
 
@@ -208,14 +219,14 @@ const AccountPage = () => {
           iconClass="gradient-payment"
           label="Spending Insights"
           sub="Monthly breakdown & analytics"
-          onClick={() => coming("Insights")}
+          onClick={() => setSubPage("insights")}
         />
         <MenuRow
           icon={CreditCard}
           iconClass="gradient-cashout"
           label="Limits & Charges"
           sub="Transaction limits, fees & tariffs"
-          onClick={() => coming("Limits")}
+          onClick={() => setSubPage("limits")}
         />
       </Section>
 
