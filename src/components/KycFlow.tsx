@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, CheckCircle2, Upload, Camera, Eye,
@@ -356,11 +357,13 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
   const stepIndex = STEPS.indexOf(step);
 
   const goTo = (next: Step, dir = 1) => {
+    haptics.medium();
     setDir(dir);
     setStep(next);
   };
 
   const goBack = () => {
+    haptics.medium();
     if (step === "nid_front")   { onClose(); return; }
     if (step === "nid_back")    { goTo("nid_front", -1); return; }
     if (step === "nid_details") { goTo("nid_back", -1); return; }
@@ -693,7 +696,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                 </div>
 
                 <button
-                  onClick={() => canSubmit && goTo("submitted")}
+                  onClick={() => { if (canSubmit) { haptics.success(); goTo("submitted"); } }}
                   disabled={!canSubmit}
                   className={`w-full h-12 rounded-2xl font-semibold text-sm transition-all active:scale-[0.98] ${
                     canSubmit

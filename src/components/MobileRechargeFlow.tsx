@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft,
@@ -248,7 +249,7 @@ const PinInput = ({ pin, onChange, error }: PinInputProps) => (
       pattern="[0-9]*"
       maxLength={4}
       value={pin}
-      onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 4))}
+      onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); if (v.length > pin.length) haptics.light(); onChange(v); }}
       autoFocus
       className="w-full h-14 text-center text-3xl font-bold tracking-[1rem] bg-card border-2 border-border rounded-2xl focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground/30"
       placeholder="••••"
@@ -286,12 +287,14 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
   const operatorPacks = operator ? PACKS[operator.name] : null;
 
   const goTo = (next: Step) => {
+    haptics.medium();
     setDirection(STEPS.indexOf(next) > stepIndex ? 1 : -1);
     setStep(next);
     setError("");
   };
 
   const goBack = () => {
+    haptics.medium();
     if (step === "number") { onClose(); return; }
     if (step === "packs")  { goTo("number"); return; }
     if (step === "pin")    { goTo("packs"); return; }
@@ -340,6 +343,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
 
   const handlePinConfirm = () => {
     if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
+    haptics.success();
     txnTime.current = new Date();
     txnId.current   = generateTxnId();
     setDirection(1);

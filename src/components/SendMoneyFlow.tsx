@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft,
@@ -104,6 +105,7 @@ const PinInput = ({ pin, onChange, error }: PinInputProps) => {
         value={pin}
         onChange={(e) => {
           const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+          if (v.length > pin.length) haptics.light();
           onChange(v);
         }}
         autoFocus
@@ -135,12 +137,14 @@ const SendMoneyFlow = ({ onClose }: SendMoneyFlowProps) => {
   const stepIndex = STEPS.indexOf(step);
 
   const goTo = (next: Step) => {
+    haptics.medium();
     setDirection(STEPS.indexOf(next) > stepIndex ? 1 : -1);
     setStep(next);
     setError("");
   };
 
   const goBack = () => {
+    haptics.medium();
     if (step === "recipient") { onClose(); return; }
     if (step === "amount")    { goTo("recipient"); return; }
     if (step === "confirm")   { goTo("amount"); return; }
@@ -227,6 +231,7 @@ const SendMoneyFlow = ({ onClose }: SendMoneyFlowProps) => {
 
   const handlePinConfirm = () => {
     if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
+    haptics.success();
     txnTime.current = new Date();
     setDirection(1);
     setStep("success");
