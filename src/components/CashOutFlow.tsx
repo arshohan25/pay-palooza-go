@@ -195,7 +195,12 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
       {/* Header */}
       {step !== "success" && (
-        <div className="gradient-cashout px-4 pt-3 pb-3 text-primary-foreground">
+        <motion.div
+          className="gradient-cashout px-4 pt-3 pb-3 text-primary-foreground"
+          initial={{ y: -60, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 300, damping: 28, duration: 0.4 }}
+        >
           <div className="flex items-center gap-3 mb-2">
             <button
               onClick={goBack}
@@ -215,7 +220,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
               transition={{ type: "spring", stiffness: 200, damping: 28 }}
             />
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Animated step content */}
