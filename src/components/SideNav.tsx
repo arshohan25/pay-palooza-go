@@ -1,5 +1,7 @@
 import { Home, ArrowLeftRight, QrCode, Bell, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react";
+import { getTxnNotifCount, onTxnNotifChange } from "@/lib/txnNotifStore";
 
 const navItems = [
   { icon: Home,           label: "Home",    id: "home" },
@@ -15,6 +17,11 @@ interface SideNavProps {
 }
 
 const SideNav = ({ activeTab = "home", onTabChange }: SideNavProps) => {
+  const [txnCount, setTxnCount] = useState(getTxnNotifCount);
+  useEffect(() => {
+    const unsub = onTxnNotifChange(setTxnCount);
+    return unsub;
+  }, []);
   return (
     <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-64 bg-card border-r border-border/60 shadow-card z-40">
       {/* Brand */}
@@ -56,11 +63,27 @@ const SideNav = ({ activeTab = "home", onTabChange }: SideNavProps) => {
                   />
                 )}
               </AnimatePresence>
-              <item.icon
-                size={18}
-                strokeWidth={isActive ? 2.5 : 2}
-                className="relative z-10 shrink-0"
-              />
+              <div className="relative z-10 shrink-0">
+                <item.icon
+                  size={18}
+                  strokeWidth={isActive ? 2.5 : 2}
+                />
+                {/* History transaction badge */}
+                <AnimatePresence>
+                  {item.id === "history" && txnCount > 0 && !isActive && (
+                    <motion.span
+                      key="hist-badge"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 22 }}
+                      className="absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] px-0.5 bg-primary text-primary-foreground text-[8px] font-bold rounded-full flex items-center justify-center border-2 border-background"
+                    >
+                      {txnCount > 9 ? "9+" : txnCount}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </div>
               <span className="relative z-10">{item.label}</span>
               {/* Inbox badge */}
               {item.id === "inbox" && !isActive && (
