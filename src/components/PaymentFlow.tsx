@@ -165,8 +165,8 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
   const handleAmountContinue = () => {
     const val = parseFloat(amount);
     if (!amount || isNaN(val) || val <= 0) { setError("Enter a valid amount."); return; }
-    if (val < 1)     { setError("Minimum payment is ৳1."); return; }
-    if (val > 50000) { setError("Maximum payment is ৳50,000."); return; }
+    if (val < 1) { setError("Minimum payment is ৳1."); return; }
+    // No maximum limit for payments
     goTo("pin");
   };
 
