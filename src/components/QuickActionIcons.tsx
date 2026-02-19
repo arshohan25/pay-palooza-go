@@ -7,56 +7,74 @@ interface IconProps {
 
 export const SendMoneyIcon = ({ isHovered }: IconProps) => (
   <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" overflow="visible">
-    {/* Flying taka coin — spins on hover */}
+    {/* Paper plane body */}
     <motion.g
-      animate={isHovered ? { rotate: 360 } : { rotate: 0 }}
-      transition={isHovered ? { duration: 0.6, ease: "easeInOut" } : { duration: 0.4 }}
-      style={{ originX: "32px", originY: "28px", transformBox: "fill-box", transformOrigin: "center" }}
+      animate={isHovered ? { x: [0, 4, -1, 3, 0], y: [0, -3, 1, -2, 0] } : { x: 0, y: 0 }}
+      transition={isHovered ? { duration: 0.55, ease: "easeInOut" } : { duration: 0.3 }}
     >
-      <circle cx="32" cy="28" r="13" fill="#E91E8C" opacity="0.15"/>
-      <circle cx="32" cy="28" r="10" fill="#E91E8C" opacity="0.25"/>
-      <circle cx="32" cy="28" r="7.5" fill="#E91E8C"/>
-      <text x="32" y="32.5" textAnchor="middle" fill="white" fontSize="9" fontWeight="bold" fontFamily="serif">৳</text>
+      {/* Main plane body */}
+      <path d="M10 28 L46 12 L34 46 L26 34 Z" fill="#E91E8C"/>
+      <path d="M10 28 L46 12 L34 46 L26 34 Z" fill="url(#planeGrad)"/>
+      <defs>
+        <linearGradient id="planeGrad" x1="10" y1="12" x2="46" y2="46" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#F06292"/>
+          <stop offset="100%" stopColor="#AD1457"/>
+        </linearGradient>
+      </defs>
+      {/* Fold crease */}
+      <path d="M26 34 L46 12 L34 36 Z" fill="#AD1457" opacity="0.5"/>
+      {/* Wing highlight */}
+      <path d="M10 28 L26 34 L20 30 Z" fill="white" opacity="0.2"/>
+      {/* Taka badge */}
+      <circle cx="42" cy="40" r="7" fill="#FFC107"/>
+      <text x="42" y="43.5" textAnchor="middle" fill="#7B3F00" fontSize="8" fontWeight="bold" fontFamily="serif">৳</text>
     </motion.g>
-    {/* Speed lines — fade in on hover */}
+    {/* Trail dots */}
     <motion.g
-      animate={isHovered ? { opacity: 1, x: -3 } : { opacity: 1, x: 0 }}
-      transition={{ duration: 0.25 }}
+      animate={isHovered ? { opacity: [0, 1, 0], x: [-2, -6] } : { opacity: 0 }}
+      transition={isHovered ? { duration: 0.5, repeat: Infinity } : {}}
     >
-      <line x1="8" y1="24" x2="19" y2="24" stroke="#E91E8C" strokeWidth="2.5" strokeLinecap="round"/>
-      <line x1="10" y1="28" x2="18" y2="28" stroke="#E91E8C" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
-      <line x1="13" y1="32" x2="19" y2="32" stroke="#E91E8C" strokeWidth="1.5" strokeLinecap="round" opacity="0.5"/>
+      <circle cx="18" cy="30" r="1.5" fill="#E91E8C" opacity="0.7"/>
+      <circle cx="13" cy="32" r="1" fill="#E91E8C" opacity="0.4"/>
     </motion.g>
-    {/* Arrow tip */}
-    <motion.path
-      d="M42 28 L37 24 M42 28 L37 32"
-      stroke="#E91E8C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-      animate={isHovered ? { x: 3 } : { x: 0 }}
-      transition={{ duration: 0.25, ease: "easeOut" }}
-    />
   </svg>
 );
 
 export const CashOutIcon = ({ isHovered }: IconProps) => (
   <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" overflow="visible">
-    {/* Bill stack — bounces up */}
+    <defs>
+      <linearGradient id="atmGrad" x1="8" y1="14" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#43A047"/>
+        <stop offset="100%" stopColor="#1B5E20"/>
+      </linearGradient>
+      <linearGradient id="screenGrad" x1="13" y1="20" x2="43" y2="34" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#A5D6A7"/>
+        <stop offset="100%" stopColor="#388E3C"/>
+      </linearGradient>
+    </defs>
+    {/* ATM machine body */}
+    <rect x="8" y="14" width="40" height="34" rx="5" fill="url(#atmGrad)"/>
+    {/* Screen */}
+    <rect x="13" y="19" width="24" height="14" rx="3" fill="url(#screenGrad)"/>
+    {/* Taka symbol on screen */}
+    <text x="25" y="30" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="serif">৳</text>
+    {/* Keypad dots */}
+    <circle cx="40" cy="22" r="1.5" fill="#81C784"/>
+    <circle cx="40" cy="27" r="1.5" fill="#81C784"/>
+    <circle cx="40" cy="32" r="1.5" fill="#81C784"/>
+    {/* Card slot */}
+    <rect x="13" y="36" width="14" height="3" rx="1.5" fill="#1B5E20"/>
+    {/* Cash slot */}
+    <rect x="13" y="42" width="20" height="3" rx="1.5" fill="#1B5E20"/>
+    {/* Cash bills coming out — animate on hover */}
     <motion.g
-      animate={isHovered ? { y: -3 } : { y: 0 }}
-      transition={{ type: "spring", stiffness: 400, damping: 15 }}
+      animate={isHovered ? { y: [0, 4, 0] } : { y: 0 }}
+      transition={isHovered ? { duration: 0.5, repeat: Infinity, ease: "easeInOut" } : { duration: 0.3 }}
     >
-      <rect x="14" y="16" width="28" height="17" rx="3" fill="#4CAF50" opacity="0.3"/>
-      <rect x="14" y="14" width="28" height="16" rx="3" fill="#4CAF50" opacity="0.6"/>
-      <rect x="14" y="12" width="28" height="15" rx="3" fill="#2E7D32"/>
-      <circle cx="28" cy="19.5" r="3.5" fill="#4CAF50" opacity="0.7"/>
-      <circle cx="28" cy="19.5" r="2" fill="#fff" opacity="0.5"/>
-      <rect x="18" y="18" width="3" height="3" rx="1" fill="#4CAF50" opacity="0.6"/>
-      <rect x="35" y="18" width="3" height="3" rx="1" fill="#4CAF50" opacity="0.6"/>
+      <rect x="14" y="43" width="18" height="5" rx="1.5" fill="#A5D6A7" opacity="0.9"/>
+      <rect x="15" y="44" width="16" height="3" rx="1" fill="white" opacity="0.4"/>
+      <text x="23" y="47" textAnchor="middle" fill="#2E7D32" fontSize="5" fontWeight="bold" fontFamily="serif">৳৳৳</text>
     </motion.g>
-    {/* Hand stays */}
-    <path d="M20 27 Q17 28 16 31 Q15 34 17 36 L22 38 Q26 40 30 39 L40 36 Q43 35 43 32 Q43 30 41 29 L37 28 L33 30 L28 30 Q24 30 22 29 Z" fill="#FFCC80"/>
-    <path d="M28 30 L28 27" stroke="#FFB74D" strokeWidth="1.5" strokeLinecap="round"/>
-    <path d="M33 30 L33 27" stroke="#FFB74D" strokeWidth="1.5" strokeLinecap="round"/>
-    <path d="M37 28 L37 26" stroke="#FFB74D" strokeWidth="1.5" strokeLinecap="round"/>
   </svg>
 );
 
@@ -180,7 +198,6 @@ export const PayBillIcon = ({ isHovered }: IconProps) => (
       animate={isHovered ? { opacity: [0.9, 0.3, 1, 0.5, 1] } : { opacity: 0.9 }}
       transition={isHovered ? { duration: 0.4, repeat: Infinity, ease: "easeInOut" } : { duration: 0.2 }}
     />
-    {/* Outer glow halo on hover */}
     {isHovered && (
       <motion.ellipse
         cx="28" cy="22" rx="14" ry="13"
@@ -196,7 +213,6 @@ export const PayBillIcon = ({ isHovered }: IconProps) => (
 
 export const ShopIcon = ({ isHovered }: IconProps) => (
   <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" overflow="visible">
-    {/* Shopping bag — slight swing on hover */}
     <motion.g
       animate={isHovered ? { rotate: [0, -6, 6, -4, 4, 0] } : { rotate: 0 }}
       transition={isHovered ? { duration: 0.5, ease: "easeInOut" } : { duration: 0.3 }}
@@ -229,5 +245,116 @@ export const MoreIcon = () => (
     <circle cx="18" cy="38" r="5" fill="#00BCD4"/>
     <circle cx="28" cy="38" r="5" fill="#FF5722"/>
     <circle cx="38" cy="38" r="5" fill="#795548"/>
+  </svg>
+);
+
+// ── Transaction Icons ─────────────────────────────────────────────────────────
+
+export const TxSendIcon = () => (
+  <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+    <path d="M6 22 L38 10 L28 38 L21 28 Z" fill="#E91E8C"/>
+    <path d="M6 22 L38 10 L28 38 L21 28 Z" fill="url(#txSendGrad)"/>
+    <defs>
+      <linearGradient id="txSendGrad" x1="6" y1="10" x2="38" y2="38" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#F48FB1"/>
+        <stop offset="100%" stopColor="#AD1457"/>
+      </linearGradient>
+    </defs>
+    <path d="M21 28 L38 10 L28 30 Z" fill="#AD1457" opacity="0.45"/>
+    <path d="M6 22 L21 28 L16 25 Z" fill="white" opacity="0.2"/>
+  </svg>
+);
+
+export const TxReceiveIcon = () => (
+  <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+    <defs>
+      <linearGradient id="txRecvGrad" x1="8" y1="8" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#66BB6A"/>
+        <stop offset="100%" stopColor="#1B5E20"/>
+      </linearGradient>
+    </defs>
+    {/* Down arrow with coin */}
+    <circle cx="22" cy="16" r="9" fill="url(#txRecvGrad)"/>
+    <text x="22" y="20" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="serif">৳</text>
+    {/* Arrow shaft + head */}
+    <line x1="22" y1="25" x2="22" y2="36" stroke="#2E7D32" strokeWidth="2.5" strokeLinecap="round"/>
+    <path d="M16 31 L22 37 L28 31" stroke="#2E7D32" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+export const TxCashOutIcon = () => (
+  <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+    <defs>
+      <linearGradient id="txAtmGrad" x1="6" y1="8" x2="38" y2="38" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#43A047"/>
+        <stop offset="100%" stopColor="#1B5E20"/>
+      </linearGradient>
+    </defs>
+    <rect x="6" y="10" width="32" height="26" rx="4" fill="url(#txAtmGrad)"/>
+    <rect x="10" y="14" width="18" height="10" rx="2" fill="#A5D6A7" opacity="0.7"/>
+    <text x="19" y="22" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold" fontFamily="serif">৳</text>
+    <circle cx="34" cy="19" r="2" fill="#81C784"/>
+    <rect x="10" y="28" width="16" height="2.5" rx="1.2" fill="#1B5E20"/>
+    <rect x="10" y="32" width="12" height="2.5" rx="1.2" fill="#A5D6A7" opacity="0.8"/>
+  </svg>
+);
+
+export const TxRechargeIcon = () => (
+  <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+    <defs>
+      <linearGradient id="txPhoneGrad" x1="12" y1="6" x2="32" y2="38" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#00BCD4"/>
+        <stop offset="100%" stopColor="#006064"/>
+      </linearGradient>
+    </defs>
+    <rect x="12" y="5" width="20" height="34" rx="4" fill="#37474F"/>
+    <rect x="14" y="8" width="16" height="24" rx="2.5" fill="url(#txPhoneGrad)"/>
+    <text x="22" y="23" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="serif">৳</text>
+    <rect x="16" y="10" width="2" height="2.5" rx="0.5" fill="white" opacity="0.6"/>
+    <rect x="19" y="9.5" width="2" height="3" rx="0.5" fill="white" opacity="0.8"/>
+    <rect x="22" y="9" width="2" height="3.5" rx="0.5" fill="white"/>
+    <circle cx="22" cy="36" r="2" fill="#455A64"/>
+  </svg>
+);
+
+export const TxBillIcon = () => (
+  <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+    <defs>
+      <linearGradient id="txBulbGrad" x1="10" y1="6" x2="34" y2="34" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#FFF9C4"/>
+        <stop offset="100%" stopColor="#F9A825"/>
+      </linearGradient>
+    </defs>
+    <path d="M22 6 C16 6 11 11 11 17 C11 21 13.5 24.5 16.5 26 L16.5 30 L27.5 30 L27.5 26 C30.5 24.5 33 21 33 17 C33 11 28 6 22 6 Z" fill="url(#txBulbGrad)"/>
+    <rect x="17.5" y="30" width="9" height="2.5" rx="1.2" fill="#FF8F00"/>
+    <rect x="18.5" y="32.5" width="7" height="2.5" rx="1.2" fill="#E65100"/>
+    <path d="M23.5 13 L20 20 L22.5 20 L20 27 L26 19 L23 19 Z" fill="white" opacity="0.9"/>
+    <line x1="22" y1="3" x2="22" y2="5" stroke="#FFEB3B" strokeWidth="1.5" strokeLinecap="round"/>
+    <line x1="32" y1="7" x2="30.8" y2="8.2" stroke="#FFEB3B" strokeWidth="1.5" strokeLinecap="round"/>
+    <line x1="12" y1="7" x2="13.2" y2="8.2" stroke="#FFEB3B" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
+export const TxBankIcon = () => (
+  <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+    <defs>
+      <linearGradient id="txBankGrad" x1="4" y1="4" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#42A5F5"/>
+        <stop offset="100%" stopColor="#0D47A1"/>
+      </linearGradient>
+    </defs>
+    {/* Pediment */}
+    <path d="M6 16 L22 6 L38 16 Z" fill="url(#txBankGrad)"/>
+    {/* Base */}
+    <rect x="6" y="16" width="32" height="3" rx="1" fill="#1565C0"/>
+    {/* Columns */}
+    <rect x="9" y="19" width="4" height="14" rx="1" fill="#1976D2"/>
+    <rect x="16" y="19" width="4" height="14" rx="1" fill="#1976D2"/>
+    <rect x="24" y="19" width="4" height="14" rx="1" fill="#1976D2"/>
+    <rect x="31" y="19" width="4" height="14" rx="1" fill="#1976D2"/>
+    {/* Floor */}
+    <rect x="6" y="33" width="32" height="3" rx="1" fill="#1565C0"/>
+    {/* Taka */}
+    <text x="22" y="30" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold" fontFamily="serif">৳</text>
   </svg>
 );
