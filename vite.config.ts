@@ -24,8 +24,8 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
       },
       manifest: {
-        name: "SwiftPay – Mobile Financial Services",
-        short_name: "SwiftPay",
+        name: "EasyPay – Mobile Financial Services",
+        short_name: "EasyPay",
         description: "Send money, pay bills, cash out and manage your finances securely.",
         start_url: "/",
         display: "standalone",

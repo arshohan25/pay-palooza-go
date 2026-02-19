@@ -43,7 +43,7 @@ const UserQrModal = ({ open, onClose, userId, userName }: UserQrModalProps) => {
 
   const handleShare = async () => {
     if (navigator.share) {
-      await navigator.share({ title: "My MFS ID", text: `My wallet ID: ${userId}` });
+      await navigator.share({ title: "My EasyPay ID", text: `My wallet ID: ${userId}` });
     } else {
       handleCopy();
     }

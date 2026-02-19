@@ -67,7 +67,7 @@ const InstallPrompt = () => {
             {/* Text */}
             <div className="flex-1 min-w-0">
               <p className="text-[13px] font-bold text-foreground leading-tight">
-                Install SwiftPay
+                Install EasyPay
               </p>
               <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
                 Add to home screen for the best experience

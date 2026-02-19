@@ -80,8 +80,8 @@ export default function SplashScreen({ onDone }: SplashScreenProps) {
             transition={{ delay: 0.35, duration: 0.5 }}
             className="text-center"
           >
-            <h1 className="text-4xl font-black text-white tracking-tight leading-none">MFS Wallet</h1>
-            <p className="text-white/70 text-sm font-semibold mt-2 tracking-wide">Bangladesh's Smartest Digital Wallet</p>
+            <h1 className="text-4xl font-black text-white tracking-tight leading-none">EasyPay</h1>
+            <p className="text-white/70 text-sm font-semibold mt-2 tracking-wide">বাংলাদেশের সবচেয়ে সহজ ডিজিটাল ওয়ালেট</p>
           </motion.div>
 
           {/* Loading dots */}

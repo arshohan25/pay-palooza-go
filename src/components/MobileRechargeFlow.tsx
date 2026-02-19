@@ -74,53 +74,44 @@ const OperatorLogo = ({ op, size = "md" }: { op: OperatorDef; size?: "xs" | "sm"
     lg: "w-16 h-16",
     xl: "w-20 h-20",
   };
+  const textSizes: Record<string, string> = {
+    xs: "text-[8px]",
+    sm: "text-[9px]",
+    md: "text-[10px]",
+    lg: "text-xs",
+    xl: "text-sm",
+  };
 
-  const inner = (children: React.ReactNode) => (
+  const logos: Record<string, string> = {
+    GP: "/operators/gp.png",
+    RB: "/operators/robi.png",
+    BL: "/operators/bl.png",
+    TT: "/operators/tt.png",
+    AT: "/operators/airtel.png",
+  };
+
+  return (
     <div
-      className={`${sizes[size]} rounded-2xl flex items-center justify-center font-black shadow-lg overflow-hidden shrink-0`}
+      className={`${sizes[size]} rounded-2xl flex flex-col items-center justify-center font-black shadow-lg overflow-hidden shrink-0`}
       style={{ background: `linear-gradient(135deg, ${op.brandColor}, ${op.brandColorDark})` }}
     >
-      {children}
+      <img
+        src={logos[op.short]}
+        alt={op.name}
+        className="w-[65%] h-[65%] object-contain drop-shadow-md"
+        onError={(e) => {
+          // Fallback to text if image fails
+          const parent = (e.target as HTMLElement).parentElement;
+          if (parent) {
+            (e.target as HTMLElement).style.display = "none";
+            const span = document.createElement("span");
+            span.className = "text-white font-black";
+            span.textContent = op.short;
+            parent.appendChild(span);
+          }
+        }}
+      />
     </div>
-  );
-
-  if (op.short === "GP") return inner(
-    <svg viewBox="0 0 40 40" className="w-full h-full p-1.5" fill="none">
-      <circle cx="20" cy="20" r="12" stroke="white" strokeWidth="3.5" fill="none" />
-      <path d="M20 14 L20 20 L25 20" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="20" cy="20" r="2" fill="white" />
-    </svg>
-  );
-
-  if (op.short === "RB") return inner(
-    <svg viewBox="0 0 40 40" className="w-full h-full" fill="none">
-      <text x="20" y="25" textAnchor="middle" fill="white" fontSize="13" fontWeight="900" fontFamily="Arial Black, Arial">Robi</text>
-    </svg>
-  );
-
-  if (op.short === "BL") return inner(
-    <svg viewBox="0 0 40 40" className="w-full h-full p-1.5" fill="none">
-      <path d="M10 30 L20 10 L30 30" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      <path d="M14 24 L26 24" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-    </svg>
-  );
-
-  if (op.short === "TT") return inner(
-    <svg viewBox="0 0 40 40" className="w-full h-full p-1.5" fill="none">
-      <rect x="8" y="10" width="24" height="4.5" rx="2.5" fill="white" />
-      <rect x="17" y="10" width="6" height="20" rx="2.5" fill="white" />
-      <rect x="8" y="25.5" width="10" height="4.5" rx="2.5" fill="white" />
-      <rect x="22" y="25.5" width="10" height="4.5" rx="2.5" fill="white" />
-    </svg>
-  );
-
-  // Airtel
-  return inner(
-    <svg viewBox="0 0 40 40" className="w-full h-full p-1.5" fill="none">
-      <path d="M7 29 Q20 10 33 29" stroke="white" strokeWidth="3.5" strokeLinecap="round" fill="none" />
-      <path d="M12 29 Q20 17 28 29" stroke="white" strokeWidth="2.5" strokeLinecap="round" fill="none" opacity="0.65" />
-      <circle cx="20" cy="28" r="2.5" fill="white" />
-    </svg>
   );
 };
 
@@ -389,8 +380,8 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
 
   // Amount → PIN
   const handleAmountContinue = () => {
-    if (!customAmount || customAmountNum < 10) { setError("Enter a valid amount (min ৳10)."); return; }
-    if (customAmountNum > 2000) { setError("Maximum amount is ৳2,000."); return; }
+    if (!customAmount || customAmountNum < 20) { setError("Enter a valid amount (min ৳20)."); return; }
+    if (customAmountNum > 1000) { setError("Maximum amount is ৳1,000."); return; }
     goTo("pin");
   };
 

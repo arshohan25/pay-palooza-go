@@ -36,7 +36,7 @@ const BANK_LIST = [
 const RECEIVE_ACCOUNT = {
   bank: "Sonali Bank PLC",
   branch: "Motijheel, Dhaka",
-  accountName: "BkashClone MFS Ltd.",
+  accountName: "EasyPay Ltd.",
   accountNo: "2031 0400 4321",
   routing: "200270423",
 };
