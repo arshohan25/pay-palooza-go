@@ -234,50 +234,6 @@ export const ShopIcon = ({ isHovered }: IconProps) => (
   </svg>
 );
 
-export const SavingsIcon = ({ isHovered }: IconProps) => (
-  <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" overflow="visible">
-    <defs>
-      <linearGradient id="pigGrad" x1="8" y1="10" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#F48FB1"/>
-        <stop offset="100%" stopColor="#C2185B"/>
-      </linearGradient>
-    </defs>
-    {/* Piggy bank body */}
-    <motion.g
-      animate={isHovered ? { rotate: [0, -8, 8, -5, 5, 0] } : { rotate: 0 }}
-      transition={isHovered ? { duration: 0.55, ease: "easeInOut" } : { duration: 0.3 }}
-      style={{ transformBox: "fill-box", transformOrigin: "28px 30px" }}
-    >
-      {/* Body */}
-      <ellipse cx="27" cy="32" rx="18" ry="15" fill="url(#pigGrad)"/>
-      {/* Snout */}
-      <ellipse cx="44" cy="34" rx="5" ry="4" fill="#F48FB1"/>
-      <circle cx="43" cy="33" r="1" fill="#AD1457" opacity="0.6"/>
-      <circle cx="45" cy="35" r="1" fill="#AD1457" opacity="0.6"/>
-      {/* Ear */}
-      <ellipse cx="19" cy="20" rx="5" ry="4" fill="#F48FB1"/>
-      <ellipse cx="19" cy="20" rx="3" ry="2.5" fill="#EC407A"/>
-      {/* Eye */}
-      <circle cx="36" cy="28" r="2" fill="white"/>
-      <circle cx="36.5" cy="28" r="1" fill="#880E4F"/>
-      {/* Coin slot */}
-      <rect x="23" y="18" width="10" height="2.5" rx="1.2" fill="#880E4F" opacity="0.7"/>
-      {/* Legs */}
-      <rect x="16" y="44" width="5" height="5" rx="2" fill="#E91E8C" opacity="0.8"/>
-      <rect x="23" y="45" width="5" height="4" rx="2" fill="#E91E8C" opacity="0.8"/>
-      <rect x="30" y="44" width="5" height="5" rx="2" fill="#E91E8C" opacity="0.8"/>
-    </motion.g>
-    {/* Coin dropping animation */}
-    <motion.g
-      animate={isHovered ? { y: [0, 8, 16], opacity: [1, 1, 0] } : { y: 0, opacity: 0 }}
-      transition={isHovered ? { duration: 0.45, ease: "easeIn", repeat: Infinity, repeatDelay: 0.3 } : {}}
-    >
-      <circle cx="28" cy="10" r="4" fill="#FFC107"/>
-      <text x="28" y="13.5" textAnchor="middle" fill="#7B3F00" fontSize="5" fontWeight="bold" fontFamily="serif">৳</text>
-    </motion.g>
-  </svg>
-);
-
 export const MoreIcon = () => (
   <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
     <circle cx="18" cy="18" r="5" fill="#E91E8C"/>

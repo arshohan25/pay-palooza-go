@@ -1,19 +1,14 @@
-import { Bell, Search, Sun, Moon, LogOut } from "lucide-react";
+import { Bell, Search, Sun, Moon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import NotificationCenter from "@/components/NotificationCenter";
 import { INITIAL_NOTIFICATIONS } from "@/components/NotificationCenter";
 
-interface AppHeaderProps {
-  onSignOut?: () => void;
-}
-
-const AppHeader = ({ onSignOut }: AppHeaderProps) => {
+const AppHeader = () => {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted]       = useState(false);
   const [showNotif, setShowNotif]   = useState(false);
-  const [showLogout, setShowLogout] = useState(false);
   // Track unread count independently so badge survives panel close/reopen
   const [unreadCount, setUnreadCount] = useState(
     () => INITIAL_NOTIFICATIONS.filter((n) => !n.read).length,
@@ -24,12 +19,6 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
   const isDark = resolvedTheme === "dark";
   const toggleTheme = () => setTheme(isDark ? "light" : "dark");
 
-  const handleSignOut = () => {
-    setShowLogout(false);
-    sessionStorage.removeItem("mfs_authenticated");
-    onSignOut?.();
-  };
-
   return (
     <>
       <motion.header
@@ -38,74 +27,15 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
         transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
         className="flex items-center justify-between py-1"
       >
-        {/* Left — avatar with logout + greeting */}
+        {/* Left */}
         <div className="flex items-center gap-3">
-          {/* Avatar circle — tap to show logout */}
-          <div className="relative md:hidden">
-            <motion.button
-              whileTap={{ scale: 0.90 }}
-              onClick={() => setShowLogout((v) => !v)}
-              className="w-10 h-10 gradient-primary rounded-2xl flex items-center justify-center text-primary-foreground font-bold text-lg shadow-glow shrink-0 relative overflow-hidden"
-              aria-label="Account menu"
-            >
-              <AnimatePresence mode="wait" initial={false}>
-                {showLogout ? (
-                  <motion.span
-                    key="logout-icon"
-                    initial={{ opacity: 0, scale: 0.6, rotate: -20 }}
-                    animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                    exit={{ opacity: 0, scale: 0.6, rotate: 20 }}
-                    transition={{ duration: 0.18 }}
-                    className="flex items-center justify-center"
-                  >
-                    <LogOut size={16} strokeWidth={2.2} />
-                  </motion.span>
-                ) : (
-                  <motion.span
-                    key="logo"
-                    initial={{ opacity: 0, scale: 0.6 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.6 }}
-                    transition={{ duration: 0.18 }}
-                  >
-                    ৳
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </motion.button>
-
-            {/* Logout popup */}
-            <AnimatePresence>
-              {showLogout && (
-                <>
-                  <motion.div
-                    key="logout-backdrop"
-                    className="fixed inset-0 z-[40]"
-                    onClick={() => setShowLogout(false)}
-                  />
-                  <motion.button
-                    key="logout-popup"
-                    initial={{ opacity: 0, scale: 0.85, y: -6 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.85, y: -6 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 28 }}
-                    onClick={handleSignOut}
-                    className="absolute top-12 left-0 z-[41] flex items-center gap-2 px-4 py-2.5 bg-card border border-border/60 rounded-2xl shadow-float text-[13px] font-semibold text-destructive hover:bg-destructive/10 transition-colors whitespace-nowrap"
-                  >
-                    <LogOut size={14} strokeWidth={2.2} />
-                    Sign Out
-                  </motion.button>
-                </>
-              )}
-            </AnimatePresence>
+          <div className="md:hidden w-10 h-10 gradient-primary rounded-2xl flex items-center justify-center text-primary-foreground font-bold text-lg shadow-glow shrink-0">
+            ₿
           </div>
-
-          {/* Greeting + name */}
           <div className="md:hidden">
             <p className="text-[11px] text-muted-foreground font-medium">Welcome back 👋</p>
             <p className="text-[15px] font-bold text-foreground leading-tight">Tanvir Hasan</p>
           </div>
-
           <div className="hidden md:block">
             <p className="text-[22px] font-bold text-foreground leading-tight">Good morning, Tanvir 👋</p>
             <p className="text-sm text-muted-foreground font-medium">Here's your financial overview</p>

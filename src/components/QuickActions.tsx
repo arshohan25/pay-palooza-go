@@ -5,11 +5,11 @@ import {
   SendMoneyIcon,
   CashOutIcon,
   PaymentIcon,
+  AddMoneyIcon,
   RechargeIcon,
   PayBillIcon,
   ShopIcon,
   MoreIcon,
-  SavingsIcon,
 } from "./QuickActionIcons";
 
 const actions = [
@@ -38,12 +38,12 @@ const actions = [
     rippleColor: "rgba(156,39,176,0.35)",
   },
   {
-    Icon: SavingsIcon,
-    label: "Savings",
-    id: "savings",
-    bgStyle: "rgba(233,30,140,0.12)",
-    ringStyle: "1px solid rgba(233,30,140,0.25)",
-    rippleColor: "rgba(233,30,140,0.35)",
+    Icon: AddMoneyIcon,
+    label: "Add Money",
+    id: "addmoney",
+    bgStyle: "rgba(25,118,210,0.12)",
+    ringStyle: "1px solid rgba(25,118,210,0.25)",
+    rippleColor: "rgba(25,118,210,0.35)",
   },
   {
     Icon: RechargeIcon,
@@ -91,9 +91,10 @@ interface QuickActionsProps {
   onPayment: () => void;
   onRecharge: () => void;
   onPayBill: () => void;
+  onAddMoney: () => void;
 }
 
-const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill }: QuickActionsProps) => {
+const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney }: QuickActionsProps) => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [ripples, setRipples] = useState<Record<string, RippleState | null>>({});
   const rippleCounterRef = useRef(0);
@@ -124,6 +125,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
     if (id === "send")     return onSendMoney();
     if (id === "cashout")  return onCashOut();
     if (id === "payment")  return onPayment();
+    if (id === "addmoney") return onAddMoney();
     if (id === "recharge") return onRecharge();
     if (id === "bill")     return onPayBill();
     toast.info(`${label} coming soon!`);
