@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useMemo, useRef } from "react";
+import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import {
-  Search, ArrowUpRight, ArrowDownLeft, Smartphone, Zap,
-  Wallet, CreditCard, X, CalendarIcon, SlidersHorizontal,
+  Search,
+  X, CalendarIcon, SlidersHorizontal,
   CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw, Share2,
+  Info, RotateCcw,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
+import {
+  TxSendIcon, TxReceiveIcon, TxCashOutIcon,
+  TxRechargeIcon, TxBillIcon, TxBankIcon,
+} from "@/components/QuickActionIcons";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type TxCategory = "all" | "send" | "cashout" | "payment" | "recharge" | "bill";
@@ -59,12 +64,20 @@ const CATEGORIES: { id: TxCategory; label: string }[] = [
   { id: "bill",     label: "Bill Pay" },
 ];
 
-const ICON_MAP: Record<Exclude<TxCategory, "all">, { icon: typeof ArrowUpRight; debitClass: string; creditClass: string }> = {
-  send:     { icon: ArrowUpRight, debitClass: "text-destructive bg-destructive/10", creditClass: "text-primary bg-primary/10" },
-  cashout:  { icon: Wallet,       debitClass: "text-rose-500 bg-rose-500/10",       creditClass: "text-primary bg-primary/10" },
-  payment:  { icon: CreditCard,   debitClass: "text-blue-500 bg-blue-500/10",       creditClass: "text-primary bg-primary/10" },
-  recharge: { icon: Smartphone,   debitClass: "text-accent bg-accent/10",           creditClass: "text-primary bg-primary/10" },
-  bill:     { icon: Zap,          debitClass: "text-orange-500 bg-orange-500/10",   creditClass: "text-primary bg-primary/10" },
+// Maps category → { illustrated SVG icon component, bg style, ring style }
+const TX_ICON_MAP: Record<Exclude<TxCategory, "all">, {
+  DebitIcon: React.FC;
+  CreditIcon: React.FC;
+  debitBg: string;
+  debitRing: string;
+  creditBg: string;
+  creditRing: string;
+}> = {
+  send:     { DebitIcon: TxSendIcon,    CreditIcon: TxReceiveIcon, debitBg: "rgba(233,30,140,0.12)", debitRing: "1px solid rgba(233,30,140,0.2)",  creditBg: "rgba(76,175,80,0.12)",  creditRing: "1px solid rgba(76,175,80,0.2)"  },
+  cashout:  { DebitIcon: TxCashOutIcon, CreditIcon: TxReceiveIcon, debitBg: "rgba(76,175,80,0.12)",  debitRing: "1px solid rgba(76,175,80,0.2)",   creditBg: "rgba(76,175,80,0.12)",  creditRing: "1px solid rgba(76,175,80,0.2)"  },
+  payment:  { DebitIcon: TxBankIcon,    CreditIcon: TxReceiveIcon, debitBg: "rgba(25,118,210,0.12)", debitRing: "1px solid rgba(25,118,210,0.2)", creditBg: "rgba(76,175,80,0.12)",  creditRing: "1px solid rgba(76,175,80,0.2)"  },
+  recharge: { DebitIcon: TxRechargeIcon,CreditIcon: TxReceiveIcon, debitBg: "rgba(0,188,212,0.12)",  debitRing: "1px solid rgba(0,188,212,0.2)",  creditBg: "rgba(76,175,80,0.12)",  creditRing: "1px solid rgba(76,175,80,0.2)"  },
+  bill:     { DebitIcon: TxBillIcon,    CreditIcon: TxReceiveIcon, debitBg: "rgba(255,193,7,0.12)",  debitRing: "1px solid rgba(255,193,7,0.2)",  creditBg: "rgba(76,175,80,0.12)",  creditRing: "1px solid rgba(76,175,80,0.2)"  },
 };
 
 const relativeDate = (iso: string) => {
@@ -78,6 +91,84 @@ const relativeDate = (iso: string) => {
 };
 
 interface TransactionHistoryProps { onClose?: () => void; onRefresh?: () => void; }
+
+// ─── Swipeable transaction row ────────────────────────────────────────────────
+const SwipeableRow = ({
+  tx, i, onOpen, onRepeat,
+}: {
+  tx: Transaction; i: number; onOpen: () => void; onRepeat: () => void;
+}) => {
+  const x = useMotionValue(0);
+  const actionOpacity = useTransform(x, [-80, -40], [1, 0]);
+  const cfg      = TX_ICON_MAP[tx.category];
+  const isCredit = tx.amount > 0;
+  const IconComp = isCredit ? cfg.CreditIcon : cfg.DebitIcon;
+  const bg       = isCredit ? cfg.creditBg  : cfg.debitBg;
+  const ring     = isCredit ? cfg.creditRing : cfg.debitRing;
+
+  return (
+    <div className="relative overflow-hidden border-b border-border/50 last:border-0">
+      {/* Revealed actions behind the row */}
+      <motion.div
+        className="absolute right-0 top-0 bottom-0 flex items-center gap-2 pr-3 pl-6"
+        style={{ opacity: actionOpacity }}
+      >
+        <motion.button
+          whileTap={{ scale: 0.88 }}
+          onClick={onOpen}
+          className="flex flex-col items-center gap-0.5 w-14 h-14 rounded-2xl bg-primary/15 border border-primary/30 justify-center"
+        >
+          <Info size={15} className="text-primary" />
+          <span className="text-[9px] font-bold text-primary">Details</span>
+        </motion.button>
+        <motion.button
+          whileTap={{ scale: 0.88 }}
+          onClick={onRepeat}
+          className="flex flex-col items-center gap-0.5 w-14 h-14 rounded-2xl bg-accent/15 border border-accent/30 justify-center"
+        >
+          <RotateCcw size={15} className="text-accent" />
+          <span className="text-[9px] font-bold text-accent">Repeat</span>
+        </motion.button>
+      </motion.div>
+
+      {/* Draggable row */}
+      <motion.button
+        key={tx.id}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: i * 0.035, ease: [0.23, 1, 0.32, 1] }}
+        onClick={onOpen}
+        drag="x"
+        dragConstraints={{ left: -108, right: 0 }}
+        dragElastic={{ left: 0.15, right: 0.05 }}
+        style={{ x }}
+        className="w-full flex items-center gap-3 px-3 py-3.5 bg-card hover:bg-muted/40 active:bg-muted/60 transition-colors text-left touch-pan-y"
+      >
+        {/* Illustrated icon circle */}
+        <div
+          className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
+          style={{ background: bg, outline: ring }}
+        >
+          <IconComp />
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <p className="text-[13.5px] font-semibold text-foreground truncate">{tx.name}</p>
+          <p className="text-[11px] text-muted-foreground truncate mt-0.5">{tx.detail}</p>
+          <p className="text-[10.5px] text-muted-foreground/60 mt-0.5">{relativeDate(tx.date)}</p>
+        </div>
+
+        {/* Amount */}
+        <div className="shrink-0 text-right max-w-[90px]">
+          <span className={`text-[13px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
+            {isCredit ? "+" : "−"}৳{Math.abs(tx.amount).toLocaleString()}
+          </span>
+        </div>
+      </motion.button>
+    </div>
+  );
+};
 
 const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => {
   const [activeTab, setActiveTab] = useState<TxCategory>("all");
@@ -354,42 +445,15 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
             transition={{ duration: 0.18 }}
             className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden w-full"
           >
-            {filtered.map((tx, i) => {
-              const cfg      = ICON_MAP[tx.category];
-              const Icon     = cfg.icon;
-              const isCredit = tx.amount > 0;
-              const iconClass = isCredit ? cfg.creditClass : cfg.debitClass;
-
-              return (
-                <motion.button
-                  key={tx.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.035, ease: [0.23, 1, 0.32, 1] }}
-                  onClick={() => setSelectedTx(tx)}
-                  className="w-full flex items-center gap-3 px-3 py-3.5 hover:bg-muted/40 active:bg-muted/60 transition-colors border-b border-border/50 last:border-0 text-left"
-                >
-                  {/* Icon */}
-                  <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center shrink-0 ${iconClass}`}>
-                    {isCredit ? <ArrowDownLeft size={17} strokeWidth={2.2} /> : <Icon size={17} strokeWidth={2.2} />}
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13.5px] font-semibold text-foreground truncate">{tx.name}</p>
-                    <p className="text-[11px] text-muted-foreground truncate mt-0.5">{tx.detail}</p>
-                    <p className="text-[10.5px] text-muted-foreground/60 mt-0.5">{relativeDate(tx.date)}</p>
-                  </div>
-
-                  {/* Amount */}
-                  <div className="shrink-0 text-right max-w-[90px]">
-                    <span className={`text-[13px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
-                      {isCredit ? "+" : "−"}৳{Math.abs(tx.amount).toLocaleString()}
-                    </span>
-                  </div>
-                </motion.button>
-              );
-            })}
+            {filtered.map((tx, i) => (
+              <SwipeableRow
+                key={tx.id}
+                tx={tx}
+                i={i}
+                onOpen={() => setSelectedTx(tx)}
+                onRepeat={() => setSelectedTx(tx)}
+              />
+            ))}
           </motion.div>
         )}
       </AnimatePresence>
@@ -400,10 +464,11 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
       {/* ── Transaction Detail Sheet ─────────────────────────────────────── */}
       <AnimatePresence>
         {selectedTx && (() => {
-          const cfg       = ICON_MAP[selectedTx.category];
-          const Icon      = cfg.icon;
+          const cfg       = TX_ICON_MAP[selectedTx.category];
           const isCredit  = selectedTx.amount > 0;
-          const iconClass = isCredit ? cfg.creditClass : cfg.debitClass;
+          const IconComp  = isCredit ? cfg.CreditIcon : cfg.DebitIcon;
+          const bg        = isCredit ? cfg.creditBg   : cfg.debitBg;
+          const ring      = isCredit ? cfg.creditRing : cfg.debitRing;
           const txDate    = new Date(selectedTx.date);
           const txId      = `TXN${selectedTx.id.toUpperCase()}${Math.floor(txDate.getTime() / 1000)}`;
           const catLabel  = CATEGORIES.find((c) => c.id === selectedTx.category)?.label ?? selectedTx.category;
@@ -448,8 +513,11 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
                 <div className="px-5 pt-2 pb-8 max-h-[85vh] overflow-y-auto">
                   {/* Icon + amount */}
                   <div className="flex flex-col items-center mb-5">
-                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-3 ${iconClass}`}>
-                      {isCredit ? <ArrowDownLeft size={26} /> : <Icon size={26} />}
+                    <div
+                      className="w-16 h-16 rounded-full flex items-center justify-center mb-3"
+                      style={{ background: bg, outline: ring }}
+                    >
+                      <IconComp />
                     </div>
                     <p className="text-[26px] font-bold text-foreground">
                       {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString()}
