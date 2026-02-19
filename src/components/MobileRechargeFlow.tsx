@@ -245,7 +245,7 @@ const TAG_COLORS: Record<string, string> = {
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const STEPS: Step[] = ["number", "packs", "amount", "pin"];
+const STEPS: Step[] = ["number", "amount", "pin"];
 const slideVariants = {
   enter:  (dir: number) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0 }),
   center: { x: 0, opacity: 1 },
@@ -339,27 +339,23 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     haptics.medium();
     if (step === "number") { onClose(); return; }
     if (step === "packs")  { setSelectedPack(null); setCustomAmount(""); goTo("number"); return; }
-    if (step === "amount") { goTo("packs"); return; }
+    if (step === "amount") { goTo("number"); return; }
     if (step === "pin")    { goTo("amount"); return; }
   };
 
-  // Step 1 → Step 2 (via Continue button — uses typed phone number)
+  // Step 1 → Step 2: Continue goes straight to amount (skip packs)
   const handleNumberContinue = () => {
     const digits = phone.replace(/\D/g, "");
     if (digits.length !== 11) { setError("Enter an 11-digit mobile number."); return; }
     if (!detectedOp) { setError("Unable to detect operator. Check the number."); return; }
     setSelectedOp(detectedOp);
-    setSelectedPack(null);
     setCustomAmount("");
-    setOfferType("drive");
-    setSubCategory("internet");
-    goTo("packs");
+    goTo("amount");
   };
 
-  // Tap an operator card directly (no phone needed yet)
+  // Tap an operator card → go to packs (browse offers)
   const handleOperatorTap = (op: OperatorDef) => {
     setSelectedOp(op);
-    // if phone already typed and matches, keep it. Otherwise clear.
     if (detectedOp?.short !== op.short) {
       setPhone(op.prefixes[0] + "00000000");
     }
@@ -375,22 +371,22 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
 
   const handlePackSelect = (pack: Pack) => {
     setSelectedPack(pack);
-    setCustomAmount(String(pack.price)); // pre-fill amount with pack price
+    setCustomAmount(String(pack.price));
     setError("");
     haptics.light();
   };
 
-  // Step 2 → Step 3 (amount screen)
+  // Packs → Amount (only when browsing via operator card tap)
   const handlePackContinue = () => {
     if (!selectedPack) { setError("Please select a pack to continue."); return; }
     goTo("amount");
   };
 
   const customAmountNum = customAmount ? parseInt(customAmount, 10) : 0;
-  const effectivePrice  = customAmountNum > 0 ? customAmountNum : (selectedPack?.price ?? 0);
+  const effectivePrice  = customAmountNum > 0 ? customAmountNum : 0;
   const effectiveName   = selectedPack ? selectedPack.name : "Custom Recharge";
 
-  // Step 3 → Step 4 (pin)
+  // Amount → PIN
   const handleAmountContinue = () => {
     if (!customAmount || customAmountNum < 10) { setError("Enter a valid amount (min ৳10)."); return; }
     if (customAmountNum > 2000) { setError("Maximum amount is ৳2,000."); return; }
@@ -822,26 +818,28 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
             {/* ══════════════════════════════════════════════
                 STEP 3 — AMOUNT
             ══════════════════════════════════════════════ */}
-            {step === "amount" && operator && selectedPack && (
+            {step === "amount" && operator && (
               <div className="px-4 pt-6 pb-10 space-y-5">
 
-                {/* Selected pack summary */}
+                {/* Operator + phone summary */}
                 <div className="rounded-2xl overflow-hidden border border-border shadow-sm">
                   <div className="h-1.5" style={{ background: `linear-gradient(90deg, ${operator.brandColor}, ${operator.brandColorDark})` }} />
                   <div className="bg-card p-4">
                     <div className="flex items-center gap-3">
                       <OperatorLogo op={operator} size="xs" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-extrabold text-foreground">{selectedPack.name}</p>
-                        <p className="text-xs text-muted-foreground">{selectedPack.details}</p>
-                        <div className="flex items-center gap-3 mt-1">
-                          <span className="text-[11px] text-muted-foreground flex items-center gap-1"><Clock size={9} /> {selectedPack.validity}</span>
-                          {selectedPack.cashback && (
-                            <span className="text-[11px] font-bold text-amber-600 flex items-center gap-1">
-                              <Coins size={9} /> Earn ৳{selectedPack.cashback}
-                            </span>
-                          )}
-                        </div>
+                        <p className="text-sm font-extrabold text-foreground">{operator.name}</p>
+                        <p className="text-xs text-muted-foreground">{formatPhone(phone)}</p>
+                        {selectedPack && (
+                          <div className="flex items-center gap-3 mt-1 flex-wrap">
+                            <span className="text-[11px] text-foreground font-semibold">{selectedPack.name}</span>
+                            {selectedPack.cashback && (
+                              <span className="text-[11px] font-bold text-amber-600 flex items-center gap-1">
+                                <Coins size={9} /> Earn ৳{selectedPack.cashback}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -850,13 +848,14 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                 {/* Amount input */}
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-foreground">Recharge Amount</label>
-                  <p className="text-xs text-muted-foreground">Amount pre-filled from selected pack. You may adjust.</p>
+                  <p className="text-xs text-muted-foreground">Enter any amount between ৳10 and ৳2,000</p>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-muted-foreground">৳</span>
                     <input
                       type="tel"
                       inputMode="numeric"
                       placeholder="0"
+                      autoFocus
                       value={customAmount}
                       onChange={(e) => {
                         const v = e.target.value.replace(/\D/g, "").slice(0, 4);
@@ -873,6 +872,20 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground">Min ৳10 · Max ৳2,000</p>
+
+                  {/* Quick amount pills */}
+                  <div className="flex gap-2 flex-wrap pt-1">
+                    {[50, 100, 199, 299, 399, 499].map((amt) => (
+                      <button
+                        key={amt}
+                        onClick={() => { setCustomAmount(String(amt)); setError(""); haptics.light(); }}
+                        className="px-3 py-1.5 rounded-xl text-xs font-bold border border-border bg-card text-foreground hover:border-primary/40 active:scale-95 transition-all"
+                        style={customAmountNum === amt ? { borderColor: operator.brandColor, color: operator.brandColor } : {}}
+                      >
+                        ৳{amt}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Balance */}

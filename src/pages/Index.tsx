@@ -35,6 +35,7 @@ const Index = () => {
   const [authenticated, setAuthenticated]    = useState(
     () => sessionStorage.getItem(SESSION_KEY) === "1",
   );
+  const [replayOnboarding, setReplayOnboarding] = useState(false);
   const [activeTab, setActiveTab]         = useState("home");
   const handleTabChange = useCallback((tab: string) => {
     setActiveTab(tab);
@@ -124,7 +125,7 @@ const Index = () => {
       return <TransactionHistory onRefresh={triggerRefresh} />;
     }
     if (activeTab === "account") {
-      return <AccountPage onSignOut={() => setAuthenticated(false)} />;
+      return <AccountPage onSignOut={() => setAuthenticated(false)} onReplayOnboarding={() => { setOnboardingDone(false); setReplayOnboarding(true); }} />;
     }
     if (activeTab === "refer") {
       return <ReferPage onBack={() => handleTabChange("home")} />;
@@ -154,10 +155,14 @@ const Index = () => {
     return <SplashScreen onDone={() => setSplashDone(true)} />;
   }
 
-  if (!onboardingDone) {
+  if (!onboardingDone || replayOnboarding) {
     return (
       <AnimatePresence>
-        <OnboardingSlides onDone={() => setOnboardingDone(true)} />
+        <OnboardingSlides onDone={() => {
+          setOnboardingDone(true);
+          setReplayOnboarding(false);
+          markOnboardingDone();
+        }} />
       </AnimatePresence>
     );
   }
