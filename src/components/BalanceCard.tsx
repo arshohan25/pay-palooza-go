@@ -5,14 +5,24 @@ import UserQrModal from "@/components/UserQrModal";
 import { getBalance, onBalanceChange } from "@/lib/balanceStore";
 import { AddMoneyIcon } from "@/components/QuickActionIcons";
 
-const generateUserId = () => {
-  const seed = "TANVIR_HASAN_2024";
+const REGISTERED_KEY = "mfs_registered_phone";
+const USER_NAME_KEY  = "mfs_user_name";
+
+const generateUserId = (seed: string) => {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
     hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
   }
   const abs = Math.abs(hash).toString(16).toUpperCase().padStart(8, "0");
   return `MFS-${abs.slice(0, 4)}-${abs.slice(4, 8)}`;
+};
+
+const getDisplayName = (): string => {
+  const stored = localStorage.getItem(USER_NAME_KEY);
+  if (stored) return stored;
+  const phone = localStorage.getItem(REGISTERED_KEY);
+  if (phone) return `+880 ${phone.slice(0, 3)}****${phone.slice(-3)}`;
+  return "My Wallet";
 };
 
 interface BalanceCardProps {
@@ -23,7 +33,9 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
   const [showBalance, setShowBalance] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showQr, setShowQr] = useState(false);
-  const userId = useMemo(() => generateUserId(), []);
+  const phone   = useMemo(() => localStorage.getItem(REGISTERED_KEY) ?? "WALLET_USER", []);
+  const userId  = useMemo(() => generateUserId(phone), [phone]);
+  const userName = useMemo(() => getDisplayName(), []);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Animated balance
@@ -105,7 +117,7 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
             {/* LEFT: Greeting + name (yellow circle area) */}
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-60 leading-tight">Welcome back 👋</p>
-              <p className="text-[15px] font-bold opacity-95 leading-tight tracking-tight">Tanvir Hasan</p>
+              <p className="text-[15px] font-bold opacity-95 leading-tight tracking-tight">{userName}</p>
             </div>
 
             {/* RIGHT: QR + Copy */}
@@ -233,7 +245,7 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
         open={showQr}
         onClose={() => setShowQr(false)}
         userId={userId}
-        userName="Tanvir Hasan"
+        userName={userName}
       />
     </>
   );

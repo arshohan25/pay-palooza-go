@@ -13,6 +13,7 @@ const SESSION_KEY    = "mfs_authenticated";
 const PIN_KEY        = "mfs_user_pin";
 const DEVICE_KEY     = "mfs_device_verified";
 const REGISTERED_KEY = "mfs_registered_phone";
+const USER_NAME_KEY  = "mfs_user_name";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const getStoredPin      = () => localStorage.getItem(PIN_KEY) ?? "";
@@ -282,6 +283,9 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     localStorage.setItem(PIN_KEY, pin);
     localStorage.setItem(DEVICE_KEY, "1");
     localStorage.setItem(REGISTERED_KEY, phone);
+    if (!localStorage.getItem(USER_NAME_KEY)) {
+      localStorage.setItem(USER_NAME_KEY, `+880 ${phone.slice(0, 3)}****${phone.slice(-3)}`);
+    }
     sessionStorage.setItem(SESSION_KEY, "1");
     haptics.success();
     goTo("success");
