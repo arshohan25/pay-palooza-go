@@ -1,16 +1,73 @@
-import { ArrowRightLeft, Banknote, ScanLine, PiggyBank, PhoneCall, Lightbulb, ShoppingCart, LayoutGrid } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import {
+  SendMoneyIcon,
+  CashOutIcon,
+  PaymentIcon,
+  AddMoneyIcon,
+  RechargeIcon,
+  PayBillIcon,
+  ShopIcon,
+  MoreIcon,
+} from "./QuickActionIcons";
 
 const actions = [
-  { icon: ArrowRightLeft, label: "Send",     gradient: "gradient-send",     id: "send" },
-  { icon: Banknote,       label: "Cash Out", gradient: "gradient-cashout",  id: "cashout" },
-  { icon: ScanLine,       label: "Payment",  gradient: "gradient-payment",  id: "payment" },
-  { icon: PiggyBank,      label: "Add",      gradient: "gradient-addmoney", id: "addmoney" },
-  { icon: PhoneCall,      label: "Recharge", gradient: "gradient-accent",   id: "recharge" },
-  { icon: Lightbulb,      label: "Bill Pay", gradient: "gradient-primary",  id: "bill" },
-  { icon: ShoppingCart,   label: "Shop",     gradient: "gradient-cashout",  id: "shopping" },
-  { icon: LayoutGrid,     label: "More",     gradient: "gradient-payment",  id: "more" },
+  {
+    Icon: SendMoneyIcon,
+    label: "Send Money",
+    id: "send",
+    bgStyle: "rgba(233,30,140,0.12)",
+    ringStyle: "1px solid rgba(233,30,140,0.25)",
+  },
+  {
+    Icon: CashOutIcon,
+    label: "Cash Out",
+    id: "cashout",
+    bgStyle: "rgba(76,175,80,0.12)",
+    ringStyle: "1px solid rgba(76,175,80,0.25)",
+  },
+  {
+    Icon: PaymentIcon,
+    label: "Payment",
+    id: "payment",
+    bgStyle: "rgba(156,39,176,0.12)",
+    ringStyle: "1px solid rgba(156,39,176,0.25)",
+  },
+  {
+    Icon: AddMoneyIcon,
+    label: "Add Money",
+    id: "addmoney",
+    bgStyle: "rgba(25,118,210,0.12)",
+    ringStyle: "1px solid rgba(25,118,210,0.25)",
+  },
+  {
+    Icon: RechargeIcon,
+    label: "Recharge",
+    id: "recharge",
+    bgStyle: "rgba(0,188,212,0.12)",
+    ringStyle: "1px solid rgba(0,188,212,0.25)",
+  },
+  {
+    Icon: PayBillIcon,
+    label: "Pay Bill",
+    id: "bill",
+    bgStyle: "rgba(255,193,7,0.12)",
+    ringStyle: "1px solid rgba(255,193,7,0.25)",
+  },
+  {
+    Icon: ShopIcon,
+    label: "Shop",
+    id: "shopping",
+    bgStyle: "rgba(255,87,34,0.12)",
+    ringStyle: "1px solid rgba(255,87,34,0.25)",
+  },
+  {
+    Icon: MoreIcon,
+    label: "More",
+    id: "more",
+    bgStyle: "rgba(120,120,140,0.10)",
+    ringStyle: "1px solid rgba(120,120,140,0.20)",
+  },
 ];
 
 interface QuickActionsProps {
@@ -35,28 +92,39 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
 
   return (
     <div className="bg-card rounded-3xl shadow-card border border-border/60 p-4 sm:p-5">
-      <div className="grid grid-cols-4 gap-2 sm:gap-3">
+      <div className="grid grid-cols-4 gap-y-5 gap-x-2 sm:gap-x-3">
         {actions.map((action, index) => (
           <motion.button
             key={action.id}
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.05 + index * 0.045, ease: [0.23, 1, 0.32, 1] }}
-            whileTap={{ scale: 0.92 }}
+            transition={{ duration: 0.35, delay: 0.04 + index * 0.05, ease: [0.23, 1, 0.32, 1] }}
+            whileTap={{ scale: 0.90 }}
             onClick={() => handleAction(action.id, action.label)}
-            className="flex flex-col items-center gap-2 group outline-none"
+            className="flex flex-col items-center gap-2.5 group outline-none"
           >
-            <div className="relative">
+            {/* Icon circle */}
+            <motion.div
+              whileHover={{ scale: 1.06, y: -2 }}
+              transition={{ type: "spring", stiffness: 380, damping: 22 }}
+              className="relative flex items-center justify-center rounded-full shadow-sm group-hover:shadow-md transition-shadow duration-200"
+              style={{
+                width: 56,
+                height: 56,
+                background: action.bgStyle,
+                outline: action.ringStyle,
+              }}
+            >
+              {/* Subtle glow on hover */}
               <div
-                className={`${action.gradient} w-13 h-13 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center text-primary-foreground shadow-card group-hover:shadow-elevated group-hover:-translate-y-0.5 transition-all duration-200`}
-                style={{ width: 52, height: 52 }}
-              >
-                <action.icon size={21} strokeWidth={2} />
-              </div>
-              {/* subtle glow on hover */}
-              <div className={`${action.gradient} absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-30 blur-md transition-opacity duration-200 -z-10`} />
-            </div>
-            <span className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-colors">
+                className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 blur-[10px] transition-opacity duration-300 -z-10 scale-110"
+                style={{ background: action.bgStyle }}
+              />
+              <action.Icon />
+            </motion.div>
+
+            {/* Label */}
+            <span className="text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-colors duration-150 px-0.5">
               {action.label}
             </span>
           </motion.button>
