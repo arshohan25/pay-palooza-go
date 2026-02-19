@@ -15,6 +15,7 @@ import PaymentFlow from "@/components/PaymentFlow";
 import MobileRechargeFlow from "@/components/MobileRechargeFlow";
 import PayBillFlow from "@/components/PayBillFlow";
 import AddMoneyFlow from "@/components/AddMoneyFlow";
+import SavingsFlow from "@/components/SavingsFlow";
 import TransactionHistory from "@/pages/TransactionHistory";
 import AccountPage from "@/pages/AccountPage";
 import ReferPage from "@/pages/ReferPage";
@@ -41,6 +42,7 @@ const Index = () => {
   const [showRecharge, setShowRecharge]   = useState(false);
   const [showPayBill, setShowPayBill]     = useState(false);
   const [showAddMoney, setShowAddMoney]   = useState(false);
+  const [showSavings, setShowSavings]     = useState(false);
   const [isLoading, setIsLoading]         = useState(true);
   const [isPulling, setIsPulling]         = useState(false);
   const mainRef = useRef<HTMLElement>(null);
@@ -103,6 +105,7 @@ const Index = () => {
                 onPayBill={() => setShowPayBill(true)}
                 onAddMoney={() => setShowAddMoney(true)}
                 onRefer={() => handleTabChange("refer")}
+                onSavings={() => setShowSavings(true)}
               />
               <PromoCard />
               <TransactionList onSeeAll={() => handleTabChange("history")} />
@@ -160,6 +163,7 @@ const Index = () => {
       {showRecharge  && <MobileRechargeFlow onClose={() => setShowRecharge(false)} />}
       {showPayBill   && <PayBillFlow   onClose={() => setShowPayBill(false)} />}
       {showAddMoney  && <AddMoneyFlow  onClose={() => setShowAddMoney(false)} />}
+      {showSavings   && <SavingsFlow   onClose={() => setShowSavings(false)} />}
 
       {/* PWA install prompt */}
       <InstallPrompt />

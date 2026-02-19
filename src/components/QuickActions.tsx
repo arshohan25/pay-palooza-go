@@ -8,7 +8,7 @@ import {
   ReferIcon,
   RechargeIcon,
   PayBillIcon,
-  ShopIcon,
+  SavingsIcon,
   MoreIcon,
 } from "./QuickActionIcons";
 
@@ -17,6 +17,7 @@ const actions = [
     Icon: SendMoneyIcon,
     label: "Send Money",
     id: "send",
+    // Pink — matches paper plane (#E91E8C)
     bgStyle: "rgba(233,30,140,0.12)",
     ringStyle: "1px solid rgba(233,30,140,0.25)",
     rippleColor: "rgba(233,30,140,0.35)",
@@ -25,6 +26,7 @@ const actions = [
     Icon: CashOutIcon,
     label: "Cash Out",
     id: "cashout",
+    // Green — matches ATM machine (#43A047)
     bgStyle: "rgba(67,160,71,0.12)",
     ringStyle: "1px solid rgba(67,160,71,0.25)",
     rippleColor: "rgba(67,160,71,0.35)",
@@ -33,6 +35,7 @@ const actions = [
     Icon: PaymentIcon,
     label: "Payment",
     id: "payment",
+    // Purple — matches QR code (#9C27B0)
     bgStyle: "rgba(156,39,176,0.12)",
     ringStyle: "1px solid rgba(156,39,176,0.25)",
     rippleColor: "rgba(156,39,176,0.35)",
@@ -41,6 +44,7 @@ const actions = [
     Icon: ReferIcon,
     label: "Refer & Earn",
     id: "refer",
+    // Orange-red — matches gift box (#FF5722)
     bgStyle: "rgba(255,87,34,0.12)",
     ringStyle: "1px solid rgba(255,87,34,0.25)",
     rippleColor: "rgba(255,87,34,0.35)",
@@ -49,6 +53,7 @@ const actions = [
     Icon: RechargeIcon,
     label: "Recharge",
     id: "recharge",
+    // Cyan — matches phone screen (#00BCD4)
     bgStyle: "rgba(0,188,212,0.12)",
     ringStyle: "1px solid rgba(0,188,212,0.25)",
     rippleColor: "rgba(0,188,212,0.35)",
@@ -57,17 +62,19 @@ const actions = [
     Icon: PayBillIcon,
     label: "Pay Bill",
     id: "bill",
+    // Amber — matches lightbulb (#FFC107)
     bgStyle: "rgba(255,193,7,0.12)",
     ringStyle: "1px solid rgba(255,193,7,0.25)",
     rippleColor: "rgba(255,193,7,0.45)",
   },
   {
-    Icon: ShopIcon,
-    label: "Shop",
-    id: "shopping",
-    bgStyle: "rgba(255,112,67,0.12)",
-    ringStyle: "1px solid rgba(255,112,67,0.25)",
-    rippleColor: "rgba(255,112,67,0.35)",
+    Icon: SavingsIcon,
+    label: "Savings",
+    id: "savings",
+    // Teal — matches piggy bank
+    bgStyle: "rgba(0,150,136,0.12)",
+    ringStyle: "1px solid rgba(0,150,136,0.25)",
+    rippleColor: "rgba(0,150,136,0.35)",
   },
   {
     Icon: MoreIcon,
@@ -93,9 +100,10 @@ interface QuickActionsProps {
   onPayBill: () => void;
   onAddMoney: () => void;
   onRefer: () => void;
+  onSavings: () => void;
 }
 
-const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney, onRefer }: QuickActionsProps) => {
+const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney, onRefer, onSavings }: QuickActionsProps) => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [ripples, setRipples] = useState<Record<string, RippleState | null>>({});
   const rippleCounterRef = useRef(0);
@@ -130,6 +138,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
     if (id === "recharge") return onRecharge();
     if (id === "bill")     return onPayBill();
     if (id === "refer")    return onRefer();
+    if (id === "savings")  return onSavings();
     toast.info(`${label} coming soon!`);
   };
 
