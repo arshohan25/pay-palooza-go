@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Phone, KeyRound, ShieldCheck, ChevronLeft,
   AlertCircle, Eye, EyeOff, ArrowRight, RefreshCw,
-  Fingerprint, Sparkles, Zap, Shield, Send, CheckCircle2,
+  Fingerprint, Sparkles, Zap, Shield, Send, CheckCircle2, UserRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { haptics } from "@/lib/haptics";
@@ -25,7 +25,7 @@ const DEMO_OTP = "123456";
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Mode =
   | "landing"
-  | "register_phone" | "register_otp" | "register_pin"
+  | "register_phone" | "register_otp" | "register_pin" | "register_name"
   | "login_phone" | "login_otp" | "login_pin"
   | "forgot_otp" | "forgot_pin"
   | "success";
@@ -250,6 +250,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const [confirmPin, setConfirmPin] = useState("");
   const [showPin, setShowPin]       = useState(false);
   const [error, setError]           = useState("");
+  const [userName, setUserName]     = useState("");
 
   const goTo = useCallback((next: Mode, dir = 1) => {
     setDir(dir); setMode(next); setError(""); haptics.medium();
@@ -283,9 +284,15 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     localStorage.setItem(PIN_KEY, pin);
     localStorage.setItem(DEVICE_KEY, "1");
     localStorage.setItem(REGISTERED_KEY, phone);
-    if (!localStorage.getItem(USER_NAME_KEY)) {
-      localStorage.setItem(USER_NAME_KEY, `+880 ${phone.slice(0, 3)}****${phone.slice(-3)}`);
-    }
+    haptics.success();
+    goTo("register_name");
+  };
+
+  const handleRegisterName = () => {
+    const trimmed = userName.trim();
+    const finalName = trimmed || `+880 ${phone.slice(0, 3)}****${phone.slice(-3)}`;
+    localStorage.setItem(USER_NAME_KEY, finalName);
+    localStorage.setItem("mfs_registered_phone", phone);
     sessionStorage.setItem(SESSION_KEY, "1");
     haptics.success();
     goTo("success");
@@ -367,6 +374,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     if (mode === "register_phone" || mode === "login_phone") { goTo("landing", -1); return; }
     if (mode === "register_otp")  { setOtp(""); goTo("register_phone", -1); return; }
     if (mode === "register_pin")  { setPin(""); setConfirmPin(""); goTo("register_otp", -1); return; }
+    if (mode === "register_name") { goTo("register_pin", -1); return; }
     if (mode === "login_otp")     { setOtp(""); goTo("login_phone", -1); return; }
     if (mode === "login_pin")     { setPin(""); goTo("login_phone", -1); return; }
     if (mode === "forgot_otp")    { setOtp(""); goTo("login_pin", -1); return; }
@@ -700,7 +708,43 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                       className="w-full h-14 gradient-addmoney text-white font-bold text-[15px] rounded-2xl shadow-glow flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
                       onClick={() => handleRegisterPin()} disabled={pin.length < 4 || confirmPin.length < 4}
                     >
-                      <CheckCircle2 size={17} /> Create Account
+                      <CheckCircle2 size={17} /> Next: Set Your Name
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ────────────── SET NAME (Register) ────────────── */}
+              {mode === "register_name" && (
+                <div className="space-y-6 pt-14">
+                  <StepHeader iconClass="gradient-primary" icon={UserRound}
+                    title="What's your name?"
+                    subtitle="Add your name so friends and family can find and recognise you easily" />
+
+                  <div className="space-y-5">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-muted-foreground uppercase tracking-[0.12em] px-1">
+                        Your Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Tanvir Hasan"
+                        value={userName}
+                        onChange={(e) => setUserName(e.target.value)}
+                        autoFocus
+                        className="w-full h-14 px-4 text-base font-semibold bg-card border-2 border-border rounded-2xl focus:outline-none focus:border-primary focus:shadow-glow transition-all placeholder:font-normal placeholder:text-muted-foreground/40"
+                      />
+                      <p className="text-[11px] text-muted-foreground px-1">
+                        This is optional — you can skip and set it later in your profile.
+                      </p>
+                    </div>
+
+                    <button
+                      className="w-full h-14 gradient-hero text-white font-bold text-[15px] rounded-2xl shadow-glow flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+                      onClick={handleRegisterName}
+                    >
+                      <CheckCircle2 size={17} />
+                      {userName.trim() ? "Create My Wallet" : "Skip & Create Wallet"}
                     </button>
                   </div>
                 </div>

@@ -2,6 +2,7 @@ import { LayoutDashboard, ArrowLeftRight, ScanLine, MessageCircle, CircleUserRou
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { getTxnNotifCount, onTxnNotifChange } from "@/lib/txnNotifStore";
+import { getInboxCount, onInboxChange } from "@/lib/inboxStore";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Home",    id: "home" },
@@ -17,10 +18,15 @@ interface SideNavProps {
 }
 
 const SideNav = ({ activeTab = "home", onTabChange }: SideNavProps) => {
-  const [txnCount, setTxnCount] = useState(getTxnNotifCount);
+  const [txnCount, setTxnCount]     = useState(getTxnNotifCount);
+  const [inboxCount, setInboxCount] = useState(getInboxCount);
+  const displayName = localStorage.getItem("mfs_user_name") || "My Wallet";
+  const phone       = localStorage.getItem("mfs_registered_phone") || "—";
+  const initials    = displayName.replace(/[^a-zA-Z\s]/g, "").trim().split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "U";
   useEffect(() => {
-    const unsub = onTxnNotifChange(setTxnCount);
-    return unsub;
+    const unsub1 = onTxnNotifChange(setTxnCount);
+    const unsub2 = onInboxChange(setInboxCount);
+    return () => { unsub1(); unsub2(); };
   }, []);
   return (
     <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-64 bg-card border-r border-border/60 shadow-card z-40">
@@ -82,13 +88,25 @@ const SideNav = ({ activeTab = "home", onTabChange }: SideNavProps) => {
                       {txnCount > 9 ? "9+" : txnCount}
                     </motion.span>
                   )}
+                  {item.id === "inbox" && inboxCount > 0 && !isActive && (
+                    <motion.span
+                      key="inbox-badge"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 22 }}
+                      className="absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] px-0.5 gradient-send text-white text-[8px] font-bold rounded-full flex items-center justify-center border-2 border-background"
+                    >
+                      {inboxCount > 9 ? "9+" : inboxCount}
+                    </motion.span>
+                  )}
                 </AnimatePresence>
               </div>
               <span className="relative z-10">{item.label}</span>
-              {/* Inbox badge */}
-              {item.id === "inbox" && !isActive && (
-                <span className="relative z-10 ml-auto w-5 h-5 bg-destructive rounded-full text-[9px] font-bold text-destructive-foreground flex items-center justify-center">
-                  3
+              {/* Inline count label for inbox on sidebar */}
+              {item.id === "inbox" && inboxCount > 0 && !isActive && (
+                <span className="relative z-10 ml-auto min-w-[18px] h-[18px] px-1 gradient-send text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                  {inboxCount > 9 ? "9+" : inboxCount}
                 </span>
               )}
             </motion.button>
@@ -100,11 +118,11 @@ const SideNav = ({ activeTab = "home", onTabChange }: SideNavProps) => {
       <div className="px-4 pb-5">
         <div className="bg-muted/50 border border-border/60 rounded-2xl px-4 py-3 flex items-center gap-3">
           <div className="w-9 h-9 gradient-primary rounded-xl flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0 shadow-glow">
-            T
+            {initials}
           </div>
           <div className="min-w-0">
-            <p className="text-[13px] font-bold text-foreground truncate">Tanvir Hasan</p>
-            <p className="text-[10.5px] text-muted-foreground truncate">01712-345678</p>
+            <p className="text-[13px] font-bold text-foreground truncate">{displayName}</p>
+            <p className="text-[10.5px] text-muted-foreground truncate">{phone}</p>
           </div>
           <div className="ml-auto w-2 h-2 bg-primary rounded-full shrink-0 shadow-glow" />
         </div>

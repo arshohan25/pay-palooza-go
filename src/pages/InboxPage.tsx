@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, Send, Phone, Video, MoreVertical, Search, Plus, Smile, Image, CheckCheck, Check } from "lucide-react";
+import { ChevronLeft, Send, Phone, Video, MoreVertical, Search, Plus, Smile, Image, CheckCheck, Check, Wallet } from "lucide-react";
+import { addInboxMsg, clearInboxCount } from "@/lib/inboxStore";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface Message {
@@ -120,9 +121,10 @@ interface ChatViewProps {
   messages: Message[];
   onBack: () => void;
   onSend: (text: string) => void;
+  onSendMoney: (phone: string) => void;
 }
 
-const ChatView = ({ contact, messages, onBack, onSend }: ChatViewProps) => {
+const ChatView = ({ contact, messages, onBack, onSend, onSendMoney }: ChatViewProps) => {
   const [text, setText] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -287,9 +289,15 @@ const ChatView = ({ contact, messages, onBack, onSend }: ChatViewProps) => {
             onKeyDown={handleKey}
             className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-w-0"
           />
-          <button className="w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-            <Image size={17} />
-          </button>
+          {/* Send Money shortcut */}
+          <motion.button
+            whileTap={{ scale: 0.88 }}
+            onClick={() => onSendMoney(contact.phone)}
+            className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors shrink-0"
+            title={`Send money to ${contact.name}`}
+          >
+            <Wallet size={15} />
+          </motion.button>
           <motion.button
             whileTap={{ scale: 0.88 }}
             onClick={handleSend}
@@ -307,12 +315,16 @@ const ChatView = ({ contact, messages, onBack, onSend }: ChatViewProps) => {
 // ── InboxPage ──────────────────────────────────────────────────────────────────
 interface InboxPageProps {
   onBack?: () => void;
+  onSendMoney?: (phone: string) => void;
 }
 
-export default function InboxPage({ onBack }: InboxPageProps) {
+export default function InboxPage({ onBack, onSendMoney }: InboxPageProps) {
   const [contacts, setContacts] = useState<Contact[]>(INITIAL_CONTACTS);
   const [activeChat, setActiveChat] = useState<Contact | null>(null);
   const [search, setSearch] = useState("");
+
+  // Clear inbox badge when user opens inbox
+  useEffect(() => { clearInboxCount(); }, []);
 
   const filtered = contacts.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -357,6 +369,7 @@ export default function InboxPage({ onBack }: InboxPageProps) {
       ];
       const reply = AUTO_REPLIES[Math.floor(Math.random() * AUTO_REPLIES.length)];
       setTimeout(() => {
+        addInboxMsg();
         setContacts((prev) =>
           prev.map((c) =>
             c.id === contactId
@@ -527,6 +540,7 @@ export default function InboxPage({ onBack }: InboxPageProps) {
               messages={currentMessages}
               onBack={() => setActiveChat(null)}
               onSend={(text) => handleSend(activeChat.id, text)}
+              onSendMoney={(phone) => { setActiveChat(null); onSendMoney?.(phone); }}
             />
           </motion.div>
         )}
