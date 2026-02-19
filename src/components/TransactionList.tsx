@@ -1,12 +1,70 @@
-import { ArrowUpRight, ArrowDownLeft, PhoneCall, Lightbulb, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
+import {
+  TxSendIcon,
+  TxReceiveIcon,
+  TxCashOutIcon,
+  TxRechargeIcon,
+  TxBillIcon,
+  TxBankIcon,
+} from "./QuickActionIcons";
 
 const transactions = [
-  { id: 1, type: "sent",     name: "Rahim Uddin",        sub: "Send Money",          time: "Today · 2:30 PM",    amount: -500,  icon: ArrowUpRight,  color: "text-destructive", bg: "bg-destructive/10" },
-  { id: 2, type: "received", name: "Salary – XYZ Corp",  sub: "Bank Transfer",       time: "Today · 10:00 AM",   amount: 25000, icon: ArrowDownLeft, color: "text-primary",     bg: "bg-primary/10" },
-  { id: 3, type: "recharge", name: "Grameenphone",       sub: "Mobile Recharge",     time: "Yesterday · 8:15 PM",amount: -200,  icon: PhoneCall,     color: "text-accent",      bg: "bg-accent/10" },
-  { id: 4, type: "bill",     name: "DESCO Electricity",  sub: "Utility Bill",        time: "Yesterday · 3:45 PM",amount: -1850, icon: Lightbulb,     color: "text-muted-foreground", bg: "bg-muted" },
-  { id: 5, type: "received", name: "Karim Ahmed",        sub: "Send Money",          time: "Feb 14 · 11:20 AM",  amount: 1200,  icon: ArrowDownLeft, color: "text-primary",     bg: "bg-primary/10" },
+  {
+    id: 1,
+    type: "sent",
+    name: "Rahim Uddin",
+    sub: "Send Money",
+    time: "Today · 2:30 PM",
+    amount: -500,
+    Icon: TxSendIcon,
+    bg: "rgba(233,30,140,0.12)",
+    ring: "1px solid rgba(233,30,140,0.2)",
+  },
+  {
+    id: 2,
+    type: "received",
+    name: "Salary – XYZ Corp",
+    sub: "Bank Transfer",
+    time: "Today · 10:00 AM",
+    amount: 25000,
+    Icon: TxBankIcon,
+    bg: "rgba(25,118,210,0.12)",
+    ring: "1px solid rgba(25,118,210,0.2)",
+  },
+  {
+    id: 3,
+    type: "recharge",
+    name: "Grameenphone",
+    sub: "Mobile Recharge",
+    time: "Yesterday · 8:15 PM",
+    amount: -200,
+    Icon: TxRechargeIcon,
+    bg: "rgba(0,188,212,0.12)",
+    ring: "1px solid rgba(0,188,212,0.2)",
+  },
+  {
+    id: 4,
+    type: "bill",
+    name: "DESCO Electricity",
+    sub: "Utility Bill",
+    time: "Yesterday · 3:45 PM",
+    amount: -1850,
+    Icon: TxBillIcon,
+    bg: "rgba(255,193,7,0.12)",
+    ring: "1px solid rgba(255,193,7,0.2)",
+  },
+  {
+    id: 5,
+    type: "received",
+    name: "Karim Ahmed",
+    sub: "Cash Received",
+    time: "Feb 14 · 11:20 AM",
+    amount: 1200,
+    Icon: TxReceiveIcon,
+    bg: "rgba(76,175,80,0.12)",
+    ring: "1px solid rgba(76,175,80,0.2)",
+  },
 ];
 
 interface TransactionListProps {
@@ -37,9 +95,12 @@ const TransactionList = ({ onSeeAll }: TransactionListProps) => {
             transition={{ duration: 0.3, delay: 0.3 + index * 0.06, ease: [0.23, 1, 0.32, 1] }}
             className="w-full flex items-center gap-3.5 px-4 py-3.5 hover:bg-muted/40 active:bg-muted/60 transition-colors border-b border-border/50 last:border-0 text-left"
           >
-            {/* Icon */}
-            <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center shrink-0 ${tx.bg}`}>
-              <tx.icon size={17} className={tx.color} strokeWidth={2.2} />
+            {/* Illustrated icon circle */}
+            <div
+              className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
+              style={{ background: tx.bg, outline: tx.ring }}
+            >
+              <tx.Icon />
             </div>
 
             {/* Info */}
