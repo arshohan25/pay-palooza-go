@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw } from "lucide-react";
 import { clearTxnNotifs } from "@/lib/txnNotifStore";
+import { useAuth } from "@/hooks/use-auth";
 import AppHeader from "@/components/AppHeader";
 import BalanceCard from "@/components/BalanceCard";
 import QuickActions from "@/components/QuickActions";
@@ -28,14 +29,11 @@ import SplashScreen from "@/components/SplashScreen";
 import OnboardingSlides, { hasSeenOnboarding, markOnboardingDone } from "@/components/OnboardingSlides";
 import TxnToast from "@/components/TxnToast";
 
-const SESSION_KEY = "mfs_authenticated";
-
 const Index = () => {
+  const { isAuthenticated, loading: authLoading, signOut } = useAuth();
+  
   const [splashDone, setSplashDone]           = useState(false);
   const [onboardingDone, setOnboardingDone]  = useState(() => hasSeenOnboarding());
-  const [authenticated, setAuthenticated]    = useState(
-    () => sessionStorage.getItem(SESSION_KEY) === "1",
-  );
   const [replayOnboarding, setReplayOnboarding] = useState(false);
   const [activeTab, setActiveTab]         = useState("home");
   const handleTabChange = useCallback((tab: string) => {
@@ -76,7 +74,7 @@ const Index = () => {
     if (activeTab === "home") {
       return (
         <div className="space-y-5">
-          <AppHeader onSignOut={() => setAuthenticated(false)} />
+          <AppHeader onSignOut={signOut} />
 
           {/* Pull-to-refresh indicator */}
           <AnimatePresence>
@@ -126,7 +124,7 @@ const Index = () => {
       return <TransactionHistory onRefresh={triggerRefresh} />;
     }
     if (activeTab === "account") {
-      return <AccountPage onSignOut={() => setAuthenticated(false)} onReplayOnboarding={() => { setOnboardingDone(false); setReplayOnboarding(true); }} />;
+      return <AccountPage onSignOut={signOut} onReplayOnboarding={() => { setOnboardingDone(false); setReplayOnboarding(true); }} />;
     }
     if (activeTab === "refer") {
       return <ReferPage onBack={() => handleTabChange("home")} />;
@@ -168,11 +166,24 @@ const Index = () => {
     );
   }
 
+  // Show loading while checking auth state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <>
       <AnimatePresence>
-        {!authenticated && (
-          <AuthPage onAuthenticated={() => setAuthenticated(true)} />
+        {!isAuthenticated && (
+          <AuthPage onAuthenticated={() => {
+            // Auth state is now managed by useAuth hook via Supabase session
+            // onAuthenticated is called after successful sign-up/sign-in
+            // The useAuth hook will automatically pick up the session change
+          }} />
         )}
       </AnimatePresence>
 

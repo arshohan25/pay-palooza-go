@@ -3,10 +3,11 @@ import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, CheckCircle2, AlertCircle, Lock, ShieldCheck } from "lucide-react";
 
-// ─── PIN storage key ───────────────────────────────────────────────────────────
-const PIN_STORAGE_KEY = "mfs_user_pin";
-const getStoredPin = () => sessionStorage.getItem(PIN_STORAGE_KEY) ?? "1234";
-const storePin    = (pin: string) => sessionStorage.setItem(PIN_STORAGE_KEY, pin);
+import { signIn, changePin as changePinAuth } from "@/lib/auth";
+
+// PIN is now stored server-side via Supabase Auth
+// We validate the current PIN by attempting a sign-in
+const getPhone = () => localStorage.getItem("mfs_device_phone") ?? "";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = "current" | "new" | "confirm" | "success";
@@ -160,14 +161,16 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
     setCurrentPin(p);
     setError("");
     if (p.length === 4) {
-      setTimeout(() => {
-        if (p !== getStoredPin()) {
+      setTimeout(async () => {
+        try {
+          // Validate current PIN by attempting sign-in
+          await signIn(getPhone(), p);
+          goTo("new");
+          setCurrentPin("");
+        } catch {
           haptics.error();
           setError("Incorrect PIN. Please try again.");
           setTimeout(() => setCurrentPin(""), 600);
-        } else {
-          goTo("new");
-          setCurrentPin("");
         }
       }, 280);
     }
@@ -204,9 +207,9 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
           setError("PINs don't match. Please try again.");
           setTimeout(() => setConfirmPin(""), 600);
         } else {
-          // Persist new PIN
+          // Update PIN server-side
           haptics.success();
-          storePin(newPin);
+          changePinAuth(newPin).catch(() => {});
           setDir(1);
           setStep("success");
         }
