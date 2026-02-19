@@ -275,9 +275,10 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     goTo("register_otp");
   };
 
-  const handleRegisterOtp = useCallback(() => {
-    if (otp.length < 6) { setError("Enter the 6-digit OTP."); return; }
-    if (otp !== DEMO_OTP) { setError("Incorrect OTP. Demo: 123456"); haptics.error(); return; }
+  const handleRegisterOtp = useCallback((val?: string) => {
+    const v = val ?? otp;
+    if (v.length < 6) { setError("Enter the 6-digit OTP."); return; }
+    if (v !== DEMO_OTP) { setError("Incorrect OTP. Demo: 123456"); haptics.error(); return; }
     setPin(""); setConfirmPin(""); setConfirmStage(false);
     goTo("register_pin");
   }, [otp, goTo]);
@@ -330,9 +331,10 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     else { goTo("login_otp"); }
   };
 
-  const handleLoginOtp = useCallback(() => {
-    if (otp.length < 6) { setError("Enter the 6-digit OTP."); return; }
-    if (otp !== DEMO_OTP) { setError("Incorrect OTP. Demo: 123456"); haptics.error(); return; }
+  const handleLoginOtp = useCallback((val?: string) => {
+    const v = val ?? otp;
+    if (v.length < 6) { setError("Enter the 6-digit OTP."); return; }
+    if (v !== DEMO_OTP) { setError("Incorrect OTP. Demo: 123456"); haptics.error(); return; }
     localStorage.setItem(DEVICE_KEY, "1");
     setPin("");
     goTo("login_pin");
@@ -353,9 +355,10 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   }, [goTo, onAuthenticated]);
 
   // ── Forgot PIN ─────────────────────────────────────────────────────────────
-  const handleForgotOtp = useCallback(() => {
-    if (otp.length < 6) { setError("Enter the 6-digit OTP."); return; }
-    if (otp !== DEMO_OTP) { setError("Incorrect OTP. Demo: 123456"); haptics.error(); return; }
+  const handleForgotOtp = useCallback((val?: string) => {
+    const v = val ?? otp;
+    if (v.length < 6) { setError("Enter the 6-digit OTP."); return; }
+    if (v !== DEMO_OTP) { setError("Incorrect OTP. Demo: 123456"); haptics.error(); return; }
     setPin(""); setConfirmPin(""); setConfirmStage(false);
     goTo("forgot_pin");
   }, [otp, goTo]);
@@ -379,11 +382,11 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   }, [goTo]);
 
   // ── OTP numeric keypad handler ─────────────────────────────────────────────
-  const handleOtpKey = (k: string, onComplete: () => void) => {
+  const handleOtpKey = (k: string, onComplete: (val: string) => void) => {
     setOtp(prev => {
       const next = (prev + k).slice(0, 6);
       setError("");
-      if (next.length === 6) setTimeout(onComplete, 260);
+      if (next.length === 6) setTimeout(() => onComplete(next), 260);
       return next;
     });
   };
@@ -770,7 +773,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                         </button>
                         <button
                           className="h-12 px-6 gradient-hero text-white font-bold text-sm rounded-xl shadow-glow flex items-center gap-2 active:scale-95 transition-transform disabled:opacity-40"
-                          onClick={onComplete}
+                          onClick={() => onComplete()}
                           disabled={otp.length < 6}
                         >
                           Verify <ArrowRight size={15} />
