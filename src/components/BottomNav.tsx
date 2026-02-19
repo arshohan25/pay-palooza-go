@@ -2,6 +2,7 @@ import { LayoutDashboard, ArrowLeftRight, ScanLine, MessageCircle, CircleUserRou
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { getTxnNotifCount, onTxnNotifChange } from "@/lib/txnNotifStore";
+import { getInboxCount, onInboxChange } from "@/lib/inboxStore";
 
 const navItems = [
   { icon: LayoutDashboard,  label: "Home",    id: "home" },
@@ -17,11 +18,13 @@ interface BottomNavProps {
 }
 
 const BottomNav = ({ activeTab = "home", onTabChange }: BottomNavProps) => {
-  const [txnCount, setTxnCount] = useState(getTxnNotifCount);
+  const [txnCount, setTxnCount]     = useState(getTxnNotifCount);
+  const [inboxCount, setInboxCount] = useState(getInboxCount);
 
   useEffect(() => {
-    const unsub = onTxnNotifChange(setTxnCount);
-    return unsub;
+    const unsub1 = onTxnNotifChange(setTxnCount);
+    const unsub2 = onInboxChange(setInboxCount);
+    return () => { unsub1(); unsub2(); };
   }, []);
 
   return (
@@ -46,7 +49,8 @@ const BottomNav = ({ activeTab = "home", onTabChange }: BottomNavProps) => {
               );
             }
 
-            const showBadge = item.id === "history" && txnCount > 0;
+          const showTxnBadge   = item.id === "history" && txnCount > 0;
+          const showInboxBadge = item.id === "inbox" && inboxCount > 0 && !isActive;
 
             return (
               <motion.button
@@ -79,9 +83,9 @@ const BottomNav = ({ activeTab = "home", onTabChange }: BottomNavProps) => {
                     strokeWidth={isActive ? 2.5 : 1.8}
                     className="relative z-10 transition-all duration-150"
                   />
-                  {/* Transaction badge */}
+                  {/* Transaction / Inbox badge */}
                   <AnimatePresence>
-                    {showBadge && (
+                    {showTxnBadge && (
                       <motion.span
                         key="txn-badge"
                         initial={{ scale: 0 }}
@@ -91,6 +95,18 @@ const BottomNav = ({ activeTab = "home", onTabChange }: BottomNavProps) => {
                         className="absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] px-0.5 bg-primary text-primary-foreground text-[8px] font-bold rounded-full flex items-center justify-center border-2 border-background z-20"
                       >
                         {txnCount > 9 ? "9+" : txnCount}
+                      </motion.span>
+                    )}
+                    {showInboxBadge && (
+                      <motion.span
+                        key="inbox-badge"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 22 }}
+                        className="absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] px-0.5 gradient-send text-white text-[8px] font-bold rounded-full flex items-center justify-center border-2 border-background z-20"
+                      >
+                        {inboxCount > 9 ? "9+" : inboxCount}
                       </motion.span>
                     )}
                   </AnimatePresence>

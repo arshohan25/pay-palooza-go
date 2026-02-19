@@ -124,14 +124,14 @@ const PinInput = ({ pin, onChange, error }: PinInputProps) => {
 };
 
 // ─── SendMoneyFlow ────────────────────────────────────────────────────────────
-interface SendMoneyFlowProps { onClose: () => void; }
+interface SendMoneyFlowProps { onClose: () => void; prefilledPhone?: string; }
 
-const SendMoneyFlow = ({ onClose }: SendMoneyFlowProps) => {
+const SendMoneyFlow = ({ onClose, prefilledPhone }: SendMoneyFlowProps) => {
   const [step, setStep]           = useState<Step>("recipient");
   const [direction, setDirection] = useState(1);
   const [recipient, setRecipient] = useState<Contact | null>(null);
-  const [inputVal, setInputVal]   = useState("");   // phone OR wallet ID
-  const [inputType, setInputType] = useState<RecipientType | null>(null);
+  const [inputVal, setInputVal]   = useState(prefilledPhone ?? "");
+  const [inputType, setInputType] = useState<RecipientType | null>(prefilledPhone ? "phone" : null);
   const [amount, setAmount]       = useState("");
   const [note, setNote]           = useState("");
   const [searchQuery, setSearchQuery] = useState("");

@@ -37,13 +37,14 @@ const Index = () => {
     setActiveTab(tab);
     if (tab === "history") clearTxnNotifs();
   }, []);
-  const [showSendMoney, setShowSendMoney] = useState(false);
+  const [showSendMoney, setShowSendMoney]         = useState(false);
+  const [sendMoneyPrefilledPhone, setSendMoneyPrefilledPhone] = useState<string | undefined>(undefined);
   const [showCashOut, setShowCashOut]     = useState(false);
   const [showPayment, setShowPayment]     = useState(false);
   const [showRecharge, setShowRecharge]   = useState(false);
   const [showPayBill, setShowPayBill]     = useState(false);
   const [showAddMoney, setShowAddMoney]   = useState(false);
-  const [showShop, setShowShop]         = useState(false);
+  const [showShop, setShowShop]           = useState(false);
   const [isLoading, setIsLoading]         = useState(true);
   const [isPulling, setIsPulling]         = useState(false);
   const mainRef = useRef<HTMLElement>(null);
@@ -125,7 +126,14 @@ const Index = () => {
       return <ReferPage onBack={() => handleTabChange("home")} />;
     }
     if (activeTab === "inbox") {
-      return <InboxPage />;
+      return (
+        <InboxPage
+          onSendMoney={(phone) => {
+            setSendMoneyPrefilledPhone(phone);
+            setShowSendMoney(true);
+          }}
+        />
+      );
     }
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-muted-foreground">
@@ -161,7 +169,7 @@ const Index = () => {
       <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
 
       {/* ── Flow overlays ── */}
-      {showSendMoney && <SendMoneyFlow onClose={() => setShowSendMoney(false)} />}
+      {showSendMoney && <SendMoneyFlow prefilledPhone={sendMoneyPrefilledPhone} onClose={() => { setShowSendMoney(false); setSendMoneyPrefilledPhone(undefined); }} />}
       {showCashOut   && <CashOutFlow   onClose={() => setShowCashOut(false)} />}
       {showPayment   && <PaymentFlow   onClose={() => setShowPayment(false)} />}
       {showRecharge  && <MobileRechargeFlow onClose={() => setShowRecharge(false)} />}
