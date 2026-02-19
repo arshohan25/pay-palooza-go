@@ -39,6 +39,7 @@ const Index = () => {
   }, []);
   const [showSendMoney, setShowSendMoney]         = useState(false);
   const [sendMoneyPrefilledPhone, setSendMoneyPrefilledPhone] = useState<string | undefined>(undefined);
+  const [sendMoneyOnComplete, setSendMoneyOnComplete] = useState<((amount: number) => void) | undefined>(undefined);
   const [showCashOut, setShowCashOut]     = useState(false);
   const [showPayment, setShowPayment]     = useState(false);
   const [showRecharge, setShowRecharge]   = useState(false);
@@ -128,8 +129,9 @@ const Index = () => {
     if (activeTab === "inbox") {
       return (
         <InboxPage
-          onSendMoney={(phone) => {
+          onSendMoney={(phone, onComplete) => {
             setSendMoneyPrefilledPhone(phone);
+            setSendMoneyOnComplete(() => onComplete);
             setShowSendMoney(true);
           }}
         />
@@ -169,7 +171,7 @@ const Index = () => {
       <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
 
       {/* ── Flow overlays ── */}
-      {showSendMoney && <SendMoneyFlow prefilledPhone={sendMoneyPrefilledPhone} onClose={() => { setShowSendMoney(false); setSendMoneyPrefilledPhone(undefined); }} />}
+      {showSendMoney && <SendMoneyFlow prefilledPhone={sendMoneyPrefilledPhone} onSuccess={(amt) => { sendMoneyOnComplete?.(amt); setSendMoneyOnComplete(undefined); }} onClose={() => { setShowSendMoney(false); setSendMoneyPrefilledPhone(undefined); setSendMoneyOnComplete(undefined); }} />}
       {showCashOut   && <CashOutFlow   onClose={() => setShowCashOut(false)} />}
       {showPayment   && <PaymentFlow   onClose={() => setShowPayment(false)} />}
       {showRecharge  && <MobileRechargeFlow onClose={() => setShowRecharge(false)} />}
