@@ -129,6 +129,7 @@ const Index = () => {
     if (activeTab === "inbox") {
       return (
         <InboxPage
+          isActive={activeTab === "inbox"}
           onSendMoney={(phone, onComplete) => {
             setSendMoneyPrefilledPhone(phone);
             setSendMoneyOnComplete(() => onComplete);
