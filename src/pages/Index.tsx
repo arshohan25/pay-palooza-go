@@ -25,12 +25,14 @@ import InstallPrompt from "@/components/InstallPrompt";
 import AuthPage from "@/pages/AuthPage";
 import InboxPage from "@/pages/InboxPage";
 import SplashScreen from "@/components/SplashScreen";
+import OnboardingSlides, { hasSeenOnboarding, markOnboardingDone } from "@/components/OnboardingSlides";
 
 const SESSION_KEY = "mfs_authenticated";
 
 const Index = () => {
-  const [splashDone, setSplashDone]         = useState(false);
-  const [authenticated, setAuthenticated]   = useState(
+  const [splashDone, setSplashDone]           = useState(false);
+  const [onboardingDone, setOnboardingDone]  = useState(() => hasSeenOnboarding());
+  const [authenticated, setAuthenticated]    = useState(
     () => sessionStorage.getItem(SESSION_KEY) === "1",
   );
   const [activeTab, setActiveTab]         = useState("home");
@@ -147,9 +149,17 @@ const Index = () => {
     );
   };
 
-  // Show splash first, then auth/home
+  // Show splash first, then onboarding (once), then auth/home
   if (!splashDone) {
     return <SplashScreen onDone={() => setSplashDone(true)} />;
+  }
+
+  if (!onboardingDone) {
+    return (
+      <AnimatePresence>
+        <OnboardingSlides onDone={() => setOnboardingDone(true)} />
+      </AnimatePresence>
+    );
   }
 
   return (
