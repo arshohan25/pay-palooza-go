@@ -23,6 +23,7 @@ import { BalanceCardSkeleton, QuickActionsSkeleton, TransactionListSkeleton } fr
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import InstallPrompt from "@/components/InstallPrompt";
 import AuthPage from "@/pages/AuthPage";
+import InboxPage from "@/pages/InboxPage";
 
 
 const SESSION_KEY = "mfs_authenticated";
@@ -122,6 +123,9 @@ const Index = () => {
     }
     if (activeTab === "refer") {
       return <ReferPage onBack={() => handleTabChange("home")} />;
+    }
+    if (activeTab === "inbox") {
+      return <InboxPage />;
     }
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-muted-foreground">

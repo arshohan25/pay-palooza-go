@@ -1,4 +1,4 @@
-import { LayoutDashboard, ArrowLeftRight, ScanLine, BellRing, CircleUserRound } from "lucide-react";
+import { LayoutDashboard, ArrowLeftRight, ScanLine, MessageCircle, CircleUserRound } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { getTxnNotifCount, onTxnNotifChange } from "@/lib/txnNotifStore";
@@ -7,7 +7,7 @@ const navItems = [
   { icon: LayoutDashboard,  label: "Home",    id: "home" },
   { icon: ArrowLeftRight,   label: "History", id: "history" },
   { icon: ScanLine,         label: "Scan",    id: "scan", center: true },
-  { icon: BellRing,         label: "Inbox",   id: "inbox" },
+  { icon: MessageCircle,    label: "Inbox",   id: "inbox" },
   { icon: CircleUserRound,  label: "Account", id: "account" },
 ];
 

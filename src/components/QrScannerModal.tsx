@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Zap } from "lucide-react";
+import { X, Zap, ImageUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface QrScannerModalProps {
@@ -19,6 +19,8 @@ const MOCK_RESULTS: Record<string, string> = {
 const QrScannerModal = ({ open, onClose, onScan, title = "Scan QR Code" }: QrScannerModalProps) => {
   const [detected, setDetected] = useState(false);
   const [scanType, setScanType] = useState<keyof typeof MOCK_RESULTS>("merchant");
+  const [uploadProcessing, setUploadProcessing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Determine mock result based on title
   useEffect(() => {
@@ -29,9 +31,8 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan QR Code" }: QrSca
 
   // Auto-start scan immediately when opened
   useEffect(() => {
-    if (!open) { setDetected(false); return; }
+    if (!open) { setDetected(false); setUploadProcessing(false); return; }
 
-    // Auto-scan after 2s
     const detectTimer = setTimeout(() => {
       setDetected(true);
       setTimeout(() => {
@@ -42,6 +43,22 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan QR Code" }: QrSca
 
     return () => clearTimeout(detectTimer);
   }, [open, scanType]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Simulate QR processing from uploaded image
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadProcessing(true);
+    setTimeout(() => {
+      setDetected(true);
+      setTimeout(() => {
+        onScan(MOCK_RESULTS[scanType]);
+        onClose();
+        setUploadProcessing(false);
+      }, 600);
+    }, 1200);
+    e.target.value = "";
+  };
 
   return (
     <AnimatePresence>
@@ -83,9 +100,8 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan QR Code" }: QrSca
                 />
               ))}
 
-              {!detected && (
+              {!detected && !uploadProcessing && (
                 <>
-                  {/* Scanning line animation — auto plays */}
                   <motion.div
                     animate={{ top: ["10%", "90%", "10%"] }}
                     transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
@@ -94,6 +110,21 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan QR Code" }: QrSca
                   />
                   <p className="text-white/70 text-xs z-10">Scanning…</p>
                 </>
+              )}
+
+              {uploadProcessing && !detected && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex flex-col items-center gap-2 text-white"
+                >
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                    className="w-10 h-10 border-2 border-white/30 border-t-white rounded-full"
+                  />
+                  <p className="text-xs text-white/80">Reading QR…</p>
+                </motion.div>
               )}
 
               {detected && (
@@ -108,9 +139,30 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan QR Code" }: QrSca
               )}
             </div>
 
-            <Button variant="outline" className="w-full h-12" onClick={onClose}>
-              Cancel
-            </Button>
+            {/* Actions */}
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1 h-12 gap-2 border-dashed border-border text-muted-foreground hover:text-foreground hover:border-primary/50 hover:bg-primary/5 transition-all"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={detected || uploadProcessing}
+              >
+                <ImageUp size={16} />
+                Upload QR from Gallery
+              </Button>
+              <Button variant="outline" className="h-12 px-5" onClick={onClose}>
+                Cancel
+              </Button>
+            </div>
+
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileUpload}
+            />
           </motion.div>
         </motion.div>
       )}
