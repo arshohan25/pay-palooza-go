@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Wallet } from "lucide-react";
-import { getBalance, onBalanceChange } from "@/lib/balanceStore";
+import { getBalance, onBalanceChange, fetchBalance } from "@/lib/balanceStore";
 
 /**
  * Small pill that always shows the live available balance.
@@ -10,6 +10,7 @@ export default function AvailableBalanceBadge() {
   const [balance, setBalance] = useState(getBalance());
 
   useEffect(() => {
+    fetchBalance();
     const unsub = onBalanceChange(setBalance);
     return () => { unsub(); };
   }, []);
