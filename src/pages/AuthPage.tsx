@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, AlertCircle, Eye, EyeOff, ArrowRight, RefreshCw,
   Shield, CheckCircle2, UserRound, Delete, Smartphone,
-  Lock, Star, Zap, Globe, Fingerprint,
+  Lock, Star, Zap, Globe, Fingerprint, Wallet, Receipt,
 } from "lucide-react";
 import { haptics } from "@/lib/haptics";
 import { signUp, signIn, phoneToEmail } from "@/lib/auth";
@@ -64,6 +64,17 @@ const T = {
     signingUp: "Creating your account…",
     signingIn: "Signing in…",
     authError: "Something went wrong. Please try again.",
+    verifyIdentity: "Verify Your Identity",
+    verifyIdentityHint: "For security, confirm one of the following to reset your PIN.",
+    useBalance: "Current Balance",
+    useLastTxn: "Last Outgoing Amount",
+    enterBalance: "Enter your current balance",
+    enterLastTxn: "Enter the amount of your last outgoing transaction",
+    verifyAndReset: "Verify & Continue",
+    verifying: "Verifying…",
+    resettingPin: "Resetting PIN…",
+    pinResetSuccess: "PIN reset successfully! Sign in with your new PIN.",
+    pinResetFailed: "PIN reset failed. Please try again.",
   },
   bn: {
     appName: "ইজিপে", tagline: "বাংলাদেশের সবচেয়ে সহজ ডিজিটাল ওয়ালেট",
@@ -112,6 +123,17 @@ const T = {
     signingUp: "একাউন্ট তৈরি হচ্ছে…",
     signingIn: "সাইন ইন হচ্ছে…",
     authError: "কিছু সমস্যা হয়েছে। আবার চেষ্টা করুন।",
+    verifyIdentity: "পরিচয় যাচাই করুন",
+    verifyIdentityHint: "নিরাপত্তার জন্য, আপনার পিন রিসেট করতে নিচের একটি নিশ্চিত করুন।",
+    useBalance: "বর্তমান ব্যালেন্স",
+    useLastTxn: "শেষ লেনদেনের পরিমাণ",
+    enterBalance: "আপনার বর্তমান ব্যালেন্স দিন",
+    enterLastTxn: "আপনার শেষ লেনদেনের পরিমাণ দিন",
+    verifyAndReset: "যাচাই করুন",
+    verifying: "যাচাই হচ্ছে…",
+    resettingPin: "পিন রিসেট হচ্ছে…",
+    pinResetSuccess: "পিন সফলভাবে রিসেট হয়েছে! নতুন পিন দিয়ে সাইন ইন করুন।",
+    pinResetFailed: "পিন রিসেট ব্যর্থ। আবার চেষ্টা করুন।",
   },
 } as const;
 
@@ -121,7 +143,7 @@ type Mode =
   | "landing"
   | "register_phone" | "register_otp" | "register_pin" | "register_name"
   | "login_phone" | "login_pin"
-  | "forgot_otp" | "forgot_pin"
+  | "forgot_otp" | "forgot_verify" | "forgot_pin"
   | "success";
 
 // ─── Step progress ────────────────────────────────────────────────────────────
@@ -316,6 +338,8 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const [error, setError]           = useState("");
   const [userName, setUserName]     = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [verifyType, setVerifyType] = useState<"balance" | "lastTransaction">("balance");
+  const [verifyValue, setVerifyValue] = useState("");
 
   // Check if returning user (has phone stored locally for UX only)
   const returningPhone = localStorage.getItem(DEVICE_KEY) ?? "";
@@ -416,13 +440,20 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     }
   }, [phone, returningPhone, goTo, onAuthenticated, t]);
 
-  // ── Forgot PIN: OTP → new PIN → re-login ──────────────────────────────────
+  // ── Forgot PIN: OTP → Verify Identity → new PIN → server reset ─────────
   const handleForgotOtp = useCallback((val?: string) => {
     const v = val ?? otp;
     if (v.length < 6) { setError(t.enterOtp); return; }
     if (v !== DEMO_OTP) { setError(t.incorrectOtp); haptics.error(); return; }
-    setPin(""); setConfirmPin(""); setConfirmStage(false); goTo("forgot_pin");
+    setVerifyType("balance"); setVerifyValue(""); goTo("forgot_verify");
   }, [otp, goTo, t]);
+
+  const handleForgotVerify = useCallback(() => {
+    if (!verifyValue.trim()) { setError("Please enter a value."); return; }
+    const num = parseFloat(verifyValue);
+    if (isNaN(num) || num < 0) { setError("Enter a valid amount."); return; }
+    setPin(""); setConfirmPin(""); setConfirmStage(false); goTo("forgot_pin");
+  }, [verifyValue, goTo]);
 
   const handleForgotPin = useCallback(async (currentPin: string, currentConfirm: string, stage: boolean) => {
     if (!stage) {
@@ -432,10 +463,40 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     } else {
       if (currentConfirm.length < 4) return;
       if (currentPin !== currentConfirm) { setError(t.pinsDontMatch); haptics.error(); setConfirmPin(""); return; }
-      // For forgot flow, we'd need server-side reset. For now, redirect to login.
-      haptics.success(); setConfirmStage(false); setPin(""); setConfirmPin(""); goTo("login_pin");
+      // Call edge function to verify identity + reset PIN
+      setIsSubmitting(true); setError("");
+      try {
+        const res = await supabase.functions.invoke("reset-pin", {
+          body: {
+            phone: phone || returningPhone,
+            newPin: currentPin,
+            verificationType: verifyType,
+            verificationValue: verifyValue,
+          },
+        });
+        if (res.error || res.data?.error) {
+          setError(res.data?.error || t.pinResetFailed);
+          haptics.error(); setConfirmPin("");
+        } else {
+          haptics.success(); setConfirmStage(false);
+          // Auto sign in with new PIN
+          try {
+            await signIn(phone || returningPhone, currentPin);
+            localStorage.setItem(DEVICE_KEY, phone || returningPhone);
+            goTo("success");
+            setTimeout(onAuthenticated, 1500);
+          } catch {
+            // Sign in failed, redirect to login
+            setPin(""); setConfirmPin(""); goTo("login_pin");
+          }
+        }
+      } catch {
+        setError(t.pinResetFailed); haptics.error(); setConfirmPin("");
+      } finally {
+        setIsSubmitting(false);
+      }
     }
-  }, [goTo, t]);
+  }, [goTo, t, phone, returningPhone, verifyType, verifyValue, onAuthenticated]);
 
   // ── Keypad handlers ────────────────────────────────────────────────────────
   const handleOtpKey = (k: string, onComplete: (val: string) => void) => {
@@ -479,9 +540,10 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     if (mode === "register_name") { goTo("register_pin", -1); return; }
     if (mode === "login_pin")     { setPin(""); goTo("login_phone", -1); return; }
     if (mode === "forgot_otp")    { setOtp(""); goTo("login_pin", -1); return; }
+    if (mode === "forgot_verify") { setVerifyValue(""); goTo("forgot_otp", -1); return; }
     if (mode === "forgot_pin")    {
       if (confirmStage) { setConfirmStage(false); setConfirmPin(""); return; }
-      setPin(""); setConfirmPin(""); goTo("forgot_otp", -1); return;
+      setPin(""); setConfirmPin(""); goTo("forgot_verify", -1); return;
     }
   };
 
@@ -779,6 +841,75 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                       );
                     })()}
 
+                    {/* ── VERIFY IDENTITY (forgot flow) ── */}
+                    {mode === "forgot_verify" && (
+                      <div className="space-y-6">
+                        <div className="space-y-1">
+                          <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/15 flex items-center justify-center mb-3">
+                            <Shield size={22} className="text-primary" />
+                          </div>
+                          <h2 className="text-2xl font-black text-foreground tracking-tight">{t.verifyIdentity}</h2>
+                          <p className="text-sm text-muted-foreground">{t.verifyIdentityHint}</p>
+                        </div>
+
+                        {/* Verification method toggle */}
+                        <div className="flex gap-2">
+                          {([
+                            { key: "balance" as const, icon: Wallet, label: t.useBalance },
+                            { key: "lastTransaction" as const, icon: Receipt, label: t.useLastTxn },
+                          ]).map(({ key, icon: Icon, label }) => (
+                            <motion.button key={key} whileTap={{ scale: 0.95 }}
+                              onClick={() => { setVerifyType(key); setVerifyValue(""); setError(""); }}
+                              className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${
+                                verifyType === key
+                                  ? "border-primary bg-primary/8 shadow-glow"
+                                  : "border-border bg-card hover:border-primary/30"
+                              }`}>
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                                verifyType === key ? "bg-primary/15" : "bg-muted"
+                              }`}>
+                                <Icon size={18} className={verifyType === key ? "text-primary" : "text-muted-foreground"} />
+                              </div>
+                              <span className={`text-xs font-bold ${verifyType === key ? "text-primary" : "text-muted-foreground"}`}>{label}</span>
+                            </motion.button>
+                          ))}
+                        </div>
+
+                        {/* Amount input */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-semibold text-foreground">
+                            {verifyType === "balance" ? t.enterBalance : t.enterLastTxn}
+                          </label>
+                          <div className={`flex items-center h-16 bg-card border-2 rounded-2xl overflow-hidden transition-all shadow-card ${
+                            error ? "border-destructive" : "border-border focus-within:border-primary focus-within:shadow-glow"
+                          }`}>
+                            <span className="pl-4 pr-2 text-lg font-black text-muted-foreground">৳</span>
+                            <input
+                              type="text" inputMode="decimal"
+                              placeholder="0.00"
+                              value={verifyValue}
+                              onChange={(e) => { setVerifyValue(e.target.value.replace(/[^0-9.]/g, "")); setError(""); }}
+                              autoFocus
+                              className="flex-1 h-full px-2 text-lg font-bold bg-transparent focus:outline-none placeholder:text-muted-foreground/30"
+                            />
+                          </div>
+                          {error && (
+                            <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                              className="text-xs text-destructive flex items-center gap-1.5 px-1">
+                              <AlertCircle size={12} /> {error}
+                            </motion.p>
+                          )}
+                        </div>
+
+                        <motion.button whileTap={{ scale: 0.97 }}
+                          className="w-full h-14 gradient-hero text-white font-bold text-[15px] rounded-2xl shadow-glow flex items-center justify-center gap-2 disabled:opacity-40"
+                          onClick={handleForgotVerify}
+                          disabled={!verifyValue.trim()}>
+                          {t.verifyAndReset} <ArrowRight size={17} />
+                        </motion.button>
+                      </div>
+                    )}
+
                     {/* ── SET / CONFIRM PIN ── */}
                     {(mode === "register_pin" || mode === "forgot_pin") && (() => {
                       const onComplete = mode === "register_pin" ? handleRegisterPin : handleForgotPin;
@@ -813,7 +944,11 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                               <p className="text-[11px] text-muted-foreground">{t.pinWeakHint}</p>
                             </div>
                           )}
-                          <NumPad onKey={(k) => handlePinKey(k, pin, confirmPin, confirmStage, onComplete)} onDelete={() => handlePinDelete(confirmStage)} />
+                          {isSubmitting && (
+                            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                              className="text-sm text-primary font-semibold text-center">{t.resettingPin}</motion.p>
+                          )}
+                          <NumPad onKey={(k) => { if (isSubmitting) return; handlePinKey(k, pin, confirmPin, confirmStage, onComplete); }} onDelete={() => handlePinDelete(confirmStage)} />
                         </div>
                       );
                     })()}
