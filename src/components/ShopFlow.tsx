@@ -1,13 +1,14 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ShoppingCart, Search, Star, Plus, Minus, Trash2,
   CheckCircle2, Tag, X, MapPin, CreditCard, Wallet, Pencil, Package,
   ChevronRight, Truck, Clock, CircleCheck, ChevronDown, ChevronUp,
-  Heart, Gift, Ticket, MessageSquarePlus, Send,
+  Heart, Gift, Ticket, MessageSquarePlus, Send, Zap, AlertCircle,
+  RefreshCw, TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
-import { getBalance, deductBalance } from "@/lib/balanceStore";
+import { getBalance, deductBalance, addBalance, onBalanceChange } from "@/lib/balanceStore";
 import { fireSuccessConfetti } from "@/lib/confetti";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -46,7 +47,7 @@ interface Order {
   total: number;
   address: Address;
   paymentMethod: "wallet" | "card";
-  status: "processing" | "confirmed" | "shipped" | "out_for_delivery" | "delivered";
+  status: "processing" | "confirmed" | "shipped" | "out_for_delivery" | "delivered" | "cancelled";
   estimatedDelivery: string;
   timeline: TimelineEvent[];
 }
@@ -105,20 +106,22 @@ const PRODUCTS: Product[] = [
 
 const CATEGORIES = ["All", "Electronics", "Gaming", "Accessories", "Computing", "Home", "Sports"];
 
+// ── Flash Deals ────────────────────────────────────────────────────────────────
+const FLASH_DEALS = [
+  { productId: "p1", endsInMs: 2 * 3600 * 1000 + 14 * 60 * 1000 },
+  { productId: "p4", endsInMs: 1 * 3600 * 1000 + 45 * 60 * 1000 },
+  { productId: "p9", endsInMs: 0 * 3600 * 1000 + 38 * 60 * 1000 },
+];
+
 const DEFAULT_ADDRESSES: Address[] = [
-  { id: "a1", label: "Home", name: "Karim Hossain", line1: "House 12, Road 5, Block D", line2: "Mirpur-10", city: "Dhaka-1216", phone: "01712-345678" },
+  { id: "a1", label: "Home",   name: "Karim Hossain", line1: "House 12, Road 5, Block D", line2: "Mirpur-10",  city: "Dhaka-1216", phone: "01712-345678" },
   { id: "a2", label: "Office", name: "Karim Hossain", line1: "Level 4, Tower A, Bashundhara City", line2: "Panthapath", city: "Dhaka-1215", phone: "01712-345678" },
 ];
 
-// ── Promo Codes ───────────────────────────────────────────────────────────────
 const PROMO_CODES: Record<string, number> = {
-  "SAVE10": 10,
-  "WELCOME20": 20,
-  "FLASH15": 15,
-  "MFS5": 5,
+  "SAVE10": 10, "WELCOME20": 20, "FLASH15": 15, "MFS5": 5,
 };
 
-// ── Order Timeline Helper ─────────────────────────────────────────────────────
 const TIMELINE_STEPS: { step: Order["status"]; label: string }[] = [
   { step: "processing",       label: "Order Placed" },
   { step: "confirmed",        label: "Confirmed" },
@@ -140,43 +143,85 @@ const makeTimeline = (currentStatus: Order["status"], baseDate: string): Timelin
 
 const SAMPLE_ORDERS: Order[] = [
   {
-    id: "o1",
-    orderNum: "ORD-A1B2C3",
-    date: "Feb 15, 2026",
+    id: "o1", orderNum: "ORD-A1B2C3", date: "Feb 15, 2026",
     items: [{ ...PRODUCTS[0], qty: 1 }, { ...PRODUCTS[3], qty: 2 }],
     total: PRODUCTS[0].price + PRODUCTS[3].price * 2,
-    address: DEFAULT_ADDRESSES[0],
-    paymentMethod: "wallet",
-    status: "shipped",
-    estimatedDelivery: "Feb 20, 2026",
-    timeline: makeTimeline("shipped", "Feb 15"),
+    address: DEFAULT_ADDRESSES[0], paymentMethod: "wallet", status: "shipped",
+    estimatedDelivery: "Feb 20, 2026", timeline: makeTimeline("shipped", "Feb 15"),
   },
   {
-    id: "o2",
-    orderNum: "ORD-D4E5F6",
-    date: "Feb 10, 2026",
+    id: "o2", orderNum: "ORD-D4E5F6", date: "Feb 10, 2026",
     items: [{ ...PRODUCTS[6], qty: 1 }],
     total: PRODUCTS[6].price,
-    address: DEFAULT_ADDRESSES[0],
-    paymentMethod: "card",
-    status: "delivered",
-    estimatedDelivery: "Feb 14, 2026",
-    timeline: makeTimeline("delivered", "Feb 10"),
+    address: DEFAULT_ADDRESSES[0], paymentMethod: "card", status: "delivered",
+    estimatedDelivery: "Feb 14, 2026", timeline: makeTimeline("delivered", "Feb 10"),
   },
 ];
 
 type Screen = "browse" | "detail" | "cart" | "checkout" | "success" | "orders" | "wishlist";
 type PaymentMethod = "wallet" | "card";
 
-const headerGradient = "linear-gradient(135deg,#FF7043,#BF360C)";
+const SHOP_GRADIENT = "linear-gradient(135deg,#FF7043,#BF360C)";
+
+// ── Countdown Timer Hook ───────────────────────────────────────────────────────
+const useCountdown = (ms: number) => {
+  const [remaining, setRemaining] = useState(ms);
+  useEffect(() => {
+    const iv = setInterval(() => setRemaining(r => Math.max(0, r - 1000)), 1000);
+    return () => clearInterval(iv);
+  }, []);
+  const h = Math.floor(remaining / 3600000);
+  const m = Math.floor((remaining % 3600000) / 60000);
+  const s = Math.floor((remaining % 60000) / 1000);
+  return `${h > 0 ? `${h}h ` : ""}${String(m).padStart(2, "0")}m ${String(s).padStart(2, "0")}s`;
+};
+
+// ── Flash Deal Card ────────────────────────────────────────────────────────────
+const FlashDealCard = ({ deal, product, onAdd, inCart, onClick }: {
+  deal: typeof FLASH_DEALS[0]; product: Product;
+  onAdd: () => void; inCart: boolean; onClick: () => void;
+}) => {
+  const countdown = useCountdown(deal.endsInMs);
+  const discount = product.originalPrice ? Math.round((1 - product.price / product.originalPrice) * 100) : 0;
+  return (
+    <motion.div
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      className="shrink-0 w-40 bg-card border border-border/60 rounded-3xl overflow-hidden shadow-card cursor-pointer"
+    >
+      <div className="h-24 flex flex-col items-center justify-center relative" style={{ background: "rgba(255,112,67,0.08)" }}>
+        <span className="text-4xl">{product.emoji}</span>
+        <div className="absolute top-2 left-2 flex items-center gap-1 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+          <Zap size={8} className="fill-white" /> {discount}% OFF
+        </div>
+      </div>
+      <div className="p-2.5 space-y-1">
+        <p className="text-[11px] font-bold text-foreground leading-tight line-clamp-2">{product.name}</p>
+        <p className="text-[12px] font-extrabold" style={{ color: "#FF7043" }}>৳{product.price.toLocaleString()}</p>
+        <div className="flex items-center gap-1 bg-orange-50 dark:bg-orange-950/30 rounded-lg px-1.5 py-0.5">
+          <Clock size={9} className="text-orange-500 shrink-0" />
+          <span className="text-[9px] font-bold text-orange-600 dark:text-orange-400 tabular-nums">{countdown}</span>
+        </div>
+        <motion.button
+          whileTap={{ scale: 0.88 }}
+          onClick={e => { e.stopPropagation(); onAdd(); }}
+          className="w-full h-7 rounded-xl text-white text-[11px] font-bold flex items-center justify-center gap-1"
+          style={{ background: inCart ? "#43A047" : SHOP_GRADIENT }}
+        >
+          {inCart ? <CheckCircle2 size={11} /> : <Plus size={11} />}
+          {inCart ? "Added" : "Add"}
+        </motion.button>
+      </div>
+    </motion.div>
+  );
+};
 
 // ── Star Rating ────────────────────────────────────────────────────────────────
 const StarRating = ({ value, size = 13, onRate }: { value: number; size?: number; onRate?: (n: number) => void }) => (
   <div className="flex gap-0.5">
     {[1,2,3,4,5].map(s => (
       <Star
-        key={s}
-        size={size}
+        key={s} size={size}
         className={`${s <= Math.round(value) ? "fill-amber-400 text-amber-400" : "fill-muted text-muted"} ${onRate ? "cursor-pointer" : ""}`}
         onClick={() => onRate?.(s)}
       />
@@ -184,12 +229,51 @@ const StarRating = ({ value, size = 13, onRate }: { value: number; size?: number
   </div>
 );
 
+// ── Rating Bar Chart ───────────────────────────────────────────────────────────
+const RatingBars = ({ productId, allReviews, overallRating, totalReviews }: {
+  productId: string; allReviews: Review[]; overallRating: number; totalReviews: number;
+}) => {
+  const productReviews = allReviews.filter(r => r.productId === productId);
+  const total = Math.max(productReviews.length, 1);
+  const counts = [5,4,3,2,1].map(star => ({
+    star,
+    count: productReviews.filter(r => Math.round(r.rating) === star).length,
+  }));
+  return (
+    <div className="flex gap-4 items-center">
+      {/* Big average */}
+      <div className="flex flex-col items-center shrink-0">
+        <p className="text-[36px] font-extrabold text-foreground leading-none">{overallRating}</p>
+        <StarRating value={overallRating} size={12} />
+        <p className="text-[10px] text-muted-foreground mt-1">{totalReviews.toLocaleString()} reviews</p>
+      </div>
+      {/* Bars */}
+      <div className="flex-1 space-y-1">
+        {counts.map(({ star, count }) => (
+          <div key={star} className="flex items-center gap-2">
+            <span className="text-[10px] font-semibold text-muted-foreground w-3 shrink-0">{star}</span>
+            <Star size={8} className="fill-amber-400 text-amber-400 shrink-0" />
+            <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${(count / total) * 100}%` }}
+                transition={{ duration: 0.6, ease: "easeOut", delay: (5 - star) * 0.05 }}
+                className="h-full rounded-full bg-amber-400"
+              />
+            </div>
+            <span className="text-[9px] text-muted-foreground w-3 text-right shrink-0">{count}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // ── Write Review Sheet ─────────────────────────────────────────────────────────
 interface WriteReviewProps { productId: string; productName: string; onSubmit: (r: Review) => void; onCancel: () => void; }
 const WriteReviewSheet = ({ productId, productName, onSubmit, onCancel }: WriteReviewProps) => {
   const [rating, setRating] = useState(0);
   const [text, setText] = useState("");
-
   return (
     <motion.div
       initial={{ opacity: 0, y: "100%" }}
@@ -201,36 +285,28 @@ const WriteReviewSheet = ({ productId, productName, onSubmit, onCancel }: WriteR
       <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
       <div className="relative bg-background rounded-t-3xl p-5 space-y-4 pb-10">
         <div className="w-10 h-1 bg-border rounded-full mx-auto mb-2" />
-        <p className="text-[16px] font-bold">Review {productName}</p>
+        <p className="text-[16px] font-bold text-foreground">Review {productName}</p>
         <div className="flex flex-col items-center gap-3 py-2">
           <p className="text-[12px] text-muted-foreground">Tap to rate</p>
           <StarRating value={rating} size={32} onRate={setRating} />
         </div>
         <textarea
-          value={text}
-          onChange={e => setText(e.target.value)}
+          value={text} onChange={e => setText(e.target.value)}
           placeholder="Share your experience with this product…"
           rows={3}
-          className="w-full px-4 py-3 rounded-2xl bg-muted border border-border text-[13px] outline-none focus:border-orange-400 resize-none"
+          className="w-full px-4 py-3 rounded-2xl bg-muted border border-border text-[13px] outline-none focus:border-orange-400 resize-none text-foreground"
         />
         <div className="flex gap-3">
-          <button onClick={onCancel} className="flex-1 h-12 rounded-2xl border border-border text-[14px] font-semibold text-muted-foreground">Cancel</button>
+          <button onClick={onCancel} className="flex-1 h-12 rounded-2xl border border-border text-[14px] font-semibold text-muted-foreground bg-background">Cancel</button>
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={() => {
               if (rating === 0) { toast.error("Please select a rating"); return; }
               if (!text.trim()) { toast.error("Please write something"); return; }
-              onSubmit({
-                productId,
-                author: "You",
-                avatar: "🙋",
-                rating,
-                date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-                text,
-              });
+              onSubmit({ productId, author: "You", avatar: "🙋", rating, date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }), text });
             }}
             className="flex-1 h-12 rounded-2xl text-white font-bold text-[14px] flex items-center justify-center gap-2"
-            style={{ background: headerGradient }}
+            style={{ background: SHOP_GRADIENT }}
           >
             <Send size={14} /> Submit
           </motion.button>
@@ -241,23 +317,15 @@ const WriteReviewSheet = ({ productId, productName, onSubmit, onCancel }: WriteR
 };
 
 // ── Address Editor Sheet ───────────────────────────────────────────────────────
-interface AddressEditorProps {
-  address: Address | null;
-  onSave: (a: Address) => void;
-  onCancel: () => void;
-}
-const AddressEditor = ({ address, onSave, onCancel }: AddressEditorProps) => {
+const AddressEditor = ({ address, onSave, onCancel }: { address: Address | null; onSave: (a: Address) => void; onCancel: () => void; }) => {
   const [form, setForm] = useState<Address>(
     address ?? { id: `a${Date.now()}`, label: "Home", name: "", line1: "", line2: "", city: "", phone: "" }
   );
   const set = (k: keyof Address, v: string) => setForm(f => ({ ...f, [k]: v }));
   const labels = ["Home", "Office", "Other"];
-
   return (
     <motion.div
-      initial={{ opacity: 0, y: "100%" }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: "100%" }}
+      initial={{ opacity: 0, y: "100%" }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: "100%" }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className="fixed inset-0 z-[60] flex flex-col justify-end"
     >
@@ -267,14 +335,9 @@ const AddressEditor = ({ address, onSave, onCancel }: AddressEditorProps) => {
         <p className="text-[16px] font-bold text-foreground">{address ? "Edit Address" : "New Address"}</p>
         <div className="flex gap-2">
           {labels.map(l => (
-            <button
-              key={l}
-              onClick={() => set("label", l)}
-              className={`flex-1 py-2 rounded-xl text-[12px] font-semibold border transition-colors ${
-                form.label === l ? "text-white border-transparent" : "bg-muted text-muted-foreground border-border"
-              }`}
-              style={form.label === l ? { background: headerGradient } : {}}
-            >
+            <button key={l} onClick={() => set("label", l)}
+              className={`flex-1 py-2 rounded-xl text-[12px] font-semibold border transition-colors ${form.label === l ? "text-white border-transparent" : "bg-muted text-muted-foreground border-border"}`}
+              style={form.label === l ? { background: SHOP_GRADIENT } : {}}>
               {l}
             </button>
           ))}
@@ -289,25 +352,18 @@ const AddressEditor = ({ address, onSave, onCancel }: AddressEditorProps) => {
           <div key={key} className="space-y-1">
             <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{label}</label>
             <input
-              type="text"
-              value={form[key]}
-              onChange={e => set(key, e.target.value)}
-              placeholder={placeholder}
-              className="w-full px-4 py-3 rounded-2xl bg-muted border border-border text-[13px] outline-none focus:border-orange-400 transition-colors"
+              type="text" value={form[key]} onChange={e => set(key, e.target.value)} placeholder={placeholder}
+              className="w-full px-4 py-3 rounded-2xl bg-muted border border-border text-[13px] text-foreground outline-none focus:border-orange-400 transition-colors"
             />
           </div>
         ))}
         <div className="flex gap-3 pt-2">
-          <button onClick={onCancel} className="flex-1 h-12 rounded-2xl border border-border text-[14px] font-semibold text-muted-foreground">Cancel</button>
+          <button onClick={onCancel} className="flex-1 h-12 rounded-2xl border border-border text-[14px] font-semibold text-muted-foreground bg-background">Cancel</button>
           <motion.button
             whileTap={{ scale: 0.97 }}
-            onClick={() => {
-              if (!form.name || !form.line1 || !form.city) { toast.error("Please fill all required fields"); return; }
-              onSave(form);
-            }}
+            onClick={() => { if (!form.name || !form.line1 || !form.city) { toast.error("Please fill all required fields"); return; } onSave(form); }}
             className="flex-1 h-12 rounded-2xl text-white font-bold text-[14px]"
-            style={{ background: headerGradient }}
-          >
+            style={{ background: SHOP_GRADIENT }}>
             Save Address
           </motion.button>
         </div>
@@ -323,27 +379,19 @@ const STATUS_CONFIG: Record<Order["status"], { label: string; color: string; ico
   shipped:          { label: "Shipped",           color: "#2196F3", icon: Truck },
   out_for_delivery: { label: "Out for Delivery",  color: "#FF5722", icon: Package },
   delivered:        { label: "Delivered",         color: "#43A047", icon: CircleCheck },
+  cancelled:        { label: "Cancelled",         color: "#9E9E9E", icon: X },
 };
 
 // ── Order Timeline ─────────────────────────────────────────────────────────────
 const OrderTimeline = ({ timeline }: { timeline: TimelineEvent[] }) => {
   const doneCount = timeline.filter(t => t.done).length;
   const progress = ((doneCount - 1) / (timeline.length - 1)) * 100;
-
   return (
     <div className="space-y-3 pt-1">
-      {/* Progress bar */}
       <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-        <motion.div
-          className="h-full rounded-full"
-          style={{ background: headerGradient }}
-          initial={{ width: 0 }}
-          animate={{ width: `${Math.max(0, progress)}%` }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-        />
+        <motion.div className="h-full rounded-full" style={{ background: SHOP_GRADIENT }}
+          initial={{ width: 0 }} animate={{ width: `${Math.max(0, progress)}%` }} transition={{ duration: 0.6, ease: "easeOut" }} />
       </div>
-
-      {/* Steps */}
       <div className="space-y-0">
         {timeline.map((event, i) => {
           const cfg = STATUS_CONFIG[event.step];
@@ -352,24 +400,17 @@ const OrderTimeline = ({ timeline }: { timeline: TimelineEvent[] }) => {
           return (
             <div key={event.step} className="flex gap-3">
               <div className="flex flex-col items-center">
-                <motion.div
-                  initial={{ scale: 0.5, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
+                <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: i * 0.07 }}
                   className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${event.done ? "text-white" : "bg-muted text-muted-foreground"}`}
-                  style={event.done ? { background: cfg.color } : {}}
-                >
+                  style={event.done ? { background: cfg.color } : {}}>
                   <Icon size={13} />
                 </motion.div>
-                {!isLast && (
-                  <div className={`w-0.5 flex-1 min-h-[20px] my-0.5 rounded-full ${event.done ? "bg-orange-300" : "bg-border"}`} />
-                )}
+                {!isLast && <div className={`w-0.5 flex-1 min-h-[20px] my-0.5 rounded-full ${event.done ? "bg-orange-300" : "bg-border"}`} />}
               </div>
               <div className="pb-4 flex-1">
                 <p className={`text-[12.5px] font-bold ${event.done ? "text-foreground" : "text-muted-foreground"}`}>{event.label}</p>
-                {event.timestamp && (
-                  <p className="text-[10.5px] text-muted-foreground mt-0.5">{event.timestamp}</p>
-                )}
+                {event.timestamp && <p className="text-[10.5px] text-muted-foreground mt-0.5">{event.timestamp}</p>}
               </div>
             </div>
           );
@@ -380,12 +421,13 @@ const OrderTimeline = ({ timeline }: { timeline: TimelineEvent[] }) => {
 };
 
 // ── Order Card ─────────────────────────────────────────────────────────────────
-interface OrderCardProps { order: Order; }
-const OrderCard = ({ order }: OrderCardProps) => {
+const OrderCard = ({ order, onCancel }: { order: Order; onCancel?: (id: string) => void; }) => {
   const [expanded, setExpanded] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
   const cfg = STATUS_CONFIG[order.status];
   const Icon = cfg.icon;
+  const canCancel = order.status === "processing" || order.status === "confirmed";
 
   return (
     <div className="bg-card rounded-3xl border border-border/60 overflow-hidden shadow-card">
@@ -405,13 +447,7 @@ const OrderCard = ({ order }: OrderCardProps) => {
 
       <AnimatePresence>
         {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.22 }}
-            className="overflow-hidden"
-          >
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22 }} className="overflow-hidden">
             <div className="px-4 pb-4 space-y-3 border-t border-border/50 pt-3">
               {/* Items */}
               <div className="space-y-2">
@@ -419,10 +455,10 @@ const OrderCard = ({ order }: OrderCardProps) => {
                   <div key={item.id} className="flex items-center gap-2.5">
                     <span className="text-xl">{item.emoji}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-semibold truncate">{item.name}</p>
+                      <p className="text-[12px] font-semibold truncate text-foreground">{item.name}</p>
                       <p className="text-[10.5px] text-muted-foreground">Qty: {item.qty}</p>
                     </div>
-                    <p className="text-[12px] font-bold">৳{(item.price * item.qty).toLocaleString()}</p>
+                    <p className="text-[12px] font-bold text-foreground">৳{(item.price * item.qty).toLocaleString()}</p>
                   </div>
                 ))}
               </div>
@@ -434,42 +470,57 @@ const OrderCard = ({ order }: OrderCardProps) => {
                   <p className="text-[11px] text-muted-foreground leading-snug">{order.address.line1}, {order.address.line2}, {order.address.city}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {order.paymentMethod === "wallet"
-                    ? <Wallet size={12} className="text-muted-foreground" />
-                    : <CreditCard size={12} className="text-muted-foreground" />}
+                  {order.paymentMethod === "wallet" ? <Wallet size={12} className="text-muted-foreground" /> : <CreditCard size={12} className="text-muted-foreground" />}
                   <p className="text-[11px] text-muted-foreground">{order.paymentMethod === "wallet" ? "Paid via Wallet" : "Paid via Card"}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Truck size={12} className="text-muted-foreground" />
-                  <p className="text-[11px] text-muted-foreground">Est. delivery: {order.estimatedDelivery}</p>
-                </div>
+                {order.status !== "cancelled" && (
+                  <div className="flex items-center gap-2">
+                    <Truck size={12} className="text-muted-foreground" />
+                    <p className="text-[11px] text-muted-foreground">Est. delivery: {order.estimatedDelivery}</p>
+                  </div>
+                )}
               </div>
 
-              {/* Track Order toggle */}
-              <button
-                onClick={() => setShowTimeline(s => !s)}
-                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl border border-border/60 bg-muted/50 text-[12px] font-semibold text-foreground"
-              >
-                <div className="flex items-center gap-2">
-                  <Truck size={13} style={{ color: "#FF7043" }} />
-                  Track Shipment
-                </div>
-                {showTimeline ? <ChevronUp size={13} className="text-muted-foreground" /> : <ChevronDown size={13} className="text-muted-foreground" />}
-              </button>
+              {/* Track Shipment */}
+              {order.status !== "cancelled" && (
+                <>
+                  <button onClick={() => setShowTimeline(s => !s)}
+                    className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl border border-border/60 bg-muted/50 text-[12px] font-semibold text-foreground">
+                    <div className="flex items-center gap-2">
+                      <Truck size={13} style={{ color: "#FF7043" }} />Track Shipment
+                    </div>
+                    {showTimeline ? <ChevronUp size={13} className="text-muted-foreground" /> : <ChevronDown size={13} className="text-muted-foreground" />}
+                  </button>
+                  <AnimatePresence>
+                    {showTimeline && (
+                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden bg-muted/30 rounded-2xl p-3">
+                        <OrderTimeline timeline={order.timeline} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </>
+              )}
 
-              <AnimatePresence>
-                {showTimeline && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden bg-muted/30 rounded-2xl p-3"
-                  >
-                    <OrderTimeline timeline={order.timeline} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {/* Cancel Order */}
+              {canCancel && onCancel && !confirmCancel && (
+                <button onClick={() => setConfirmCancel(true)}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl border border-red-200 dark:border-red-800 text-red-500 text-[12px] font-semibold bg-red-50 dark:bg-red-950/30">
+                  <AlertCircle size={13} /> Cancel Order
+                </button>
+              )}
+              {canCancel && onCancel && confirmCancel && (
+                <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-2xl p-3 space-y-2">
+                  <p className="text-[12px] font-semibold text-red-600 dark:text-red-400 text-center">Cancel this order?</p>
+                  <p className="text-[11px] text-muted-foreground text-center">
+                    {order.paymentMethod === "wallet" ? "Refund of ৳" + order.total.toLocaleString() + " will go back to your wallet." : "Refund will be processed to your card."}
+                  </p>
+                  <div className="flex gap-2">
+                    <button onClick={() => setConfirmCancel(false)} className="flex-1 h-9 rounded-xl border border-border text-[12px] font-semibold text-muted-foreground bg-background">Keep Order</button>
+                    <button onClick={() => { onCancel(order.id); setConfirmCancel(false); setExpanded(false); }}
+                      className="flex-1 h-9 rounded-xl bg-red-500 text-white text-[12px] font-bold">Yes, Cancel</button>
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -489,12 +540,24 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
   const [detail, setDetail]           = useState<Product | null>(null);
   const [orderNum, setOrderNum]       = useState("");
   const [lastOrderTotal, setLastOrderTotal] = useState(0);
+  const [lastPayMethod, setLastPayMethod] = useState<PaymentMethod>("wallet");
+  const bodyRef = useRef<HTMLDivElement>(null);
 
-  // Wishlist
-  const [wishlist, setWishlist]       = useState<Set<string>>(new Set());
+  // Reactive wallet balance
+  const [walletBalance, setWalletBalance] = useState(getBalance);
+  useEffect(() => {
+    const unsub = onBalanceChange(setWalletBalance);
+    return () => { unsub(); };
+  }, []);
+
+  // Wishlist — persisted in localStorage
+  const [wishlist, setWishlist] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("shop_wishlist") || "[]")); }
+    catch { return new Set(); }
+  });
 
   // Address state
-  const [addresses, setAddresses]     = useState<Address[]>(DEFAULT_ADDRESSES);
+  const [addresses, setAddresses]         = useState<Address[]>(DEFAULT_ADDRESSES);
   const [selectedAddressId, setSelectedAddressId] = useState("a1");
   const [showAddressPicker, setShowAddressPicker] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null | "new">(null);
@@ -504,7 +567,6 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
   const [savedCard]                   = useState({ last4: "4242", brand: "Visa" });
 
   // Promo code
-  const [promoCode, setPromoCode]     = useState("");
   const [appliedPromo, setAppliedPromo] = useState<{ code: string; discount: number } | null>(null);
   const [promoInput, setPromoInput]   = useState("");
 
@@ -515,32 +577,32 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
   const [reviews, setReviews]         = useState<Review[]>(SAMPLE_REVIEWS);
   const [showWriteReview, setShowWriteReview] = useState(false);
 
+  // Persist wishlist
+  useEffect(() => {
+    localStorage.setItem("shop_wishlist", JSON.stringify([...wishlist]));
+  }, [wishlist]);
+
+  // Scroll body to top on screen change
+  useEffect(() => {
+    bodyRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [screen, detail]);
+
   // ── Derived ────────────────────────────────────────────────────────────────
   const filtered = useMemo(() => PRODUCTS.filter(p =>
     (category === "All" || p.category === category) &&
     (p.name.toLowerCase().includes(search.toLowerCase()) || p.brand.toLowerCase().includes(search.toLowerCase()))
   ), [category, search]);
 
-  const cartCount   = cart.reduce((s, i) => s + i.qty, 0);
+  const cartCount    = cart.reduce((s, i) => s + i.qty, 0);
   const cartSubtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const discountAmt  = appliedPromo ? Math.round(cartSubtotal * appliedPromo.discount / 100) : 0;
   const cartTotal    = cartSubtotal - discountAmt;
   const selectedAddress = addresses.find(a => a.id === selectedAddressId) ?? addresses[0];
-
-  // Products the user has purchased
-  const purchasedProductIds = useMemo(() =>
-    new Set(orders.flatMap(o => o.items.map(i => i.id))),
-    [orders]
-  );
-
-  // Wishlist products
+  const purchasedProductIds = useMemo(() => new Set(orders.flatMap(o => o.items.map(i => i.id))), [orders]);
   const wishlistProducts = PRODUCTS.filter(p => wishlist.has(p.id));
-
-  // Related products (same category, exclude current)
   const relatedProducts = useMemo(() =>
-    detail ? PRODUCTS.filter(p => p.category === detail.category && p.id !== detail.id).slice(0, 4) : [],
-    [detail]
-  );
+    detail ? PRODUCTS.filter(p => p.category === detail.category && p.id !== detail.id).slice(0, 4) : [], [detail]);
+  const flashDealsWithProduct = FLASH_DEALS.map(d => ({ deal: d, product: PRODUCTS.find(p => p.id === d.productId)! })).filter(x => x.product);
 
   // ── Cart helpers ────────────────────────────────────────────────────────────
   const addToCart = (p: Product) => {
@@ -583,40 +645,42 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
     const disc = PROMO_CODES[upper];
     if (!disc) { toast.error("Invalid promo code"); return; }
     setAppliedPromo({ code: upper, discount: disc });
-    setPromoCode(upper);
     toast.success(`🎉 ${disc}% discount applied!`);
   };
 
-  const removePromo = () => {
-    setAppliedPromo(null);
-    setPromoInput("");
-    setPromoCode("");
+  const removePromo = () => { setAppliedPromo(null); setPromoInput(""); };
+
+  // ── Order cancellation ──────────────────────────────────────────────────────
+  const cancelOrder = (orderId: string) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "cancelled" as const, timeline: [] } : o));
+    if (order.paymentMethod === "wallet") {
+      addBalance(order.total);
+      toast.success(`Order cancelled · ৳${order.total.toLocaleString()} refunded to wallet`);
+    } else {
+      toast.success("Order cancelled · Refund will be processed to your card");
+    }
   };
 
   // ── Checkout ────────────────────────────────────────────────────────────────
   const handleCheckout = () => {
     if (payMethod === "wallet") {
-      const bal = getBalance();
-      if (cartTotal > bal) { toast.error("Insufficient wallet balance"); return; }
+      if (cartTotal > walletBalance) { toast.error("Insufficient wallet balance"); return; }
       deductBalance(cartTotal);
     }
     const num = `ORD-${Date.now().toString(36).toUpperCase().slice(-6)}`;
     const dateStr = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
     const newOrder: Order = {
-      id: `o${Date.now()}`,
-      orderNum: num,
-      date: dateStr,
-      items: [...cart],
-      total: cartTotal,
-      address: selectedAddress,
-      paymentMethod: payMethod,
-      status: "processing",
+      id: `o${Date.now()}`, orderNum: num, date: dateStr, items: [...cart], total: cartTotal,
+      address: selectedAddress, paymentMethod: payMethod, status: "processing",
       estimatedDelivery: new Date(Date.now() + 5 * 86400000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
       timeline: makeTimeline("processing", dateStr),
     };
     setOrders(prev => [newOrder, ...prev]);
     setOrderNum(num);
     setLastOrderTotal(cartTotal);
+    setLastPayMethod(payMethod);
     fireSuccessConfetti();
     setCart([]);
     setAppliedPromo(null);
@@ -636,28 +700,22 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
   };
 
   const headerTitle: Record<Screen, string> = {
-    browse:   "Shop",
-    detail:   detail?.name ?? "Product",
-    cart:     `Cart (${cartCount})`,
-    checkout: "Checkout",
-    success:  "Order Placed!",
-    orders:   "My Orders",
+    browse: "Shop", detail: detail?.name ?? "Product",
+    cart: `Cart (${cartCount})`, checkout: "Checkout",
+    success: "Order Placed!", orders: "My Orders",
     wishlist: `Wishlist (${wishlist.size})`,
   };
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 bg-background flex flex-col overflow-hidden"
     >
       {/* ── Header ── */}
       <motion.div
-        className="text-primary-foreground px-4 pt-3 pb-3 shrink-0"
-        style={{ background: headerGradient }}
-        initial={{ y: -60, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
+        className="text-white px-4 pt-3 pb-3 shrink-0"
+        style={{ background: SHOP_GRADIENT }}
+        initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 320, damping: 28 }}
       >
         {/* Progress bar */}
@@ -670,11 +728,8 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
         </div>
 
         <div className="flex items-center gap-3">
-          <motion.button
-            whileTap={{ scale: 0.88 }}
-            onClick={goBack}
-            className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors tap-target shrink-0"
-          >
+          <motion.button whileTap={{ scale: 0.88 }} onClick={goBack}
+            className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors tap-target shrink-0">
             <ArrowLeft size={18} strokeWidth={2.5} />
           </motion.button>
 
@@ -693,23 +748,22 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
           <div className="flex gap-2 shrink-0">
             {(screen === "browse" || screen === "detail") && (
               <>
-                {/* Wishlist */}
                 <motion.button whileTap={{ scale: 0.88 }} onClick={() => setScreen("wishlist")}
                   className="relative w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors tap-target">
-                  <Heart size={16} className={wishlist.size > 0 ? "fill-white" : ""} />
+                  <Heart size={17} />
                   {wishlist.size > 0 && (
                     <span className="absolute -top-1 -right-1 w-[18px] h-[18px] rounded-full bg-yellow-400 text-[9px] font-bold text-gray-900 flex items-center justify-center">{wishlist.size}</span>
                   )}
                 </motion.button>
-                {/* Orders icon */}
                 <motion.button whileTap={{ scale: 0.88 }} onClick={() => setScreen("orders")}
                   className="relative w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors tap-target">
                   <Package size={17} />
-                  {orders.length > 0 && (
-                    <span className="absolute -top-1 -right-1 w-[18px] h-[18px] rounded-full bg-yellow-400 text-[9px] font-bold text-gray-900 flex items-center justify-center">{orders.length}</span>
+                  {orders.filter(o => o.status !== "cancelled" && o.status !== "delivered").length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-[18px] h-[18px] rounded-full bg-yellow-400 text-[9px] font-bold text-gray-900 flex items-center justify-center">
+                      {orders.filter(o => o.status !== "cancelled" && o.status !== "delivered").length}
+                    </span>
                   )}
                 </motion.button>
-                {/* Cart icon */}
                 <motion.button whileTap={{ scale: 0.88 }} onClick={() => setScreen("cart")}
                   className="relative w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors tap-target">
                   <ShoppingCart size={17} />
@@ -724,7 +778,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
       </motion.div>
 
       {/* ── Body ── */}
-      <div className="flex-1 overflow-y-auto pb-32">
+      <div ref={bodyRef} className="flex-1 overflow-y-auto pb-32 scrollbar-none">
         <AnimatePresence mode="wait">
 
           {/* ──── BROWSE ──── */}
@@ -734,18 +788,43 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
               <div className="relative">
                 <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input type="text" placeholder="Search products…" value={search} onChange={e => setSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-card border border-border text-sm outline-none focus:border-orange-400 transition-colors" />
+                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-card border border-border text-sm text-foreground outline-none focus:border-orange-400 transition-colors" />
                 {search && (
                   <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"><X size={14} /></button>
                 )}
               </div>
 
+              {/* Flash Deals Section */}
+              {!search && (
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Zap size={15} className="fill-orange-500 text-orange-500" />
+                      <p className="text-[14px] font-bold text-foreground">Flash Deals</p>
+                    </div>
+                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-semibold">
+                      <TrendingUp size={11} /> Limited time only
+                    </div>
+                  </div>
+                  <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-none">
+                    {flashDealsWithProduct.map(({ deal, product }) => (
+                      <FlashDealCard
+                        key={deal.productId} deal={deal} product={product}
+                        inCart={!!cart.find(c => c.id === product.id)}
+                        onAdd={() => addToCart(product)}
+                        onClick={() => { setDetail(product); setScreen("detail"); }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Categories */}
-              <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
                 {CATEGORIES.map(cat => (
                   <button key={cat} onClick={() => setCategory(cat)}
                     className={`shrink-0 px-3.5 py-1.5 rounded-full text-[11.5px] font-semibold transition-all ${category === cat ? "text-white shadow-sm" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
-                    style={category === cat ? { background: headerGradient } : {}}>
+                    style={category === cat ? { background: SHOP_GRADIENT } : {}}>
                     {cat}
                   </button>
                 ))}
@@ -761,24 +840,16 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                     <motion.div key={p.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
                       className="bg-card border border-border/60 rounded-3xl overflow-hidden shadow-card cursor-pointer"
                       onClick={() => { setDetail(p); setScreen("detail"); }}>
-                      {/* Product image area */}
                       <div className="relative h-28 flex items-center justify-center" style={{ background: "rgba(255,112,67,0.07)" }}>
                         <span className="text-5xl">{p.emoji}</span>
-                        {p.badge && (
-                          <span className="absolute top-2 left-2 text-[9px] font-bold text-white px-2 py-0.5 rounded-full" style={{ background: p.badgeColor }}>{p.badge}</span>
-                        )}
-                        {discount > 0 && !p.badge && (
-                          <span className="absolute top-2 right-2 text-[9px] font-bold text-white px-1.5 py-0.5 rounded-full bg-red-500">-{discount}%</span>
-                        )}
-                        {/* Wishlist heart */}
+                        {p.badge && <span className="absolute top-2 left-2 text-[9px] font-bold text-white px-2 py-0.5 rounded-full" style={{ background: p.badgeColor }}>{p.badge}</span>}
+                        {discount > 0 && !p.badge && <span className="absolute top-2 left-2 text-[9px] font-bold text-white px-1.5 py-0.5 rounded-full bg-red-500">-{discount}%</span>}
                         <motion.button whileTap={{ scale: 0.8 }}
                           onClick={e => { e.stopPropagation(); toggleWishlist(p.id); }}
-                          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/80 flex items-center justify-center shadow-sm"
-                          style={discount > 0 && !p.badge ? { top: "1.75rem" } : {}}>
+                          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-background/80 flex items-center justify-center shadow-sm">
                           <Heart size={12} className={isWished ? "fill-red-500 text-red-500" : "text-muted-foreground"} />
                         </motion.button>
                       </div>
-
                       <div className="p-3 space-y-1">
                         <p className="text-[10px] text-muted-foreground font-medium">{p.brand}</p>
                         <p className="text-[12.5px] font-bold text-foreground leading-tight line-clamp-2">{p.name}</p>
@@ -794,7 +865,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                           </div>
                           <motion.button whileTap={{ scale: 0.85 }} onClick={e => { e.stopPropagation(); addToCart(p); }}
                             className="w-7 h-7 rounded-xl flex items-center justify-center text-white transition-colors"
-                            style={{ background: inCart ? "#43A047" : headerGradient }}>
+                            style={{ background: inCart ? "#43A047" : SHOP_GRADIENT }}>
                             {inCart ? <CheckCircle2 size={13} /> : <Plus size={13} />}
                           </motion.button>
                         </div>
@@ -807,7 +878,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
               {filtered.length === 0 && (
                 <div className="text-center py-16 text-muted-foreground">
                   <p className="text-4xl mb-3">🔍</p>
-                  <p className="font-semibold">No products found</p>
+                  <p className="font-semibold text-foreground">No products found</p>
                   <p className="text-sm mt-1">Try a different search or category</p>
                 </div>
               )}
@@ -816,18 +887,21 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
 
           {/* ──── DETAIL ──── */}
           {screen === "detail" && detail && (
-            <motion.div key="detail" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.22 }} className="px-4 pt-4 space-y-4">
-              {/* Hero image */}
+            <motion.div key={`detail-${detail.id}`} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.22 }} className="px-4 pt-4 space-y-4">
+              {/* Hero */}
               <div className="relative rounded-3xl h-52 flex items-center justify-center" style={{ background: "rgba(255,112,67,0.07)" }}>
                 <span className="text-8xl">{detail.emoji}</span>
+                {detail.badge && (
+                  <span className="absolute top-3 left-3 text-[10px] font-bold text-white px-2.5 py-1 rounded-full" style={{ background: detail.badgeColor }}>{detail.badge}</span>
+                )}
                 <motion.button whileTap={{ scale: 0.8 }}
                   onClick={() => toggleWishlist(detail.id)}
-                  className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center">
+                  className="absolute top-3 right-3 w-9 h-9 rounded-full bg-background/90 shadow-md flex items-center justify-center">
                   <Heart size={17} className={wishlist.has(detail.id) ? "fill-red-500 text-red-500" : "text-muted-foreground"} />
                 </motion.button>
               </div>
 
-              {/* Info card */}
+              {/* Info */}
               <div className="bg-card rounded-3xl border border-border/60 p-4 space-y-3">
                 <div>
                   <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wide">{detail.brand} · {detail.category}</p>
@@ -835,7 +909,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                 </div>
                 <div className="flex items-center gap-2">
                   <StarRating value={detail.rating} size={14} />
-                  <span className="text-[12px] font-semibold">{detail.rating}</span>
+                  <span className="text-[12px] font-semibold text-foreground">{detail.rating}</span>
                   <span className="text-[12px] text-muted-foreground">({detail.reviews} reviews)</span>
                 </div>
                 <div className="flex items-end gap-2">
@@ -858,13 +932,13 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
               {/* Action buttons */}
               <div className="flex gap-3">
                 <motion.button whileTap={{ scale: 0.97 }} onClick={() => { addToCart(detail); setScreen("cart"); }}
-                  className="flex-1 h-14 rounded-2xl font-bold text-[14px] border-2 flex items-center justify-center gap-2 transition-colors"
+                  className="flex-1 h-14 rounded-2xl font-bold text-[14px] border-2 flex items-center justify-center gap-2 transition-colors bg-background"
                   style={{ borderColor: "#FF7043", color: "#FF7043" }}>
                   <ShoppingCart size={17} /> Add to Cart
                 </motion.button>
                 <motion.button whileTap={{ scale: 0.97 }} onClick={() => buyNow(detail)}
                   className="flex-1 h-14 rounded-2xl text-white font-bold text-[14px] shadow-lg flex items-center justify-center gap-2"
-                  style={{ background: headerGradient }}>
+                  style={{ background: SHOP_GRADIENT }}>
                   Buy Now
                 </motion.button>
               </div>
@@ -878,23 +952,25 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
               )}
 
               {/* Reviews Section */}
-              <div className="bg-card rounded-3xl border border-border/60 p-4 space-y-3">
+              <div className="bg-card rounded-3xl border border-border/60 p-4 space-y-4">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[13px] font-bold text-foreground">Customer Reviews</p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <StarRating value={detail.rating} size={11} />
-                      <span className="text-[11px] text-muted-foreground">{detail.rating} · {detail.reviews} reviews</span>
-                    </div>
-                  </div>
+                  <p className="text-[13px] font-bold text-foreground">Customer Reviews</p>
                   {purchasedProductIds.has(detail.id) && (
                     <motion.button whileTap={{ scale: 0.95 }} onClick={() => setShowWriteReview(true)}
                       className="flex items-center gap-1.5 px-3 py-2 rounded-2xl text-white text-[11px] font-bold"
-                      style={{ background: headerGradient }}>
+                      style={{ background: SHOP_GRADIENT }}>
                       <MessageSquarePlus size={12} /> Write Review
                     </motion.button>
                   )}
                 </div>
+
+                {/* Rating bar chart */}
+                <RatingBars
+                  productId={detail.id} allReviews={reviews}
+                  overallRating={detail.rating} totalReviews={detail.reviews}
+                />
+
+                <div className="h-px bg-border" />
 
                 <div className="space-y-3">
                   {reviews.filter(r => r.productId === detail.id).slice(0, 3).map((r, i) => (
@@ -903,7 +979,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                         <div className="flex items-center gap-2">
                           <span className="text-xl">{r.avatar}</span>
                           <div>
-                            <p className="text-[12px] font-bold leading-none">{r.author}</p>
+                            <p className="text-[12px] font-bold text-foreground leading-none">{r.author}</p>
                             <p className="text-[10px] text-muted-foreground">{r.date}</p>
                           </div>
                         </div>
@@ -915,12 +991,17 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                   {reviews.filter(r => r.productId === detail.id).length === 0 && (
                     <p className="text-[12px] text-muted-foreground text-center py-3">No reviews yet. Be the first!</p>
                   )}
+                  {!purchasedProductIds.has(detail.id) && (
+                    <p className="text-[11px] text-muted-foreground text-center py-1 flex items-center justify-center gap-1">
+                      <CheckCircle2 size={11} /> Purchase this item to leave a review
+                    </p>
+                  )}
                 </div>
               </div>
 
               {/* Related Products */}
               {relatedProducts.length > 0 && (
-                <div className="space-y-3">
+                <div className="space-y-3 pb-2">
                   <p className="text-[14px] font-bold text-foreground">Related Products</p>
                   <div className="grid grid-cols-2 gap-3">
                     {relatedProducts.map(p => {
@@ -928,7 +1009,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                       return (
                         <motion.div key={p.id} whileTap={{ scale: 0.97 }}
                           className="bg-card border border-border/60 rounded-2xl overflow-hidden shadow-card cursor-pointer"
-                          onClick={() => { setDetail(p); }}>
+                          onClick={() => setDetail(p)}>
                           <div className="h-20 flex items-center justify-center" style={{ background: "rgba(255,112,67,0.07)" }}>
                             <span className="text-3xl">{p.emoji}</span>
                           </div>
@@ -938,7 +1019,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                               <p className="text-[12px] font-bold" style={{ color: "#FF7043" }}>৳{p.price.toLocaleString()}</p>
                               <motion.button whileTap={{ scale: 0.85 }} onClick={e => { e.stopPropagation(); addToCart(p); }}
                                 className="w-6 h-6 rounded-lg flex items-center justify-center text-white"
-                                style={{ background: inCart ? "#43A047" : headerGradient }}>
+                                style={{ background: inCart ? "#43A047" : SHOP_GRADIENT }}>
                                 {inCart ? <CheckCircle2 size={11} /> : <Plus size={11} />}
                               </motion.button>
                             </div>
@@ -960,7 +1041,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                   <p className="text-5xl">💝</p>
                   <p className="font-semibold text-foreground">Your wishlist is empty</p>
                   <p className="text-[13px]">Tap the ❤️ on any product to save it</p>
-                  <button onClick={() => setScreen("browse")} className="text-sm font-semibold text-white px-5 py-2.5 rounded-2xl" style={{ background: headerGradient }}>
+                  <button onClick={() => setScreen("browse")} className="text-sm font-semibold text-white px-5 py-2.5 rounded-2xl" style={{ background: SHOP_GRADIENT }}>
                     Browse Products
                   </button>
                 </div>
@@ -974,17 +1055,17 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                         {p.emoji}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-bold truncate">{p.name}</p>
+                        <p className="text-[13px] font-bold text-foreground truncate">{p.name}</p>
                         <p className="text-[11px] text-muted-foreground">{p.brand}</p>
                         <p className="text-[13px] font-bold mt-0.5" style={{ color: "#FF7043" }}>৳{p.price.toLocaleString()}</p>
                       </div>
                       <div className="flex flex-col gap-2 shrink-0">
                         <motion.button whileTap={{ scale: 0.85 }} onClick={e => { e.stopPropagation(); addToCart(p); }}
-                          className="w-8 h-8 rounded-xl flex items-center justify-center text-white" style={{ background: inCart ? "#43A047" : headerGradient }}>
+                          className="w-8 h-8 rounded-xl flex items-center justify-center text-white" style={{ background: inCart ? "#43A047" : SHOP_GRADIENT }}>
                           {inCart ? <CheckCircle2 size={14} /> : <Plus size={14} />}
                         </motion.button>
                         <motion.button whileTap={{ scale: 0.85 }} onClick={e => { e.stopPropagation(); toggleWishlist(p.id); }}
-                          className="w-8 h-8 rounded-xl flex items-center justify-center bg-red-50 dark:bg-red-950">
+                          className="w-8 h-8 rounded-xl flex items-center justify-center bg-red-50 dark:bg-red-950/30">
                           <Heart size={14} className="fill-red-500 text-red-500" />
                         </motion.button>
                       </div>
@@ -1002,7 +1083,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                 <div className="text-center py-20 text-muted-foreground space-y-3">
                   <p className="text-5xl">🛒</p>
                   <p className="font-semibold text-foreground">Your cart is empty</p>
-                  <button onClick={() => setScreen("browse")} className="text-sm font-semibold text-white px-5 py-2.5 rounded-2xl" style={{ background: headerGradient }}>
+                  <button onClick={() => setScreen("browse")} className="text-sm font-semibold text-white px-5 py-2.5 rounded-2xl" style={{ background: SHOP_GRADIENT }}>
                     Continue Shopping
                   </button>
                 </div>
@@ -1019,20 +1100,50 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                         <p className="text-[13px] font-bold mt-0.5" style={{ color: "#FF7043" }}>৳{(item.price * item.qty).toLocaleString()}</p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <motion.button whileTap={{ scale: 0.85 }} onClick={() => changeQty(item.id, -1)} className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center"><Minus size={12} /></motion.button>
-                        <span className="text-[13px] font-bold w-4 text-center">{item.qty}</span>
-                        <motion.button whileTap={{ scale: 0.85 }} onClick={() => changeQty(item.id, +1)} className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center"><Plus size={12} /></motion.button>
-                        <motion.button whileTap={{ scale: 0.85 }} onClick={() => removeFromCart(item.id)} className="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-950 flex items-center justify-center ml-1"><Trash2 size={12} className="text-red-500" /></motion.button>
+                        <motion.button whileTap={{ scale: 0.85 }} onClick={() => changeQty(item.id, -1)} className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-foreground"><Minus size={12} /></motion.button>
+                        <span className="text-[13px] font-bold w-4 text-center text-foreground">{item.qty}</span>
+                        <motion.button whileTap={{ scale: 0.85 }} onClick={() => changeQty(item.id, +1)} className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-foreground"><Plus size={12} /></motion.button>
+                        <motion.button whileTap={{ scale: 0.85 }} onClick={() => removeFromCart(item.id)} className="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-950/30 flex items-center justify-center ml-1"><Trash2 size={12} className="text-red-500" /></motion.button>
                       </div>
                     </div>
                   ))}
+
+                  {/* Promo in cart */}
+                  <div className="bg-card rounded-3xl border border-border/60 p-4 space-y-3">
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Promo Code</p>
+                    {appliedPromo ? (
+                      <div className="flex items-center gap-3 p-3 rounded-2xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
+                        <Gift size={16} className="text-green-600 shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-[13px] font-bold text-green-700 dark:text-green-400">{appliedPromo.code}</p>
+                          <p className="text-[11px] text-green-600 dark:text-green-500">{appliedPromo.discount}% off · saving ৳{discountAmt.toLocaleString()}</p>
+                        </div>
+                        <button onClick={removePromo} className="w-7 h-7 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                          <X size={12} className="text-green-700 dark:text-green-400" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <div className="flex-1 relative">
+                          <Ticket size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                          <input type="text" value={promoInput} onChange={e => setPromoInput(e.target.value.toUpperCase())}
+                            onKeyDown={e => e.key === "Enter" && applyPromo()}
+                            placeholder="Enter promo code"
+                            className="w-full pl-9 pr-3 py-2.5 rounded-2xl bg-muted border border-border text-[13px] text-foreground font-mono outline-none focus:border-orange-400 transition-colors uppercase" />
+                        </div>
+                        <motion.button whileTap={{ scale: 0.95 }} onClick={applyPromo}
+                          className="px-4 py-2.5 rounded-2xl text-white text-[13px] font-bold shrink-0" style={{ background: SHOP_GRADIENT }}>Apply</motion.button>
+                      </div>
+                    )}
+                    <p className="text-[10.5px] text-muted-foreground">Try: SAVE10, WELCOME20, FLASH15</p>
+                  </div>
 
                   {/* Order summary */}
                   <div className="bg-card rounded-3xl border border-border/60 p-4 space-y-2">
                     <p className="text-[12px] font-bold uppercase tracking-wide text-muted-foreground">Order Summary</p>
                     <div className="flex justify-between text-[13px]">
                       <span className="text-muted-foreground">Subtotal ({cartCount} items)</span>
-                      <span className="font-semibold">৳{cartSubtotal.toLocaleString()}</span>
+                      <span className="font-semibold text-foreground">৳{cartSubtotal.toLocaleString()}</span>
                     </div>
                     {appliedPromo && (
                       <div className="flex justify-between text-[13px]">
@@ -1046,15 +1157,14 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                     </div>
                     <div className="h-px bg-border my-1" />
                     <div className="flex justify-between text-[15px] font-bold">
-                      <span>Total</span>
+                      <span className="text-foreground">Total</span>
                       <span style={{ color: "#FF7043" }}>৳{cartTotal.toLocaleString()}</span>
                     </div>
-                    <p className="text-[10.5px] text-muted-foreground">Wallet balance: ৳{getBalance().toLocaleString()}</p>
+                    <p className="text-[10.5px] text-muted-foreground">Wallet balance: ৳{walletBalance.toLocaleString()}</p>
                   </div>
 
                   <motion.button whileTap={{ scale: 0.97 }} onClick={() => setScreen("checkout")}
-                    className="w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg"
-                    style={{ background: headerGradient }}>
+                    className="w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg" style={{ background: SHOP_GRADIENT }}>
                     Proceed to Checkout
                   </motion.button>
                 </>
@@ -1065,8 +1175,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
           {/* ──── CHECKOUT ──── */}
           {screen === "checkout" && (
             <motion.div key="checkout" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.22 }} className="px-4 pt-4 space-y-4">
-
-              {/* ── Delivery address ── */}
+              {/* Delivery address */}
               <div className="bg-card rounded-3xl border border-border/60 p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Delivery Address</p>
@@ -1078,7 +1187,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                   <MapPin size={16} style={{ color: "#FF7043" }} className="mt-0.5 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="text-[13px] font-bold">{selectedAddress.label}</p>
+                      <p className="text-[13px] font-bold text-foreground">{selectedAddress.label}</p>
                       <span className="text-[9px] font-bold text-white px-1.5 py-0.5 rounded-full" style={{ background: "#FF7043" }}>{selectedAddress.label.toUpperCase()}</span>
                     </div>
                     <p className="text-[12px] text-muted-foreground leading-snug mt-0.5">{selectedAddress.name} · {selectedAddress.phone}</p>
@@ -1097,14 +1206,14 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                           style={a.id === selectedAddressId ? { background: "rgba(255,112,67,0.06)" } : {}}>
                           <MapPin size={14} className="text-muted-foreground shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-[12.5px] font-bold">{a.label}</p>
+                            <p className="text-[12.5px] font-bold text-foreground">{a.label}</p>
                             <p className="text-[11px] text-muted-foreground truncate">{a.line1}, {a.city}</p>
                           </div>
                           {a.id === selectedAddressId && <CheckCircle2 size={15} style={{ color: "#FF7043" }} />}
                         </button>
                       ))}
                       <button onClick={() => { setEditingAddress("new"); setShowAddressPicker(false); }}
-                        className="w-full flex items-center gap-3 p-3 rounded-2xl border border-dashed border-border text-muted-foreground">
+                        className="w-full flex items-center gap-3 p-3 rounded-2xl border border-dashed border-border text-muted-foreground bg-muted/20">
                         <Plus size={14} /><span className="text-[12.5px] font-semibold">Add New Address</span>
                       </button>
                     </motion.div>
@@ -1112,7 +1221,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                 </AnimatePresence>
               </div>
 
-              {/* ── Promo Code ── */}
+              {/* Promo Code */}
               <div className="bg-card rounded-3xl border border-border/60 p-4 space-y-3">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Promo Code</p>
                 {appliedPromo ? (
@@ -1130,26 +1239,19 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                   <div className="flex gap-2">
                     <div className="flex-1 relative">
                       <Ticket size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                      <input
-                        type="text"
-                        value={promoInput}
-                        onChange={e => setPromoInput(e.target.value.toUpperCase())}
+                      <input type="text" value={promoInput} onChange={e => setPromoInput(e.target.value.toUpperCase())}
                         onKeyDown={e => e.key === "Enter" && applyPromo()}
                         placeholder="Enter promo code"
-                        className="w-full pl-9 pr-3 py-2.5 rounded-2xl bg-muted border border-border text-[13px] font-mono outline-none focus:border-orange-400 transition-colors uppercase"
-                      />
+                        className="w-full pl-9 pr-3 py-2.5 rounded-2xl bg-muted border border-border text-[13px] text-foreground font-mono outline-none focus:border-orange-400 transition-colors uppercase" />
                     </div>
                     <motion.button whileTap={{ scale: 0.95 }} onClick={applyPromo}
-                      className="px-4 py-2.5 rounded-2xl text-white text-[13px] font-bold shrink-0"
-                      style={{ background: headerGradient }}>
-                      Apply
-                    </motion.button>
+                      className="px-4 py-2.5 rounded-2xl text-white text-[13px] font-bold shrink-0" style={{ background: SHOP_GRADIENT }}>Apply</motion.button>
                   </div>
                 )}
                 <p className="text-[10.5px] text-muted-foreground">Try: SAVE10, WELCOME20, FLASH15</p>
               </div>
 
-              {/* ── Payment method ── */}
+              {/* Payment method */}
               <div className="bg-card rounded-3xl border border-border/60 p-4 space-y-3">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Payment Method</p>
                 <button onClick={() => setPayMethod("wallet")}
@@ -1159,13 +1261,19 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                     <Wallet size={16} style={{ color: "#FF7043" }} />
                   </div>
                   <div className="flex-1">
-                    <p className="text-[13px] font-bold">MFS Wallet</p>
-                    <p className="text-[11px] text-muted-foreground">Balance: ৳{getBalance().toLocaleString()}</p>
+                    <p className="text-[13px] font-bold text-foreground">MFS Wallet</p>
+                    <p className="text-[11px] text-muted-foreground">Balance: ৳{walletBalance.toLocaleString()}</p>
                   </div>
                   <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${payMethod === "wallet" ? "border-orange-500" : "border-border"}`}>
                     {payMethod === "wallet" && <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#FF7043" }} />}
                   </div>
                 </button>
+                {payMethod === "wallet" && cartTotal > walletBalance && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
+                    <AlertCircle size={13} className="text-red-500 shrink-0" />
+                    <p className="text-[11px] text-red-600 dark:text-red-400 font-semibold">Insufficient balance — need ৳{(cartTotal - walletBalance).toLocaleString()} more</p>
+                  </div>
+                )}
                 <button onClick={() => setPayMethod("card")}
                   className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-colors text-left ${payMethod === "card" ? "border-orange-300" : "border-border"}`}
                   style={payMethod === "card" ? { background: "rgba(255,112,67,0.06)" } : {}}>
@@ -1173,7 +1281,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                     <CreditCard size={16} style={{ color: "#2196F3" }} />
                   </div>
                   <div className="flex-1">
-                    <p className="text-[13px] font-bold">{savedCard.brand} •••• {savedCard.last4}</p>
+                    <p className="text-[13px] font-bold text-foreground">{savedCard.brand} •••• {savedCard.last4}</p>
                     <p className="text-[11px] text-muted-foreground">Saved card</p>
                   </div>
                   <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${payMethod === "card" ? "border-orange-500" : "border-border"}`}>
@@ -1182,7 +1290,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                 </button>
               </div>
 
-              {/* ── Items summary ── */}
+              {/* Items summary */}
               <div className="bg-card rounded-3xl border border-border/60 p-4 space-y-2">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Items ({cartCount})</p>
                 {cart.map(item => (
@@ -1190,17 +1298,17 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{item.emoji}</span>
                       <div>
-                        <p className="text-[12px] font-semibold leading-tight">{item.name}</p>
+                        <p className="text-[12px] font-semibold text-foreground leading-tight">{item.name}</p>
                         <p className="text-[10px] text-muted-foreground">Qty: {item.qty}</p>
                       </div>
                     </div>
-                    <p className="text-[13px] font-bold">৳{(item.price * item.qty).toLocaleString()}</p>
+                    <p className="text-[13px] font-bold text-foreground">৳{(item.price * item.qty).toLocaleString()}</p>
                   </div>
                 ))}
                 <div className="h-px bg-border" />
                 <div className="flex justify-between text-[13px]">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-semibold">৳{cartSubtotal.toLocaleString()}</span>
+                  <span className="font-semibold text-foreground">৳{cartSubtotal.toLocaleString()}</span>
                 </div>
                 {appliedPromo && (
                   <div className="flex justify-between text-[13px]">
@@ -1210,14 +1318,17 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                 )}
                 <div className="h-px bg-border" />
                 <div className="flex justify-between font-bold text-[14px]">
-                  <span>Total</span>
+                  <span className="text-foreground">Total</span>
                   <span style={{ color: "#FF7043" }}>৳{cartTotal.toLocaleString()}</span>
                 </div>
               </div>
 
-              <motion.button whileTap={{ scale: 0.97 }} onClick={handleCheckout}
-                className="w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg"
-                style={{ background: headerGradient }}>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={handleCheckout}
+                disabled={payMethod === "wallet" && cartTotal > walletBalance}
+                className="w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ background: SHOP_GRADIENT }}>
                 Place Order · ৳{cartTotal.toLocaleString()}
               </motion.button>
             </motion.div>
@@ -1239,12 +1350,12 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
               <div className="w-full bg-card rounded-3xl border border-border/60 p-4 space-y-2 text-left">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Delivery Info</p>
                 <div className="flex items-center gap-2 text-[13px]">
-                  <span>📦</span><span className="font-semibold">Estimated: 3–5 business days</span>
+                  <span>📦</span><span className="font-semibold text-foreground">Estimated: 3–5 business days</span>
                 </div>
                 <div className="flex items-center gap-2 text-[13px]">
-                  {payMethod === "wallet"
-                    ? <><Wallet size={14} style={{ color: "#FF7043" }} /><span className="font-semibold">৳{lastOrderTotal.toLocaleString()} deducted from wallet</span></>
-                    : <><CreditCard size={14} style={{ color: "#2196F3" }} /><span className="font-semibold">৳{lastOrderTotal.toLocaleString()} charged to {savedCard.brand} ••••{savedCard.last4}</span></>
+                  {lastPayMethod === "wallet"
+                    ? <><Wallet size={14} style={{ color: "#FF7043" }} /><span className="font-semibold text-foreground">৳{lastOrderTotal.toLocaleString()} deducted from wallet</span></>
+                    : <><CreditCard size={14} style={{ color: "#2196F3" }} /><span className="font-semibold text-foreground">৳{lastOrderTotal.toLocaleString()} charged to {savedCard.brand} ••••{savedCard.last4}</span></>
                   }
                 </div>
                 <div className="flex items-center gap-2 text-[13px]">
@@ -1254,13 +1365,12 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
               </div>
               <div className="w-full flex gap-3">
                 <motion.button whileTap={{ scale: 0.97 }} onClick={() => setScreen("orders")}
-                  className="flex-1 h-14 rounded-2xl font-bold text-[14px] border-2 flex items-center justify-center gap-2"
+                  className="flex-1 h-14 rounded-2xl font-bold text-[14px] border-2 flex items-center justify-center gap-2 bg-background"
                   style={{ borderColor: "#FF7043", color: "#FF7043" }}>
                   <Package size={17} /> My Orders
                 </motion.button>
                 <motion.button whileTap={{ scale: 0.97 }} onClick={() => setScreen("browse")}
-                  className="flex-1 h-14 rounded-2xl text-white font-bold text-[14px] shadow-lg"
-                  style={{ background: headerGradient }}>
+                  className="flex-1 h-14 rounded-2xl text-white font-bold text-[14px] shadow-lg" style={{ background: SHOP_GRADIENT }}>
                   Continue Shopping
                 </motion.button>
               </div>
@@ -1274,12 +1384,12 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                 <div className="text-center py-20 text-muted-foreground space-y-3">
                   <p className="text-5xl">📦</p>
                   <p className="font-semibold text-foreground">No orders yet</p>
-                  <button onClick={() => setScreen("browse")} className="text-sm font-semibold text-white px-5 py-2.5 rounded-2xl" style={{ background: headerGradient }}>Start Shopping</button>
+                  <button onClick={() => setScreen("browse")} className="text-sm font-semibold text-white px-5 py-2.5 rounded-2xl" style={{ background: SHOP_GRADIENT }}>Start Shopping</button>
                 </div>
               ) : (
                 <>
                   {/* Status legend */}
-                  <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                  <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
                     {Object.entries(STATUS_CONFIG).map(([key, cfg]) => {
                       const count = orders.filter(o => o.status === key).length;
                       if (count === 0) return null;
@@ -1292,7 +1402,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                       );
                     })}
                   </div>
-                  {orders.map(order => <OrderCard key={order.id} order={order} />)}
+                  {orders.map(order => <OrderCard key={order.id} order={order} onCancel={cancelOrder} />)}
                 </>
               )}
             </motion.div>
@@ -1301,18 +1411,15 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
         </AnimatePresence>
       </div>
 
-      {/* ── Bottom Checkout Bar (browse / cart) ── */}
+      {/* ── Bottom Checkout Bar ── */}
       <AnimatePresence>
         {screen === "cart" && cart.length > 0 && (
           <motion.div
-            initial={{ y: 80, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 80, opacity: 0 }}
-            className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t border-border z-10"
-          >
+            initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
+            className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t border-border z-10">
             <motion.button whileTap={{ scale: 0.97 }} onClick={() => setScreen("checkout")}
               className="w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg flex items-center justify-center gap-2"
-              style={{ background: headerGradient }}>
+              style={{ background: SHOP_GRADIENT }}>
               Checkout · ৳{cartTotal.toLocaleString()}
               <ChevronRight size={18} />
             </motion.button>
@@ -1333,6 +1440,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
               });
               setSelectedAddressId(a.id);
               setEditingAddress(null);
+              setShowAddressPicker(false);
               toast.success("Address saved");
             }}
             onCancel={() => setEditingAddress(null)}
@@ -1344,13 +1452,8 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
       <AnimatePresence>
         {showWriteReview && detail && (
           <WriteReviewSheet
-            productId={detail.id}
-            productName={detail.name}
-            onSubmit={(r) => {
-              setReviews(prev => [r, ...prev]);
-              setShowWriteReview(false);
-              toast.success("Review submitted! 🌟");
-            }}
+            productId={detail.id} productName={detail.name}
+            onSubmit={(r) => { setReviews(prev => [r, ...prev]); setShowWriteReview(false); toast.success("Review submitted! 🌟"); }}
             onCancel={() => setShowWriteReview(false)}
           />
         )}
