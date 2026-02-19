@@ -136,7 +136,7 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
           <div className="w-16 h-16 gradient-primary rounded-3xl flex items-center justify-center text-primary-foreground text-3xl font-bold shadow-glow mb-4">
             ₿
           </div>
-          <h1 className="text-2xl font-extrabold text-foreground">MFS Wallet</h1>
+           <h1 className="text-2xl font-extrabold text-foreground">EasyPay</h1>
           <p className="text-sm text-muted-foreground mt-1">Secure your account to continue</p>
         </motion.div>
 
