@@ -13,7 +13,7 @@ export default {
       },
     },
     fontFamily: {
-      sans: ['"Plus Jakarta Sans"', '"Baloo Da 2"', 'system-ui', 'sans-serif'],
+      sans: ['"Plus Jakarta Sans"', '"Anek Bangla"', 'system-ui', 'sans-serif'],
     },
     extend: {
       colors: {
