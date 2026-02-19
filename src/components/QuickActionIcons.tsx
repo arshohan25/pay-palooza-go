@@ -234,40 +234,41 @@ export const ShopIcon = ({ isHovered }: IconProps) => (
   </svg>
 );
 
-// Savings icon — piggy bank with coin slot
-export const SavingsIcon = ({ isHovered }: IconProps) => (
+// Refer & Earn icon — gift box with star burst
+export const ReferIcon = ({ isHovered }: IconProps) => (
   <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" overflow="visible">
     <defs>
-      <linearGradient id="pigGrad" x1="10" y1="14" x2="46" y2="44" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#F48FB1"/>
-        <stop offset="100%" stopColor="#C2185B"/>
+      <linearGradient id="giftBoxGrad" x1="10" y1="20" x2="46" y2="50" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#FF8A65"/>
+        <stop offset="100%" stopColor="#BF360C"/>
+      </linearGradient>
+      <linearGradient id="giftLidGrad" x1="10" y1="18" x2="46" y2="26" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#FFAB91"/>
+        <stop offset="100%" stopColor="#FF7043"/>
       </linearGradient>
     </defs>
-    {/* Piggy body */}
-    <ellipse cx="27" cy="32" rx="17" ry="14" fill="url(#pigGrad)"/>
-    {/* Snout */}
-    <ellipse cx="43" cy="32" rx="5" ry="4" fill="#F06292"/>
-    <circle cx="42" cy="31" r="1" fill="#C2185B" opacity="0.6"/>
-    <circle cx="44" cy="31" r="1" fill="#C2185B" opacity="0.6"/>
-    {/* Ear */}
-    <ellipse cx="22" cy="20" rx="5" ry="4" fill="#F06292"/>
-    <ellipse cx="22" cy="20" rx="3" ry="2.5" fill="#FCE4EC"/>
-    {/* Eye */}
-    <circle cx="38" cy="27" r="2" fill="white"/>
-    <circle cx="38.5" cy="27" r="1" fill="#333"/>
-    {/* Coin slot */}
-    <rect x="22" y="18" width="9" height="2.5" rx="1.2" fill="#AD1457"/>
-    {/* Legs */}
-    <rect x="17" y="43" width="5" height="6" rx="2" fill="#F06292"/>
-    <rect x="24" y="43" width="5" height="6" rx="2" fill="#F06292"/>
-    <rect x="31" y="43" width="5" height="6" rx="2" fill="#F06292"/>
-    {/* Coin drop animation */}
+    {/* Box body */}
+    <rect x="11" y="26" width="34" height="22" rx="3" fill="url(#giftBoxGrad)"/>
+    {/* Lid */}
+    <rect x="10" y="19" width="36" height="8" rx="3" fill="url(#giftLidGrad)"/>
+    {/* Ribbon vertical */}
+    <rect x="25" y="19" width="6" height="29" rx="1" fill="#FF3D00" opacity="0.7"/>
+    {/* Ribbon horizontal */}
+    <rect x="10" y="22" width="36" height="5" rx="1" fill="#FF3D00" opacity="0.5"/>
+    {/* Bow left */}
+    <path d="M28 19 Q20 12 16 16 Q14 20 20 20 Z" fill="#FF5722"/>
+    {/* Bow right */}
+    <path d="M28 19 Q36 12 40 16 Q42 20 36 20 Z" fill="#FF5722"/>
+    {/* Star badge — spins on hover */}
     <motion.g
-      animate={isHovered ? { y: [0, 4, 0], opacity: [1, 0.6, 1] } : { y: 0, opacity: 1 }}
-      transition={isHovered ? { duration: 0.5, repeat: Infinity, ease: "easeInOut" } : { duration: 0.3 }}
+      animate={isHovered ? { rotate: [0, 20, -20, 15, -15, 0], scale: [1, 1.15, 1] } : { rotate: 0, scale: 1 }}
+      transition={isHovered ? { duration: 0.6, ease: "easeInOut" } : { duration: 0.3 }}
+      style={{ transformBox: "fill-box", transformOrigin: "42px 16px" }}
     >
-      <circle cx="26.5" cy="12" r="4" fill="#FFC107"/>
-      <text x="26.5" y="15" textAnchor="middle" fill="#7B3F00" fontSize="5" fontWeight="bold" fontFamily="serif">৳</text>
+      <circle cx="42" cy="16" r="8" fill="#FFC107"/>
+      {/* Star shape */}
+      <path d="M42 9.5 L43.5 13.5 L47.5 13.5 L44.3 16 L45.5 20 L42 17.5 L38.5 20 L39.7 16 L36.5 13.5 L40.5 13.5 Z"
+        fill="white" opacity="0.9"/>
     </motion.g>
   </svg>
 );
