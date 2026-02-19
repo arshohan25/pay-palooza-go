@@ -124,9 +124,9 @@ const PinInput = ({ pin, onChange, error }: PinInputProps) => {
 };
 
 // ─── SendMoneyFlow ────────────────────────────────────────────────────────────
-interface SendMoneyFlowProps { onClose: () => void; prefilledPhone?: string; }
+interface SendMoneyFlowProps { onClose: () => void; prefilledPhone?: string; onSuccess?: (amount: number) => void; }
 
-const SendMoneyFlow = ({ onClose, prefilledPhone }: SendMoneyFlowProps) => {
+const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProps) => {
   const [step, setStep]           = useState<Step>("recipient");
   const [direction, setDirection] = useState(1);
   const [recipient, setRecipient] = useState<Contact | null>(null);
@@ -252,6 +252,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone }: SendMoneyFlowProps) => {
     const amtVal = parseFloat(amount) || 0;
     const feeVal = calcSendFee(amtVal);
     deductBalance(amtVal + feeVal);
+    onSuccess?.(amtVal);
     setDirection(1);
     setStep("success");
   };
@@ -355,6 +356,16 @@ const SendMoneyFlow = ({ onClose, prefilledPhone }: SendMoneyFlowProps) => {
                   {error && (
                     <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {error}</p>
                   )}
+                  {/* Upload QR from Gallery */}
+                  <button
+                    type="button"
+                    onClick={() => setShowScanner(true)}
+                    className="w-full h-11 border-2 border-dashed border-border rounded-xl flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/50 hover:bg-primary/5 active:scale-[0.98] transition-all"
+                  >
+                    <QrCode size={16} />
+                    Upload QR from Gallery
+                  </button>
+
                   <Button
                     className="w-full h-11 gradient-send border-0 text-white font-semibold"
                     onClick={handleContinue}

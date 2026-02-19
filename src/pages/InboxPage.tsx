@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, Send, Phone, Video, MoreVertical, Search, Plus, Smile, Image, CheckCheck, Check, Wallet } from "lucide-react";
+import { ChevronLeft, Send, Phone, Video, MoreVertical, Search, Plus, Smile, CheckCheck, Check, Wallet, CheckCircle2 } from "lucide-react";
 import { addInboxMsg, clearInboxCount } from "@/lib/inboxStore";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -8,9 +8,12 @@ interface Message {
   id: string;
   text: string;
   time: string;
-  sent: boolean; // true = current user sent
+  sent: boolean;
   status: "sent" | "delivered" | "read";
   emoji?: string;
+  type?: "text" | "money";
+  amount?: number;
+  txnId?: string;
 }
 
 interface Contact {
@@ -191,6 +194,7 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendMoney }: ChatViewPr
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 scrollbar-none">
         {messages.map((msg, idx) => {
           const showDate = idx === 0;
+          const isMoney = msg.type === "money";
           return (
             <div key={msg.id}>
               {showDate && (
@@ -205,15 +209,33 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendMoney }: ChatViewPr
                 className={`flex ${msg.sent ? "justify-end" : "justify-start"}`}
               >
                 <div className={`flex flex-col max-w-[78%] ${msg.sent ? "items-end" : "items-start"}`}>
-                  <div
-                    className={`px-4 py-2.5 rounded-2xl text-[13.5px] leading-snug font-medium ${
-                      msg.sent
-                        ? "gradient-primary text-primary-foreground rounded-br-md shadow-glow"
-                        : "bg-card border border-border text-foreground rounded-bl-md shadow-card"
-                    }`}
-                  >
-                    {msg.text}
-                  </div>
+                  {isMoney ? (
+                    /* ── Money sent card ── */
+                    <div className="rounded-2xl rounded-br-md border border-primary/30 bg-primary/5 shadow-card overflow-hidden min-w-[200px]">
+                      <div className="gradient-send px-4 py-2 flex items-center gap-2">
+                        <CheckCircle2 size={16} className="text-primary-foreground/90" />
+                        <span className="text-[12px] font-bold text-primary-foreground">Money Sent</span>
+                      </div>
+                      <div className="px-4 py-3 space-y-1">
+                        <p className="text-xl font-extrabold text-foreground">৳{(msg.amount ?? 0).toLocaleString()}</p>
+                        <p className="text-[11px] text-muted-foreground">To: {contact.name}</p>
+                        <div className="flex items-center justify-between pt-1 border-t border-border mt-1">
+                          <span className="text-[10px] text-muted-foreground font-mono">{msg.txnId}</span>
+                          <span className="text-[10px] text-primary font-semibold">View Receipt →</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className={`px-4 py-2.5 rounded-2xl text-[13.5px] leading-snug font-medium ${
+                        msg.sent
+                          ? "gradient-primary text-primary-foreground rounded-br-md shadow-glow"
+                          : "bg-card border border-border text-foreground rounded-bl-md shadow-card"
+                      }`}
+                    >
+                      {msg.text}
+                    </div>
+                  )}
                   <div className={`flex items-center gap-1 mt-1 ${msg.sent ? "flex-row-reverse" : ""}`}>
                     <span className="text-[10px] text-muted-foreground">{msg.time}</span>
                     {msg.sent && (
@@ -315,21 +337,48 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendMoney }: ChatViewPr
 // ── InboxPage ──────────────────────────────────────────────────────────────────
 interface InboxPageProps {
   onBack?: () => void;
-  onSendMoney?: (phone: string) => void;
+  onSendMoney?: (phone: string, onComplete?: (amount: number) => void) => void;
 }
 
 export default function InboxPage({ onBack, onSendMoney }: InboxPageProps) {
-  const [contacts, setContacts] = useState<Contact[]>(INITIAL_CONTACTS);
+  const [contacts, setContacts] = useState<Contact[]>(() => {
+    // Rehydrate messages from localStorage on first mount
+    return INITIAL_CONTACTS.map((c) => {
+      try {
+        const stored = localStorage.getItem(`inbox_msgs_${c.id}`);
+        if (stored) {
+          const msgs: Message[] = JSON.parse(stored);
+          const last = msgs[msgs.length - 1];
+          return { ...c, messages: msgs, lastMsg: last?.text ?? c.lastMsg, lastTime: "saved" };
+        }
+      } catch { /* ignore */ }
+      return c;
+    });
+  });
   const [activeChat, setActiveChat] = useState<Contact | null>(null);
   const [search, setSearch] = useState("");
 
+
   // Clear inbox badge when user opens inbox
   useEffect(() => { clearInboxCount(); }, []);
+
+  // Persist messages to localStorage whenever contacts change
+  useEffect(() => {
+    contacts.forEach((c) => {
+      try {
+        localStorage.setItem(`inbox_msgs_${c.id}`, JSON.stringify(c.messages));
+      } catch { /* ignore quota errors */ }
+    });
+  }, [contacts]);
 
   const filtered = contacts.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.phone.includes(search),
   );
+
+  const updateContact = (contactId: string, updater: (c: Contact) => Contact) => {
+    setContacts((prev) => prev.map((c) => c.id === contactId ? updater(c) : c));
+  };
 
   const handleSend = (contactId: string, text: string) => {
     const now = new Date();
@@ -340,64 +389,96 @@ export default function InboxPage({ onBack, onSendMoney }: InboxPageProps) {
       time: timeStr,
       sent: true,
       status: "sent",
+      type: "text",
     };
 
-    setContacts((prev) =>
-      prev.map((c) =>
-        c.id === contactId
-          ? {
-              ...c,
-              messages: [...c.messages, newMsg],
-              lastMsg: text,
-              lastTime: "now",
-              unread: 0,
-            }
-          : c,
-      ),
-    );
+    updateContact(contactId, (c) => ({
+      ...c,
+      messages: [...c.messages, newMsg],
+      lastMsg: text,
+      lastTime: "now",
+      unread: 0,
+    }));
 
-    // Simulate a reply after 1.5s if contact is online
+    // Simulate auto-reply if contact is online
     const contact = contacts.find((c) => c.id === contactId);
     if (contact?.online) {
-      const AUTO_REPLIES = [
-        "Got it! 👍",
-        "Thanks for letting me know",
-        "OK sure!",
-        "Received 🙏",
-        "Will check now",
-        "😊",
-      ];
+      const AUTO_REPLIES = ["Got it! 👍", "Thanks for letting me know", "OK sure!", "Received 🙏", "Will check now", "😊"];
       const reply = AUTO_REPLIES[Math.floor(Math.random() * AUTO_REPLIES.length)];
       setTimeout(() => {
         addInboxMsg();
-        setContacts((prev) =>
-          prev.map((c) =>
-            c.id === contactId
-              ? {
-                  ...c,
-                  messages: [
-                    ...c.messages,
-                    newMsg,
-                    {
-                      id: `m${Date.now() + 1}`,
-                      text: reply,
-                      time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-                      sent: false,
-                      status: "delivered" as const,
-                    },
-                  ],
-                  lastMsg: reply,
-                  lastTime: "now",
-                }
-              : c,
-          ),
-        );
+        updateContact(contactId, (c) => ({
+          ...c,
+          messages: [
+            ...c.messages,
+            newMsg,
+            {
+              id: `m${Date.now() + 1}`,
+              text: reply,
+              time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+              sent: false,
+              status: "delivered" as const,
+              type: "text" as const,
+            },
+          ],
+          lastMsg: reply,
+          lastTime: "now",
+        }));
       }, 1800);
     }
   };
 
+  // Send a styled money card bubble into chat
+  const handleSendMoneyMsg = (contactId: string, amount: number, phone: string) => {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+    const txnId = `TXN${Date.now().toString().slice(-8)}`;
+    const moneyMsg: Message = {
+      id: `m${Date.now()}`,
+      text: `Sent ৳${amount.toLocaleString()} to ${phone}`,
+      time: timeStr,
+      sent: true,
+      status: "sent",
+      type: "money",
+      amount,
+      txnId,
+    };
+    updateContact(contactId, (c) => ({
+      ...c,
+      messages: [...c.messages, moneyMsg],
+      lastMsg: `💸 Sent ৳${amount.toLocaleString()}`,
+      lastTime: "now",
+      unread: 0,
+    }));
+    // Auto-reply for received money
+    const contact = contacts.find((c) => c.id === contactId);
+    if (contact?.online) {
+      const MONEY_REPLIES = ["Received! Thank you 🙏", "Got it, thanks! 💚", "Received ৳" + amount.toLocaleString() + " ✓", "Thank you so much! 😊"];
+      const reply = MONEY_REPLIES[Math.floor(Math.random() * MONEY_REPLIES.length)];
+      setTimeout(() => {
+        addInboxMsg();
+        updateContact(contactId, (c) => ({
+          ...c,
+          messages: [
+            ...c.messages,
+            moneyMsg,
+            {
+              id: `m${Date.now() + 1}`,
+              text: reply,
+              time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+              sent: false,
+              status: "delivered" as const,
+              type: "text" as const,
+            },
+          ],
+          lastMsg: reply,
+          lastTime: "now",
+        }));
+      }, 1500);
+    }
+  };
+
   const openChat = (contact: Contact) => {
-    // Clear unread
     setContacts((prev) =>
       prev.map((c) => (c.id === contact.id ? { ...c, unread: 0 } : c)),
     );
@@ -410,6 +491,7 @@ export default function InboxPage({ onBack, onSendMoney }: InboxPageProps) {
     activeChat
       ? (contacts.find((c) => c.id === activeChat.id)?.messages ?? activeChat.messages)
       : [];
+
 
   return (
     <>
@@ -540,7 +622,15 @@ export default function InboxPage({ onBack, onSendMoney }: InboxPageProps) {
               messages={currentMessages}
               onBack={() => setActiveChat(null)}
               onSend={(text) => handleSend(activeChat.id, text)}
-              onSendMoney={(phone) => { setActiveChat(null); onSendMoney?.(phone); }}
+              onSendMoney={(phone) => {
+                const chatId = activeChat.id;
+                const chatContact = activeChat;
+                setActiveChat(null);
+                onSendMoney?.(phone, (amount) => {
+                  // After user confirms payment, post money bubble in chat
+                  handleSendMoneyMsg(chatId, amount, chatContact.phone);
+                });
+              }}
             />
           </motion.div>
         )}
