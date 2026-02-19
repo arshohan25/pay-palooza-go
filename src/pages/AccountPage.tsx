@@ -4,7 +4,7 @@ import {
   Copy, CheckCheck, ChevronRight,
   Shield, Bell, Fingerprint, BarChart3, CreditCard,
   Gift, Lock, LogOut, BadgeCheck, AlertCircle,
-  BellOff, Pencil,
+  BellOff, Pencil, PlayCircle,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -14,6 +14,8 @@ import ProfileEditFlow, { getDisplayName, getDisplayPhoto } from "@/components/P
 import LimitsPage from "@/pages/LimitsPage";
 import SpendingInsightsPage from "@/pages/SpendingInsightsPage";
 import ReferPage from "@/pages/ReferPage";
+
+const ONBOARDING_KEY = "mfs_onboarding_done";
 
 type SubPage = "limits" | "insights" | "refer" | null;
 
@@ -96,9 +98,9 @@ const ToggleRow = ({
 );
 
 /* ─── Main ─── */
-interface AccountPageProps { onSignOut?: () => void; }
+interface AccountPageProps { onSignOut?: () => void; onReplayOnboarding?: () => void; }
 
-const AccountPage = ({ onSignOut }: AccountPageProps) => {
+const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const [copied, setCopied]             = useState(false);
   const [biometric, setBiometric]       = useState(false);
   const [pushNotifs, setPushNotifs]     = useState(true);
@@ -212,6 +214,21 @@ const AccountPage = ({ onSignOut }: AccountPageProps) => {
           <MenuRow icon={BadgeCheck} iconClass="gradient-primary" label="KYC Verification" sub="Full verification unlocks higher limits" onClick={() => setShowKyc(true)} />
           <MenuRow icon={Lock}       iconClass="gradient-send"    label="Change PIN"        sub="Update your 4-digit transaction PIN"    onClick={() => setShowChangePin(true)} />
           <MenuRow icon={Gift}       iconClass="gradient-accent"  label="Refer a Friend"   sub="Earn ৳50 for every successful referral" onClick={() => setSubPage("refer")} />
+        </Section>
+
+        {/* ── App Experience ── */}
+        <Section title="App Experience">
+          <MenuRow
+            icon={PlayCircle}
+            iconClass="gradient-hero"
+            label="View Onboarding Again"
+            sub="Replay the feature tour from the start"
+            onClick={() => {
+              localStorage.removeItem(ONBOARDING_KEY);
+              toast.success("Onboarding reset! Restarting tour…");
+              setTimeout(() => onReplayOnboarding?.(), 600);
+            }}
+          />
         </Section>
 
         {/* ── Insights & Limits ── */}

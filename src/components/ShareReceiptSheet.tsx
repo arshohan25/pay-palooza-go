@@ -182,7 +182,7 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
                 <div className="flex items-center justify-between px-4 py-3 border-t border-border/60 bg-muted/30">
                   <div className="min-w-0">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-semibold">Transaction ID</p>
-                    <p className="text-xs font-mono font-bold text-primary truncate mt-0.5">{receipt.txnId}</p>
+                    <p className="text-xs font-mono font-bold text-primary break-all mt-0.5 leading-snug">{receipt.txnId}</p>
                   </div>
                   <motion.button
                     whileTap={{ scale: 0.85 }}
