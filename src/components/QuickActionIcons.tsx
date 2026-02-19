@@ -234,6 +234,44 @@ export const ShopIcon = ({ isHovered }: IconProps) => (
   </svg>
 );
 
+// Savings icon — piggy bank with coin slot
+export const SavingsIcon = ({ isHovered }: IconProps) => (
+  <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" overflow="visible">
+    <defs>
+      <linearGradient id="pigGrad" x1="10" y1="14" x2="46" y2="44" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#F48FB1"/>
+        <stop offset="100%" stopColor="#C2185B"/>
+      </linearGradient>
+    </defs>
+    {/* Piggy body */}
+    <ellipse cx="27" cy="32" rx="17" ry="14" fill="url(#pigGrad)"/>
+    {/* Snout */}
+    <ellipse cx="43" cy="32" rx="5" ry="4" fill="#F06292"/>
+    <circle cx="42" cy="31" r="1" fill="#C2185B" opacity="0.6"/>
+    <circle cx="44" cy="31" r="1" fill="#C2185B" opacity="0.6"/>
+    {/* Ear */}
+    <ellipse cx="22" cy="20" rx="5" ry="4" fill="#F06292"/>
+    <ellipse cx="22" cy="20" rx="3" ry="2.5" fill="#FCE4EC"/>
+    {/* Eye */}
+    <circle cx="38" cy="27" r="2" fill="white"/>
+    <circle cx="38.5" cy="27" r="1" fill="#333"/>
+    {/* Coin slot */}
+    <rect x="22" y="18" width="9" height="2.5" rx="1.2" fill="#AD1457"/>
+    {/* Legs */}
+    <rect x="17" y="43" width="5" height="6" rx="2" fill="#F06292"/>
+    <rect x="24" y="43" width="5" height="6" rx="2" fill="#F06292"/>
+    <rect x="31" y="43" width="5" height="6" rx="2" fill="#F06292"/>
+    {/* Coin drop animation */}
+    <motion.g
+      animate={isHovered ? { y: [0, 4, 0], opacity: [1, 0.6, 1] } : { y: 0, opacity: 1 }}
+      transition={isHovered ? { duration: 0.5, repeat: Infinity, ease: "easeInOut" } : { duration: 0.3 }}
+    >
+      <circle cx="26.5" cy="12" r="4" fill="#FFC107"/>
+      <text x="26.5" y="15" textAnchor="middle" fill="#7B3F00" fontSize="5" fontWeight="bold" fontFamily="serif">৳</text>
+    </motion.g>
+  </svg>
+);
+
 export const MoreIcon = () => (
   <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
     <circle cx="18" cy="18" r="5" fill="#E91E8C"/>
@@ -273,10 +311,8 @@ export const TxReceiveIcon = () => (
         <stop offset="100%" stopColor="#1B5E20"/>
       </linearGradient>
     </defs>
-    {/* Down arrow with coin */}
     <circle cx="22" cy="16" r="9" fill="url(#txRecvGrad)"/>
     <text x="22" y="20" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="serif">৳</text>
-    {/* Arrow shaft + head */}
     <line x1="22" y1="25" x2="22" y2="36" stroke="#2E7D32" strokeWidth="2.5" strokeLinecap="round"/>
     <path d="M16 31 L22 37 L28 31" stroke="#2E7D32" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
@@ -355,6 +391,28 @@ export const TxBankIcon = () => (
     {/* Floor */}
     <rect x="6" y="33" width="32" height="3" rx="1" fill="#1565C0"/>
     {/* Taka */}
-    <text x="22" y="30" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold" fontFamily="serif">৳</text>
+    <text x="22" y="30" textAnchor="middle" fill="white" fontSize="7" fontWeight="bold" fontFamily="serif">৳</text>
+  </svg>
+);
+
+export const TxPaymentIcon = () => (
+  <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+    <defs>
+      <linearGradient id="txQrGrad" x1="4" y1="4" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#CE93D8"/>
+        <stop offset="100%" stopColor="#6A1B9A"/>
+      </linearGradient>
+    </defs>
+    <rect x="7" y="7" width="12" height="12" rx="2" fill="none" stroke="#9C27B0" strokeWidth="2"/>
+    <rect x="10" y="10" width="6" height="6" rx="1" fill="#9C27B0"/>
+    <rect x="25" y="7" width="12" height="12" rx="2" fill="none" stroke="#9C27B0" strokeWidth="2"/>
+    <rect x="28" y="10" width="6" height="6" rx="1" fill="#9C27B0"/>
+    <rect x="7" y="25" width="12" height="12" rx="2" fill="none" stroke="#9C27B0" strokeWidth="2"/>
+    <rect x="10" y="28" width="6" height="6" rx="1" fill="#9C27B0"/>
+    <rect x="25" y="25" width="5" height="2" rx="1" fill="#9C27B0"/>
+    <rect x="33" y="25" width="4" height="2" rx="1" fill="#9C27B0"/>
+    <rect x="25" y="30" width="7" height="2" rx="1" fill="#9C27B0"/>
+    <rect x="25" y="35" width="4" height="2" rx="1" fill="#9C27B0"/>
+    <rect x="32" y="32" width="5" height="5" rx="1" fill="#9C27B0"/>
   </svg>
 );
