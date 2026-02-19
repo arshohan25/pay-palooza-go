@@ -13,12 +13,105 @@ const PIN_KEY        = "mfs_user_pin";
 const DEVICE_KEY     = "mfs_device_verified";
 const REGISTERED_KEY = "mfs_registered_phone";
 const USER_NAME_KEY  = "mfs_user_name";
+const LANG_KEY       = "mfs_ui_lang";
 
 const getStoredPin      = () => localStorage.getItem(PIN_KEY) ?? "";
 const getDeviceVerified = () => localStorage.getItem(DEVICE_KEY) === "1";
 const getRegistered     = () => localStorage.getItem(REGISTERED_KEY) ?? "";
 
 const DEMO_OTP = "123456";
+
+// ─── Translations ──────────────────────────────────────────────────────────────
+const T = {
+  en: {
+    appName: "MFS Wallet", tagline: "Bangladesh's Smartest Digital Wallet",
+    users: "Users", encryption: "Encryption", transfer: "Transfer",
+    balanceLabel: "Available Balance", walletSecurity: "Bank-grade encrypted wallet",
+    createFree: "🎉 Create Free Account", loginWallet: "🔐 Log In to Wallet",
+    alreadyHave: "Already have an account?", signIn: "Sign in →",
+    newUser: "New user?", createOne: "Create an account →",
+    terms: "By continuing you agree to our", termsLink: "Terms", privacy: "Privacy Policy",
+    createAccount: "Create Account", welcomeBack: "Welcome Back",
+    enterPhoneRegister: "Enter your mobile number to create your free wallet",
+    enterPhoneLogin: "Enter your registered mobile number to continue",
+    sendOtp: "Send OTP", continue: "Continue",
+    alreadyRegistered: "Already registered?", logIn: "Log in",
+    noAccount: "Don't have an account?", createOneFree: "Create one free",
+    supportedNet: "Supported",
+    verifyNumber: "Verify Number", resetPin: "Reset PIN",
+    codeSent: "Code sent to", demoMode: "Demo mode — use OTP",
+    resendOtp: "Resend OTP", verify: "Verify",
+    setPin: "Set Your PIN", newPin: "New PIN", confirmPin: "Confirm PIN",
+    choosePinHint: "Choose a secure 4-digit PIN to protect your wallet",
+    reenterPin: "Re-enter your PIN to confirm",
+    pinWeakHint: "Avoid 1234, 1111, or your birthday. Never share your PIN.",
+    enterPin: "Enter PIN",
+    trustedDevice: "Trusted device — enter your PIN to continue",
+    trustedVerified: "Trusted Device Verified",
+    forgotPin: "Forgot PIN?", reset: "Reset",
+    showPin: "Show PIN", hidePin: "Hide PIN",
+    yourName: "What's your name?", nameHint: "Friends will recognise you by this",
+    namePlaceholder: "e.g. Tanvir Hasan",
+    nameOptional: "Optional — you can skip and add it later from your profile.",
+    createWallet: "Create My Wallet 🎉", skipCreate: "Skip & Create Wallet",
+    allSet: "All Set! 🎊", walletReady: "Your wallet is ready.", openingDashboard: "Opening your dashboard…",
+    instantTransfer: "Instant Transfer", bankSecurity: "Bank-Grade Security",
+    available247: "24/7 Available", zeroFees: "Zero Fees",
+    pinTooWeak: "PIN too weak. Avoid sequential/repeated digits.",
+    pinsDontMatch: "PINs don't match. Try again.",
+    incorrectPin: "Incorrect PIN. Try again.", incorrectOtp: "Incorrect OTP. Demo: 123456",
+    validPhone: "Enter a valid 11-digit Bangladeshi mobile number.",
+    alreadyRegisteredErr: "Already registered. Please log in.",
+    notRegistered: "Number not registered. Create an account.",
+    enterOtp: "Enter the 6-digit OTP.", enter4Digits: "Enter all 4 digits.",
+    reenterPinErr: "Re-enter your PIN.",
+  },
+  bn: {
+    appName: "এমএফএস ওয়ালেট", tagline: "বাংলাদেশের সবচেয়ে স্মার্ট ডিজিটাল ওয়ালেট",
+    users: "ব্যবহারকারী", encryption: "এনক্রিপশন", transfer: "ট্রান্সফার",
+    balanceLabel: "উপলব্ধ ব্যালেন্স", walletSecurity: "ব্যাংক-গ্রেড এনক্রিপ্টেড ওয়ালেট",
+    createFree: "🎉 বিনামূল্যে একাউন্ট খুলুন", loginWallet: "🔐 ওয়ালেটে লগইন করুন",
+    alreadyHave: "ইতিমধ্যে একাউন্ট আছে?", signIn: "সাইন ইন →",
+    newUser: "নতুন ব্যবহারকারী?", createOne: "একাউন্ট তৈরি করুন →",
+    terms: "চালিয়ে যাওয়ার মাধ্যমে আপনি আমাদের", termsLink: "শর্তাবলী", privacy: "গোপনীয়তা নীতি",
+    createAccount: "একাউন্ট তৈরি করুন", welcomeBack: "স্বাগতম",
+    enterPhoneRegister: "বিনামূল্যে ওয়ালেট তৈরি করতে আপনার মোবাইল নম্বর দিন",
+    enterPhoneLogin: "চালিয়ে যেতে আপনার নিবন্ধিত নম্বর দিন",
+    sendOtp: "ওটিপি পাঠান", continue: "পরবর্তী",
+    alreadyRegistered: "ইতিমধ্যে নিবন্ধিত?", logIn: "লগইন",
+    noAccount: "একাউন্ট নেই?", createOneFree: "বিনামূল্যে তৈরি করুন",
+    supportedNet: "সাপোর্টেড",
+    verifyNumber: "নম্বর যাচাই করুন", resetPin: "পিন রিসেট করুন",
+    codeSent: "কোড পাঠানো হয়েছে", demoMode: "ডেমো মোড — ওটিপি ব্যবহার করুন",
+    resendOtp: "ওটিপি পুনরায় পাঠান", verify: "যাচাই করুন",
+    setPin: "পিন সেট করুন", newPin: "নতুন পিন", confirmPin: "পিন নিশ্চিত করুন",
+    choosePinHint: "আপনার ওয়ালেট রক্ষার জন্য একটি নিরাপদ ৪-সংখ্যার পিন বেছে নিন",
+    reenterPin: "নিশ্চিত করতে পিন পুনরায় দিন",
+    pinWeakHint: "১২৩৪, ১১১১ বা জন্মদিন ব্যবহার করবেন না। পিন কখনো শেয়ার করবেন না।",
+    enterPin: "পিন দিন",
+    trustedDevice: "বিশ্বস্ত ডিভাইস — চালিয়ে যেতে পিন দিন",
+    trustedVerified: "বিশ্বস্ত ডিভাইস যাচাই হয়েছে",
+    forgotPin: "পিন ভুলে গেছেন?", reset: "রিসেট",
+    showPin: "পিন দেখুন", hidePin: "পিন লুকান",
+    yourName: "আপনার নাম কি?", nameHint: "বন্ধুরা এই নামে আপনাকে চিনবে",
+    namePlaceholder: "যেমন: তানভীর হাসান",
+    nameOptional: "ঐচ্ছিক — পরে প্রোফাইল থেকে যোগ করতে পারবেন।",
+    createWallet: "আমার ওয়ালেট তৈরি করুন 🎉", skipCreate: "এড়িয়ে যান এবং তৈরি করুন",
+    allSet: "সব ঠিক আছে! 🎊", walletReady: "আপনার ওয়ালেট প্রস্তুত।", openingDashboard: "ড্যাশবোর্ড খোলা হচ্ছে…",
+    instantTransfer: "তাৎক্ষণিক ট্রান্সফার", bankSecurity: "ব্যাংক-গ্রেড নিরাপত্তা",
+    available247: "২৪/৭ উপলব্ধ", zeroFees: "শূন্য চার্জ",
+    pinTooWeak: "পিন দুর্বল। ক্রমিক/একই সংখ্যা এড়িয়ে চলুন।",
+    pinsDontMatch: "পিন মিলছে না। আবার চেষ্টা করুন।",
+    incorrectPin: "ভুল পিন। আবার চেষ্টা করুন।", incorrectOtp: "ভুল ওটিপি। ডেমো: ১২৩৪৫৬",
+    validPhone: "একটি বৈধ ১১-সংখ্যার বাংলাদেশী মোবাইল নম্বর দিন।",
+    alreadyRegisteredErr: "ইতিমধ্যে নিবন্ধিত। অনুগ্রহ করে লগইন করুন।",
+    notRegistered: "নম্বর নিবন্ধিত নয়। একটি একাউন্ট তৈরি করুন।",
+    enterOtp: "৬-সংখ্যার ওটিপি দিন।", enter4Digits: "সব ৪টি সংখ্যা দিন।",
+    reenterPinErr: "আপনার পিন পুনরায় দিন।",
+  },
+} as const;
+
+type Lang = "en" | "bn";
 
 type Mode =
   | "landing"
@@ -250,6 +343,15 @@ const slideV = {
 interface AuthPageProps { onAuthenticated: () => void; }
 
 export default function AuthPage({ onAuthenticated }: AuthPageProps) {
+  const [lang, setLang]               = useState<Lang>(() => (localStorage.getItem(LANG_KEY) as Lang) ?? "en");
+  const t = T[lang];
+
+  const toggleLang = () => {
+    const next: Lang = lang === "en" ? "bn" : "en";
+    setLang(next);
+    localStorage.setItem(LANG_KEY, next);
+  };
+
   const [mode, setMode]             = useState<Mode>("landing");
   const [direction, setDir]         = useState(1);
   const [phone, setPhone]           = useState("");
@@ -270,46 +372,37 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
 
   // ── Register ───────────────────────────────────────────────────────────────
   const handleRegisterPhone = () => {
-    if (!isValidPhone(phone)) { setError("Enter a valid 11-digit Bangladeshi mobile number."); return; }
-    if (getRegistered() === phone) { setError("Already registered. Please log in."); return; }
+    if (!isValidPhone(phone)) { setError(t.validPhone); return; }
+    if (getRegistered() === phone) { setError(t.alreadyRegisteredErr); return; }
     goTo("register_otp");
   };
 
   const handleRegisterOtp = useCallback((val?: string) => {
     const v = val ?? otp;
-    if (v.length < 6) { setError("Enter the 6-digit OTP."); return; }
-    if (v !== DEMO_OTP) { setError("Incorrect OTP. Demo: 123456"); haptics.error(); return; }
+    if (v.length < 6) { setError(t.enterOtp); return; }
+    if (v !== DEMO_OTP) { setError(t.incorrectOtp); haptics.error(); return; }
     setPin(""); setConfirmPin(""); setConfirmStage(false);
     goTo("register_pin");
-  }, [otp, goTo]);
+  }, [otp, goTo, t]);
 
   const handleRegisterPin = useCallback((currentPin: string, currentConfirm: string, stage: boolean) => {
     const seq = ["1234","2345","3456","4567","5678","6789","9876","8765","7654","6543","5432","4321"];
     const rep = ["0000","1111","2222","3333","4444","5555","6666","7777","8888","9999"];
     if (!stage) {
-      // First stage: validate PIN strength then move to confirm
-      if (currentPin.length < 4) { setError("Enter all 4 digits."); return; }
-      if (seq.includes(currentPin) || rep.includes(currentPin)) { setError("PIN too weak. Avoid sequential/repeated digits."); return; }
-      setError("");
-      setConfirmStage(true);
-      haptics.success();
+      if (currentPin.length < 4) { setError(t.enter4Digits); return; }
+      if (seq.includes(currentPin) || rep.includes(currentPin)) { setError(t.pinTooWeak); return; }
+      setError(""); setConfirmStage(true); haptics.success();
     } else {
-      // Second stage: confirm match
-      if (currentConfirm.length < 4) { setError("Re-enter your PIN."); return; }
+      if (currentConfirm.length < 4) { setError(t.reenterPinErr); return; }
       if (currentPin !== currentConfirm) {
-        setError("PINs don't match. Try again.");
-        haptics.error();
-        setConfirmPin("");
-        return;
+        setError(t.pinsDontMatch); haptics.error(); setConfirmPin(""); return;
       }
       localStorage.setItem(PIN_KEY, currentPin);
       localStorage.setItem(DEVICE_KEY, "1");
       localStorage.setItem(REGISTERED_KEY, phone);
-      haptics.success();
-      setConfirmStage(false);
-      goTo("register_name");
+      haptics.success(); setConfirmStage(false); goTo("register_name");
     }
-  }, [phone, goTo]);
+  }, [phone, goTo, t]);
 
   const handleRegisterName = () => {
     const trimmed = userName.trim();
@@ -317,69 +410,57 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     localStorage.setItem(USER_NAME_KEY, finalName);
     localStorage.setItem("mfs_registered_phone", phone);
     sessionStorage.setItem(SESSION_KEY, "1");
-    haptics.success();
-    goTo("success");
-    setTimeout(onAuthenticated, 1500);
+    haptics.success(); goTo("success"); setTimeout(onAuthenticated, 1500);
   };
 
   // ── Login ──────────────────────────────────────────────────────────────────
   const handleLoginPhone = () => {
-    if (!isValidPhone(phone)) { setError("Enter a valid 11-digit Bangladeshi mobile number."); return; }
+    if (!isValidPhone(phone)) { setError(t.validPhone); return; }
     const registered = getRegistered();
-    if (registered && registered !== phone) { setError("Number not registered. Create an account."); return; }
+    if (registered && registered !== phone) { setError(t.notRegistered); return; }
     if (getDeviceVerified() && getStoredPin()) { goTo("login_pin"); }
     else { goTo("login_otp"); }
   };
 
   const handleLoginOtp = useCallback((val?: string) => {
     const v = val ?? otp;
-    if (v.length < 6) { setError("Enter the 6-digit OTP."); return; }
-    if (v !== DEMO_OTP) { setError("Incorrect OTP. Demo: 123456"); haptics.error(); return; }
-    localStorage.setItem(DEVICE_KEY, "1");
-    setPin("");
-    goTo("login_pin");
-  }, [otp, goTo]);
+    if (v.length < 6) { setError(t.enterOtp); return; }
+    if (v !== DEMO_OTP) { setError(t.incorrectOtp); haptics.error(); return; }
+    localStorage.setItem(DEVICE_KEY, "1"); setPin(""); goTo("login_pin");
+  }, [otp, goTo, t]);
 
   const handleLoginPin = useCallback((entered: string) => {
     const stored = getStoredPin() || "1234";
     if (entered !== stored) {
-      haptics.error();
-      setError("Incorrect PIN. Try again.");
-      setTimeout(() => { setPin(""); setError(""); }, 700);
-      return;
+      haptics.error(); setError(t.incorrectPin);
+      setTimeout(() => { setPin(""); setError(""); }, 700); return;
     }
-    sessionStorage.setItem(SESSION_KEY, "1");
-    haptics.success();
-    goTo("success");
-    setTimeout(onAuthenticated, 1500);
-  }, [goTo, onAuthenticated]);
+    sessionStorage.setItem(SESSION_KEY, "1"); haptics.success();
+    goTo("success"); setTimeout(onAuthenticated, 1500);
+  }, [goTo, onAuthenticated, t]);
 
   // ── Forgot PIN ─────────────────────────────────────────────────────────────
   const handleForgotOtp = useCallback((val?: string) => {
     const v = val ?? otp;
-    if (v.length < 6) { setError("Enter the 6-digit OTP."); return; }
-    if (v !== DEMO_OTP) { setError("Incorrect OTP. Demo: 123456"); haptics.error(); return; }
-    setPin(""); setConfirmPin(""); setConfirmStage(false);
-    goTo("forgot_pin");
-  }, [otp, goTo]);
+    if (v.length < 6) { setError(t.enterOtp); return; }
+    if (v !== DEMO_OTP) { setError(t.incorrectOtp); haptics.error(); return; }
+    setPin(""); setConfirmPin(""); setConfirmStage(false); goTo("forgot_pin");
+  }, [otp, goTo, t]);
 
   const handleForgotPin = useCallback((currentPin: string, currentConfirm: string, stage: boolean) => {
     const seq = ["1234","2345","3456","4567","5678","6789","9876","8765","7654","6543","5432","4321"];
     const rep = ["0000","1111","2222","3333","4444","5555","6666","7777","8888","9999"];
     if (!stage) {
       if (currentPin.length < 4) return;
-      if (seq.includes(currentPin) || rep.includes(currentPin)) { setError("PIN too weak."); return; }
+      if (seq.includes(currentPin) || rep.includes(currentPin)) { setError(t.pinTooWeak); return; }
       setError(""); setConfirmStage(true); haptics.success();
     } else {
       if (currentConfirm.length < 4) return;
-      if (currentPin !== currentConfirm) { setError("PINs don't match."); haptics.error(); setConfirmPin(""); return; }
-      localStorage.setItem(PIN_KEY, currentPin);
-      localStorage.setItem(DEVICE_KEY, "1");
-      haptics.success();
-      setConfirmStage(false); setPin(""); setConfirmPin("");
-      goTo("login_pin");
+      if (currentPin !== currentConfirm) { setError(t.pinsDontMatch); haptics.error(); setConfirmPin(""); return; }
+      localStorage.setItem(PIN_KEY, currentPin); localStorage.setItem(DEVICE_KEY, "1");
+      haptics.success(); setConfirmStage(false); setPin(""); setConfirmPin(""); goTo("login_pin");
     }
-  }, [goTo]);
+  }, [goTo, t]);
 
   // ── OTP numeric keypad handler ─────────────────────────────────────────────
   const handleOtpKey = (k: string, onComplete: (val: string) => void) => {
@@ -464,6 +545,16 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
             <div className="absolute top-8 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full bg-white/4 pointer-events-none" />
 
             <div className="relative px-6 pt-12 pb-4 flex flex-col items-center gap-4 text-white">
+              {/* Language toggle — top right */}
+              <motion.button
+                whileTap={{ scale: 0.92 }}
+                onClick={toggleLang}
+                className="absolute top-3 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-sm border border-white/25 text-white text-xs font-bold"
+              >
+                <Globe size={11} />
+                {lang === "en" ? "বাংলা" : "English"}
+              </motion.button>
+
               {/* Logo */}
               <motion.div
                 initial={{ scale: 0.6, rotate: -12 }}
@@ -487,8 +578,8 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 transition={{ delay: 0.18 }}
                 className="text-center"
               >
-                <h1 className="text-3xl font-black tracking-tight leading-none">MFS Wallet</h1>
-                <p className="text-sm font-medium text-white/70 mt-1">Bangladesh's Smartest Digital Wallet</p>
+                <h1 className="text-3xl font-black tracking-tight leading-none">{t.appName}</h1>
+                <p className="text-sm font-medium text-white/70 mt-1">{t.tagline}</p>
               </motion.div>
 
               {/* Feature pills */}
@@ -498,10 +589,10 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 transition={{ delay: 0.3 }}
                 className="flex flex-wrap justify-center gap-2 pb-2"
               >
-                <Pill icon={Zap} label="Instant Transfer" />
-                <Pill icon={Shield} label="Bank-Grade Security" />
-                <Pill icon={Globe} label="24/7 Available" />
-                <Pill icon={Star} label="Zero Fees" />
+                <Pill icon={Zap} label={t.instantTransfer} />
+                <Pill icon={Shield} label={t.bankSecurity} />
+                <Pill icon={Globe} label={t.available247} />
+                <Pill icon={Star} label={t.zeroFees} />
               </motion.div>
             </div>
 
@@ -574,9 +665,9 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                       className="grid grid-cols-3 gap-3"
                     >
                       {[
-                        { emoji: "🏦", val: "10M+", label: "Users" },
-                        { emoji: "🔒", val: "256-bit", label: "Encryption" },
-                        { emoji: "⚡", val: "< 3s", label: "Transfer" },
+                        { emoji: "🏦", val: "10M+", label: t.users },
+                        { emoji: "🔒", val: "256-bit", label: t.encryption },
+                        { emoji: "⚡", val: "< 3s", label: t.transfer },
                       ].map(({ emoji, val, label }) => (
                         <div key={label} className="flex flex-col items-center gap-1 p-3 rounded-2xl bg-card border border-border shadow-card">
                           <span className="text-xl">{emoji}</span>
@@ -598,7 +689,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                       <div className="relative">
                         <div className="flex justify-between items-start mb-4">
                           <div>
-                            <p className="text-[10px] uppercase tracking-widest opacity-60 mb-1">Available Balance</p>
+                            <p className="text-[10px] uppercase tracking-widest opacity-60 mb-1">{t.balanceLabel}</p>
                             <p className="text-2xl font-black tracking-tight">৳ •••,•••</p>
                           </div>
                           <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center">
@@ -607,7 +698,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                         </div>
                         <div className="flex items-center gap-2 text-xs font-semibold opacity-75">
                           <Shield size={13} />
-                          <span>Bank-grade encrypted wallet</span>
+                          <span>{t.walletSecurity}</span>
                         </div>
                       </div>
                     </motion.div>
@@ -627,7 +718,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                           else goTo(isNewUser ? "register_phone" : "login_phone");
                         }}
                       >
-                        {isNewUser ? "🎉 Create Free Account" : "🔐 Log In to Wallet"}
+                        {isNewUser ? t.createFree : t.loginWallet}
                         <ArrowRight size={17} />
                       </button>
 
@@ -640,8 +731,8 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                             else goTo("login_phone");
                           }}
                         >
-                          Already have an account?{" "}
-                          <span className="text-primary font-bold">Sign in →</span>
+                          {t.alreadyHave}{" "}
+                          <span className="text-primary font-bold">{t.signIn}</span>
                         </button>
                       ) : (
                         <button
@@ -653,16 +744,16 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                             setPhone(""); goTo("register_phone");
                           }}
                         >
-                          New user?{" "}
-                          <span className="text-primary font-bold">Create an account →</span>
+                          {t.newUser}{" "}
+                          <span className="text-primary font-bold">{t.createOne}</span>
                         </button>
                       )}
                     </motion.div>
 
                     <p className="text-[10px] text-muted-foreground text-center">
-                      By continuing you agree to our{" "}
-                      <span className="text-primary underline underline-offset-2">Terms</span> &{" "}
-                      <span className="text-primary underline underline-offset-2">Privacy Policy</span>
+                      {t.terms}{" "}
+                      <span className="text-primary underline underline-offset-2">{t.termsLink}</span> &{" "}
+                      <span className="text-primary underline underline-offset-2">{t.privacy}</span>
                     </p>
                   </div>
                 )}
@@ -672,12 +763,10 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                   <div className="space-y-6 pt-2">
                     <div className="space-y-1">
                       <h2 className="text-2xl font-black text-foreground tracking-tight">
-                        {mode === "register_phone" ? "Create Account" : "Welcome Back"}
+                        {mode === "register_phone" ? t.createAccount : t.welcomeBack}
                       </h2>
                       <p className="text-sm text-muted-foreground leading-relaxed">
-                        {mode === "register_phone"
-                          ? "Enter your mobile number to create your free wallet"
-                          : "Enter your registered mobile number to continue"}
+                        {mode === "register_phone" ? t.enterPhoneRegister : t.enterPhoneLogin}
                       </p>
                     </div>
 
@@ -693,20 +782,20 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                       onClick={mode === "register_phone" ? handleRegisterPhone : handleLoginPhone}
                       disabled={phone.length < 11}
                     >
-                      {mode === "register_phone" ? "Send OTP" : "Continue"}
+                      {mode === "register_phone" ? t.sendOtp : t.continue}
                       <ArrowRight size={17} />
                     </button>
 
                     <div className="text-center text-sm text-muted-foreground">
                       {mode === "register_phone" ? (
                         <button onClick={() => { setError(""); setPhone(""); goTo("login_phone"); }}>
-                          Already registered?{" "}
-                          <span className="text-primary font-bold">Log in</span>
+                          {t.alreadyRegistered}{" "}
+                          <span className="text-primary font-bold">{t.logIn}</span>
                         </button>
                       ) : (
                         <button onClick={() => { setError(""); setPhone(""); goTo("register_phone"); }}>
-                          Don't have an account?{" "}
-                          <span className="text-primary font-bold">Create one free</span>
+                          {t.noAccount}{" "}
+                          <span className="text-primary font-bold">{t.createOneFree}</span>
                         </button>
                       )}
                     </div>
@@ -715,7 +804,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                     <div className="flex items-center gap-2 p-3 rounded-2xl bg-muted/50 border border-border">
                       <span className="text-base">📱</span>
                       <p className="text-[11px] text-muted-foreground leading-relaxed">
-                        Supported: <strong className="text-foreground">GP · Robi · BL · Airtel · Teletalk · Banglalink</strong>
+                        {t.supportedNet}: <strong className="text-foreground">GP · Robi · BL · Airtel · Teletalk · Banglalink</strong>
                       </p>
                     </div>
                   </div>
@@ -731,10 +820,10 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                     <div className="space-y-6 pt-2">
                       <div className="space-y-1">
                         <h2 className="text-2xl font-black text-foreground tracking-tight">
-                          {mode === "forgot_otp" ? "Reset PIN" : "Verify Number"}
+                          {mode === "forgot_otp" ? t.resetPin : t.verifyNumber}
                         </h2>
                         <p className="text-sm text-muted-foreground">
-                          Code sent to{" "}
+                          {t.codeSent}{" "}
                           <span className="font-bold text-foreground">+880 {phone || getRegistered()}</span>
                         </p>
                       </div>
@@ -753,7 +842,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                       <div className="flex items-center gap-2 p-3 rounded-xl bg-accent/10 border border-accent/25">
                         <span className="text-sm">💡</span>
                         <p className="text-[11px] text-muted-foreground">
-                          Demo mode — use OTP{" "}
+                          {t.demoMode}{" "}
                           <strong className="text-foreground font-black text-sm">123456</strong>
                         </p>
                       </div>
@@ -769,14 +858,14 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                           className="flex items-center gap-1.5 text-sm text-muted-foreground"
                           onClick={() => { setOtp(""); setError(""); }}
                         >
-                          <RefreshCw size={13} /> Resend OTP
+                          <RefreshCw size={13} /> {t.resendOtp}
                         </button>
                         <button
                           className="h-12 px-6 gradient-hero text-white font-bold text-sm rounded-xl shadow-glow flex items-center gap-2 active:scale-95 transition-transform disabled:opacity-40"
                           onClick={() => onComplete()}
                           disabled={otp.length < 6}
                         >
-                          Verify <ArrowRight size={15} />
+                          {t.verify} <ArrowRight size={15} />
                         </button>
                       </div>
                     </div>
@@ -799,12 +888,10 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                             exit={{ opacity: 0, y: -8 }}
                           >
                             <h2 className="text-2xl font-black text-foreground tracking-tight">
-                              {confirmStage ? "Confirm PIN" : (mode === "forgot_pin" ? "New PIN" : "Set Your PIN")}
+                              {confirmStage ? t.confirmPin : (mode === "forgot_pin" ? t.newPin : t.setPin)}
                             </h2>
                             <p className="text-sm text-muted-foreground mt-0.5">
-                              {confirmStage
-                                ? "Re-enter your PIN to confirm"
-                                : "Choose a secure 4-digit PIN to protect your wallet"}
+                              {confirmStage ? t.reenterPin : t.choosePinHint}
                             </p>
                           </motion.div>
                         </AnimatePresence>
@@ -840,9 +927,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                       {!confirmStage && (
                         <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/60 border border-border">
                           <Shield size={13} className="text-muted-foreground shrink-0" />
-                          <p className="text-[11px] text-muted-foreground">
-                            Avoid 1234, 1111, or your birthday. Never share your PIN.
-                          </p>
+                          <p className="text-[11px] text-muted-foreground">{t.pinWeakHint}</p>
                         </div>
                       )}
 
@@ -859,18 +944,16 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 {mode === "login_pin" && (
                   <div className="space-y-6 pt-2">
                     <div className="space-y-1">
-                      <h2 className="text-2xl font-black text-foreground tracking-tight">Enter PIN</h2>
+                      <h2 className="text-2xl font-black text-foreground tracking-tight">{t.enterPin}</h2>
                       <p className="text-sm text-muted-foreground">
-                        {getDeviceVerified()
-                          ? "Trusted device — enter your PIN to continue"
-                          : "Enter your 4-digit security PIN"}
+                        {getDeviceVerified() ? t.trustedDevice : t.enterPin}
                       </p>
                     </div>
 
                     {getDeviceVerified() && (
                       <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/8 border border-primary/20">
                         <CheckCircle2 size={14} className="text-primary" />
-                        <span className="text-xs font-semibold text-primary">Trusted Device Verified</span>
+                        <span className="text-xs font-semibold text-primary">{t.trustedVerified}</span>
                       </div>
                     )}
 
@@ -901,8 +984,8 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                         className="text-sm"
                         onClick={() => { setPin(""); setOtp(""); goTo("forgot_otp"); }}
                       >
-                        <span className="text-muted-foreground">Forgot PIN? </span>
-                        <span className="text-primary font-bold">Reset</span>
+                        <span className="text-muted-foreground">{t.forgotPin} </span>
+                        <span className="text-primary font-bold">{t.reset}</span>
                       </button>
 
                       {/* Show/hide pin toggle */}
@@ -911,7 +994,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                         onClick={() => setShowPin(v => !v)}
                       >
                         {showPin ? <EyeOff size={13} /> : <Eye size={13} />}
-                        {showPin ? "Hide" : "Show"} PIN
+                        {showPin ? t.hidePin : t.showPin}
                       </button>
                     </div>
 
@@ -938,23 +1021,21 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                         <UserRound size={22} className="text-primary" />
                       </div>
                       <div>
-                        <h2 className="text-2xl font-black text-foreground tracking-tight">What's your name?</h2>
-                        <p className="text-sm text-muted-foreground">Friends will recognise you by this</p>
+                        <h2 className="text-2xl font-black text-foreground tracking-tight">{t.yourName}</h2>
+                        <p className="text-sm text-muted-foreground">{t.nameHint}</p>
                       </div>
                     </div>
 
                     <NameInput value={userName} onChange={setUserName} />
 
-                    <p className="text-[11px] text-muted-foreground px-1">
-                      Optional — you can skip and add it later from your profile.
-                    </p>
+                    <p className="text-[11px] text-muted-foreground px-1">{t.nameOptional}</p>
 
                     <button
                       className="w-full h-14 gradient-hero text-white font-bold text-[15px] rounded-2xl shadow-glow flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
                       onClick={handleRegisterName}
                     >
                       <CheckCircle2 size={17} />
-                      {userName.trim() ? "Create My Wallet 🎉" : "Skip & Create Wallet"}
+                      {userName.trim() ? t.createWallet : t.skipCreate}
                     </button>
                   </div>
                 )}
@@ -986,9 +1067,9 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.22 }}
                     >
-                      <h2 className="text-3xl font-black text-foreground tracking-tight">All Set! 🎊</h2>
+                      <h2 className="text-3xl font-black text-foreground tracking-tight">{t.allSet}</h2>
                       <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-                        Your wallet is ready.<br />Opening your dashboard…
+                        {t.walletReady}<br />{t.openingDashboard}
                       </p>
                     </motion.div>
 
