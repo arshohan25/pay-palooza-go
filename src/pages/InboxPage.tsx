@@ -1,0 +1,536 @@
+import { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronLeft, Send, Phone, Video, MoreVertical, Search, Plus, Smile, Image, CheckCheck, Check } from "lucide-react";
+
+// ── Types ──────────────────────────────────────────────────────────────────────
+interface Message {
+  id: string;
+  text: string;
+  time: string;
+  sent: boolean; // true = current user sent
+  status: "sent" | "delivered" | "read";
+  emoji?: string;
+}
+
+interface Contact {
+  id: string;
+  name: string;
+  phone: string;
+  initials: string;
+  gradient: string;
+  lastMsg: string;
+  lastTime: string;
+  unread: number;
+  online: boolean;
+  messages: Message[];
+}
+
+// ── Mock data ──────────────────────────────────────────────────────────────────
+const INITIAL_CONTACTS: Contact[] = [
+  {
+    id: "c1",
+    name: "Rahim Uddin",
+    phone: "01711-223344",
+    initials: "RU",
+    gradient: "gradient-send",
+    lastMsg: "Payment received, thanks! 🙏",
+    lastTime: "2m",
+    unread: 2,
+    online: true,
+    messages: [
+      { id: "m1", text: "Hey, can you send me ৳500?", time: "10:30 AM", sent: false, status: "read" },
+      { id: "m2", text: "Sure, sending now!", time: "10:31 AM", sent: true, status: "read" },
+      { id: "m3", text: "Payment received, thanks! 🙏", time: "10:32 AM", sent: false, status: "read" },
+      { id: "m4", text: "Let's split the dinner bill?", time: "2m ago", sent: false, status: "delivered" },
+      { id: "m5", text: "How much is my share?", time: "1m ago", sent: false, status: "delivered" },
+    ],
+  },
+  {
+    id: "c2",
+    name: "Nusrat Jahan",
+    phone: "01831-556677",
+    initials: "NJ",
+    gradient: "gradient-payment",
+    lastMsg: "Will send you tomorrow 😊",
+    lastTime: "1h",
+    unread: 0,
+    online: true,
+    messages: [
+      { id: "m1", text: "Hey Nusrat! Did you get the transfer?", time: "9:15 AM", sent: true, status: "read" },
+      { id: "m2", text: "Not yet, let me check!", time: "9:20 AM", sent: false, status: "read" },
+      { id: "m3", text: "Hmm still not showing. Maybe tomorrow?", time: "9:22 AM", sent: false, status: "read" },
+      { id: "m4", text: "Will send you tomorrow 😊", time: "1h ago", sent: false, status: "read" },
+    ],
+  },
+  {
+    id: "c3",
+    name: "Karim Bhai",
+    phone: "01912-889900",
+    initials: "KB",
+    gradient: "gradient-cashout",
+    lastMsg: "ঠিক আছে, পাঠিয়ে দিও",
+    lastTime: "3h",
+    unread: 0,
+    online: false,
+    messages: [
+      { id: "m1", text: "Karim bhai, need to pay the rent", time: "Yesterday", sent: true, status: "read" },
+      { id: "m2", text: "কত লাগবে?", time: "Yesterday", sent: false, status: "read" },
+      { id: "m3", text: "৳8,000", time: "Yesterday", sent: true, status: "read" },
+      { id: "m4", text: "ঠিক আছে, পাঠিয়ে দিও", time: "3h ago", sent: false, status: "read" },
+    ],
+  },
+  {
+    id: "c4",
+    name: "Mitu Apa",
+    phone: "01614-334455",
+    initials: "MA",
+    gradient: "gradient-accent",
+    lastMsg: "Sure! I'll transfer right now",
+    lastTime: "Yesterday",
+    unread: 0,
+    online: false,
+    messages: [
+      { id: "m1", text: "Mitu apa, আপনার কাছে ৳2000 ধার চাই", time: "Yesterday", sent: true, status: "read" },
+      { id: "m2", text: "Sure! I'll transfer right now", time: "Yesterday", sent: false, status: "read" },
+    ],
+  },
+  {
+    id: "c5",
+    name: "Arif vai",
+    phone: "01511-778899",
+    initials: "AV",
+    gradient: "gradient-addmoney",
+    lastMsg: "👍",
+    lastTime: "2d",
+    unread: 0,
+    online: false,
+    messages: [
+      { id: "m1", text: "Payment done bro", time: "2d ago", sent: true, status: "read" },
+      { id: "m2", text: "👍", time: "2d ago", sent: false, status: "read" },
+    ],
+  },
+];
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+const QUICK_REPLIES = ["👍", "Thanks!", "OK!", "Send ৳500", "Got it 😊", "Sure!"];
+
+// ── Chat View ──────────────────────────────────────────────────────────────────
+interface ChatViewProps {
+  contact: Contact;
+  messages: Message[];
+  onBack: () => void;
+  onSend: (text: string) => void;
+}
+
+const ChatView = ({ contact, messages, onBack, onSend }: ChatViewProps) => {
+  const [text, setText] = useState("");
+  const [showEmoji, setShowEmoji] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleSend = () => {
+    if (!text.trim()) return;
+    onSend(text.trim());
+    setText("");
+    setShowEmoji(false);
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+  };
+
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleSend();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
+      {/* Chat header */}
+      <motion.div
+        initial={{ y: -50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 300, damping: 28 }}
+        className="gradient-primary px-4 pt-12 pb-4 text-primary-foreground flex items-center gap-3 shrink-0"
+      >
+        <button
+          onClick={onBack}
+          className="w-10 h-10 rounded-full bg-white/20 ring-1 ring-white/30 flex items-center justify-center active:scale-95 transition-transform shrink-0"
+        >
+          <ChevronLeft size={20} />
+        </button>
+        {/* Avatar */}
+        <div className="relative">
+          <div className={`w-10 h-10 rounded-2xl ${contact.gradient} flex items-center justify-center text-white font-bold text-sm shrink-0`}>
+            {contact.initials}
+          </div>
+          {contact.online && (
+            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white" />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-[15px] leading-tight">{contact.name}</p>
+          <p className="text-[11px] text-white/70">{contact.online ? "Active now" : contact.phone}</p>
+        </div>
+        <div className="flex items-center gap-1">
+          <button className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center active:scale-95 transition-transform">
+            <Phone size={16} />
+          </button>
+          <button className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center active:scale-95 transition-transform">
+            <Video size={16} />
+          </button>
+          <button className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center active:scale-95 transition-transform">
+            <MoreVertical size={16} />
+          </button>
+        </div>
+      </motion.div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 scrollbar-none">
+        {messages.map((msg, idx) => {
+          const showDate = idx === 0;
+          return (
+            <div key={msg.id}>
+              {showDate && (
+                <p className="text-center text-[10px] text-muted-foreground mb-3 font-medium">
+                  Today
+                </p>
+              )}
+              <motion.div
+                initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ type: "spring", stiffness: 400, damping: 28 }}
+                className={`flex ${msg.sent ? "justify-end" : "justify-start"}`}
+              >
+                <div className={`flex flex-col max-w-[78%] ${msg.sent ? "items-end" : "items-start"}`}>
+                  <div
+                    className={`px-4 py-2.5 rounded-2xl text-[13.5px] leading-snug font-medium ${
+                      msg.sent
+                        ? "gradient-primary text-primary-foreground rounded-br-md shadow-glow"
+                        : "bg-card border border-border text-foreground rounded-bl-md shadow-card"
+                    }`}
+                  >
+                    {msg.text}
+                  </div>
+                  <div className={`flex items-center gap-1 mt-1 ${msg.sent ? "flex-row-reverse" : ""}`}>
+                    <span className="text-[10px] text-muted-foreground">{msg.time}</span>
+                    {msg.sent && (
+                      msg.status === "read"
+                        ? <CheckCheck size={12} className="text-primary" />
+                        : <Check size={12} className="text-muted-foreground" />
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          );
+        })}
+
+        {/* Typing indicator — shown when online */}
+        {contact.online && (
+          <div className="flex justify-start">
+            <div className="bg-card border border-border rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1 shadow-card">
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full"
+                  animate={{ y: [0, -4, 0] }}
+                  transition={{ duration: 0.7, repeat: Infinity, delay: i * 0.15 }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Quick replies */}
+      <AnimatePresence>
+        {showEmoji && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="px-4 pb-2 overflow-hidden"
+          >
+            <div className="flex gap-2 flex-wrap">
+              {QUICK_REPLIES.map((r) => (
+                <button
+                  key={r}
+                  onClick={() => { onSend(r); setShowEmoji(false); }}
+                  className="px-3 py-1.5 rounded-xl bg-card border border-border text-sm font-medium text-foreground hover:bg-primary/10 hover:border-primary/30 transition-colors"
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Input bar */}
+      <div className="px-3 pb-5 pt-2 border-t border-border/60 bg-background shrink-0">
+        <div className="flex items-center gap-2 bg-card border border-border rounded-2xl px-3 py-2 shadow-card">
+          <button
+            onClick={() => setShowEmoji(!showEmoji)}
+            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${showEmoji ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <Smile size={18} />
+          </button>
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="Message…"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKey}
+            className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-w-0"
+          />
+          <button className="w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+            <Image size={17} />
+          </button>
+          <motion.button
+            whileTap={{ scale: 0.88 }}
+            onClick={handleSend}
+            disabled={!text.trim()}
+            className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground shadow-glow disabled:opacity-40 disabled:shadow-none transition-all"
+          >
+            <Send size={16} />
+          </motion.button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── InboxPage ──────────────────────────────────────────────────────────────────
+interface InboxPageProps {
+  onBack?: () => void;
+}
+
+export default function InboxPage({ onBack }: InboxPageProps) {
+  const [contacts, setContacts] = useState<Contact[]>(INITIAL_CONTACTS);
+  const [activeChat, setActiveChat] = useState<Contact | null>(null);
+  const [search, setSearch] = useState("");
+
+  const filtered = contacts.filter((c) =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
+    c.phone.includes(search),
+  );
+
+  const handleSend = (contactId: string, text: string) => {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+    const newMsg: Message = {
+      id: `m${Date.now()}`,
+      text,
+      time: timeStr,
+      sent: true,
+      status: "sent",
+    };
+
+    setContacts((prev) =>
+      prev.map((c) =>
+        c.id === contactId
+          ? {
+              ...c,
+              messages: [...c.messages, newMsg],
+              lastMsg: text,
+              lastTime: "now",
+              unread: 0,
+            }
+          : c,
+      ),
+    );
+
+    // Simulate a reply after 1.5s if contact is online
+    const contact = contacts.find((c) => c.id === contactId);
+    if (contact?.online) {
+      const AUTO_REPLIES = [
+        "Got it! 👍",
+        "Thanks for letting me know",
+        "OK sure!",
+        "Received 🙏",
+        "Will check now",
+        "😊",
+      ];
+      const reply = AUTO_REPLIES[Math.floor(Math.random() * AUTO_REPLIES.length)];
+      setTimeout(() => {
+        setContacts((prev) =>
+          prev.map((c) =>
+            c.id === contactId
+              ? {
+                  ...c,
+                  messages: [
+                    ...c.messages,
+                    newMsg,
+                    {
+                      id: `m${Date.now() + 1}`,
+                      text: reply,
+                      time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+                      sent: false,
+                      status: "delivered" as const,
+                    },
+                  ],
+                  lastMsg: reply,
+                  lastTime: "now",
+                }
+              : c,
+          ),
+        );
+      }, 1800);
+    }
+  };
+
+  const openChat = (contact: Contact) => {
+    // Clear unread
+    setContacts((prev) =>
+      prev.map((c) => (c.id === contact.id ? { ...c, unread: 0 } : c)),
+    );
+    setActiveChat(contact);
+  };
+
+  const totalUnread = contacts.reduce((sum, c) => sum + c.unread, 0);
+
+  const currentMessages =
+    activeChat
+      ? (contacts.find((c) => c.id === activeChat.id)?.messages ?? activeChat.messages)
+      : [];
+
+  return (
+    <>
+      {/* ── Contact list ── */}
+      <div className="space-y-0">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h1 className="text-xl font-extrabold text-foreground">Messages</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {totalUnread > 0 ? `${totalUnread} unread message${totalUnread > 1 ? "s" : ""}` : "All caught up!"}
+            </p>
+          </div>
+          <motion.button
+            whileTap={{ scale: 0.88 }}
+            className="w-10 h-10 gradient-primary rounded-2xl flex items-center justify-center text-primary-foreground shadow-glow"
+          >
+            <Plus size={18} />
+          </motion.button>
+        </div>
+
+        {/* Search */}
+        <div className="relative mb-4">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search contacts…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-4 h-10 bg-card border border-border rounded-2xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
+          />
+        </div>
+
+        {/* Online contacts strip */}
+        <div className="mb-4 -mx-1">
+          <div className="flex gap-3 overflow-x-auto px-1 pb-1 scrollbar-none">
+            {contacts.filter((c) => c.online).map((c) => (
+              <button
+                key={c.id}
+                onClick={() => openChat(c)}
+                className="flex flex-col items-center gap-1.5 shrink-0"
+              >
+                <div className="relative">
+                  <div className={`w-12 h-12 rounded-2xl ${c.gradient} flex items-center justify-center text-white font-bold text-sm shadow-card`}>
+                    {c.initials}
+                  </div>
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-background" />
+                </div>
+                <p className="text-[10px] text-muted-foreground font-medium truncate max-w-[48px]">{c.name.split(" ")[0]}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Conversation list */}
+        <div className="space-y-1">
+          <AnimatePresence>
+            {filtered.map((contact, idx) => (
+              <motion.button
+                key={contact.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.04, type: "spring", stiffness: 400, damping: 28 }}
+                onClick={() => openChat(contact)}
+                className="w-full flex items-center gap-3 p-3 rounded-2xl bg-card border border-border hover:shadow-elevated active:scale-[0.98] transition-all text-left shadow-card"
+              >
+                {/* Avatar */}
+                <div className="relative shrink-0">
+                  <div className={`w-12 h-12 rounded-2xl ${contact.gradient} flex items-center justify-center text-white font-bold text-sm`}>
+                    {contact.initials}
+                  </div>
+                  {contact.online && (
+                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-background" />
+                  )}
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <p className={`text-[13.5px] ${contact.unread > 0 ? "font-bold text-foreground" : "font-semibold text-foreground/80"} truncate`}>
+                      {contact.name}
+                    </p>
+                    <span className="text-[10px] text-muted-foreground shrink-0 ml-2">{contact.lastTime}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className={`text-[12px] truncate ${contact.unread > 0 ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                      {contact.lastMsg}
+                    </p>
+                    {contact.unread > 0 && (
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="ml-2 min-w-[18px] h-[18px] px-1 gradient-send text-white text-[9px] font-bold rounded-full flex items-center justify-center shrink-0"
+                      >
+                        {contact.unread}
+                      </motion.span>
+                    )}
+                  </div>
+                </div>
+              </motion.button>
+            ))}
+          </AnimatePresence>
+
+          {filtered.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+              <div className="w-14 h-14 rounded-3xl bg-muted flex items-center justify-center">
+                <Search size={22} />
+              </div>
+              <p className="text-sm font-semibold">No contacts found</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Chat overlay ── */}
+      <AnimatePresence>
+        {activeChat && (
+          <motion.div
+            key="chat"
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", stiffness: 320, damping: 32 }}
+            className="fixed inset-0 z-[60]"
+          >
+            <ChatView
+              contact={activeChat}
+              messages={currentMessages}
+              onBack={() => setActiveChat(null)}
+              onSend={(text) => handleSend(activeChat.id, text)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
