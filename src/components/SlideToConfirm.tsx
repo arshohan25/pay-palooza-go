@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from "framer-motion";
-import { ChevronRight, CheckCircle2, Lock } from "lucide-react";
+import { ChevronRight, CheckCircle2, ArrowRight } from "lucide-react";
 import { haptics } from "@/lib/haptics";
 
 interface SlideToConfirmProps {
@@ -153,7 +153,7 @@ const SlideToConfirm = ({
             {confirmed ? (
               <CheckCircle2 size={24} strokeWidth={2.5} />
             ) : (
-              <Lock size={20} strokeWidth={2.5} />
+              <ArrowRight size={22} strokeWidth={2.5} />
             )}
           </motion.div>
         </AnimatePresence>

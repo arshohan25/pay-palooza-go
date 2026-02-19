@@ -3,6 +3,7 @@ import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { addBalance } from "@/lib/balanceStore";
 import { addTxnNotif } from "@/lib/txnNotifStore";
+import { showTxnToast } from "@/components/TxnToast";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
@@ -151,7 +152,9 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
     haptics.success();
     txnTime.current = new Date();
     txnId.current = generateTxnId();
-    addBalance(parseFloat(amount) || 0);
+    const addAmt = parseFloat(amount) || 0;
+    addBalance(addAmt);
+    showTxnToast({ type: "Add Money", amount: `৳${addAmt.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-addmoney" });
     setDir(1);
     setStep("success");
   };

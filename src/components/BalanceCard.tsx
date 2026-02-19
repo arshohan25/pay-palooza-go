@@ -2,6 +2,7 @@ import { Eye, EyeOff, Copy, CheckCheck, QrCode, Share2 } from "lucide-react";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
 import UserQrModal from "@/components/UserQrModal";
+import WalletShareSheet from "@/components/WalletShareSheet";
 import { getBalance, onBalanceChange } from "@/lib/balanceStore";
 import { AddMoneyIcon } from "@/components/QuickActionIcons";
 
@@ -33,6 +34,7 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
   const [showBalance, setShowBalance] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showQr, setShowQr] = useState(false);
+  const [showWalletShare, setShowWalletShare] = useState(false);
   const phone   = useMemo(() => localStorage.getItem(REGISTERED_KEY) ?? "WALLET_USER", []);
   const userId  = useMemo(() => generateUserId(phone), [phone]);
   const userName = useMemo(() => getDisplayName(), []);
@@ -89,13 +91,8 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleShare = async () => {
-    const text = `My Wallet ID: ${userId}\nScan my QR to send money.`;
-    if (navigator.share) {
-      try { await navigator.share({ title: "My MFS Wallet", text }); } catch { /* dismissed */ }
-    } else {
-      await navigator.clipboard.writeText(text).catch(() => {});
-    }
+  const handleShare = () => {
+    setShowWalletShare(true);
   };
 
   return (
@@ -226,12 +223,12 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
               <p className="text-[12px] font-mono font-semibold tracking-widest opacity-90">{userId}</p>
             </div>
 
-            {/* Share — green tinted glass (green circle area) */}
+            {/* Share button */}
             <motion.button
               whileTap={{ scale: 0.88 }}
               whileHover={{ scale: 1.05 }}
               onClick={handleShare}
-              className="flex items-center gap-1.5 bg-emerald-400/20 hover:bg-emerald-400/30 border border-emerald-300/25 transition-colors rounded-xl px-2.5 py-1.5 tap-target"
+              className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 border border-white/20 transition-colors rounded-xl px-2.5 py-1.5 tap-target"
               title="Share QR / Wallet ID"
             >
               <Share2 size={11} className="opacity-90" />
@@ -244,6 +241,13 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
       <UserQrModal
         open={showQr}
         onClose={() => setShowQr(false)}
+        userId={userId}
+        userName={userName}
+      />
+
+      <WalletShareSheet
+        open={showWalletShare}
+        onClose={() => setShowWalletShare(false)}
         userId={userId}
         userName={userName}
       />

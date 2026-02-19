@@ -3,6 +3,7 @@ import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { deductBalance } from "@/lib/balanceStore";
 import { addTxnNotif } from "@/lib/txnNotifStore";
+import { showTxnToast } from "@/components/TxnToast";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
@@ -192,6 +193,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     const amtVal = parseFloat(amount) || 0;
     const feeVal = amtVal * 0.0119;
     deductBalance(amtVal + feeVal);
+    showTxnToast({ type: "Cash Out", amount: `৳${amtVal.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-cashout" });
     setDirection(1);
     setStep("success");
   };

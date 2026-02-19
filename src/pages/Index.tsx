@@ -26,6 +26,7 @@ import AuthPage from "@/pages/AuthPage";
 import InboxPage from "@/pages/InboxPage";
 import SplashScreen from "@/components/SplashScreen";
 import OnboardingSlides, { hasSeenOnboarding, markOnboardingDone } from "@/components/OnboardingSlides";
+import TxnToast from "@/components/TxnToast";
 
 const SESSION_KEY = "mfs_authenticated";
 
@@ -203,6 +204,9 @@ const Index = () => {
 
       {/* PWA install prompt */}
       <InstallPrompt />
+
+      {/* Transaction toast overlay */}
+      <TxnToast />
     </div>
     </>
   );
