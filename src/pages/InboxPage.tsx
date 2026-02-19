@@ -1,9 +1,18 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, Send, Phone, Video, MoreVertical, Search, Plus, Smile, CheckCheck, Check, Wallet, CheckCircle2 } from "lucide-react";
+import {
+  ChevronLeft, Send, Phone, Video, MoreVertical, Search, Plus,
+  Smile, CheckCheck, Check, Wallet, CheckCircle2, Package,
+} from "lucide-react";
 import { addInboxMsg, clearInboxCount } from "@/lib/inboxStore";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
+interface Reaction {
+  emoji: string;
+  count: number;
+  reacted: boolean; // did the current user react with this?
+}
+
 interface Message {
   id: string;
   text: string;
@@ -11,9 +20,14 @@ interface Message {
   sent: boolean;
   status: "sent" | "delivered" | "read";
   emoji?: string;
-  type?: "text" | "money";
+  type?: "text" | "money" | "order";
   amount?: number;
   txnId?: string;
+  // order card fields
+  orderId?: string;
+  orderStatus?: "Pending" | "Shipped" | "Delivered";
+  itemCount?: number;
+  reactions?: Reaction[];
 }
 
 interface Contact {
@@ -80,7 +94,18 @@ const INITIAL_CONTACTS: Contact[] = [
       { id: "m1", text: "Karim bhai, need to pay the rent", time: "Yesterday", sent: true, status: "read" },
       { id: "m2", text: "কত লাগবে?", time: "Yesterday", sent: false, status: "read" },
       { id: "m3", text: "৳8,000", time: "Yesterday", sent: true, status: "read" },
-      { id: "m4", text: "ঠিক আছে, পাঠিয়ে দিও", time: "3h ago", sent: false, status: "read" },
+      {
+        id: "m4",
+        text: "",
+        time: "Yesterday",
+        sent: false,
+        status: "read",
+        type: "order",
+        orderId: "ORD-20483",
+        orderStatus: "Shipped",
+        itemCount: 3,
+      },
+      { id: "m5", text: "ঠিক আছে, পাঠিয়ে দিও", time: "3h ago", sent: false, status: "read" },
     ],
   },
   {
@@ -115,6 +140,222 @@ const INITIAL_CONTACTS: Contact[] = [
   },
 ];
 
+// ── Emoji Reaction Picker ──────────────────────────────────────────────────────
+const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏", "🔥", "👏", "😍", "🎉"];
+
+interface EmojiPickerProps {
+  onPick: (emoji: string) => void;
+  onClose: () => void;
+  alignRight?: boolean;
+}
+
+const EmojiPicker = ({ onPick, onClose, alignRight }: EmojiPickerProps) => (
+  <>
+    {/* Backdrop */}
+    <div className="fixed inset-0 z-[70]" onClick={onClose} />
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8, y: 8 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.8, y: 8 }}
+      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+      className={`absolute bottom-full mb-2 z-[80] bg-card border border-border rounded-2xl shadow-elevated px-2 py-2 flex gap-1 ${alignRight ? "right-0" : "left-0"}`}
+    >
+      {REACTION_EMOJIS.map((e) => (
+        <motion.button
+          key={e}
+          whileTap={{ scale: 0.8 }}
+          whileHover={{ scale: 1.25, y: -4 }}
+          onClick={() => { onPick(e); onClose(); }}
+          className="text-xl w-9 h-9 flex items-center justify-center rounded-xl hover:bg-muted transition-colors"
+        >
+          {e}
+        </motion.button>
+      ))}
+    </motion.div>
+  </>
+);
+
+// ── Order Status Badge ─────────────────────────────────────────────────────────
+const STATUS_STYLES: Record<string, string> = {
+  Pending: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  Shipped: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  Delivered: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+};
+
+// ── Message Bubble ─────────────────────────────────────────────────────────────
+interface BubbleProps {
+  msg: Message;
+  contactName: string;
+  onReact: (msgId: string, emoji: string) => void;
+}
+
+const MessageBubble = ({ msg, contactName, onReact }: BubbleProps) => {
+  const [showPicker, setShowPicker] = useState(false);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMoney = msg.type === "money";
+  const isOrder = msg.type === "order";
+
+  const startLongPress = () => {
+    longPressTimer.current = setTimeout(() => {
+      setShowPicker(true);
+    }, 480);
+  };
+
+  const cancelLongPress = () => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+  };
+
+  const hasReactions = msg.reactions && msg.reactions.length > 0;
+
+  return (
+    <div className={`flex ${msg.sent ? "justify-end" : "justify-start"}`}>
+      <div className={`flex flex-col max-w-[78%] ${msg.sent ? "items-end" : "items-start"} relative`}>
+        {/* ── Money sent card ── */}
+        {isMoney && (
+          <div
+            className="rounded-2xl rounded-br-md border border-primary/30 bg-primary/5 shadow-card overflow-hidden min-w-[200px] select-none"
+            onMouseDown={startLongPress}
+            onMouseUp={cancelLongPress}
+            onMouseLeave={cancelLongPress}
+            onTouchStart={startLongPress}
+            onTouchEnd={cancelLongPress}
+          >
+            <div className="gradient-send px-4 py-2 flex items-center gap-2">
+              <CheckCircle2 size={16} className="text-primary-foreground/90" />
+              <span className="text-[12px] font-bold text-primary-foreground">Money Sent</span>
+            </div>
+            <div className="px-4 py-3 space-y-1">
+              <p className="text-xl font-extrabold text-foreground">৳{(msg.amount ?? 0).toLocaleString()}</p>
+              <p className="text-[11px] text-muted-foreground">To: {contactName}</p>
+              <div className="flex items-center justify-between pt-1 border-t border-border mt-1">
+                <span className="text-[10px] text-muted-foreground font-mono">{msg.txnId}</span>
+                <span className="text-[10px] text-primary font-semibold">View Receipt →</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Order tracking card ── */}
+        {isOrder && (
+          <div
+            className={`rounded-2xl border border-border bg-card shadow-card overflow-hidden min-w-[210px] select-none ${msg.sent ? "rounded-br-md" : "rounded-bl-md"}`}
+            onMouseDown={startLongPress}
+            onMouseUp={cancelLongPress}
+            onMouseLeave={cancelLongPress}
+            onTouchStart={startLongPress}
+            onTouchEnd={cancelLongPress}
+          >
+            {/* Header */}
+            <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-border bg-muted/40">
+              <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Package size={14} className="text-primary" />
+              </div>
+              <div>
+                <p className="text-[11px] font-bold text-foreground leading-tight">Order Tracking</p>
+                <p className="text-[10px] text-muted-foreground font-mono">{msg.orderId}</p>
+              </div>
+              <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${STATUS_STYLES[msg.orderStatus ?? "Pending"]}`}>
+                {msg.orderStatus}
+              </span>
+            </div>
+            {/* Body */}
+            <div className="px-4 py-3">
+              <div className="flex items-center justify-between">
+                <p className="text-[12px] text-muted-foreground">
+                  <span className="font-semibold text-foreground">{msg.itemCount}</span> item{(msg.itemCount ?? 0) > 1 ? "s" : ""}
+                </p>
+                <span className="text-[11px] text-primary font-semibold">Track →</span>
+              </div>
+              {/* Progress dots */}
+              <div className="flex items-center gap-1 mt-3">
+                {["Pending", "Shipped", "Delivered"].map((step, i) => {
+                  const statusIndex = ["Pending", "Shipped", "Delivered"].indexOf(msg.orderStatus ?? "Pending");
+                  const active = i <= statusIndex;
+                  return (
+                    <div key={step} className="flex items-center gap-1 flex-1">
+                      <div className={`w-2.5 h-2.5 rounded-full shrink-0 transition-colors ${active ? "bg-primary" : "bg-border"}`} />
+                      {i < 2 && <div className={`flex-1 h-0.5 rounded-full ${i < statusIndex ? "bg-primary" : "bg-border"}`} />}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex justify-between mt-1">
+                {["Pending", "Shipped", "Delivered"].map((step) => (
+                  <p key={step} className="text-[9px] text-muted-foreground">{step}</p>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Regular text bubble ── */}
+        {!isMoney && !isOrder && (
+          <div
+            className={`px-4 py-2.5 rounded-2xl text-[13.5px] leading-snug font-medium select-none ${
+              msg.sent
+                ? "gradient-primary text-primary-foreground rounded-br-md shadow-glow"
+                : "bg-card border border-border text-foreground rounded-bl-md shadow-card"
+            }`}
+            onMouseDown={startLongPress}
+            onMouseUp={cancelLongPress}
+            onMouseLeave={cancelLongPress}
+            onTouchStart={startLongPress}
+            onTouchEnd={cancelLongPress}
+          >
+            {msg.text}
+          </div>
+        )}
+
+        {/* Emoji reaction picker */}
+        <AnimatePresence>
+          {showPicker && (
+            <EmojiPicker
+              alignRight={msg.sent}
+              onPick={(emoji) => onReact(msg.id, emoji)}
+              onClose={() => setShowPicker(false)}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Reaction pills */}
+        {hasReactions && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex gap-1 mt-1 flex-wrap"
+          >
+            {msg.reactions!.map((r) => (
+              <motion.button
+                key={r.emoji}
+                whileTap={{ scale: 0.85 }}
+                onClick={() => onReact(msg.id, r.emoji)}
+                className={`flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[12px] border transition-colors ${
+                  r.reacted
+                    ? "bg-primary/15 border-primary/40 text-primary"
+                    : "bg-card border-border text-foreground"
+                }`}
+              >
+                <span>{r.emoji}</span>
+                {r.count > 1 && <span className="text-[10px] font-semibold">{r.count}</span>}
+              </motion.button>
+            ))}
+          </motion.div>
+        )}
+
+        {/* Timestamp + read receipt */}
+        <div className={`flex items-center gap-1 mt-1 ${msg.sent ? "flex-row-reverse" : ""}`}>
+          <span className="text-[10px] text-muted-foreground">{msg.time}</span>
+          {msg.sent && (
+            msg.status === "read"
+              ? <CheckCheck size={12} className="text-primary" />
+              : <Check size={12} className="text-muted-foreground" />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const QUICK_REPLIES = ["👍", "Thanks!", "OK!", "Send ৳500", "Got it 😊", "Sure!"];
 
@@ -125,13 +366,13 @@ interface ChatViewProps {
   onBack: () => void;
   onSend: (text: string) => void;
   onSendMoney: (phone: string) => void;
+  onReact: (msgId: string, emoji: string) => void;
 }
 
-const ChatView = ({ contact, messages, onBack, onSend, onSendMoney }: ChatViewProps) => {
+const ChatView = ({ contact, messages, onBack, onSend, onSendMoney, onReact }: ChatViewProps) => {
   const [text, setText] = useState("");
-  const [showEmoji, setShowEmoji] = useState(false);
+  const [showQuick, setShowQuick] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -141,7 +382,7 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendMoney }: ChatViewPr
     if (!text.trim()) return;
     onSend(text.trim());
     setText("");
-    setShowEmoji(false);
+    setShowQuick(false);
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
   };
 
@@ -164,7 +405,6 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendMoney }: ChatViewPr
         >
           <ChevronLeft size={20} />
         </button>
-        {/* Avatar */}
         <div className="relative">
           <div className={`w-10 h-10 rounded-2xl ${contact.gradient} flex items-center justify-center text-white font-bold text-sm shrink-0`}>
             {contact.initials}
@@ -194,63 +434,23 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendMoney }: ChatViewPr
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 scrollbar-none">
         {messages.map((msg, idx) => {
           const showDate = idx === 0;
-          const isMoney = msg.type === "money";
           return (
             <div key={msg.id}>
               {showDate && (
-                <p className="text-center text-[10px] text-muted-foreground mb-3 font-medium">
-                  Today
-                </p>
+                <p className="text-center text-[10px] text-muted-foreground mb-3 font-medium">Today</p>
               )}
               <motion.div
                 initial={{ opacity: 0, y: 8, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ type: "spring", stiffness: 400, damping: 28 }}
-                className={`flex ${msg.sent ? "justify-end" : "justify-start"}`}
               >
-                <div className={`flex flex-col max-w-[78%] ${msg.sent ? "items-end" : "items-start"}`}>
-                  {isMoney ? (
-                    /* ── Money sent card ── */
-                    <div className="rounded-2xl rounded-br-md border border-primary/30 bg-primary/5 shadow-card overflow-hidden min-w-[200px]">
-                      <div className="gradient-send px-4 py-2 flex items-center gap-2">
-                        <CheckCircle2 size={16} className="text-primary-foreground/90" />
-                        <span className="text-[12px] font-bold text-primary-foreground">Money Sent</span>
-                      </div>
-                      <div className="px-4 py-3 space-y-1">
-                        <p className="text-xl font-extrabold text-foreground">৳{(msg.amount ?? 0).toLocaleString()}</p>
-                        <p className="text-[11px] text-muted-foreground">To: {contact.name}</p>
-                        <div className="flex items-center justify-between pt-1 border-t border-border mt-1">
-                          <span className="text-[10px] text-muted-foreground font-mono">{msg.txnId}</span>
-                          <span className="text-[10px] text-primary font-semibold">View Receipt →</span>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div
-                      className={`px-4 py-2.5 rounded-2xl text-[13.5px] leading-snug font-medium ${
-                        msg.sent
-                          ? "gradient-primary text-primary-foreground rounded-br-md shadow-glow"
-                          : "bg-card border border-border text-foreground rounded-bl-md shadow-card"
-                      }`}
-                    >
-                      {msg.text}
-                    </div>
-                  )}
-                  <div className={`flex items-center gap-1 mt-1 ${msg.sent ? "flex-row-reverse" : ""}`}>
-                    <span className="text-[10px] text-muted-foreground">{msg.time}</span>
-                    {msg.sent && (
-                      msg.status === "read"
-                        ? <CheckCheck size={12} className="text-primary" />
-                        : <Check size={12} className="text-muted-foreground" />
-                    )}
-                  </div>
-                </div>
+                <MessageBubble msg={msg} contactName={contact.name} onReact={onReact} />
               </motion.div>
             </div>
           );
         })}
 
-        {/* Typing indicator — shown when online */}
+        {/* Typing indicator */}
         {contact.online && (
           <div className="flex justify-start">
             <div className="bg-card border border-border rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1 shadow-card">
@@ -271,7 +471,7 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendMoney }: ChatViewPr
 
       {/* Quick replies */}
       <AnimatePresence>
-        {showEmoji && (
+        {showQuick && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
@@ -282,7 +482,7 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendMoney }: ChatViewPr
               {QUICK_REPLIES.map((r) => (
                 <button
                   key={r}
-                  onClick={() => { onSend(r); setShowEmoji(false); }}
+                  onClick={() => { onSend(r); setShowQuick(false); }}
                   className="px-3 py-1.5 rounded-xl bg-card border border-border text-sm font-medium text-foreground hover:bg-primary/10 hover:border-primary/30 transition-colors"
                 >
                   {r}
@@ -297,13 +497,12 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendMoney }: ChatViewPr
       <div className="px-3 pb-5 pt-2 border-t border-border/60 bg-background shrink-0">
         <div className="flex items-center gap-2 bg-card border border-border rounded-2xl px-3 py-2 shadow-card">
           <button
-            onClick={() => setShowEmoji(!showEmoji)}
-            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${showEmoji ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+            onClick={() => setShowQuick(!showQuick)}
+            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${showQuick ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}
           >
             <Smile size={18} />
           </button>
           <input
-            ref={inputRef}
             type="text"
             placeholder="Message…"
             value={text}
@@ -311,7 +510,6 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendMoney }: ChatViewPr
             onKeyDown={handleKey}
             className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-w-0"
           />
-          {/* Send Money shortcut */}
           <motion.button
             whileTap={{ scale: 0.88 }}
             onClick={() => onSendMoney(contact.phone)}
@@ -342,7 +540,6 @@ interface InboxPageProps {
 
 export default function InboxPage({ onBack, onSendMoney }: InboxPageProps) {
   const [contacts, setContacts] = useState<Contact[]>(() => {
-    // Rehydrate messages from localStorage on first mount
     return INITIAL_CONTACTS.map((c) => {
       try {
         const stored = localStorage.getItem(`inbox_msgs_${c.id}`);
@@ -358,11 +555,8 @@ export default function InboxPage({ onBack, onSendMoney }: InboxPageProps) {
   const [activeChat, setActiveChat] = useState<Contact | null>(null);
   const [search, setSearch] = useState("");
 
-
-  // Clear inbox badge when user opens inbox
   useEffect(() => { clearInboxCount(); }, []);
 
-  // Persist messages to localStorage whenever contacts change
   useEffect(() => {
     contacts.forEach((c) => {
       try {
@@ -372,15 +566,38 @@ export default function InboxPage({ onBack, onSendMoney }: InboxPageProps) {
   }, [contacts]);
 
   const filtered = contacts.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.phone.includes(search),
+    c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search),
   );
 
-  const updateContact = (contactId: string, updater: (c: Contact) => Contact) => {
+  const updateContact = useCallback((contactId: string, updater: (c: Contact) => Contact) => {
     setContacts((prev) => prev.map((c) => c.id === contactId ? updater(c) : c));
-  };
+  }, []);
 
-  const handleSend = (contactId: string, text: string) => {
+  const handleReact = useCallback((contactId: string, msgId: string, emoji: string) => {
+    updateContact(contactId, (c) => ({
+      ...c,
+      messages: c.messages.map((m) => {
+        if (m.id !== msgId) return m;
+        const reactions = m.reactions ? [...m.reactions] : [];
+        const existing = reactions.find((r) => r.emoji === emoji);
+        if (existing) {
+          if (existing.reacted) {
+            // un-react
+            const updated = { ...existing, count: existing.count - 1, reacted: false };
+            const filtered = updated.count === 0
+              ? reactions.filter((r) => r.emoji !== emoji)
+              : reactions.map((r) => r.emoji === emoji ? updated : r);
+            return { ...m, reactions: filtered };
+          } else {
+            return { ...m, reactions: reactions.map((r) => r.emoji === emoji ? { ...r, count: r.count + 1, reacted: true } : r) };
+          }
+        }
+        return { ...m, reactions: [...reactions, { emoji, count: 1, reacted: true }] };
+      }),
+    }));
+  }, [updateContact]);
+
+  const handleSend = useCallback((contactId: string, text: string) => {
     const now = new Date();
     const timeStr = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
     const newMsg: Message = {
@@ -400,7 +617,6 @@ export default function InboxPage({ onBack, onSendMoney }: InboxPageProps) {
       unread: 0,
     }));
 
-    // Simulate auto-reply if contact is online
     const contact = contacts.find((c) => c.id === contactId);
     if (contact?.online) {
       const AUTO_REPLIES = ["Got it! 👍", "Thanks for letting me know", "OK sure!", "Received 🙏", "Will check now", "😊"];
@@ -426,10 +642,9 @@ export default function InboxPage({ onBack, onSendMoney }: InboxPageProps) {
         }));
       }, 1800);
     }
-  };
+  }, [contacts, updateContact]);
 
-  // Send a styled money card bubble into chat
-  const handleSendMoneyMsg = (contactId: string, amount: number, phone: string) => {
+  const handleSendMoneyMsg = useCallback((contactId: string, amount: number, phone: string) => {
     const now = new Date();
     const timeStr = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
     const txnId = `TXN${Date.now().toString().slice(-8)}`;
@@ -450,7 +665,6 @@ export default function InboxPage({ onBack, onSendMoney }: InboxPageProps) {
       lastTime: "now",
       unread: 0,
     }));
-    // Auto-reply for received money
     const contact = contacts.find((c) => c.id === contactId);
     if (contact?.online) {
       const MONEY_REPLIES = ["Received! Thank you 🙏", "Got it, thanks! 💚", "Received ৳" + amount.toLocaleString() + " ✓", "Thank you so much! 😊"];
@@ -476,12 +690,10 @@ export default function InboxPage({ onBack, onSendMoney }: InboxPageProps) {
         }));
       }, 1500);
     }
-  };
+  }, [contacts, updateContact]);
 
   const openChat = (contact: Contact) => {
-    setContacts((prev) =>
-      prev.map((c) => (c.id === contact.id ? { ...c, unread: 0 } : c)),
-    );
+    setContacts((prev) => prev.map((c) => (c.id === contact.id ? { ...c, unread: 0 } : c)));
     setActiveChat(contact);
   };
 
@@ -492,12 +704,10 @@ export default function InboxPage({ onBack, onSendMoney }: InboxPageProps) {
       ? (contacts.find((c) => c.id === activeChat.id)?.messages ?? activeChat.messages)
       : [];
 
-
   return (
     <>
       {/* ── Contact list ── */}
       <div className="space-y-0">
-        {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div>
             <h1 className="text-xl font-extrabold text-foreground">Messages</h1>
@@ -513,7 +723,6 @@ export default function InboxPage({ onBack, onSendMoney }: InboxPageProps) {
           </motion.button>
         </div>
 
-        {/* Search */}
         <div className="relative mb-4">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -529,11 +738,7 @@ export default function InboxPage({ onBack, onSendMoney }: InboxPageProps) {
         <div className="mb-4 -mx-1">
           <div className="flex gap-3 overflow-x-auto px-1 pb-1 scrollbar-none">
             {contacts.filter((c) => c.online).map((c) => (
-              <button
-                key={c.id}
-                onClick={() => openChat(c)}
-                className="flex flex-col items-center gap-1.5 shrink-0"
-              >
+              <button key={c.id} onClick={() => openChat(c)} className="flex flex-col items-center gap-1.5 shrink-0">
                 <div className="relative">
                   <div className={`w-12 h-12 rounded-2xl ${c.gradient} flex items-center justify-center text-white font-bold text-sm shadow-card`}>
                     {c.initials}
@@ -558,7 +763,6 @@ export default function InboxPage({ onBack, onSendMoney }: InboxPageProps) {
                 onClick={() => openChat(contact)}
                 className="w-full flex items-center gap-3 p-3 rounded-2xl bg-card border border-border hover:shadow-elevated active:scale-[0.98] transition-all text-left shadow-card"
               >
-                {/* Avatar */}
                 <div className="relative shrink-0">
                   <div className={`w-12 h-12 rounded-2xl ${contact.gradient} flex items-center justify-center text-white font-bold text-sm`}>
                     {contact.initials}
@@ -567,8 +771,6 @@ export default function InboxPage({ onBack, onSendMoney }: InboxPageProps) {
                     <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-background" />
                   )}
                 </div>
-
-                {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-0.5">
                     <p className={`text-[13.5px] ${contact.unread > 0 ? "font-bold text-foreground" : "font-semibold text-foreground/80"} truncate`}>
@@ -622,12 +824,12 @@ export default function InboxPage({ onBack, onSendMoney }: InboxPageProps) {
               messages={currentMessages}
               onBack={() => setActiveChat(null)}
               onSend={(text) => handleSend(activeChat.id, text)}
+              onReact={(msgId, emoji) => handleReact(activeChat.id, msgId, emoji)}
               onSendMoney={(phone) => {
                 const chatId = activeChat.id;
                 const chatContact = activeChat;
                 setActiveChat(null);
                 onSendMoney?.(phone, (amount) => {
-                  // After user confirms payment, post money bubble in chat
                   handleSendMoneyMsg(chatId, amount, chatContact.phone);
                 });
               }}
