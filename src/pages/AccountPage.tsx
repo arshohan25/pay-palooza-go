@@ -19,7 +19,7 @@ const ONBOARDING_KEY = "mfs_onboarding_done";
 
 type SubPage = "limits" | "insights" | "refer" | null;
 
-const WALLET_ID  = "MFS-A3F1-9C22";
+const WALLET_ID  = "EP-A3F1-9C22";
 const USER_EMAIL = "tanvir@example.com";
 
 const SESSION_KEY    = "mfs_authenticated";

@@ -24,7 +24,7 @@ const DEMO_OTP = "123456";
 // ─── Translations ──────────────────────────────────────────────────────────────
 const T = {
   en: {
-    appName: "MFS Wallet", tagline: "Bangladesh's Smartest Digital Wallet",
+    appName: "EasyPay", tagline: "বাংলাদেশের সবচেয়ে সহজ ডিজিটাল ওয়ালেট",
     users: "Users", encryption: "Encryption", transfer: "Transfer",
     balanceLabel: "Available Balance", walletSecurity: "Bank-grade encrypted wallet",
     createFree: "🎉 Create Free Account", loginWallet: "🔐 Log In to Wallet",
@@ -67,7 +67,7 @@ const T = {
     reenterPinErr: "Re-enter your PIN.",
   },
   bn: {
-    appName: "এমএফএস ওয়ালেট", tagline: "বাংলাদেশের সবচেয়ে স্মার্ট ডিজিটাল ওয়ালেট",
+    appName: "ইজিপে", tagline: "বাংলাদেশের সবচেয়ে সহজ ডিজিটাল ওয়ালেট",
     users: "ব্যবহারকারী", encryption: "এনক্রিপশন", transfer: "ট্রান্সফার",
     balanceLabel: "উপলব্ধ ব্যালেন্স", walletSecurity: "ব্যাংক-গ্রেড এনক্রিপ্টেড ওয়ালেট",
     createFree: "🎉 বিনামূল্যে একাউন্ট খুলুন", loginWallet: "🔐 ওয়ালেটে লগইন করুন",
