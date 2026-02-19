@@ -109,8 +109,8 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
               transition={{ type: "spring", stiffness: 380, damping: 22 }}
               className="relative flex items-center justify-center rounded-full shadow-sm group-hover:shadow-md transition-shadow duration-200"
               style={{
-                width: 68,
-                height: 68,
+                width: 56,
+                height: 56,
                 background: action.bgStyle,
                 outline: action.ringStyle,
               }}
