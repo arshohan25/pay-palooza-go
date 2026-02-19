@@ -1,8 +1,12 @@
-import { Eye, EyeOff, Copy, CheckCheck, QrCode, TrendingUp } from "lucide-react";
+import { Eye, EyeOff, Copy, CheckCheck, QrCode, TrendingUp, Plus } from "lucide-react";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
 import UserQrModal from "@/components/UserQrModal";
 import { getBalance, onBalanceChange } from "@/lib/balanceStore";
+
+interface BalanceCardProps {
+  onAddMoney?: () => void;
+}
 
 const generateUserId = () => {
   const seed = "TANVIR_HASAN_2024";
@@ -14,7 +18,7 @@ const generateUserId = () => {
   return `MFS-${abs.slice(0, 4)}-${abs.slice(4, 8)}`;
 };
 
-const BalanceCard = () => {
+const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
   const [showBalance, setShowBalance] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showQr, setShowQr] = useState(false);
@@ -153,12 +157,26 @@ const BalanceCard = () => {
           {/* Divider */}
           <div className="h-px bg-white/15 mb-4" />
 
-          {/* Wallet ID row */}
+          {/* Wallet ID row + Add Money */}
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[10px] uppercase tracking-[0.12em] opacity-50 mb-0.5">Wallet ID</p>
               <p className="text-sm font-mono font-semibold tracking-widest opacity-90">{userId}</p>
             </div>
+
+            {/* Add Money button (yellow circle) */}
+            <motion.button
+              whileTap={{ scale: 0.88 }}
+              whileHover={{ scale: 1.06, y: -2 }}
+              onClick={onAddMoney}
+              className="glass-hero w-12 h-12 rounded-2xl flex flex-col items-center justify-center gap-0.5 hover:bg-white/25 transition-colors tap-target"
+              title="Add Money"
+            >
+              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+                <Plus size={14} strokeWidth={2.5} />
+              </div>
+              <span className="text-[8px] font-semibold opacity-80 leading-none">Add</span>
+            </motion.button>
           </div>
         </div>
       </motion.div>
