@@ -463,23 +463,45 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       <AlertCircle size={12} /> {error}
                     </p>
                   )}
-                  <Button className="w-full h-11 gradient-accent border-0 text-white font-semibold" onClick={handleNumberContinue}>
-                    See Offers & Packs
-                  </Button>
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={handleNumberContinue}
+                    className="w-full h-14 rounded-2xl text-white font-bold text-base shadow-glow flex items-center justify-center gap-2.5 transition-all"
+                    style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.8))" }}
+                  >
+                    <Zap size={18} className="fill-white" />
+                    See Offers &amp; Packs
+                  </motion.button>
                 </div>
 
-                {/* Operator guide */}
+                {/* Operator guide — tap to browse */}
                 <div className="space-y-3">
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Operator prefixes</p>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Tap an operator to browse packs</p>
                   <div className="grid grid-cols-1 gap-2">
                     {OPERATORS.map((op) => (
-                      <div key={op.name} className="flex items-center gap-3 px-3 py-2 rounded-xl bg-card border border-border">
-                        <div className={`${op.gradient} w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs shrink-0`}>
+                      <motion.button
+                        key={op.name}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => {
+                          // prefill phone with first prefix + placeholder digits, then jump to packs
+                          const prefix = op.prefixes[0];
+                          const fakePhone = prefix + "00000000"; // 11 digits
+                          setPhone(fakePhone);
+                          setError("");
+                          setSelectedPack(null);
+                          setCustomAmount("");
+                          setActiveCategory("offers");
+                          goTo("packs");
+                        }}
+                        className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-card border border-border shadow-card active:border-primary transition-all text-left"
+                      >
+                        <div className={`${op.gradient} w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-md`}>
                           {op.short}
                         </div>
-                        <span className="text-sm font-semibold text-foreground flex-1">{op.name}</span>
-                        <span className="text-xs text-muted-foreground">{op.prefixes.join(", ")}</span>
-                      </div>
+                        <span className="text-sm font-bold text-foreground flex-1">{op.name}</span>
+                        <span className="text-xs text-muted-foreground font-medium">{op.prefixes.join(", ")}</span>
+                        <ChevronLeft size={14} className="text-muted-foreground rotate-180 shrink-0" />
+                      </motion.button>
                     ))}
                   </div>
                 </div>
