@@ -1,4 +1,4 @@
-import { Eye, EyeOff, Copy, CheckCheck, QrCode, Share2, PlusCircle } from "lucide-react";
+import { Eye, EyeOff, Copy, CheckCheck, QrCode, Share2 } from "lucide-react";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
 import UserQrModal from "@/components/UserQrModal";
@@ -53,10 +53,8 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
   const handleToggleBalance = () => {
     setShowBalance((v) => {
       if (!v) {
-        // Revealing: start timer
         startHideTimer();
       } else {
-        // Hiding manually: clear timer
         if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
       }
       return !v;
@@ -102,9 +100,9 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
         <div className="absolute top-3 right-20 w-16 h-16 rounded-full bg-white/5 pointer-events-none" />
 
         <div className="relative p-4 sm:p-5">
-          {/* Top row — Greeting left, actions right */}
+          {/* Top row — Greeting left, QR + Copy right */}
           <div className="flex items-start justify-between mb-3">
-            {/* LEFT: greeting (yellow circle area) */}
+            {/* LEFT: Greeting + name (yellow circle area) */}
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-60 leading-tight">Welcome back 👋</p>
               <p className="text-[15px] font-bold opacity-95 leading-tight tracking-tight">Tanvir Hasan</p>
@@ -141,92 +139,92 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
             </div>
           </div>
 
-          {/* Balance — tap to reveal */}
-          <div className="mb-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-55 mb-1.5">Available Balance</p>
-            <motion.button
-              className="flex items-center group"
-              onClick={handleToggleBalance}
-              whileTap={{ scale: 0.97 }}
-              aria-label={showBalance ? "Hide balance" : "Tap to see balance"}
-            >
-              <AnimatePresence mode="wait">
-                {showBalance ? (
-                  <motion.div
-                    key="shown"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.22 }}
-                    className="flex items-baseline gap-1"
-                  >
-                    <span className="text-lg font-semibold opacity-70">৳</span>
-                    <span className="text-[2rem] sm:text-[2.4rem] font-bold tracking-tight leading-none">
-                      {displayBalance.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                    <motion.span
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 0.55 }}
-                      className="flex items-center self-center ml-1"
+          {/* Balance row — tap to reveal + Add Money inline on the right */}
+          <div className="mb-3 flex items-center gap-3">
+            {/* Balance tap area */}
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-55 mb-1.5">Available Balance</p>
+              <motion.button
+                className="flex items-center group"
+                onClick={handleToggleBalance}
+                whileTap={{ scale: 0.97 }}
+                aria-label={showBalance ? "Hide balance" : "Tap to see balance"}
+              >
+                <AnimatePresence mode="wait">
+                  {showBalance ? (
+                    <motion.div
+                      key="shown"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.22 }}
+                      className="flex items-baseline gap-1"
                     >
-                      <EyeOff size={12} />
-                    </motion.span>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="hidden"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.22 }}
-                    className="glass-hero rounded-2xl px-4 py-2 flex items-center gap-2"
-                  >
-                    <Eye size={13} className="opacity-85" />
-                    <span className="text-[12.5px] font-semibold opacity-95 tracking-wide">Tap to see balance</span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                      <span className="text-lg font-semibold opacity-70">৳</span>
+                      <span className="text-[2rem] sm:text-[2.2rem] font-bold tracking-tight leading-none">
+                        {displayBalance.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                      <motion.span
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 0.55 }}
+                        className="flex items-center self-center ml-1"
+                      >
+                        <EyeOff size={12} />
+                      </motion.span>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="hidden"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.22 }}
+                      className="glass-hero rounded-2xl px-4 py-2 flex items-center gap-2"
+                    >
+                      <Eye size={13} className="opacity-85" />
+                      <span className="text-[12.5px] font-semibold opacity-95 tracking-wide">Tap to see balance</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.button>
+            </div>
+
+            {/* RIGHT of balance: Add Money (white circle area) */}
+            <motion.button
+              whileTap={{ scale: 0.88 }}
+              whileHover={{ scale: 1.05 }}
+              onClick={onAddMoney}
+              className="flex flex-col items-center gap-1 bg-white/15 hover:bg-white/25 transition-colors rounded-2xl px-3 py-2 tap-target shrink-0"
+              title="Add Money"
+            >
+              <div className="w-7 h-7 flex items-center justify-center">
+                <AddMoneyIcon isHovered={false} />
+              </div>
+              <span className="text-[9.5px] font-bold opacity-95 whitespace-nowrap">Add Money</span>
             </motion.button>
           </div>
 
           {/* Divider */}
           <div className="h-px bg-white/12 mb-3" />
 
-          {/* Bottom row: Wallet ID left | Add Money + Share right */}
+          {/* Bottom row: Wallet ID left | Share right (green circle area) */}
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[9px] uppercase tracking-[0.14em] opacity-45 mb-0.5">Wallet ID</p>
               <p className="text-[12px] font-mono font-semibold tracking-widest opacity-90">{userId}</p>
             </div>
 
-            {/* RIGHT: Add Money (white circle) + Share (green circle) */}
-            <div className="flex items-center gap-2">
-              {/* Add Money — white/glass style */}
-              <motion.button
-                whileTap={{ scale: 0.88 }}
-                whileHover={{ scale: 1.05 }}
-                onClick={onAddMoney}
-                className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 transition-colors rounded-xl px-2.5 py-1.5 tap-target"
-                title="Add Money"
-              >
-                <div className="w-5 h-5 flex items-center justify-center">
-                  <AddMoneyIcon isHovered={false} />
-                </div>
-                <span className="text-[10.5px] font-bold opacity-95 whitespace-nowrap">Add Money</span>
-              </motion.button>
-
-              {/* Share — green tinted glass */}
-              <motion.button
-                whileTap={{ scale: 0.88 }}
-                whileHover={{ scale: 1.05 }}
-                onClick={handleShare}
-                className="flex items-center gap-1.5 bg-emerald-400/20 hover:bg-emerald-400/30 border border-emerald-300/25 transition-colors rounded-xl px-2.5 py-1.5 tap-target"
-                title="Share QR / Wallet ID"
-              >
-                <Share2 size={11} className="opacity-90" />
-                <span className="text-[10.5px] font-bold opacity-95 whitespace-nowrap">Share</span>
-              </motion.button>
-            </div>
+            {/* Share — green tinted glass (green circle area) */}
+            <motion.button
+              whileTap={{ scale: 0.88 }}
+              whileHover={{ scale: 1.05 }}
+              onClick={handleShare}
+              className="flex items-center gap-1.5 bg-emerald-400/20 hover:bg-emerald-400/30 border border-emerald-300/25 transition-colors rounded-xl px-2.5 py-1.5 tap-target"
+              title="Share QR / Wallet ID"
+            >
+              <Share2 size={11} className="opacity-90" />
+              <span className="text-[10.5px] font-bold opacity-95 whitespace-nowrap">Share</span>
+            </motion.button>
           </div>
         </div>
       </motion.div>

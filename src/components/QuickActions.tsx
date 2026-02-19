@@ -5,7 +5,7 @@ import {
   SendMoneyIcon,
   CashOutIcon,
   PaymentIcon,
-  SavingsIcon,
+  ReferIcon,
   RechargeIcon,
   PayBillIcon,
   ShopIcon,
@@ -25,9 +25,9 @@ const actions = [
     Icon: CashOutIcon,
     label: "Cash Out",
     id: "cashout",
-    bgStyle: "rgba(76,175,80,0.12)",
-    ringStyle: "1px solid rgba(76,175,80,0.25)",
-    rippleColor: "rgba(76,175,80,0.35)",
+    bgStyle: "rgba(67,160,71,0.12)",
+    ringStyle: "1px solid rgba(67,160,71,0.25)",
+    rippleColor: "rgba(67,160,71,0.35)",
   },
   {
     Icon: PaymentIcon,
@@ -38,12 +38,12 @@ const actions = [
     rippleColor: "rgba(156,39,176,0.35)",
   },
   {
-    Icon: SavingsIcon,
-    label: "Savings",
-    id: "savings",
-    bgStyle: "rgba(236,64,122,0.10)",
-    ringStyle: "1px solid rgba(236,64,122,0.22)",
-    rippleColor: "rgba(236,64,122,0.30)",
+    Icon: ReferIcon,
+    label: "Refer & Earn",
+    id: "refer",
+    bgStyle: "rgba(255,87,34,0.12)",
+    ringStyle: "1px solid rgba(255,87,34,0.25)",
+    rippleColor: "rgba(255,87,34,0.35)",
   },
   {
     Icon: RechargeIcon,
@@ -65,9 +65,9 @@ const actions = [
     Icon: ShopIcon,
     label: "Shop",
     id: "shopping",
-    bgStyle: "rgba(255,87,34,0.12)",
-    ringStyle: "1px solid rgba(255,87,34,0.25)",
-    rippleColor: "rgba(255,87,34,0.35)",
+    bgStyle: "rgba(255,112,67,0.12)",
+    ringStyle: "1px solid rgba(255,112,67,0.25)",
+    rippleColor: "rgba(255,112,67,0.35)",
   },
   {
     Icon: MoreIcon,
@@ -92,9 +92,10 @@ interface QuickActionsProps {
   onRecharge: () => void;
   onPayBill: () => void;
   onAddMoney: () => void;
+  onRefer: () => void;
 }
 
-const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney }: QuickActionsProps) => {
+const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney, onRefer }: QuickActionsProps) => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [ripples, setRipples] = useState<Record<string, RippleState | null>>({});
   const rippleCounterRef = useRef(0);
@@ -128,6 +129,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
     if (id === "addmoney") return onAddMoney();
     if (id === "recharge") return onRecharge();
     if (id === "bill")     return onPayBill();
+    if (id === "refer")    return onRefer();
     toast.info(`${label} coming soon!`);
   };
 

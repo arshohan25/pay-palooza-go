@@ -17,6 +17,7 @@ import PayBillFlow from "@/components/PayBillFlow";
 import AddMoneyFlow from "@/components/AddMoneyFlow";
 import TransactionHistory from "@/pages/TransactionHistory";
 import AccountPage from "@/pages/AccountPage";
+import ReferPage from "@/pages/ReferPage";
 import { BalanceCardSkeleton, QuickActionsSkeleton, TransactionListSkeleton } from "@/components/HomeSkeletons";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import InstallPrompt from "@/components/InstallPrompt";
@@ -101,6 +102,7 @@ const Index = () => {
                 onRecharge={() => setShowRecharge(true)}
                 onPayBill={() => setShowPayBill(true)}
                 onAddMoney={() => setShowAddMoney(true)}
+                onRefer={() => handleTabChange("refer")}
               />
               <PromoCard />
               <TransactionList onSeeAll={() => handleTabChange("history")} />
@@ -114,6 +116,9 @@ const Index = () => {
     }
     if (activeTab === "account") {
       return <AccountPage onSignOut={() => setAuthenticated(false)} />;
+    }
+    if (activeTab === "refer") {
+      return <ReferPage onBack={() => handleTabChange("home")} />;
     }
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-muted-foreground">

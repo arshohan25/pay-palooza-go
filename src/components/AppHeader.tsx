@@ -30,20 +30,16 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
         transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
         className="flex items-center justify-between py-1"
       >
-        {/* Left — greeting + name (red circle area: logout button embedded here) */}
-        <div className="flex items-center gap-3">
-          <div className="md:hidden w-10 h-10 gradient-primary rounded-2xl flex items-center justify-center text-primary-foreground font-bold text-lg shadow-glow shrink-0">
-            ₿
-          </div>
-          <div className="md:hidden">
-            <p className="text-[11px] text-muted-foreground font-medium">Welcome back 👋</p>
-            <p className="text-[15px] font-bold text-foreground leading-tight">Tanvir Hasan</p>
-          </div>
-          <div className="hidden md:block">
-            <p className="text-[22px] font-bold text-foreground leading-tight">Good morning, Tanvir 👋</p>
-            <p className="text-sm text-muted-foreground font-medium">Here's your financial overview</p>
-          </div>
-        </div>
+        {/* Left — Logout button with icon + text */}
+        <motion.button
+          whileTap={{ scale: 0.88 }}
+          onClick={onSignOut}
+          className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-destructive/10 border border-destructive/20 shadow-card text-destructive hover:bg-destructive/20 hover:shadow-elevated transition-all duration-150 tap-target"
+          aria-label="Sign out"
+        >
+          <LogOut size={15} strokeWidth={2} />
+          <span className="text-[13px] font-semibold">Logout</span>
+        </motion.button>
 
         {/* Right */}
         <div className="flex items-center gap-2">
@@ -103,16 +99,6 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
             </AnimatePresence>
           </motion.button>
 
-          {/* Logout — red circle area */}
-          <motion.button
-            whileTap={{ scale: 0.88 }}
-            onClick={onSignOut}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-destructive/10 border border-destructive/20 shadow-card flex items-center justify-center text-destructive hover:bg-destructive/20 hover:shadow-elevated transition-all duration-150 tap-target"
-            aria-label="Sign out"
-            title="Sign out"
-          >
-            <LogOut size={15} strokeWidth={2} />
-          </motion.button>
         </div>
       </motion.header>
 
