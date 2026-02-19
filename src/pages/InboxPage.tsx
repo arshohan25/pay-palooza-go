@@ -4,9 +4,9 @@ import {
   ChevronLeft, Send, Phone, Video, MoreVertical, Plus,
   Smile, CheckCheck, Check, Wallet, CheckCircle2, Package,
   Mic, Play, Pause, X, UserPlus, QrCode, ImagePlus,
-  Download, PhoneCall, PhoneOff, VideoIcon, MicOff, Volume2,
-  Clock, UserCheck, Hourglass, Users, Search, ArrowLeft,
-  Camera,
+  Download, PhoneOff, VideoIcon, MicOff, Volume2,
+  Clock, UserCheck, Hourglass, Users, ArrowLeft,
+  Shield, UserMinus, Edit3, Info, ScanLine,
 } from "lucide-react";
 import { addInboxMsg, clearInboxCount } from "@/lib/inboxStore";
 import { toast } from "@/components/ui/sonner";
@@ -25,8 +25,8 @@ interface Message {
   time: string;
   sent: boolean;
   status: "sent" | "delivered" | "read";
-  seenAt?: string; // "3:45 PM"
-  type?: "text" | "money" | "order" | "voice" | "image";
+  seenAt?: string;
+  type?: "text" | "money" | "order" | "voice" | "image" | "qr";
   amount?: number;
   txnId?: string;
   orderId?: string;
@@ -34,6 +34,8 @@ interface Message {
   itemCount?: number;
   voiceDuration?: number;
   imageUrl?: string;
+  qrUserId?: string;   // for QR card
+  qrUserName?: string; // for QR card
   reactions?: Reaction[];
 }
 
@@ -51,8 +53,9 @@ interface Contact {
   avatarUrl?: string;
   pending?: boolean;
   isGroup?: boolean;
-  members?: string[]; // contact IDs for groups
-  groupIcon?: string; // emoji
+  members?: string[];  // contact IDs for groups
+  groupIcon?: string;  // emoji
+  adminId?: string;    // "self" = current user is admin
   messages: Message[];
 }
 
@@ -120,7 +123,7 @@ const INITIAL_CONTACTS: Contact[] = [
     id: "g1", name: "Family Group 💚", phone: "", initials: "FG",
     gradient: "gradient-send", lastMsg: "Rahim: Coming tonight?",
     lastTime: "30m", lastTimestamp: minsAgo(30), unread: 3, online: false,
-    isGroup: true, groupIcon: "💚",
+    isGroup: true, groupIcon: "💚", adminId: "self",
     members: ["c1", "c2", "c4"],
     messages: [
       { id: "m1", text: "Hey everyone! Party tonight?", time: "Yesterday", sent: true, status: "read", seenAt: "Yesterday" },
@@ -142,6 +145,9 @@ const GRADIENT_OPTIONS = [
 ];
 const pickGradient = (name: string) =>
   GRADIENT_OPTIONS[name.charCodeAt(0) % GRADIENT_OPTIONS.length];
+
+let _msgSeq = 0;
+const newMsgId = () => `m_${Date.now()}_${++_msgSeq}`;
 
 const getInitials = (name: string) =>
   name.trim().split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
@@ -435,15 +441,17 @@ interface BubbleProps {
   contactName: string;
   onReact: (msgId: string, emoji: string) => void;
   isGroup?: boolean;
+  onPayQr?: (userId: string, userName: string) => void;
 }
 
-const MessageBubble = ({ msg, contactName, onReact, isGroup }: BubbleProps) => {
+const MessageBubble = ({ msg, contactName, onReact, isGroup, onPayQr }: BubbleProps) => {
   const [showPicker, setShowPicker] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMoney = msg.type === "money";
   const isOrder = msg.type === "order";
   const isVoice = msg.type === "voice";
   const isImage = msg.type === "image";
+  const isQr = msg.type === "qr";
 
   const startLongPress = () => { longPressTimer.current = setTimeout(() => setShowPicker(true), 480); };
   const cancelLongPress = () => { if (longPressTimer.current) clearTimeout(longPressTimer.current); };
@@ -530,8 +538,40 @@ const MessageBubble = ({ msg, contactName, onReact, isGroup }: BubbleProps) => {
           </div>
         )}
 
+        {/* QR Pay card */}
+        {isQr && (
+          <div {...pressHandlers} className={`rounded-2xl border border-border bg-card shadow-card overflow-hidden min-w-[200px] select-none ${msg.sent ? "rounded-br-md" : "rounded-bl-md"}`}>
+            <div className="gradient-primary px-4 py-2.5 flex items-center gap-2">
+              <ScanLine size={15} className="text-primary-foreground/90" />
+              <span className="text-[12px] font-bold text-primary-foreground">Payment QR</span>
+            </div>
+            <div className="px-4 py-3 flex items-center gap-3">
+              {/* Mini QR visual */}
+              <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center border border-border shrink-0">
+                <div className="grid grid-cols-4 gap-[2px] p-1">
+                  {Array.from({ length: 16 }, (_, i) => {
+                    const seed = (msg.qrUserId ?? "x").charCodeAt(i % (msg.qrUserId?.length ?? 1));
+                    const dark = (seed * (i + 3)) % 5 > 1;
+                    return <div key={i} className={`w-2 h-2 rounded-[1px] ${dark ? "bg-foreground" : "bg-transparent"}`} />;
+                  })}
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-bold text-foreground truncate">{msg.qrUserName ?? "Unknown"}</p>
+                <p className="text-[11px] text-muted-foreground">Scan to pay me</p>
+                {!msg.sent && (
+                  <motion.button whileTap={{ scale: 0.95 }} onClick={() => onPayQr?.(msg.qrUserId ?? "", msg.qrUserName ?? "")}
+                    className="mt-2 px-3 py-1 rounded-xl gradient-primary text-primary-foreground text-[11px] font-bold shadow-glow">
+                    Pay Now →
+                  </motion.button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Text bubble */}
-        {!isMoney && !isOrder && !isVoice && !isImage && (
+        {!isMoney && !isOrder && !isVoice && !isImage && !isQr && (
           <div {...pressHandlers}
             className={`px-4 py-2.5 rounded-2xl text-[13.5px] leading-snug font-medium select-none ${
               msg.sent
@@ -915,10 +955,13 @@ interface ChatViewProps {
   onSendVoice: (duration: number) => void;
   onSendImage: (url: string) => void;
   onSendMoney: (phone: string) => void;
+  onSendQr: () => void;
   onReact: (msgId: string, emoji: string) => void;
+  onGroupInfo: () => void;
+  onPayQr: (userId: string, userName: string) => void;
 }
 
-const ChatView = ({ contact, allContacts, messages, onBack, onSend, onSendVoice, onSendImage, onSendMoney, onReact }: ChatViewProps) => {
+const ChatView = ({ contact, allContacts, messages, onBack, onSend, onSendVoice, onSendImage, onSendMoney, onSendQr, onReact, onGroupInfo, onPayQr }: ChatViewProps) => {
   const [text, setText] = useState("");
   const [showQuick, setShowQuick] = useState(false);
   const [showQr, setShowQr] = useState(false);
@@ -1030,8 +1073,9 @@ const ChatView = ({ contact, allContacts, messages, onBack, onSend, onSendVoice,
                 </button>
               </>
             )}
-            <button className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center active:scale-95 transition-transform">
-              <MoreVertical size={16} />
+            <button onClick={onGroupInfo}
+              className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center active:scale-95 transition-transform">
+              {contact.isGroup ? <Info size={16} /> : <MoreVertical size={16} />}
             </button>
           </div>
         </div>
@@ -1059,6 +1103,7 @@ const ChatView = ({ contact, allContacts, messages, onBack, onSend, onSendVoice,
                 contactName={contact.isGroup && !msg.sent ? getGroupSenderName(idx) : contact.name}
                 onReact={(msgId, emoji) => onReact(msgId, emoji)}
                 isGroup={contact.isGroup}
+                onPayQr={onPayQr}
               />
             </motion.div>
           </div>
@@ -1110,6 +1155,12 @@ const ChatView = ({ contact, allContacts, messages, onBack, onSend, onSendVoice,
             disabled={recording}
             className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-w-0 disabled:opacity-50"
           />
+          {/* Share my QR */}
+          <motion.button whileTap={{ scale: 0.88 }} onClick={onSendQr}
+            className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors shrink-0"
+            title="Share my payment QR">
+            <ScanLine size={15} />
+          </motion.button>
           {/* QR scanner */}
           <motion.button whileTap={{ scale: 0.88 }} onClick={() => setShowQr(true)}
             className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
@@ -1125,7 +1176,7 @@ const ChatView = ({ contact, allContacts, messages, onBack, onSend, onSendVoice,
           {/* Send money shortcut (not for groups) */}
           {!contact.isGroup && (
             <motion.button whileTap={{ scale: 0.88 }} onClick={() => onSendMoney(contact.phone)}
-              className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors shrink-0"
+              className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
               title={`Send money to ${contact.name}`}>
               <Wallet size={15} />
             </motion.button>
@@ -1162,6 +1213,220 @@ const ChatView = ({ contact, allContacts, messages, onBack, onSend, onSendVoice,
         )}
       </AnimatePresence>
     </div>
+  );
+};
+
+// ── Group Info Sheet ──────────────────────────────────────────────────────────
+interface GroupInfoSheetProps {
+  group: Contact;
+  allContacts: Contact[];
+  isAdmin: boolean;
+  onClose: () => void;
+  onUpdate: (updates: Partial<Pick<Contact, "name" | "groupIcon" | "members">>) => void;
+}
+
+const GroupInfoSheet = ({ group, allContacts, isAdmin, onClose, onUpdate }: GroupInfoSheetProps) => {
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState(group.name.replace(/\s*[\u{1F300}-\u{1FAFF}]\s*$/u, "").trim());
+  const [selectedIcon, setSelectedIcon] = useState(group.groupIcon ?? "💚");
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [addIds, setAddIds] = useState<string[]>([]);
+
+  const members = (group.members ?? [])
+    .map((id) => allContacts.find((c) => c.id === id))
+    .filter(Boolean) as Contact[];
+
+  const availableToAdd = allContacts.filter(
+    (c) => !c.isGroup && !c.pending && !(group.members ?? []).includes(c.id)
+  );
+
+  const handleSaveName = () => {
+    if (!nameInput.trim()) return;
+    onUpdate({ name: `${nameInput.trim()} ${selectedIcon}`, groupIcon: selectedIcon });
+    setEditingName(false);
+    toast("Group updated!", { duration: 2000 });
+  };
+
+  const handleRemoveMember = (memberId: string) => {
+    const newMembers = (group.members ?? []).filter((id) => id !== memberId);
+    onUpdate({ members: newMembers });
+    toast("Member removed", { duration: 2000 });
+  };
+
+  const handleAddMembers = () => {
+    if (addIds.length === 0) return;
+    const newMembers = [...(group.members ?? []), ...addIds];
+    onUpdate({ members: newMembers });
+    setAddIds([]);
+    setShowAddMember(false);
+    toast(`${addIds.length} member${addIds.length > 1 ? "s" : ""} added!`, { duration: 2000 });
+  };
+
+  return (
+    <>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[75] bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <motion.div
+        initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+        transition={{ type: "spring", stiffness: 320, damping: 32 }}
+        className="fixed bottom-0 left-0 right-0 z-[80] max-w-md mx-auto bg-card rounded-t-3xl shadow-elevated"
+        style={{ maxHeight: "88vh", display: "flex", flexDirection: "column" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-5 pt-3 pb-2 shrink-0">
+          <div className="w-10 h-1 bg-border rounded-full mx-auto mb-4" />
+          {/* Header */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-extrabold text-foreground">Group Info</h2>
+                {isAdmin && (
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">
+                    <Shield size={10} /> Admin
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">{members.length + 1} members</p>
+            </div>
+            <button onClick={onClose} className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 pb-8 min-h-0 space-y-5">
+          {/* Group avatar + name */}
+          <div className="flex flex-col items-center gap-3 py-2">
+            <div className={`w-20 h-20 rounded-3xl ${group.gradient} flex items-center justify-center text-4xl shadow-glow`}>
+              {selectedIcon}
+            </div>
+            {editingName ? (
+              <div className="flex items-center gap-2 w-full">
+                <input
+                  autoFocus
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
+                  className="flex-1 h-10 px-3 bg-background border border-primary/40 rounded-xl text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                />
+                <motion.button whileTap={{ scale: 0.95 }} onClick={handleSaveName}
+                  className="px-3 h-10 rounded-xl gradient-primary text-primary-foreground text-sm font-bold shadow-glow">
+                  Save
+                </motion.button>
+                <button onClick={() => setEditingName(false)}
+                  className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
+                  <X size={15} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <p className="font-extrabold text-foreground text-base">{group.name}</p>
+                {isAdmin && (
+                  <button onClick={() => setEditingName(true)} className="text-muted-foreground hover:text-primary transition-colors">
+                    <Edit3 size={14} />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Icon picker (admin only) */}
+          {isAdmin && (
+            <div>
+              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Group Icon</p>
+              <div className="flex gap-2 flex-wrap">
+                {GROUP_ICONS.map((icon) => (
+                  <motion.button key={icon} whileTap={{ scale: 0.85 }}
+                    onClick={() => { setSelectedIcon(icon); onUpdate({ groupIcon: icon, name: `${nameInput.trim()} ${icon}` }); }}
+                    className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center border-2 transition-all ${
+                      selectedIcon === icon ? "border-primary bg-primary/10 scale-110" : "border-border bg-muted"
+                    }`}
+                  >{icon}</motion.button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Members list */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{members.length + 1} Members</p>
+              {isAdmin && (
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setShowAddMember((v) => !v)}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-primary/10 text-primary text-[11px] font-bold">
+                  <Plus size={12} /> Add
+                </motion.button>
+              )}
+            </div>
+
+            {/* Add member picker */}
+            <AnimatePresence>
+              {showAddMember && availableToAdd.length > 0 && (
+                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden mb-3">
+                  <div className="bg-muted/50 rounded-2xl p-3 space-y-2">
+                    <p className="text-[11px] text-muted-foreground font-medium">Select contacts to add:</p>
+                    {availableToAdd.map((c) => (
+                      <button key={c.id} onClick={() => setAddIds((prev) => prev.includes(c.id) ? prev.filter((i) => i !== c.id) : [...prev, c.id])}
+                        className={`w-full flex items-center gap-3 p-2 rounded-xl border transition-all text-left ${addIds.includes(c.id) ? "bg-primary/10 border-primary/40" : "bg-background border-border"}`}>
+                        <div className={`w-8 h-8 rounded-xl ${c.gradient} flex items-center justify-center text-white text-xs font-bold overflow-hidden shrink-0`}>
+                          {c.avatarUrl ? <img src={c.avatarUrl} alt={c.name} className="w-full h-full object-cover" /> : c.initials}
+                        </div>
+                        <span className="text-[13px] font-semibold text-foreground flex-1">{c.name}</span>
+                        <div className={`w-4 h-4 rounded-full border-2 ${addIds.includes(c.id) ? "bg-primary border-primary" : "border-border"}`} />
+                      </button>
+                    ))}
+                    {addIds.length > 0 && (
+                      <motion.button whileTap={{ scale: 0.97 }} onClick={handleAddMembers}
+                        className="w-full py-2 rounded-xl gradient-primary text-primary-foreground text-sm font-bold shadow-glow">
+                        Add {addIds.length} Member{addIds.length > 1 ? "s" : ""}
+                      </motion.button>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* You (admin) */}
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-primary/5 border border-primary/20 mb-2">
+              <div className="w-10 h-10 rounded-2xl gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0">
+                You
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-bold text-foreground">You</p>
+                <p className="text-[11px] text-muted-foreground">My Account</p>
+              </div>
+              {isAdmin && (
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/15 text-primary text-[10px] font-bold">
+                  <Shield size={9} /> Admin
+                </span>
+              )}
+            </div>
+
+            {members.map((m) => (
+              <div key={m.id} className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border mb-2 last:mb-0">
+                <div className={`w-10 h-10 rounded-2xl ${m.gradient} flex items-center justify-center text-white font-bold text-sm overflow-hidden shrink-0 relative`}>
+                  {m.avatarUrl ? <img src={m.avatarUrl} alt={m.name} className="w-full h-full object-cover" /> : m.initials}
+                  {m.online && <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border border-background" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-bold text-foreground">{m.name}</p>
+                  <p className="text-[11px] text-muted-foreground">{m.phone}</p>
+                </div>
+                {isAdmin && (
+                  <motion.button whileTap={{ scale: 0.9 }}
+                    onClick={() => handleRemoveMember(m.id)}
+                    className="w-8 h-8 rounded-xl bg-destructive/10 flex items-center justify-center text-destructive hover:bg-destructive/20 transition-colors shrink-0"
+                    title={`Remove ${m.name}`}>
+                    <UserMinus size={14} />
+                  </motion.button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+    </>
   );
 };
 
@@ -1205,6 +1470,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
   const [search, setSearch] = useState("");
   const [showNewContact, setShowNewContact] = useState(false);
   const [showNewGroup, setShowNewGroup] = useState(false);
+  const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [pendingContacts, setPendingContacts] = useState<Contact[]>([]);
 
   const isActiveChatRef = useRef(false);
@@ -1286,7 +1552,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
 
   const handleSend = useCallback((contactId: string, text: string) => {
     const timeStr = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
-    const newMsg: Message = { id: `m${Date.now()}`, text, time: timeStr, sent: true, status: "sent", type: "text" };
+    const newMsg: Message = { id: newMsgId(), text, time: timeStr, sent: true, status: "sent", type: "text" };
     const contact = contacts.find((c) => c.id === contactId);
     updateContact(contactId, (c) => ({ ...c, messages: [...c.messages, newMsg], lastMsg: text, lastTime: "now", lastTimestamp: Date.now(), unread: 0 }));
     if (contact) {
@@ -1297,7 +1563,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
 
   const handleSendVoice = useCallback((contactId: string, duration: number) => {
     const timeStr = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
-    const voiceMsg: Message = { id: `m${Date.now()}`, text: "", time: timeStr, sent: true, status: "sent", type: "voice", voiceDuration: duration };
+    const voiceMsg: Message = { id: newMsgId(), text: "", time: timeStr, sent: true, status: "sent", type: "voice", voiceDuration: duration };
     const contact = contacts.find((c) => c.id === contactId);
     updateContact(contactId, (c) => ({ ...c, messages: [...c.messages, voiceMsg], lastMsg: `🎤 Voice (${duration}s)`, lastTime: "now", lastTimestamp: Date.now(), unread: 0 }));
     if (contact) {
@@ -1308,7 +1574,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
 
   const handleSendImage = useCallback((contactId: string, imageUrl: string) => {
     const timeStr = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
-    const imgMsg: Message = { id: `m${Date.now()}`, text: "", time: timeStr, sent: true, status: "sent", type: "image", imageUrl };
+    const imgMsg: Message = { id: newMsgId(), text: "", time: timeStr, sent: true, status: "sent", type: "image", imageUrl };
     const contact = contacts.find((c) => c.id === contactId);
     updateContact(contactId, (c) => ({ ...c, messages: [...c.messages, imgMsg], lastMsg: "📷 Photo", lastTime: "now", lastTimestamp: Date.now(), unread: 0 }));
     if (contact) {
@@ -1320,7 +1586,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
   const handleSendMoneyMsg = useCallback((contactId: string, amount: number, phone: string) => {
     const timeStr = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
     const txnId = `TXN${Date.now().toString().slice(-8)}`;
-    const moneyMsg: Message = { id: `m${Date.now()}`, text: `Sent ৳${amount.toLocaleString()} to ${phone}`, time: timeStr, sent: true, status: "sent", type: "money", amount, txnId };
+    const moneyMsg: Message = { id: newMsgId(), text: `Sent ৳${amount.toLocaleString()} to ${phone}`, time: timeStr, sent: true, status: "sent", type: "money", amount, txnId };
     const contact = contacts.find((c) => c.id === contactId);
     updateContact(contactId, (c) => ({ ...c, messages: [...c.messages, moneyMsg], lastMsg: `💸 Sent ৳${amount.toLocaleString()}`, lastTime: "now", lastTimestamp: Date.now(), unread: 0 }));
     if (contact) {
@@ -1367,6 +1633,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
       isGroup: true,
       groupIcon: icon,
       members: memberIds,
+      adminId: "self",
       messages: [
         {
           id: "gm1",
@@ -1399,6 +1666,31 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
   const openChat = (contact: Contact) => {
     setContacts((prev) => prev.map((c) => c.id === contact.id ? { ...c, unread: 0 } : c));
     setActiveChat(contact);
+  };
+
+  const handleSendQr = (contactId: string) => {
+    const timeStr = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+    const qrMsg: Message = {
+      id: newMsgId(), text: "", time: timeStr, sent: true, status: "sent",
+      type: "qr", qrUserId: "01XX-XXXXXX", qrUserName: "Me",
+    };
+    updateContact(contactId, (c) => ({ ...c, messages: [...c.messages, qrMsg], lastMsg: "📲 Shared QR code", lastTime: "now", lastTimestamp: Date.now(), unread: 0 }));
+    const contact = contacts.find((c) => c.id === contactId);
+    if (contact) {
+      markAsRead(contactId);
+      triggerAutoReply(contactId, contact, ["Got your QR! 👍", "Scanning now…", "Will pay you soon! 💚"], 1800);
+    }
+  };
+
+  const handleUpdateGroup = (groupId: string, updates: Partial<Pick<Contact, "name" | "groupIcon" | "members">>) => {
+    updateContact(groupId, (c) => ({
+      ...c,
+      ...updates,
+      lastMsg: "Group updated",
+      lastTimestamp: Date.now(),
+    }));
+    // Also update activeChat reference
+    setActiveChat((prev) => prev?.id === groupId ? { ...prev, ...updates } : prev);
   };
 
   const totalUnread = contacts.reduce((sum, c) => sum + c.unread, 0);
@@ -1546,6 +1838,19 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
         )}
       </AnimatePresence>
 
+      {/* ── Group Info Sheet ── */}
+      <AnimatePresence>
+        {showGroupInfo && currentContact?.isGroup && (
+          <GroupInfoSheet
+            group={currentContact}
+            allContacts={contacts}
+            isAdmin={currentContact.adminId === "self"}
+            onClose={() => setShowGroupInfo(false)}
+            onUpdate={(updates) => handleUpdateGroup(currentContact.id, updates)}
+          />
+        )}
+      </AnimatePresence>
+
       {/* ── Chat overlay ── */}
       <AnimatePresence>
         {activeChat && currentContact && (
@@ -1560,6 +1865,12 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
               onSendVoice={(dur) => handleSendVoice(activeChat.id, dur)}
               onSendImage={(url) => handleSendImage(activeChat.id, url)}
               onReact={(msgId, emoji) => handleReact(activeChat.id, msgId, emoji)}
+              onSendQr={() => handleSendQr(activeChat.id)}
+              onGroupInfo={() => setShowGroupInfo(true)}
+              onPayQr={(userId, userName) => {
+                // Open send money flow pre-filling phone/id
+                onSendMoney?.(userId, undefined);
+              }}
               onSendMoney={(phone) => {
                 const chatId = activeChat.id;
                 const chatContact = activeChat;
