@@ -2,11 +2,10 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Fingerprint, KeyRound, AlertCircle, CheckCircle2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { signIn } from "@/lib/auth";
 
-// Reads the current PIN — falls back to "1234" if none set
-const PIN_STORAGE_KEY = "mfs_user_pin";
-const getPin = () => sessionStorage.getItem(PIN_STORAGE_KEY) ?? "1234";
 const SESSION_KEY = "mfs_authenticated";
+const getPhone = () => localStorage.getItem("mfs_device_phone") ?? "";
 
 // ── Check WebAuthn platform authenticator availability ───────────────────────
 async function isBiometricAvailable(): Promise<boolean> {
@@ -66,7 +65,6 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
     const ok = await triggerBiometric();
     if (ok) {
       setStep("success");
-      sessionStorage.setItem(SESSION_KEY, "1");
       setTimeout(onAuthenticated, 900);
     } else {
       setBioError("Biometric check failed or was cancelled.");
@@ -75,16 +73,16 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
   };
 
   // ── PIN attempt ───────────────────────────────────────────────────────────
-  const handlePinChange = (val: string) => {
+  const handlePinChange = async (val: string) => {
     const digits = val.replace(/\D/g, "").slice(0, 4);
     setPin(digits);
     setPinError("");
     if (digits.length === 4) {
-      if (digits === getPin()) {
+      try {
+        await signIn(getPhone(), digits);
         setStep("success");
-        sessionStorage.setItem(SESSION_KEY, "1");
         setTimeout(onAuthenticated, 900);
-      } else {
+      } catch {
         setPinError("Incorrect PIN. Try again.");
         setTimeout(() => setPin(""), 400);
       }

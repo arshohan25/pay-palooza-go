@@ -47,6 +47,51 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          amount: number
+          balance_after: number | null
+          created_at: string
+          description: string | null
+          fee: number
+          id: string
+          recipient_name: string | null
+          recipient_phone: string | null
+          reference: string | null
+          status: Database["public"]["Enums"]["txn_status"]
+          type: Database["public"]["Enums"]["txn_type"]
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after?: number | null
+          created_at?: string
+          description?: string | null
+          fee?: number
+          id?: string
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          reference?: string | null
+          status?: Database["public"]["Enums"]["txn_status"]
+          type: Database["public"]["Enums"]["txn_type"]
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number | null
+          created_at?: string
+          description?: string | null
+          fee?: number
+          id?: string
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          reference?: string | null
+          status?: Database["public"]["Enums"]["txn_status"]
+          type?: Database["public"]["Enums"]["txn_type"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -55,7 +100,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      txn_status: "pending" | "completed" | "failed" | "reversed"
+      txn_type:
+        | "send"
+        | "cashout"
+        | "payment"
+        | "recharge"
+        | "paybill"
+        | "addmoney"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -182,6 +234,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      txn_status: ["pending", "completed", "failed", "reversed"],
+      txn_type: [
+        "send",
+        "cashout",
+        "payment",
+        "recharge",
+        "paybill",
+        "addmoney",
+      ],
+    },
   },
 } as const
