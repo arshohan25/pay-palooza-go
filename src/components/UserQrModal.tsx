@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Copy, CheckCheck, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import QRCode from "qrcode";
 
 interface UserQrModalProps {
   open: boolean;
@@ -10,71 +11,25 @@ interface UserQrModalProps {
   userName: string;
 }
 
-// Simple QR-like visual using a canvas drawn grid (deterministic from userId)
-const QrCanvas = ({ value }: { value: string }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const SIZE = 21; // 21x21 module grid (QR v1 style)
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    // Seed a deterministic bit grid from the user ID string
-    const hash = value.split("").reduce((acc, c) => ((acc << 5) - acc + c.charCodeAt(0)) | 0, 0);
-    const rand = (i: number) => {
-      const x = Math.sin(hash + i) * 10000;
-      return x - Math.floor(x);
-    };
-
-    const CELL = canvas.width / SIZE;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Fixed finder patterns (top-left, top-right, bottom-left)
-    const drawFinder = (ox: number, oy: number) => {
-      ctx.fillStyle = "#000";
-      ctx.fillRect(ox * CELL, oy * CELL, 7 * CELL, 7 * CELL);
-      ctx.fillStyle = "#fff";
-      ctx.fillRect((ox + 1) * CELL, (oy + 1) * CELL, 5 * CELL, 5 * CELL);
-      ctx.fillStyle = "#000";
-      ctx.fillRect((ox + 2) * CELL, (oy + 2) * CELL, 3 * CELL, 3 * CELL);
-    };
-    drawFinder(0, 0);
-    drawFinder(SIZE - 7, 0);
-    drawFinder(0, SIZE - 7);
-
-    // Fill data modules pseudo-randomly
-    for (let r = 0; r < SIZE; r++) {
-      for (let c = 0; c < SIZE; c++) {
-        // Skip finder pattern zones
-        if ((r < 8 && c < 8) || (r < 8 && c >= SIZE - 8) || (r >= SIZE - 8 && c < 8)) continue;
-        const dark = rand(r * SIZE + c) > 0.45;
-        ctx.fillStyle = dark ? "#000" : "#fff";
-        ctx.fillRect(c * CELL, r * CELL, CELL, CELL);
-      }
-    }
-  }, [value]);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      width={200}
-      height={200}
-      className="rounded-xl border border-border"
-      style={{ imageRendering: "pixelated" }}
-    />
-  );
-};
-
 const UserQrModal = ({ open, onClose, userId, userName }: UserQrModalProps) => {
   const [copied, setCopied] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Generate real QR code when modal opens
+  useEffect(() => {
+    if (!open || !canvasRef.current) return;
+    const payload = JSON.stringify({ walletId: userId, name: userName, app: "PayWave" });
+    QRCode.toCanvas(canvasRef.current, payload, {
+      width: 200,
+      margin: 2,
+      color: { dark: "#000000", light: "#ffffff" },
+    }).catch(console.error);
+  }, [open, userId, userName]);
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(userId);
     } catch {
-      // Fallback
       const el = document.createElement("textarea");
       el.value = userId;
       document.body.appendChild(el);
@@ -128,8 +83,14 @@ const UserQrModal = ({ open, onClose, userId, userName }: UserQrModalProps) => {
 
             {/* QR + info */}
             <div className="flex flex-col items-center gap-4 py-2">
-              <div className="p-4 bg-white rounded-2xl shadow-elevated">
-                <QrCanvas value={userId} />
+              <div className="p-4 bg-background rounded-2xl shadow-elevated border border-border">
+                <canvas
+                  ref={canvasRef}
+                  width={200}
+                  height={200}
+                  className="rounded-xl"
+                  style={{ imageRendering: "pixelated" }}
+                />
               </div>
               <div className="text-center space-y-1">
                 <p className="text-base font-bold text-foreground">{userName}</p>

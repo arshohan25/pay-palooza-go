@@ -3,6 +3,7 @@ import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
 import { deductBalance } from "@/lib/balanceStore";
 import { addTxnNotif } from "@/lib/txnNotifStore";
+import { showTxnToast } from "@/components/TxnToast";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
@@ -399,6 +400,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     txnTime.current = new Date();
     txnId.current   = generateTxnId();
     deductBalance(effectivePrice);
+    showTxnToast({ type: "Mobile Recharge", amount: `৳${effectivePrice.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-accent" });
     setDirection(1);
     setStep("success");
   };

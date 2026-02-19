@@ -3,6 +3,7 @@ import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
 import { deductBalance } from "@/lib/balanceStore";
 import { addTxnNotif } from "@/lib/txnNotifStore";
+import { showTxnToast } from "@/components/TxnToast";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
@@ -246,7 +247,9 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
   const handlePinConfirm = () => {
     if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
     haptics.success();
-    deductBalance(billInfo?.due ?? 0);
+    const dueAmt = billInfo?.due ?? 0;
+    deductBalance(dueAmt);
+    showTxnToast({ type: "Bill Payment", amount: `৳${dueAmt.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-primary" });
     setDirection(1);
     setStep("success");
   };
