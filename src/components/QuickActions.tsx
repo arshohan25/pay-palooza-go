@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -80,6 +81,8 @@ interface QuickActionsProps {
 }
 
 const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney }: QuickActionsProps) => {
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+
   const handleAction = (id: string, label: string) => {
     if (id === "send")     return onSendMoney();
     if (id === "cashout")  return onCashOut();
@@ -93,42 +96,47 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   return (
     <div className="bg-card rounded-3xl shadow-card border border-border/60 p-4 sm:p-5">
       <div className="grid grid-cols-4 gap-y-5 gap-x-2 sm:gap-x-3">
-        {actions.map((action, index) => (
-          <motion.button
-            key={action.id}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: 0.04 + index * 0.05, ease: [0.23, 1, 0.32, 1] }}
-            whileTap={{ scale: 0.90 }}
-            onClick={() => handleAction(action.id, action.label)}
-            className="flex flex-col items-center gap-2.5 group outline-none"
-          >
-            {/* Icon circle */}
-            <motion.div
-              whileHover={{ scale: 1.06, y: -2 }}
-              transition={{ type: "spring", stiffness: 380, damping: 22 }}
-              className="relative flex items-center justify-center rounded-full shadow-sm group-hover:shadow-md transition-shadow duration-200"
-              style={{
-                width: 56,
-                height: 56,
-                background: action.bgStyle,
-                outline: action.ringStyle,
-              }}
+        {actions.map((action, index) => {
+          const isHovered = hoveredId === action.id;
+          return (
+            <motion.button
+              key={action.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: 0.04 + index * 0.05, ease: [0.23, 1, 0.32, 1] }}
+              whileTap={{ scale: 0.90 }}
+              onClick={() => handleAction(action.id, action.label)}
+              onHoverStart={() => setHoveredId(action.id)}
+              onHoverEnd={() => setHoveredId(null)}
+              className="flex flex-col items-center gap-2.5 group outline-none"
             >
-              {/* Subtle glow on hover */}
-              <div
-                className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 blur-[10px] transition-opacity duration-300 -z-10 scale-110"
-                style={{ background: action.bgStyle }}
-              />
-              <action.Icon />
-            </motion.div>
+              {/* Icon circle */}
+              <motion.div
+                whileHover={{ scale: 1.06, y: -2 }}
+                transition={{ type: "spring", stiffness: 380, damping: 22 }}
+                className="relative flex items-center justify-center rounded-full shadow-sm group-hover:shadow-md transition-shadow duration-200"
+                style={{
+                  width: 56,
+                  height: 56,
+                  background: action.bgStyle,
+                  outline: action.ringStyle,
+                }}
+              >
+                {/* Subtle glow on hover */}
+                <div
+                  className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 blur-[10px] transition-opacity duration-300 -z-10 scale-110"
+                  style={{ background: action.bgStyle }}
+                />
+                <action.Icon isHovered={isHovered} />
+              </motion.div>
 
-            {/* Label */}
-            <span className="text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-colors duration-150 px-0.5">
-              {action.label}
-            </span>
-          </motion.button>
-        ))}
+              {/* Label */}
+              <span className="text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-colors duration-150 px-0.5">
+                {action.label}
+              </span>
+            </motion.button>
+          );
+        })}
       </div>
     </div>
   );
