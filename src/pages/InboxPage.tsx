@@ -5,7 +5,8 @@ import {
   Smile, CheckCheck, Check, Wallet, CheckCircle2, Package,
   Mic, Play, Pause, X, UserPlus, QrCode, ImagePlus,
   Download, PhoneCall, PhoneOff, VideoIcon, MicOff, Volume2,
-  Clock, UserCheck, Hourglass,
+  Clock, UserCheck, Hourglass, Users, Search, ArrowLeft,
+  Camera,
 } from "lucide-react";
 import { addInboxMsg, clearInboxCount } from "@/lib/inboxStore";
 import { toast } from "@/components/ui/sonner";
@@ -24,6 +25,7 @@ interface Message {
   time: string;
   sent: boolean;
   status: "sent" | "delivered" | "read";
+  seenAt?: string; // "3:45 PM"
   type?: "text" | "money" | "order" | "voice" | "image";
   amount?: number;
   txnId?: string;
@@ -43,11 +45,14 @@ interface Contact {
   gradient: string;
   lastMsg: string;
   lastTime: string;
-  lastTimestamp: number; // for display as real time
+  lastTimestamp: number;
   unread: number;
   online: boolean;
-  avatarUrl?: string; // optional real photo
-  pending?: boolean;  // awaiting accept
+  avatarUrl?: string;
+  pending?: boolean;
+  isGroup?: boolean;
+  members?: string[]; // contact IDs for groups
+  groupIcon?: string; // emoji
   messages: Message[];
 }
 
@@ -63,7 +68,7 @@ const INITIAL_CONTACTS: Contact[] = [
     avatarUrl: "https://api.dicebear.com/9.x/avataaars/svg?seed=Rahim",
     messages: [
       { id: "m1", text: "Hey, can you send me ৳500?", time: "10:30 AM", sent: false, status: "read" },
-      { id: "m2", text: "Sure, sending now!", time: "10:31 AM", sent: true, status: "read" },
+      { id: "m2", text: "Sure, sending now!", time: "10:31 AM", sent: true, status: "read", seenAt: "10:31 AM" },
       { id: "m3", text: "Payment received, thanks! 🙏", time: "10:32 AM", sent: false, status: "read" },
       { id: "m4", text: "Let's split the dinner bill?", time: "2m ago", sent: false, status: "delivered" },
       { id: "m5", text: "How much is my share?", time: "1m ago", sent: false, status: "delivered" },
@@ -75,7 +80,7 @@ const INITIAL_CONTACTS: Contact[] = [
     lastTime: "1h", lastTimestamp: minsAgo(60), unread: 0, online: true,
     avatarUrl: "https://api.dicebear.com/9.x/avataaars/svg?seed=Nusrat",
     messages: [
-      { id: "m1", text: "Hey Nusrat! Did you get the transfer?", time: "9:15 AM", sent: true, status: "read" },
+      { id: "m1", text: "Hey Nusrat! Did you get the transfer?", time: "9:15 AM", sent: true, status: "read", seenAt: "9:20 AM" },
       { id: "m2", text: "Not yet, let me check!", time: "9:20 AM", sent: false, status: "read" },
       { id: "m3", text: "Hmm still not showing. Maybe tomorrow?", time: "9:22 AM", sent: false, status: "read" },
       { id: "m4", text: "Will send you tomorrow 😊", time: "1h ago", sent: false, status: "read" },
@@ -86,9 +91,9 @@ const INITIAL_CONTACTS: Contact[] = [
     gradient: "gradient-cashout", lastMsg: "ঠিক আছে, পাঠিয়ে দিও",
     lastTime: "3h", lastTimestamp: minsAgo(180), unread: 0, online: false,
     messages: [
-      { id: "m1", text: "Karim bhai, need to pay the rent", time: "Yesterday", sent: true, status: "read" },
+      { id: "m1", text: "Karim bhai, need to pay the rent", time: "Yesterday", sent: true, status: "read", seenAt: "Yesterday" },
       { id: "m2", text: "কত লাগবে?", time: "Yesterday", sent: false, status: "read" },
-      { id: "m3", text: "৳8,000", time: "Yesterday", sent: true, status: "read" },
+      { id: "m3", text: "৳8,000", time: "Yesterday", sent: true, status: "read", seenAt: "Yesterday" },
       { id: "m4", text: "", time: "Yesterday", sent: false, status: "read", type: "order", orderId: "ORD-20483", orderStatus: "Shipped", itemCount: 3 },
       { id: "m5", text: "ঠিক আছে, পাঠিয়ে দিও", time: "3h ago", sent: false, status: "read" },
     ],
@@ -98,7 +103,7 @@ const INITIAL_CONTACTS: Contact[] = [
     gradient: "gradient-accent", lastMsg: "Sure! I'll transfer right now",
     lastTime: "Yesterday", lastTimestamp: minsAgo(1440), unread: 0, online: false,
     messages: [
-      { id: "m1", text: "Mitu apa, আপনার কাছে ৳2000 ধার চাই", time: "Yesterday", sent: true, status: "read" },
+      { id: "m1", text: "Mitu apa, আপনার কাছে ৳2000 ধার চাই", time: "Yesterday", sent: true, status: "read", seenAt: "Yesterday" },
       { id: "m2", text: "Sure! I'll transfer right now", time: "Yesterday", sent: false, status: "read" },
     ],
   },
@@ -107,14 +112,28 @@ const INITIAL_CONTACTS: Contact[] = [
     gradient: "gradient-addmoney", lastMsg: "👍",
     lastTime: "2d", lastTimestamp: minsAgo(2880), unread: 0, online: false,
     messages: [
-      { id: "m1", text: "Payment done bro", time: "2d ago", sent: true, status: "read" },
+      { id: "m1", text: "Payment done bro", time: "2d ago", sent: true, status: "read", seenAt: "2d ago" },
       { id: "m2", text: "👍", time: "2d ago", sent: false, status: "read" },
+    ],
+  },
+  {
+    id: "g1", name: "Family Group 💚", phone: "", initials: "FG",
+    gradient: "gradient-send", lastMsg: "Rahim: Coming tonight?",
+    lastTime: "30m", lastTimestamp: minsAgo(30), unread: 3, online: false,
+    isGroup: true, groupIcon: "💚",
+    members: ["c1", "c2", "c4"],
+    messages: [
+      { id: "m1", text: "Hey everyone! Party tonight?", time: "Yesterday", sent: true, status: "read", seenAt: "Yesterday" },
+      { id: "m2", text: "I'm in! 🎉", time: "Yesterday", sent: false, status: "read" },
+      { id: "m3", text: "Count me in too!", time: "Yesterday", sent: false, status: "read" },
+      { id: "m4", text: "Rahim: Coming tonight?", time: "30m ago", sent: false, status: "delivered" },
     ],
   },
 ];
 
 const QUICK_REPLIES = ["👍", "Thanks!", "OK!", "Send ৳500", "Got it 😊", "Sure!"];
 const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏", "🔥", "👏", "😍", "🎉"];
+const GROUP_ICONS = ["💚", "🏠", "🎯", "⚽", "💼", "🎉", "🌟", "🔥", "🎵", "❤️"];
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const GRADIENT_OPTIONS = [
@@ -264,7 +283,6 @@ const CallingOverlay = ({ contact, mode, onEnd }: CallingOverlayProps) => {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    // Simulate call being answered after 3s
     const answerTimer = setTimeout(() => {
       setStatus("connected");
       timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
@@ -289,20 +307,17 @@ const CallingOverlay = ({ contact, mode, onEnd }: CallingOverlayProps) => {
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className="fixed inset-0 z-[90] flex flex-col items-center justify-between pb-16 pt-24 bg-gradient-to-b from-primary/90 to-primary/60 backdrop-blur-xl"
     >
-      {/* Background blur circles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
         <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
       </div>
 
       <div className="flex flex-col items-center gap-5 z-10">
-        {/* Avatar */}
         <motion.div
           animate={{ scale: status === "ringing" ? [1, 1.05, 1] : 1 }}
           transition={{ duration: 1.5, repeat: status === "ringing" ? Infinity : 0 }}
           className="relative"
         >
-          {/* Ripple rings when ringing */}
           {status === "ringing" && [0, 1, 2].map((i) => (
             <motion.div
               key={i}
@@ -314,7 +329,7 @@ const CallingOverlay = ({ contact, mode, onEnd }: CallingOverlayProps) => {
           <div className={`w-24 h-24 rounded-full ${contact.gradient} flex items-center justify-center text-white font-bold text-3xl shadow-elevated overflow-hidden`}>
             {contact.avatarUrl
               ? <img src={contact.avatarUrl} alt={contact.name} className="w-full h-full object-cover" />
-              : contact.initials
+              : contact.isGroup ? (contact.groupIcon ?? "👥") : contact.initials
             }
           </div>
         </motion.div>
@@ -335,22 +350,15 @@ const CallingOverlay = ({ contact, mode, onEnd }: CallingOverlayProps) => {
         </div>
       </div>
 
-      {/* Controls */}
       <div className="flex flex-col items-center gap-6 z-10 w-full px-12">
         <div className="flex justify-center gap-8">
-          <button
-            onClick={() => setMuted((v) => !v)}
-            className={`flex flex-col items-center gap-2 group`}
-          >
+          <button onClick={() => setMuted((v) => !v)} className="flex flex-col items-center gap-2">
             <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${muted ? "bg-white/30" : "bg-white/15"}`}>
               {muted ? <MicOff size={22} className="text-white" /> : <Mic size={22} className="text-white" />}
             </div>
             <span className="text-[11px] text-white/70">{muted ? "Unmute" : "Mute"}</span>
           </button>
-          <button
-            onClick={() => setSpeaker((v) => !v)}
-            className="flex flex-col items-center gap-2"
-          >
+          <button onClick={() => setSpeaker((v) => !v)} className="flex flex-col items-center gap-2">
             <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${speaker ? "bg-white/30" : "bg-white/15"}`}>
               <Volume2 size={22} className="text-white" />
             </div>
@@ -365,13 +373,8 @@ const CallingOverlay = ({ contact, mode, onEnd }: CallingOverlayProps) => {
             </button>
           )}
         </div>
-
-        {/* End call */}
-        <motion.button
-          whileTap={{ scale: 0.92 }}
-          onClick={onEnd}
-          className="w-16 h-16 rounded-full bg-destructive flex items-center justify-center shadow-elevated"
-        >
+        <motion.button whileTap={{ scale: 0.92 }} onClick={onEnd}
+          className="w-16 h-16 rounded-full bg-destructive flex items-center justify-center shadow-elevated">
           <PhoneOff size={26} className="text-destructive-foreground" />
         </motion.button>
         <p className="text-[11px] text-white/50">Tap to end call</p>
@@ -380,14 +383,61 @@ const CallingOverlay = ({ contact, mode, onEnd }: CallingOverlayProps) => {
   );
 };
 
+// ── Read Receipt ───────────────────────────────────────────────────────────────
+const ReadReceipt = ({ msg }: { msg: Message }) => {
+  if (!msg.sent) return null;
+
+  return (
+    <div className={`flex items-center gap-1 mt-0.5 justify-end`}>
+      <AnimatePresence mode="wait">
+        {msg.status === "read" ? (
+          <motion.div
+            key="read"
+            initial={{ opacity: 0, scale: 0.7 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex items-center gap-1"
+          >
+            <motion.div
+              initial={{ color: "hsl(var(--muted-foreground))" }}
+              animate={{ color: "hsl(var(--primary))" }}
+              transition={{ delay: 0.1, duration: 0.4 }}
+            >
+              <CheckCheck size={13} className="text-primary" />
+            </motion.div>
+            {msg.seenAt && (
+              <motion.span
+                initial={{ opacity: 0, x: -4 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+                className="text-[9px] text-primary/70 font-medium"
+              >
+                Seen {msg.seenAt}
+              </motion.span>
+            )}
+          </motion.div>
+        ) : msg.status === "delivered" ? (
+          <motion.div key="delivered" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <CheckCheck size={13} className="text-muted-foreground" />
+          </motion.div>
+        ) : (
+          <motion.div key="sent" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <Check size={13} className="text-muted-foreground" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 // ── Message Bubble ─────────────────────────────────────────────────────────────
 interface BubbleProps {
   msg: Message;
   contactName: string;
   onReact: (msgId: string, emoji: string) => void;
+  isGroup?: boolean;
 }
 
-const MessageBubble = ({ msg, contactName, onReact }: BubbleProps) => {
+const MessageBubble = ({ msg, contactName, onReact, isGroup }: BubbleProps) => {
   const [showPicker, setShowPicker] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMoney = msg.type === "money";
@@ -404,6 +454,10 @@ const MessageBubble = ({ msg, contactName, onReact }: BubbleProps) => {
   return (
     <div className={`flex ${msg.sent ? "justify-end" : "justify-start"}`}>
       <div className={`flex flex-col max-w-[78%] ${msg.sent ? "items-end" : "items-start"} relative`}>
+        {/* Group sender name */}
+        {isGroup && !msg.sent && (
+          <span className="text-[10px] font-semibold text-primary mb-0.5 ml-1">{contactName}</span>
+        )}
 
         {/* Money card */}
         {isMoney && (
@@ -511,10 +565,10 @@ const MessageBubble = ({ msg, contactName, onReact }: BubbleProps) => {
           </motion.div>
         )}
 
-        {/* Timestamp */}
+        {/* Timestamp + read receipt */}
         <div className={`flex items-center gap-1 mt-1 ${msg.sent ? "flex-row-reverse" : ""}`}>
           <span className="text-[10px] text-muted-foreground">{msg.time}</span>
-          {msg.sent && (msg.status === "read" ? <CheckCheck size={12} className="text-primary" /> : <Check size={12} className="text-muted-foreground" />)}
+          <ReadReceipt msg={msg} />
         </div>
       </div>
     </div>
@@ -568,7 +622,6 @@ const NewContactSheet = ({ onClose, onCreate }: NewContactSheetProps) => {
           </button>
         </div>
 
-        {/* Illustration */}
         <div className="flex justify-center mb-6">
           <AnimatePresence mode="wait">
             {sent ? (
@@ -618,6 +671,176 @@ const NewContactSheet = ({ onClose, onCreate }: NewContactSheetProps) => {
   );
 };
 
+// ── New Group Sheet ────────────────────────────────────────────────────────────
+interface NewGroupSheetProps {
+  contacts: Contact[];
+  onClose: () => void;
+  onCreate: (name: string, icon: string, memberIds: string[]) => void;
+}
+
+const NewGroupSheet = ({ contacts, onClose, onCreate }: NewGroupSheetProps) => {
+  const [step, setStep] = useState<"pick" | "name">("pick");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [groupName, setGroupName] = useState("");
+  const [groupIcon, setGroupIcon] = useState("💚");
+  const [error, setError] = useState("");
+
+  const regularContacts = contacts.filter((c) => !c.isGroup && !c.pending);
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
+  };
+
+  const handleNext = () => {
+    if (selected.length < 2) { setError("Select at least 2 contacts"); return; }
+    setError("");
+    setStep("name");
+  };
+
+  const handleCreate = () => {
+    if (!groupName.trim()) { setError("Group name is required"); return; }
+    onCreate(groupName.trim(), groupIcon, selected);
+    onClose();
+  };
+
+  return (
+    <>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <motion.div
+        initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+        transition={{ type: "spring", stiffness: 320, damping: 32 }}
+        className="fixed bottom-0 left-0 right-0 z-[80] max-w-md mx-auto bg-card rounded-t-3xl px-5 pt-3 pb-8 shadow-elevated"
+        style={{ maxHeight: "85vh", display: "flex", flexDirection: "column" }}
+      >
+        <div className="w-10 h-1 bg-border rounded-full mx-auto mb-4 shrink-0" />
+
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-5 shrink-0">
+          {step === "name" && (
+            <button onClick={() => setStep("pick")} className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
+              <ArrowLeft size={18} />
+            </button>
+          )}
+          <div className="flex-1">
+            <h2 className="text-lg font-extrabold text-foreground">
+              {step === "pick" ? "New Group" : "Group Details"}
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              {step === "pick" ? `Select members (${selected.length} selected)` : "Set a name and icon for your group"}
+            </p>
+          </div>
+          <button onClick={onClose} className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
+            <X size={18} />
+          </button>
+        </div>
+
+        {step === "pick" ? (
+          <>
+            {/* Contact list */}
+            <div className="flex-1 overflow-y-auto space-y-2 mb-4 min-h-0">
+              {regularContacts.length === 0 && (
+                <div className="flex flex-col items-center py-10 text-muted-foreground gap-2">
+                  <Users size={32} className="opacity-30" />
+                  <p className="text-sm">No contacts available</p>
+                </div>
+              )}
+              {regularContacts.map((c) => {
+                const isSelected = selected.includes(c.id);
+                return (
+                  <motion.button
+                    key={c.id}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => toggleSelect(c.id)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-2xl border transition-all text-left ${
+                      isSelected
+                        ? "bg-primary/10 border-primary/40"
+                        : "bg-background border-border hover:bg-muted/50"
+                    }`}
+                  >
+                    <div className={`w-11 h-11 rounded-2xl ${c.gradient} flex items-center justify-center text-white font-bold text-sm overflow-hidden shrink-0`}>
+                      {c.avatarUrl
+                        ? <img src={c.avatarUrl} alt={c.name} className="w-full h-full object-cover" />
+                        : c.initials
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-bold text-foreground">{c.name}</p>
+                      <p className="text-[11px] text-muted-foreground">{c.phone}</p>
+                    </div>
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                      isSelected ? "bg-primary border-primary" : "border-border"
+                    }`}>
+                      {isSelected && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-2.5 h-2.5 rounded-full bg-primary-foreground" />}
+                    </div>
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            {error && <p className="text-[11px] text-destructive mb-2 shrink-0">{error}</p>}
+
+            <motion.button whileTap={{ scale: 0.97 }} onClick={handleNext}
+              className="w-full gradient-primary text-primary-foreground font-bold rounded-2xl shadow-glow flex items-center justify-center gap-2 py-4 shrink-0">
+              Next →
+            </motion.button>
+          </>
+        ) : (
+          <>
+            {/* Icon picker */}
+            <div className="mb-5 shrink-0">
+              <label className="text-[12px] font-semibold text-muted-foreground mb-2 block">Group Icon</label>
+              <div className="flex gap-2 flex-wrap">
+                {GROUP_ICONS.map((icon) => (
+                  <motion.button key={icon} whileTap={{ scale: 0.85 }}
+                    onClick={() => setGroupIcon(icon)}
+                    className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center border-2 transition-all ${
+                      groupIcon === icon ? "border-primary bg-primary/10 scale-110" : "border-border bg-muted"
+                    }`}
+                  >
+                    {icon}
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+
+            {/* Preview */}
+            <div className="flex items-center gap-3 mb-5 p-3 rounded-2xl bg-muted/50 shrink-0">
+              <div className="w-12 h-12 rounded-2xl gradient-primary flex items-center justify-center text-2xl shadow-glow shrink-0">
+                {groupIcon}
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-foreground">{groupName || "Group name…"}</p>
+                <p className="text-[11px] text-muted-foreground">{selected.length} members</p>
+              </div>
+            </div>
+
+            {/* Name input */}
+            <div className="mb-5 shrink-0">
+              <label className="text-[12px] font-semibold text-muted-foreground mb-1.5 block">Group Name</label>
+              <input
+                autoFocus
+                type="text"
+                value={groupName}
+                onChange={(e) => { setGroupName(e.target.value); setError(""); }}
+                placeholder="e.g. Family, Office Team…"
+                className={`w-full h-12 px-4 bg-background border rounded-2xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition ${error ? "border-destructive" : "border-border"}`}
+              />
+              {error && <p className="text-[11px] text-destructive mt-1">{error}</p>}
+            </div>
+
+            <motion.button whileTap={{ scale: 0.97 }} onClick={handleCreate}
+              className="w-full gradient-primary text-primary-foreground font-bold rounded-2xl shadow-glow flex items-center justify-center gap-2 py-4 shrink-0">
+              <Users size={18} />
+              Create Group
+            </motion.button>
+          </>
+        )}
+      </motion.div>
+    </>
+  );
+};
+
 // ── Pending Accept Banner ──────────────────────────────────────────────────────
 interface PendingBannerProps {
   contact: Contact;
@@ -649,9 +872,43 @@ const PendingBanner = ({ contact, onAccept, onDecline }: PendingBannerProps) => 
   </motion.div>
 );
 
+// ── Group Participants Panel ────────────────────────────────────────────────────
+const GroupParticipants = ({ contact, allContacts }: { contact: Contact; allContacts: Contact[] }) => {
+  const members = (contact.members ?? [])
+    .map((id) => allContacts.find((c) => c.id === id))
+    .filter(Boolean) as Contact[];
+
+  return (
+    <div className="px-4 py-3 border-b border-border/60 bg-muted/30">
+      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
+        {members.length + 1} Participants
+      </p>
+      <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
+        {/* Self */}
+        <div className="flex flex-col items-center gap-1 shrink-0">
+          <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
+            You
+          </div>
+          <p className="text-[9px] text-muted-foreground">You</p>
+        </div>
+        {members.map((m) => (
+          <div key={m.id} className="flex flex-col items-center gap-1 shrink-0">
+            <div className={`w-9 h-9 rounded-xl ${m.gradient} flex items-center justify-center text-white font-bold text-xs overflow-hidden relative`}>
+              {m.avatarUrl ? <img src={m.avatarUrl} alt={m.name} className="w-full h-full object-cover" /> : m.initials}
+              {m.online && <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border border-background" />}
+            </div>
+            <p className="text-[9px] text-muted-foreground max-w-[36px] truncate">{m.name.split(" ")[0]}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // ── ChatView ───────────────────────────────────────────────────────────────────
 interface ChatViewProps {
   contact: Contact;
+  allContacts: Contact[];
   messages: Message[];
   onBack: () => void;
   onSend: (text: string) => void;
@@ -661,7 +918,7 @@ interface ChatViewProps {
   onReact: (msgId: string, emoji: string) => void;
 }
 
-const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage, onSendMoney, onReact }: ChatViewProps) => {
+const ChatView = ({ contact, allContacts, messages, onBack, onSend, onSendVoice, onSendImage, onSendMoney, onReact }: ChatViewProps) => {
   const [text, setText] = useState("");
   const [showQuick, setShowQuick] = useState(false);
   const [showQr, setShowQr] = useState(false);
@@ -722,6 +979,10 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage,
     setShowQr(false);
   };
 
+  // Simulate group member names for sent messages
+  const GROUP_MEMBER_NAMES = ["Rahim", "Nusrat", "Mitu", "Arif"];
+  const getGroupSenderName = (idx: number) => GROUP_MEMBER_NAMES[idx % GROUP_MEMBER_NAMES.length];
+
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
       {/* Header */}
@@ -738,32 +999,48 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage,
           {/* Avatar */}
           <div className="relative shrink-0">
             <div className={`w-10 h-10 rounded-2xl ${contact.gradient} flex items-center justify-center text-white font-bold text-sm overflow-hidden`}>
-              {contact.avatarUrl
-                ? <img src={contact.avatarUrl} alt={contact.name} className="w-full h-full object-cover" />
-                : contact.initials
+              {contact.isGroup
+                ? <span className="text-lg">{contact.groupIcon ?? "👥"}</span>
+                : contact.avatarUrl
+                  ? <img src={contact.avatarUrl} alt={contact.name} className="w-full h-full object-cover" />
+                  : contact.initials
               }
             </div>
-            {contact.online && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white" />}
+            {!contact.isGroup && contact.online && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white" />}
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-bold text-[15px] leading-tight">{contact.name}</p>
-            <p className="text-[11px] text-white/70">{contact.online ? "Active now" : contact.phone}</p>
+            <p className="text-[11px] text-white/70">
+              {contact.isGroup
+                ? `${(contact.members?.length ?? 0) + 1} members`
+                : contact.online ? "Active now" : contact.phone
+              }
+            </p>
           </div>
           <div className="flex items-center gap-1">
-            <button onClick={() => setCallMode("audio")}
-              className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center active:scale-95 transition-transform">
-              <Phone size={16} />
-            </button>
-            <button onClick={() => setCallMode("video")}
-              className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center active:scale-95 transition-transform">
-              <Video size={16} />
-            </button>
+            {!contact.isGroup && (
+              <>
+                <button onClick={() => setCallMode("audio")}
+                  className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center active:scale-95 transition-transform">
+                  <Phone size={16} />
+                </button>
+                <button onClick={() => setCallMode("video")}
+                  className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center active:scale-95 transition-transform">
+                  <Video size={16} />
+                </button>
+              </>
+            )}
             <button className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center active:scale-95 transition-transform">
               <MoreVertical size={16} />
             </button>
           </div>
         </div>
       </motion.div>
+
+      {/* Group participants strip */}
+      {contact.isGroup && (
+        <GroupParticipants contact={contact} allContacts={allContacts} />
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 scrollbar-none">
@@ -777,22 +1054,15 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage,
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ type: "spring", stiffness: 400, damping: 28 }}
             >
-              <MessageBubble msg={msg} contactName={contact.name} onReact={onReact} />
+              <MessageBubble
+                msg={msg}
+                contactName={contact.isGroup && !msg.sent ? getGroupSenderName(idx) : contact.name}
+                onReact={(msgId, emoji) => onReact(msgId, emoji)}
+                isGroup={contact.isGroup}
+              />
             </motion.div>
           </div>
         ))}
-
-        {/* Typing indicator */}
-        {contact.online && (
-          <div className="flex justify-start">
-            <div className="bg-card border border-border rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1 shadow-card">
-              {[0, 1, 2].map((i) => (
-                <motion.div key={i} className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full"
-                  animate={{ y: [0, -4, 0] }} transition={{ duration: 0.7, repeat: Infinity, delay: i * 0.15 }} />
-              ))}
-            </div>
-          </div>
-        )}
         <div ref={bottomRef} />
       </div>
 
@@ -852,12 +1122,14 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage,
             title="Share image">
             <ImagePlus size={15} />
           </motion.button>
-          {/* Send money shortcut */}
-          <motion.button whileTap={{ scale: 0.88 }} onClick={() => onSendMoney(contact.phone)}
-            className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors shrink-0"
-            title={`Send money to ${contact.name}`}>
-            <Wallet size={15} />
-          </motion.button>
+          {/* Send money shortcut (not for groups) */}
+          {!contact.isGroup && (
+            <motion.button whileTap={{ scale: 0.88 }} onClick={() => onSendMoney(contact.phone)}
+              className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors shrink-0"
+              title={`Send money to ${contact.name}`}>
+              <Wallet size={15} />
+            </motion.button>
+          )}
           {/* Mic or Send */}
           {text.trim() ? (
             <motion.button whileTap={{ scale: 0.88 }} onClick={handleSend}
@@ -896,12 +1168,14 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage,
 // ── Contact Avatar helper ──────────────────────────────────────────────────────
 const ContactAvatar = ({ contact, size = 12 }: { contact: Contact; size?: number }) => (
   <div
-    className={`w-${size} h-${size} rounded-2xl ${contact.gradient} flex items-center justify-center text-white font-bold text-sm overflow-hidden shrink-0`}
+    className={`rounded-2xl ${contact.gradient} flex items-center justify-center text-white font-bold text-sm overflow-hidden shrink-0`}
     style={{ width: size * 4, height: size * 4 }}
   >
-    {contact.avatarUrl
-      ? <img src={contact.avatarUrl} alt={contact.name} className="w-full h-full object-cover" />
-      : contact.initials
+    {contact.isGroup
+      ? <span className="text-xl">{contact.groupIcon ?? "👥"}</span>
+      : contact.avatarUrl
+        ? <img src={contact.avatarUrl} alt={contact.name} className="w-full h-full object-cover" />
+        : contact.initials
     }
   </div>
 );
@@ -910,7 +1184,7 @@ const ContactAvatar = ({ contact, size = 12 }: { contact: Contact; size?: number
 interface InboxPageProps {
   onBack?: () => void;
   onSendMoney?: (phone: string, onComplete?: (amount: number) => void) => void;
-  isActive?: boolean; // true when inbox tab is currently visible
+  isActive?: boolean;
 }
 
 export default function InboxPage({ onBack, onSendMoney, isActive = false }: InboxPageProps) {
@@ -930,10 +1204,9 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
   const [activeChat, setActiveChat] = useState<Contact | null>(null);
   const [search, setSearch] = useState("");
   const [showNewContact, setShowNewContact] = useState(false);
-  // pending contacts waiting for accept simulation
+  const [showNewGroup, setShowNewGroup] = useState(false);
   const [pendingContacts, setPendingContacts] = useState<Contact[]>([]);
 
-  // Track whether inbox/chat is visible for toast logic
   const isActiveChatRef = useRef(false);
   isActiveChatRef.current = isActive || !!activeChat;
 
@@ -973,17 +1246,19 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
   }, [updateContact]);
 
   const triggerAutoReply = useCallback((contactId: string, contact: Contact, replies: string[], delay = 1800) => {
-    if (!contact.online) return;
+    if (!contact.online && !contact.isGroup) return;
     const reply = replies[Math.floor(Math.random() * replies.length)];
     setTimeout(() => {
       const timeStr = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
       addInboxMsg();
       updateContact(contactId, (c) => ({
         ...c,
-        messages: [...c.messages, { id: `reply_${Date.now()}_${Math.random().toString(36).slice(2)}`, text: reply, time: timeStr, sent: false, status: "delivered" as const, type: "text" as const }],
+        messages: [...c.messages, {
+          id: `reply_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+          text: reply, time: timeStr, sent: false, status: "delivered" as const, type: "text" as const,
+        }],
         lastMsg: reply, lastTime: "now", lastTimestamp: Date.now(), unread: c.unread + 1,
       }));
-      // Show sonner toast if user is NOT in inbox
       if (!isActiveChatRef.current) {
         toast(contact.name, {
           description: reply,
@@ -994,15 +1269,31 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
     }, delay);
   }, [updateContact]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Mark sent messages as read after a delay
+  const markAsRead = useCallback((contactId: string) => {
+    setTimeout(() => {
+      const timeStr = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+      updateContact(contactId, (c) => ({
+        ...c,
+        messages: c.messages.map((m) =>
+          m.sent && m.status !== "read"
+            ? { ...m, status: "read" as const, seenAt: timeStr }
+            : m
+        ),
+      }));
+    }, 2000);
+  }, [updateContact]);
+
   const handleSend = useCallback((contactId: string, text: string) => {
     const timeStr = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
     const newMsg: Message = { id: `m${Date.now()}`, text, time: timeStr, sent: true, status: "sent", type: "text" };
     const contact = contacts.find((c) => c.id === contactId);
     updateContact(contactId, (c) => ({ ...c, messages: [...c.messages, newMsg], lastMsg: text, lastTime: "now", lastTimestamp: Date.now(), unread: 0 }));
     if (contact) {
+      markAsRead(contactId);
       triggerAutoReply(contactId, contact, ["Got it! 👍", "Thanks for letting me know", "OK sure!", "Received 🙏", "Will check now", "😊"]);
     }
-  }, [contacts, updateContact, triggerAutoReply]);
+  }, [contacts, updateContact, triggerAutoReply, markAsRead]);
 
   const handleSendVoice = useCallback((contactId: string, duration: number) => {
     const timeStr = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
@@ -1010,9 +1301,10 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
     const contact = contacts.find((c) => c.id === contactId);
     updateContact(contactId, (c) => ({ ...c, messages: [...c.messages, voiceMsg], lastMsg: `🎤 Voice (${duration}s)`, lastTime: "now", lastTimestamp: Date.now(), unread: 0 }));
     if (contact) {
+      markAsRead(contactId);
       triggerAutoReply(contactId, contact, ["🎤 Heard it!", "Listening now...", "👍 Got your voice note", "Will reply soon!"], 2200);
     }
-  }, [contacts, updateContact, triggerAutoReply]);
+  }, [contacts, updateContact, triggerAutoReply, markAsRead]);
 
   const handleSendImage = useCallback((contactId: string, imageUrl: string) => {
     const timeStr = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
@@ -1020,9 +1312,10 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
     const contact = contacts.find((c) => c.id === contactId);
     updateContact(contactId, (c) => ({ ...c, messages: [...c.messages, imgMsg], lastMsg: "📷 Photo", lastTime: "now", lastTimestamp: Date.now(), unread: 0 }));
     if (contact) {
+      markAsRead(contactId);
       triggerAutoReply(contactId, contact, ["Nice photo! 😍", "Looks great!", "📷 Got it!", "Beautiful!"], 1500);
     }
-  }, [contacts, updateContact, triggerAutoReply]);
+  }, [contacts, updateContact, triggerAutoReply, markAsRead]);
 
   const handleSendMoneyMsg = useCallback((contactId: string, amount: number, phone: string) => {
     const timeStr = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
@@ -1031,9 +1324,10 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
     const contact = contacts.find((c) => c.id === contactId);
     updateContact(contactId, (c) => ({ ...c, messages: [...c.messages, moneyMsg], lastMsg: `💸 Sent ৳${amount.toLocaleString()}`, lastTime: "now", lastTimestamp: Date.now(), unread: 0 }));
     if (contact) {
+      markAsRead(contactId);
       triggerAutoReply(contactId, contact, ["Received! Thank you 🙏", "Got it, thanks! 💚", `Received ৳${amount.toLocaleString()} ✓`, "Thank you so much! 😊"], 1500);
     }
-  }, [contacts, updateContact, triggerAutoReply]);
+  }, [contacts, updateContact, triggerAutoReply, markAsRead]);
 
   const handleCreateContact = (phone: string) => {
     const id = `c_${Date.now()}`;
@@ -1047,7 +1341,6 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
       messages: [],
     };
     setPendingContacts((prev) => [...prev, newContact]);
-    // Simulate auto-accept after 4 seconds
     setTimeout(() => {
       setPendingContacts((prev) => prev.filter((c) => c.id !== id));
       setContacts((prev) => [{ ...newContact, pending: false, lastMsg: "Say hi! 👋", online: true }, ...prev]);
@@ -1056,6 +1349,42 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
         duration: 4000,
       });
     }, 4000);
+  };
+
+  const handleCreateGroup = (name: string, icon: string, memberIds: string[]) => {
+    const id = `g_${Date.now()}`;
+    const newGroup: Contact = {
+      id,
+      name: `${name} ${icon}`,
+      phone: "",
+      initials: getInitials(name),
+      gradient: pickGradient(name),
+      lastMsg: "Group created 🎉",
+      lastTime: "now",
+      lastTimestamp: Date.now(),
+      unread: 0,
+      online: false,
+      isGroup: true,
+      groupIcon: icon,
+      members: memberIds,
+      messages: [
+        {
+          id: "gm1",
+          text: `Group "${name}" created! 🎉 Say hello to everyone!`,
+          time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+          sent: false,
+          status: "delivered",
+          type: "text",
+        },
+      ],
+    };
+    setContacts((prev) => [newGroup, ...prev]);
+    toast(`Group "${name}" created!`, {
+      description: `${memberIds.length + 1} members added`,
+      duration: 3000,
+    });
+    // Open the new group chat immediately
+    setActiveChat(newGroup);
   };
 
   const acceptPending = (contact: Contact) => {
@@ -1087,10 +1416,18 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
               {totalUnread > 0 ? `${totalUnread} unread message${totalUnread > 1 ? "s" : ""}` : "All caught up!"}
             </p>
           </div>
-          <motion.button whileTap={{ scale: 0.88 }} onClick={() => setShowNewContact(true)}
-            className="w-10 h-10 gradient-primary rounded-2xl flex items-center justify-center text-primary-foreground shadow-glow">
-            <Plus size={18} />
-          </motion.button>
+          <div className="flex gap-2">
+            {/* New Group */}
+            <motion.button whileTap={{ scale: 0.88 }} onClick={() => setShowNewGroup(true)}
+              className="w-10 h-10 bg-muted rounded-2xl flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+              <Users size={18} />
+            </motion.button>
+            {/* New Contact */}
+            <motion.button whileTap={{ scale: 0.88 }} onClick={() => setShowNewContact(true)}
+              className="w-10 h-10 gradient-primary rounded-2xl flex items-center justify-center text-primary-foreground shadow-glow">
+              <Plus size={18} />
+            </motion.button>
+          </div>
         </div>
 
         {/* Pending requests banners */}
@@ -1109,7 +1446,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
         {/* Online strip */}
         <div className="mb-4 -mx-1">
           <div className="flex gap-3 overflow-x-auto px-1 pb-1 scrollbar-none">
-            {contacts.filter((c) => c.online).map((c) => (
+            {contacts.filter((c) => c.online && !c.isGroup).map((c) => (
               <button key={c.id} onClick={() => openChat(c)} className="flex flex-col items-center gap-1.5 shrink-0">
                 <div className="relative">
                   <div className={`w-12 h-12 rounded-2xl ${c.gradient} flex items-center justify-center text-white font-bold text-sm shadow-card overflow-hidden`}>
@@ -1135,15 +1472,22 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
                 onClick={() => openChat(contact)}
                 className="w-full flex items-center gap-3 p-3 rounded-2xl bg-card border border-border hover:shadow-elevated active:scale-[0.98] transition-all text-left shadow-card"
               >
-                {/* Avatar with photo */}
+                {/* Avatar */}
                 <div className="relative shrink-0">
                   <div className={`w-12 h-12 rounded-2xl ${contact.gradient} flex items-center justify-center text-white font-bold text-sm overflow-hidden`}>
-                    {contact.avatarUrl
-                      ? <img src={contact.avatarUrl} alt={contact.name} className="w-full h-full object-cover" />
-                      : contact.initials
+                    {contact.isGroup
+                      ? <span className="text-xl">{contact.groupIcon ?? "👥"}</span>
+                      : contact.avatarUrl
+                        ? <img src={contact.avatarUrl} alt={contact.name} className="w-full h-full object-cover" />
+                        : contact.initials
                     }
                   </div>
-                  {contact.online && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-background" />}
+                  {!contact.isGroup && contact.online && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-background" />}
+                  {contact.isGroup && (
+                    <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-primary rounded-full border-2 border-background flex items-center justify-center">
+                      <Users size={8} className="text-primary-foreground" />
+                    </span>
+                  )}
                   {contact.pending && (
                     <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 rounded-full border-2 border-background flex items-center justify-center">
                       <Hourglass size={8} className="text-white" />
@@ -1152,8 +1496,10 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-0.5">
-                    <p className={`text-[13.5px] ${contact.unread > 0 ? "font-bold text-foreground" : "font-semibold text-foreground/80"} truncate`}>{contact.name}</p>
-                    {/* Real relative timestamp */}
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <p className={`text-[13.5px] ${contact.unread > 0 ? "font-bold text-foreground" : "font-semibold text-foreground/80"} truncate`}>{contact.name}</p>
+                      {contact.isGroup && <Users size={10} className="text-muted-foreground shrink-0" />}
+                    </div>
                     <span className="text-[10px] text-muted-foreground shrink-0 ml-2 flex items-center gap-0.5">
                       <Clock size={9} className="opacity-60" />
                       {formatRelativeTime(contact.lastTimestamp)}
@@ -1183,9 +1529,22 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
       </div>
 
       {/* ── New Contact Sheet ── */}
-      {showNewContact && (
-        <NewContactSheet onClose={() => setShowNewContact(false)} onCreate={handleCreateContact} />
-      )}
+      <AnimatePresence>
+        {showNewContact && (
+          <NewContactSheet onClose={() => setShowNewContact(false)} onCreate={handleCreateContact} />
+        )}
+      </AnimatePresence>
+
+      {/* ── New Group Sheet ── */}
+      <AnimatePresence>
+        {showNewGroup && (
+          <NewGroupSheet
+            contacts={contacts}
+            onClose={() => setShowNewGroup(false)}
+            onCreate={handleCreateGroup}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ── Chat overlay ── */}
       <AnimatePresence>
@@ -1194,6 +1553,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
             transition={{ type: "spring", stiffness: 320, damping: 32 }} className="fixed inset-0 z-[60]">
             <ChatView
               contact={currentContact}
+              allContacts={contacts}
               messages={currentMessages}
               onBack={() => setActiveChat(null)}
               onSend={(text) => handleSend(activeChat.id, text)}
