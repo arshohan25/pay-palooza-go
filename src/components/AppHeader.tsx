@@ -1,15 +1,18 @@
-import { Bell, Search, Sun, Moon } from "lucide-react";
+import { Bell, Search, Sun, Moon, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import NotificationCenter from "@/components/NotificationCenter";
 import { INITIAL_NOTIFICATIONS } from "@/components/NotificationCenter";
 
-const AppHeader = () => {
+interface AppHeaderProps {
+  onSignOut?: () => void;
+}
+
+const AppHeader = ({ onSignOut }: AppHeaderProps) => {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted]       = useState(false);
   const [showNotif, setShowNotif]   = useState(false);
-  // Track unread count independently so badge survives panel close/reopen
   const [unreadCount, setUnreadCount] = useState(
     () => INITIAL_NOTIFICATIONS.filter((n) => !n.read).length,
   );
@@ -27,7 +30,7 @@ const AppHeader = () => {
         transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
         className="flex items-center justify-between py-1"
       >
-        {/* Left */}
+        {/* Left — greeting + name (red circle area: logout button embedded here) */}
         <div className="flex items-center gap-3">
           <div className="md:hidden w-10 h-10 gradient-primary rounded-2xl flex items-center justify-center text-primary-foreground font-bold text-lg shadow-glow shrink-0">
             ₿
@@ -98,6 +101,17 @@ const AppHeader = () => {
                 </motion.span>
               )}
             </AnimatePresence>
+          </motion.button>
+
+          {/* Logout — red circle area */}
+          <motion.button
+            whileTap={{ scale: 0.88 }}
+            onClick={onSignOut}
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-destructive/10 border border-destructive/20 shadow-card flex items-center justify-center text-destructive hover:bg-destructive/20 hover:shadow-elevated transition-all duration-150 tap-target"
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <LogOut size={15} strokeWidth={2} />
           </motion.button>
         </div>
       </motion.header>

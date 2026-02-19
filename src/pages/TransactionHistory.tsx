@@ -2,8 +2,7 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import {
-  Search, ArrowUpRight, ArrowDownLeft, Smartphone, Zap,
-  Wallet, CreditCard, X, CalendarIcon, SlidersHorizontal,
+  Search, X, CalendarIcon, SlidersHorizontal,
   CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw, Share2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -13,6 +12,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
+import {
+  TxSendIcon, TxReceiveIcon, TxCashOutIcon,
+  TxRechargeIcon, TxBillIcon, TxBankIcon, TxPaymentIcon,
+} from "@/components/QuickActionIcons";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type TxCategory = "all" | "send" | "cashout" | "payment" | "recharge" | "bill";
@@ -59,12 +62,20 @@ const CATEGORIES: { id: TxCategory; label: string }[] = [
   { id: "bill",     label: "Bill Pay" },
 ];
 
-const ICON_MAP: Record<Exclude<TxCategory, "all">, { icon: typeof ArrowUpRight; debitClass: string; creditClass: string }> = {
-  send:     { icon: ArrowUpRight, debitClass: "text-destructive bg-destructive/10", creditClass: "text-primary bg-primary/10" },
-  cashout:  { icon: Wallet,       debitClass: "text-rose-500 bg-rose-500/10",       creditClass: "text-primary bg-primary/10" },
-  payment:  { icon: CreditCard,   debitClass: "text-blue-500 bg-blue-500/10",       creditClass: "text-primary bg-primary/10" },
-  recharge: { icon: Smartphone,   debitClass: "text-accent bg-accent/10",           creditClass: "text-primary bg-primary/10" },
-  bill:     { icon: Zap,          debitClass: "text-orange-500 bg-orange-500/10",   creditClass: "text-primary bg-primary/10" },
+// Illustrated icon config for each transaction category
+const TX_ICON_MAP: Record<Exclude<TxCategory, "all">, {
+  Icon: () => JSX.Element;
+  ReceiveIcon: () => JSX.Element;
+  bg: string;
+  ring: string;
+  receiveBg: string;
+  receiveRing: string;
+}> = {
+  send:     { Icon: TxSendIcon,    ReceiveIcon: TxReceiveIcon, bg: "rgba(233,30,140,0.12)", ring: "1px solid rgba(233,30,140,0.2)",  receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
+  cashout:  { Icon: TxCashOutIcon, ReceiveIcon: TxReceiveIcon, bg: "rgba(76,175,80,0.12)",  ring: "1px solid rgba(76,175,80,0.2)",   receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
+  payment:  { Icon: TxPaymentIcon, ReceiveIcon: TxReceiveIcon, bg: "rgba(156,39,176,0.12)", ring: "1px solid rgba(156,39,176,0.2)", receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
+  recharge: { Icon: TxRechargeIcon,ReceiveIcon: TxReceiveIcon, bg: "rgba(0,188,212,0.12)",  ring: "1px solid rgba(0,188,212,0.2)",  receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
+  bill:     { Icon: TxBillIcon,    ReceiveIcon: TxReceiveIcon, bg: "rgba(255,193,7,0.12)",  ring: "1px solid rgba(255,193,7,0.2)",  receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
 };
 
 const relativeDate = (iso: string) => {
@@ -355,10 +366,11 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
             className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden w-full"
           >
             {filtered.map((tx, i) => {
-              const cfg      = ICON_MAP[tx.category];
-              const Icon     = cfg.icon;
+              const cfg      = TX_ICON_MAP[tx.category];
               const isCredit = tx.amount > 0;
-              const iconClass = isCredit ? cfg.creditClass : cfg.debitClass;
+              const IconComp = isCredit ? cfg.ReceiveIcon : cfg.Icon;
+              const bgStyle  = isCredit ? cfg.receiveBg : cfg.bg;
+              const ringStyle = isCredit ? cfg.receiveRing : cfg.ring;
 
               return (
                 <motion.button
@@ -367,11 +379,14 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.035, ease: [0.23, 1, 0.32, 1] }}
                   onClick={() => setSelectedTx(tx)}
-                  className="w-full flex items-center gap-3 px-3 py-3.5 hover:bg-muted/40 active:bg-muted/60 transition-colors border-b border-border/50 last:border-0 text-left"
+                  className="w-full flex items-center gap-3.5 px-4 py-3.5 hover:bg-muted/40 active:bg-muted/60 transition-colors border-b border-border/50 last:border-0 text-left"
                 >
-                  {/* Icon */}
-                  <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center shrink-0 ${iconClass}`}>
-                    {isCredit ? <ArrowDownLeft size={17} strokeWidth={2.2} /> : <Icon size={17} strokeWidth={2.2} />}
+                  {/* Illustrated icon circle */}
+                  <div
+                    className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
+                    style={{ background: bgStyle, outline: ringStyle }}
+                  >
+                    <IconComp />
                   </div>
 
                   {/* Info */}
@@ -400,10 +415,11 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
       {/* ── Transaction Detail Sheet ─────────────────────────────────────── */}
       <AnimatePresence>
         {selectedTx && (() => {
-          const cfg       = ICON_MAP[selectedTx.category];
-          const Icon      = cfg.icon;
+          const cfg       = TX_ICON_MAP[selectedTx.category];
           const isCredit  = selectedTx.amount > 0;
-          const iconClass = isCredit ? cfg.creditClass : cfg.debitClass;
+          const IconComp  = isCredit ? cfg.ReceiveIcon : cfg.Icon;
+          const bgStyle   = isCredit ? cfg.receiveBg : cfg.bg;
+          const ringStyle = isCredit ? cfg.receiveRing : cfg.ring;
           const txDate    = new Date(selectedTx.date);
           const txId      = `TXN${selectedTx.id.toUpperCase()}${Math.floor(txDate.getTime() / 1000)}`;
           const catLabel  = CATEGORIES.find((c) => c.id === selectedTx.category)?.label ?? selectedTx.category;
@@ -448,8 +464,11 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
                 <div className="px-5 pt-2 pb-8 max-h-[85vh] overflow-y-auto">
                   {/* Icon + amount */}
                   <div className="flex flex-col items-center mb-5">
-                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-3 ${iconClass}`}>
-                      {isCredit ? <ArrowDownLeft size={26} /> : <Icon size={26} />}
+                    <div
+                      className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3"
+                      style={{ background: bgStyle, outline: ringStyle }}
+                    >
+                      <IconComp />
                     </div>
                     <p className="text-[26px] font-bold text-foreground">
                       {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString()}

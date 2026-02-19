@@ -65,7 +65,7 @@ const Index = () => {
     if (activeTab === "home") {
       return (
         <div className="space-y-5">
-          <AppHeader />
+          <AppHeader onSignOut={() => setAuthenticated(false)} />
 
           {/* Pull-to-refresh indicator */}
           <AnimatePresence>
@@ -93,7 +93,7 @@ const Index = () => {
             </>
           ) : (
             <>
-              <BalanceCard />
+              <BalanceCard onAddMoney={() => setShowAddMoney(true)} />
               <QuickActions
                 onSendMoney={() => setShowSendMoney(true)}
                 onCashOut={() => setShowCashOut(true)}
