@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
-import { deductBalance } from "@/lib/balanceStore";
+import { recordTransaction, getBalance } from "@/lib/balanceStore";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -246,20 +246,28 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
   const handleConfirm = () => goTo("pin");
 
-  const handlePinConfirm = () => {
+  const handlePinConfirm = async () => {
     if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
     haptics.success();
     txnTime.current = new Date();
     const amtVal = parseFloat(amount) || 0;
     const feeVal = calcSendFee(amtVal);
-    deductBalance(amtVal + feeVal);
+    await recordTransaction({
+      type: "send",
+      amount: amtVal,
+      fee: feeVal,
+      recipientPhone: recipient?.phone,
+      recipientName: recipient?.name,
+      reference: txnId.current,
+      description: note || undefined,
+    });
     onSuccess?.(amtVal);
     showTxnToast({ type: "Send Money", amount: `৳${amtVal.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-send" });
     setDirection(1);
     setStep("success");
   };
 
-  const BALANCE = 12450.75;
+  const BALANCE = getBalance();
   const amtNum = parseFloat(amount) || 0;
   const fee    = calcSendFee(amtNum);
   const feeFromBalance = Math.min(fee, BALANCE);

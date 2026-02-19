@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
-import { deductBalance } from "@/lib/balanceStore";
+import { recordTransaction } from "@/lib/balanceStore";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -385,12 +385,20 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     goTo("pin");
   };
 
-  const handlePinConfirm = () => {
+  const handlePinConfirm = async () => {
     if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
     haptics.success();
     txnTime.current = new Date();
     txnId.current   = generateTxnId();
-    deductBalance(effectivePrice);
+    await recordTransaction({
+      type: "recharge",
+      amount: effectivePrice,
+      fee: 0,
+      recipientPhone: phone,
+      recipientName: detectedOp?.name,
+      reference: txnId.current,
+      description: selectedPack ? selectedPack.name : `Recharge ৳${effectivePrice}`,
+    });
     showTxnToast({ type: "Mobile Recharge", amount: `৳${effectivePrice.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-accent" });
     setDirection(1);
     setStep("success");
