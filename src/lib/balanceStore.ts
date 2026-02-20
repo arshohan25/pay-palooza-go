@@ -101,6 +101,7 @@ export async function transferMoney(params: {
   reference?: string;
   recipientName?: string;
   recipientType?: "receive" | "cashout" | "cashin";
+  commission?: number;
 }): Promise<{ success: boolean; recipientFound: boolean; senderBalance: number }> {
   const { data, error } = await supabase.rpc("transfer_money", {
     p_recipient_phone: params.recipientPhone,
@@ -111,6 +112,7 @@ export async function transferMoney(params: {
     p_reference: params.reference ?? null,
     p_recipient_name: params.recipientName ?? null,
     p_recipient_type: params.recipientType ?? "receive",
+    p_commission: params.commission ?? 0,
   });
 
   if (error) throw error;

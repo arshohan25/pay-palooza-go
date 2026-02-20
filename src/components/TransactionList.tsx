@@ -83,6 +83,7 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
     { icon: Tag,      label: "Type",           value: display.label,                         copy: false },
     { icon: FileText, label: "Description",    value: tx.description || display.label,       copy: false },
     { icon: Clock,    label: "Date & Time",    value: format(txDate, "dd MMM yyyy, h:mm a"), copy: false },
+    ...(tx.commission > 0 ? [{ icon: Tag, label: "Commission", value: `৳${tx.commission.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, copy: false }] : []),
   ];
 
   return (

@@ -195,6 +195,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     txnTime.current = new Date();
     const amtVal = parseFloat(amount) || 0;
     const feeVal = amtVal * 0.0119;
+    const commissionVal = amtVal * 0.0049;
     try {
       await transferMoney({
         recipientPhone: agent?.agentId ?? "",
@@ -205,6 +206,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
         description: `Cash Out at ${agent?.name}`,
         reference: txnId.current,
         recipientType: "cashin",
+        commission: commissionVal,
       });
     } catch (e: any) {
       setError(e.message || "Cash out failed");

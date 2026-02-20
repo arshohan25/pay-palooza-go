@@ -30,6 +30,7 @@ export interface DbTransaction {
   type: "send" | "receive" | "cashout" | "cashin" | "payment" | "recharge" | "paybill" | "addmoney";
   amount: number;
   fee: number;
+  commission: number;
   balance_after: number | null;
   recipient_phone: string | null;
   recipient_name: string | null;
