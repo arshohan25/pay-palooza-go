@@ -8,7 +8,7 @@ import {
   RefreshCw, TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
-import { getBalance, recordTransaction, addBalance, onBalanceChange } from "@/lib/balanceStore";
+import { getBalance, recordTransaction, addBalance, onBalanceChange, transferMoney } from "@/lib/balanceStore";
 import { fireSuccessConfetti } from "@/lib/confetti";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -673,14 +673,20 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
   const handleCheckout = async () => {
     if (payMethod === "wallet") {
       if (cartTotal > walletBalance) { toast.error("Insufficient wallet balance"); return; }
-      await recordTransaction({
-        type: "payment",
-        amount: cartTotal,
-        fee: 0,
-        recipientName: "EasyPay Shop",
-        description: `Shop order: ${cart.map(i => i.name).join(", ")}`,
-        reference: `ORD-${Date.now().toString(36).toUpperCase().slice(-6)}`,
-      });
+      try {
+        await transferMoney({
+          recipientPhone: "SHOP-EASYPAY",
+          amount: cartTotal,
+          fee: 0,
+          type: "payment",
+          recipientName: "EasyPay Shop",
+          description: `Shop order: ${cart.map(i => i.name).join(", ")}`,
+          reference: `ORD-${Date.now().toString(36).toUpperCase().slice(-6)}`,
+        });
+      } catch (e: any) {
+        toast.error(e.message ?? "Payment failed");
+        return;
+      }
     }
     const num = `ORD-${Date.now().toString(36).toUpperCase().slice(-6)}`;
     const dateStr = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });

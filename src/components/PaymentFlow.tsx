@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
-import { recordTransaction } from "@/lib/balanceStore";
+import { transferMoney } from "@/lib/balanceStore";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -181,14 +181,21 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
     haptics.success();
     txnTime.current = new Date();
     const amtVal = parseFloat(amount) || 0;
-    await recordTransaction({
-      type: "payment",
-      amount: amtVal,
-      fee: 0,
-      recipientName: merchant?.name,
-      description: note || `Payment to ${merchant?.name}`,
-      reference: txnId.current,
-    });
+    try {
+      await transferMoney({
+        recipientPhone: merchant?.merchantId ?? "",
+        amount: amtVal,
+        fee: 0,
+        type: "payment",
+        recipientName: merchant?.name,
+        description: note || `Payment to ${merchant?.name}`,
+        reference: txnId.current,
+      });
+    } catch (e: any) {
+      setError(e.message ?? "Payment failed");
+      setProcessing(false);
+      return;
+    }
     showTxnToast({ type: "Payment", amount: `৳${amtVal.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-payment" });
     setDirection(1);
     setStep("success");
