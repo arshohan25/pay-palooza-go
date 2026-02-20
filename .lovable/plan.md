@@ -1,57 +1,42 @@
 
 
-## Connect Add Money, Pay Bill, and Payment flows to the database
+## Returning User Login Improvements
 
-### What changes
-Three transaction flows currently use the old client-only `addBalance`/`deductBalance` functions. They need to be updated to use `recordTransaction` from `balanceStore`, which writes to both the `profiles` and `transactions` tables in the database.
+### What Changes
 
-### Files to modify
+**1. Hide "Create Account" for returning users on the login PIN screen**
 
-**1. `src/components/AddMoneyFlow.tsx`**
-- Replace `import { addBalance }` with `import { recordTransaction }`
-- In `handlePinConfirm`, replace `addBalance(addAmt)` with:
-  ```typescript
-  await recordTransaction({
-    type: "addmoney",
-    amount: addAmt,
-    fee: 0,
-    description: source === "bank" ? `Bank Transfer via ${bank?.name}` : "Card Payment",
-    reference: txnId.current,
-  });
-  ```
-- Make `handlePinConfirm` async
+Currently, when a returning user reaches the login PIN screen, they see a "Forgot PIN?" link and a back button that leads to the landing page where "Create an account" is still accessible. After a successful login, the `DEVICE_KEY` is stored in localStorage, marking them as a returning user.
 
-**2. `src/components/PayBillFlow.tsx`**
-- Replace `import { deductBalance }` with `import { recordTransaction }`
-- In `handlePinConfirm`, replace `deductBalance(dueAmt)` with:
-  ```typescript
-  await recordTransaction({
-    type: "paybill",
-    amount: dueAmt,
-    fee: 0,
-    recipientName: `${provider?.name} - ${billType?.name}`,
-    description: `${billType?.name} bill - ${provider?.name} (${accountNo})`,
-    reference: txnId.current,
-  });
-  ```
-- Make `handlePinConfirm` async
+The change will:
+- On the **landing page** for returning users (`!isNewUser`), remove the "New user? Create an account" secondary link. Only the "Log In to Wallet" button and "Forgot PIN?" will remain.
+- On the **login PIN screen**, keep only "Forgot PIN?" (already the case -- no create account link there).
 
-**3. `src/components/PaymentFlow.tsx`**
-- Replace `import { deductBalance }` with `import { recordTransaction }`
-- In `handlePinConfirm`, replace `deductBalance(amtVal)` with:
-  ```typescript
-  await recordTransaction({
-    type: "payment",
-    amount: amtVal,
-    fee: 0,
-    recipientName: merchant?.name,
-    description: note || `Payment to ${merchant?.name}`,
-    reference: txnId.current,
-  });
-  ```
-- Make `handlePinConfirm` async
+**2. Lock account after 5 consecutive wrong PIN attempts**
 
-### Technical notes
-- The `recordTransaction` function already handles both the balance update in `profiles` and the transaction insert in `transactions`, plus optimistic local state updates and listener notifications.
-- No database schema changes are needed -- the `txn_type` enum already includes `addmoney`, `paybill`, and `payment`.
-- The pattern exactly matches what was done for SendMoneyFlow, CashOutFlow, and MobileRechargeFlow.
+Add a lockout mechanism that blocks login attempts for a cooldown period after 5 consecutive failed PINs.
+
+---
+
+### Technical Details
+
+**File: `src/pages/AuthPage.tsx`**
+
+**Change 1 -- Hide "Create Account" for returning users:**
+- In the landing page section (lines 617-626), when `!isNewUser` (returning user), instead of showing "New user? Create an account", show nothing or only a "Forgot PIN?" link.
+- The returning user flow already goes straight to `login_pin`, so the landing acts as a brief pass-through. The secondary "Create an account" link will be removed for returning users.
+
+**Change 2 -- Account lockout after 5 failed attempts:**
+- Add state: `failedAttempts` (number, default 0) and `lockUntil` (timestamp or null).
+- Store lockout state in `localStorage` keyed by phone number so it persists across page refreshes.
+- In `handleLoginPin`, before attempting sign-in:
+  - Check if currently locked (lockUntil > Date.now()). If so, show an error with remaining time and return early.
+  - On failed PIN attempt, increment `failedAttempts`. If it reaches 5, set `lockUntil` to `Date.now() + 5 * 60 * 1000` (5-minute lockout).
+  - On successful login, reset `failedAttempts` and clear `lockUntil`.
+- Show a countdown timer in the error message when locked (e.g., "Account locked. Try again in 4:32").
+- Add translations for lockout messages in both English and Bangla.
+
+**Lockout storage keys:**
+- `mfs_lock_attempts_{phone}` -- number of failed attempts
+- `mfs_lock_until_{phone}` -- timestamp when lock expires
+
