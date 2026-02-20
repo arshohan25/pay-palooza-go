@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import QrScannerModal from "@/components/QrScannerModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw } from "lucide-react";
 import { clearTxnNotifs } from "@/lib/txnNotifStore";
@@ -38,6 +39,10 @@ const Index = () => {
   const [replayOnboarding, setReplayOnboarding] = useState(false);
   const [activeTab, setActiveTab]         = useState("home");
   const handleTabChange = useCallback((tab: string) => {
+    if (tab === "scan") {
+      setShowScanPay(true);
+      return;
+    }
     setActiveTab(tab);
     if (tab === "history") clearTxnNotifs();
   }, []);
@@ -50,6 +55,7 @@ const Index = () => {
   const [showPayBill, setShowPayBill]     = useState(false);
   const [showAddMoney, setShowAddMoney]   = useState(false);
   const [showShop, setShowShop]           = useState(false);
+  const [showScanPay, setShowScanPay]     = useState(false);
   const [isLoading, setIsLoading]         = useState(true);
   const [isPulling, setIsPulling]         = useState(false);
   const [refreshKey, setRefreshKey]       = useState(0);
@@ -216,6 +222,22 @@ const Index = () => {
       {showPayBill   && <PayBillFlow   onClose={() => setShowPayBill(false)} />}
       {showAddMoney  && <AddMoneyFlow  onClose={() => setShowAddMoney(false)} />}
       {showShop      && <ShopFlow      onClose={() => setShowShop(false)} />}
+
+      {/* Scan & Pay QR flow */}
+      <QrScannerModal
+        open={showScanPay}
+        onClose={() => setShowScanPay(false)}
+        title="Scan & Pay"
+        onScan={(result) => {
+          setShowScanPay(false);
+          if (result.startsWith("MRC-") || result.startsWith("MRC")) {
+            setShowPayment(true);
+          } else {
+            setSendMoneyPrefilledPhone(result);
+            setShowSendMoney(true);
+          }
+        }}
+      />
 
       {/* PWA install prompt */}
       <InstallPrompt />
