@@ -135,7 +135,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   const [inputType, setInputType] = useState<RecipientType | null>(prefilledPhone ? "phone" : null);
   const [amount, setAmount]       = useState("");
   const [note, setNote]           = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
+  // searchQuery removed – input field doubles as search
   const [error, setError]         = useState("");
   const [pin, setPin]             = useState("");
   const [showScanner, setShowScanner] = useState(false);
@@ -169,7 +169,11 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   };
 
   const filteredContacts = RECENT_CONTACTS.filter(
-    (c) => c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.phone.includes(searchQuery.replace(/\D/g, "")),
+    (c) => {
+      if (!inputVal.trim()) return true;
+      const q = inputVal.trim().toLowerCase();
+      return c.name.toLowerCase().includes(q) || c.phone.includes(q.replace(/\D/g, ""));
+    },
   );
 
   const handleSelectContact = (c: Contact) => {
@@ -180,8 +184,10 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   };
 
   const handleInputChange = (val: string) => {
-    setInputVal(val);
-    setInputType(detectRecipientType(val));
+    // Limit: 13 chars max (MFS-XXXX-XXXX) or 11 digits for phone
+    const trimmed = val.slice(0, 13);
+    setInputVal(trimmed);
+    setInputType(detectRecipientType(trimmed));
     setError("");
   };
 
@@ -331,16 +337,18 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
             {step === "recipient" && (
               <div className="px-4 pt-6 pb-32 space-y-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">Mobile Number or Wallet ID</label>
+                  <label className="text-sm font-semibold text-foreground">Search by Name, Number or Wallet ID</label>
                   <div className="relative">
-                    <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       type="text"
                       inputMode="text"
-                      placeholder="01XXXXXXXXX or MFS-XXXX-XXXX"
+                      placeholder="Name, 01XXXXXXXXX or MFS-XXXX-XXXX"
                       value={inputVal}
+                      maxLength={13}
                       onChange={(e) => handleInputChange(e.target.value)}
                       className="pl-9 pr-12 h-12 text-base bg-card border-border"
+                      autoFocus
                     />
                     <button
                       onClick={() => setShowScanner(true)}
@@ -394,15 +402,6 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   <div className="flex-1 h-px bg-border" />
                 </div>
 
-                <div className="relative">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Search name or number…"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 bg-card border-border"
-                  />
-                </div>
 
                 <div className="space-y-2">
                   {filteredContacts.map((c) => (
