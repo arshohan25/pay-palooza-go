@@ -1,5 +1,24 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { showTxnToast } from "@/components/TxnToast";
+
+const TXN_LABELS: Record<string, string> = {
+  send: "Send Money",
+  cashout: "Cash Out",
+  payment: "Payment",
+  recharge: "Recharge",
+  paybill: "Bill Pay",
+  addmoney: "Add Money",
+};
+
+const TXN_GRADIENTS: Record<string, string> = {
+  send: "bg-gradient-to-b from-pink-500 to-rose-500",
+  cashout: "bg-gradient-to-b from-green-500 to-emerald-500",
+  payment: "bg-gradient-to-b from-purple-500 to-violet-500",
+  recharge: "bg-gradient-to-b from-cyan-500 to-teal-500",
+  paybill: "bg-gradient-to-b from-amber-500 to-yellow-500",
+  addmoney: "bg-gradient-to-b from-blue-500 to-indigo-500",
+};
 
 export interface DbTransaction {
   id: string;
@@ -18,8 +37,10 @@ export interface DbTransaction {
 export function useTransactions(limit?: number, refreshKey?: number) {
   const [transactions, setTransactions] = useState<DbTransaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const knownIds = useRef(new Set<string>());
+  const initialLoad = useRef(true);
 
-  const fetch = useCallback(async () => {
+  const fetchTxns = useCallback(async () => {
     setLoading(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) {
@@ -37,19 +58,23 @@ export function useTransactions(limit?: number, refreshKey?: number) {
     if (limit) query = query.limit(limit);
 
     const { data } = await query;
-    setTransactions((data as DbTransaction[]) ?? []);
+    const txns = (data as DbTransaction[]) ?? [];
+    // Seed known IDs on first load so we don't toast existing transactions
+    if (initialLoad.current) {
+      txns.forEach((t) => knownIds.current.add(t.id));
+      initialLoad.current = false;
+    }
+    setTransactions(txns);
     setLoading(false);
   }, [limit]);
 
-  useEffect(() => { fetch(); }, [fetch, refreshKey]);
+  useEffect(() => { fetchTxns(); }, [fetchTxns, refreshKey]);
 
-  // Realtime subscription — auto-refetch on any change to user's transactions
+  // Realtime subscription — auto-refetch + toast on new inserts
   useEffect(() => {
-    let userId: string | null = null;
-
     const setup = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      userId = session?.user?.id ?? null;
+      const userId = session?.user?.id;
       if (!userId) return;
 
       const channel = supabase
@@ -57,12 +82,34 @@ export function useTransactions(limit?: number, refreshKey?: number) {
         .on(
           "postgres_changes",
           {
-            event: "*",
+            event: "INSERT",
             schema: "public",
             table: "transactions",
             filter: `user_id=eq.${userId}`,
           },
-          () => { fetch(); }
+          (payload) => {
+            const newTxn = payload.new as DbTransaction;
+            // Only toast if we haven't seen this ID before
+            if (!knownIds.current.has(newTxn.id)) {
+              knownIds.current.add(newTxn.id);
+              showTxnToast({
+                type: TXN_LABELS[newTxn.type] ?? newTxn.type,
+                amount: `৳${newTxn.amount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
+                gradient: TXN_GRADIENTS[newTxn.type] ?? "bg-gradient-to-b from-gray-500 to-gray-600",
+              });
+            }
+            fetchTxns();
+          }
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "transactions",
+            filter: `user_id=eq.${userId}`,
+          },
+          () => { fetchTxns(); }
         )
         .subscribe();
 
@@ -75,7 +122,7 @@ export function useTransactions(limit?: number, refreshKey?: number) {
     return () => {
       if (channel) supabase.removeChannel(channel);
     };
-  }, [fetch]);
+  }, [fetchTxns]);
 
-  return { transactions, loading, refetch: fetch };
+  return { transactions, loading, refetch: fetchTxns };
 }
