@@ -46,7 +46,7 @@ const RECENT_CONTACTS: Contact[] = [
 const QUICK_AMOUNTS = [100, 200, 500, 1000, 2000, 5000];
 
 // ─── Validation helpers ───────────────────────────────────────────────────────
-const WALLET_ID_RE = /^MFS-[0-9A-F]{4}-[0-9A-F]{4}$/i;
+const WALLET_ID_RE = /^MFS-[A-Z]{4}-[A-Z]{4}$/i;
 const BD_PHONE_RE  = /^(?:\+?88)?01[3-9]\d{8}$/;
 
 const normalizePhone = (raw: string) => raw.replace(/[\s\-()]/g, "");
@@ -184,7 +184,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   };
 
   const handleInputChange = (val: string) => {
-    // Limit: 13 chars max (MFS-XXXX-XXXX) or 11 digits for phone
+    // Cap at 13 characters: supports 11-digit phone or 13-char wallet ID (MFS-ABCD-EFGH)
     const trimmed = val.slice(0, 13);
     setInputVal(trimmed);
     setInputType(detectRecipientType(trimmed));
@@ -195,7 +195,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     const val = inputVal.trim();
     const type = detectRecipientType(val);
     if (!type) {
-      setError("Enter a valid 11-digit mobile number or Wallet ID (MFS-XXXX-XXXX).");
+      setError("Enter a valid 11-digit mobile number or Wallet ID (MFS-ABCD-EFGH).");
       return;
     }
     const found = RECENT_CONTACTS.find((c) => {
@@ -343,7 +343,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                     <Input
                       type="text"
                       inputMode="text"
-                      placeholder="Name, 01XXXXXXXXX or MFS-XXXX-XXXX"
+                      placeholder="Name, 01XXXXXXXXX or MFS-ABCD-EFGH"
                       value={inputVal}
                       maxLength={13}
                       onChange={(e) => handleInputChange(e.target.value)}
@@ -368,7 +368,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                         </span>
                       ) : (
                         <span className="text-[11px] text-muted-foreground">
-                          Enter valid 11-digit number or MFS-XXXX-XXXX
+                          Enter valid 11-digit number or MFS-ABCD-EFGH
                         </span>
                       )}
                     </div>
