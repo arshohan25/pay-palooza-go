@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
 import UserQrModal from "@/components/UserQrModal";
 import WalletShareSheet from "@/components/WalletShareSheet";
-import { getBalance, onBalanceChange, fetchBalance } from "@/lib/balanceStore";
+import { getBalance, onBalanceChange, fetchBalance, setupBalanceRealtime } from "@/lib/balanceStore";
 import { AddMoneyIcon } from "@/components/QuickActionIcons";
 
 const REGISTERED_KEY = "mfs_registered_phone";
@@ -44,9 +44,10 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
   const motionBalance = useMotionValue(getBalance());
   const [displayBalance, setDisplayBalance] = useState(getBalance());
 
-  // Fetch real balance from DB on mount
+  // Fetch real balance from DB on mount + setup realtime
   useEffect(() => {
     fetchBalance();
+    setupBalanceRealtime();
   }, []);
 
   useEffect(() => {

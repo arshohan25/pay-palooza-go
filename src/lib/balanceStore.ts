@@ -61,6 +61,36 @@ export const onBalanceChange = (fn: (b: number) => void) => {
   return () => listeners.delete(fn);
 };
 
+/** Subscribe to realtime balance changes from the DB */
+let realtimeSetup = false;
+export function setupBalanceRealtime() {
+  if (realtimeSetup) return;
+  realtimeSetup = true;
+
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (!session?.user) return;
+    supabase
+      .channel("balance-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `user_id=eq.${session.user.id}`,
+        },
+        (payload) => {
+          const newBal = parseFloat(String(payload.new.balance));
+          if (!isNaN(newBal) && newBal !== balance) {
+            balance = newBal;
+            notify();
+          }
+        }
+      )
+      .subscribe();
+  });
+}
+
 /** Record a transaction in the DB and update balance */
 export async function recordTransaction(params: {
   type: "send" | "cashout" | "payment" | "recharge" | "paybill" | "addmoney";
