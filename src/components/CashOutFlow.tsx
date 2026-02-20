@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
-import { recordTransaction, getBalance } from "@/lib/balanceStore";
+import { transferMoney, getBalance } from "@/lib/balanceStore";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -195,14 +195,21 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     txnTime.current = new Date();
     const amtVal = parseFloat(amount) || 0;
     const feeVal = amtVal * 0.0119;
-    await recordTransaction({
-      type: "cashout",
-      amount: amtVal,
-      fee: feeVal,
-      recipientName: agent?.name,
-      recipientPhone: agent?.agentId,
-      reference: txnId.current,
-    });
+    try {
+      await transferMoney({
+        recipientPhone: agent?.agentId ?? "",
+        amount: amtVal,
+        fee: feeVal,
+        type: "send",
+        recipientName: agent?.name,
+        description: `Cash Out at ${agent?.name}`,
+        reference: txnId.current,
+      });
+    } catch (e: any) {
+      setError(e.message || "Cash out failed");
+      setProcessing(false);
+      return;
+    }
     showTxnToast({ type: "Cash Out", amount: `৳${amtVal.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-cashout" });
     setDirection(1);
     setStep("success");
