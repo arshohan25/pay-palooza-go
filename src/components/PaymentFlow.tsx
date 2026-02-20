@@ -173,8 +173,11 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
     goTo("pin");
   };
 
+  const [processing, setProcessing] = useState(false);
   const handlePinConfirm = async () => {
     if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
+    if (processing) return;
+    setProcessing(true);
     haptics.success();
     txnTime.current = new Date();
     const amtVal = parseFloat(amount) || 0;
@@ -421,7 +424,7 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
                   onConfirm={handlePinConfirm}
                   label="Slide to Pay"
                   gradient="gradient-payment"
-                  disabled={pin.length < 4}
+                  disabled={pin.length < 4 || processing}
                   pinComplete={pin.length === 4}
                 />
               </div>
