@@ -15,7 +15,7 @@ export interface DbTransaction {
   created_at: string;
 }
 
-export function useTransactions(limit?: number) {
+export function useTransactions(limit?: number, refreshKey?: number) {
   const [transactions, setTransactions] = useState<DbTransaction[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -41,7 +41,7 @@ export function useTransactions(limit?: number) {
     setLoading(false);
   }, [limit]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { fetch(); }, [fetch, refreshKey]);
 
   return { transactions, loading, refetch: fetch };
 }

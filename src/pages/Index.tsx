@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw } from "lucide-react";
 import { clearTxnNotifs } from "@/lib/txnNotifStore";
+import { fetchBalance } from "@/lib/balanceStore";
 import { useAuth } from "@/hooks/use-auth";
 import AppHeader from "@/components/AppHeader";
 import BalanceCard from "@/components/BalanceCard";
@@ -51,6 +52,7 @@ const Index = () => {
   const [showShop, setShowShop]           = useState(false);
   const [isLoading, setIsLoading]         = useState(true);
   const [isPulling, setIsPulling]         = useState(false);
+  const [refreshKey, setRefreshKey]       = useState(0);
   const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -62,10 +64,12 @@ const Index = () => {
     if (isLoading) return;
     setIsPulling(true);
     setIsLoading(true);
+    fetchBalance();
+    setRefreshKey((k) => k + 1);
     setTimeout(() => {
       setIsLoading(false);
       setIsPulling(false);
-    }, 1600);
+    }, 1200);
   }, [isLoading]);
 
   usePullToRefresh({ onRefresh: triggerRefresh, threshold: 70 });
@@ -114,7 +118,7 @@ const Index = () => {
                 onShop={() => setShowShop(true)}
               />
               <PromoCard />
-              <TransactionList onSeeAll={() => handleTabChange("history")} />
+              <TransactionList onSeeAll={() => handleTabChange("history")} refreshKey={refreshKey} />
             </>
           )}
         </div>
