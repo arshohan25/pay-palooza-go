@@ -21,4 +21,7 @@ export const haptics = {
 
   /** Error shake */
   error: () => vibrate([20, 30, 20]),
+
+  /** Gentle notification pulse — realtime updates */
+  notify: () => vibrate([15, 40, 15]),
 };
