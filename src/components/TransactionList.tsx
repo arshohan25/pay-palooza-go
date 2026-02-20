@@ -59,6 +59,7 @@ function relativeDate(iso: string) {
 
 interface TransactionListProps {
   onSeeAll?: () => void;
+  refreshKey?: number;
 }
 
 const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: () => void }) => {
@@ -157,8 +158,8 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
   );
 };
 
-const TransactionList = ({ onSeeAll }: TransactionListProps) => {
-  const { transactions, loading } = useTransactions(5);
+const TransactionList = ({ onSeeAll, refreshKey }: TransactionListProps) => {
+  const { transactions, loading } = useTransactions(5, refreshKey);
   const [selectedTx, setSelectedTx] = useState<DbTransaction | null>(null);
 
   return (
