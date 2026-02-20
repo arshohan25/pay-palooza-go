@@ -16,7 +16,7 @@ const TXN_LABELS: Record<string, string> = {
 const TXN_GRADIENTS: Record<string, string> = {
   send: "bg-gradient-to-b from-pink-500 to-rose-500",
   receive: "bg-gradient-to-b from-emerald-500 to-green-500",
-  cashout: "bg-gradient-to-b from-green-500 to-emerald-500",
+  cashout: "bg-gradient-to-b from-orange-500 to-amber-500",
   payment: "bg-gradient-to-b from-purple-500 to-violet-500",
   recharge: "bg-gradient-to-b from-cyan-500 to-teal-500",
   paybill: "bg-gradient-to-b from-amber-500 to-yellow-500",
