@@ -52,7 +52,7 @@ const TX_ICON_MAP: Record<Exclude<TxCategory, "all">, {
 }> = {
   send:     { Icon: TxSendIcon,    ReceiveIcon: TxReceiveIcon, bg: "rgba(233,30,140,0.12)", ring: "1px solid rgba(233,30,140,0.2)",  receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
   receive:  { Icon: TxReceiveIcon, ReceiveIcon: TxReceiveIcon, bg: "rgba(76,175,80,0.12)",  ring: "1px solid rgba(76,175,80,0.2)",   receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
-  cashout:  { Icon: TxCashOutIcon, ReceiveIcon: TxReceiveIcon, bg: "rgba(76,175,80,0.12)",  ring: "1px solid rgba(76,175,80,0.2)",   receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
+  cashout:  { Icon: TxCashOutIcon, ReceiveIcon: TxCashOutIcon, bg: "rgba(255,152,0,0.12)",  ring: "1px solid rgba(255,152,0,0.2)",   receiveBg: "rgba(255,152,0,0.12)",  receiveRing: "1px solid rgba(255,152,0,0.2)"  },
   payment:  { Icon: TxPaymentIcon, ReceiveIcon: TxReceiveIcon, bg: "rgba(156,39,176,0.12)", ring: "1px solid rgba(156,39,176,0.2)", receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
   recharge: { Icon: TxRechargeIcon,ReceiveIcon: TxReceiveIcon, bg: "rgba(0,188,212,0.12)",  ring: "1px solid rgba(0,188,212,0.2)",  receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
   paybill:  { Icon: TxBillIcon,    ReceiveIcon: TxReceiveIcon, bg: "rgba(255,193,7,0.12)",  ring: "1px solid rgba(255,193,7,0.2)",  receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
