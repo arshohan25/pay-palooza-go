@@ -17,16 +17,16 @@ export const isBalanceLoaded = () => loaded;
 
 /** Fetch the real balance from DB for the current user */
 export async function fetchBalance(): Promise<number> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return balance;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) return balance;
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .select("balance")
-    .eq("user_id", user.id)
+    .eq("user_id", session.user.id)
     .single();
 
-  if (data) {
+  if (data && !error) {
     balance = parseFloat(String(data.balance));
     loaded = true;
     notify();
@@ -36,8 +36,8 @@ export async function fetchBalance(): Promise<number> {
 
 /** Update balance in DB and locally */
 async function updateDbBalance(newBalance: number): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) return;
 
   balance = Math.max(0, newBalance);
   notify(); // optimistic local update
@@ -45,7 +45,7 @@ async function updateDbBalance(newBalance: number): Promise<void> {
   await supabase
     .from("profiles")
     .update({ balance })
-    .eq("user_id", user.id);
+    .eq("user_id", session.user.id);
 }
 
 export const deductBalance = async (amount: number) => {
@@ -71,8 +71,8 @@ export async function recordTransaction(params: {
   description?: string;
   reference?: string;
 }): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) return;
 
   const fee = params.fee ?? 0;
   const totalDeduction = params.type === "addmoney" ? 0 : params.amount + fee;
@@ -87,11 +87,11 @@ export async function recordTransaction(params: {
   await supabase
     .from("profiles")
     .update({ balance })
-    .eq("user_id", user.id);
+    .eq("user_id", session.user.id);
 
   // Insert transaction record
   await supabase.from("transactions").insert({
-    user_id: user.id,
+    user_id: session.user.id,
     type: params.type,
     amount: params.amount,
     fee,
