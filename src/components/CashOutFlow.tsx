@@ -26,6 +26,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import QrScannerModal from "@/components/QrScannerModal";
 import { useSavedBanks } from "@/hooks/use-saved-banks";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Step = "method" | "agent" | "bank" | "amount" | "pin" | "success";
@@ -142,6 +152,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const [accountNumber, setAccountNumber] = useState("");
   const [accountHolder, setAccountHolder] = useState("");
   const { accounts: savedBanks, save: saveBank, remove: removeBank } = useSavedBanks();
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const txnTime = useRef(new Date());
   const txnId   = useRef(`TXN${Date.now().toString().slice(-8)}`);
 
@@ -500,7 +511,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                             </div>
                           </button>
                           <button
-                            onClick={() => removeBank(sb.id)}
+                            onClick={() => setDeleteConfirmId(sb.id)}
                             className="w-9 h-9 rounded-xl bg-destructive/10 flex items-center justify-center text-destructive hover:bg-destructive/20 transition-colors shrink-0"
                           >
                             <Trash2 size={14} />
@@ -953,6 +964,29 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
           ],
         }}
       />
+
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <AlertDialogContent className="rounded-2xl max-w-[90vw]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove saved account?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This bank account will be removed from your saved list. You can always add it again later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteConfirmId) removeBank(deleteConfirmId);
+                setDeleteConfirmId(null);
+              }}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
