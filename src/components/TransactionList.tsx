@@ -11,6 +11,7 @@ import {
   TxBillIcon,
   TxBankIcon,
   TxPaymentIcon,
+  TxBankTransferIcon,
 } from "./QuickActionIcons";
 
 // Icon/color config per transaction type
@@ -28,6 +29,7 @@ const TX_CONFIG: Record<string, {
   recharge: { Icon: TxRechargeIcon, bg: "rgba(0,188,212,0.12)",  ring: "1px solid rgba(0,188,212,0.2)",  label: "Recharge" },
   paybill:  { Icon: TxBillIcon,     bg: "rgba(255,193,7,0.12)",  ring: "1px solid rgba(255,193,7,0.2)",  label: "Bill Pay" },
   addmoney: { Icon: TxBankIcon,     bg: "rgba(25,118,210,0.12)", ring: "1px solid rgba(25,118,210,0.2)", label: "Add Money" },
+  banktransfer: { Icon: TxBankTransferIcon, bg: "rgba(63,81,181,0.12)", ring: "1px solid rgba(63,81,181,0.2)", label: "Bank Transfer" },
 };
 
 const RECEIVE_CONFIG = {

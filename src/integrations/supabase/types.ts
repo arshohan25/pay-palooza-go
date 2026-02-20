@@ -47,6 +47,36 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_bank_accounts: {
+        Row: {
+          account_holder: string
+          account_number: string
+          bank_name: string
+          created_at: string
+          id: string
+          short_code: string
+          user_id: string
+        }
+        Insert: {
+          account_holder: string
+          account_number: string
+          bank_name: string
+          created_at?: string
+          id?: string
+          short_code: string
+          user_id: string
+        }
+        Update: {
+          account_holder?: string
+          account_number?: string
+          bank_name?: string
+          created_at?: string
+          id?: string
+          short_code?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number
@@ -152,6 +182,7 @@ export type Database = {
         | "addmoney"
         | "receive"
         | "cashin"
+        | "banktransfer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -289,6 +320,7 @@ export const Constants = {
         "addmoney",
         "receive",
         "cashin",
+        "banktransfer",
       ],
     },
   },

@@ -15,11 +15,11 @@ import ShareReceiptSheet from "@/components/ShareReceiptSheet";
 import { useTransactions, DbTransaction } from "@/hooks/use-transactions";
 import {
   TxSendIcon, TxReceiveIcon, TxCashOutIcon,
-  TxRechargeIcon, TxBillIcon, TxBankIcon, TxPaymentIcon,
+  TxRechargeIcon, TxBillIcon, TxBankIcon, TxPaymentIcon, TxBankTransferIcon,
 } from "@/components/QuickActionIcons";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-type TxCategory = "all" | "send" | "receive" | "cashout" | "cashin" | "payment" | "recharge" | "paybill" | "addmoney";
+type TxCategory = "all" | "send" | "receive" | "cashout" | "cashin" | "banktransfer" | "payment" | "recharge" | "paybill" | "addmoney";
 
 interface Transaction {
   id: string;
@@ -37,6 +37,7 @@ const CATEGORIES: { id: TxCategory; label: string }[] = [
   { id: "cashout",  label: "Cash Out" },
   { id: "cashin",   label: "Cash In" },
   { id: "payment",  label: "Payment" },
+  { id: "banktransfer", label: "Bank Transfer" },
   { id: "recharge", label: "Recharge" },
   { id: "paybill",  label: "Bill Pay" },
   { id: "addmoney", label: "Add Money" },
@@ -59,6 +60,7 @@ const TX_ICON_MAP: Record<Exclude<TxCategory, "all">, {
   recharge: { Icon: TxRechargeIcon,ReceiveIcon: TxReceiveIcon, bg: "rgba(0,188,212,0.12)",  ring: "1px solid rgba(0,188,212,0.2)",  receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
   paybill:  { Icon: TxBillIcon,    ReceiveIcon: TxReceiveIcon, bg: "rgba(255,193,7,0.12)",  ring: "1px solid rgba(255,193,7,0.2)",  receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
   addmoney: { Icon: TxBankIcon,    ReceiveIcon: TxReceiveIcon, bg: "rgba(25,118,210,0.12)", ring: "1px solid rgba(25,118,210,0.2)", receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
+  banktransfer: { Icon: TxBankTransferIcon, ReceiveIcon: TxBankTransferIcon, bg: "rgba(63,81,181,0.12)", ring: "1px solid rgba(63,81,181,0.2)", receiveBg: "rgba(63,81,181,0.12)", receiveRing: "1px solid rgba(63,81,181,0.2)" },
 };
 
 const relativeDate = (iso: string) => {
