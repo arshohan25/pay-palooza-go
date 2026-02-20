@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { showTxnToast } from "@/components/TxnToast";
+import { haptics } from "@/lib/haptics";
 
 const TXN_LABELS: Record<string, string> = {
   send: "Send Money",
@@ -92,6 +93,7 @@ export function useTransactions(limit?: number, refreshKey?: number) {
             // Only toast if we haven't seen this ID before
             if (!knownIds.current.has(newTxn.id)) {
               knownIds.current.add(newTxn.id);
+              haptics.notify();
               showTxnToast({
                 type: TXN_LABELS[newTxn.type] ?? newTxn.type,
                 amount: `৳${newTxn.amount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
