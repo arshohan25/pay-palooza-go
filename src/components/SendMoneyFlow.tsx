@@ -246,8 +246,11 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
   const handleConfirm = () => goTo("pin");
 
+  const [processing, setProcessing] = useState(false);
   const handlePinConfirm = async () => {
     if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
+    if (processing) return;
+    setProcessing(true);
     haptics.success();
     txnTime.current = new Date();
     const amtVal = parseFloat(amount) || 0;
@@ -610,7 +613,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   onConfirm={handlePinConfirm}
                   label="Slide to Send Money"
                   gradient="gradient-send"
-                  disabled={pin.length < 4}
+                  disabled={pin.length < 4 || processing}
                   pinComplete={pin.length === 4}
                 />
               </div>
