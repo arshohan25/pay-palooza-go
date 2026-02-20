@@ -1,0 +1,1 @@
+ALTER TYPE public.txn_type ADD VALUE 'cashin';

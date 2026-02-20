@@ -100,7 +100,7 @@ export async function transferMoney(params: {
   description?: string;
   reference?: string;
   recipientName?: string;
-  recipientType?: "receive" | "cashout";
+  recipientType?: "receive" | "cashout" | "cashin";
 }): Promise<{ success: boolean; recipientFound: boolean; senderBalance: number }> {
   const { data, error } = await supabase.rpc("transfer_money", {
     p_recipient_phone: params.recipientPhone,

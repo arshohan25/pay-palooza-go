@@ -204,7 +204,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
         recipientName: agent?.name,
         description: `Cash Out at ${agent?.name}`,
         reference: txnId.current,
-        recipientType: "cashout",
+        recipientType: "cashin",
       });
     } catch (e: any) {
       setError(e.message || "Cash out failed");
