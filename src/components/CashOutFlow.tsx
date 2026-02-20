@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
-import { transferMoney, getBalance } from "@/lib/balanceStore";
+import { transferMoney, getBalance, recordTransaction } from "@/lib/balanceStore";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,13 +17,17 @@ import {
   Store,
   QrCode,
   CheckCircle2,
+  Building2,
+  Landmark,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import QrScannerModal from "@/components/QrScannerModal";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-type Step = "agent" | "amount" | "pin" | "success";
+type Step = "method" | "agent" | "bank" | "amount" | "pin" | "success";
+type CashOutMethod = "agent" | "bank";
 
 interface Agent {
   id: string;
@@ -48,13 +52,28 @@ const NEARBY_AGENTS: Agent[] = [
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 20000];
 
 // ─── Step config ─────────────────────────────────────────────────────────────
-const STEPS: Step[] = ["agent", "amount", "pin"];
+const STEPS: Step[] = ["method", "agent", "amount", "pin"];
+const BANK_STEPS: Step[] = ["method", "bank", "amount", "pin"];
 const STEP_LABELS: Record<Step, string> = {
+  method: "Method",
   agent: "Agent",
+  bank: "Bank",
   amount: "Amount",
   pin: "PIN",
   success: "Done",
 };
+
+// ─── Mock banks ──────────────────────────────────────────────────────────────
+const BANKS = [
+  { id: "dbbl", name: "Dutch-Bangla Bank", short: "DBBL" },
+  { id: "brac", name: "BRAC Bank", short: "BRAC" },
+  { id: "city", name: "City Bank", short: "CITY" },
+  { id: "ebl",  name: "Eastern Bank", short: "EBL" },
+  { id: "ucb",  name: "UCB Bank", short: "UCB" },
+  { id: "islami", name: "Islami Bank", short: "IBBL" },
+  { id: "ab",   name: "AB Bank", short: "AB" },
+  { id: "scb",  name: "Standard Chartered", short: "SCB" },
+];
 
 // ─── Slide animation ──────────────────────────────────────────────────────────
 const slideVariants = {
@@ -104,8 +123,9 @@ interface CashOutFlowProps {
 }
 
 const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
-  const [step, setStep] = useState<Step>("agent");
+  const [step, setStep] = useState<Step>("method");
   const [direction, setDirection] = useState(1);
+  const [cashOutMethod, setCashOutMethod] = useState<CashOutMethod>("agent");
   const [agent, setAgent] = useState<Agent | null>(null);
   const [agentIdInput, setAgentIdInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -115,6 +135,10 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const [showScanner, setShowScanner] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [isMerchant, setIsMerchant] = useState(false);
+  // Bank transfer state
+  const [bankName, setBankName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [accountHolder, setAccountHolder] = useState("");
   const txnTime = useRef(new Date());
   const txnId   = useRef(`TXN${Date.now().toString().slice(-8)}`);
 
@@ -126,19 +150,21 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     }
   }, [step]);
 
-  const stepIndex = STEPS.indexOf(step);
+  const activeSteps = cashOutMethod === "bank" ? BANK_STEPS : STEPS;
+  const stepIndex = activeSteps.indexOf(step);
 
   const goTo = (next: Step) => {
     haptics.medium();
-    setDirection(STEPS.indexOf(next) > stepIndex ? 1 : -1);
+    setDirection(activeSteps.indexOf(next) > activeSteps.indexOf(step) ? 1 : -1);
     setStep(next);
     setError("");
   };
 
   const goBack = () => {
     haptics.medium();
-    if (step === "agent") { onClose(); return; }
-    if (step === "amount") { goTo("agent"); return; }
+    if (step === "method") { onClose(); return; }
+    if (step === "agent" || step === "bank") { goTo("method"); return; }
+    if (step === "amount") { goTo(cashOutMethod === "bank" ? "bank" : "agent"); return; }
     if (step === "pin") { goTo("amount"); return; }
   };
 
@@ -179,6 +205,13 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     goTo("amount");
   };
 
+  const handleBankContinue = () => {
+    if (!bankName) { setError("Select a bank."); return; }
+    if (accountNumber.trim().length < 8) { setError("Enter a valid account number."); return; }
+    if (accountHolder.trim().length < 2) { setError("Enter account holder name."); return; }
+    goTo("amount");
+  };
+
   const handleAmountContinue = () => {
     const val = parseFloat(amount);
     if (!amount || isNaN(val) || val <= 0) { setError("Enter a valid amount."); return; }
@@ -186,6 +219,9 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     if (val > 50000) { setError("Maximum cash out per day is ৳50,000."); return; }
     goTo("pin");
   };
+
+  const isBank = cashOutMethod === "bank";
+  const recipientLabel = isBank ? bankName : agent?.name;
 
   const [processing, setProcessing] = useState(false);
   const handlePinConfirm = async () => {
@@ -198,23 +234,36 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     const feeVal = amtVal * (isMerchant ? 0.01 : 0.0119);
     const commissionVal = amtVal * 0.0049;
     try {
-      await transferMoney({
-        recipientPhone: agent?.agentId ?? "",
-        amount: amtVal,
-        fee: feeVal,
-        type: "cashout",
-        recipientName: agent?.name,
-        description: `Cash Out at ${agent?.name}`,
-        reference: txnId.current,
-        recipientType: "cashin",
-        commission: commissionVal,
-      });
+      if (isBank) {
+        // Bank transfer — single-sided, no in-system recipient
+        await recordTransaction({
+          type: "cashout",
+          amount: amtVal,
+          fee: feeVal,
+          recipientName: `${bankName} - ${accountHolder}`,
+          description: `Bank Transfer to ${bankName} (${accountNumber})`,
+          reference: txnId.current,
+        });
+      } else {
+        // Agent cash out — dual-sided
+        await transferMoney({
+          recipientPhone: agent?.agentId ?? "",
+          amount: amtVal,
+          fee: feeVal,
+          type: "cashout",
+          recipientName: agent?.name,
+          description: `Cash Out at ${agent?.name}`,
+          reference: txnId.current,
+          recipientType: "cashin",
+          commission: commissionVal,
+        });
+      }
     } catch (e: any) {
       setError(e.message || "Cash out failed");
       setProcessing(false);
       return;
     }
-    showTxnToast({ type: "Cash Out", amount: `৳${amtVal.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-cashout" });
+    showTxnToast({ type: isBank ? "Bank Transfer" : "Cash Out", amount: `৳${amtVal.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-cashout" });
     setDirection(1);
     setStep("success");
   };
@@ -257,13 +306,15 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
             </button>
             <div className="flex-1 min-w-0">
               <h1 className="text-xl font-extrabold tracking-tight">Cash Out</h1>
-              <p className="text-xs text-white/70 mt-0.5">Withdraw from Nearby Agent</p>
+              <p className="text-xs text-white/70 mt-0.5">
+                {isBank ? "Transfer to Bank Account" : "Withdraw from Nearby Agent"}
+              </p>
             </div>
           </div>
           <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
             <motion.div
               className="h-full bg-white rounded-full shadow-[0_0_8px_2px_rgba(255,255,255,0.55)]"
-              animate={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }}
+              animate={{ width: `${((stepIndex + 1) / activeSteps.length) * 100}%` }}
               transition={{ type: "spring", stiffness: 200, damping: 28 }}
             />
           </div>
@@ -284,7 +335,49 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
             className="absolute inset-0 overflow-y-auto scrollbar-none"
           >
 
-            {/* ── STEP 1: Agent ── */}
+            {/* ── STEP 0: Method ── */}
+            {step === "method" && (
+              <div className="px-4 pt-6 pb-32 space-y-6">
+                <div className="text-center space-y-1">
+                  <h2 className="text-lg font-bold text-foreground">How would you like to cash out?</h2>
+                  <p className="text-sm text-muted-foreground">Choose your preferred withdrawal method</p>
+                </div>
+
+                <div className="space-y-3">
+                  <button
+                    onClick={() => { setCashOutMethod("agent"); goTo("agent"); }}
+                    className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card border border-border shadow-card hover:shadow-elevated active:scale-[0.98] transition-all text-left"
+                  >
+                    <div className="gradient-cashout w-14 h-14 rounded-2xl flex items-center justify-center text-white shrink-0">
+                      <Store size={24} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-base font-bold text-foreground">Agent Cash Out</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Withdraw cash from a nearby agent</p>
+                      <p className="text-xs text-primary font-semibold mt-1">Fee: 1.19% (Personal) · 1% (Merchant)</p>
+                    </div>
+                    <ChevronLeft size={18} className="text-muted-foreground rotate-180 shrink-0" />
+                  </button>
+
+                  <button
+                    onClick={() => { setCashOutMethod("bank"); goTo("bank"); }}
+                    className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card border border-border shadow-card hover:shadow-elevated active:scale-[0.98] transition-all text-left"
+                  >
+                    <div className="bg-gradient-to-b from-blue-500 to-indigo-600 w-14 h-14 rounded-2xl flex items-center justify-center text-white shrink-0">
+                      <Landmark size={24} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-base font-bold text-foreground">Bank Transfer</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Transfer to any bank account</p>
+                      <p className="text-xs text-primary font-semibold mt-1">Fee: 1.19% (Personal) · 1% (Merchant)</p>
+                    </div>
+                    <ChevronLeft size={18} className="text-muted-foreground rotate-180 shrink-0" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── STEP 1a: Agent ── */}
             {step === "agent" && (
               <div className="px-4 pt-6 pb-32 space-y-6">
                 {/* Agent ID input */}
@@ -367,11 +460,83 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
               </div>
             )}
 
+            {/* ── STEP 1b: Bank ── */}
+            {step === "bank" && (
+              <div className="px-4 pt-6 pb-32 space-y-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-foreground">Select Bank</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {BANKS.map((b) => (
+                      <button
+                        key={b.id}
+                        onClick={() => { setBankName(b.name); setError(""); }}
+                        className={`p-3 rounded-xl border text-left transition-all active:scale-95 ${
+                          bankName === b.name
+                            ? "border-primary bg-primary/10 shadow-card"
+                            : "border-border bg-card hover:border-primary/50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
+                            bankName === b.name ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                          }`}>
+                            {b.short.slice(0, 2)}
+                          </div>
+                          <p className="text-xs font-semibold text-foreground truncate">{b.name}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-foreground">Account Number</label>
+                  <div className="relative">
+                    <Hash size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="e.g. 1234567890123"
+                      value={accountNumber}
+                      onChange={(e) => { setAccountNumber(e.target.value); setError(""); }}
+                      className="pl-9 h-12 text-base bg-card border-border"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-foreground">Account Holder Name</label>
+                  <div className="relative">
+                    <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="e.g. Mohammad Ali"
+                      value={accountHolder}
+                      onChange={(e) => { setAccountHolder(e.target.value); setError(""); }}
+                      className="pl-9 h-12 text-base bg-card border-border"
+                    />
+                  </div>
+                </div>
+
+                {error && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle size={12} /> {error}
+                  </p>
+                )}
+
+                <Button
+                  className="w-full h-11 gradient-cashout border-0 text-white font-semibold"
+                  onClick={handleBankContinue}
+                >
+                  Continue
+                </Button>
+              </div>
+            )}
+
             {/* ── STEP 2: Amount ── */}
             {step === "amount" && (
               <div className="px-4 pt-6 pb-32 space-y-6">
-                {/* Agent pill */}
-                {agent && (
+                {/* Recipient pill */}
+                {!isBank && agent && (
                   <div className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border shadow-card">
                     <div className={`${agent.gradient} w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0`}>
                       <Store size={20} />
@@ -380,6 +545,18 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       <p className="text-xs text-muted-foreground">Cashing out at</p>
                       <p className="text-sm font-bold text-foreground">{agent.name}</p>
                       <p className="text-xs text-muted-foreground">{agent.agentId} · {agent.address}</p>
+                    </div>
+                  </div>
+                )}
+                {isBank && (
+                  <div className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border shadow-card">
+                    <div className="bg-gradient-to-b from-blue-500 to-indigo-600 w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0">
+                      <Landmark size={20} />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Transferring to</p>
+                      <p className="text-sm font-bold text-foreground">{bankName}</p>
+                      <p className="text-xs text-muted-foreground">{accountNumber} · {accountHolder}</p>
                     </div>
                   </div>
                 )}
@@ -496,20 +673,39 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
               <div className="px-4 pt-6 pb-32 space-y-6">
                 {/* Summary banner */}
                 <div className="text-center space-y-1">
-                  <p className="text-sm text-muted-foreground">Cashing out</p>
+                  <p className="text-sm text-muted-foreground">{isBank ? "Transferring to bank" : "Cashing out"}</p>
                   <p className="text-4xl font-extrabold text-foreground">৳{parseFloat(amount).toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">at <span className="font-semibold text-foreground">{agent?.name}</span></p>
+                  <p className="text-xs text-muted-foreground">
+                    {isBank
+                      ? <>to <span className="font-semibold text-foreground">{bankName}</span></>
+                      : <>at <span className="font-semibold text-foreground">{agent?.name}</span></>
+                    }
+                  </p>
                 </div>
 
-                {/* Agent card */}
+                {/* Recipient card */}
                 <div className="rounded-2xl bg-card border border-border shadow-card p-4 flex items-center gap-3">
-                  <div className={`${agent?.gradient} w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0`}>
-                    <Store size={18} />
-                  </div>
-                  <div>
-                    <p className="font-bold text-foreground text-sm">{agent?.name}</p>
-                    <p className="text-xs text-muted-foreground">{agent?.agentId} · {agent?.address}</p>
-                  </div>
+                  {isBank ? (
+                    <>
+                      <div className="bg-gradient-to-b from-blue-500 to-indigo-600 w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0">
+                        <Landmark size={18} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-foreground text-sm">{bankName}</p>
+                        <p className="text-xs text-muted-foreground">{accountNumber} · {accountHolder}</p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className={`${agent?.gradient} w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0`}>
+                        <Store size={18} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-foreground text-sm">{agent?.name}</p>
+                        <p className="text-xs text-muted-foreground">{agent?.agentId} · {agent?.address}</p>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Fee row */}
@@ -534,7 +730,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
 
                 <SlideToConfirm
                   onConfirm={handlePinConfirm}
-                  label="Slide to Cash Out"
+                  label={isBank ? "Slide to Transfer" : "Slide to Cash Out"}
                   gradient="gradient-cashout"
                   disabled={pin.length < 4 || processing}
                   pinComplete={pin.length === 4}
@@ -560,10 +756,12 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   transition={{ delay: 0.3 }}
                   className="space-y-2"
                 >
-                  <h2 className="text-2xl font-extrabold text-foreground">Cash Out Successful!</h2>
+                  <h2 className="text-2xl font-extrabold text-foreground">
+                    {isBank ? "Bank Transfer Successful!" : "Cash Out Successful!"}
+                  </h2>
                   <p className="text-muted-foreground text-sm">
-                    ৳{parseFloat(amount).toLocaleString()} cashed out at{" "}
-                    <span className="font-semibold text-foreground">{agent?.name}</span>
+                    ৳{parseFloat(amount).toLocaleString()} {isBank ? "transferred to" : "cashed out at"}{" "}
+                    <span className="font-semibold text-foreground">{isBank ? bankName : agent?.name}</span>
                   </p>
                 </motion.div>
 
@@ -574,14 +772,33 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   transition={{ delay: 0.45 }}
                   className="w-full rounded-2xl bg-card border border-border shadow-elevated p-4 text-sm space-y-3"
                 >
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Agent</span>
-                    <span className="text-foreground font-medium">{agent?.name}</span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Agent ID</span>
-                    <span className="text-foreground font-medium">{agent?.agentId}</span>
-                  </div>
+                  {isBank ? (
+                    <>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Bank</span>
+                        <span className="text-foreground font-medium">{bankName}</span>
+                      </div>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Account</span>
+                        <span className="text-foreground font-medium">{accountNumber}</span>
+                      </div>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Account Holder</span>
+                        <span className="text-foreground font-medium">{accountHolder}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Agent</span>
+                        <span className="text-foreground font-medium">{agent?.name}</span>
+                      </div>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Agent ID</span>
+                        <span className="text-foreground font-medium">{agent?.agentId}</span>
+                      </div>
+                    </>
+                  )}
                   <div className="flex justify-between text-muted-foreground">
                     <span>Amount</span>
                     <span className="text-foreground font-medium">৳{parseFloat(amount).toLocaleString()}</span>
@@ -659,13 +876,22 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
         open={showShare}
         onClose={() => setShowShare(false)}
         receipt={{
-          title: "Cash Out Successful",
+          title: isBank ? "Bank Transfer Successful" : "Cash Out Successful",
           amount: `৳${parseFloat(amount || "0").toLocaleString()}`,
           gradient: "gradient-cashout",
           txnId: txnId.current,
           rows: [
-            { label: "Agent", value: agent?.name ?? "" },
-            { label: "Agent ID", value: agent?.agentId ?? "" },
+            ...(isBank
+              ? [
+                  { label: "Bank", value: bankName },
+                  { label: "Account", value: accountNumber },
+                  { label: "Account Holder", value: accountHolder },
+                ]
+              : [
+                  { label: "Agent", value: agent?.name ?? "" },
+                  { label: "Agent ID", value: agent?.agentId ?? "" },
+                ]
+            ),
             { label: "Amount", value: `৳${parseFloat(amount || "0").toLocaleString()}` },
             { label: `Fee (${FEE_LABEL})`, value: `৳${feeNum.toFixed(2)}` },
             { label: "You Received", value: `৳${parseFloat(receive).toLocaleString()}` },
