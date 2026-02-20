@@ -43,5 +43,39 @@ export function useTransactions(limit?: number, refreshKey?: number) {
 
   useEffect(() => { fetch(); }, [fetch, refreshKey]);
 
+  // Realtime subscription — auto-refetch on any change to user's transactions
+  useEffect(() => {
+    let userId: string | null = null;
+
+    const setup = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      userId = session?.user?.id ?? null;
+      if (!userId) return;
+
+      const channel = supabase
+        .channel("txn-realtime")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "transactions",
+            filter: `user_id=eq.${userId}`,
+          },
+          () => { fetch(); }
+        )
+        .subscribe();
+
+      return channel;
+    };
+
+    let channel: ReturnType<typeof supabase.channel> | undefined;
+    setup().then((ch) => { channel = ch; });
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [fetch]);
+
   return { transactions, loading, refetch: fetch };
 }
