@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
-import { deductBalance } from "@/lib/balanceStore";
+import { recordTransaction } from "@/lib/balanceStore";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -244,11 +244,18 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
     goTo("bill");
   };
 
-  const handlePinConfirm = () => {
+  const handlePinConfirm = async () => {
     if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
     haptics.success();
     const dueAmt = billInfo?.due ?? 0;
-    deductBalance(dueAmt);
+    await recordTransaction({
+      type: "paybill",
+      amount: dueAmt,
+      fee: 0,
+      recipientName: `${provider?.name} - ${billType?.name}`,
+      description: `${billType?.name} bill - ${provider?.name} (${accountNo})`,
+      reference: txnId.current,
+    });
     showTxnToast({ type: "Bill Payment", amount: `৳${dueAmt.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-primary" });
     setDirection(1);
     setStep("success");

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
-import { addBalance } from "@/lib/balanceStore";
+import { recordTransaction } from "@/lib/balanceStore";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -147,13 +147,19 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
     goTo("pin");
   };
 
-  const handlePinConfirm = () => {
+  const handlePinConfirm = async () => {
     if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
     haptics.success();
     txnTime.current = new Date();
     txnId.current = generateTxnId();
     const addAmt = parseFloat(amount) || 0;
-    addBalance(addAmt);
+    await recordTransaction({
+      type: "addmoney",
+      amount: addAmt,
+      fee: 0,
+      description: source === "bank" ? `Bank Transfer via ${bank?.name}` : "Card Payment",
+      reference: txnId.current,
+    });
     showTxnToast({ type: "Add Money", amount: `৳${addAmt.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-addmoney" });
     setDir(1);
     setStep("success");

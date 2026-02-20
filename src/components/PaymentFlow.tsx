@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
-import { deductBalance } from "@/lib/balanceStore";
+import { recordTransaction } from "@/lib/balanceStore";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -173,12 +173,19 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
     goTo("pin");
   };
 
-  const handlePinConfirm = () => {
+  const handlePinConfirm = async () => {
     if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
     haptics.success();
     txnTime.current = new Date();
     const amtVal = parseFloat(amount) || 0;
-    deductBalance(amtVal);
+    await recordTransaction({
+      type: "payment",
+      amount: amtVal,
+      fee: 0,
+      recipientName: merchant?.name,
+      description: note || `Payment to ${merchant?.name}`,
+      reference: txnId.current,
+    });
     showTxnToast({ type: "Payment", amount: `৳${amtVal.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-payment" });
     setDirection(1);
     setStep("success");
