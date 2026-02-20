@@ -114,6 +114,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const [error, setError] = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [isMerchant, setIsMerchant] = useState(false);
   const txnTime = useRef(new Date());
   const txnId   = useRef(`TXN${Date.now().toString().slice(-8)}`);
 
@@ -194,7 +195,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     haptics.success();
     txnTime.current = new Date();
     const amtVal = parseFloat(amount) || 0;
-    const feeVal = amtVal * 0.0119;
+    const feeVal = amtVal * (isMerchant ? 0.01 : 0.0119);
     const commissionVal = amtVal * 0.0049;
     try {
       await transferMoney({
@@ -218,9 +219,11 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     setStep("success");
   };
 
-  // Fee: 1.19% of amount
+  // Fee: 1.19% personal, 1% merchant
+  const FEE_RATE = isMerchant ? 0.01 : 0.0119;
+  const FEE_LABEL = isMerchant ? "1%" : "1.19%";
   const BALANCE = getBalance();
-  const calcCashOutFee = (amt: number) => amt * 0.0119;
+  const calcCashOutFee = (amt: number) => amt * FEE_RATE;
   const feeNum = parseFloat(amount) > 0 ? calcCashOutFee(parseFloat(amount)) : 0;
   const fee = feeNum.toFixed(2);
   // Fee source logic
@@ -381,6 +384,26 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   </div>
                 )}
 
+                {/* Merchant / Personal toggle */}
+                <div className="flex items-center gap-2 p-3 rounded-2xl bg-muted/50 border border-border">
+                  <button
+                    onClick={() => setIsMerchant(false)}
+                    className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${
+                      !isMerchant ? "gradient-cashout text-white shadow-card" : "text-muted-foreground"
+                    }`}
+                  >
+                    Personal (1.19%)
+                  </button>
+                  <button
+                    onClick={() => setIsMerchant(true)}
+                    className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${
+                      isMerchant ? "gradient-cashout text-white shadow-card" : "text-muted-foreground"
+                    }`}
+                  >
+                    Merchant (1%)
+                  </button>
+                </div>
+
                 {/* Big amount input */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -432,7 +455,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       <span className="text-foreground font-medium">৳{parseFloat(amount).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Fee (1.19%)</span>
+                      <span>Fee ({FEE_LABEL})</span>
                       <span className="text-destructive font-medium">− ৳{fee}</span>
                     </div>
                     <div className="flex justify-between text-xs text-muted-foreground/70">
@@ -496,7 +519,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                     <span className="font-bold text-primary">৳{parseFloat(receive).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-xs text-muted-foreground/70">
-                    <span>Fee (1.19%) source</span>
+                    <span>Fee ({FEE_LABEL}) source</span>
                     <span className="text-primary font-medium">
                       {feeFromBalance >= feeNum
                         ? "From your balance"
@@ -564,7 +587,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                     <span className="text-foreground font-medium">৳{parseFloat(amount).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Fee (1.19%)</span>
+                    <span>Fee ({FEE_LABEL})</span>
                     <span className="text-foreground font-medium">৳{fee}</span>
                   </div>
                   <div className="flex justify-between text-xs text-muted-foreground/70">
@@ -644,7 +667,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
             { label: "Agent", value: agent?.name ?? "" },
             { label: "Agent ID", value: agent?.agentId ?? "" },
             { label: "Amount", value: `৳${parseFloat(amount || "0").toLocaleString()}` },
-            { label: "Fee (1.19%)", value: `৳${feeNum.toFixed(2)}` },
+            { label: `Fee (${FEE_LABEL})`, value: `৳${feeNum.toFixed(2)}` },
             { label: "You Received", value: `৳${parseFloat(receive).toLocaleString()}` },
             { label: "Date", value: txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) },
             { label: "Time", value: txnTime.current.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) },
