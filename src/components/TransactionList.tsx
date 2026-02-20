@@ -21,6 +21,7 @@ const TX_CONFIG: Record<string, {
   label: string;
 }> = {
   send:     { Icon: TxSendIcon,     bg: "rgba(233,30,140,0.12)", ring: "1px solid rgba(233,30,140,0.2)", label: "Send Money" },
+  receive:  { Icon: TxReceiveIcon,  bg: "rgba(76,175,80,0.12)",  ring: "1px solid rgba(76,175,80,0.2)",  label: "Received" },
   cashout:  { Icon: TxCashOutIcon,  bg: "rgba(76,175,80,0.12)",  ring: "1px solid rgba(76,175,80,0.2)",  label: "Cash Out" },
   payment:  { Icon: TxPaymentIcon,  bg: "rgba(156,39,176,0.12)", ring: "1px solid rgba(156,39,176,0.2)", label: "Payment" },
   recharge: { Icon: TxRechargeIcon, bg: "rgba(0,188,212,0.12)",  ring: "1px solid rgba(0,188,212,0.2)",  label: "Recharge" },
@@ -35,7 +36,7 @@ const RECEIVE_CONFIG = {
 };
 
 function getTxDisplay(tx: DbTransaction) {
-  const isCredit = tx.type === "addmoney";
+  const isCredit = tx.type === "addmoney" || tx.type === "receive";
   const cfg = TX_CONFIG[tx.type] ?? TX_CONFIG.send;
   return {
     icon: isCredit ? RECEIVE_CONFIG.Icon : cfg.Icon,

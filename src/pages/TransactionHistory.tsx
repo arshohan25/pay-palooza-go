@@ -19,7 +19,7 @@ import {
 } from "@/components/QuickActionIcons";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-type TxCategory = "all" | "send" | "cashout" | "payment" | "recharge" | "paybill" | "addmoney";
+type TxCategory = "all" | "send" | "receive" | "cashout" | "payment" | "recharge" | "paybill" | "addmoney";
 
 interface Transaction {
   id: string;
@@ -33,6 +33,7 @@ interface Transaction {
 const CATEGORIES: { id: TxCategory; label: string }[] = [
   { id: "all",      label: "All" },
   { id: "send",     label: "Send" },
+  { id: "receive",  label: "Received" },
   { id: "cashout",  label: "Cash Out" },
   { id: "payment",  label: "Payment" },
   { id: "recharge", label: "Recharge" },
@@ -50,6 +51,7 @@ const TX_ICON_MAP: Record<Exclude<TxCategory, "all">, {
   receiveRing: string;
 }> = {
   send:     { Icon: TxSendIcon,    ReceiveIcon: TxReceiveIcon, bg: "rgba(233,30,140,0.12)", ring: "1px solid rgba(233,30,140,0.2)",  receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
+  receive:  { Icon: TxReceiveIcon, ReceiveIcon: TxReceiveIcon, bg: "rgba(76,175,80,0.12)",  ring: "1px solid rgba(76,175,80,0.2)",   receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
   cashout:  { Icon: TxCashOutIcon, ReceiveIcon: TxReceiveIcon, bg: "rgba(76,175,80,0.12)",  ring: "1px solid rgba(76,175,80,0.2)",   receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
   payment:  { Icon: TxPaymentIcon, ReceiveIcon: TxReceiveIcon, bg: "rgba(156,39,176,0.12)", ring: "1px solid rgba(156,39,176,0.2)", receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
   recharge: { Icon: TxRechargeIcon,ReceiveIcon: TxReceiveIcon, bg: "rgba(0,188,212,0.12)",  ring: "1px solid rgba(0,188,212,0.2)",  receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
@@ -88,7 +90,7 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
     dbTxns.map((t) => {
       const cfg = TX_ICON_MAP[t.type as Exclude<TxCategory, "all">];
       const label = CATEGORIES.find((c) => c.id === t.type)?.label ?? t.type;
-      const isCredit = t.type === "addmoney";
+      const isCredit = t.type === "addmoney" || t.type === "receive";
       return {
         id: t.id,
         category: t.type as Exclude<TxCategory, "all">,

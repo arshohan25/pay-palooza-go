@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
-import { recordTransaction, getBalance } from "@/lib/balanceStore";
+import { transferMoney, getBalance } from "@/lib/balanceStore";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -255,11 +255,11 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     txnTime.current = new Date();
     const amtVal = parseFloat(amount) || 0;
     const feeVal = calcSendFee(amtVal);
-    await recordTransaction({
-      type: "send",
+    await transferMoney({
+      recipientPhone: recipient?.phone ?? "",
       amount: amtVal,
       fee: feeVal,
-      recipientPhone: recipient?.phone,
+      type: "send",
       recipientName: recipient?.name,
       reference: txnId.current,
       description: note || undefined,
