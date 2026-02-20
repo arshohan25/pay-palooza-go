@@ -97,7 +97,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      transfer_money: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_fee?: number
+          p_recipient_name?: string
+          p_recipient_phone: string
+          p_reference?: string
+          p_type?: Database["public"]["Enums"]["txn_type"]
+        }
+        Returns: Json
+      }
     }
     Enums: {
       txn_status: "pending" | "completed" | "failed" | "reversed"
@@ -108,6 +119,7 @@ export type Database = {
         | "recharge"
         | "paybill"
         | "addmoney"
+        | "receive"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -243,6 +255,7 @@ export const Constants = {
         "recharge",
         "paybill",
         "addmoney",
+        "receive",
       ],
     },
   },

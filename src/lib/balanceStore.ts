@@ -91,7 +91,41 @@ export function setupBalanceRealtime() {
   });
 }
 
-/** Record a transaction in the DB and update balance */
+/** Transfer money to another user atomically via DB function */
+export async function transferMoney(params: {
+  recipientPhone: string;
+  amount: number;
+  fee?: number;
+  type?: "send" | "payment";
+  description?: string;
+  reference?: string;
+  recipientName?: string;
+}): Promise<{ success: boolean; recipientFound: boolean; senderBalance: number }> {
+  const { data, error } = await supabase.rpc("transfer_money", {
+    p_recipient_phone: params.recipientPhone,
+    p_amount: params.amount,
+    p_fee: params.fee ?? 0,
+    p_type: params.type ?? "send",
+    p_description: params.description ?? null,
+    p_reference: params.reference ?? null,
+    p_recipient_name: params.recipientName ?? null,
+  });
+
+  if (error) throw error;
+
+  const result = typeof data === "string" ? JSON.parse(data) : data;
+  // Update local balance from the DB response
+  balance = result.sender_balance;
+  notify();
+
+  return {
+    success: result.success,
+    recipientFound: result.recipient_found,
+    senderBalance: result.sender_balance,
+  };
+}
+
+/** Record a transaction in the DB and update balance (non-transfer types) */
 export async function recordTransaction(params: {
   type: "send" | "cashout" | "payment" | "recharge" | "paybill" | "addmoney";
   amount: number;
