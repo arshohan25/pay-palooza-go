@@ -12,13 +12,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
+import { useTransactions, DbTransaction } from "@/hooks/use-transactions";
 import {
   TxSendIcon, TxReceiveIcon, TxCashOutIcon,
   TxRechargeIcon, TxBillIcon, TxBankIcon, TxPaymentIcon,
 } from "@/components/QuickActionIcons";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-type TxCategory = "all" | "send" | "cashout" | "payment" | "recharge" | "bill";
+type TxCategory = "all" | "send" | "cashout" | "payment" | "recharge" | "paybill" | "addmoney";
 
 interface Transaction {
   id: string;
@@ -29,37 +30,14 @@ interface Transaction {
   amount: number;
 }
 
-// ─── Mock data ───────────────────────────────────────────────────────────────
-const ALL_TRANSACTIONS: Transaction[] = [
-  { id: "t01", category: "send",     name: "Rahim Uddin",               detail: "Send Money",                 date: "2026-02-18T14:30:00", amount: -500   },
-  { id: "t02", category: "send",     name: "Salary - XYZ Corp",         detail: "Money Received",             date: "2026-02-18T10:00:00", amount: 25000  },
-  { id: "t03", category: "recharge", name: "Grameenphone",              detail: "Mobile Recharge · 3GB Pack", date: "2026-02-17T20:15:00", amount: -199   },
-  { id: "t04", category: "bill",     name: "DESCO Electricity",         detail: "Pay Bill · Feb 2026",        date: "2026-02-17T15:45:00", amount: -1850  },
-  { id: "t05", category: "send",     name: "Karim Ahmed",               detail: "Money Received",             date: "2026-02-14T11:20:00", amount: 1200   },
-  { id: "t06", category: "cashout",  name: "Karim Store · AGT-10234",   detail: "Cash Out",                   date: "2026-02-13T09:30:00", amount: -5000  },
-  { id: "t07", category: "payment",  name: "Shajgoj",                   detail: "Merchant Payment",           date: "2026-02-12T17:55:00", amount: -320   },
-  { id: "t08", category: "recharge", name: "Robi",                      detail: "Mobile Recharge · 2GB Pack", date: "2026-02-11T08:00:00", amount: -59    },
-  { id: "t09", category: "bill",     name: "Titas Gas",                 detail: "Pay Bill · Feb 2026",        date: "2026-02-10T12:10:00", amount: -780   },
-  { id: "t10", category: "send",     name: "Nasrin Begum",              detail: "Send Money",                 date: "2026-02-09T16:00:00", amount: -2000  },
-  { id: "t11", category: "payment",  name: "Daraz BD",                  detail: "Merchant Payment",           date: "2026-02-08T13:25:00", amount: -1490  },
-  { id: "t12", category: "cashout",  name: "Hasan Mobile · AGT-33512",  detail: "Cash Out",                   date: "2026-02-07T10:40:00", amount: -3000  },
-  { id: "t13", category: "send",     name: "Farhan Islam",              detail: "Money Received",             date: "2026-02-06T09:00:00", amount: 800    },
-  { id: "t14", category: "bill",     name: "WASA (Dhaka)",              detail: "Pay Bill · Feb 2026",        date: "2026-02-05T14:00:00", amount: -450   },
-  { id: "t15", category: "recharge", name: "Banglalink",                detail: "Mobile Recharge · ৳100",     date: "2026-02-04T19:30:00", amount: -100   },
-  { id: "t16", category: "payment",  name: "Pathao",                    detail: "Merchant Payment",           date: "2026-02-03T08:55:00", amount: -180   },
-  { id: "t17", category: "send",     name: "Salary Bonus",              detail: "Money Received",             date: "2026-02-01T10:00:00", amount: 5000   },
-  { id: "t18", category: "bill",     name: "Link3 Internet",            detail: "Pay Bill · Feb 2026",        date: "2026-01-31T11:00:00", amount: -650   },
-  { id: "t19", category: "cashout",  name: "Rina Telecom · AGT-20871",  detail: "Cash Out",                   date: "2026-01-28T15:20:00", amount: -10000 },
-  { id: "t20", category: "payment",  name: "Chaldal",                   detail: "Merchant Payment",           date: "2026-01-25T18:00:00", amount: -990   },
-];
-
 const CATEGORIES: { id: TxCategory; label: string }[] = [
   { id: "all",      label: "All" },
   { id: "send",     label: "Send" },
   { id: "cashout",  label: "Cash Out" },
   { id: "payment",  label: "Payment" },
   { id: "recharge", label: "Recharge" },
-  { id: "bill",     label: "Bill Pay" },
+  { id: "paybill",  label: "Bill Pay" },
+  { id: "addmoney", label: "Add Money" },
 ];
 
 // Illustrated icon config for each transaction category
@@ -75,7 +53,8 @@ const TX_ICON_MAP: Record<Exclude<TxCategory, "all">, {
   cashout:  { Icon: TxCashOutIcon, ReceiveIcon: TxReceiveIcon, bg: "rgba(76,175,80,0.12)",  ring: "1px solid rgba(76,175,80,0.2)",   receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
   payment:  { Icon: TxPaymentIcon, ReceiveIcon: TxReceiveIcon, bg: "rgba(156,39,176,0.12)", ring: "1px solid rgba(156,39,176,0.2)", receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
   recharge: { Icon: TxRechargeIcon,ReceiveIcon: TxReceiveIcon, bg: "rgba(0,188,212,0.12)",  ring: "1px solid rgba(0,188,212,0.2)",  receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
-  bill:     { Icon: TxBillIcon,    ReceiveIcon: TxReceiveIcon, bg: "rgba(255,193,7,0.12)",  ring: "1px solid rgba(255,193,7,0.2)",  receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
+  paybill:  { Icon: TxBillIcon,    ReceiveIcon: TxReceiveIcon, bg: "rgba(255,193,7,0.12)",  ring: "1px solid rgba(255,193,7,0.2)",  receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
+  addmoney: { Icon: TxBankIcon,    ReceiveIcon: TxReceiveIcon, bg: "rgba(25,118,210,0.12)", ring: "1px solid rgba(25,118,210,0.2)", receiveBg: "rgba(76,175,80,0.12)",  receiveRing: "1px solid rgba(76,175,80,0.2)"  },
 };
 
 const relativeDate = (iso: string) => {
@@ -91,6 +70,7 @@ const relativeDate = (iso: string) => {
 interface TransactionHistoryProps { onClose?: () => void; onRefresh?: () => void; }
 
 const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => {
+  const { transactions: dbTxns, loading: txLoading, refetch } = useTransactions();
   const [activeTab, setActiveTab] = useState<TxCategory>("all");
   const [search, setSearch]       = useState("");
   const [dateFrom, setDateFrom]   = useState<Date | undefined>();
@@ -103,10 +83,26 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showShare, setShowShare]       = useState(false);
 
+  // Map DB transactions to local Transaction shape
+  const allTransactions: Transaction[] = useMemo(() =>
+    dbTxns.map((t) => {
+      const cfg = TX_ICON_MAP[t.type as Exclude<TxCategory, "all">];
+      const label = CATEGORIES.find((c) => c.id === t.type)?.label ?? t.type;
+      const isCredit = t.type === "addmoney";
+      return {
+        id: t.id,
+        category: t.type as Exclude<TxCategory, "all">,
+        name: t.recipient_name || t.description || label,
+        detail: t.description || label,
+        date: t.created_at,
+        amount: isCredit ? t.amount : -t.amount,
+      };
+    }), [dbTxns]);
+
   const triggerRefresh = () => {
     if (isRefreshing) return;
     setIsRefreshing(true);
-    setTimeout(() => setIsRefreshing(false), 1200);
+    refetch().finally(() => setIsRefreshing(false));
     onRefresh?.();
   };
 
@@ -120,7 +116,7 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return ALL_TRANSACTIONS.filter((tx) => {
+    return allTransactions.filter((tx) => {
       if (activeTab !== "all" && tx.category !== activeTab) return false;
       if (q && !tx.name.toLowerCase().includes(q) && !tx.detail.toLowerCase().includes(q)) return false;
       if (dateFrom || dateTo) {
@@ -131,7 +127,7 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
       }
       return true;
     });
-  }, [activeTab, search, dateFrom, dateTo]);
+  }, [activeTab, search, dateFrom, dateTo, allTransactions]);
 
   const clearFilters    = () => { setDateFrom(undefined); setDateTo(undefined); setSearch(""); setActiveTab("all"); };
   const hasActiveFilters = search || dateFrom || dateTo || activeTab !== "all";
