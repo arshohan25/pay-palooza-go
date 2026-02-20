@@ -8,6 +8,7 @@ const TXN_LABELS: Record<string, string> = {
   receive: "Received",
   cashout: "Cash Out",
   cashin: "Cash In",
+  banktransfer: "Bank Transfer",
   payment: "Payment",
   recharge: "Recharge",
   paybill: "Bill Pay",
@@ -19,6 +20,7 @@ const TXN_GRADIENTS: Record<string, string> = {
   receive: "bg-gradient-to-b from-emerald-500 to-green-500",
   cashout: "bg-gradient-to-b from-orange-500 to-amber-500",
   cashin: "bg-gradient-to-b from-emerald-500 to-green-500",
+  banktransfer: "bg-gradient-to-b from-indigo-500 to-blue-600",
   payment: "bg-gradient-to-b from-purple-500 to-violet-500",
   recharge: "bg-gradient-to-b from-cyan-500 to-teal-500",
   paybill: "bg-gradient-to-b from-amber-500 to-yellow-500",
@@ -27,7 +29,7 @@ const TXN_GRADIENTS: Record<string, string> = {
 
 export interface DbTransaction {
   id: string;
-  type: "send" | "receive" | "cashout" | "cashin" | "payment" | "recharge" | "paybill" | "addmoney";
+  type: "send" | "receive" | "cashout" | "cashin" | "banktransfer" | "payment" | "recharge" | "paybill" | "addmoney";
   amount: number;
   fee: number;
   commission: number;

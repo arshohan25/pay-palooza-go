@@ -435,6 +435,30 @@ export const TxBankIcon = () => (
   </svg>
 );
 
+export const TxBankTransferIcon = () => (
+  <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+    <defs>
+      <linearGradient id="txBankXferGrad" x1="4" y1="4" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#5C6BC0"/>
+        <stop offset="100%" stopColor="#283593"/>
+      </linearGradient>
+    </defs>
+    {/* Bank building */}
+    <path d="M5 18 L18 10 L31 18 Z" fill="url(#txBankXferGrad)"/>
+    <rect x="5" y="18" width="26" height="2.5" rx="1" fill="#3949AB"/>
+    <rect x="8" y="20.5" width="3" height="10" rx="1" fill="#5C6BC0"/>
+    <rect x="14" y="20.5" width="3" height="10" rx="1" fill="#5C6BC0"/>
+    <rect x="21" y="20.5" width="3" height="10" rx="1" fill="#5C6BC0"/>
+    <rect x="5" y="30.5" width="26" height="2.5" rx="1" fill="#3949AB"/>
+    {/* Arrow transferring */}
+    <path d="M28 22 L38 22 L35 19 M38 22 L35 25" stroke="#1565C0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M38 30 L28 30 L31 27 M28 30 L31 33" stroke="#1565C0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    {/* Taka badge */}
+    <circle cx="36" cy="14" r="6" fill="#FFC107"/>
+    <text x="36" y="17" textAnchor="middle" fill="#7B3F00" fontSize="7" fontWeight="bold" fontFamily="serif">৳</text>
+  </svg>
+);
+
 export const TxPaymentIcon = () => (
   <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
     <defs>

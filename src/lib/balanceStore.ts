@@ -131,7 +131,7 @@ export async function transferMoney(params: {
 
 /** Record a transaction in the DB and update balance (non-transfer types) */
 export async function recordTransaction(params: {
-  type: "send" | "cashout" | "payment" | "recharge" | "paybill" | "addmoney";
+  type: "send" | "cashout" | "banktransfer" | "payment" | "recharge" | "paybill" | "addmoney";
   amount: number;
   fee?: number;
   recipientPhone?: string;

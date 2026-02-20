@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { transferMoney, getBalance, recordTransaction } from "@/lib/balanceStore";
@@ -20,10 +20,12 @@ import {
   Building2,
   Landmark,
   User,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import QrScannerModal from "@/components/QrScannerModal";
+import { useSavedBanks } from "@/hooks/use-saved-banks";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Step = "method" | "agent" | "bank" | "amount" | "pin" | "success";
@@ -139,6 +141,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const [bankName, setBankName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [accountHolder, setAccountHolder] = useState("");
+  const { accounts: savedBanks, save: saveBank, remove: removeBank } = useSavedBanks();
   const txnTime = useRef(new Date());
   const txnId   = useRef(`TXN${Date.now().toString().slice(-8)}`);
 
@@ -237,7 +240,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
       if (isBank) {
         // Bank transfer — single-sided, no in-system recipient
         await recordTransaction({
-          type: "cashout",
+          type: "banktransfer",
           amount: amtVal,
           fee: feeVal,
           recipientName: `${bankName} - ${accountHolder}`,
@@ -264,6 +267,11 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
       return;
     }
     showTxnToast({ type: isBank ? "Bank Transfer" : "Cash Out", amount: `৳${amtVal.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-cashout" });
+    // Save bank account for future use
+    if (isBank) {
+      const bankShort = BANKS.find((b) => b.name === bankName)?.short ?? bankName.slice(0, 4).toUpperCase();
+      saveBank({ bank_name: bankName, account_number: accountNumber, account_holder: accountHolder, short_code: bankShort });
+    }
     setDirection(1);
     setStep("success");
   };
@@ -463,6 +471,51 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
             {/* ── STEP 1b: Bank ── */}
             {step === "bank" && (
               <div className="px-4 pt-6 pb-32 space-y-6">
+                {/* Saved bank accounts */}
+                {savedBanks.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-foreground">Saved Accounts</label>
+                    <div className="space-y-2">
+                      {savedBanks.map((sb) => (
+                        <div key={sb.id} className="flex items-center gap-3">
+                          <button
+                            onClick={() => {
+                              setBankName(sb.bank_name);
+                              setAccountNumber(sb.account_number);
+                              setAccountHolder(sb.account_holder);
+                              setError("");
+                            }}
+                            className={`flex-1 flex items-center gap-3 p-3 rounded-2xl border transition-all active:scale-[0.98] text-left ${
+                              bankName === sb.bank_name && accountNumber === sb.account_number
+                                ? "border-primary bg-primary/10 shadow-card"
+                                : "border-border bg-card hover:border-primary/50"
+                            }`}
+                          >
+                            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                              {sb.short_code.slice(0, 2)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-foreground truncate">{sb.account_holder}</p>
+                              <p className="text-xs text-muted-foreground">{sb.bank_name} · {sb.account_number.slice(-4).padStart(sb.account_number.length, "•")}</p>
+                            </div>
+                          </button>
+                          <button
+                            onClick={() => removeBank(sb.id)}
+                            className="w-9 h-9 rounded-xl bg-destructive/10 flex items-center justify-center text-destructive hover:bg-destructive/20 transition-colors shrink-0"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-px bg-border" />
+                      <span className="text-xs text-muted-foreground">or enter new</span>
+                      <div className="flex-1 h-px bg-border" />
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-foreground">Select Bank</label>
                   <div className="grid grid-cols-2 gap-2">
