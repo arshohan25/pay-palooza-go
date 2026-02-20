@@ -60,6 +60,7 @@ const T = {
     notRegistered: "Number not registered. Create an account.",
     enterOtp: "Enter the 6-digit OTP.", enter4Digits: "Enter all 4 digits.",
     reenterPinErr: "Re-enter your PIN.",
+    accountLocked: "Account locked. Try again in",
     securePayments: "Secure Payments",
     signingUp: "Creating your account…",
     signingIn: "Signing in…",
@@ -119,6 +120,7 @@ const T = {
     notRegistered: "নম্বর নিবন্ধিত নয়। একাউন্ট তৈরি করুন।",
     enterOtp: "৬-সংখ্যার ওটিপি দিন।", enter4Digits: "সব ৪টি সংখ্যা দিন।",
     reenterPinErr: "আপনার পিন পুনরায় দিন।",
+    accountLocked: "একাউন্ট লক হয়েছে। আবার চেষ্টা করুন",
     securePayments: "নিরাপদ পেমেন্ট",
     signingUp: "একাউন্ট তৈরি হচ্ছে…",
     signingIn: "সাইন ইন হচ্ছে…",
@@ -416,18 +418,52 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   };
 
   const handleLoginPin = useCallback(async (entered: string) => {
+    const loginPhone = phone || returningPhone;
+    // ── Lockout check ──
+    const lockKey = `mfs_lock_until_${loginPhone}`;
+    const attKey = `mfs_lock_attempts_${loginPhone}`;
+    const lockUntilStr = localStorage.getItem(lockKey);
+    if (lockUntilStr) {
+      const lockUntil = Number(lockUntilStr);
+      if (Date.now() < lockUntil) {
+        const secsLeft = Math.ceil((lockUntil - Date.now()) / 1000);
+        const mins = Math.floor(secsLeft / 60);
+        const secs = secsLeft % 60;
+        setError(`${t.accountLocked} ${mins}:${secs.toString().padStart(2, "0")}`);
+        haptics.error();
+        setTimeout(() => setPin(""), 300);
+        return;
+      }
+      // Lock expired — clear
+      localStorage.removeItem(lockKey);
+      localStorage.removeItem(attKey);
+    }
+
     setIsSubmitting(true);
     setError("");
     try {
-      await signIn(phone || returningPhone, entered);
-      localStorage.setItem(DEVICE_KEY, phone || returningPhone);
+      await signIn(loginPhone, entered);
+      // Success — clear lockout state
+      localStorage.removeItem(attKey);
+      localStorage.removeItem(lockKey);
+      localStorage.setItem(DEVICE_KEY, loginPhone);
       haptics.success();
       goTo("success");
       setTimeout(onAuthenticated, 1500);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "";
       if (msg.includes("Invalid login credentials")) {
-        setError(t.incorrectPin);
+        // Increment failed attempts
+        const prev = Number(localStorage.getItem(attKey) || "0");
+        const next = prev + 1;
+        localStorage.setItem(attKey, String(next));
+        if (next >= 5) {
+          const lockUntil = Date.now() + 5 * 60 * 1000;
+          localStorage.setItem(lockKey, String(lockUntil));
+          setError(`${t.accountLocked} 5:00`);
+        } else {
+          setError(`${t.incorrectPin} (${next}/5)`);
+        }
       } else if (msg.includes("not registered") || msg.includes("invalid")) {
         setError(t.notRegistered);
       } else {
@@ -621,8 +657,8 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 </button>
               ) : (
                 <button className="w-full text-sm text-center py-1 text-muted-foreground"
-                  onClick={() => { localStorage.removeItem(DEVICE_KEY); setPhone(""); goTo("register_phone"); }}>
-                  {t.newUser} <span className="text-primary font-bold">{t.createOne}</span>
+                  onClick={() => { setPin(""); setOtp(""); goTo("forgot_otp"); }}>
+                  {t.forgotPin}
                 </button>
               )}
               <p className="text-[10px] text-muted-foreground text-center pt-1">
