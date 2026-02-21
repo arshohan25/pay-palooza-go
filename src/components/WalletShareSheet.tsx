@@ -17,10 +17,21 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
+  // Generate alphabetic wallet ID (MFS-ABCD-EFGH)
+  const walletId = (() => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const block = (seed: string) => {
+      let h = 0;
+      for (let i = 0; i < seed.length; i++) h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
+      return Array.from({ length: 4 }, (_, i) => chars[Math.abs((h >> (i * 5)) % 26)]).join("");
+    };
+    return `MFS-${block(userId)}-${block(userId + "salt")}`;
+  })();
+
   // Generate real QR code
   useEffect(() => {
     if (!open || !canvasRef.current) return;
-    const payload = JSON.stringify({ walletId: userId, name: userName, app: "PayWave" });
+    const payload = JSON.stringify({ walletId, name: userName, app: "PayWave" });
     QRCode.toCanvas(canvasRef.current, payload, {
       width: 220,
       margin: 2,
@@ -30,10 +41,10 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
 
   const handleCopy = async () => {
     haptics.light();
-    try { await navigator.clipboard.writeText(userId); }
+    try { await navigator.clipboard.writeText(walletId); }
     catch {
       const el = document.createElement("textarea");
-      el.value = userId; document.body.appendChild(el);
+      el.value = walletId; document.body.appendChild(el);
       el.select(); document.execCommand("copy");
       document.body.removeChild(el);
     }
@@ -43,7 +54,7 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
 
   const handleShare = async () => {
     haptics.medium();
-    const text = `💳 My PayWave Wallet ID: ${userId}\n👤 ${userName}\n\nScan my QR code to send money instantly!`;
+    const text = `💳 My PayWave Wallet ID: ${walletId}\n👤 ${userName}\n\nScan my QR code to send money instantly!`;
     if (navigator.share) {
       try { await navigator.share({ title: "My PayWave Wallet", text }); } catch { /* dismissed */ }
     } else { handleCopy(); }
@@ -59,7 +70,7 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
       if (!card) return;
       const canvas = await html2canvas(card, { backgroundColor: null, scale: 3, useCORS: true, logging: false });
       const link = document.createElement("a");
-      link.download = `paywave-qr-${userId}.png`;
+      link.download = `paywave-qr-${walletId}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
     } catch (e) { console.error(e); }
@@ -127,7 +138,7 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
                 {/* Wallet ID row */}
                 <div className="px-4 py-3 bg-muted/30 text-center border-t border-border/60">
                   <p className="text-[9px] text-muted-foreground uppercase tracking-[0.18em] mb-0.5">Wallet ID</p>
-                  <p className="text-sm font-mono font-bold text-foreground tracking-widest">{userId}</p>
+                   <p className="text-sm font-mono font-bold text-foreground tracking-widest">{walletId}</p>
                 </div>
               </div>
 
@@ -139,7 +150,7 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
               >
                 <div className="text-left">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Your Wallet ID</p>
-                  <p className="text-sm font-mono font-bold text-foreground tracking-widest">{userId}</p>
+                  <p className="text-sm font-mono font-bold text-foreground tracking-widest">{walletId}</p>
                 </div>
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div

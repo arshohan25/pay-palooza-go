@@ -15,10 +15,21 @@ const UserQrModal = ({ open, onClose, userId, userName }: UserQrModalProps) => {
   const [copied, setCopied] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Generate alphabetic wallet ID (MFS-ABCD-EFGH)
+  const walletId = (() => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const block = (seed: string) => {
+      let h = 0;
+      for (let i = 0; i < seed.length; i++) h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
+      return Array.from({ length: 4 }, (_, i) => chars[Math.abs((h >> (i * 5)) % 26)]).join("");
+    };
+    return `MFS-${block(userId)}-${block(userId + "salt")}`;
+  })();
+
   // Generate real QR code when modal opens
   useEffect(() => {
     if (!open || !canvasRef.current) return;
-    const payload = JSON.stringify({ walletId: userId, name: userName, app: "PayWave" });
+    const payload = JSON.stringify({ walletId, name: userName, app: "PayWave" });
     QRCode.toCanvas(canvasRef.current, payload, {
       width: 200,
       margin: 2,
@@ -28,10 +39,10 @@ const UserQrModal = ({ open, onClose, userId, userName }: UserQrModalProps) => {
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(userId);
+      await navigator.clipboard.writeText(walletId);
     } catch {
       const el = document.createElement("textarea");
-      el.value = userId;
+      el.value = walletId;
       document.body.appendChild(el);
       el.select();
       document.execCommand("copy");
@@ -43,7 +54,7 @@ const UserQrModal = ({ open, onClose, userId, userName }: UserQrModalProps) => {
 
   const handleShare = async () => {
     if (navigator.share) {
-      await navigator.share({ title: "My EasyPay ID", text: `My wallet ID: ${userId}` });
+      await navigator.share({ title: "My PayWave ID", text: `My wallet ID: ${walletId}` });
     } else {
       handleCopy();
     }
@@ -105,7 +116,7 @@ const UserQrModal = ({ open, onClose, userId, userName }: UserQrModalProps) => {
             >
               <div className="text-left">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Your Wallet ID</p>
-                <p className="text-sm font-bold text-foreground font-mono tracking-widest">{userId}</p>
+                <p className="text-sm font-bold text-foreground font-mono tracking-widest">{walletId}</p>
               </div>
               <motion.div
                 animate={{ scale: copied ? [1, 1.25, 1] : 1 }}
