@@ -5,18 +5,10 @@ import UserQrModal from "@/components/UserQrModal";
 import WalletShareSheet from "@/components/WalletShareSheet";
 import { getBalance, onBalanceChange, fetchBalance, setupBalanceRealtime } from "@/lib/balanceStore";
 import { AddMoneyIcon } from "@/components/QuickActionIcons";
+import { generateWalletId } from "@/lib/walletId";
 
 const REGISTERED_KEY = "mfs_registered_phone";
 const USER_NAME_KEY  = "mfs_user_name";
-
-const generateUserId = (seed: string) => {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
-  }
-  const abs = Math.abs(hash).toString(16).toUpperCase().padStart(8, "0");
-  return `MFS-${abs.slice(0, 4)}-${abs.slice(4, 8)}`;
-};
 
 const getDisplayName = (): string => {
   const stored = localStorage.getItem(USER_NAME_KEY);
@@ -36,7 +28,7 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
   const [showQr, setShowQr] = useState(false);
   const [showWalletShare, setShowWalletShare] = useState(false);
   const phone   = useMemo(() => localStorage.getItem(REGISTERED_KEY) ?? "WALLET_USER", []);
-  const userId  = useMemo(() => generateUserId(phone), [phone]);
+  const userId  = useMemo(() => generateWalletId(phone), [phone]);
   const userName = useMemo(() => getDisplayName(), []);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 

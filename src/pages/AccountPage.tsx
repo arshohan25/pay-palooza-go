@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Copy, CheckCheck, ChevronRight,
@@ -14,12 +14,12 @@ import ProfileEditFlow, { getDisplayName, getDisplayPhoto } from "@/components/P
 import LimitsPage from "@/pages/LimitsPage";
 import SpendingInsightsPage from "@/pages/SpendingInsightsPage";
 import ReferPage from "@/pages/ReferPage";
+import { generateWalletId } from "@/lib/walletId";
 
 const ONBOARDING_KEY = "mfs_onboarding_done";
 
 type SubPage = "limits" | "insights" | "refer" | null;
 
-const WALLET_ID  = "EP-A3F1-9C22";
 const USER_EMAIL = "tanvir@example.com";
 
 const SESSION_KEY    = "mfs_authenticated";
@@ -115,16 +115,16 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const [displayPhoto, setDisplayPhotoState] = useState(getDisplayPhoto);
 
   const registeredPhone = getRegisteredPhone();
-
+  const walletId = useMemo(() => generateWalletId(registeredPhone || "WALLET_USER"), [registeredPhone]);
   if (subPage === "limits")   return <LimitsPage           onBack={() => setSubPage(null)} />;
   if (subPage === "insights") return <SpendingInsightsPage onBack={() => setSubPage(null)} />;
   if (subPage === "refer")    return <ReferPage            onBack={() => setSubPage(null)} />;
 
   const handleCopy = async () => {
-    try { await navigator.clipboard.writeText(WALLET_ID); }
+    try { await navigator.clipboard.writeText(walletId); }
     catch {
       const el = document.createElement("textarea");
-      el.value = WALLET_ID; document.body.appendChild(el);
+      el.value = walletId; document.body.appendChild(el);
       el.select(); document.execCommand("copy");
       document.body.removeChild(el);
     }
@@ -187,7 +187,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
           <div className="relative mt-5 pt-4 border-t border-white/15 flex items-center justify-between">
             <div>
               <p className="text-[10px] uppercase tracking-[0.12em] opacity-50 mb-0.5">Wallet ID</p>
-              <p className="text-[13px] font-mono font-bold tracking-widest opacity-90">{WALLET_ID}</p>
+              <p className="text-[13px] font-mono font-bold tracking-widest opacity-90">{walletId}</p>
             </div>
             <motion.button
               whileTap={{ scale: 0.88 }}

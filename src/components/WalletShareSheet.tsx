@@ -4,6 +4,7 @@ import { X, Copy, CheckCheck, Share2, Download } from "lucide-react";
 import QRCode from "qrcode";
 import { Button } from "@/components/ui/button";
 import { haptics } from "@/lib/haptics";
+import { generateWalletId } from "@/lib/walletId";
 
 interface WalletShareSheetProps {
   open: boolean;
@@ -17,16 +18,7 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
-  // Generate alphabetic wallet ID (MFS-ABCD-EFGH)
-  const walletId = (() => {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const block = (seed: string) => {
-      let h = 0;
-      for (let i = 0; i < seed.length; i++) h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
-      return Array.from({ length: 4 }, (_, i) => chars[Math.abs((h >> (i * 5)) % 26)]).join("");
-    };
-    return `MFS-${block(userId)}-${block(userId + "salt")}`;
-  })();
+  const walletId = generateWalletId(userId);
 
   // Generate real QR code
   useEffect(() => {
