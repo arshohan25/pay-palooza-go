@@ -41,7 +41,7 @@ const AgentBillPay = () => {
         p_fee: 0,
         p_description: `Bill Pay - ${selected}`,
         p_recipient_name: selected,
-        p_reference: `BP-${Date.now()}`,
+        p_reference: (() => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; })(),
       });
       if (error) throw error;
       setStep("done");

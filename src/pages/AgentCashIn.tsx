@@ -35,7 +35,7 @@ const AgentCashIn = () => {
         p_recipient_type: "cashin" as any,
         p_commission: commission,
         p_description: "Agent Cash In",
-        p_reference: `CI-${Date.now()}`,
+        p_reference: (() => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; })(),
       });
       if (error) throw error;
       setStep("done");

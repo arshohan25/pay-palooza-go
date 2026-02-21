@@ -29,6 +29,7 @@ const TXN_GRADIENTS: Record<string, string> = {
 
 export interface DbTransaction {
   id: string;
+  short_id: string;
   type: "send" | "receive" | "cashout" | "cashin" | "banktransfer" | "payment" | "recharge" | "paybill" | "addmoney";
   amount: number;
   fee: number;

@@ -36,7 +36,7 @@ const AgentB2B = () => {
         p_recipient_type: "receive" as any,
         p_commission: 0,
         p_description: `B2B ${transferType === "agent" ? "Agent" : "Distributor"} Transfer${note ? `: ${note}` : ""}`,
-        p_reference: `B2B-${Date.now()}`,
+        p_reference: (() => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; })(),
         p_recipient_name: transferType === "agent" ? "Agent" : "Distributor",
       });
       if (error) throw error;
