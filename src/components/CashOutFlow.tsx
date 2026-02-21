@@ -360,8 +360,8 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
             {step === "method" && (
               <div className="px-4 pt-6 pb-32 space-y-6">
                 <div className="text-center space-y-1">
-                   <h2 className="text-lg font-bold text-foreground">{t("howCashOut")}</h2>
-                   <p className="text-sm text-muted-foreground">{t("chooseMethod")}</p>
+                  <h2 className="text-lg font-bold text-foreground">How would you like to cash out?</h2>
+                  <p className="text-sm text-muted-foreground">Choose your preferred withdrawal method</p>
                 </div>
 
                 <div className="space-y-3">
@@ -373,9 +373,9 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       <Store size={24} />
                     </div>
                     <div className="flex-1">
-                       <p className="text-base font-bold text-foreground">{t("agentCashOut")}</p>
-                       <p className="text-xs text-muted-foreground mt-0.5">{t("withdrawFromAgentDesc")}</p>
-                       <p className="text-xs text-primary font-semibold mt-1">{t("fee")}: 1.19% ({t("personal")}) · 1% ({t("merchant")})</p>
+                      <p className="text-base font-bold text-foreground">Agent Cash Out</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Withdraw cash from a nearby agent</p>
+                      <p className="text-xs text-primary font-semibold mt-1">Fee: 1.19% (Personal) · 1% (Merchant)</p>
                     </div>
                     <ChevronLeft size={18} className="text-muted-foreground rotate-180 shrink-0" />
                   </button>
@@ -388,9 +388,9 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       <Landmark size={24} />
                     </div>
                     <div className="flex-1">
-                       <p className="text-base font-bold text-foreground">{t("flowBankTransfer")}</p>
-                       <p className="text-xs text-muted-foreground mt-0.5">{t("transferToBankDesc")}</p>
-                       <p className="text-xs text-primary font-semibold mt-1">{t("fee")}: 1.19% ({t("personal")}) · 1% ({t("merchant")})</p>
+                      <p className="text-base font-bold text-foreground">Bank Transfer</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Transfer to any bank account</p>
+                      <p className="text-xs text-primary font-semibold mt-1">Fee: 1.19% (Personal) · 1% (Merchant)</p>
                     </div>
                     <ChevronLeft size={18} className="text-muted-foreground rotate-180 shrink-0" />
                   </button>
@@ -403,7 +403,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
               <div className="px-4 pt-6 pb-32 space-y-6">
                 {/* Agent ID input */}
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">{t("agentIdLabel")}</label>
+                  <label className="text-sm font-semibold text-foreground">Agent ID</label>
                   <div className="relative">
                     <Hash size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -429,14 +429,14 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                     className="w-full h-11 gradient-cashout border-0 text-white font-semibold"
                     onClick={handleAgentIdContinue}
                   >
-                     {t("continue")}
+                    Continue
                   </Button>
                 </div>
 
                 {/* Divider */}
                 <div className="flex items-center gap-3">
                   <div className="flex-1 h-px bg-border" />
-                  <span className="text-xs text-muted-foreground flex items-center gap-1"><MapPin size={11} /> {t("nearbyAgents")}</span>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1"><MapPin size={11} /> Nearby agents</span>
                   <div className="flex-1 h-px bg-border" />
                 </div>
 
@@ -487,7 +487,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                 {/* Saved bank accounts */}
                 {savedBanks.length > 0 && (
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-foreground">{t("savedAccounts")}</label>
+                    <label className="text-sm font-semibold text-foreground">Saved Accounts</label>
                     <div className="space-y-2">
                       {savedBanks.map((sb) => (
                         <div key={sb.id} className="flex items-center gap-3">
@@ -524,13 +524,13 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
 
                     <div className="flex items-center gap-3">
                       <div className="flex-1 h-px bg-border" />
-                      <span className="text-xs text-muted-foreground">{t("orEnterNew")}</span>
+                      <span className="text-xs text-muted-foreground">or enter new</span>
                       <div className="flex-1 h-px bg-border" />
                     </div>
                   </div>
                 )}
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">{t("selectBank")}</label>
+                  <label className="text-sm font-semibold text-foreground">Select Bank</label>
                   <div className="grid grid-cols-2 gap-2">
                     {BANKS.map((b) => (
                       <button
@@ -556,7 +556,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">{t("accountNumber")}</label>
+                  <label className="text-sm font-semibold text-foreground">Account Number</label>
                   <div className="relative">
                     <Hash size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -570,7 +570,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">{t("accountHolderName")}</label>
+                  <label className="text-sm font-semibold text-foreground">Account Holder Name</label>
                   <div className="relative">
                     <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -593,7 +593,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   className="w-full h-11 gradient-cashout border-0 text-white font-semibold"
                   onClick={handleBankContinue}
                 >
-                   {t("continue")}
+                  Continue
                 </Button>
               </div>
             )}
@@ -650,7 +650,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                 {/* Big amount input */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-semibold text-foreground">{t("enterAmount")}</label>
+                    <label className="text-sm font-semibold text-foreground">Enter Amount</label>
                     <AvailableBalanceBadge />
                   </div>
                   <div className="relative flex items-center">
@@ -672,7 +672,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
 
                 {/* Quick amounts */}
                 <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground font-medium">{t("quickSelect")}</p>
+                  <p className="text-xs text-muted-foreground font-medium">Quick select</p>
                   <div className="grid grid-cols-3 gap-2">
                     {QUICK_AMOUNTS.map((q) => (
                       <button
@@ -729,7 +729,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   className="w-full h-12 gradient-cashout border-0 text-white font-semibold text-base"
                   onClick={handleAmountContinue}
                 >
-                  {t("continueToPin")}
+                  Continue to PIN
                 </Button>
               </div>
             )}
@@ -796,7 +796,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
 
                 <SlideToConfirm
                   onConfirm={handlePinConfirm}
-                  label={isBank ? t("slideToTransfer") : t("slideToCashOut")}
+                  label={isBank ? "Slide to Transfer" : "Slide to Cash Out"}
                   gradient="gradient-cashout"
                   disabled={pin.length < 4 || processing}
                   pinComplete={pin.length === 4}
@@ -822,8 +822,8 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   transition={{ delay: 0.3 }}
                   className="space-y-2"
                 >
-                   <h2 className="text-2xl font-extrabold text-foreground">
-                     {isBank ? t("bankTransferSuccessful") : t("cashOutSuccessful")}
+                  <h2 className="text-2xl font-extrabold text-foreground">
+                    {isBank ? "Bank Transfer Successful!" : "Cash Out Successful!"}
                   </h2>
                   <p className="text-muted-foreground text-sm">
                     ৳{parseFloat(amount).toLocaleString()} {isBank ? "transferred to" : "cashed out at"}{" "}
@@ -912,14 +912,14 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   transition={{ delay: 0.6 }}
                   className="w-full space-y-3"
                 >
-                   <Button
-                     className="w-full h-12 gradient-cashout border-0 text-white font-semibold"
-                     onClick={onClose}
-                   >
-                     {t("backToHome")}
+                  <Button
+                    className="w-full h-12 gradient-cashout border-0 text-white font-semibold"
+                    onClick={onClose}
+                  >
+                    Back to Home
                   </Button>
-                   <Button variant="outline" className="w-full h-11" onClick={() => setShowShare(true)}>
-                     {t("shareReceipt")}
+                  <Button variant="outline" className="w-full h-11" onClick={() => setShowShare(true)}>
+                    Share Receipt
                   </Button>
                 </motion.div>
               </div>
