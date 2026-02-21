@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Copy, CheckCheck, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import QRCode from "qrcode";
-import { generateWalletId } from "@/lib/walletId";
+
 
 interface UserQrModalProps {
   open: boolean;
@@ -16,7 +16,7 @@ const UserQrModal = ({ open, onClose, userId, userName }: UserQrModalProps) => {
   const [copied, setCopied] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const walletId = generateWalletId(userId);
+  const walletId = userId;
 
   // Generate real QR code when modal opens
   useEffect(() => {
