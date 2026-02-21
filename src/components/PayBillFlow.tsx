@@ -317,7 +317,7 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
             {/* ── STEP 1: Bill Type ── */}
             {step === "type" && (
               <div className="px-4 pt-6 pb-32 space-y-3">
-                <p className="text-sm font-semibold text-foreground mb-4">Select Bill Type</p>
+                <p className="text-sm font-semibold text-foreground mb-4">{t("selectBillType")}</p>
                 {BILL_TYPES.map((bt) => {
                   const Icon = bt.icon;
                   return (
@@ -359,7 +359,7 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
 
                 {/* Provider selection */}
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">Select Provider</label>
+                  <label className="text-sm font-semibold text-foreground">{t("selectProvider")}</label>
                   <div className="grid grid-cols-2 gap-2">
                     {billType.providers.map((p) => {
                       const selected = provider?.id === p.id;
@@ -407,7 +407,7 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
                   className="w-full h-11 gradient-primary border-0 text-white font-semibold"
                   onClick={handleAccountContinue}
                 >
-                  Fetch Bill
+                  {t("fetchBill")}
                 </Button>
               </div>
             )}
@@ -480,7 +480,7 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
             {step === "pin" && billType && billInfo && (
               <div className="px-4 pt-8 pb-32 space-y-8">
                 <div className="text-center space-y-1">
-                  <p className="text-base font-bold text-foreground">Confirm Payment</p>
+                  <p className="text-base font-bold text-foreground">{t("confirmPayment")}</p>
                   <p className="text-sm text-muted-foreground">
                     Paying <span className="font-semibold text-foreground">৳{billInfo.due.toLocaleString()}</span> for {billType.name} bill
                   </p>
@@ -489,7 +489,7 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
                 <div className="px-4">
                   <SlideToConfirm
                     onConfirm={handlePinConfirm}
-                    label="Slide to Pay Bill"
+                    label={t("slideToPayBill")}
                     gradient="gradient-primary"
                     disabled={pin.length < 4 || processing}
                     pinComplete={pin.length === 4}
@@ -517,7 +517,7 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
                   transition={{ delay: 0.15 }}
                   className="text-center space-y-1"
                 >
-                  <p className="text-2xl font-extrabold text-foreground">Payment Successful!</p>
+                  <p className="text-2xl font-extrabold text-foreground">{t("paymentSuccessfulBill")}</p>
                   <p className="text-sm text-muted-foreground">{billType.name} bill paid to {provider.name}</p>
                 </motion.div>
 
@@ -572,10 +572,10 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
                     className="w-full h-11 gradient-primary border-0 text-white font-semibold"
                     onClick={onClose}
                   >
-                    Done
+                    {t("done")}
                   </Button>
                   <Button variant="outline" className="w-full h-11" onClick={() => setShowShare(true)}>
-                    Share Receipt
+                    {t("shareReceipt")}
                   </Button>
                 </motion.div>
               </div>
