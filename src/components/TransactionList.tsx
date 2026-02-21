@@ -3,6 +3,7 @@ import { ChevronRight, X, Copy, CheckCircle2, Hash, User, Tag, FileText, Clock }
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { useTransactions, DbTransaction } from "@/hooks/use-transactions";
+import { useI18n } from "@/lib/i18n";
 import {
   TxSendIcon,
   TxReceiveIcon,
@@ -67,6 +68,7 @@ interface TransactionListProps {
 }
 
 const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: () => void }) => {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   const display = getTxDisplay(tx);
   const isCredit = display.amount > 0;
@@ -80,12 +82,12 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
   };
 
   const rows: { icon: React.ElementType; label: string; value: string; copy: boolean }[] = [
-    { icon: Hash,     label: "Transaction ID", value: txId,                                  copy: true  },
-    { icon: User,     label: "Name / Party",   value: display.name,                          copy: false },
-    { icon: Tag,      label: "Type",           value: display.label,                         copy: false },
-    { icon: FileText, label: "Description",    value: tx.description || display.label,       copy: false },
-    { icon: Clock,    label: "Date & Time",    value: format(txDate, "dd MMM yyyy, h:mm a"), copy: false },
-    ...(tx.commission > 0 ? [{ icon: Tag, label: "Commission", value: `৳${tx.commission.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, copy: false }] : []),
+    { icon: Hash,     label: t("transactionId"), value: txId,                                  copy: true  },
+    { icon: User,     label: t("nameParty"),      value: display.name,                          copy: false },
+    { icon: Tag,      label: t("type"),            value: display.label,                         copy: false },
+    { icon: FileText, label: t("description"),     value: tx.description || display.label,       copy: false },
+    { icon: Clock,    label: t("dateTime"),        value: format(txDate, "dd MMM yyyy, h:mm a"), copy: false },
+    ...(tx.commission > 0 ? [{ icon: Tag, label: t("commission"), value: `৳${tx.commission.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, copy: false }] : []),
   ];
 
   return (
@@ -152,7 +154,7 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
           ))}
 
           <div className={`mt-4 rounded-2xl p-4 flex items-center justify-between ${isCredit ? "bg-primary/10" : "bg-muted/60"}`}>
-            <span className="text-[13px] font-semibold text-muted-foreground">Total Amount</span>
+            <span className="text-[13px] font-semibold text-muted-foreground">{t("totalAmount")}</span>
             <span className={`text-[20px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
               {isCredit ? "+" : "−"}৳{Math.abs(display.amount).toLocaleString()}
             </span>
@@ -164,24 +166,25 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
 };
 
 const TransactionList = ({ onSeeAll, refreshKey }: TransactionListProps) => {
+  const { t } = useI18n();
   const { transactions, loading } = useTransactions(5, refreshKey);
   const [selectedTx, setSelectedTx] = useState<DbTransaction | null>(null);
 
   return (
     <div>
       <div className="flex items-center justify-between mb-3 px-0.5">
-        <h2 className="text-[15px] font-bold text-foreground tracking-tight">Recent Transactions</h2>
+        <h2 className="text-[15px] font-bold text-foreground tracking-tight">{t("recentTransactions")}</h2>
         <button onClick={onSeeAll}
           className="flex items-center gap-0.5 text-[12px] font-semibold text-primary hover:text-primary/80 transition-colors press-effect">
-          See All <ChevronRight size={13} strokeWidth={2.5} />
+          {t("seeAll")} <ChevronRight size={13} strokeWidth={2.5} />
         </button>
       </div>
 
       <div className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden">
         {loading ? (
-          <div className="px-4 py-8 text-center text-muted-foreground text-sm">Loading…</div>
+          <div className="px-4 py-8 text-center text-muted-foreground text-sm">{t("loading")}</div>
         ) : transactions.length === 0 ? (
-          <div className="px-4 py-8 text-center text-muted-foreground text-sm">No transactions yet</div>
+          <div className="px-4 py-8 text-center text-muted-foreground text-sm">{t("noTransactions")}</div>
         ) : (
           transactions.map((tx, index) => {
             const display = getTxDisplay(tx);

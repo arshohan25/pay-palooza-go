@@ -1,7 +1,9 @@
 import { motion } from "framer-motion";
 import { Gift, ChevronRight, Sparkles } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 const PromoCard = () => {
+  const { t } = useI18n();
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -24,14 +26,14 @@ const PromoCard = () => {
           <div className="flex items-center gap-1.5 mb-0.5">
             <Sparkles size={11} className="text-accent-foreground opacity-80" />
             <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-accent-foreground/70">
-              Limited offer
+              {t("limitedOffer")}
             </span>
           </div>
           <p className="text-[14px] font-bold text-accent-foreground leading-snug">
-            5% Cashback on Mobile Recharge
+            {t("promoCashback")}
           </p>
           <p className="text-[11.5px] text-accent-foreground/75 mt-0.5">
-            Valid until Feb 28 · Min ৳100
+            {t("promoValid")}
           </p>
         </div>
 

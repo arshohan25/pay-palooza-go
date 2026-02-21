@@ -3,13 +3,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { getTxnNotifCount, onTxnNotifChange } from "@/lib/txnNotifStore";
 import { getInboxCount, onInboxChange } from "@/lib/inboxStore";
+import { useI18n } from "@/lib/i18n";
 
-const navItems = [
-  { icon: LayoutDashboard, label: "Home",    id: "home" },
-  { icon: ArrowLeftRight,  label: "History", id: "history" },
-  { icon: ScanLine,        label: "Scan",    id: "scan" },
-  { icon: MessageCircle,   label: "Inbox",   id: "inbox" },
-  { icon: CircleUserRound, label: "Account", id: "account" },
+const navDefs = [
+  { icon: LayoutDashboard, labelKey: "home" as const, id: "home" },
+  { icon: ArrowLeftRight,  labelKey: "history" as const, id: "history" },
+  { icon: ScanLine,        labelKey: "scan" as const, id: "scan" },
+  { icon: MessageCircle,   labelKey: "inbox" as const, id: "inbox" },
+  { icon: CircleUserRound, labelKey: "account" as const, id: "account" },
 ];
 
 interface SideNavProps {
@@ -18,6 +19,7 @@ interface SideNavProps {
 }
 
 const SideNav = ({ activeTab = "home", onTabChange }: SideNavProps) => {
+  const { t } = useI18n();
   const [txnCount, setTxnCount]     = useState(getTxnNotifCount);
   const [inboxCount, setInboxCount] = useState(getInboxCount);
   const displayName = localStorage.getItem("mfs_user_name") || "My Wallet";
@@ -36,15 +38,16 @@ const SideNav = ({ activeTab = "home", onTabChange }: SideNavProps) => {
           ₿
         </div>
         <div>
-          <p className="text-[14px] font-bold text-foreground">BkashClone</p>
-          <p className="text-[10px] text-muted-foreground font-medium">Mobile Financial Service</p>
+          <p className="text-[14px] font-bold text-foreground">EasyPay</p>
+          <p className="text-[10px] text-muted-foreground font-medium">{t("mobileFinancialService")}</p>
         </div>
       </div>
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-5 space-y-0.5 overflow-y-auto">
-        {navItems.map((item) => {
+        {navDefs.map((item) => {
           const isActive = activeTab === item.id;
+          const label = t(item.labelKey);
           return (
             <motion.button
               key={item.id}
@@ -102,7 +105,7 @@ const SideNav = ({ activeTab = "home", onTabChange }: SideNavProps) => {
                   )}
                 </AnimatePresence>
               </div>
-              <span className="relative z-10">{item.label}</span>
+              <span className="relative z-10">{label}</span>
               {/* Inline count label for inbox on sidebar */}
               {item.id === "inbox" && inboxCount > 0 && !isActive && (
                 <span className="relative z-10 ml-auto min-w-[18px] h-[18px] px-1 gradient-send text-white text-[9px] font-bold rounded-full flex items-center justify-center">
