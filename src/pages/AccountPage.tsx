@@ -16,6 +16,18 @@ import SpendingInsightsPage from "@/pages/SpendingInsightsPage";
 import ReferPage from "@/pages/ReferPage";
 import { generateWalletId } from "@/lib/walletId";
 import { useI18n } from "@/lib/i18n";
+import { useUserRoles } from "@/hooks/use-user-roles";
+
+const ROLE_STYLES: Record<string, { label: string; bg: string; text: string }> = {
+  customer:          { label: "Customer",          bg: "bg-primary/10",      text: "text-primary" },
+  admin:             { label: "Admin",             bg: "bg-destructive/10",  text: "text-destructive" },
+  agent:             { label: "Agent",             bg: "bg-[hsl(122_38%_50%)]/12", text: "text-[hsl(122_38%_50%)]" },
+  merchant:          { label: "Merchant",          bg: "bg-[hsl(291_64%_44%)]/12", text: "text-[hsl(291_64%_44%)]" },
+  distributor:       { label: "Distributor",       bg: "bg-[hsl(217_80%_50%)]/12", text: "text-[hsl(217_80%_50%)]" },
+  super_distributor: { label: "Super Distributor", bg: "bg-accent/12",       text: "text-accent" },
+  compliance:        { label: "Compliance",        bg: "bg-muted",           text: "text-muted-foreground" },
+  finance:           { label: "Finance",           bg: "bg-muted",           text: "text-muted-foreground" },
+};
 
 const ONBOARDING_KEY = "mfs_onboarding_done";
 
@@ -117,6 +129,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const [displayName, setDisplayNameState]   = useState(getDisplayName);
   const [displayPhoto, setDisplayPhotoState] = useState(getDisplayPhoto);
 
+  const { roles } = useUserRoles();
   const registeredPhone = getRegisteredPhone();
   const walletId = useMemo(() => generateWalletId(registeredPhone || "WALLET_USER"), [registeredPhone]);
   if (subPage === "limits")   return <LimitsPage           onBack={() => setSubPage(null)} />;
@@ -176,6 +189,18 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
                 <p className="text-[17px] font-bold">{displayName}</p>
                 <KycBadge verified />
               </div>
+              {roles.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                  {roles.map((role) => {
+                    const s = ROLE_STYLES[role] ?? { label: role, bg: "bg-muted", text: "text-muted-foreground" };
+                    return (
+                      <span key={role} className={`inline-flex items-center text-[9px] font-bold px-2 py-0.5 rounded-full ${s.bg} ${s.text} border border-white/15`}>
+                        {s.label}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
               <p className="text-[13px] opacity-80 mt-0.5 font-medium">{registeredPhone ? `+880 ${registeredPhone}` : "—"}</p>
               <p className="text-[11px] opacity-55 truncate">{USER_EMAIL}</p>
             </div>
