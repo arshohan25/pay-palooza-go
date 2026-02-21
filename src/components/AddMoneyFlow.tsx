@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useI18n } from "@/lib/i18n";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = "amount" | "source" | "details" | "pin" | "success";
@@ -80,6 +81,7 @@ const PinDots = ({ length }: { length: number }) => (
 interface AddMoneyFlowProps { onClose: () => void; }
 
 const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
+  const { t } = useI18n();
   const [step, setStep]       = useState<Step>("amount");
   const [direction, setDir]   = useState(1);
   const [amount, setAmount]   = useState("");
@@ -220,8 +222,8 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
               <ChevronLeft size={20} />
             </button>
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-extrabold tracking-tight">Add Money</h1>
-              <p className="text-xs text-white/70 mt-0.5">Top Up Your Wallet · Free</p>
+              <h1 className="text-xl font-extrabold tracking-tight">{t("flowAddMoney")}</h1>
+              <p className="text-xs text-white/70 mt-0.5">{t("flowTopUpWallet")}</p>
             </div>
           </div>
           <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">

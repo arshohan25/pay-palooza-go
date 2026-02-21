@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowUpRight, Banknote, CreditCard, TrendingDown, Info } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 import { Progress } from "@/components/ui/progress";
 
 interface LimitRowProps {
@@ -108,7 +109,9 @@ interface LimitsPageProps {
   onBack: () => void;
 }
 
-const LimitsPage = ({ onBack }: LimitsPageProps) => (
+const LimitsPage = ({ onBack }: LimitsPageProps) => {
+  const { t } = useI18n();
+  return (
   <motion.div
     initial={{ opacity: 0, x: 32 }}
     animate={{ opacity: 1, x: 0 }}
@@ -126,8 +129,8 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => (
         <ArrowLeft size={17} className="text-foreground" strokeWidth={2.2} />
       </motion.button>
       <div>
-        <h1 className="text-[17px] font-bold text-foreground">Limits & Charges</h1>
-        <p className="text-[11.5px] text-muted-foreground">Your current usage & transaction limits</p>
+        <h1 className="text-[17px] font-bold text-foreground">{t("limitsTitle")}</h1>
+        <p className="text-[11.5px] text-muted-foreground">{t("limitsSubtitle")}</p>
       </div>
     </div>
 
@@ -135,8 +138,8 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => (
     <div className="flex gap-3 items-start bg-primary/8 border border-primary/20 rounded-2xl px-4 py-3.5">
       <Info size={15} className="text-primary mt-0.5 shrink-0" />
       <p className="text-[12px] text-primary leading-relaxed font-medium">
-        Limits reset at midnight. Complete KYC verification to unlock higher transaction limits.
-      </p>
+          {t("limitsInfoBanner")}
+        </p>
     </div>
 
     {/* Service cards */}
@@ -147,7 +150,7 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => (
     {/* Tariff note */}
     <div className="bg-card rounded-3xl border border-border/60 p-4 space-y-2.5 shadow-card">
       <p className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-        Tariff Note
+          {t("tariffNote")}
       </p>
       <ul className="space-y-2 text-[12px] text-muted-foreground font-medium">
         <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Cash Out at agent: 1.85% per transaction</li>
@@ -158,6 +161,7 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => (
       </ul>
     </div>
   </motion.div>
-);
+  );
+};
 
 export default LimitsPage;

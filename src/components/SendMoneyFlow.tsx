@@ -22,6 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import QrScannerModal from "@/components/QrScannerModal";
+import { useI18n } from "@/lib/i18n";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = "recipient" | "amount" | "confirm" | "pin" | "success";
@@ -128,6 +129,7 @@ const PinInput = ({ pin, onChange, error }: PinInputProps) => {
 interface SendMoneyFlowProps { onClose: () => void; prefilledPhone?: string; onSuccess?: (amount: number) => void; }
 
 const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProps) => {
+  const { t } = useI18n();
   const [step, setStep]           = useState<Step>("recipient");
   const [direction, setDirection] = useState(1);
   const [recipient, setRecipient] = useState<Contact | null>(null);
@@ -304,8 +306,8 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
               <ChevronLeft size={20} />
             </button>
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-extrabold tracking-tight">Send Money</h1>
-              <p className="text-xs text-white/70 mt-0.5">Secure &amp; Instant Transfer</p>
+              <h1 className="text-xl font-extrabold tracking-tight">{t("flowSendMoney")}</h1>
+              <p className="text-xs text-white/70 mt-0.5">{t("flowSecureTransfer")}</p>
             </div>
           </div>
           {/* Slim progress bar */}

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useI18n } from "@/lib/i18n";
 import { ArrowLeft, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -79,6 +80,7 @@ interface InsightsPageProps {
 }
 
 const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
+  const { t } = useI18n();
   const [activeMonth, setActiveMonth] = useState("Jan");
 
   const donutTotal = DONUT_DATA.reduce((s, d) => s + d.value, 0);
@@ -101,8 +103,8 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
           <ArrowLeft size={17} className="text-foreground" strokeWidth={2.2} />
         </motion.button>
         <div>
-          <h1 className="text-[17px] font-bold text-foreground">Spending Insights</h1>
-          <p className="text-[11.5px] text-muted-foreground">Track your spending patterns</p>
+          <h1 className="text-[17px] font-bold text-foreground">{t("insightsTitle")}</h1>
+          <p className="text-[11.5px] text-muted-foreground">{t("insightsSub2")}</p>
         </div>
       </div>
 
@@ -116,7 +118,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
             <div className="w-7 h-7 rounded-xl gradient-cashout flex items-center justify-center">
               <ArrowUpRight size={13} className="text-primary-foreground" />
             </div>
-            <span className="text-[11.5px] font-semibold text-muted-foreground">Total Sent</span>
+            <span className="text-[11.5px] font-semibold text-muted-foreground">{t("totalSent")}</span>
           </div>
           <p className="text-[20px] font-bold text-foreground">৳{TOTAL_SENT.toLocaleString()}</p>
           <div className="flex items-center gap-1 mt-1">
@@ -133,7 +135,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
             <div className="w-7 h-7 rounded-xl gradient-primary flex items-center justify-center">
               <ArrowDownLeft size={13} className="text-primary-foreground" />
             </div>
-            <span className="text-[11.5px] font-semibold text-muted-foreground">Total Received</span>
+            <span className="text-[11.5px] font-semibold text-muted-foreground">{t("totalReceived")}</span>
           </div>
           <p className="text-[20px] font-bold text-foreground">৳{TOTAL_RECEIVED.toLocaleString()}</p>
           <div className="flex items-center gap-1 mt-1">
@@ -149,7 +151,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
         className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden"
       >
         <div className="px-4 pt-4 pb-2 flex items-center justify-between">
-          <p className="text-sm font-bold text-foreground">Monthly Breakdown</p>
+          <p className="text-sm font-bold text-foreground">{t("monthlyBreakdown")}</p>
           <div className="flex gap-1">
             {MONTHS.map((m) => (
               <button
@@ -211,7 +213,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
         initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
         className="bg-card rounded-3xl border border-border/60 shadow-card p-4"
       >
-        <p className="text-sm font-bold text-foreground mb-3">Category Breakdown</p>
+        <p className="text-sm font-bold text-foreground mb-3">{t("categoryBreakdown")}</p>
         <div style={{ height: 200 }}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -270,7 +272,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
         initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
         className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden"
       >
-        <p className="text-sm font-bold text-foreground px-4 pt-4 pb-2">Top Merchants</p>
+        <p className="text-sm font-bold text-foreground px-4 pt-4 pb-2">{t("topMerchants")}</p>
         {TOP_MERCHANTS.map((m, i) => {
           const max = TOP_MERCHANTS[0].amount;
           const pct = Math.round((m.amount / max) * 100);

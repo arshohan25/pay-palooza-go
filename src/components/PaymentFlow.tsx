@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import QrScannerModal from "@/components/QrScannerModal";
+import { useI18n } from "@/lib/i18n";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = "merchant" | "amount" | "pin" | "success";
@@ -99,6 +100,7 @@ const PinInput = ({ pin, onChange, error }: PinInputProps) => (
 interface PaymentFlowProps { onClose: () => void; }
 
 const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
+  const { t } = useI18n();
   const [step, setStep]           = useState<Step>("merchant");
   const [direction, setDirection] = useState(1);
   const [merchant, setMerchant]   = useState<Merchant | null>(null);
@@ -222,8 +224,8 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
               <ChevronLeft size={20} />
             </button>
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-extrabold tracking-tight">Payment</h1>
-              <p className="text-xs text-white/70 mt-0.5">Merchant &amp; QR Payments</p>
+              <h1 className="text-xl font-extrabold tracking-tight">{t("flowPayment")}</h1>
+              <p className="text-xs text-white/70 mt-0.5">{t("flowMerchantQr")}</p>
             </div>
           </div>
           <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">

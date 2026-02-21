@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useI18n } from "@/lib/i18n";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Step = "type" | "account" | "bill" | "pin" | "success";
@@ -195,6 +196,7 @@ const PinInput = ({ pin, onChange, error }: PinInputProps) => (
 interface PayBillFlowProps { onClose: () => void; }
 
 const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
+  const { t } = useI18n();
   const [step, setStep]             = useState<Step>("type");
   const [direction, setDirection]   = useState(1);
   const [billType, setBillType]     = useState<BillType | null>(null);
@@ -284,8 +286,8 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
               <ChevronLeft size={20} />
             </button>
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-extrabold tracking-tight">Pay Bill</h1>
-              <p className="text-xs text-white/70 mt-0.5">Utilities &amp; Services · Free</p>
+              <h1 className="text-xl font-extrabold tracking-tight">{t("flowPayBill")}</h1>
+              <p className="text-xs text-white/70 mt-0.5">{t("flowUtilitiesFree")}</p>
             </div>
           </div>
           <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">

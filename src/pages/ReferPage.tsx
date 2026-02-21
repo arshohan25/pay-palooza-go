@@ -4,6 +4,7 @@ import {
   ArrowLeft, Copy, CheckCheck, Gift, Users, Star,
   CheckCircle2, Clock, XCircle, Share2,
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 
@@ -42,6 +43,7 @@ interface ReferPageProps {
 }
 
 const ReferPage = ({ onBack }: ReferPageProps) => {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -57,7 +59,7 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
     }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    toast.success("Referral code copied!");
+    toast.success(t("referralCodeCopied"));
   };
 
   const shareText = `Use my referral code ${REFERRAL_CODE} on BkashClone and we both get ৳${REWARD_PER_FRIEND}!`;
@@ -102,8 +104,8 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
           <ArrowLeft size={17} className="text-foreground" strokeWidth={2.2} />
         </motion.button>
         <div>
-          <h1 className="text-[17px] font-bold text-foreground">Refer a Friend</h1>
-          <p className="text-[11.5px] text-muted-foreground">Earn ৳{REWARD_PER_FRIEND} for every successful referral</p>
+          <h1 className="text-[17px] font-bold text-foreground">{t("referTitle")}</h1>
+          <p className="text-[11.5px] text-muted-foreground">{t("referSubtitle")}</p>
         </div>
       </div>
 
@@ -117,15 +119,15 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
             <Gift size={22} className="text-white" />
           </div>
           <div>
-            <p className="text-lg font-bold">Earn ৳{REWARD_PER_FRIEND}</p>
-            <p className="text-sm opacity-80">per successful referral</p>
+            <p className="text-lg font-bold">{t("referEarn")} ৳{REWARD_PER_FRIEND}</p>
+            <p className="text-sm opacity-80">{t("perSuccessfulReferral")}</p>
           </div>
         </div>
 
         {/* Code block */}
         <div className="bg-white/15 rounded-xl px-4 py-3 flex items-center justify-between backdrop-blur-sm">
           <div>
-            <p className="text-[11px] opacity-60 mb-0.5">Your referral code</p>
+            <p className="text-[11px] opacity-60 mb-0.5">{t("yourReferralCode")}</p>
             <p className="text-lg font-mono font-bold tracking-widest">{REFERRAL_CODE}</p>
           </div>
           <button
@@ -165,9 +167,9 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Total Earned",  value: `৳${totalEarned}`,   icon: Star,   cls: "gradient-accent"   },
-          { label: "Referred",      value: FRIENDS.length,       icon: Users,  cls: "gradient-payment"  },
-          { label: "Completed",     value: completedCount,        icon: CheckCircle2, cls: "gradient-primary" },
+          { label: t("totalEarned"),  value: `৳${totalEarned}`,   icon: Star,   cls: "gradient-accent"   },
+          { label: t("referred"),      value: FRIENDS.length,       icon: Users,  cls: "gradient-payment"  },
+          { label: t("completed"),     value: completedCount,        icon: CheckCircle2, cls: "gradient-primary" },
         ].map(({ label, value, icon: Icon, cls }) => (
           <motion.div
             key={label}
@@ -189,9 +191,9 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
         className="bg-card rounded-3xl border border-border/60 shadow-card p-4 space-y-3"
       >
         <div className="flex items-center justify-between">
-          <p className="text-sm font-bold text-foreground">Reward Progress</p>
+          <p className="text-sm font-bold text-foreground">{t("rewardProgress")}</p>
           <span className="text-xs text-muted-foreground">
-            {completedCount} / {TARGET_FRIENDS} friends
+            {completedCount} / {TARGET_FRIENDS} {t("friends")}
           </span>
         </div>
 
@@ -199,7 +201,7 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
 
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>{progressPct}% complete</span>
-          <span>{TARGET_FRIENDS - completedCount} more for next milestone</span>
+          <span>{TARGET_FRIENDS - completedCount} {t("moreForMilestone")}</span>
         </div>
 
         {/* Milestone markers */}
@@ -233,7 +235,7 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
         initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
         className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden"
       >
-        <p className="text-sm font-bold text-foreground px-4 pt-4 pb-2">Referred Friends</p>
+        <p className="text-sm font-bold text-foreground px-4 pt-4 pb-2">{t("referredFriends")}</p>
         {FRIENDS.map((f, i) => (
           <div key={i} className="flex items-center gap-3 px-4 py-3.5 border-b border-border last:border-0">
             <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0">
@@ -258,11 +260,11 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
         initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
         className="bg-card rounded-3xl border border-border/60 shadow-card p-4 space-y-3"
       >
-        <p className="text-sm font-bold text-foreground">How it Works</p>
+        <p className="text-sm font-bold text-foreground">{t("howItWorks")}</p>
         {[
-          { step: "1", text: "Share your unique referral code with friends" },
-          { step: "2", text: "Friend signs up & completes first transaction" },
-          { step: "3", text: "Both you & your friend earn ৳50 instantly" },
+          { step: "1", text: t("referStep1") },
+          { step: "2", text: t("referStep2") },
+          { step: "3", text: t("referStep3") },
         ].map((s) => (
           <div key={s.step} className="flex items-start gap-3">
             <div className="w-6 h-6 rounded-full gradient-primary flex items-center justify-center text-primary-foreground text-xs font-bold shrink-0 mt-0.5">
