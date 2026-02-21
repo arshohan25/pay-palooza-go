@@ -13,7 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { useAdmin, fetchAdminStats, fetchRecentTransactions, fetchAllUsers, fetchFraudAlerts } from "@/hooks/use-admin";
+import { useAdmin, fetchAdminStats, fetchRecentTransactions, fetchAllUsers, fetchFraudAlerts, fetchAllAgents, fetchAllMerchants, toggleUserStatus, toggleAgentStatus, toggleMerchantStatus } from "@/hooks/use-admin";
+import { toast } from "sonner";
 import { signOut } from "@/lib/auth";
 import AdminChargeConfig from "@/components/admin/AdminChargeConfig";
 import AdminCommissionSetup from "@/components/admin/AdminCommissionSetup";
@@ -88,22 +89,29 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats>({ totalUsers: 0, totalTransactions: 0, totalAgents: 0, totalMerchants: 0, openAlerts: 0 });
   const [transactions, setTransactions] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  const [agents, setAgents] = useState<any[]>([]);
+  const [merchants, setMerchants] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [userSubTab, setUserSubTab] = useState<"users" | "agents" | "merchants">("users");
 
   const loadData = useCallback(async () => {
     setRefreshing(true);
-    const [s, t, u, a] = await Promise.all([
+    const [s, t, u, a, ag, m] = await Promise.all([
       fetchAdminStats(),
       fetchRecentTransactions(50),
       fetchAllUsers(100),
       fetchFraudAlerts(50),
+      fetchAllAgents(100),
+      fetchAllMerchants(100),
     ]);
     setStats(s);
     setTransactions(t);
     setUsers(u);
     setAlerts(a);
+    setAgents(ag);
+    setMerchants(m);
     setRefreshing(false);
   }, []);
 
@@ -295,44 +303,182 @@ export default function AdminDashboard() {
 
         {/* ═══ USER MANAGEMENT ═══ */}
         {activeTab === "users" && (
-          <Card className="border-0 shadow-[var(--shadow-card)]">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-base">User Management</CardTitle>
-              <div className="md:hidden relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Search…" className="pl-10 w-48" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-muted-foreground">
-                      <th className="text-left px-4 py-3 font-medium">Name</th>
-                      <th className="text-left px-4 py-3 font-medium">Phone</th>
-                      <th className="text-left px-4 py-3 font-medium">Balance</th>
-                      <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Joined</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredUsers.map((user: any) => (
-                      <tr key={user.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-3 font-medium text-foreground">{user.name || "—"}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{user.phone}</td>
-                        <td className="px-4 py-3 font-semibold text-foreground">৳{parseFloat(user.balance).toLocaleString()}</td>
-                        <td className="px-4 py-3 text-muted-foreground text-xs hidden md:table-cell">
-                          {new Date(user.created_at).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {filteredUsers.length === 0 && (
-                <p className="text-center text-muted-foreground py-8 text-sm">No users found</p>
-              )}
-            </CardContent>
-          </Card>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              {(["users", "agents", "merchants"] as const).map(tab => (
+                <Button
+                  key={tab}
+                  variant={userSubTab === tab ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setUserSubTab(tab)}
+                  className="capitalize"
+                >
+                  {tab}
+                </Button>
+              ))}
+            </div>
+
+            {/* Users sub-tab */}
+            {userSubTab === "users" && (
+              <Card className="border-0 shadow-[var(--shadow-card)]">
+                <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                  <CardTitle className="text-base">All Users</CardTitle>
+                  <div className="md:hidden relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input placeholder="Search…" className="pl-10 w-48" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border text-muted-foreground">
+                          <th className="text-left px-4 py-3 font-medium">Name</th>
+                          <th className="text-left px-4 py-3 font-medium">Phone</th>
+                          <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Balance</th>
+                          <th className="text-left px-4 py-3 font-medium">Status</th>
+                          <th className="text-left px-4 py-3 font-medium">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredUsers.map((user: any) => (
+                          <tr key={user.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                            <td className="px-4 py-3 font-medium text-foreground">{user.name || "—"}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{user.phone}</td>
+                            <td className="px-4 py-3 font-semibold text-foreground hidden md:table-cell">৳{parseFloat(user.balance).toLocaleString()}</td>
+                            <td className="px-4 py-3">
+                              <Badge variant={user.status === "suspended" ? "destructive" : "secondary"} className="text-xs">
+                                {user.status || "active"}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3">
+                              <Button
+                                size="sm"
+                                variant={user.status === "suspended" ? "default" : "destructive"}
+                                className="text-xs h-7"
+                                onClick={async () => {
+                                  try {
+                                    const ns = await toggleUserStatus(user.user_id, user.status || "active");
+                                    setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status: ns } : u));
+                                    toast.success(`User ${ns}`);
+                                  } catch { toast.error("Failed to update status"); }
+                                }}
+                              >
+                                {user.status === "suspended" ? "Activate" : "Suspend"}
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {filteredUsers.length === 0 && <p className="text-center text-muted-foreground py-8 text-sm">No users found</p>}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Agents sub-tab */}
+            {userSubTab === "agents" && (
+              <Card className="border-0 shadow-[var(--shadow-card)]">
+                <CardHeader className="pb-2"><CardTitle className="text-base">Agent Management</CardTitle></CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border text-muted-foreground">
+                          <th className="text-left px-4 py-3 font-medium">Business</th>
+                          <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Territory</th>
+                          <th className="text-left px-4 py-3 font-medium">Status</th>
+                          <th className="text-left px-4 py-3 font-medium">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {agents.map((agent: any) => (
+                          <tr key={agent.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                            <td className="px-4 py-3 font-medium text-foreground">{agent.business_name || "—"}</td>
+                            <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{agent.territory_code || "—"}</td>
+                            <td className="px-4 py-3">
+                              <Badge variant={agent.status === "suspended" ? "destructive" : agent.status === "active" ? "secondary" : "outline"} className="text-xs">
+                                {agent.status}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3">
+                              <Button
+                                size="sm"
+                                variant={agent.status === "suspended" ? "default" : "destructive"}
+                                className="text-xs h-7"
+                                onClick={async () => {
+                                  try {
+                                    const ns = await toggleAgentStatus(agent.id, agent.status);
+                                    setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: ns } : a));
+                                    toast.success(`Agent ${ns}`);
+                                  } catch { toast.error("Failed to update status"); }
+                                }}
+                              >
+                                {agent.status === "suspended" ? "Activate" : "Suspend"}
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {agents.length === 0 && <p className="text-center text-muted-foreground py-8 text-sm">No agents found</p>}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Merchants sub-tab */}
+            {userSubTab === "merchants" && (
+              <Card className="border-0 shadow-[var(--shadow-card)]">
+                <CardHeader className="pb-2"><CardTitle className="text-base">Merchant Management</CardTitle></CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border text-muted-foreground">
+                          <th className="text-left px-4 py-3 font-medium">Business</th>
+                          <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Category</th>
+                          <th className="text-left px-4 py-3 font-medium">Status</th>
+                          <th className="text-left px-4 py-3 font-medium">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {merchants.map((m: any) => (
+                          <tr key={m.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                            <td className="px-4 py-3 font-medium text-foreground">{m.business_name}</td>
+                            <td className="px-4 py-3 text-muted-foreground capitalize hidden md:table-cell">{m.category}</td>
+                            <td className="px-4 py-3">
+                              <Badge variant={m.status === "suspended" ? "destructive" : m.status === "active" ? "secondary" : "outline"} className="text-xs">
+                                {m.status}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3">
+                              <Button
+                                size="sm"
+                                variant={m.status === "suspended" ? "default" : "destructive"}
+                                className="text-xs h-7"
+                                onClick={async () => {
+                                  try {
+                                    const ns = await toggleMerchantStatus(m.id, m.status);
+                                    setMerchants(prev => prev.map(x => x.id === m.id ? { ...x, status: ns } : x));
+                                    toast.success(`Merchant ${ns}`);
+                                  } catch { toast.error("Failed to update status"); }
+                                }}
+                              >
+                                {m.status === "suspended" ? "Activate" : "Suspend"}
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {merchants.length === 0 && <p className="text-center text-muted-foreground py-8 text-sm">No merchants found</p>}
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
 
         {/* ═══ TRANSACTION MONITORING ═══ */}
