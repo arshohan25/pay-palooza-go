@@ -4,15 +4,21 @@ import { motion } from "framer-motion";
 import {
   Users, ArrowLeftRight, ShieldAlert, Store, UserCheck,
   TrendingUp, Activity, Search, RefreshCw, LogOut,
-  LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings, ChevronLeft,
+  LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings,
+  ChevronLeft, Coins, Scale, BarChart3,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useAdmin, fetchAdminStats, fetchRecentTransactions, fetchAllUsers, fetchFraudAlerts } from "@/hooks/use-admin";
 import { signOut } from "@/lib/auth";
+import AdminChargeConfig from "@/components/admin/AdminChargeConfig";
+import AdminCommissionSetup from "@/components/admin/AdminCommissionSetup";
+import AdminDisputeResolution from "@/components/admin/AdminDisputeResolution";
+import AdminReporting from "@/components/admin/AdminReporting";
 
 interface Stats {
   totalUsers: number;
@@ -68,7 +74,11 @@ const NAV_ITEMS = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "users", label: "Users", icon: UserCog },
   { id: "transactions", label: "Transactions", icon: Receipt },
-  { id: "alerts", label: "Fraud Alerts", icon: AlertTriangle },
+  { id: "alerts", label: "Fraud", icon: AlertTriangle },
+  { id: "charges", label: "Charges", icon: Settings },
+  { id: "commissions", label: "Commissions", icon: Coins },
+  { id: "disputes", label: "Disputes", icon: Scale },
+  { id: "reporting", label: "Reports", icon: BarChart3 },
 ];
 
 export default function AdminDashboard() {
@@ -126,7 +136,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col border-r border-border bg-card p-4 gap-2">
+      <aside className="hidden md:flex w-64 flex-col border-r border-border bg-card p-4 gap-1 fixed inset-y-0 left-0 z-30">
         <div className="flex items-center gap-3 px-3 py-4 mb-4">
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
             <ShieldAlert className="w-5 h-5 text-primary-foreground" />
@@ -137,27 +147,31 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {NAV_ITEMS.map(item => (
-          <button
-            key={item.id}
-            onClick={() => setActiveTab(item.id)}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-              activeTab === item.id
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            }`}
-          >
-            <item.icon className="w-5 h-5" />
-            {item.label}
-            {item.id === "alerts" && stats.openAlerts > 0 && (
-              <Badge variant="destructive" className="ml-auto text-xs px-1.5 py-0">
-                {stats.openAlerts}
-              </Badge>
-            )}
-          </button>
-        ))}
+        <ScrollArea className="flex-1">
+          <div className="space-y-1">
+            {NAV_ITEMS.map(item => (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                  activeTab === item.id
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <item.icon className="w-5 h-5" />
+                {item.label}
+                {item.id === "alerts" && stats.openAlerts > 0 && (
+                  <Badge variant="destructive" className="ml-auto text-xs px-1.5 py-0">
+                    {stats.openAlerts}
+                  </Badge>
+                )}
+              </button>
+            ))}
+          </div>
+        </ScrollArea>
 
-        <div className="mt-auto space-y-2">
+        <div className="mt-auto space-y-2 pt-4 border-t border-border">
           <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground" onClick={() => navigate("/")}>
             <ChevronLeft className="w-4 h-4" /> Back to App
           </Button>
@@ -168,38 +182,41 @@ export default function AdminDashboard() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 p-4 md:p-8 overflow-auto">
+      <main className="flex-1 p-4 md:p-8 overflow-auto md:ml-64">
         {/* Mobile nav */}
         <div className="md:hidden mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
               <ChevronLeft className="w-5 h-5" />
             </Button>
-            <h1 className="font-bold text-lg text-foreground">Admin Dashboard</h1>
+            <h1 className="font-bold text-lg text-foreground">Admin</h1>
           </div>
           <Button variant="ghost" size="icon" onClick={loadData} disabled={refreshing}>
             <RefreshCw className={`w-5 h-5 ${refreshing ? "animate-spin" : ""}`} />
           </Button>
         </div>
 
-        {/* Mobile tabs */}
+        {/* Mobile tabs - horizontally scrollable */}
         <div className="md:hidden mb-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="w-full grid grid-cols-4">
-              {NAV_ITEMS.map(item => (
-                <TabsTrigger key={item.id} value={item.id} className="text-xs">
-                  <item.icon className="w-4 h-4 mr-1" />
-                  <span className="hidden sm:inline">{item.label}</span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+          <ScrollArea className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="inline-flex w-auto gap-1">
+                {NAV_ITEMS.map(item => (
+                  <TabsTrigger key={item.id} value={item.id} className="text-xs whitespace-nowrap">
+                    <item.icon className="w-3.5 h-3.5 mr-1" />
+                    {item.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
         </div>
 
         {/* Header bar (desktop) */}
         <div className="hidden md:flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-foreground capitalize">{activeTab}</h2>
+            <h2 className="text-2xl font-bold text-foreground capitalize">{activeTab === "alerts" ? "Fraud Detection" : activeTab}</h2>
             <p className="text-sm text-muted-foreground">EasyPay MFS Admin Backoffice</p>
           </div>
           <div className="flex items-center gap-3">
@@ -218,7 +235,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Content */}
+        {/* ═══ OVERVIEW ═══ */}
         {activeTab === "overview" && (
           <div className="space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -229,7 +246,6 @@ export default function AdminDashboard() {
               <StatCard icon={ShieldAlert} label="Open Alerts" value={stats.openAlerts} color="bg-destructive" />
             </div>
 
-            {/* Recent transactions */}
             <Card className="border-0 shadow-[var(--shadow-card)]">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
@@ -277,6 +293,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* ═══ USER MANAGEMENT ═══ */}
         {activeTab === "users" && (
           <Card className="border-0 shadow-[var(--shadow-card)]">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
@@ -318,6 +335,7 @@ export default function AdminDashboard() {
           </Card>
         )}
 
+        {/* ═══ TRANSACTION MONITORING ═══ */}
         {activeTab === "transactions" && (
           <Card className="border-0 shadow-[var(--shadow-card)]">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
@@ -371,6 +389,7 @@ export default function AdminDashboard() {
           </Card>
         )}
 
+        {/* ═══ FRAUD DETECTION ═══ */}
         {activeTab === "alerts" && (
           <Card className="border-0 shadow-[var(--shadow-card)]">
             <CardHeader className="pb-2">
@@ -424,6 +443,18 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         )}
+
+        {/* ═══ CHARGE CONFIGURATION ═══ */}
+        {activeTab === "charges" && <AdminChargeConfig />}
+
+        {/* ═══ COMMISSION SETUP ═══ */}
+        {activeTab === "commissions" && <AdminCommissionSetup />}
+
+        {/* ═══ DISPUTE RESOLUTION ═══ */}
+        {activeTab === "disputes" && <AdminDisputeResolution />}
+
+        {/* ═══ REPORTING DASHBOARD ═══ */}
+        {activeTab === "reporting" && <AdminReporting />}
       </main>
     </div>
   );
