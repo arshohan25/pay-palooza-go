@@ -1585,7 +1585,8 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
 
   const handleSendMoneyMsg = useCallback((contactId: string, amount: number, phone: string) => {
     const timeStr = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
-    const txnId = `TXN${Date.now().toString().slice(-8)}`;
+    const genId = () => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; };
+    const txnId = genId();
     const moneyMsg: Message = { id: newMsgId(), text: `Sent ৳${amount.toLocaleString()} to ${phone}`, time: timeStr, sent: true, status: "sent", type: "money", amount, txnId };
     const contact = contacts.find((c) => c.id === contactId);
     updateContact(contactId, (c) => ({ ...c, messages: [...c.messages, moneyMsg], lastMsg: `💸 Sent ৳${amount.toLocaleString()}`, lastTime: "now", lastTimestamp: Date.now(), unread: 0 }));

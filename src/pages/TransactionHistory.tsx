@@ -24,6 +24,7 @@ type TxCategory = "all" | "send" | "receive" | "cashout" | "cashin" | "banktrans
 
 interface Transaction {
   id: string;
+  short_id: string;
   category: Exclude<TxCategory, "all">;
   name: string;
   detail: string;
@@ -99,6 +100,7 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
       const isCredit = t.type === "addmoney" || t.type === "receive" || t.type === "cashin";
       return {
         id: t.id,
+        short_id: t.short_id || t.id.slice(0, 12).toUpperCase(),
         category: t.type as Exclude<TxCategory, "all">,
         name: t.recipient_name || t.description || label,
         detail: t.description || label,
@@ -123,10 +125,15 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
   };
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = search.trim().toUpperCase();
     return allTransactions.filter((tx) => {
       if (activeTab !== "all" && tx.category !== activeTab) return false;
-      if (q && !tx.name.toLowerCase().includes(q) && !tx.detail.toLowerCase().includes(q)) return false;
+      if (q) {
+        const matchesName = tx.name.toUpperCase().includes(q);
+        const matchesDetail = tx.detail.toUpperCase().includes(q);
+        const matchesId = tx.short_id.toUpperCase().includes(q);
+        if (!matchesName && !matchesDetail && !matchesId) return false;
+      }
       if (dateFrom || dateTo) {
         const txDate = new Date(tx.date);
         const from = dateFrom ? startOfDay(dateFrom) : new Date(0);
@@ -213,7 +220,7 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
         <div className="relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <Input
-            placeholder={t("searchTransactions")}
+            placeholder={`${t("searchTransactions")} or Transaction ID`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 pr-9 h-11 bg-card border-border/60 rounded-2xl text-[13px] shadow-xs"
@@ -425,7 +432,7 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
           const bgStyle   = isCredit ? cfg.receiveBg : cfg.bg;
           const ringStyle = isCredit ? cfg.receiveRing : cfg.ring;
           const txDate    = new Date(selectedTx.date);
-          const txId      = `TXN${selectedTx.id.toUpperCase()}${Math.floor(txDate.getTime() / 1000)}`;
+          const txId      = selectedTx.short_id;
           const catLabel  = CATEGORIES.find((c) => c.id === selectedTx.category)?.label ?? selectedTx.category;
 
           return (
@@ -540,7 +547,7 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
       {/* Share Receipt Sheet (from history detail) */}
       {selectedTx && (() => {
         const txDate = new Date(selectedTx.date);
-        const txId   = `TXN${selectedTx.id.toUpperCase()}${Math.floor(txDate.getTime() / 1000)}`;
+        const txId   = selectedTx.short_id;
         const catLabel = CATEGORIES.find((c) => c.id === selectedTx.category)?.label ?? selectedTx.category;
         const gradMap: Record<string, string> = {
           send: "gradient-send", cashout: "gradient-cashout",
