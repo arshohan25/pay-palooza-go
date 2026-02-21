@@ -256,7 +256,7 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
             {step === "merchant" && (
               <div className="px-4 pt-6 pb-32 space-y-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">Merchant ID</label>
+                  <label className="text-sm font-semibold text-foreground">{t("merchantId")}</label>
                   <div className="relative">
                     <Hash size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -280,14 +280,14 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
                     className="w-full h-11 gradient-payment border-0 text-white font-semibold"
                     onClick={handleMerchantIdContinue}
                   >
-                    Continue
+                    {t("continue")}
                   </Button>
                 </div>
 
                 {/* Divider */}
                 <div className="flex items-center gap-3">
                   <div className="flex-1 h-px bg-border" />
-                  <span className="text-xs text-muted-foreground flex items-center gap-1"><ShoppingBag size={11} /> Recent merchants</span>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1"><ShoppingBag size={11} /> {t("recentMerchants")}</span>
                   <div className="flex-1 h-px bg-border" />
                 </div>
 
@@ -322,7 +322,7 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
                       <CreditCard size={20} />
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Paying to</p>
+                      <p className="text-xs text-muted-foreground">{t("payingTo")}</p>
                       <p className="text-sm font-bold text-foreground">{merchant.name}</p>
                       <p className="text-xs text-muted-foreground">{merchant.merchantId} · {merchant.category}</p>
                     </div>
@@ -331,7 +331,7 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-semibold text-foreground">Enter Amount</label>
+                    <label className="text-sm font-semibold text-foreground">{t("enterAmount")}</label>
                     <AvailableBalanceBadge />
                   </div>
                   <div className="relative flex items-center">
@@ -350,7 +350,7 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground font-medium">Quick select</p>
+                  <p className="text-xs text-muted-foreground font-medium">{t("quickSelect")}</p>
                   <div className="grid grid-cols-3 gap-2">
                     {QUICK_AMOUNTS.map((q) => (
                       <button
@@ -369,7 +369,7 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">Note (optional)</label>
+                  <label className="text-sm font-semibold text-foreground">{t("noteOptional")}</label>
                   <Input
                     placeholder="Invoice / reference…"
                     value={note}
@@ -381,23 +381,23 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
                 {amtNum > 0 && (
                   <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2 text-sm">
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Payment Amount</span>
+                      <span>{t("paymentAmount")}</span>
                       <span className="text-foreground font-medium">৳{amtNum.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Fee</span>
-                      <span className="text-primary font-semibold">Free</span>
+                      <span>{t("fee")}</span>
+                      <span className="text-primary font-semibold">{t("free")}</span>
                     </div>
                     <div className="h-px bg-border" />
                     <div className="flex justify-between font-bold text-foreground">
-                      <span>Total</span>
+                      <span>{t("total")}</span>
                       <span>৳{amtNum.toLocaleString()}</span>
                     </div>
                   </div>
                 )}
 
                 <Button className="w-full h-12 gradient-payment border-0 text-white font-semibold text-base" onClick={handleAmountContinue}>
-                  Continue to PIN
+                  {t("continueToPin")}
                 </Button>
               </div>
             )}
@@ -431,7 +431,7 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
 
                 <SlideToConfirm
                   onConfirm={handlePinConfirm}
-                  label="Slide to Pay"
+                  label={t("slideToPayment")}
                   gradient="gradient-payment"
                   disabled={pin.length < 4 || processing}
                   pinComplete={pin.length === 4}
@@ -452,9 +452,9 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="space-y-2">
-                  <h2 className="text-2xl font-extrabold text-foreground">Payment Successful!</h2>
+                  <h2 className="text-2xl font-extrabold text-foreground">{t("paymentSuccessful")}</h2>
                   <p className="text-muted-foreground text-sm">
-                    ৳{amtNum.toLocaleString()} paid to{" "}
+                    ৳{amtNum.toLocaleString()} {t("paidTo")}{" "}
                     <span className="font-semibold text-foreground">{merchant?.name}</span>
                   </p>
                 </motion.div>
@@ -506,9 +506,9 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
 
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="w-full space-y-3">
                   <Button className="w-full h-12 gradient-payment border-0 text-white font-semibold" onClick={onClose}>
-                    Back to Home
+                    {t("backToHome")}
                   </Button>
-                  <Button variant="outline" className="w-full h-11" onClick={() => setShowShare(true)}>Share Receipt</Button>
+                  <Button variant="outline" className="w-full h-11" onClick={() => setShowShare(true)}>{t("shareReceipt")}</Button>
                 </motion.div>
               </div>
             )}
