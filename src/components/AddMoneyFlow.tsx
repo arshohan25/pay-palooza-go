@@ -42,9 +42,12 @@ const RECEIVE_ACCOUNT = {
   routing: "200270423",
 };
 
-const generateTxnId = () =>
-  "ADD" + Date.now().toString(36).toUpperCase().slice(-6) +
-  Math.random().toString(36).toUpperCase().slice(2, 4);
+const generateTxnId = () => {
+  const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let r = "";
+  for (let i = 0; i < 12; i++) r += CHARS[Math.floor(Math.random() * 36)];
+  return r;
+};
 
 // ─── Step config ──────────────────────────────────────────────────────────────
 const STEPS: Step[] = ["amount", "source", "details", "pin"];
