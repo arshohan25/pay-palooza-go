@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Share2, Copy, CheckCheck, X, Download } from "lucide-react";
 import { haptics } from "@/lib/haptics";
+import { useI18n } from "@/lib/i18n";
 
 export interface ReceiptData {
   title: string;
@@ -18,6 +19,7 @@ interface ShareReceiptSheetProps {
 }
 
 const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) => {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -26,13 +28,13 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
   const buildText = () => {
     const lines = [
       `🧾 ${receipt.title}`,
-      `💰 Amount: ${receipt.amount}`,
+      `💰 ${t("amount")}: ${receipt.amount}`,
       ``,
       ...receipt.rows.map((r) => `${r.label}: ${r.value}`),
       ``,
-      `Transaction ID: ${receipt.txnId}`,
+      `${t("transactionId")}: ${receipt.txnId}`,
       ``,
-      `Powered by EasyPay`,
+      t("poweredByEasyPay"),
     ];
     return lines.join("\n");
   };
@@ -78,7 +80,7 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
           text: buildText(),
         });
       } catch {
-        // user cancelled — no-op
+        // user cancelled
       }
     } else {
       await handleCopyText();
@@ -112,7 +114,6 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop */}
           <motion.div
             key="share-backdrop"
             initial={{ opacity: 0 }}
@@ -123,7 +124,6 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
             onClick={onClose}
           />
 
-          {/* Sheet */}
           <motion.div
             key="share-sheet"
             initial={{ y: "100%", opacity: 0 }}
@@ -134,12 +134,10 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
                        md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2
                        md:w-[90vw] md:max-w-sm md:rounded-3xl"
           >
-            {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-1 md:hidden">
               <div className="w-10 h-1 rounded-full bg-muted-foreground/25" />
             </div>
 
-            {/* Close */}
             <motion.button
               whileTap={{ scale: 0.88 }}
               onClick={onClose}
@@ -149,24 +147,20 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
             </motion.button>
 
             <div className="px-5 pt-3 pb-8 space-y-4">
-              {/* Header */}
               <div className="text-center pb-1">
-                <p className="text-base font-bold text-foreground">Share Receipt</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Copy, share, or save your receipt</p>
+                <p className="text-base font-bold text-foreground">{t("shareReceiptTitle")}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t("copyShareSave")}</p>
               </div>
 
-              {/* Receipt preview card — captured by html2canvas */}
               <div
                 ref={receiptRef}
                 className="rounded-2xl border border-border overflow-hidden shadow-card bg-card"
               >
-                {/* Gradient header */}
                 <div className={`${receipt.gradient} px-4 py-4 text-white text-center`}>
                   <p className="text-xs font-semibold opacity-80 mb-0.5">{receipt.title}</p>
                   <p className="text-3xl font-extrabold">{receipt.amount}</p>
                 </div>
 
-                {/* Receipt rows */}
                 <div className="divide-y divide-border/60">
                   {receipt.rows.map((row) => (
                     <div key={row.label} className="flex items-center justify-between px-4 py-2.5 gap-2">
@@ -178,10 +172,9 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
                   ))}
                 </div>
 
-                {/* Transaction ID row */}
                 <div className="flex items-center justify-between px-4 py-3 border-t border-border/60 bg-muted/30">
                   <div className="min-w-0">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-semibold">Transaction ID</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-semibold">{t("transactionId")}</p>
                     <p className="text-xs font-mono font-bold text-primary break-all mt-0.5 leading-snug">{receipt.txnId}</p>
                   </div>
                   <motion.button
@@ -203,13 +196,11 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
                   </motion.button>
                 </div>
 
-                {/* EasyPay branding footer */}
                 <div className="px-4 py-2 bg-muted/20 text-center">
-                  <p className="text-[9px] text-muted-foreground font-semibold tracking-widest uppercase">Powered by EasyPay</p>
+                  <p className="text-[9px] text-muted-foreground font-semibold tracking-widest uppercase">{t("poweredByEasyPay")}</p>
                 </div>
               </div>
 
-              {/* Action buttons — 3 cols */}
               <div className="grid grid-cols-3 gap-2">
                 <motion.button
                   whileTap={{ scale: 0.96 }}
@@ -226,9 +217,9 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
                       className="flex flex-col items-center gap-1"
                     >
                       {copied ? (
-                        <><CheckCheck size={16} className="text-primary" /><span>Copied!</span></>
+                        <><CheckCheck size={16} className="text-primary" /><span>{t("copied")}</span></>
                       ) : (
-                        <><Copy size={16} /><span>Copy</span></>
+                        <><Copy size={16} /><span>{t("copy")}</span></>
                       )}
                     </motion.span>
                   </AnimatePresence>
@@ -250,9 +241,9 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
                       className="flex flex-col items-center gap-1"
                     >
                       {downloading ? (
-                        <><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.7, ease: "linear" }}><Download size={16} /></motion.div><span>Saving…</span></>
+                        <><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.7, ease: "linear" }}><Download size={16} /></motion.div><span>{t("saving")}</span></>
                       ) : (
-                        <><Download size={16} /><span>Save PNG</span></>
+                        <><Download size={16} /><span>{t("savePng")}</span></>
                       )}
                     </motion.span>
                   </AnimatePresence>
@@ -264,7 +255,7 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
                   className={`flex flex-col items-center justify-center gap-1.5 h-14 rounded-2xl ${receipt.gradient} text-white text-[11px] font-semibold shadow-card active:opacity-90 transition-opacity`}
                 >
                   <Share2 size={16} />
-                  <span>Share</span>
+                  <span>{t("share")}</span>
                 </motion.button>
               </div>
             </div>

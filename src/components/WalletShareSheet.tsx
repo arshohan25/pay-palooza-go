@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { Button } from "@/components/ui/button";
 import { haptics } from "@/lib/haptics";
 import { generateWalletId } from "@/lib/walletId";
+import { useI18n } from "@/lib/i18n";
 
 interface WalletShareSheetProps {
   open: boolean;
@@ -14,13 +15,13 @@ interface WalletShareSheetProps {
 }
 
 const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetProps) => {
+  const { t } = useI18n();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
   const walletId = generateWalletId(userId);
 
-  // Generate real QR code
   useEffect(() => {
     if (!open || !canvasRef.current) return;
     const payload = JSON.stringify({ walletId, name: userName, app: "EasyPay" });
@@ -90,12 +91,10 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
             transition={{ type: "spring", stiffness: 320, damping: 32 }}
             className="fixed bottom-0 left-0 right-0 z-[81] bg-card rounded-t-3xl shadow-float max-w-md mx-auto"
           >
-            {/* Handle */}
             <div className="flex justify-center pt-3 pb-1">
               <div className="w-10 h-1 rounded-full bg-muted-foreground/25" />
             </div>
 
-            {/* Close */}
             <button
               onClick={onClose}
               className="absolute right-4 top-4 w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
@@ -104,44 +103,39 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
             </button>
 
             <div className="px-5 pt-2 pb-8 space-y-5">
-              <h3 className="text-base font-bold text-foreground text-center">Share My Wallet</h3>
+              <h3 className="text-base font-bold text-foreground text-center">{t("shareMyWallet")}</h3>
 
-              {/* QR card — captured by html2canvas */}
               <div
                 id="wallet-share-card"
                 className="rounded-2xl overflow-hidden border border-border shadow-card bg-card"
               >
-                {/* Gradient header */}
                 <div className="gradient-hero px-4 py-4 text-white text-center">
                   <p className="text-xs font-semibold opacity-75 mb-0.5 uppercase tracking-widest">EasyPay</p>
                   <p className="text-base font-bold">{userName}</p>
                 </div>
 
-                {/* QR code */}
                 <div className="flex flex-col items-center gap-2 py-5 bg-background">
                   <canvas
                     ref={canvasRef}
                     className="rounded-lg"
                     style={{ imageRendering: "pixelated" }}
                   />
-                  <p className="text-[10px] text-muted-foreground font-medium tracking-widest">SCAN TO SEND MONEY</p>
+                  <p className="text-[10px] text-muted-foreground font-medium tracking-widest">{t("scanToSend")}</p>
                 </div>
 
-                {/* Wallet ID row */}
                 <div className="px-4 py-3 bg-muted/30 text-center border-t border-border/60">
-                  <p className="text-[9px] text-muted-foreground uppercase tracking-[0.18em] mb-0.5">Wallet ID</p>
+                  <p className="text-[9px] text-muted-foreground uppercase tracking-[0.18em] mb-0.5">{t("walletId")}</p>
                    <p className="text-sm font-mono font-bold text-foreground tracking-widest">{walletId}</p>
                 </div>
               </div>
 
-              {/* Copy wallet ID chip */}
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={handleCopy}
                 className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-muted border border-border hover:bg-muted/70 active:scale-[0.98] transition-all"
               >
                 <div className="text-left">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Your Wallet ID</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{t("yourWalletId")}</p>
                   <p className="text-sm font-mono font-bold text-foreground tracking-widest">{walletId}</p>
                 </div>
                 <AnimatePresence mode="wait" initial={false}>
@@ -160,7 +154,6 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
                 </AnimatePresence>
               </motion.button>
 
-              {/* Action buttons */}
               <div className="grid grid-cols-3 gap-2">
                 <Button
                   variant="outline"
@@ -176,7 +169,7 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
                       className="flex flex-col items-center gap-1"
                     >
                       {copied ? <CheckCheck size={16} className="text-primary" /> : <Copy size={16} />}
-                      <span>{copied ? "Copied!" : "Copy ID"}</span>
+                      <span>{copied ? t("copied") : t("copyId")}</span>
                     </motion.span>
                   </AnimatePresence>
                 </Button>
@@ -188,8 +181,8 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
                   onClick={handleDownload}
                 >
                   {downloading
-                    ? <><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.7, ease: "linear" }}><Download size={16} /></motion.div><span>Saving…</span></>
-                    : <><Download size={16} /><span>Save QR</span></>
+                    ? <><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.7, ease: "linear" }}><Download size={16} /></motion.div><span>{t("saving")}</span></>
+                    : <><Download size={16} /><span>{t("saveQr")}</span></>
                   }
                 </Button>
 
@@ -198,7 +191,7 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
                   onClick={handleShare}
                 >
                   <Share2 size={16} />
-                  <span>Share</span>
+                  <span>{t("share")}</span>
                 </Button>
               </div>
             </div>

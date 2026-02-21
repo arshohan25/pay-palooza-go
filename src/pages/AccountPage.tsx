@@ -4,7 +4,7 @@ import {
   Copy, CheckCheck, ChevronRight,
   Shield, Bell, Fingerprint, BarChart3, CreditCard,
   Gift, Lock, LogOut, BadgeCheck, AlertCircle,
-  BellOff, Pencil, PlayCircle,
+  BellOff, Pencil, PlayCircle, Globe,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -15,6 +15,7 @@ import LimitsPage from "@/pages/LimitsPage";
 import SpendingInsightsPage from "@/pages/SpendingInsightsPage";
 import ReferPage from "@/pages/ReferPage";
 import { generateWalletId } from "@/lib/walletId";
+import { useI18n } from "@/lib/i18n";
 
 const ONBOARDING_KEY = "mfs_onboarding_done";
 
@@ -28,16 +29,18 @@ const REGISTERED_KEY = "mfs_registered_phone";
 const getRegisteredPhone = () => localStorage.getItem(REGISTERED_KEY) ?? "";
 
 /* ─── KYC badge ─── */
-const KycBadge = ({ verified }: { verified: boolean }) =>
-  verified ? (
+const KycBadge = ({ verified }: { verified: boolean }) => {
+  const { t } = useI18n();
+  return verified ? (
     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/12 text-primary border border-primary/20">
-      <BadgeCheck size={11} /> Verified
+      <BadgeCheck size={11} /> {t("verified")}
     </span>
   ) : (
     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20">
-      <AlertCircle size={11} /> Unverified
+      <AlertCircle size={11} /> {t("unverified")}
     </span>
   );
+};
 
 /* ─── Section ─── */
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
@@ -101,6 +104,7 @@ const ToggleRow = ({
 interface AccountPageProps { onSignOut?: () => void; onReplayOnboarding?: () => void; }
 
 const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
+  const { t, lang, toggleLang } = useI18n();
   const [copied, setCopied]             = useState(false);
   const [biometric, setBiometric]       = useState(false);
   const [pushNotifs, setPushNotifs]     = useState(true);
@@ -110,7 +114,6 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const [showKyc, setShowKyc]           = useState(false);
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [subPage, setSubPage]           = useState<SubPage>(null);
-  // Live-update name/photo after profile edit
   const [displayName, setDisplayNameState]   = useState(getDisplayName);
   const [displayPhoto, setDisplayPhotoState] = useState(getDisplayPhoto);
 
@@ -130,15 +133,13 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
     }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    toast.success("Wallet ID copied!");
+    toast.success(t("walletIdCopied"));
   };
 
   const handleProfileSaved = () => {
     setDisplayNameState(getDisplayName());
     setDisplayPhotoState(getDisplayPhoto());
   };
-
-  const coming = (label: string) => toast.info(`${label} coming soon!`);
 
   return (
     <>
@@ -150,12 +151,10 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
       >
         {/* ── Profile card ── */}
         <div className="relative overflow-hidden gradient-hero rounded-3xl p-5 sm:p-6 text-primary-foreground shadow-glow-lg">
-          {/* Decoration */}
           <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-white/6 pointer-events-none" />
           <div className="absolute -bottom-10 left-4 w-32 h-32 rounded-full bg-white/4 pointer-events-none" />
 
           <div className="relative flex items-center gap-4">
-            {/* Avatar — tappable to edit profile */}
             <button
               onClick={() => setShowProfileEdit(true)}
               className="relative w-16 h-16 rounded-2xl shrink-0 group active:scale-95 transition-transform"
@@ -167,7 +166,6 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
                   {displayName[0]?.toUpperCase() ?? "?"}
                 </div>
               )}
-              {/* Edit overlay */}
               <div className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity flex items-center justify-center">
                 <Pencil size={16} className="text-white" />
               </div>
@@ -186,14 +184,14 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
           {/* Wallet ID */}
           <div className="relative mt-5 pt-4 border-t border-white/15 flex items-center justify-between">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.12em] opacity-50 mb-0.5">Wallet ID</p>
+              <p className="text-[10px] uppercase tracking-[0.12em] opacity-50 mb-0.5">{t("walletId")}</p>
               <p className="text-[13px] font-mono font-bold tracking-widest opacity-90">{walletId}</p>
             </div>
             <motion.button
               whileTap={{ scale: 0.88 }}
               onClick={handleCopy}
               className="glass-hero w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/25 transition-colors tap-target"
-              title="Copy Wallet ID"
+              title={t("copyId")}
             >
               <AnimatePresence mode="wait" initial={false}>
                 <motion.span
@@ -209,53 +207,65 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
         </div>
 
         {/* ── Account ── */}
-        <Section title="Account">
-          <MenuRow icon={Pencil}    iconClass="gradient-hero"    label="Edit Profile"      sub="Update your name and profile photo"      onClick={() => setShowProfileEdit(true)} />
-          <MenuRow icon={BadgeCheck} iconClass="gradient-primary" label="KYC Verification" sub="Full verification unlocks higher limits" onClick={() => setShowKyc(true)} />
-          <MenuRow icon={Lock}       iconClass="gradient-send"    label="Change PIN"        sub="Update your 4-digit transaction PIN"    onClick={() => setShowChangePin(true)} />
-          <MenuRow icon={Gift}       iconClass="gradient-accent"  label="Refer a Friend"   sub="Earn ৳50 for every successful referral" onClick={() => setSubPage("refer")} />
+        <Section title={t("sectionAccount")}>
+          <MenuRow icon={Pencil}    iconClass="gradient-hero"    label={t("editProfile")}      sub={t("updateNamePhoto")}      onClick={() => setShowProfileEdit(true)} />
+          <MenuRow icon={BadgeCheck} iconClass="gradient-primary" label={t("kycVerification")} sub={t("kycSub")} onClick={() => setShowKyc(true)} />
+          <MenuRow icon={Lock}       iconClass="gradient-send"    label={t("changePin")}        sub={t("changePinSub")}    onClick={() => setShowChangePin(true)} />
+          <MenuRow icon={Gift}       iconClass="gradient-accent"  label={t("referAFriend")}   sub={t("referSub")} onClick={() => setSubPage("refer")} />
         </Section>
 
         {/* ── App Experience ── */}
-        <Section title="App Experience">
+        <Section title={t("sectionAppExperience")}>
+          <MenuRow
+            icon={Globe}
+            iconClass="gradient-payment"
+            label={t("language")}
+            sub={t("languageSub")}
+            right={
+              <span className="text-[12px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-xl">
+                {lang === "en" ? "English" : "বাংলা"}
+              </span>
+            }
+            onClick={toggleLang}
+          />
           <MenuRow
             icon={PlayCircle}
             iconClass="gradient-hero"
-            label="View Onboarding Again"
-            sub="Replay the feature tour from the start"
+            label={t("viewOnboarding")}
+            sub={t("viewOnboardingSub")}
             onClick={() => {
               localStorage.removeItem(ONBOARDING_KEY);
-              toast.success("Onboarding reset! Restarting tour…");
+              toast.success(t("onboardingReset"));
               setTimeout(() => onReplayOnboarding?.(), 600);
             }}
           />
         </Section>
 
         {/* ── Insights & Limits ── */}
-        <Section title="Insights & Limits">
-          <MenuRow icon={BarChart3}  iconClass="gradient-payment"  label="Spending Insights" sub="Monthly breakdown & analytics"        onClick={() => setSubPage("insights")} />
-          <MenuRow icon={CreditCard} iconClass="gradient-cashout"  label="Limits & Charges"  sub="Transaction limits, fees & tariffs"   onClick={() => setSubPage("limits")} />
+        <Section title={t("sectionInsightsLimits")}>
+          <MenuRow icon={BarChart3}  iconClass="gradient-payment"  label={t("spendingInsights")} sub={t("insightsSub")}        onClick={() => setSubPage("insights")} />
+          <MenuRow icon={CreditCard} iconClass="gradient-cashout"  label={t("limitsCharges")}  sub={t("limitsSub")}   onClick={() => setSubPage("limits")} />
         </Section>
 
         {/* ── Notifications ── */}
-        <Section title="Notifications">
-          <ToggleRow icon={Bell}   iconClass="gradient-accent"  label="Push Notifications" sub="Transaction alerts & updates" checked={pushNotifs}  onCheckedChange={setPushNotifs} />
-          <ToggleRow icon={BellOff} iconClass="gradient-payment" label="Promotional Alerts" sub="Offers, cashbacks & news"     checked={promoNotifs} onCheckedChange={setPromoNotifs} />
+        <Section title={t("sectionNotifications")}>
+          <ToggleRow icon={Bell}   iconClass="gradient-accent"  label={t("pushNotifications")} sub={t("pushSub")} checked={pushNotifs}  onCheckedChange={setPushNotifs} />
+          <ToggleRow icon={BellOff} iconClass="gradient-payment" label={t("promotionalAlerts")} sub={t("promoAlertsSub")}     checked={promoNotifs} onCheckedChange={setPromoNotifs} />
         </Section>
 
         {/* ── Security ── */}
-        <Section title="Security & Privacy">
-          <ToggleRow icon={Fingerprint} iconClass="gradient-send"    label="Biometric Login"  sub="Use fingerprint or face ID"   checked={biometric}   onCheckedChange={(v) => { setBiometric(v); toast.success(v ? "Biometric login enabled" : "Biometric login disabled"); }} />
-          <ToggleRow icon={Shield}      iconClass="gradient-primary"  label="Two-Factor Auth"  sub="Extra OTP step on each login" checked={twoFa}       onCheckedChange={(v) => { setTwoFa(v); toast.success(v ? "2FA enabled" : "2FA disabled"); }} />
+        <Section title={t("sectionSecurity")}>
+          <ToggleRow icon={Fingerprint} iconClass="gradient-send"    label={t("biometricLogin")}  sub={t("biometricSub")}   checked={biometric}   onCheckedChange={(v) => { setBiometric(v); toast.success(v ? t("biometricEnabled") : t("biometricDisabled")); }} />
+          <ToggleRow icon={Shield}      iconClass="gradient-primary"  label={t("twoFactorAuth")}  sub={t("twoFactorSub")} checked={twoFa}       onCheckedChange={(v) => { setTwoFa(v); toast.success(v ? t("twoFaEnabled") : t("twoFaDisabled")); }} />
         </Section>
 
         {/* ── Sign Out ── */}
-        <Section title="Account Actions">
+        <Section title={t("sectionAccountActions")}>
           <MenuRow
             icon={LogOut}
             iconClass="bg-destructive"
-            label="Sign Out"
-            sub={registeredPhone ? `Signed in as +880 ${registeredPhone}` : "Sign out of your account"}
+            label={t("signOut")}
+            sub={registeredPhone ? `${t("signedInAs")} +880 ${registeredPhone}` : t("signOutAccount")}
             danger
             right={<span />}
             onClick={() => {
@@ -266,7 +276,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
         </Section>
 
         <p className="text-center text-[11px] text-muted-foreground pt-1 pb-2">
-          BkashClone v1.0.0 · Built with ❤️
+          EasyPay v1.0.0 · Built with ❤️
         </p>
       </motion.div>
 
@@ -283,4 +293,3 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
 };
 
 export default AccountPage;
-
