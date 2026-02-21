@@ -255,7 +255,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
               <div className="px-4 pt-6 pb-32 space-y-6">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-semibold text-foreground">Enter Amount</label>
+                    <label className="text-sm font-semibold text-foreground">{t("enterAmount")}</label>
                     <AvailableBalanceBadge />
                   </div>
                   <div className="relative flex items-center">
@@ -278,7 +278,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
 
                 {/* Quick amounts */}
                 <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground font-medium">Quick select</p>
+                  <p className="text-xs text-muted-foreground font-medium">{t("quickSelect")}</p>
                   <div className="grid grid-cols-3 gap-2">
                     {QUICK_AMOUNTS.map((q) => (
                       <button
@@ -300,7 +300,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                 <div className="rounded-xl bg-primary/5 border border-primary/15 px-4 py-3 flex items-start gap-2">
                   <Info size={14} className="text-primary mt-0.5 shrink-0" />
                   <p className="text-xs text-primary/80 leading-relaxed">
-                    <span className="font-semibold">No fees!</span> Add money to your wallet at zero charge.
+                    <span className="font-semibold">{t("noFees")}</span> {t("addMoneyZeroCharge")}
                   </p>
                 </div>
 
@@ -308,7 +308,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                   className="w-full h-11 gradient-addmoney border-0 text-white font-semibold"
                   onClick={handleAmountContinue}
                 >
-                  Continue
+                  {t("continue")}
                 </Button>
               </div>
             )}
@@ -318,12 +318,12 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
               <div className="px-4 pt-6 pb-32 space-y-5">
                 {/* Amount recap */}
                 <div className="flex items-center justify-between p-4 rounded-2xl bg-card border border-border shadow-card">
-                  <p className="text-sm text-muted-foreground">Adding to wallet</p>
+                  <p className="text-sm text-muted-foreground">{t("addingToWallet")}</p>
                   <p className="text-xl font-bold text-foreground">৳{amtNum.toLocaleString()}</p>
                 </div>
 
                 {/* Source selector */}
-                <p className="text-sm font-semibold text-foreground">Select Funding Source</p>
+                <p className="text-sm font-semibold text-foreground">{t("selectFundingSource")}</p>
                 <div className="space-y-3">
                   {/* Bank Transfer */}
                   <button
@@ -338,7 +338,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                       <Landmark size={22} strokeWidth={2} />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-bold text-foreground">Bank Transfer</p>
+                      <p className="text-sm font-bold text-foreground">{t("bankTransferLabel")}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">Send from any bank · Free · Up to 24h</p>
                     </div>
                     {source === "bank"
@@ -360,7 +360,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                       <CreditCard size={22} strokeWidth={2} />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-bold text-foreground">Debit / Credit Card</p>
+                      <p className="text-sm font-bold text-foreground">{t("debitCreditCard")}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">Visa, Mastercard · Instant · Free</p>
                     </div>
                     {source === "card"
@@ -411,7 +411,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                   className="w-full h-11 gradient-addmoney border-0 text-white font-semibold"
                   onClick={handleSourceContinue}
                 >
-                  Continue
+                  {t("continue")}
                 </Button>
               </div>
             )}
@@ -649,7 +649,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
 
                 <SlideToConfirm
                   onConfirm={handlePinConfirm}
-                  label="Slide to Add Money"
+                  label={t("slideToAddMoney")}
                   gradient="gradient-addmoney"
                   disabled={pin.length < 4 || processing}
                   pinComplete={pin.length === 4}
@@ -676,9 +676,9 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                   transition={{ delay: 0.18 }}
                   className="text-center space-y-1"
                 >
-                  <h2 className="text-2xl font-bold text-foreground">Money Added!</h2>
+                  <h2 className="text-2xl font-bold text-foreground">{t("moneyAdded")}</h2>
                   <p className="text-3xl font-bold text-primary">৳{amtNum.toLocaleString()}</p>
-                  <p className="text-sm text-muted-foreground">has been added to your wallet</p>
+                  <p className="text-sm text-muted-foreground">{t("hasBeenAddedToWallet")}</p>
                 </motion.div>
 
                 {/* Receipt */}
@@ -690,7 +690,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                 >
                   {/* Receipt header */}
                   <div className="gradient-addmoney px-5 py-3 text-primary-foreground flex items-center justify-between">
-                    <p className="text-sm font-bold">Transaction Receipt</p>
+                    <p className="text-sm font-bold">{t("transactionReceipt")}</p>
                     <CheckCircle2 size={16} className="opacity-80" />
                   </div>
 
@@ -728,13 +728,13 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                     onClick={onClose}
                     className="w-full h-12 gradient-addmoney text-primary-foreground font-semibold rounded-2xl shadow-glow active:scale-[0.98] transition-transform"
                   >
-                    Back to Home
+                    {t("backToHome")}
                   </button>
                   <button
                     onClick={() => setShowShare(true)}
                     className="w-full h-11 rounded-2xl border border-border bg-card text-foreground font-semibold active:scale-[0.98] transition-transform"
                   >
-                    Share Receipt
+                    {t("shareReceipt")}
                   </button>
                 </motion.div>
               </div>

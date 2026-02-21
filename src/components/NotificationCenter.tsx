@@ -4,6 +4,7 @@ import {
   X, ArrowDownLeft, ArrowUpRight, Tag, ShieldAlert,
   CheckCheck, Trash2, Bell, BellOff,
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -88,6 +89,7 @@ interface NotificationCenterProps {
 }
 
 export default function NotificationCenter({ open, onClose }: NotificationCenterProps) {
+  const { t } = useI18n();
   const [notifications, setNotifications] = useState<Notification[]>(INITIAL);
 
   const markRead    = (id: string)  => setNotifications((n) => n.map((x) => x.id === id ? { ...x, read: true } : x));
@@ -131,7 +133,7 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
             <div className="flex items-center justify-between px-5 pt-12 pb-4 border-b border-border/60">
               <div className="flex items-center gap-2">
                 <Bell size={19} className="text-foreground" strokeWidth={2} />
-                <h2 className="text-[17px] font-bold text-foreground">Notifications</h2>
+                <h2 className="text-[17px] font-bold text-foreground">{t("notifications")}</h2>
                 <AnimatePresence>
                   {unread > 0 && (
                     <motion.span
@@ -153,7 +155,7 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                     onClick={markAllRead}
                     className="text-[11px] font-semibold text-primary px-2 py-1 rounded-lg hover:bg-primary/10 transition-colors flex items-center gap-1"
                   >
-                    <CheckCheck size={12} /> All read
+                    <CheckCheck size={12} /> {t("allRead")}
                   </button>
                 )}
                 {notifications.length > 0 && (
@@ -161,7 +163,7 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                     onClick={clearAll}
                     className="text-[11px] font-semibold text-muted-foreground px-2 py-1 rounded-lg hover:bg-muted transition-colors flex items-center gap-1"
                   >
-                    <Trash2 size={12} /> Clear
+                    <Trash2 size={12} /> {t("clear")}
                   </button>
                 )}
                 <button
@@ -186,8 +188,8 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                     <div className="w-16 h-16 rounded-3xl bg-muted flex items-center justify-center">
                       <BellOff size={28} className="text-muted-foreground" />
                     </div>
-                    <p className="font-bold text-foreground text-sm">All caught up!</p>
-                    <p className="text-xs text-muted-foreground">No notifications right now.</p>
+                    <p className="font-bold text-foreground text-sm">{t("allCaughtUp")}</p>
+                    <p className="text-xs text-muted-foreground">{t("noNotificationsRightNow")}</p>
                   </motion.div>
                 ) : (
                   GROUP_ORDER.filter((g) => grouped[g].length > 0).map((group) => (
@@ -195,7 +197,7 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                       {/* Group label */}
                       <div className="px-5 py-2 bg-muted/40 border-b border-border/40">
                         <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-                          {GROUP_LABELS[group]}
+                          {t(group === "transaction" ? "ncTransactions" : group === "promo" ? "ncPromotions" : "ncSystem")}
                         </p>
                       </div>
 
