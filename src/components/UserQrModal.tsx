@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Copy, CheckCheck, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import QRCode from "qrcode";
+import { generateWalletId } from "@/lib/walletId";
 
 interface UserQrModalProps {
   open: boolean;
@@ -15,16 +16,7 @@ const UserQrModal = ({ open, onClose, userId, userName }: UserQrModalProps) => {
   const [copied, setCopied] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Generate alphabetic wallet ID (MFS-ABCD-EFGH)
-  const walletId = (() => {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const block = (seed: string) => {
-      let h = 0;
-      for (let i = 0; i < seed.length; i++) h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
-      return Array.from({ length: 4 }, (_, i) => chars[Math.abs((h >> (i * 5)) % 26)]).join("");
-    };
-    return `MFS-${block(userId)}-${block(userId + "salt")}`;
-  })();
+  const walletId = generateWalletId(userId);
 
   // Generate real QR code when modal opens
   useEffect(() => {
