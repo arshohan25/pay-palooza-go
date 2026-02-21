@@ -23,6 +23,7 @@ import {
   Coins,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useI18n } from "@/lib/i18n";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Step = "number" | "packs" | "amount" | "pin" | "success";
@@ -296,6 +297,7 @@ const PinInput = ({ pin, onChange, error, accentColor }: PinInputProps) => (
 interface MobileRechargeFlowProps { onClose: () => void; }
 
 const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
+  const { t } = useI18n();
   const [step, setStep]               = useState<Step>("number");
   const [direction, setDirection]     = useState(1);
   const [phone, setPhone]             = useState("");
@@ -430,9 +432,9 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
               <ChevronLeft size={20} />
             </button>
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-extrabold tracking-tight">Mobile Recharge</h1>
+              <h1 className="text-xl font-extrabold tracking-tight">{t("flowRecharge")}</h1>
               <p className="text-xs text-white/70 mt-0.5">
-                {operator && step !== "number" ? `${operator.name} · Instant Top-up` : "Select operator or enter number"}
+                {operator && step !== "number" ? `${operator.name} · ${t("instantTopUp")}` : t("selectOperatorOrNumber")}
               </p>
             </div>
             {operator && step !== "number" && (

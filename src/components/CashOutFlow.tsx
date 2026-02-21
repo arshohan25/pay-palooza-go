@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import QrScannerModal from "@/components/QrScannerModal";
 import { useSavedBanks } from "@/hooks/use-saved-banks";
+import { useI18n } from "@/lib/i18n";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -135,6 +136,7 @@ interface CashOutFlowProps {
 }
 
 const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
+  const { t } = useI18n();
   const [step, setStep] = useState<Step>("method");
   const [direction, setDirection] = useState(1);
   const [cashOutMethod, setCashOutMethod] = useState<CashOutMethod>("agent");
@@ -324,9 +326,9 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
               <ChevronLeft size={20} />
             </button>
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-extrabold tracking-tight">Cash Out</h1>
+              <h1 className="text-xl font-extrabold tracking-tight">{t("flowCashOut")}</h1>
               <p className="text-xs text-white/70 mt-0.5">
-                {isBank ? "Transfer to Bank Account" : "Withdraw from Nearby Agent"}
+                {isBank ? t("flowTransferBank") : t("flowWithdrawAgent")}
               </p>
             </div>
           </div>
