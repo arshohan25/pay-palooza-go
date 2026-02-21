@@ -82,3 +82,51 @@ export async function fetchFraudAlerts(limit = 50) {
     .limit(limit);
   return data ?? [];
 }
+
+export async function fetchAllAgents(limit = 100) {
+  const { data } = await supabase
+    .from("agents")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return data ?? [];
+}
+
+export async function fetchAllMerchants(limit = 100) {
+  const { data } = await supabase
+    .from("merchants")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return data ?? [];
+}
+
+export async function toggleUserStatus(userId: string, currentStatus: string) {
+  const newStatus = currentStatus === "suspended" ? "active" : "suspended";
+  const { error } = await supabase
+    .from("profiles")
+    .update({ status: newStatus })
+    .eq("user_id", userId);
+  if (error) throw error;
+  return newStatus;
+}
+
+export async function toggleAgentStatus(agentId: string, currentStatus: string) {
+  const newStatus = currentStatus === "suspended" ? "active" : "suspended";
+  const { error } = await supabase
+    .from("agents")
+    .update({ status: newStatus as any })
+    .eq("id", agentId);
+  if (error) throw error;
+  return newStatus;
+}
+
+export async function toggleMerchantStatus(merchantId: string, currentStatus: string) {
+  const newStatus = currentStatus === "suspended" ? "active" : "suspended";
+  const { error } = await supabase
+    .from("merchants")
+    .update({ status: newStatus as any })
+    .eq("id", merchantId);
+  if (error) throw error;
+  return newStatus;
+}
