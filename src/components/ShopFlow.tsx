@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getBalance, recordTransaction, addBalance, onBalanceChange, transferMoney } from "@/lib/balanceStore";
+import { useI18n } from "@/lib/i18n";
 import { fireSuccessConfetti } from "@/lib/confetti";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -122,20 +123,20 @@ const PROMO_CODES: Record<string, number> = {
   "SAVE10": 10, "WELCOME20": 20, "FLASH15": 15, "MFS5": 5,
 };
 
-const TIMELINE_STEPS: { step: Order["status"]; label: string }[] = [
-  { step: "processing",       label: "Order Placed" },
-  { step: "confirmed",        label: "Confirmed" },
-  { step: "shipped",          label: "Shipped" },
-  { step: "out_for_delivery", label: "Out for Delivery" },
-  { step: "delivered",        label: "Delivered" },
+const TIMELINE_STEP_KEYS: { step: Order["status"]; labelKey: string }[] = [
+  { step: "processing",       labelKey: "orderPlacedTimeline" },
+  { step: "confirmed",        labelKey: "confirmed2" },
+  { step: "shipped",          labelKey: "shipped" },
+  { step: "out_for_delivery", labelKey: "outForDelivery" },
+  { step: "delivered",        labelKey: "delivered" },
 ];
 
 const makeTimeline = (currentStatus: Order["status"], baseDate: string): TimelineEvent[] => {
-  const stepOrder = TIMELINE_STEPS.map(s => s.step);
+  const stepOrder = TIMELINE_STEP_KEYS.map(s => s.step);
   const currentIdx = stepOrder.indexOf(currentStatus);
-  return TIMELINE_STEPS.map((s, i) => ({
+  return TIMELINE_STEP_KEYS.map((s, i) => ({
     step: s.step,
-    label: s.label,
+    label: s.labelKey,
     done: i <= currentIdx,
     timestamp: i <= currentIdx ? (i === 0 ? baseDate : `${baseDate} +${i}d`) : null,
   }));
@@ -181,6 +182,7 @@ const FlashDealCard = ({ deal, product, onAdd, inCart, onClick }: {
   deal: typeof FLASH_DEALS[0]; product: Product;
   onAdd: () => void; inCart: boolean; onClick: () => void;
 }) => {
+  const { t } = useI18n();
   const countdown = useCountdown(deal.endsInMs);
   const discount = product.originalPrice ? Math.round((1 - product.price / product.originalPrice) * 100) : 0;
   return (
@@ -209,7 +211,7 @@ const FlashDealCard = ({ deal, product, onAdd, inCart, onClick }: {
           style={{ background: inCart ? "#43A047" : SHOP_GRADIENT }}
         >
           {inCart ? <CheckCircle2 size={11} /> : <Plus size={11} />}
-          {inCart ? "Added" : "Add"}
+          {inCart ? t("added") : t("add")}
         </motion.button>
       </div>
     </motion.div>
@@ -272,6 +274,7 @@ const RatingBars = ({ productId, allReviews, overallRating, totalReviews }: {
 // ── Write Review Sheet ─────────────────────────────────────────────────────────
 interface WriteReviewProps { productId: string; productName: string; onSubmit: (r: Review) => void; onCancel: () => void; }
 const WriteReviewSheet = ({ productId, productName, onSubmit, onCancel }: WriteReviewProps) => {
+  const { t } = useI18n();
   const [rating, setRating] = useState(0);
   const [text, setText] = useState("");
   return (
@@ -285,30 +288,30 @@ const WriteReviewSheet = ({ productId, productName, onSubmit, onCancel }: WriteR
       <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
       <div className="relative bg-background rounded-t-3xl p-5 space-y-4 pb-10">
         <div className="w-10 h-1 bg-border rounded-full mx-auto mb-2" />
-        <p className="text-[16px] font-bold text-foreground">Review {productName}</p>
+        <p className="text-[16px] font-bold text-foreground">{t("reviewProduct")} {productName}</p>
         <div className="flex flex-col items-center gap-3 py-2">
-          <p className="text-[12px] text-muted-foreground">Tap to rate</p>
+          <p className="text-[12px] text-muted-foreground">{t("tapToRate")}</p>
           <StarRating value={rating} size={32} onRate={setRating} />
         </div>
         <textarea
           value={text} onChange={e => setText(e.target.value)}
-          placeholder="Share your experience with this product…"
+          placeholder={t("shareExperience")}
           rows={3}
           className="w-full px-4 py-3 rounded-2xl bg-muted border border-border text-[13px] outline-none focus:border-orange-400 resize-none text-foreground"
         />
         <div className="flex gap-3">
-          <button onClick={onCancel} className="flex-1 h-12 rounded-2xl border border-border text-[14px] font-semibold text-muted-foreground bg-background">Cancel</button>
+          <button onClick={onCancel} className="flex-1 h-12 rounded-2xl border border-border text-[14px] font-semibold text-muted-foreground bg-background">{t("cancel")}</button>
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={() => {
-              if (rating === 0) { toast.error("Please select a rating"); return; }
-              if (!text.trim()) { toast.error("Please write something"); return; }
+              if (rating === 0) { toast.error(t("pleaseSelectRating")); return; }
+              if (!text.trim()) { toast.error(t("pleaseWriteSomething")); return; }
               onSubmit({ productId, author: "You", avatar: "🙋", rating, date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }), text });
             }}
             className="flex-1 h-12 rounded-2xl text-white font-bold text-[14px] flex items-center justify-center gap-2"
             style={{ background: SHOP_GRADIENT }}
           >
-            <Send size={14} /> Submit
+            <Send size={14} /> {t("submit")}
           </motion.button>
         </div>
       </div>
@@ -318,6 +321,7 @@ const WriteReviewSheet = ({ productId, productName, onSubmit, onCancel }: WriteR
 
 // ── Address Editor Sheet ───────────────────────────────────────────────────────
 const AddressEditor = ({ address, onSave, onCancel }: { address: Address | null; onSave: (a: Address) => void; onCancel: () => void; }) => {
+  const { t } = useI18n();
   const [form, setForm] = useState<Address>(
     address ?? { id: `a${Date.now()}`, label: "Home", name: "", line1: "", line2: "", city: "", phone: "" }
   );
@@ -332,7 +336,7 @@ const AddressEditor = ({ address, onSave, onCancel }: { address: Address | null;
       <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
       <div className="relative bg-background rounded-t-3xl p-5 space-y-4 max-h-[85vh] overflow-y-auto pb-10">
         <div className="w-10 h-1 bg-border rounded-full mx-auto mb-2" />
-        <p className="text-[16px] font-bold text-foreground">{address ? "Edit Address" : "New Address"}</p>
+        <p className="text-[16px] font-bold text-foreground">{address ? t("editAddress") : t("newAddress")}</p>
         <div className="flex gap-2">
           {labels.map(l => (
             <button key={l} onClick={() => set("label", l)}
@@ -343,11 +347,11 @@ const AddressEditor = ({ address, onSave, onCancel }: { address: Address | null;
           ))}
         </div>
         {([
-          { key: "name" as const, label: "Full Name", placeholder: "e.g. Karim Hossain" },
-          { key: "phone" as const, label: "Phone", placeholder: "e.g. 01712-345678" },
-          { key: "line1" as const, label: "Address Line 1", placeholder: "House/Flat, Road, Block" },
-          { key: "line2" as const, label: "Area / Thana", placeholder: "e.g. Mirpur-10" },
-          { key: "city" as const, label: "City / Postcode", placeholder: "e.g. Dhaka-1216" },
+          { key: "name" as const, label: t("fullName"), placeholder: "e.g. Karim Hossain" },
+          { key: "phone" as const, label: t("phone"), placeholder: "e.g. 01712-345678" },
+          { key: "line1" as const, label: t("addressLine1"), placeholder: "House/Flat, Road, Block" },
+          { key: "line2" as const, label: t("areaThana"), placeholder: "e.g. Mirpur-10" },
+          { key: "city" as const, label: t("cityPostcode"), placeholder: "e.g. Dhaka-1216" },
         ]).map(({ key, label, placeholder }) => (
           <div key={key} className="space-y-1">
             <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{label}</label>
@@ -358,13 +362,13 @@ const AddressEditor = ({ address, onSave, onCancel }: { address: Address | null;
           </div>
         ))}
         <div className="flex gap-3 pt-2">
-          <button onClick={onCancel} className="flex-1 h-12 rounded-2xl border border-border text-[14px] font-semibold text-muted-foreground bg-background">Cancel</button>
+          <button onClick={onCancel} className="flex-1 h-12 rounded-2xl border border-border text-[14px] font-semibold text-muted-foreground bg-background">{t("cancel")}</button>
           <motion.button
             whileTap={{ scale: 0.97 }}
-            onClick={() => { if (!form.name || !form.line1 || !form.city) { toast.error("Please fill all required fields"); return; } onSave(form); }}
+            onClick={() => { if (!form.name || !form.line1 || !form.city) { toast.error(t("fillAllRequired")); return; } onSave(form); }}
             className="flex-1 h-12 rounded-2xl text-white font-bold text-[14px]"
             style={{ background: SHOP_GRADIENT }}>
-            Save Address
+            {t("saveAddress")}
           </motion.button>
         </div>
       </div>
@@ -384,6 +388,7 @@ const STATUS_CONFIG: Record<Order["status"], { label: string; color: string; ico
 
 // ── Order Timeline ─────────────────────────────────────────────────────────────
 const OrderTimeline = ({ timeline }: { timeline: TimelineEvent[] }) => {
+  const { t } = useI18n();
   const doneCount = timeline.filter(t => t.done).length;
   const progress = ((doneCount - 1) / (timeline.length - 1)) * 100;
   return (
@@ -409,7 +414,7 @@ const OrderTimeline = ({ timeline }: { timeline: TimelineEvent[] }) => {
                 {!isLast && <div className={`w-0.5 flex-1 min-h-[20px] my-0.5 rounded-full ${event.done ? "bg-orange-300" : "bg-border"}`} />}
               </div>
               <div className="pb-4 flex-1">
-                <p className={`text-[12.5px] font-bold ${event.done ? "text-foreground" : "text-muted-foreground"}`}>{event.label}</p>
+                <p className={`text-[12.5px] font-bold ${event.done ? "text-foreground" : "text-muted-foreground"}`}>{t(event.label as any)}</p>
                 {event.timestamp && <p className="text-[10.5px] text-muted-foreground mt-0.5">{event.timestamp}</p>}
               </div>
             </div>
@@ -422,6 +427,7 @@ const OrderTimeline = ({ timeline }: { timeline: TimelineEvent[] }) => {
 
 // ── Order Card ─────────────────────────────────────────────────────────────────
 const OrderCard = ({ order, onCancel }: { order: Order; onCancel?: (id: string) => void; }) => {
+  const { t } = useI18n();
   const [expanded, setExpanded] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
@@ -456,7 +462,7 @@ const OrderCard = ({ order, onCancel }: { order: Order; onCancel?: (id: string) 
                     <span className="text-xl">{item.emoji}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-[12px] font-semibold truncate text-foreground">{item.name}</p>
-                      <p className="text-[10.5px] text-muted-foreground">Qty: {item.qty}</p>
+                      <p className="text-[10.5px] text-muted-foreground">{t("qty")}: {item.qty}</p>
                     </div>
                     <p className="text-[12px] font-bold text-foreground">৳{(item.price * item.qty).toLocaleString()}</p>
                   </div>
@@ -471,12 +477,12 @@ const OrderCard = ({ order, onCancel }: { order: Order; onCancel?: (id: string) 
                 </div>
                 <div className="flex items-center gap-2">
                   {order.paymentMethod === "wallet" ? <Wallet size={12} className="text-muted-foreground" /> : <CreditCard size={12} className="text-muted-foreground" />}
-                  <p className="text-[11px] text-muted-foreground">{order.paymentMethod === "wallet" ? "Paid via Wallet" : "Paid via Card"}</p>
+                  <p className="text-[11px] text-muted-foreground">{order.paymentMethod === "wallet" ? t("paidViaWallet") : t("paidViaCard")}</p>
                 </div>
                 {order.status !== "cancelled" && (
                   <div className="flex items-center gap-2">
                     <Truck size={12} className="text-muted-foreground" />
-                    <p className="text-[11px] text-muted-foreground">Est. delivery: {order.estimatedDelivery}</p>
+                    <p className="text-[11px] text-muted-foreground">{t("estDelivery")}: {order.estimatedDelivery}</p>
                   </div>
                 )}
               </div>
@@ -487,7 +493,7 @@ const OrderCard = ({ order, onCancel }: { order: Order; onCancel?: (id: string) 
                   <button onClick={() => setShowTimeline(s => !s)}
                     className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl border border-border/60 bg-muted/50 text-[12px] font-semibold text-foreground">
                     <div className="flex items-center gap-2">
-                      <Truck size={13} style={{ color: "#FF7043" }} />Track Shipment
+                      <Truck size={13} style={{ color: "#FF7043" }} />{t("trackShipment")}
                     </div>
                     {showTimeline ? <ChevronUp size={13} className="text-muted-foreground" /> : <ChevronDown size={13} className="text-muted-foreground" />}
                   </button>
@@ -505,19 +511,19 @@ const OrderCard = ({ order, onCancel }: { order: Order; onCancel?: (id: string) 
               {canCancel && onCancel && !confirmCancel && (
                 <button onClick={() => setConfirmCancel(true)}
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl border border-red-200 dark:border-red-800 text-red-500 text-[12px] font-semibold bg-red-50 dark:bg-red-950/30">
-                  <AlertCircle size={13} /> Cancel Order
+                  <AlertCircle size={13} /> {t("cancelOrder")}
                 </button>
               )}
               {canCancel && onCancel && confirmCancel && (
                 <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-2xl p-3 space-y-2">
-                  <p className="text-[12px] font-semibold text-red-600 dark:text-red-400 text-center">Cancel this order?</p>
+                  <p className="text-[12px] font-semibold text-red-600 dark:text-red-400 text-center">{t("cancelThisOrder")}</p>
                   <p className="text-[11px] text-muted-foreground text-center">
-                    {order.paymentMethod === "wallet" ? "Refund of ৳" + order.total.toLocaleString() + " will go back to your wallet." : "Refund will be processed to your card."}
+                    {order.paymentMethod === "wallet" ? `${t("refundOf")} ৳${order.total.toLocaleString()} ${t("refundToWallet")}` : t("refundToCard")}
                   </p>
                   <div className="flex gap-2">
-                    <button onClick={() => setConfirmCancel(false)} className="flex-1 h-9 rounded-xl border border-border text-[12px] font-semibold text-muted-foreground bg-background">Keep Order</button>
+                    <button onClick={() => setConfirmCancel(false)} className="flex-1 h-9 rounded-xl border border-border text-[12px] font-semibold text-muted-foreground bg-background">{t("keepOrder")}</button>
                     <button onClick={() => { onCancel(order.id); setConfirmCancel(false); setExpanded(false); }}
-                      className="flex-1 h-9 rounded-xl bg-red-500 text-white text-[12px] font-bold">Yes, Cancel</button>
+                      className="flex-1 h-9 rounded-xl bg-red-500 text-white text-[12px] font-bold">{t("yesCancel")}</button>
                   </div>
                 </div>
               )}
@@ -533,6 +539,7 @@ const OrderCard = ({ order, onCancel }: { order: Order; onCancel?: (id: string) 
 interface ShopFlowProps { onClose: () => void; }
 
 const ShopFlow = ({ onClose }: ShopFlowProps) => {
+  const { t } = useI18n();
   const [screen, setScreen]           = useState<Screen>("browse");
   const [category, setCategory]       = useState("All");
   const [search, setSearch]           = useState("");
@@ -611,7 +618,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
       if (ex) return prev.map(c => c.id === p.id ? { ...c, qty: c.qty + 1 } : c);
       return [...prev, { ...p, qty: 1 }];
     });
-    toast.success(`${p.emoji} Added to cart`);
+    toast.success(`${p.emoji} ${t("addedToCart")}`);
   };
 
   const changeQty = (id: string, delta: number) => {
@@ -631,8 +638,8 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
   const toggleWishlist = (id: string) => {
     setWishlist(prev => {
       const next = new Set(prev);
-      if (next.has(id)) { next.delete(id); toast("Removed from wishlist"); }
-      else { next.add(id); toast.success("❤️ Added to wishlist"); }
+      if (next.has(id)) { next.delete(id); toast(t("removedFromWishlist")); }
+      else { next.add(id); toast.success(`❤️ ${t("addedToWishlist")}`); }
       return next;
     });
   };
@@ -719,10 +726,10 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
   };
 
   const headerTitle: Record<Screen, string> = {
-    browse: "Shop", detail: detail?.name ?? "Product",
-    cart: `Cart (${cartCount})`, checkout: "Checkout",
-    success: "Order Placed!", orders: "My Orders",
-    wishlist: `Wishlist (${wishlist.size})`,
+    browse: t("shopTitle"), detail: detail?.name ?? t("product"),
+    cart: `${t("cart")} (${cartCount})`, checkout: t("checkout"),
+    success: t("orderPlaced"), orders: t("myOrders"),
+    wishlist: `${t("wishlist")} (${wishlist.size})`,
   };
 
   return (
@@ -755,12 +762,12 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
           <div className="flex-1 min-w-0">
             <p className="text-[17px] font-bold leading-tight truncate">{headerTitle[screen]}</p>
             <p className="text-[11px] opacity-60">
-              {screen === "browse"   && `${filtered.length} products`}
-              {screen === "cart"     && `৳${cartTotal.toLocaleString()} total`}
-              {screen === "checkout" && "Confirm your order"}
+              {screen === "browse"   && `${filtered.length} ${t("products")}`}
+              {screen === "cart"     && `৳${cartTotal.toLocaleString()} ${t("total")}`}
+              {screen === "checkout" && t("confirmYourOrder")}
               {screen === "success"  && orderNum}
-              {screen === "orders"   && `${orders.length} orders`}
-              {screen === "wishlist" && `${wishlist.size} saved items`}
+              {screen === "orders"   && `${orders.length} ${t("orders")}`}
+              {screen === "wishlist" && `${wishlist.size} ${t("savedItems")}`}
             </p>
           </div>
 
@@ -806,7 +813,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
               {/* Search */}
               <div className="relative">
                 <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input type="text" placeholder="Search products…" value={search} onChange={e => setSearch(e.target.value)}
+                <input type="text" placeholder={t("searchProducts")} value={search} onChange={e => setSearch(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-card border border-border text-sm text-foreground outline-none focus:border-orange-400 transition-colors" />
                 {search && (
                   <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"><X size={14} /></button>
@@ -819,10 +826,10 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Zap size={15} className="fill-orange-500 text-orange-500" />
-                      <p className="text-[14px] font-bold text-foreground">Flash Deals</p>
+                      <p className="text-[14px] font-bold text-foreground">{t("flashDeals")}</p>
                     </div>
                     <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-semibold">
-                      <TrendingUp size={11} /> Limited time only
+                      <TrendingUp size={11} /> {t("limitedTimeOnly")}
                     </div>
                   </div>
                   <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-none">
@@ -897,8 +904,8 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
               {filtered.length === 0 && (
                 <div className="text-center py-16 text-muted-foreground">
                   <p className="text-4xl mb-3">🔍</p>
-                  <p className="font-semibold text-foreground">No products found</p>
-                  <p className="text-sm mt-1">Try a different search or category</p>
+                  <p className="font-semibold text-foreground">{t("noProductsFound")}</p>
+                  <p className="text-sm mt-1">{t("tryDifferentSearch")}</p>
                 </div>
               )}
             </motion.div>
@@ -943,7 +950,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                 {detail.badge && (
                   <div className="flex items-center gap-2 p-2.5 rounded-2xl" style={{ background: `${detail.badgeColor}18` }}>
                     <Tag size={12} style={{ color: detail.badgeColor }} />
-                    <span className="text-[11.5px] font-semibold" style={{ color: detail.badgeColor }}>{detail.badge} — Limited time offer</span>
+                    <span className="text-[11.5px] font-semibold" style={{ color: detail.badgeColor }}>{detail.badge} — {t("limitedTimeOffer")}</span>
                   </div>
                 )}
               </div>
@@ -953,19 +960,19 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                 <motion.button whileTap={{ scale: 0.97 }} onClick={() => { addToCart(detail); setScreen("cart"); }}
                   className="flex-1 h-14 rounded-2xl font-bold text-[14px] border-2 flex items-center justify-center gap-2 transition-colors bg-background"
                   style={{ borderColor: "#FF7043", color: "#FF7043" }}>
-                  <ShoppingCart size={17} /> Add to Cart
+                  <ShoppingCart size={17} /> {t("addToCart")}
                 </motion.button>
                 <motion.button whileTap={{ scale: 0.97 }} onClick={() => buyNow(detail)}
                   className="flex-1 h-14 rounded-2xl text-white font-bold text-[14px] shadow-lg flex items-center justify-center gap-2"
                   style={{ background: SHOP_GRADIENT }}>
-                  Buy Now
+                  {t("buyNow")}
                 </motion.button>
               </div>
 
               {/* Description */}
               {detail.description && (
                 <div className="bg-card rounded-3xl border border-border/60 p-4">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-2">Description</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-2">{t("shopDescription")}</p>
                   <p className="text-[13px] text-foreground leading-relaxed">{detail.description}</p>
                 </div>
               )}
@@ -973,12 +980,12 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
               {/* Reviews Section */}
               <div className="bg-card rounded-3xl border border-border/60 p-4 space-y-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-[13px] font-bold text-foreground">Customer Reviews</p>
+                  <p className="text-[13px] font-bold text-foreground">{t("customerReviews")}</p>
                   {purchasedProductIds.has(detail.id) && (
                     <motion.button whileTap={{ scale: 0.95 }} onClick={() => setShowWriteReview(true)}
                       className="flex items-center gap-1.5 px-3 py-2 rounded-2xl text-white text-[11px] font-bold"
                       style={{ background: SHOP_GRADIENT }}>
-                      <MessageSquarePlus size={12} /> Write Review
+                      <MessageSquarePlus size={12} /> {t("writeReview")}
                     </motion.button>
                   )}
                 </div>
@@ -1008,11 +1015,11 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                     </div>
                   ))}
                   {reviews.filter(r => r.productId === detail.id).length === 0 && (
-                    <p className="text-[12px] text-muted-foreground text-center py-3">No reviews yet. Be the first!</p>
+                    <p className="text-[12px] text-muted-foreground text-center py-3">{t("noReviewsYet")}</p>
                   )}
                   {!purchasedProductIds.has(detail.id) && (
                     <p className="text-[11px] text-muted-foreground text-center py-1 flex items-center justify-center gap-1">
-                      <CheckCircle2 size={11} /> Purchase this item to leave a review
+                      <CheckCircle2 size={11} /> {t("purchaseToReview")}
                     </p>
                   )}
                 </div>
@@ -1021,7 +1028,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
               {/* Related Products */}
               {relatedProducts.length > 0 && (
                 <div className="space-y-3 pb-2">
-                  <p className="text-[14px] font-bold text-foreground">Related Products</p>
+                  <p className="text-[14px] font-bold text-foreground">{t("relatedProducts")}</p>
                   <div className="grid grid-cols-2 gap-3">
                     {relatedProducts.map(p => {
                       const inCart = cart.find(c => c.id === p.id);
@@ -1058,10 +1065,10 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
               {wishlistProducts.length === 0 ? (
                 <div className="text-center py-20 text-muted-foreground space-y-3">
                   <p className="text-5xl">💝</p>
-                  <p className="font-semibold text-foreground">Your wishlist is empty</p>
-                  <p className="text-[13px]">Tap the ❤️ on any product to save it</p>
+                  <p className="font-semibold text-foreground">{t("yourWishlistEmpty")}</p>
+                  <p className="text-[13px]">{t("tapHeartToSave")}</p>
                   <button onClick={() => setScreen("browse")} className="text-sm font-semibold text-white px-5 py-2.5 rounded-2xl" style={{ background: SHOP_GRADIENT }}>
-                    Browse Products
+                    {t("browseProducts")}
                   </button>
                 </div>
               ) : (
@@ -1101,9 +1108,9 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
               {cart.length === 0 ? (
                 <div className="text-center py-20 text-muted-foreground space-y-3">
                   <p className="text-5xl">🛒</p>
-                  <p className="font-semibold text-foreground">Your cart is empty</p>
+                  <p className="font-semibold text-foreground">{t("yourCartEmpty")}</p>
                   <button onClick={() => setScreen("browse")} className="text-sm font-semibold text-white px-5 py-2.5 rounded-2xl" style={{ background: SHOP_GRADIENT }}>
-                    Continue Shopping
+                    {t("continueShopping")}
                   </button>
                 </div>
               ) : (
@@ -1129,7 +1136,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
 
                   {/* Promo in cart */}
                   <div className="bg-card rounded-3xl border border-border/60 p-4 space-y-3">
-                    <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Promo Code</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{t("promoCode")}</p>
                     {appliedPromo ? (
                       <div className="flex items-center gap-3 p-3 rounded-2xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
                         <Gift size={16} className="text-green-600 shrink-0" />
@@ -1147,11 +1154,11 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                           <Ticket size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                           <input type="text" value={promoInput} onChange={e => setPromoInput(e.target.value.toUpperCase())}
                             onKeyDown={e => e.key === "Enter" && applyPromo()}
-                            placeholder="Enter promo code"
+                            placeholder={t("enterPromoCode")}
                             className="w-full pl-9 pr-3 py-2.5 rounded-2xl bg-muted border border-border text-[13px] text-foreground font-mono outline-none focus:border-orange-400 transition-colors uppercase" />
                         </div>
                         <motion.button whileTap={{ scale: 0.95 }} onClick={applyPromo}
-                          className="px-4 py-2.5 rounded-2xl text-white text-[13px] font-bold shrink-0" style={{ background: SHOP_GRADIENT }}>Apply</motion.button>
+                          className="px-4 py-2.5 rounded-2xl text-white text-[13px] font-bold shrink-0" style={{ background: SHOP_GRADIENT }}>{t("apply")}</motion.button>
                       </div>
                     )}
                     <p className="text-[10.5px] text-muted-foreground">Try: SAVE10, WELCOME20, FLASH15</p>
@@ -1159,32 +1166,32 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
 
                   {/* Order summary */}
                   <div className="bg-card rounded-3xl border border-border/60 p-4 space-y-2">
-                    <p className="text-[12px] font-bold uppercase tracking-wide text-muted-foreground">Order Summary</p>
+                    <p className="text-[12px] font-bold uppercase tracking-wide text-muted-foreground">{t("orderSummary")}</p>
                     <div className="flex justify-between text-[13px]">
-                      <span className="text-muted-foreground">Subtotal ({cartCount} items)</span>
+                      <span className="text-muted-foreground">{t("subtotal")} ({cartCount} {t("items")})</span>
                       <span className="font-semibold text-foreground">৳{cartSubtotal.toLocaleString()}</span>
                     </div>
                     {appliedPromo && (
                       <div className="flex justify-between text-[13px]">
-                        <span className="text-green-600">Discount ({appliedPromo.discount}%)</span>
+                        <span className="text-green-600">{t("discount")} ({appliedPromo.discount}%)</span>
                         <span className="font-semibold text-green-600">-৳{discountAmt.toLocaleString()}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-[13px]">
-                      <span className="text-muted-foreground">Delivery</span>
-                      <span className="font-semibold text-green-600">FREE</span>
+                      <span className="text-muted-foreground">{t("delivery")}</span>
+                      <span className="font-semibold text-green-600">{t("freeCaps")}</span>
                     </div>
                     <div className="h-px bg-border my-1" />
                     <div className="flex justify-between text-[15px] font-bold">
-                      <span className="text-foreground">Total</span>
+                      <span className="text-foreground">{t("total")}</span>
                       <span style={{ color: "#FF7043" }}>৳{cartTotal.toLocaleString()}</span>
                     </div>
-                    <p className="text-[10.5px] text-muted-foreground">Wallet balance: ৳{walletBalance.toLocaleString()}</p>
+                    <p className="text-[10.5px] text-muted-foreground">{t("walletBalanceLabel")}: ৳{walletBalance.toLocaleString()}</p>
                   </div>
 
                   <motion.button whileTap={{ scale: 0.97 }} onClick={() => setScreen("checkout")}
                     className="w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg" style={{ background: SHOP_GRADIENT }}>
-                    Proceed to Checkout
+                    {t("proceedToCheckout")}
                   </motion.button>
                 </>
               )}
@@ -1197,9 +1204,9 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
               {/* Delivery address */}
               <div className="bg-card rounded-3xl border border-border/60 p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Delivery Address</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{t("deliveryAddress")}</p>
                   <button onClick={() => setShowAddressPicker(p => !p)} className="flex items-center gap-1 text-[11px] font-semibold" style={{ color: "#FF7043" }}>
-                    Change <ChevronRight size={12} />
+                    {t("change")} <ChevronRight size={12} />
                   </button>
                 </div>
                 <div className="flex items-start gap-3 p-3 rounded-2xl border" style={{ background: "rgba(255,112,67,0.06)", borderColor: "rgba(255,112,67,0.25)" }}>
@@ -1233,7 +1240,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                       ))}
                       <button onClick={() => { setEditingAddress("new"); setShowAddressPicker(false); }}
                         className="w-full flex items-center gap-3 p-3 rounded-2xl border border-dashed border-border text-muted-foreground bg-muted/20">
-                        <Plus size={14} /><span className="text-[12.5px] font-semibold">Add New Address</span>
+                        <Plus size={14} /><span className="text-[12.5px] font-semibold">{t("addNewAddress")}</span>
                       </button>
                     </motion.div>
                   )}
@@ -1242,7 +1249,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
 
               {/* Promo Code */}
               <div className="bg-card rounded-3xl border border-border/60 p-4 space-y-3">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Promo Code</p>
+                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{t("promoCode")}</p>
                 {appliedPromo ? (
                   <div className="flex items-center gap-3 p-3 rounded-2xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
                     <Gift size={16} className="text-green-600 shrink-0" />
@@ -1260,11 +1267,11 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                       <Ticket size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       <input type="text" value={promoInput} onChange={e => setPromoInput(e.target.value.toUpperCase())}
                         onKeyDown={e => e.key === "Enter" && applyPromo()}
-                        placeholder="Enter promo code"
+                        placeholder={t("enterPromoCode")}
                         className="w-full pl-9 pr-3 py-2.5 rounded-2xl bg-muted border border-border text-[13px] text-foreground font-mono outline-none focus:border-orange-400 transition-colors uppercase" />
                     </div>
                     <motion.button whileTap={{ scale: 0.95 }} onClick={applyPromo}
-                      className="px-4 py-2.5 rounded-2xl text-white text-[13px] font-bold shrink-0" style={{ background: SHOP_GRADIENT }}>Apply</motion.button>
+                      className="px-4 py-2.5 rounded-2xl text-white text-[13px] font-bold shrink-0" style={{ background: SHOP_GRADIENT }}>{t("apply")}</motion.button>
                   </div>
                 )}
                 <p className="text-[10.5px] text-muted-foreground">Try: SAVE10, WELCOME20, FLASH15</p>
@@ -1272,7 +1279,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
 
               {/* Payment method */}
               <div className="bg-card rounded-3xl border border-border/60 p-4 space-y-3">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Payment Method</p>
+                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{t("paymentMethod")}</p>
                 <button onClick={() => setPayMethod("wallet")}
                   className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-colors text-left ${payMethod === "wallet" ? "border-orange-300" : "border-border"}`}
                   style={payMethod === "wallet" ? { background: "rgba(255,112,67,0.06)" } : {}}>
@@ -1280,8 +1287,8 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                     <Wallet size={16} style={{ color: "#FF7043" }} />
                   </div>
                   <div className="flex-1">
-                    <p className="text-[13px] font-bold text-foreground">MFS Wallet</p>
-                    <p className="text-[11px] text-muted-foreground">Balance: ৳{walletBalance.toLocaleString()}</p>
+                    <p className="text-[13px] font-bold text-foreground">{t("mfsWallet")}</p>
+                    <p className="text-[11px] text-muted-foreground">{t("balance")}: ৳{walletBalance.toLocaleString()}</p>
                   </div>
                   <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${payMethod === "wallet" ? "border-orange-500" : "border-border"}`}>
                     {payMethod === "wallet" && <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#FF7043" }} />}
@@ -1290,7 +1297,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                 {payMethod === "wallet" && cartTotal > walletBalance && (
                   <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
                     <AlertCircle size={13} className="text-red-500 shrink-0" />
-                    <p className="text-[11px] text-red-600 dark:text-red-400 font-semibold">Insufficient balance — need ৳{(cartTotal - walletBalance).toLocaleString()} more</p>
+                    <p className="text-[11px] text-red-600 dark:text-red-400 font-semibold">{t("insufficientBalanceNeed")} ৳{(cartTotal - walletBalance).toLocaleString()} {t("shopMore")}</p>
                   </div>
                 )}
                 <button onClick={() => setPayMethod("card")}
@@ -1301,7 +1308,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                   </div>
                   <div className="flex-1">
                     <p className="text-[13px] font-bold text-foreground">{savedCard.brand} •••• {savedCard.last4}</p>
-                    <p className="text-[11px] text-muted-foreground">Saved card</p>
+                    <p className="text-[11px] text-muted-foreground">{t("savedCard")}</p>
                   </div>
                   <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${payMethod === "card" ? "border-orange-500" : "border-border"}`}>
                     {payMethod === "card" && <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#FF7043" }} />}
@@ -1311,14 +1318,14 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
 
               {/* Items summary */}
               <div className="bg-card rounded-3xl border border-border/60 p-4 space-y-2">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Items ({cartCount})</p>
+                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{t("items")} ({cartCount})</p>
                 {cart.map(item => (
                   <div key={item.id} className="flex items-center justify-between py-1">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{item.emoji}</span>
                       <div>
                         <p className="text-[12px] font-semibold text-foreground leading-tight">{item.name}</p>
-                        <p className="text-[10px] text-muted-foreground">Qty: {item.qty}</p>
+                        <p className="text-[10px] text-muted-foreground">{t("qty")}: {item.qty}</p>
                       </div>
                     </div>
                     <p className="text-[13px] font-bold text-foreground">৳{(item.price * item.qty).toLocaleString()}</p>
@@ -1326,7 +1333,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                 ))}
                 <div className="h-px bg-border" />
                 <div className="flex justify-between text-[13px]">
-                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="text-muted-foreground">{t("subtotal")}</span>
                   <span className="font-semibold text-foreground">৳{cartSubtotal.toLocaleString()}</span>
                 </div>
                 {appliedPromo && (
@@ -1337,7 +1344,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                 )}
                 <div className="h-px bg-border" />
                 <div className="flex justify-between font-bold text-[14px]">
-                  <span className="text-foreground">Total</span>
+                  <span className="text-foreground">{t("total")}</span>
                   <span style={{ color: "#FF7043" }}>৳{cartTotal.toLocaleString()}</span>
                 </div>
               </div>
@@ -1348,7 +1355,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                 disabled={payMethod === "wallet" && cartTotal > walletBalance}
                 className="w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ background: SHOP_GRADIENT }}>
-                Place Order · ৳{cartTotal.toLocaleString()}
+                {t("placeOrder")} · ৳{cartTotal.toLocaleString()}
               </motion.button>
             </motion.div>
           )}
@@ -1362,19 +1369,19 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                 🎉
               </motion.div>
               <div>
-                <h2 className="text-[22px] font-extrabold text-foreground">Order Placed!</h2>
-                <p className="text-muted-foreground text-sm mt-1">Your order has been confirmed</p>
+                <h2 className="text-[22px] font-extrabold text-foreground">{t("orderPlaced")}</h2>
+                <p className="text-muted-foreground text-sm mt-1">{t("orderConfirmed")}</p>
                 <p className="text-[12px] font-mono font-semibold mt-2 text-muted-foreground">{orderNum}</p>
               </div>
               <div className="w-full bg-card rounded-3xl border border-border/60 p-4 space-y-2 text-left">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Delivery Info</p>
+                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{t("deliveryInfo")}</p>
                 <div className="flex items-center gap-2 text-[13px]">
-                  <span>📦</span><span className="font-semibold text-foreground">Estimated: 3–5 business days</span>
+                  <span>📦</span><span className="font-semibold text-foreground">{t("estimated35Days")}</span>
                 </div>
                 <div className="flex items-center gap-2 text-[13px]">
                   {lastPayMethod === "wallet"
-                    ? <><Wallet size={14} style={{ color: "#FF7043" }} /><span className="font-semibold text-foreground">৳{lastOrderTotal.toLocaleString()} deducted from wallet</span></>
-                    : <><CreditCard size={14} style={{ color: "#2196F3" }} /><span className="font-semibold text-foreground">৳{lastOrderTotal.toLocaleString()} charged to {savedCard.brand} ••••{savedCard.last4}</span></>
+                    ? <><Wallet size={14} style={{ color: "#FF7043" }} /><span className="font-semibold text-foreground">৳{lastOrderTotal.toLocaleString()} {t("deductedFromWallet")}</span></>
+                    : <><CreditCard size={14} style={{ color: "#2196F3" }} /><span className="font-semibold text-foreground">৳{lastOrderTotal.toLocaleString()} {t("chargedTo")} {savedCard.brand} ••••{savedCard.last4}</span></>
                   }
                 </div>
                 <div className="flex items-center gap-2 text-[13px]">
@@ -1386,11 +1393,11 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                 <motion.button whileTap={{ scale: 0.97 }} onClick={() => setScreen("orders")}
                   className="flex-1 h-14 rounded-2xl font-bold text-[14px] border-2 flex items-center justify-center gap-2 bg-background"
                   style={{ borderColor: "#FF7043", color: "#FF7043" }}>
-                  <Package size={17} /> My Orders
+                  <Package size={17} /> {t("myOrders")}
                 </motion.button>
                 <motion.button whileTap={{ scale: 0.97 }} onClick={() => setScreen("browse")}
                   className="flex-1 h-14 rounded-2xl text-white font-bold text-[14px] shadow-lg" style={{ background: SHOP_GRADIENT }}>
-                  Continue Shopping
+                  {t("continueShopping")}
                 </motion.button>
               </div>
             </motion.div>
@@ -1402,8 +1409,8 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
               {orders.length === 0 ? (
                 <div className="text-center py-20 text-muted-foreground space-y-3">
                   <p className="text-5xl">📦</p>
-                  <p className="font-semibold text-foreground">No orders yet</p>
-                  <button onClick={() => setScreen("browse")} className="text-sm font-semibold text-white px-5 py-2.5 rounded-2xl" style={{ background: SHOP_GRADIENT }}>Start Shopping</button>
+                  <p className="font-semibold text-foreground">{t("noOrdersYet")}</p>
+                  <button onClick={() => setScreen("browse")} className="text-sm font-semibold text-white px-5 py-2.5 rounded-2xl" style={{ background: SHOP_GRADIENT }}>{t("startShopping")}</button>
                 </div>
               ) : (
                 <>
@@ -1439,7 +1446,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
             <motion.button whileTap={{ scale: 0.97 }} onClick={() => setScreen("checkout")}
               className="w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg flex items-center justify-center gap-2"
               style={{ background: SHOP_GRADIENT }}>
-              Checkout · ৳{cartTotal.toLocaleString()}
+              {t("checkout")} · ৳{cartTotal.toLocaleString()}
               <ChevronRight size={18} />
             </motion.button>
           </motion.div>
@@ -1460,7 +1467,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
               setSelectedAddressId(a.id);
               setEditingAddress(null);
               setShowAddressPicker(false);
-              toast.success("Address saved");
+              toast.success(t("addressSaved"));
             }}
             onCancel={() => setEditingAddress(null)}
           />
@@ -1472,7 +1479,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
         {showWriteReview && detail && (
           <WriteReviewSheet
             productId={detail.id} productName={detail.name}
-            onSubmit={(r) => { setReviews(prev => [r, ...prev]); setShowWriteReview(false); toast.success("Review submitted! 🌟"); }}
+            onSubmit={(r) => { setReviews(prev => [r, ...prev]); setShowWriteReview(false); toast.success(`${t("reviewSubmitted")} 🌟`); }}
             onCancel={() => setShowWriteReview(false)}
           />
         )}
