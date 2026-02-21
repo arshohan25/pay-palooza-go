@@ -14,6 +14,278 @@ export type Database = {
   }
   public: {
     Tables: {
+      agents: {
+        Row: {
+          activated_at: string | null
+          business_name: string | null
+          commission_earned: number
+          created_at: string
+          customers_onboarded: number
+          distributor_id: string | null
+          id: string
+          max_float: number
+          nid_number: string | null
+          status: Database["public"]["Enums"]["agent_status"]
+          territory_code: string | null
+          trade_license: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activated_at?: string | null
+          business_name?: string | null
+          commission_earned?: number
+          created_at?: string
+          customers_onboarded?: number
+          distributor_id?: string | null
+          id?: string
+          max_float?: number
+          nid_number?: string | null
+          status?: Database["public"]["Enums"]["agent_status"]
+          territory_code?: string | null
+          trade_license?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activated_at?: string | null
+          business_name?: string | null
+          commission_earned?: number
+          created_at?: string
+          customers_onboarded?: number
+          distributor_id?: string | null
+          id?: string
+          max_float?: number
+          nid_number?: string | null
+          status?: Database["public"]["Enums"]["agent_status"]
+          territory_code?: string | null
+          trade_license?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          actor_id: string
+          created_at: string
+          details: Json | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: unknown
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+        }
+        Relationships: []
+      }
+      distributors: {
+        Row: {
+          business_name: string
+          commission_rate: number
+          created_at: string
+          id: string
+          max_float: number
+          parent_id: string | null
+          status: Database["public"]["Enums"]["agent_status"]
+          territory: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_name: string
+          commission_rate?: number
+          created_at?: string
+          id?: string
+          max_float?: number
+          parent_id?: string | null
+          status?: Database["public"]["Enums"]["agent_status"]
+          territory?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_name?: string
+          commission_rate?: number
+          created_at?: string
+          id?: string
+          max_float?: number
+          parent_id?: string | null
+          status?: Database["public"]["Enums"]["agent_status"]
+          territory?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "distributors_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "distributors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fee_config: {
+        Row: {
+          agent_commission: number | null
+          created_at: string
+          distributor_commission: number | null
+          effective_from: string
+          effective_to: string | null
+          fee_type: string
+          fee_value: number
+          id: string
+          is_active: boolean
+          max_amount: number | null
+          min_amount: number | null
+          platform_share: number | null
+          txn_type: string
+        }
+        Insert: {
+          agent_commission?: number | null
+          created_at?: string
+          distributor_commission?: number | null
+          effective_from?: string
+          effective_to?: string | null
+          fee_type?: string
+          fee_value: number
+          id?: string
+          is_active?: boolean
+          max_amount?: number | null
+          min_amount?: number | null
+          platform_share?: number | null
+          txn_type: string
+        }
+        Update: {
+          agent_commission?: number | null
+          created_at?: string
+          distributor_commission?: number | null
+          effective_from?: string
+          effective_to?: string | null
+          fee_type?: string
+          fee_value?: number
+          id?: string
+          is_active?: boolean
+          max_amount?: number | null
+          min_amount?: number | null
+          platform_share?: number | null
+          txn_type?: string
+        }
+        Relationships: []
+      }
+      fraud_alerts: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          details: Json | null
+          id: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          rule_triggered: string
+          severity: Database["public"]["Enums"]["alert_severity"]
+          status: Database["public"]["Enums"]["alert_status"]
+          transaction_id: string | null
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          rule_triggered: string
+          severity?: Database["public"]["Enums"]["alert_severity"]
+          status?: Database["public"]["Enums"]["alert_status"]
+          transaction_id?: string | null
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          rule_triggered?: string
+          severity?: Database["public"]["Enums"]["alert_severity"]
+          status?: Database["public"]["Enums"]["alert_status"]
+          transaction_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      merchants: {
+        Row: {
+          bank_account_number: string | null
+          bank_name: string | null
+          bank_routing: string | null
+          business_name: string
+          category: Database["public"]["Enums"]["merchant_category"]
+          created_at: string
+          id: string
+          mdr_rate: number
+          qr_code_data: string | null
+          settlement_frequency: string
+          status: Database["public"]["Enums"]["agent_status"]
+          trade_license: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bank_account_number?: string | null
+          bank_name?: string | null
+          bank_routing?: string | null
+          business_name: string
+          category?: Database["public"]["Enums"]["merchant_category"]
+          created_at?: string
+          id?: string
+          mdr_rate?: number
+          qr_code_data?: string | null
+          settlement_frequency?: string
+          status?: Database["public"]["Enums"]["agent_status"]
+          trade_license?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bank_account_number?: string | null
+          bank_name?: string | null
+          bank_routing?: string | null
+          business_name?: string
+          category?: Database["public"]["Enums"]["merchant_category"]
+          created_at?: string
+          id?: string
+          mdr_rate?: number
+          qr_code_data?: string | null
+          settlement_frequency?: string
+          status?: Database["public"]["Enums"]["agent_status"]
+          trade_license?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -125,11 +397,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       transfer_money:
         | {
             Args: {
@@ -172,6 +472,27 @@ export type Database = {
           }
     }
     Enums: {
+      agent_status: "pending" | "active" | "suspended" | "terminated"
+      alert_severity: "low" | "medium" | "high" | "critical"
+      alert_status: "open" | "investigating" | "resolved" | "false_positive"
+      app_role:
+        | "customer"
+        | "agent"
+        | "merchant"
+        | "distributor"
+        | "super_distributor"
+        | "admin"
+        | "compliance"
+        | "finance"
+      merchant_category:
+        | "retail"
+        | "restaurant"
+        | "grocery"
+        | "pharmacy"
+        | "transport"
+        | "education"
+        | "utility"
+        | "other"
       txn_status: "pending" | "completed" | "failed" | "reversed"
       txn_type:
         | "send"
@@ -310,6 +631,29 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      agent_status: ["pending", "active", "suspended", "terminated"],
+      alert_severity: ["low", "medium", "high", "critical"],
+      alert_status: ["open", "investigating", "resolved", "false_positive"],
+      app_role: [
+        "customer",
+        "agent",
+        "merchant",
+        "distributor",
+        "super_distributor",
+        "admin",
+        "compliance",
+        "finance",
+      ],
+      merchant_category: [
+        "retail",
+        "restaurant",
+        "grocery",
+        "pharmacy",
+        "transport",
+        "education",
+        "utility",
+        "other",
+      ],
       txn_status: ["pending", "completed", "failed", "reversed"],
       txn_type: [
         "send",
