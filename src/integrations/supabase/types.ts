@@ -98,6 +98,56 @@ export type Database = {
         }
         Relationships: []
       }
+      disputes: {
+        Row: {
+          assigned_to: string | null
+          complainant_id: string
+          created_at: string
+          description: string | null
+          id: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["dispute_status"]
+          subject: string
+          transaction_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          complainant_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["dispute_status"]
+          subject: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          complainant_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["dispute_status"]
+          subject?: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disputes_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       distributors: {
         Row: {
           business_name: string
@@ -484,6 +534,7 @@ export type Database = {
         | "admin"
         | "compliance"
         | "finance"
+      dispute_status: "open" | "under_review" | "resolved" | "rejected"
       merchant_category:
         | "retail"
         | "restaurant"
@@ -644,6 +695,7 @@ export const Constants = {
         "compliance",
         "finance",
       ],
+      dispute_status: ["open", "under_review", "resolved", "rejected"],
       merchant_category: [
         "retail",
         "restaurant",
