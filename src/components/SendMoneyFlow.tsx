@@ -339,7 +339,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
             {step === "recipient" && (
               <div className="px-4 pt-6 pb-32 space-y-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">Search by Name, Number or Wallet ID</label>
+                  <label className="text-sm font-semibold text-foreground">{t("searchByNameNumberWallet")}</label>
                   <div className="relative">
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -366,7 +366,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                       {inputType ? (
                         <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
                           {inputType === "phone" ? <Phone size={10} /> : <Hash size={10} />}
-                          {inputType === "phone" ? "Mobile Number" : "Wallet ID"}
+                          {inputType === "phone" ? t("mobileNumber") : t("walletIdLabel")}
                         </span>
                       ) : (
                         <span className="text-[11px] text-muted-foreground">
@@ -394,13 +394,13 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                     onClick={handleContinue}
                     disabled={!inputVal.trim()}
                   >
-                    Continue
+                    {t("continue")}
                   </Button>
                 </div>
 
                 <div className="flex items-center gap-3">
                   <div className="flex-1 h-px bg-border" />
-                  <span className="text-xs text-muted-foreground">Recent contacts</span>
+                  <span className="text-xs text-muted-foreground">{t("recentContacts")}</span>
                   <div className="flex-1 h-px bg-border" />
                 </div>
 
@@ -435,7 +435,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                       {recipient.initials}
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Sending to</p>
+                      <p className="text-xs text-muted-foreground">{t("sendingTo")}</p>
                       <p className="text-sm font-bold text-foreground">{recipient.name}</p>
                       <p className="text-xs text-muted-foreground">{recipient.phone}</p>
                     </div>
@@ -444,7 +444,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-semibold text-foreground">Enter Amount</label>
+                    <label className="text-sm font-semibold text-foreground">{t("enterAmount")}</label>
                     <AvailableBalanceBadge />
                   </div>
                   <div className="relative flex items-center">
@@ -464,7 +464,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground font-medium">Quick select</p>
+                  <p className="text-xs text-muted-foreground font-medium">{t("quickSelect")}</p>
                   <div className="grid grid-cols-3 gap-2">
                     {QUICK_AMOUNTS.map((q) => (
                       <button
@@ -483,7 +483,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">Note (optional)</label>
+                  <label className="text-sm font-semibold text-foreground">{t("noteOptional")}</label>
                   <Input
                     placeholder="What's it for?"
                     value={note}
@@ -495,13 +495,13 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 {amtNum > 0 && (
                   <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2 text-sm">
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Amount</span>
+                       <span>{t("amount")}</span>
                       <span className="text-foreground font-medium">৳{amtNum.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Service Fee</span>
+                       <span>{t("serviceFee")}</span>
                       <span className="text-foreground font-medium">
-                        {fee === 0 ? <span className="text-primary font-semibold">Free</span> : `৳${fee}`}
+                         {fee === 0 ? <span className="text-primary font-semibold">{t("free")}</span> : `৳${fee}`}
                       </span>
                     </div>
                     {fee > 0 && (
@@ -512,15 +512,15 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                     )}
                     <div className="h-px bg-border" />
                     <div className="flex justify-between font-bold text-foreground">
-                      <span>Total from balance</span>
+                       <span>{t("totalFromBalance")}</span>
                       <span>৳{totalFromBalance.toLocaleString()}</span>
                     </div>
                   </div>
                 )}
 
-                <Button className="w-full h-12 gradient-send border-0 text-white font-semibold text-base" onClick={handleAmountContinue}>
-                  Review Transfer
-                </Button>
+                 <Button className="w-full h-12 gradient-send border-0 text-white font-semibold text-base" onClick={handleAmountContinue}>
+                   {t("reviewTransfer")}
+                 </Button>
               </div>
             )}
 
@@ -550,16 +550,16 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 </div>
 
                 <div className="rounded-2xl bg-card border border-border shadow-card p-4 space-y-3 text-sm">
-                  <p className="font-semibold text-foreground">Transfer Summary</p>
+                  <p className="font-semibold text-foreground">{t("transferSummary")}</p>
                   <div className="space-y-2 text-muted-foreground">
                     <div className="flex justify-between">
-                      <span>Send Amount</span>
+                      <span>{t("sendAmount")}</span>
                       <span className="text-foreground font-medium">৳{amtNum.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Service Fee</span>
-                      <span className="text-foreground font-medium">
-                        {fee === 0 ? <span className="text-primary font-semibold">Free</span> : `৳${fee}`}
+                       <span>{t("serviceFee")}</span>
+                       <span className="text-foreground font-medium">
+                         {fee === 0 ? <span className="text-primary font-semibold">{t("free")}</span> : `৳${fee}`}
                       </span>
                     </div>
                     {fee > 0 && (
@@ -570,12 +570,12 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                     )}
                     <div className="h-px bg-border" />
                     <div className="flex justify-between font-bold text-foreground text-base">
-                      <span>Total from balance</span>
+                      <span>{t("totalFromBalance")}</span>
                       <span>৳{totalFromBalance.toLocaleString()}</span>
                     </div>
                     {feeFromAmount > 0 && (
                       <div className="flex justify-between text-xs text-muted-foreground/70">
-                        <span>Recipient receives</span>
+                        <span>{t("recipientReceives")}</span>
                         <span>৳{recipientReceives.toLocaleString()}</span>
                       </div>
                     )}
@@ -587,10 +587,10 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   <span>Your balance: <strong className="text-foreground">৳12,450.75</strong></span>
                 </div>
 
-                <Button className="w-full h-12 gradient-send border-0 text-white font-bold text-base" onClick={handleConfirm}>
-                  <Send size={18} /> Confirm & Enter PIN
-                </Button>
-                <Button variant="ghost" className="w-full" onClick={() => goTo("amount")}>Edit</Button>
+                 <Button className="w-full h-12 gradient-send border-0 text-white font-bold text-base" onClick={handleConfirm}>
+                   <Send size={18} /> {t("confirmEnterPin")}
+                 </Button>
+                 <Button variant="ghost" className="w-full" onClick={() => goTo("amount")}>{t("edit")}</Button>
               </div>
             )}
 
@@ -598,13 +598,13 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
             {step === "pin" && (
               <div className="px-4 pt-6 pb-32 space-y-6">
                 <div className="text-center space-y-1">
-                  <p className="text-sm text-muted-foreground">Sending</p>
+                  <p className="text-sm text-muted-foreground">{t("sending")}</p>
                   <p className="text-4xl font-extrabold text-foreground">৳{amtNum.toLocaleString()}</p>
                   <p className="text-xs text-muted-foreground">to <span className="font-semibold text-foreground">{recipient?.name}</span></p>
                 </div>
 
                 <div className="rounded-2xl bg-muted/40 border border-border p-3 flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total from balance</span>
+                  <span className="text-muted-foreground">{t("totalFromBalance")}</span>
                   <span className="font-bold text-foreground">৳{totalFromBalance.toLocaleString()}</span>
                 </div>
 
@@ -612,7 +612,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
                 <SlideToConfirm
                   onConfirm={handlePinConfirm}
-                  label="Slide to Send Money"
+                  label={t("slideToSendMoney")}
                   gradient="gradient-send"
                   disabled={pin.length < 4 || processing}
                   pinComplete={pin.length === 4}
@@ -633,9 +633,9 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="space-y-2">
-                  <h2 className="text-2xl font-extrabold text-foreground">Money Sent!</h2>
+                  <h2 className="text-2xl font-extrabold text-foreground">{t("moneySent")}</h2>
                   <p className="text-muted-foreground text-sm">
-                    ৳{amtNum.toLocaleString()} sent to{" "}
+                    ৳{amtNum.toLocaleString()} {t("sentTo")}{" "}
                     <span className="font-semibold text-foreground">{recipient?.name}</span>
                   </p>
                 </motion.div>
@@ -688,12 +688,12 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="w-full space-y-3">
-                  <Button className="w-full h-12 gradient-send border-0 text-white font-semibold" onClick={onClose}>
-                    Back to Home
-                  </Button>
-                  <Button variant="outline" className="w-full h-11" onClick={() => setShowShare(true)}>
-                    Share Receipt
-                  </Button>
+                   <Button className="w-full h-12 gradient-send border-0 text-white font-semibold" onClick={onClose}>
+                     {t("backToHome")}
+                   </Button>
+                   <Button variant="outline" className="w-full h-11" onClick={() => setShowShare(true)}>
+                     {t("shareReceipt")}
+                   </Button>
                 </motion.div>
               </div>
             )}
