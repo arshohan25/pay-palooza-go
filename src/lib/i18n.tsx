@@ -353,6 +353,12 @@ const translations = {
   used: { en: "Used", bn: "ব্যবহৃত" },
   left: { en: "left of", bn: "বাকি আছে" },
   tariffNote: { en: "Tariff Note", bn: "ট্যারিফ নোট" },
+  pctUsed: { en: "used", bn: "ব্যবহৃত" },
+  tariffCashOutAgent: { en: "Cash Out at agent: 1.85% per transaction", bn: "এজেন্টে ক্যাশ আউট: প্রতি লেনদেনে ১.৮৫%" },
+  tariffCashOutATM: { en: "Cash Out at ATM: ৳15 flat fee per transaction", bn: "ATM-এ ক্যাশ আউট: প্রতি লেনদেনে ৳১৫ ফ্ল্যাট ফি" },
+  tariffSendMoney: { en: "Send Money: Free up to ৳25,000/day", bn: "টাকা পাঠান: দৈনিক ৳২৫,০০০ পর্যন্ত ফ্রি" },
+  tariffAddMoney: { en: "Add Money via bank: Free of charge", bn: "ব্যাংকের মাধ্যমে টাকা যোগ: বিনা চার্জে" },
+  tariffPayment: { en: "Payment to merchants: Free of charge", bn: "মার্চেন্ট পেমেন্ট: বিনা চার্জে" },
 
   // ─── Refer Page ───
   referTitle: { en: "Refer a Friend", bn: "বন্ধুকে রেফার করুন" },
