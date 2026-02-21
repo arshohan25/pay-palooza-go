@@ -21,7 +21,7 @@ const UserQrModal = ({ open, onClose, userId, userName }: UserQrModalProps) => {
   // Generate real QR code when modal opens
   useEffect(() => {
     if (!open || !canvasRef.current) return;
-    const payload = JSON.stringify({ walletId, name: userName, app: "PayWave" });
+    const payload = JSON.stringify({ walletId, name: userName, app: "EasyPay" });
     QRCode.toCanvas(canvasRef.current, payload, {
       width: 200,
       margin: 2,
@@ -46,7 +46,7 @@ const UserQrModal = ({ open, onClose, userId, userName }: UserQrModalProps) => {
 
   const handleShare = async () => {
     if (navigator.share) {
-      await navigator.share({ title: "My PayWave ID", text: `My wallet ID: ${walletId}` });
+      await navigator.share({ title: "My EasyPay ID", text: `My wallet ID: ${walletId}` });
     } else {
       handleCopy();
     }

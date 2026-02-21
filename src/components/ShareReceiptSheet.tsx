@@ -32,7 +32,7 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
       ``,
       `Transaction ID: ${receipt.txnId}`,
       ``,
-      `Powered by PayWave`,
+      `Powered by EasyPay`,
     ];
     return lines.join("\n");
   };
@@ -203,9 +203,9 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
                   </motion.button>
                 </div>
 
-                {/* PayWave branding footer */}
+                {/* EasyPay branding footer */}
                 <div className="px-4 py-2 bg-muted/20 text-center">
-                  <p className="text-[9px] text-muted-foreground font-semibold tracking-widest uppercase">Powered by PayWave</p>
+                  <p className="text-[9px] text-muted-foreground font-semibold tracking-widest uppercase">Powered by EasyPay</p>
                 </div>
               </div>
 
