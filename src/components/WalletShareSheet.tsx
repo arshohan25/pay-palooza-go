@@ -23,7 +23,7 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
   // Generate real QR code
   useEffect(() => {
     if (!open || !canvasRef.current) return;
-    const payload = JSON.stringify({ walletId, name: userName, app: "PayWave" });
+    const payload = JSON.stringify({ walletId, name: userName, app: "EasyPay" });
     QRCode.toCanvas(canvasRef.current, payload, {
       width: 220,
       margin: 2,
@@ -46,9 +46,9 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
 
   const handleShare = async () => {
     haptics.medium();
-    const text = `💳 My PayWave Wallet ID: ${walletId}\n👤 ${userName}\n\nScan my QR code to send money instantly!`;
+    const text = `💳 My EasyPay Wallet ID: ${walletId}\n👤 ${userName}\n\nScan my QR code to send money instantly!`;
     if (navigator.share) {
-      try { await navigator.share({ title: "My PayWave Wallet", text }); } catch { /* dismissed */ }
+      try { await navigator.share({ title: "My EasyPay Wallet", text }); } catch { /* dismissed */ }
     } else { handleCopy(); }
   };
 
@@ -62,7 +62,7 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
       if (!card) return;
       const canvas = await html2canvas(card, { backgroundColor: null, scale: 3, useCORS: true, logging: false });
       const link = document.createElement("a");
-      link.download = `paywave-qr-${walletId}.png`;
+      link.download = `easypay-qr-${walletId}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
     } catch (e) { console.error(e); }
@@ -113,7 +113,7 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
               >
                 {/* Gradient header */}
                 <div className="gradient-hero px-4 py-4 text-white text-center">
-                  <p className="text-xs font-semibold opacity-75 mb-0.5 uppercase tracking-widest">PayWave</p>
+                  <p className="text-xs font-semibold opacity-75 mb-0.5 uppercase tracking-widest">EasyPay</p>
                   <p className="text-base font-bold">{userName}</p>
                 </div>
 
