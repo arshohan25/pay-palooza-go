@@ -1,4 +1,4 @@
-import { Bell, Search, Sun, Moon, LogOut, Globe } from "lucide-react";
+import { Bell, Search, Sun, Moon, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
@@ -12,7 +12,7 @@ interface AppHeaderProps {
 
 const AppHeader = ({ onSignOut }: AppHeaderProps) => {
   const { resolvedTheme, setTheme } = useTheme();
-  const { lang, toggleLang, t } = useI18n();
+  const { t } = useI18n();
   const [mounted, setMounted]       = useState(false);
   const [showNotif, setShowNotif]   = useState(false);
   const [unreadCount, setUnreadCount] = useState(
@@ -45,16 +45,6 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
 
         {/* Right */}
         <div className="flex items-center gap-2">
-          {/* Language toggle */}
-          <motion.button
-            whileTap={{ scale: 0.88 }}
-            onClick={toggleLang}
-            className="flex items-center gap-1 px-2.5 py-2 rounded-2xl bg-card border border-border/60 shadow-card text-muted-foreground hover:text-foreground hover:shadow-elevated transition-all duration-150 tap-target"
-            aria-label="Toggle language"
-          >
-            <Globe size={14} strokeWidth={2} />
-            <span className="text-[11px] font-bold">{t("langToggle")}</span>
-          </motion.button>
           {/* Dark mode toggle */}
           <motion.button
             whileTap={{ scale: 0.88 }}

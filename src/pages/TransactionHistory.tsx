@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useI18n } from "@/lib/i18n";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import {
@@ -76,6 +77,7 @@ const relativeDate = (iso: string) => {
 interface TransactionHistoryProps { onClose?: () => void; onRefresh?: () => void; }
 
 const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => {
+  const { t } = useI18n();
   const { transactions: dbTxns, loading: txLoading, refetch } = useTransactions();
   const [activeTab, setActiveTab] = useState<TxCategory>("all");
   const [search, setSearch]       = useState("");
@@ -157,7 +159,7 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
             <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}>
               <RefreshCw size={16} />
             </motion.div>
-            Refreshing…
+            {t("refreshing")}
           </motion.div>
         )}
       </AnimatePresence>
@@ -166,7 +168,7 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
       <div className="gradient-hero px-4 pt-5 pb-5 text-primary-foreground rounded-2xl mb-3 w-full box-border">
         {/* Top row */}
         <div className="flex items-center gap-2 mb-4 w-full min-w-0">
-          <h1 className="text-[16px] font-bold flex-1 min-w-0 truncate">Transaction History</h1>
+          <h1 className="text-[16px] font-bold flex-1 min-w-0 truncate">{t("transactionHistory")}</h1>
           <motion.button
             whileTap={{ scale: 0.88 }}
             onClick={triggerRefresh}
@@ -194,9 +196,9 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
         {/* Summary chips — strict 3-col grid */}
         <div className="grid grid-cols-3 gap-2 w-full">
           {[
-            { label: "Money In",  value: `+৳${totalIn.toLocaleString()}`,  color: "text-green-300" },
-            { label: "Money Out", value: `-৳${totalOut.toLocaleString()}`, color: "text-rose-300"  },
-            { label: "Count",     value: String(filtered.length),          color: "text-white"     },
+            { label: t("moneyIn"),  value: `+৳${totalIn.toLocaleString()}`,  color: "text-green-300" },
+            { label: t("moneyOut"), value: `-৳${totalOut.toLocaleString()}`, color: "text-rose-300"  },
+            { label: t("count"),     value: String(filtered.length),          color: "text-white"     },
           ].map(({ label, value, color }) => (
             <div key={label} className="glass-hero rounded-2xl px-2 py-2.5 text-center min-w-0 overflow-hidden">
               <p className="text-[9px] font-semibold uppercase tracking-wide text-white/60 mb-0.5 truncate">{label}</p>
@@ -211,7 +213,7 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
         <div className="relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <Input
-            placeholder="Search transactions…"
+            placeholder={t("searchTransactions")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 pr-9 h-11 bg-card border-border/60 rounded-2xl text-[13px] shadow-xs"
@@ -249,7 +251,7 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
                     )}
                   >
                     <CalendarIcon size={13} className="mr-1.5 shrink-0" />
-                    <span className="truncate">{dateFrom ? format(dateFrom, "dd MMM yy") : "From"}</span>
+                    <span className="truncate">{dateFrom ? format(dateFrom, "dd MMM yy") : t("from")}</span>
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 z-[60]" align="start">
@@ -271,7 +273,7 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
                     )}
                   >
                     <CalendarIcon size={13} className="mr-1.5 shrink-0" />
-                    <span className="truncate">{dateTo ? format(dateTo, "dd MMM yy") : "To"}</span>
+                    <span className="truncate">{dateTo ? format(dateTo, "dd MMM yy") : t("to")}</span>
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 z-[60]" align="start">
@@ -326,14 +328,14 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
       {hasActiveFilters && (
         <div className="flex items-center justify-between mb-2">
           <p className="text-[11.5px] text-muted-foreground font-medium">
-            {filtered.length} result{filtered.length !== 1 ? "s" : ""}
+            {filtered.length} {filtered.length !== 1 ? t("results") : t("result")}
           </p>
           <motion.button
             whileTap={{ scale: 0.93 }}
             onClick={clearFilters}
             className="text-[11.5px] font-semibold text-primary flex items-center gap-1"
           >
-            <X size={11} /> Clear all
+            <X size={11} /> {t("clearAll")}
           </motion.button>
         </div>
       )}
@@ -350,12 +352,12 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
             <div className="w-16 h-16 rounded-3xl bg-muted flex items-center justify-center">
               <Search size={26} className="text-muted-foreground" />
             </div>
-            <p className="text-[14px] font-bold text-foreground">No transactions found</p>
+            <p className="text-[14px] font-bold text-foreground">{t("noTransactionsFound")}</p>
             <p className="text-[12px] text-muted-foreground text-center max-w-[220px] leading-relaxed">
-              Try adjusting your filters or search query
+              {t("adjustFilters")}
             </p>
             <button onClick={clearFilters} className="text-[12px] font-semibold text-primary mt-1">
-              Clear filters
+              {t("clearFilters")}
             </button>
           </motion.div>
         ) : (
