@@ -3,13 +3,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { getTxnNotifCount, onTxnNotifChange } from "@/lib/txnNotifStore";
 import { getInboxCount, onInboxChange } from "@/lib/inboxStore";
+import { useI18n } from "@/lib/i18n";
 
-const navItems = [
-  { icon: LayoutDashboard,  label: "Home",    id: "home" },
-  { icon: ArrowLeftRight,   label: "History", id: "history" },
-  { icon: ScanLine,         label: "Scan",    id: "scan", center: true },
-  { icon: MessageCircle,    label: "Inbox",   id: "inbox" },
-  { icon: CircleUserRound,  label: "Account", id: "account" },
+const navDefs = [
+  { icon: LayoutDashboard, labelKey: "home" as const, id: "home" },
+  { icon: ArrowLeftRight,  labelKey: "history" as const, id: "history" },
+  { icon: ScanLine,        labelKey: "scan" as const, id: "scan", center: true },
+  { icon: MessageCircle,   labelKey: "inbox" as const, id: "inbox" },
+  { icon: CircleUserRound, labelKey: "account" as const, id: "account" },
 ];
 
 interface BottomNavProps {
@@ -18,6 +19,7 @@ interface BottomNavProps {
 }
 
 const BottomNav = ({ activeTab = "home", onTabChange }: BottomNavProps) => {
+  const { t } = useI18n();
   const [txnCount, setTxnCount]     = useState(getTxnNotifCount);
   const [inboxCount, setInboxCount] = useState(getInboxCount);
 
@@ -31,8 +33,9 @@ const BottomNav = ({ activeTab = "home", onTabChange }: BottomNavProps) => {
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 px-3 pb-3 pt-0">
       <div className="glass rounded-2xl border border-border/60 shadow-float max-w-md mx-auto">
         <div className="flex items-center justify-around px-1 py-1">
-          {navItems.map((item) => {
+          {navDefs.map((item) => {
             const isActive = activeTab === item.id;
+            const label = t(item.labelKey);
 
             if (item.center) {
               return (
@@ -42,15 +45,15 @@ const BottomNav = ({ activeTab = "home", onTabChange }: BottomNavProps) => {
                   onClick={() => onTabChange?.(item.id)}
                   className="gradient-primary -mt-7 w-13 h-13 rounded-2xl flex items-center justify-center text-primary-foreground shadow-glow-lg tap-target"
                   style={{ width: 52, height: 52, marginTop: -24 }}
-                  aria-label="Scan QR"
+                  aria-label={label}
                 >
                   <item.icon size={22} strokeWidth={2} />
                 </motion.button>
               );
             }
 
-          const showTxnBadge   = item.id === "history" && txnCount > 0;
-          const showInboxBadge = item.id === "inbox" && inboxCount > 0 && !isActive;
+            const showTxnBadge   = item.id === "history" && txnCount > 0;
+            const showInboxBadge = item.id === "inbox" && inboxCount > 0 && !isActive;
 
             return (
               <motion.button
@@ -60,9 +63,8 @@ const BottomNav = ({ activeTab = "home", onTabChange }: BottomNavProps) => {
                 className={`relative flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl transition-colors tap-target ${
                   isActive ? "text-primary" : "text-muted-foreground"
                 }`}
-                aria-label={item.label}
+                aria-label={label}
               >
-                {/* Active indicator pill */}
                 <AnimatePresence>
                   {isActive && (
                     <motion.div
@@ -76,36 +78,20 @@ const BottomNav = ({ activeTab = "home", onTabChange }: BottomNavProps) => {
                   )}
                 </AnimatePresence>
 
-                {/* Icon wrapper with badge */}
                 <div className="relative">
-                  <item.icon
-                    size={20}
-                    strokeWidth={isActive ? 2.5 : 1.8}
-                    className="relative z-10 transition-all duration-150"
-                  />
-                  {/* Transaction / Inbox badge */}
+                  <item.icon size={20} strokeWidth={isActive ? 2.5 : 1.8} className="relative z-10 transition-all duration-150" />
                   <AnimatePresence>
                     {showTxnBadge && (
-                      <motion.span
-                        key="txn-badge"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        exit={{ scale: 0 }}
+                      <motion.span key="txn-badge" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}
                         transition={{ type: "spring", stiffness: 500, damping: 22 }}
-                        className="absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] px-0.5 bg-primary text-primary-foreground text-[8px] font-bold rounded-full flex items-center justify-center border-2 border-background z-20"
-                      >
+                        className="absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] px-0.5 bg-primary text-primary-foreground text-[8px] font-bold rounded-full flex items-center justify-center border-2 border-background z-20">
                         {txnCount > 9 ? "9+" : txnCount}
                       </motion.span>
                     )}
                     {showInboxBadge && (
-                      <motion.span
-                        key="inbox-badge"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        exit={{ scale: 0 }}
+                      <motion.span key="inbox-badge" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}
                         transition={{ type: "spring", stiffness: 500, damping: 22 }}
-                        className="absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] px-0.5 gradient-send text-white text-[8px] font-bold rounded-full flex items-center justify-center border-2 border-background z-20"
-                      >
+                        className="absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] px-0.5 gradient-send text-white text-[8px] font-bold rounded-full flex items-center justify-center border-2 border-background z-20">
                         {inboxCount > 9 ? "9+" : inboxCount}
                       </motion.span>
                     )}
@@ -113,7 +99,7 @@ const BottomNav = ({ activeTab = "home", onTabChange }: BottomNavProps) => {
                 </div>
 
                 <span className={`relative z-10 text-[10px] font-semibold transition-all duration-150 ${isActive ? "opacity-100" : "opacity-70"}`}>
-                  {item.label}
+                  {label}
                 </span>
               </motion.button>
             );

@@ -6,6 +6,7 @@ import WalletShareSheet from "@/components/WalletShareSheet";
 import { getBalance, onBalanceChange, fetchBalance, setupBalanceRealtime } from "@/lib/balanceStore";
 import { AddMoneyIcon } from "@/components/QuickActionIcons";
 import { generateWalletId } from "@/lib/walletId";
+import { useI18n } from "@/lib/i18n";
 
 const REGISTERED_KEY = "mfs_registered_phone";
 const USER_NAME_KEY  = "mfs_user_name";
@@ -23,6 +24,7 @@ interface BalanceCardProps {
 }
 
 const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
+  const { t } = useI18n();
   const [showBalance, setShowBalance] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showQr, setShowQr] = useState(false);
@@ -111,7 +113,7 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
           <div className="flex items-start justify-between mb-3">
             {/* LEFT: Greeting + name (yellow circle area) */}
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-60 leading-tight">Welcome back 👋</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-60 leading-tight">{t("welcomeBack")}</p>
               <p className="text-[15px] font-bold opacity-95 leading-tight tracking-tight">{userName}</p>
             </div>
 
@@ -150,12 +152,12 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
           <div className="mb-3 flex items-center gap-3">
             {/* Balance tap area */}
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-55 mb-1.5">Available Balance</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-55 mb-1.5">{t("availableBalance")}</p>
               <motion.button
                 className="flex items-center group"
                 onClick={handleToggleBalance}
                 whileTap={{ scale: 0.97 }}
-                aria-label={showBalance ? "Hide balance" : "Tap to see balance"}
+                aria-label={showBalance ? "Hide balance" : t("tapToSeeBalance")}
               >
                 <AnimatePresence mode="wait">
                   {showBalance ? (
@@ -189,7 +191,7 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
                       className="glass-hero rounded-2xl px-4 py-2 flex items-center gap-2"
                     >
                       <Eye size={13} className="opacity-85" />
-                      <span className="text-[12.5px] font-semibold opacity-95 tracking-wide">Tap to see balance</span>
+                      <span className="text-[12.5px] font-semibold opacity-95 tracking-wide">{t("tapToSeeBalance")}</span>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -207,7 +209,7 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
               <div className="w-7 h-7 flex items-center justify-center">
                 <AddMoneyIcon isHovered={false} />
               </div>
-              <span className="text-[9.5px] font-bold opacity-95 whitespace-nowrap">Add Money</span>
+              <span className="text-[9.5px] font-bold opacity-95 whitespace-nowrap">{t("addMoney")}</span>
             </motion.button>
           </div>
 
@@ -217,7 +219,7 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
           {/* Bottom row: Wallet ID left | Share right (green circle area) */}
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[9px] uppercase tracking-[0.14em] opacity-45 mb-0.5">Wallet ID</p>
+              <p className="text-[9px] uppercase tracking-[0.14em] opacity-45 mb-0.5">{t("walletId")}</p>
               <p className="text-[12px] font-mono font-semibold tracking-widest opacity-90">{userId}</p>
             </div>
 
@@ -230,7 +232,7 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
               title="Share QR / Wallet ID"
             >
               <Share2 size={11} className="opacity-90" />
-              <span className="text-[10.5px] font-bold opacity-95 whitespace-nowrap">Share</span>
+              <span className="text-[10.5px] font-bold opacity-95 whitespace-nowrap">{t("share")}</span>
             </motion.button>
           </div>
         </div>
