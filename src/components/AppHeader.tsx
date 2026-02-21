@@ -1,13 +1,10 @@
-import { Bell, Sun, Moon, LogOut, Sparkles } from "lucide-react";
+import { Bell, Search, Sun, Moon, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import NotificationCenter from "@/components/NotificationCenter";
 import { INITIAL_NOTIFICATIONS } from "@/components/NotificationCenter";
 import { useI18n } from "@/lib/i18n";
-
-const REGISTERED_KEY = "mfs_registered_phone";
-const USER_NAME_KEY = "mfs_user_name";
 
 interface AppHeaderProps {
   onSignOut?: () => void;
@@ -16,8 +13,8 @@ interface AppHeaderProps {
 const AppHeader = ({ onSignOut }: AppHeaderProps) => {
   const { resolvedTheme, setTheme } = useTheme();
   const { t } = useI18n();
-  const [mounted, setMounted] = useState(false);
-  const [showNotif, setShowNotif] = useState(false);
+  const [mounted, setMounted]       = useState(false);
+  const [showNotif, setShowNotif]   = useState(false);
   const [unreadCount, setUnreadCount] = useState(
     () => INITIAL_NOTIFICATIONS.filter((n) => !n.read).length,
   );
@@ -27,61 +24,32 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
   const isDark = resolvedTheme === "dark";
   const toggleTheme = () => setTheme(isDark ? "light" : "dark");
 
-  const displayName = useMemo(() => {
-    const stored = localStorage.getItem(USER_NAME_KEY);
-    if (stored) return stored;
-    const phone = localStorage.getItem(REGISTERED_KEY);
-    if (phone) return `+880 ${phone.slice(0, 3)}****${phone.slice(-3)}`;
-    return "User";
-  }, []);
-
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 17) return "Good afternoon";
-    return "Good evening";
-  }, []);
-
-  const initials = useMemo(() => {
-    return displayName
-      .replace(/[^a-zA-Z\s]/g, "")
-      .trim()
-      .split(/\s+/)
-      .map((w) => w[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase() || "U";
-  }, [displayName]);
-
   return (
     <>
       <motion.header
-        initial={{ opacity: 0, y: -8 }}
+        initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
-        className="flex items-center gap-3 py-2"
+        transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+        className="flex items-center justify-between py-1"
       >
-        {/* Avatar + greeting */}
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="w-11 h-11 gradient-primary rounded-2xl flex items-center justify-center text-primary-foreground font-bold text-sm shadow-glow shrink-0">
-            {initials}
-          </div>
-          <div className="min-w-0">
-            <p className="text-[11px] text-muted-foreground font-medium flex items-center gap-1">
-              {greeting} <Sparkles size={10} className="text-accent" />
-            </p>
-            <p className="text-[15px] font-bold text-foreground truncate leading-tight">
-              {displayName}
-            </p>
-          </div>
-        </div>
+        {/* Left — Logout button with icon + text */}
+        <motion.button
+          whileTap={{ scale: 0.88 }}
+          onClick={onSignOut}
+          className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-destructive/10 border border-destructive/20 shadow-card text-destructive hover:bg-destructive/20 hover:shadow-elevated transition-all duration-150 tap-target"
+          aria-label="Sign out"
+        >
+          <LogOut size={15} strokeWidth={2} />
+          <span className="text-[13px] font-semibold">{t("logout")}</span>
+        </motion.button>
 
-        {/* Action buttons */}
-        <div className="flex items-center gap-1.5">
+        {/* Right */}
+        <div className="flex items-center gap-2">
+          {/* Dark mode toggle */}
           <motion.button
             whileTap={{ scale: 0.88 }}
             onClick={toggleTheme}
-            className="w-9 h-9 rounded-2xl bg-card border border-border/60 shadow-xs flex items-center justify-center text-muted-foreground hover:text-foreground transition-all tap-target"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-card border border-border/60 shadow-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:shadow-elevated transition-all duration-150 tap-target overflow-hidden"
             aria-label="Toggle dark mode"
           >
             <AnimatePresence mode="wait" initial={false}>
@@ -89,24 +57,34 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
                 <motion.span
                   key={isDark ? "moon" : "sun"}
                   initial={{ opacity: 0, rotate: -30, scale: 0.6 }}
-                  animate={{ opacity: 1, rotate: 0, scale: 1 }}
-                  exit={{ opacity: 0, rotate: 30, scale: 0.6 }}
-                  transition={{ duration: 0.2 }}
+                  animate={{ opacity: 1, rotate: 0,   scale: 1   }}
+                  exit={{   opacity: 0, rotate:  30,  scale: 0.6 }}
+                  transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
                   className="flex items-center justify-center"
                 >
-                  {isDark ? <Moon size={16} /> : <Sun size={16} />}
+                  {isDark ? <Moon size={17} strokeWidth={2} /> : <Sun size={17} strokeWidth={2} />}
                 </motion.span>
               )}
             </AnimatePresence>
           </motion.button>
 
+          {/* Search */}
+          <motion.button
+            whileTap={{ scale: 0.90 }}
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-card border border-border/60 shadow-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:shadow-elevated transition-all duration-150 tap-target"
+            aria-label="Search"
+          >
+            <Search size={17} strokeWidth={2} />
+          </motion.button>
+
+          {/* Bell + badge */}
           <motion.button
             whileTap={{ scale: 0.90 }}
             onClick={() => { setShowNotif(true); setUnreadCount(0); }}
-            className="relative w-9 h-9 rounded-2xl bg-card border border-border/60 shadow-xs flex items-center justify-center text-muted-foreground hover:text-foreground transition-all tap-target"
+            className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-card border border-border/60 shadow-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:shadow-elevated transition-all duration-150 tap-target"
             aria-label="Notifications"
           >
-            <Bell size={16} />
+            <Bell size={17} strokeWidth={2} />
             <AnimatePresence>
               {unreadCount > 0 && (
                 <motion.span
@@ -123,17 +101,10 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
             </AnimatePresence>
           </motion.button>
 
-          <motion.button
-            whileTap={{ scale: 0.88 }}
-            onClick={onSignOut}
-            className="w-9 h-9 rounded-2xl bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive hover:bg-destructive/20 transition-all tap-target"
-            aria-label="Sign out"
-          >
-            <LogOut size={15} />
-          </motion.button>
         </div>
       </motion.header>
 
+      {/* Notification Center */}
       <NotificationCenter open={showNotif} onClose={() => setShowNotif(false)} />
     </>
   );
