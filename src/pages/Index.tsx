@@ -23,7 +23,7 @@ import TransactionHistory from "@/pages/TransactionHistory";
 import AccountPage from "@/pages/AccountPage";
 import ReferPage from "@/pages/ReferPage";
 import { BalanceCardSkeleton, QuickActionsSkeleton, TransactionListSkeleton } from "@/components/HomeSkeletons";
-import RoleDashboardCards from "@/components/RoleDashboardCards";
+
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import InstallPrompt from "@/components/InstallPrompt";
 import AuthPage from "@/pages/AuthPage";
@@ -124,7 +124,7 @@ const Index = () => {
                 onRefer={() => handleTabChange("refer")}
                 onShop={() => setShowShop(true)}
               />
-              <RoleDashboardCards />
+              
               <PromoCard />
               <TransactionList onSeeAll={() => handleTabChange("history")} refreshKey={refreshKey} />
             </>
