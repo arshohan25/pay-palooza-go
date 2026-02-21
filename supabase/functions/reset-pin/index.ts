@@ -5,6 +5,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const MAX_ATTEMPTS = 3;
+const WINDOW_MINUTES = 60;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -41,7 +44,25 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Find user profile by phone
+    // --- Rate limiting check ---
+    const windowStart = new Date(Date.now() - WINDOW_MINUTES * 60 * 1000).toISOString();
+    const { count: attemptCount } = await supabaseAdmin
+      .from("pin_reset_attempts")
+      .select("*", { count: "exact", head: true })
+      .eq("phone", phone)
+      .gte("attempted_at", windowStart);
+
+    if ((attemptCount ?? 0) >= MAX_ATTEMPTS) {
+      return new Response(
+        JSON.stringify({ error: "Too many attempts. Please try again later." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Record this attempt
+    await supabaseAdmin.from("pin_reset_attempts").insert({ phone, success: false });
+
+    // Find user profile by phone — use generic error to prevent enumeration
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
       .select("user_id, balance")
@@ -50,8 +71,8 @@ Deno.serve(async (req) => {
 
     if (profileError || !profile) {
       return new Response(
-        JSON.stringify({ error: "Account not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Verification failed. Please check your details." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -61,12 +82,11 @@ Deno.serve(async (req) => {
       const actualBalance = parseFloat(String(profile.balance));
       if (isNaN(inputBalance) || Math.abs(inputBalance - actualBalance) > 0.01) {
         return new Response(
-          JSON.stringify({ error: "Incorrect balance. Verification failed." }),
+          JSON.stringify({ error: "Verification failed. Please check your details." }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
     } else if (verificationType === "lastTransaction") {
-      // Check last outgoing transaction amount
       const { data: lastTxn } = await supabaseAdmin
         .from("transactions")
         .select("amount")
@@ -78,7 +98,7 @@ Deno.serve(async (req) => {
 
       if (!lastTxn) {
         return new Response(
-          JSON.stringify({ error: "No outgoing transactions found. Try verifying with balance instead." }),
+          JSON.stringify({ error: "Verification failed. Please check your details." }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -87,7 +107,7 @@ Deno.serve(async (req) => {
       const actualAmount = parseFloat(String(lastTxn.amount));
       if (isNaN(inputAmount) || Math.abs(inputAmount - actualAmount) > 0.01) {
         return new Response(
-          JSON.stringify({ error: "Incorrect transaction amount. Verification failed." }),
+          JSON.stringify({ error: "Verification failed. Please check your details." }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -111,6 +131,14 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Mark attempt as successful
+    await supabaseAdmin
+      .from("pin_reset_attempts")
+      .update({ success: true })
+      .eq("phone", phone)
+      .order("attempted_at", { ascending: false })
+      .limit(1);
 
     return new Response(
       JSON.stringify({ success: true }),

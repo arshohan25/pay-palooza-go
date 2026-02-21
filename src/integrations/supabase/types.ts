@@ -336,6 +336,27 @@ export type Database = {
         }
         Relationships: []
       }
+      pin_reset_attempts: {
+        Row: {
+          attempted_at: string
+          id: string
+          phone: string
+          success: boolean
+        }
+        Insert: {
+          attempted_at?: string
+          id?: string
+          phone: string
+          success?: boolean
+        }
+        Update: {
+          attempted_at?: string
+          id?: string
+          phone?: string
+          success?: boolean
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -482,6 +503,18 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      record_transaction: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_fee?: number
+          p_recipient_name?: string
+          p_recipient_phone?: string
+          p_reference?: string
+          p_type: Database["public"]["Enums"]["txn_type"]
+        }
+        Returns: Json
       }
       transfer_money:
         | {

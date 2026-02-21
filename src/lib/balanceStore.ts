@@ -129,7 +129,7 @@ export async function transferMoney(params: {
   };
 }
 
-/** Record a transaction in the DB and update balance (non-transfer types) */
+/** Record a transaction in the DB and update balance atomically via server-side RPC */
 export async function recordTransaction(params: {
   type: "send" | "cashout" | "banktransfer" | "payment" | "recharge" | "paybill" | "addmoney";
   amount: number;
@@ -139,35 +139,19 @@ export async function recordTransaction(params: {
   description?: string;
   reference?: string;
 }): Promise<void> {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user) return;
-
-  const fee = params.fee ?? 0;
-  const totalDeduction = params.type === "addmoney" ? 0 : params.amount + fee;
-  const newBalance = params.type === "addmoney"
-    ? balance + params.amount
-    : balance - totalDeduction;
-
-  // Update balance
-  balance = Math.max(0, newBalance);
-  notify();
-
-  await supabase
-    .from("profiles")
-    .update({ balance })
-    .eq("user_id", session.user.id);
-
-  // Insert transaction record
-  await supabase.from("transactions").insert({
-    user_id: session.user.id,
-    type: params.type,
-    amount: params.amount,
-    fee,
-    balance_after: balance,
-    recipient_phone: params.recipientPhone ?? null,
-    recipient_name: params.recipientName ?? null,
-    description: params.description ?? null,
-    reference: params.reference ?? null,
-    status: "completed",
+  const { data, error } = await supabase.rpc("record_transaction", {
+    p_type: params.type,
+    p_amount: params.amount,
+    p_fee: params.fee ?? 0,
+    p_recipient_phone: params.recipientPhone ?? null,
+    p_recipient_name: params.recipientName ?? null,
+    p_description: params.description ?? null,
+    p_reference: params.reference ?? null,
   });
+
+  if (error) throw error;
+
+  const result = typeof data === "string" ? JSON.parse(data) : data;
+  balance = result.balance;
+  notify();
 }
