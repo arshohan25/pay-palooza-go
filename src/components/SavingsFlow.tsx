@@ -4,24 +4,26 @@ import { ArrowLeft, Plus, TrendingUp, CheckCircle2, ChevronRight } from "lucide-
 import { toast } from "sonner";
 import { getBalance, deductBalance, onBalanceChange } from "@/lib/balanceStore";
 import { fireSuccessConfetti } from "@/lib/confetti";
+import { useI18n } from "@/lib/i18n";
 
 interface SavingsGoal {
   id: string;
-  name: string;
+  nameKey: string;
   target: number;
   saved: number;
   emoji: string;
 }
 
 const DEFAULT_GOALS: SavingsGoal[] = [
-  { id: "g1", name: "Emergency Fund", target: 50000, saved: 18500, emoji: "🛡️" },
-  { id: "g2", name: "New Phone",      target: 30000, saved: 12000, emoji: "📱" },
-  { id: "g3", name: "Vacation",       target: 80000, saved: 5000,  emoji: "✈️" },
+  { id: "g1", nameKey: "emergencyFund", target: 50000, saved: 18500, emoji: "🛡️" },
+  { id: "g2", nameKey: "newPhone",      target: 30000, saved: 12000, emoji: "📱" },
+  { id: "g3", nameKey: "vacation",       target: 80000, saved: 5000,  emoji: "✈️" },
 ];
 
 interface SavingsFlowProps { onClose: () => void; }
 
 const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
+  const { t } = useI18n();
   const [step, setStep]         = useState<"home" | "add">("home");
   const [goals, setGoals]       = useState<SavingsGoal[]>(DEFAULT_GOALS);
   const [selectedGoal, setSelectedGoal] = useState<SavingsGoal | null>(null);
@@ -34,11 +36,13 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     return () => { unsub(); };
   }, []);
 
+  const goalName = (g: SavingsGoal) => t(g.nameKey as any);
+
   const handleSave = () => {
     const amt = parseFloat(amount);
-    if (!amt || amt <= 0) { setError("Enter a valid amount."); return; }
-    if (amt > balance)    { setError("Insufficient balance."); return; }
-    if (!selectedGoal)    { setError("Please select a savings goal."); return; }
+    if (!amt || amt <= 0) { setError(t("enterValidAmountSavings")); return; }
+    if (amt > balance)    { setError(t("insufficientBalance")); return; }
+    if (!selectedGoal)    { setError(t("selectSavingsGoal")); return; }
 
     deductBalance(amt);
     let goalCompleted = false;
@@ -55,9 +59,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
 
     if (goalCompleted) {
       fireSuccessConfetti();
-      toast.success(`🎉 Goal "${selectedGoal.name}" completed!`);
+      toast.success(`🎉 "${goalName(selectedGoal)}" ${t("goalCompleted")}`);
     } else {
-      toast.success(`৳${amt.toLocaleString()} saved to "${selectedGoal.name}"`);
+      toast.success(`৳${amt.toLocaleString()} ${t("savedToGoal")} "${goalName(selectedGoal)}"`);
     }
     setStep("home");
     setAmount("");
@@ -99,10 +103,10 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
           </motion.button>
           <div className="flex-1 min-w-0">
             <p className="text-[17px] font-bold leading-tight">
-              {step === "home" ? "My Savings" : "Add to Goal"}
+              {step === "home" ? t("mySavings") : t("addToGoal")}
             </p>
             <p className="text-[11px] opacity-60">
-              {step === "home" ? "Track & grow your money" : `Wallet: ৳${balance.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              {step === "home" ? t("trackGrowMoney") : `${t("wallet")}: ৳${balance.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             </p>
           </div>
           {step === "home" && (
@@ -136,7 +140,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     <TrendingUp size={18} className="text-teal-600 dark:text-teal-400" />
                   </div>
                   <div>
-                    <p className="text-[10.5px] font-semibold text-muted-foreground uppercase tracking-wide">Total Saved</p>
+                    <p className="text-[10.5px] font-semibold text-muted-foreground uppercase tracking-wide">{t("totalSaved")}</p>
                     <p className="text-[22px] font-bold text-foreground leading-tight">
                       ৳{goals.reduce((s, g) => s + g.saved, 0).toLocaleString()}
                     </p>
@@ -161,7 +165,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                       <div className="flex items-center gap-2.5">
                         <span className="text-2xl">{goal.emoji}</span>
                         <div>
-                          <p className="text-[14px] font-bold text-foreground">{goal.name}</p>
+                          <p className="text-[14px] font-bold text-foreground">{goalName(goal)}</p>
                           <p className="text-[11px] text-muted-foreground">
                             ৳{goal.saved.toLocaleString()} / ৳{goal.target.toLocaleString()}
                           </p>
@@ -182,7 +186,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                         transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
                       />
                     </div>
-                    <p className="text-[11px] font-semibold text-teal-600 dark:text-teal-400">{pct.toFixed(0)}% complete</p>
+                    <p className="text-[11px] font-semibold text-teal-600 dark:text-teal-400">{pct.toFixed(0)}% {t("pctComplete")}</p>
                   </motion.button>
                 );
               })}
@@ -200,7 +204,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
             >
               {/* Select goal */}
               <div className="space-y-2">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1">Select Goal</p>
+                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1">{t("selectGoal")}</p>
                 {goals.map((goal) => (
                   <motion.button
                     key={goal.id}
@@ -214,8 +218,8 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   >
                     <span className="text-2xl">{goal.emoji}</span>
                     <div className="flex-1 text-left">
-                      <p className="text-[13px] font-semibold text-foreground">{goal.name}</p>
-                      <p className="text-[11px] text-muted-foreground">৳{(goal.target - goal.saved).toLocaleString()} remaining</p>
+                      <p className="text-[13px] font-semibold text-foreground">{goalName(goal)}</p>
+                      <p className="text-[11px] text-muted-foreground">৳{(goal.target - goal.saved).toLocaleString()} {t("remaining")}</p>
                     </div>
                     {selectedGoal?.id === goal.id && (
                       <CheckCircle2 size={16} className="text-teal-500 shrink-0" />
@@ -226,7 +230,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
 
               {/* Amount input */}
               <div className="bg-card rounded-3xl border border-border/60 shadow-card p-4 space-y-3">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Amount to Save</p>
+                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{t("amountToSave")}</p>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[20px] font-bold text-muted-foreground">৳</span>
                   <input
@@ -260,7 +264,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 className="w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg"
                 style={{ background: "linear-gradient(135deg,#009688,#00695C)" }}
               >
-                Save Now
+                {t("saveNow")}
               </motion.button>
             </motion.div>
           )}
