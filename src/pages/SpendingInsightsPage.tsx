@@ -19,11 +19,11 @@ const BAR_DATA = [
   { month: "Jan", Send: 13500, CashOut: 8500, Payment: 5500, Recharge: 1100 },
 ];
 
-const DONUT_DATA = [
-  { name: "Send Money", value: 13500, color: "hsl(262 70% 55%)" },
-  { name: "Cash Out",   value: 8500,  color: "hsl(340 75% 55%)" },
-  { name: "Payment",    value: 5500,  color: "hsl(200 80% 50%)" },
-  { name: "Recharge",   value: 1100,  color: "hsl(36 95% 55%)"  },
+const DONUT_RAW = [
+  { key: "sendMoney" as const, value: 13500, color: "hsl(262 70% 55%)" },
+  { key: "cashOut" as const,   value: 8500,  color: "hsl(340 75% 55%)" },
+  { key: "payment" as const,   value: 5500,  color: "hsl(200 80% 50%)" },
+  { key: "recharge" as const,  value: 1100,  color: "hsl(36 95% 55%)"  },
 ];
 
 const TOP_MERCHANTS = [
@@ -38,7 +38,7 @@ const TOTAL_SENT     = 28600;
 const TOTAL_RECEIVED = 34200;
 
 /* ── Custom bar tooltip ── */
-const BarTooltip = ({ active, payload, label }: any) => {
+const BarTooltip = ({ active, payload, label, totalLabel }: any) => {
   if (!active || !payload?.length) return null;
   const total = payload.reduce((s: number, p: any) => s + p.value, 0);
   return (
@@ -54,7 +54,7 @@ const BarTooltip = ({ active, payload, label }: any) => {
         </div>
       ))}
       <div className="border-t border-border pt-1 mt-1 flex justify-between font-semibold text-foreground">
-        <span>Total</span>
+        <span>{totalLabel}</span>
         <span>৳{total.toLocaleString()}</span>
       </div>
     </div>
@@ -62,11 +62,11 @@ const BarTooltip = ({ active, payload, label }: any) => {
 };
 
 /* ── Custom donut label ── */
-const DonutLabel = ({ cx, cy, total }: { cx: number; cy: number; total: number }) => (
+const DonutLabel = ({ cx, cy, total, label }: { cx: number; cy: number; total: number; label: string }) => (
   <>
     <text x={cx} y={cy - 8} textAnchor="middle" dominantBaseline="middle"
       style={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}>
-      This month
+      {label}
     </text>
     <text x={cx} y={cy + 12} textAnchor="middle" dominantBaseline="middle"
       style={{ fill: "hsl(var(--foreground))", fontSize: 16, fontWeight: 700 }}>
@@ -83,6 +83,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
   const { t } = useI18n();
   const [activeMonth, setActiveMonth] = useState("Jan");
 
+  const DONUT_DATA = DONUT_RAW.map(d => ({ ...d, name: t(d.key) }));
   const donutTotal = DONUT_DATA.reduce((s, d) => s + d.value, 0);
 
   return (
@@ -123,7 +124,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
           <p className="text-[20px] font-bold text-foreground">৳{TOTAL_SENT.toLocaleString()}</p>
           <div className="flex items-center gap-1 mt-1">
             <TrendingDown size={11} className="text-destructive" />
-            <span className="text-[11px] text-destructive font-semibold">+12% vs last month</span>
+            <span className="text-[11px] text-destructive font-semibold">+12% {t("vsLastMonth")}</span>
           </div>
         </motion.div>
 
@@ -140,7 +141,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
           <p className="text-[20px] font-bold text-foreground">৳{TOTAL_RECEIVED.toLocaleString()}</p>
           <div className="flex items-center gap-1 mt-1">
             <TrendingUp size={11} className="text-primary" />
-            <span className="text-[11px] text-primary font-semibold">+8% vs last month</span>
+            <span className="text-[11px] text-primary font-semibold">+8% {t("vsLastMonth")}</span>
           </div>
         </motion.div>
       </div>
@@ -184,7 +185,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
                 tickLine={false}
                 tickFormatter={(v) => `৳${(v / 1000).toFixed(0)}k`}
               />
-              <Tooltip content={<BarTooltip />} cursor={{ fill: "hsl(var(--muted) / 0.5)", radius: 4 }} />
+              <Tooltip content={<BarTooltip totalLabel={t("total")} />} cursor={{ fill: "hsl(var(--muted) / 0.5)", radius: 4 }} />
               <Bar dataKey="Send"    stackId="a" fill="hsl(262 70% 55%)" radius={[0,0,0,0]} />
               <Bar dataKey="CashOut" stackId="a" fill="hsl(340 75% 55%)" />
               <Bar dataKey="Payment" stackId="a" fill="hsl(200 80% 50%)" />
@@ -195,10 +196,10 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
         {/* Legend */}
         <div className="flex flex-wrap gap-3 px-4 pb-4">
           {[
-            { label: "Send",     color: "hsl(262 70% 55%)" },
-            { label: "Cash Out", color: "hsl(340 75% 55%)" },
-            { label: "Payment",  color: "hsl(200 80% 50%)" },
-            { label: "Recharge", color: "hsl(36 95% 55%)"  },
+            { label: t("sendMoney"), color: "hsl(262 70% 55%)" },
+            { label: t("cashOut"),   color: "hsl(340 75% 55%)" },
+            { label: t("payment"),   color: "hsl(200 80% 50%)" },
+            { label: t("recharge"),  color: "hsl(36 95% 55%)"  },
           ].map((l) => (
             <div key={l.label} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
               <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: l.color }} />

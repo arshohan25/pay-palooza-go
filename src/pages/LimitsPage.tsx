@@ -12,30 +12,32 @@ interface LimitRowProps {
 }
 
 const LimitRow = ({ label, used, limit, period, fee }: LimitRowProps) => {
+  const { t } = useI18n();
   const pct = Math.round((used / limit) * 100);
   const remaining = limit - used;
   const isWarning = pct >= 75;
   const isDanger = pct >= 90;
+  const periodLabel = period === "Daily" ? t("daily") : t("monthly");
 
   return (
     <div className="px-4 py-4 border-b border-border/50 last:border-0 space-y-2.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-[13px] font-semibold text-foreground">{period}</span>
+          <span className="text-[13px] font-semibold text-foreground">{periodLabel}</span>
           {fee && (
             <span className="text-[10.5px] px-2 py-0.5 rounded-lg bg-muted text-muted-foreground font-semibold border border-border/60">
-              Fee: {fee}
+              {t("fee")}: {fee}
             </span>
           )}
         </div>
         <span className={`text-[11.5px] font-bold ${isDanger ? "text-destructive" : isWarning ? "text-accent" : "text-primary"}`}>
-          {pct}% used
+          {pct}% {t("pctUsed")}
         </span>
       </div>
       <Progress value={pct} className={`h-2 rounded-full ${isDanger ? "[&>div]:bg-destructive" : isWarning ? "[&>div]:bg-accent" : ""}`} />
       <div className="flex justify-between text-[11.5px] text-muted-foreground font-medium">
-        <span>Used ৳{used.toLocaleString()}</span>
-        <span>৳{remaining.toLocaleString()} left of ৳{limit.toLocaleString()}</span>
+        <span>{t("used")} ৳{used.toLocaleString()}</span>
+        <span>৳{remaining.toLocaleString()} {t("left")} ৳{limit.toLocaleString()}</span>
       </div>
     </div>
   );
@@ -66,44 +68,47 @@ const ServiceCard = ({ icon: Icon, iconClass, title, limits }: ServiceCardProps)
   </motion.div>
 );
 
-const SERVICES: ServiceCardProps[] = [
-  {
-    icon: ArrowUpRight,
-    iconClass: "gradient-send",
-    title: "Send Money",
-    limits: [
-      { label: "Send Money", used: 18500, limit: 25000, period: "Daily",   fee: "Free" },
-      { label: "Send Money", used: 74000, limit: 200000, period: "Monthly", fee: "Free" },
-    ],
-  },
-  {
-    icon: Banknote,
-    iconClass: "gradient-cashout",
-    title: "Cash Out",
-    limits: [
-      { label: "Cash Out", used: 8000,  limit: 20000,  period: "Daily",   fee: "1.85%" },
-      { label: "Cash Out", used: 35000, limit: 100000, period: "Monthly", fee: "1.85%" },
-    ],
-  },
-  {
-    icon: CreditCard,
-    iconClass: "gradient-addmoney",
-    title: "Add Money",
-    limits: [
-      { label: "Add Money", used: 5000,  limit: 30000,  period: "Daily",   fee: "Free" },
-      { label: "Add Money", used: 22000, limit: 200000, period: "Monthly", fee: "Free" },
-    ],
-  },
-  {
-    icon: TrendingDown,
-    iconClass: "gradient-payment",
-    title: "Payment",
-    limits: [
-      { label: "Payment", used: 2200,  limit: 10000,  period: "Daily",   fee: "Free" },
-      { label: "Payment", used: 11000, limit: 50000,  period: "Monthly", fee: "Free" },
-    ],
-  },
-];
+const useServices = (): ServiceCardProps[] => {
+  const { t } = useI18n();
+  return [
+    {
+      icon: ArrowUpRight,
+      iconClass: "gradient-send",
+      title: t("sendMoney"),
+      limits: [
+        { label: t("sendMoney"), used: 18500, limit: 25000, period: "Daily",   fee: t("free") },
+        { label: t("sendMoney"), used: 74000, limit: 200000, period: "Monthly", fee: t("free") },
+      ],
+    },
+    {
+      icon: Banknote,
+      iconClass: "gradient-cashout",
+      title: t("cashOut"),
+      limits: [
+        { label: t("cashOut"), used: 8000,  limit: 20000,  period: "Daily",   fee: "1.85%" },
+        { label: t("cashOut"), used: 35000, limit: 100000, period: "Monthly", fee: "1.85%" },
+      ],
+    },
+    {
+      icon: CreditCard,
+      iconClass: "gradient-addmoney",
+      title: t("addMoney"),
+      limits: [
+        { label: t("addMoney"), used: 5000,  limit: 30000,  period: "Daily",   fee: t("free") },
+        { label: t("addMoney"), used: 22000, limit: 200000, period: "Monthly", fee: t("free") },
+      ],
+    },
+    {
+      icon: TrendingDown,
+      iconClass: "gradient-payment",
+      title: t("payment"),
+      limits: [
+        { label: t("payment"), used: 2200,  limit: 10000,  period: "Daily",   fee: t("free") },
+        { label: t("payment"), used: 11000, limit: 50000,  period: "Monthly", fee: t("free") },
+      ],
+    },
+  ];
+};
 
 interface LimitsPageProps {
   onBack: () => void;
@@ -111,6 +116,7 @@ interface LimitsPageProps {
 
 const LimitsPage = ({ onBack }: LimitsPageProps) => {
   const { t } = useI18n();
+  const SERVICES = useServices();
   return (
   <motion.div
     initial={{ opacity: 0, x: 32 }}
@@ -153,11 +159,11 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
           {t("tariffNote")}
       </p>
       <ul className="space-y-2 text-[12px] text-muted-foreground font-medium">
-        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Cash Out at agent: 1.85% per transaction</li>
-        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Cash Out at ATM: ৳15 flat fee per transaction</li>
-        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Send Money: Free up to ৳25,000/day</li>
-        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Add Money via bank: Free of charge</li>
-        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Payment to merchants: Free of charge</li>
+        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />{t("tariffCashOutAgent")}</li>
+        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />{t("tariffCashOutATM")}</li>
+        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />{t("tariffSendMoney")}</li>
+        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />{t("tariffAddMoney")}</li>
+        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />{t("tariffPayment")}</li>
       </ul>
     </div>
   </motion.div>
