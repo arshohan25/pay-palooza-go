@@ -245,8 +245,12 @@ const slideVariants = {
   exit:   (dir: number) => ({ x: dir < 0 ? "100%" : "-100%", opacity: 0 }),
 };
 
-const generateTxnId = () =>
-  "RCH" + Date.now().toString(36).toUpperCase().slice(-6) + Math.random().toString(36).toUpperCase().slice(2, 5);
+const generateTxnId = () => {
+  const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let r = "";
+  for (let i = 0; i < 12; i++) r += CHARS[Math.floor(Math.random() * 36)];
+  return r;
+};
 
 const formatPhone = (raw: string) => {
   const d = raw.replace(/\D/g, "").slice(0, 11);

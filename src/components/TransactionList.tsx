@@ -73,10 +73,10 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
   const display = getTxDisplay(tx);
   const isCredit = display.amount > 0;
   const txDate = new Date(tx.created_at);
-  const txId = tx.id.slice(0, 12).toUpperCase();
+  const txId = (tx as any).short_id || tx.id.slice(0, 12).toUpperCase();
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(tx.id).catch(() => {});
+    navigator.clipboard.writeText((tx as any).short_id || tx.id).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };

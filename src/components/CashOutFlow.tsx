@@ -156,13 +156,14 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const { accounts: savedBanks, save: saveBank, remove: removeBank } = useSavedBanks();
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const txnTime = useRef(new Date());
-  const txnId   = useRef(`TXN${Date.now().toString().slice(-8)}`);
+  const genId = () => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; };
+  const txnId   = useRef(genId());
 
   useEffect(() => {
     if (step === "success") {
       fireSuccessConfetti();
       addTxnNotif();
-      txnId.current = `TXN${Date.now().toString().slice(-8)}`;
+      txnId.current = genId();
     }
   }, [step]);
 

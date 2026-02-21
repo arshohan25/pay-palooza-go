@@ -160,7 +160,7 @@ const AgentDashboard = () => {
       ...(tx.commission > 0 ? [{ label: "Commission", value: `৳${fmt(tx.commission)}` }] : []),
       { label: "Date", value: new Date(tx.created_at).toLocaleString("en-BD") },
     ];
-    setReceiptData({ title: typeLabels[tx.type] || tx.type, amount: `৳${fmt(tx.amount)}`, gradient: gradients[tx.type] || "bg-gradient-to-b from-gray-500 to-gray-600", rows, txnId: tx.id });
+    setReceiptData({ title: typeLabels[tx.type] || tx.type, amount: `৳${fmt(tx.amount)}`, gradient: gradients[tx.type] || "bg-gradient-to-b from-gray-500 to-gray-600", rows, txnId: tx.short_id || tx.id });
     setReceiptOpen(true);
   };
 
@@ -494,7 +494,7 @@ const TxnDetailModal = ({ tx, onClose, onShare }: { tx: any; onClose: () => void
             </div>
             <div className="px-4 py-3 border-t border-border/50 bg-muted/30">
               <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-semibold">Transaction ID</p>
-              <p className="text-[10px] font-mono font-bold text-primary break-all mt-0.5">{tx.id}</p>
+              <p className="text-[10px] font-mono font-bold text-primary break-all mt-0.5">{tx.short_id || tx.id}</p>
             </div>
           </Card>
           <div className="grid grid-cols-2 gap-2">

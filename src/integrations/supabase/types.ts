@@ -435,6 +435,7 @@ export type Database = {
           recipient_name: string | null
           recipient_phone: string | null
           reference: string | null
+          short_id: string
           status: Database["public"]["Enums"]["txn_status"]
           type: Database["public"]["Enums"]["txn_type"]
           user_id: string
@@ -450,6 +451,7 @@ export type Database = {
           recipient_name?: string | null
           recipient_phone?: string | null
           reference?: string | null
+          short_id?: string
           status?: Database["public"]["Enums"]["txn_status"]
           type: Database["public"]["Enums"]["txn_type"]
           user_id: string
@@ -465,6 +467,7 @@ export type Database = {
           recipient_name?: string | null
           recipient_phone?: string | null
           reference?: string | null
+          short_id?: string
           status?: Database["public"]["Enums"]["txn_status"]
           type?: Database["public"]["Enums"]["txn_type"]
           user_id?: string
@@ -497,6 +500,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_short_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
