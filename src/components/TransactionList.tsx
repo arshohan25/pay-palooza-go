@@ -19,24 +19,22 @@ import {
 const TX_CONFIG: Record<string, {
   Icon: () => JSX.Element;
   bg: string;
-  ring: string;
   label: string;
 }> = {
-  send:     { Icon: TxSendIcon,     bg: "rgba(233,30,140,0.12)", ring: "1px solid rgba(233,30,140,0.2)", label: "Send Money" },
-  receive:  { Icon: TxReceiveIcon,  bg: "rgba(76,175,80,0.12)",  ring: "1px solid rgba(76,175,80,0.2)",  label: "Received" },
-  cashout:  { Icon: TxCashOutIcon,  bg: "rgba(255,152,0,0.12)",  ring: "1px solid rgba(255,152,0,0.2)",  label: "Cash Out" },
-  cashin:   { Icon: TxCashOutIcon,  bg: "rgba(76,175,80,0.12)",  ring: "1px solid rgba(76,175,80,0.2)",  label: "Cash In" },
-  payment:  { Icon: TxPaymentIcon,  bg: "rgba(156,39,176,0.12)", ring: "1px solid rgba(156,39,176,0.2)", label: "Payment" },
-  recharge: { Icon: TxRechargeIcon, bg: "rgba(0,188,212,0.12)",  ring: "1px solid rgba(0,188,212,0.2)",  label: "Recharge" },
-  paybill:  { Icon: TxBillIcon,     bg: "rgba(255,193,7,0.12)",  ring: "1px solid rgba(255,193,7,0.2)",  label: "Bill Pay" },
-  addmoney: { Icon: TxBankIcon,     bg: "rgba(25,118,210,0.12)", ring: "1px solid rgba(25,118,210,0.2)", label: "Add Money" },
-  banktransfer: { Icon: TxBankTransferIcon, bg: "rgba(63,81,181,0.12)", ring: "1px solid rgba(63,81,181,0.2)", label: "Bank Transfer" },
+  send:     { Icon: TxSendIcon,     bg: "hsl(330 80% 55% / 0.1)",  label: "Send Money" },
+  receive:  { Icon: TxReceiveIcon,  bg: "hsl(122 38% 50% / 0.1)",  label: "Received" },
+  cashout:  { Icon: TxCashOutIcon,  bg: "hsl(28 100% 50% / 0.1)",  label: "Cash Out" },
+  cashin:   { Icon: TxCashOutIcon,  bg: "hsl(122 38% 50% / 0.1)",  label: "Cash In" },
+  payment:  { Icon: TxPaymentIcon,  bg: "hsl(291 64% 44% / 0.1)",  label: "Payment" },
+  recharge: { Icon: TxRechargeIcon, bg: "hsl(187 100% 42% / 0.1)", label: "Recharge" },
+  paybill:  { Icon: TxBillIcon,     bg: "hsl(45 100% 51% / 0.1)",  label: "Bill Pay" },
+  addmoney: { Icon: TxBankIcon,     bg: "hsl(217 80% 50% / 0.1)",  label: "Add Money" },
+  banktransfer: { Icon: TxBankTransferIcon, bg: "hsl(231 48% 48% / 0.1)", label: "Bank Transfer" },
 };
 
 const RECEIVE_CONFIG = {
   Icon: TxReceiveIcon,
-  bg: "rgba(76,175,80,0.12)",
-  ring: "1px solid rgba(76,175,80,0.2)",
+  bg: "hsl(122 38% 50% / 0.1)",
 };
 
 function getTxDisplay(tx: DbTransaction) {
@@ -45,7 +43,6 @@ function getTxDisplay(tx: DbTransaction) {
   return {
     icon: isCredit ? RECEIVE_CONFIG.Icon : cfg.Icon,
     bg: isCredit ? RECEIVE_CONFIG.bg : cfg.bg,
-    ring: isCredit ? RECEIVE_CONFIG.ring : cfg.ring,
     label: cfg.label,
     name: tx.recipient_name || tx.description || cfg.label,
     amount: isCredit ? tx.amount : -tx.amount,
@@ -103,9 +100,9 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
         key="tx-detail-sheet"
         initial={{ y: "100%", opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }}
         transition={{ type: "spring", stiffness: 340, damping: 34 }}
-        className="fixed bottom-0 left-0 right-0 z-[71] bg-card rounded-t-3xl shadow-float
+        className="fixed bottom-0 left-0 right-0 z-[71] bg-card rounded-t-[28px] shadow-float
                    md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2
-                   md:w-[90vw] md:max-w-md md:rounded-3xl"
+                   md:w-[90vw] md:max-w-md md:rounded-[28px]"
       >
         <div className="flex justify-center pt-3 pb-1 md:hidden">
           <div className="w-10 h-1 rounded-full bg-muted-foreground/25" />
@@ -119,11 +116,11 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
 
         <div className="px-5 pt-3 pb-8 max-h-[85vh] overflow-y-auto">
           <div className="flex flex-col items-center mb-5">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3"
-              style={{ background: display.bg, outline: display.ring }}>
+            <div className="w-16 h-16 rounded-[20px] flex items-center justify-center mb-3"
+              style={{ background: display.bg }}>
               <display.icon />
             </div>
-            <p className="text-[26px] font-bold text-foreground">
+            <p className="text-[26px] font-extrabold text-foreground">
               {isCredit ? "+" : "−"}৳{Math.abs(display.amount).toLocaleString()}
             </p>
             <p className="text-[12.5px] text-muted-foreground mt-0.5">{display.label}</p>
@@ -136,7 +133,7 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
           <div className="h-px bg-border/60 mb-3" />
 
           {rows.map(({ icon: RowIcon, label, value, copy }) => (
-            <div key={label} className="flex items-start gap-3 py-2.5 border-b border-border/50 last:border-0">
+            <div key={label} className="flex items-start gap-3 py-2.5 border-b border-border/40 last:border-0">
               <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center shrink-0 mt-0.5">
                 <RowIcon size={14} className="text-muted-foreground" />
               </div>
@@ -155,7 +152,7 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
 
           <div className={`mt-4 rounded-2xl p-4 flex items-center justify-between ${isCredit ? "bg-primary/10" : "bg-muted/60"}`}>
             <span className="text-[13px] font-semibold text-muted-foreground">{t("totalAmount")}</span>
-            <span className={`text-[20px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
+            <span className={`text-[20px] font-extrabold ${isCredit ? "text-primary" : "text-foreground"}`}>
               {isCredit ? "+" : "−"}৳{Math.abs(display.amount).toLocaleString()}
             </span>
           </div>
@@ -173,14 +170,14 @@ const TransactionList = ({ onSeeAll, refreshKey }: TransactionListProps) => {
   return (
     <div>
       <div className="flex items-center justify-between mb-3 px-0.5">
-        <h2 className="text-[15px] font-bold text-foreground tracking-tight">{t("recentTransactions")}</h2>
+        <h2 className="text-[14px] font-bold text-foreground tracking-tight">{t("recentTransactions")}</h2>
         <button onClick={onSeeAll}
           className="flex items-center gap-0.5 text-[12px] font-semibold text-primary hover:text-primary/80 transition-colors press-effect">
           {t("seeAll")} <ChevronRight size={13} strokeWidth={2.5} />
         </button>
       </div>
 
-      <div className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden">
+      <div className="bg-card rounded-[22px] border border-border/60 shadow-card overflow-hidden">
         {loading ? (
           <div className="px-4 py-8 text-center text-muted-foreground text-sm">{t("loading")}</div>
         ) : transactions.length === 0 ? (
@@ -193,23 +190,23 @@ const TransactionList = ({ onSeeAll, refreshKey }: TransactionListProps) => {
               <motion.button
                 key={tx.id}
                 initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: 0.3 + index * 0.06, ease: [0.23, 1, 0.32, 1] }}
+                transition={{ duration: 0.3, delay: 0.25 + index * 0.05, ease: [0.23, 1, 0.32, 1] }}
                 onClick={() => setSelectedTx(tx)}
-                className="w-full flex items-center gap-3.5 px-4 py-3.5 hover:bg-muted/40 active:bg-muted/60 transition-colors border-b border-border/50 last:border-0 text-left"
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/40 active:bg-muted/60 transition-colors border-b border-border/40 last:border-0 text-left"
               >
-                <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
-                  style={{ background: display.bg, outline: display.ring }}>
+                <div className="w-10 h-10 rounded-[14px] flex items-center justify-center shrink-0"
+                  style={{ background: display.bg }}>
                   <display.icon />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13.5px] font-semibold text-foreground truncate">{display.name}</p>
-                  <p className="text-[11.5px] text-muted-foreground mt-0.5">{relativeDate(tx.created_at)}</p>
+                  <p className="text-[13px] font-semibold text-foreground truncate">{display.name}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{relativeDate(tx.created_at)}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <span className={`text-[14px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
+                  <span className={`text-[13.5px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
                     {isCredit ? "+" : "−"}৳{Math.abs(display.amount).toLocaleString()}
                   </span>
-                  <p className="text-[10.5px] text-muted-foreground mt-0.5">{display.label}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{display.label}</p>
                 </div>
               </motion.button>
             );

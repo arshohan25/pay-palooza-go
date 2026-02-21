@@ -20,25 +20,27 @@ interface SideNavProps {
 
 const SideNav = ({ activeTab = "home", onTabChange }: SideNavProps) => {
   const { t } = useI18n();
-  const [txnCount, setTxnCount]     = useState(getTxnNotifCount);
+  const [txnCount, setTxnCount] = useState(getTxnNotifCount);
   const [inboxCount, setInboxCount] = useState(getInboxCount);
   const displayName = localStorage.getItem("mfs_user_name") || "My Wallet";
-  const phone       = localStorage.getItem("mfs_registered_phone") || "—";
-  const initials    = displayName.replace(/[^a-zA-Z\s]/g, "").trim().split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "U";
+  const phone = localStorage.getItem("mfs_registered_phone") || "—";
+  const initials = displayName.replace(/[^a-zA-Z\s]/g, "").trim().split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "U";
+
   useEffect(() => {
     const unsub1 = onTxnNotifChange(setTxnCount);
     const unsub2 = onInboxChange(setInboxCount);
     return () => { unsub1(); unsub2(); };
   }, []);
+
   return (
-    <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-64 bg-card border-r border-border/60 shadow-card z-40">
+    <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-64 bg-card border-r border-border/50 z-40">
       {/* Brand */}
-      <div className="px-5 py-6 flex items-center gap-3 border-b border-border/60">
-        <div className="w-10 h-10 gradient-primary rounded-2xl flex items-center justify-center text-primary-foreground font-bold text-lg shadow-glow shrink-0">
+      <div className="px-5 py-6 flex items-center gap-3 border-b border-border/50">
+        <div className="w-10 h-10 gradient-primary rounded-[14px] flex items-center justify-center text-primary-foreground font-bold text-lg shadow-glow shrink-0">
           ₿
         </div>
         <div>
-          <p className="text-[14px] font-bold text-foreground">EasyPay</p>
+          <p className="text-[14px] font-extrabold text-foreground">EasyPay</p>
           <p className="text-[10px] text-muted-foreground font-medium">{t("mobileFinancialService")}</p>
         </div>
       </div>
@@ -53,18 +55,17 @@ const SideNav = ({ activeTab = "home", onTabChange }: SideNavProps) => {
               key={item.id}
               onClick={() => onTabChange?.(item.id)}
               whileTap={{ scale: 0.97 }}
-              className={`relative w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[13.5px] font-semibold transition-all duration-150 group ${
+              className={`relative w-full flex items-center gap-3 px-4 py-3 rounded-[14px] text-[13.5px] font-semibold transition-all duration-150 group ${
                 isActive
                   ? "text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
               }`}
             >
-              {/* Active bg */}
               <AnimatePresence>
                 {isActive && (
                   <motion.div
                     layoutId="sidenav-indicator"
-                    className="absolute inset-0 gradient-primary rounded-2xl shadow-glow"
+                    className="absolute inset-0 gradient-primary rounded-[14px] shadow-glow"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -73,20 +74,14 @@ const SideNav = ({ activeTab = "home", onTabChange }: SideNavProps) => {
                 )}
               </AnimatePresence>
               <div className="relative z-10 shrink-0">
-                <item.icon
-                  size={18}
-                  strokeWidth={isActive ? 2.5 : 2}
-                />
-                {/* History transaction badge */}
+                <item.icon size={18} strokeWidth={isActive ? 2.5 : 2} />
                 <AnimatePresence>
                   {item.id === "history" && txnCount > 0 && !isActive && (
                     <motion.span
                       key="hist-badge"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      exit={{ scale: 0 }}
+                      initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 22 }}
-                      className="absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] px-0.5 bg-primary text-primary-foreground text-[8px] font-bold rounded-full flex items-center justify-center border-2 border-background"
+                      className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] px-0.5 bg-primary text-primary-foreground text-[8px] font-bold rounded-full flex items-center justify-center border-2 border-card"
                     >
                       {txnCount > 9 ? "9+" : txnCount}
                     </motion.span>
@@ -94,11 +89,9 @@ const SideNav = ({ activeTab = "home", onTabChange }: SideNavProps) => {
                   {item.id === "inbox" && inboxCount > 0 && !isActive && (
                     <motion.span
                       key="inbox-badge"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      exit={{ scale: 0 }}
+                      initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 22 }}
-                      className="absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] px-0.5 gradient-send text-white text-[8px] font-bold rounded-full flex items-center justify-center border-2 border-background"
+                      className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] px-0.5 gradient-send text-white text-[8px] font-bold rounded-full flex items-center justify-center border-2 border-card"
                     >
                       {inboxCount > 9 ? "9+" : inboxCount}
                     </motion.span>
@@ -106,7 +99,6 @@ const SideNav = ({ activeTab = "home", onTabChange }: SideNavProps) => {
                 </AnimatePresence>
               </div>
               <span className="relative z-10">{label}</span>
-              {/* Inline count label for inbox on sidebar */}
               {item.id === "inbox" && inboxCount > 0 && !isActive && (
                 <span className="relative z-10 ml-auto min-w-[18px] h-[18px] px-1 gradient-send text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                   {inboxCount > 9 ? "9+" : inboxCount}
@@ -119,7 +111,7 @@ const SideNav = ({ activeTab = "home", onTabChange }: SideNavProps) => {
 
       {/* User card */}
       <div className="px-4 pb-5">
-        <div className="bg-muted/50 border border-border/60 rounded-2xl px-4 py-3 flex items-center gap-3">
+        <div className="bg-muted/40 border border-border/50 rounded-[16px] px-4 py-3 flex items-center gap-3">
           <div className="w-9 h-9 gradient-primary rounded-xl flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0 shadow-glow">
             {initials}
           </div>
