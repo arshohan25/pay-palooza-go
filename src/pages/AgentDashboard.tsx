@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import ShareReceiptSheet, { ReceiptData } from "@/components/ShareReceiptSheet";
 import { useNavigate } from "react-router-dom";
 import { haptics } from "@/lib/haptics";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 /* ─── Types ─── */
 interface AgentInfo {
@@ -126,6 +127,25 @@ const AgentDashboard = () => {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user, loadData]);
+
+  /* ── 7-day commission chart data ── */
+  const chartData = useMemo(() => {
+    const days: { label: string; date: string; commission: number; volume: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toDateString();
+      const dayLabel = d.toLocaleDateString("en-BD", { weekday: "short" });
+      const dayTxns = recentTxns.filter(t => new Date(t.created_at).toDateString() === dateStr);
+      days.push({
+        label: dayLabel,
+        date: dateStr,
+        commission: dayTxns.reduce((s, t) => s + (t.commission || 0), 0),
+        volume: dayTxns.reduce((s, t) => s + t.amount, 0),
+      });
+    }
+    return days;
+  }, [recentTxns]);
 
   /* ── Share receipt ── */
   const shareTxnReceipt = (tx: any) => {
@@ -341,6 +361,37 @@ const AgentDashboard = () => {
           </div>
         </Card>
 
+        {/* ── 7-Day Commission Trend ── */}
+        <div>
+          <h3 className="text-sm font-bold text-foreground mb-3">7-Day Commission Trend</h3>
+          <Card className="border-0 shadow-card rounded-2xl p-4">
+            <div className="h-40">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+                  <defs>
+                    <linearGradient id="commGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="label" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} tickFormatter={v => `৳${v}`} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,.1)", fontSize: 11, background: "hsl(var(--card))" }}
+                    formatter={(v: number) => [`৳${fmt(v)}`, "Commission"]}
+                    labelStyle={{ fontWeight: 700, color: "hsl(var(--foreground))" }}
+                  />
+                  <Area type="monotone" dataKey="commission" stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#commGrad)" dot={{ r: 3, fill: "hsl(var(--primary))", strokeWidth: 0 }} activeDot={{ r: 5, strokeWidth: 0 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/40">
+              <span className="text-[10px] text-muted-foreground font-semibold">7-Day Total</span>
+              <span className="text-sm font-extrabold text-primary">৳{fmt(chartData.reduce((s, d) => s + d.commission, 0))}</span>
+            </div>
+          </Card>
+        </div>
+
         {/* ── Recent Activity ── */}
         <div>
           <h3 className="text-sm font-bold text-foreground mb-3">Recent Activity</h3>
@@ -353,7 +404,7 @@ const AgentDashboard = () => {
             ) : (
               <div className="divide-y divide-border/50">
                 {recentTxns.slice(0, 8).map(tx => {
-                  const isCredit = tx.type === "cashin" || tx.type === "receive" || tx.type === "addmoney";
+                  const isCredit = tx.type === "receive" || tx.type === "addmoney";
                   return (
                     <button key={tx.id} onClick={() => setSelectedTxn(tx)} className="flex items-center gap-3 px-4 py-3 w-full text-left press-effect hover:bg-muted/20 transition-colors">
                       <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isCredit ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"}`}>
@@ -407,7 +458,7 @@ const AgentDashboard = () => {
 /* ── Transaction Detail Modal ── */
 const TxnDetailModal = ({ tx, onClose, onShare }: { tx: any; onClose: () => void; onShare: (tx: any) => void }) => {
   const typeLabels: Record<string, string> = { send: "Send Money", receive: "Received", cashout: "Cash Out", cashin: "Cash In", banktransfer: "Bank Transfer", payment: "Payment", recharge: "Recharge", paybill: "Bill Pay", addmoney: "Add Money" };
-  const isCredit = tx.type === "receive" || tx.type === "cashin" || tx.type === "addmoney";
+  const isCredit = tx.type === "receive" || tx.type === "addmoney";
   return (
     <>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm" onClick={onClose} />
