@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 
 const LOCKABLE_FEATURES = [
+  { value: "account", label: "Account (Full Lock)" },
   { value: "send_money", label: "Send Money" },
   { value: "cash_out", label: "Cash Out" },
   { value: "cash_in", label: "Cash In" },
@@ -99,9 +100,15 @@ export default function UserLockDialog({ open, onOpenChange, targetUserId, targe
     );
   };
 
-  const selectAll = () => {
-    const unlocked = LOCKABLE_FEATURES.map(f => f.value).filter(f => !existingLocks.includes(f));
-    setSelectedFeatures(unlocked);
+  const allUnlocked = LOCKABLE_FEATURES.map(f => f.value).filter(f => !existingLocks.includes(f));
+  const allSelected = allUnlocked.length > 0 && allUnlocked.every(f => selectedFeatures.includes(f));
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedFeatures([]);
+    } else {
+      setSelectedFeatures(allUnlocked);
+    }
   };
 
   const createLocks = async () => {
@@ -151,8 +158,8 @@ export default function UserLockDialog({ open, onOpenChange, targetUserId, targe
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Features to Lock</Label>
-              <Button variant="ghost" size="sm" className="text-xs h-6 px-2" onClick={selectAll}>
-                Select All
+              <Button variant="ghost" size="sm" className="text-xs h-6 px-2" onClick={toggleSelectAll}>
+                {allSelected ? "Deselect All" : "Select All"}
               </Button>
             </div>
 

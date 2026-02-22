@@ -5,6 +5,8 @@ import { RefreshCw } from "lucide-react";
 import { clearTxnNotifs } from "@/lib/txnNotifStore";
 import { fetchBalance } from "@/lib/balanceStore";
 import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import AppHeader from "@/components/AppHeader";
 import BalanceCard from "@/components/BalanceCard";
 import QuickActions from "@/components/QuickActions";
@@ -33,7 +35,7 @@ import OnboardingSlides, { hasSeenOnboarding, markOnboardingDone } from "@/compo
 import TxnToast from "@/components/TxnToast";
 
 const Index = () => {
-  const { isAuthenticated, loading: authLoading, signOut } = useAuth();
+  const { isAuthenticated, loading: authLoading, signOut, user } = useAuth();
   
   const [splashDone, setSplashDone]           = useState(false);
   const [onboardingDone, setOnboardingDone]  = useState(() => hasSeenOnboarding());
@@ -66,6 +68,27 @@ const Index = () => {
     const t = setTimeout(() => setIsLoading(false), 1800);
     return () => clearTimeout(t);
   }, []);
+
+  // Realtime account lock listener — sign out if account gets locked
+  useEffect(() => {
+    if (!user || !isAuthenticated) return;
+    const channel = supabase
+      .channel("account-lock-" + user.id)
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "feature_locks",
+        filter: `target_user_id=eq.${user.id}`,
+      }, (payload: any) => {
+        if (payload.new?.feature === "account" && payload.new?.is_active) {
+          toast.error("Your account has been locked by an administrator. Contact support.");
+          setTimeout(() => signOut(), 1500);
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, isAuthenticated, signOut]);
 
   const triggerRefresh = useCallback(() => {
     if (isLoading) return;

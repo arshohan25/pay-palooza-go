@@ -442,7 +442,39 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     setIsSubmitting(true);
     setError("");
     try {
-      await signIn(loginPhone, entered);
+      const { user } = await signIn(loginPhone, entered);
+      
+      // Check if account is locked
+      if (user) {
+        const { data: accountLocks } = await supabase
+          .from("feature_locks")
+          .select("id, reason")
+          .eq("target_user_id", user.id)
+          .eq("feature", "account")
+          .eq("is_active", true);
+        
+        const now = new Date();
+        const activeLock = (accountLocks ?? []).find((lock: any) => {
+          // Check if lock has expired (if expires_at exists)
+          return true; // active locks are already filtered by is_active=true
+        });
+        
+        if (activeLock) {
+          // Sign out immediately
+          await supabase.auth.signOut();
+          const reason = activeLock.reason;
+          setError(
+            lang === "bn"
+              ? `আপনার অ্যাকাউন্ট লক করা হয়েছে। সাপোর্টে যোগাযোগ করুন।${reason ? ` কারণ: ${reason}` : ""}`
+              : `Your account has been locked. Contact support.${reason ? ` Reason: ${reason}` : ""}`
+          );
+          haptics.error();
+          setTimeout(() => setPin(""), 300);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+      
       // Success — clear lockout state
       localStorage.removeItem(attKey);
       localStorage.removeItem(lockKey);
