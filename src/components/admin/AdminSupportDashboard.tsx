@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, User, Loader2, MessageCircle, ArrowLeft, CheckCheck, Check } from "lucide-react";
+import { Send, Bot, User, Loader2, MessageCircle, ArrowLeft, CheckCheck, Check, Zap, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/hooks/use-auth";
 
 interface Conversation {
@@ -34,6 +35,17 @@ interface Message {
   created_at: string;
   read_at: string | null;
 }
+
+const CANNED_REPLIES = [
+  { label: "Greeting", text: "Hello! Thank you for contacting EasyPay Support. How can I help you today?" },
+  { label: "Processing", text: "I'm looking into your issue right now. Please give me a moment." },
+  { label: "Transaction Issue", text: "I can see your transaction. Let me check the details and get back to you shortly." },
+  { label: "Resolved", text: "Your issue has been resolved. Is there anything else I can help you with?" },
+  { label: "Escalate", text: "I'm escalating this to our senior team for further investigation. You'll receive an update soon." },
+  { label: "PIN Reset", text: "For security, please use the PIN reset option in Settings → Change PIN. Let me know if you need further help." },
+  { label: "Balance Query", text: "I've checked your account. Your current balance is reflected in your app. If you see a discrepancy, please share the transaction ID." },
+  { label: "Closing", text: "Thank you for reaching out! If you need any further assistance, don't hesitate to contact us. Have a great day!" },
+];
 
 const fmt = (d: string) =>
   new Date(d).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -452,27 +464,60 @@ export default function AdminSupportDashboard() {
 
             {/* Input */}
             {selectedConv.status === "open" && (
-              <div className="flex gap-2 p-4 border-t border-border">
-                <Input
-                  ref={inputRef}
-                  value={input}
-                  onChange={e => {
-                    setInput(e.target.value);
-                    if (selectedConv) sendTypingIndicator(selectedConv.id);
-                  }}
-                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                  placeholder="Reply to user..."
-                  className="flex-1 h-10 rounded-xl text-xs"
-                  disabled={sending}
-                />
-                <Button
-                  size="icon"
-                  onClick={sendMessage}
-                  disabled={!input.trim() || sending}
-                  className="h-10 w-10 rounded-xl bg-primary text-primary-foreground shrink-0"
-                >
-                  {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                </Button>
+              <div className="border-t border-border">
+                {/* Canned replies */}
+                <div className="px-4 pt-2 pb-1">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-7 text-[10px] text-muted-foreground gap-1 px-2 hover:text-primary">
+                        <Zap size={12} />
+                        Quick Replies
+                        <ChevronDown size={10} />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-72 p-1.5" align="start" side="top">
+                      <ScrollArea className="max-h-52">
+                        <div className="space-y-0.5">
+                          {CANNED_REPLIES.map((reply, i) => (
+                            <button
+                              key={i}
+                              onClick={() => {
+                                setInput(reply.text);
+                                inputRef.current?.focus();
+                              }}
+                              className="w-full text-left px-2.5 py-2 rounded-lg hover:bg-muted/60 transition-colors group"
+                            >
+                              <p className="text-[10px] font-semibold text-primary/80 group-hover:text-primary">{reply.label}</p>
+                              <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5">{reply.text}</p>
+                            </button>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="flex gap-2 px-4 pb-4">
+                  <Input
+                    ref={inputRef}
+                    value={input}
+                    onChange={e => {
+                      setInput(e.target.value);
+                      if (selectedConv) sendTypingIndicator(selectedConv.id);
+                    }}
+                    onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                    placeholder="Reply to user..."
+                    className="flex-1 h-10 rounded-xl text-xs"
+                    disabled={sending}
+                  />
+                  <Button
+                    size="icon"
+                    onClick={sendMessage}
+                    disabled={!input.trim() || sending}
+                    className="h-10 w-10 rounded-xl bg-primary text-primary-foreground shrink-0"
+                  >
+                    {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                  </Button>
+                </div>
               </div>
             )}
           </>
