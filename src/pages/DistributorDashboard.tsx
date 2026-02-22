@@ -569,7 +569,7 @@ const DistributorDashboard = () => {
           {/* ═══ History Sub-View ═══ */}
           {subView === "history" && (
             <motion.div key="history" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
-              <TransactionHistory filterTypes={["send", "receive", "addmoney"]} />
+              <TransactionHistory filterTypes={["send", "receive", "addmoney"]} customLabels={{ addmoney: "Distributor" }} />
             </motion.div>
           )}
 
