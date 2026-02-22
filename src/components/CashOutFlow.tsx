@@ -27,6 +27,8 @@ import { Input } from "@/components/ui/input";
 import QrScannerModal from "@/components/QrScannerModal";
 import { useSavedBanks } from "@/hooks/use-saved-banks";
 import { useI18n } from "@/lib/i18n";
+import { useFeatureLocks } from "@/hooks/use-feature-locks";
+import FeatureLockedOverlay from "@/components/FeatureLockedOverlay";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -137,6 +139,8 @@ interface CashOutFlowProps {
 
 const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const { t } = useI18n();
+  const { isLocked } = useFeatureLocks();
+  const cashOutLock = isLocked("cash_out");
   const [step, setStep] = useState<Step>("method");
   const [direction, setDirection] = useState(1);
   const [cashOutMethod, setCashOutMethod] = useState<CashOutMethod>("agent");
@@ -308,6 +312,17 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const totalFromBalance = parseFloat(amount) > 0
     ? parseFloat((parseFloat(amount) + feeFromBalance).toFixed(2))
     : 0;
+
+  if (cashOutLock.locked) {
+    return (
+      <FeatureLockedOverlay
+        featureName="Cash Out"
+        reason={cashOutLock.reason}
+        expiresAt={cashOutLock.expiresAt}
+        onClose={onClose}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
