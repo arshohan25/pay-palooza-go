@@ -17,6 +17,7 @@ import AgentBankTransfer from "./pages/AgentBankTransfer";
 import DistributorDashboard from "./pages/DistributorDashboard";
 import DistributorCreateAgent from "./pages/DistributorCreateAgent";
 import SuperDistributorDashboard from "./pages/SuperDistributorDashboard";
+import SuperDistributorCreateDistributor from "./pages/SuperDistributorCreateDistributor";
 import MerchantDashboard from "./pages/MerchantDashboard";
 import NotFound from "./pages/NotFound";
 
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/distributor" element={<DistributorDashboard />} />
               <Route path="/distributor/create-agent" element={<DistributorCreateAgent />} />
               <Route path="/super-distributor" element={<SuperDistributorDashboard />} />
+              <Route path="/super-distributor/create-distributor" element={<SuperDistributorCreateDistributor />} />
               <Route path="/merchant" element={<MerchantDashboard />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
