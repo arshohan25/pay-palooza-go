@@ -8,7 +8,7 @@ import {
   UserCheck, UserX, ChevronRight, DollarSign,
   Globe, Activity, Target, Zap, AlertTriangle, Eye, EyeOff,
   Bell, UserPlus, History, Headphones, Network, PieChart,
-  Crown, Banknote, Search, X, ListChecks,
+  Crown, Banknote, Search, X, ListChecks, FileBarChart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -89,7 +89,7 @@ const SuperDistributorDashboard = () => {
   const [txnCount, setTxnCount] = useState(0);
 
   // Sub-views
-  const [subView, setSubView] = useState<"home" | "distributors" | "agents" | "alerts" | "analytics" | "distTxns" | "settle">("home");
+  const [subView, setSubView] = useState<"home" | "distributors" | "agents" | "alerts" | "analytics" | "distTxns" | "settle" | "reconcile">("home");
 
   // Sheets
   const [distDetailSheet, setDistDetailSheet] = useState<DistRow | null>(null);
@@ -273,6 +273,7 @@ const SuperDistributorDashboard = () => {
     { icon: Network, label: "Distributors", bg: "rgba(76,175,80,0.12)", ring: "1px solid rgba(76,175,80,0.25)", action: "distributors" as const },
     { icon: ListChecks, label: "Dist Txns", bg: "rgba(103,58,183,0.12)", ring: "1px solid rgba(103,58,183,0.25)", action: "distTxns" as const },
     { icon: Banknote, label: "Settle", bg: "rgba(0,150,136,0.12)", ring: "1px solid rgba(0,150,136,0.25)", action: "settle" as const },
+    { icon: FileBarChart, label: "Reconcile", bg: "rgba(255,152,0,0.12)", ring: "1px solid rgba(255,152,0,0.25)", action: "reconcile" as const },
     { icon: BarChart3, label: "Analytics", bg: "rgba(0,188,212,0.12)", ring: "1px solid rgba(0,188,212,0.25)", action: "analytics" as const },
     { icon: AlertTriangle, label: "Alerts", bg: "rgba(244,67,54,0.12)", ring: "1px solid rgba(244,67,54,0.25)", action: "alerts" as const },
     { icon: Headphones, label: "Support", bg: "rgba(120,120,140,0.12)", ring: "1px solid rgba(120,120,140,0.25)", action: "support" as const },
@@ -289,6 +290,7 @@ const SuperDistributorDashboard = () => {
       else if (item.action === "analytics") setSubView("analytics");
       else if (item.action === "distTxns") setSubView("distTxns");
       else if (item.action === "settle") setSubView("settle");
+      else if (item.action === "reconcile") setSubView("reconcile");
     }
   };
 
@@ -300,6 +302,7 @@ const SuperDistributorDashboard = () => {
   if (subView === "analytics") return <AnalyticsView distributors={distributors} agents={agents} alerts={alerts} balance={balance} onBack={() => setSubView("home")} />;
   if (subView === "distTxns") return <DistTxnsView distributors={distributors} onBack={() => setSubView("home")} />;
   if (subView === "settle") return <SettleView distributors={distributors} balance={balance} onBack={() => setSubView("home")} onRefresh={loadData} toast={toast} />;
+  if (subView === "reconcile") return <ReconcileView distributors={distributors} userId={user!.id} onBack={() => setSubView("home")} />;
 
   return (
     <div className="min-h-screen bg-background pb-6">
@@ -1223,6 +1226,219 @@ const SettleView = ({ distributors, balance, onBack, onRefresh, toast }: {
               {processing ? "Settling…" : `Settle ৳${settleAmount ? fmt(Number(settleAmount)) : "0"}`}
             </Button>
           </Card>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ── Float Reconciliation Report Sub-View ── */
+const ReconcileView = ({ distributors, userId, onBack }: {
+  distributors: DistRow[]; userId: string; onBack: () => void;
+}) => {
+  const [loading, setLoading] = useState(true);
+  const [reconData, setReconData] = useState<{
+    dist: DistRow;
+    allocated: number;
+    returned: number;
+    net: number;
+    txnCount: number;
+    currentBalance: number;
+  }[]>([]);
+  const [totalAllocated, setTotalAllocated] = useState(0);
+  const [totalReturned, setTotalReturned] = useState(0);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+
+      // Get all float-related transactions from SD to distributors and vice versa
+      const distUserIds = distributors.map(d => d.user_id);
+      if (distUserIds.length === 0) { setLoading(false); return; }
+
+      // Get SD's outgoing (allocated) transactions to distributors
+      const { data: sdTxns } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("user_id", userId)
+        .in("type", ["send"])
+        .eq("status", "completed")
+        .order("created_at", { ascending: false })
+        .limit(1000);
+
+      // Get distributor profiles for phone matching + current balances
+      const { data: distProfiles } = await supabase
+        .from("profiles")
+        .select("user_id, phone, balance")
+        .in("user_id", distUserIds);
+
+      const phoneToUserId = new Map<string, string>();
+      const userIdToBalance = new Map<string, number>();
+      (distProfiles ?? []).forEach(p => {
+        phoneToUserId.set(p.phone, p.user_id);
+        userIdToBalance.set(p.user_id, p.balance);
+      });
+
+      // Get SD's phone for matching return transactions
+      const { data: sdProfile } = await supabase
+        .from("profiles")
+        .select("phone")
+        .eq("user_id", userId)
+        .single();
+      const sdPhone = sdProfile?.phone ?? "";
+
+      // Get distributor transactions sent back to SD (returns)
+      const returnTxnPromises = distUserIds.map(uid =>
+        supabase
+          .from("transactions")
+          .select("amount, recipient_phone, type")
+          .eq("user_id", uid)
+          .eq("status", "completed")
+          .in("type", ["send"])
+          .limit(500)
+      );
+      const returnResults = await Promise.all(returnTxnPromises);
+
+      // Build reconciliation per distributor
+      const distPhones = new Set<string>();
+      (distProfiles ?? []).forEach(p => distPhones.add(p.phone));
+
+      const results = distributors.map((dist, idx) => {
+        const distProfile = (distProfiles ?? []).find(p => p.user_id === dist.user_id);
+        const distPhone = distProfile?.phone ?? "";
+
+        // Float allocated: SD sent to this distributor
+        const allocated = (sdTxns ?? [])
+          .filter(t => t.recipient_phone === distPhone && (t.description ?? "").toLowerCase().includes("float"))
+          .reduce((s, t) => s + t.amount, 0);
+
+        // Float returned: distributor sent back to SD
+        const distReturnTxns = returnResults[idx]?.data ?? [];
+        const returned = distReturnTxns
+          .filter(t => t.recipient_phone === sdPhone)
+          .reduce((s, t) => s + t.amount, 0);
+
+        return {
+          dist,
+          allocated,
+          returned,
+          net: allocated - returned,
+          txnCount: (sdTxns ?? []).filter(t => t.recipient_phone === distPhone).length + distReturnTxns.filter(t => t.recipient_phone === sdPhone).length,
+          currentBalance: userIdToBalance.get(dist.user_id) ?? 0,
+        };
+      });
+
+      setReconData(results);
+      setTotalAllocated(results.reduce((s, r) => s + r.allocated, 0));
+      setTotalReturned(results.reduce((s, r) => s + r.returned, 0));
+      setLoading(false);
+    };
+    load();
+  }, [distributors, userId]);
+
+  const totalNet = totalAllocated - totalReturned;
+
+  return (
+    <div className="min-h-screen bg-background pb-6">
+      <header className="px-4 pt-5 pb-4" style={{ background: "linear-gradient(150deg, hsl(270 60% 40%) 0%, hsl(285 55% 30%) 100%)" }}>
+        <div className="max-w-xl mx-auto flex items-center gap-3">
+          <button onClick={onBack} className="tap-target text-primary-foreground"><ArrowLeft size={20} /></button>
+          <h1 className="text-base font-bold text-primary-foreground">Float Reconciliation</h1>
+        </div>
+      </header>
+      <div className="max-w-xl mx-auto px-4 mt-4 space-y-4">
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : (
+          <>
+            {/* Summary Cards */}
+            <div className="grid grid-cols-3 gap-2">
+              <Card className="p-3 border-0 shadow-card text-center">
+                <p className="text-[9px] text-muted-foreground font-semibold">Total Allocated</p>
+                <p className="text-sm font-bold text-primary">৳{fmt(totalAllocated)}</p>
+              </Card>
+              <Card className="p-3 border-0 shadow-card text-center">
+                <p className="text-[9px] text-muted-foreground font-semibold">Total Returned</p>
+                <p className="text-sm font-bold text-accent">৳{fmt(totalReturned)}</p>
+              </Card>
+              <Card className="p-3 border-0 shadow-card text-center">
+                <p className="text-[9px] text-muted-foreground font-semibold">Net Outstanding</p>
+                <p className={`text-sm font-bold ${totalNet > 0 ? "text-destructive" : "text-primary"}`}>৳{fmt(Math.abs(totalNet))}</p>
+              </Card>
+            </div>
+
+            {/* Per-distributor breakdown */}
+            <Card className="border-0 shadow-card overflow-hidden">
+              <div className="p-4 border-b border-border/50">
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <FileBarChart size={14} className="text-accent" /> Per-Distributor Breakdown
+                </h3>
+              </div>
+              {reconData.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-8">No distributors</p>
+              ) : (
+                <div className="divide-y divide-border/30">
+                  {reconData.map(r => {
+                    const utilization = r.dist.max_float > 0 ? (r.currentBalance / r.dist.max_float) * 100 : 0;
+                    return (
+                      <div key={r.dist.id} className="p-4 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(255,152,0,0.12)" }}>
+                              <Network size={14} className="text-foreground" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-foreground">{r.dist.business_name}</p>
+                              <p className="text-[9px] text-muted-foreground">{r.txnCount} float txns · {(r.dist.territory ?? []).join(", ") || "—"}</p>
+                            </div>
+                          </div>
+                          <Badge className={`text-[9px] ${statusColor[r.dist.status]}`}>{r.dist.status}</Badge>
+                        </div>
+
+                        <div className="grid grid-cols-4 gap-1.5">
+                          <div className="p-2 rounded-lg bg-primary/5 text-center">
+                            <p className="text-[8px] text-muted-foreground">Allocated</p>
+                            <p className="text-[11px] font-bold text-primary">৳{fmt(r.allocated)}</p>
+                          </div>
+                          <div className="p-2 rounded-lg bg-accent/5 text-center">
+                            <p className="text-[8px] text-muted-foreground">Returned</p>
+                            <p className="text-[11px] font-bold text-accent">৳{fmt(r.returned)}</p>
+                          </div>
+                          <div className="p-2 rounded-lg bg-muted/50 text-center">
+                            <p className="text-[8px] text-muted-foreground">Net Out</p>
+                            <p className={`text-[11px] font-bold ${r.net > 0 ? "text-destructive" : "text-primary"}`}>৳{fmt(Math.abs(r.net))}</p>
+                          </div>
+                          <div className="p-2 rounded-lg bg-muted/50 text-center">
+                            <p className="text-[8px] text-muted-foreground">Balance</p>
+                            <p className="text-[11px] font-bold text-foreground">৳{fmt(r.currentBalance)}</p>
+                          </div>
+                        </div>
+
+                        {/* Float utilization bar */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-[8px] text-muted-foreground">Float Utilization</p>
+                            <p className="text-[8px] font-semibold text-muted-foreground">{utilization.toFixed(1)}% of ৳{fmt(r.dist.max_float)}</p>
+                          </div>
+                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all"
+                              style={{
+                                width: `${Math.min(utilization, 100)}%`,
+                                background: utilization > 80 ? "hsl(var(--destructive))" : utilization > 50 ? "hsl(40 80% 50%)" : "hsl(var(--primary))",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          </>
         )}
       </div>
     </div>
