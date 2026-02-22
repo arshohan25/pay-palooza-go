@@ -315,7 +315,7 @@ const SuperDistributorDashboard = () => {
         </div>
       </header>
       <div className="max-w-xl mx-auto px-4 mt-4">
-        <TransactionHistory filterTypes={["send", "receive", "cashin", "cashout", "banktransfer", "addmoney"]} />
+        <TransactionHistory filterTypes={["send", "receive", "addmoney"]} />
       </div>
     </div>
   );
