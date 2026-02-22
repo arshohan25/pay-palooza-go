@@ -1,15 +1,30 @@
-import { useState } from "react";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Building2, Shield, TrendingUp, Banknote, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Shield, Building2 } from "lucide-react";
+import { useTransactions } from "@/hooks/use-transactions";
 import TransactionHistory from "./TransactionHistory";
+
+const fmt = (n: number) => n.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const AgentTransactionHistory = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { transactions } = useTransactions();
+
+  // Compute commission summary from agent-relevant transactions
+  const summary = useMemo(() => {
+    const agentTxns = transactions.filter((t) =>
+      ["cashin", "cashout", "banktransfer", "paybill"].includes(t.type)
+    );
+    const totalCommission = agentTxns.reduce((sum, t) => sum + (t.commission || 0), 0);
+    const cashInCount = agentTxns.filter((t) => t.type === "cashin").length;
+    const cashOutCount = agentTxns.filter((t) => t.type === "cashout").length;
+    const totalVolume = agentTxns.reduce((sum, t) => sum + t.amount, 0);
+    return { totalCommission, cashInCount, cashOutCount, totalVolume, totalTxns: agentTxns.length };
+  }, [transactions]);
 
   if (authLoading) {
     return (
@@ -29,6 +44,13 @@ const AgentTransactionHistory = () => {
     );
   }
 
+  const statItems = [
+    { icon: TrendingUp, label: "Commission", value: `৳${fmt(summary.totalCommission)}`, accent: true },
+    { icon: Banknote, label: "Volume", value: `৳${fmt(summary.totalVolume)}`, accent: false },
+    { icon: ArrowDownToLine, label: "Cash In", value: String(summary.cashInCount), accent: false },
+    { icon: ArrowUpFromLine, label: "Cash Out", value: String(summary.cashOutCount), accent: false },
+  ];
+
   return (
     <div className="min-h-screen bg-background pb-6">
       {/* Header */}
@@ -46,8 +68,29 @@ const AgentTransactionHistory = () => {
         </div>
       </div>
 
-      {/* Reuse existing TransactionHistory component — agent-relevant types only */}
       <div className="max-w-xl mx-auto px-4">
+        {/* Commission Summary Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+          className="bg-card border border-border/60 rounded-2xl p-4 mb-4 shadow-card"
+        >
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">Earnings Summary</p>
+          <div className="grid grid-cols-2 gap-3">
+            {statItems.map(({ icon: Icon, label, value, accent }) => (
+              <div key={label} className="flex items-center gap-2.5">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${accent ? "bg-primary/12" : "bg-muted"}`}>
+                  <Icon size={16} className={accent ? "text-primary" : "text-muted-foreground"} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] text-muted-foreground font-medium">{label}</p>
+                  <p className={`text-[14px] font-bold truncate ${accent ? "text-primary" : "text-foreground"}`}>{value}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Transaction list */}
         <TransactionHistory filterTypes={["cashin", "cashout", "banktransfer", "paybill"]} agentView />
       </div>
     </div>
