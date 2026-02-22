@@ -22,6 +22,7 @@ import AdminDisputeResolution from "@/components/admin/AdminDisputeResolution";
 import AdminReporting from "@/components/admin/AdminReporting";
 import AdminSupportDashboard from "@/components/admin/AdminSupportDashboard";
 import AdminFeatureLocks from "@/components/admin/AdminFeatureLocks";
+import UserLockDialog from "@/components/admin/UserLockDialog";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 
 interface Stats {
@@ -101,6 +102,7 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [userSubTab, setUserSubTab] = useState<"users" | "agents" | "merchants">("users");
+  const [lockTarget, setLockTarget] = useState<{ userId: string; label: string } | null>(null);
 
   const loadData = useCallback(async () => {
     setRefreshing(true);
@@ -367,7 +369,7 @@ export default function AdminDashboard() {
                                 {user.status || "active"}
                               </Badge>
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-4 py-3 flex items-center gap-1.5">
                               <Button
                                 size="sm"
                                 variant={user.status === "suspended" ? "default" : "destructive"}
@@ -381,6 +383,14 @@ export default function AdminDashboard() {
                                 }}
                               >
                                 {user.status === "suspended" ? "Activate" : "Suspend"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs h-7 gap-1"
+                                onClick={() => setLockTarget({ userId: user.user_id, label: `${user.name || "User"} (${user.phone})` })}
+                              >
+                                <Lock className="w-3 h-3" /> Lock
                               </Button>
                             </td>
                           </tr>
@@ -418,7 +428,7 @@ export default function AdminDashboard() {
                                 {agent.status}
                               </Badge>
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-4 py-3 flex items-center gap-1.5">
                               <Button
                                 size="sm"
                                 variant={agent.status === "suspended" ? "default" : "destructive"}
@@ -432,6 +442,14 @@ export default function AdminDashboard() {
                                 }}
                               >
                                 {agent.status === "suspended" ? "Activate" : "Suspend"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs h-7 gap-1"
+                                onClick={() => setLockTarget({ userId: agent.user_id, label: `${agent.business_name || "Agent"} (${agent.territory_code || agent.id.slice(0, 8)})` })}
+                              >
+                                <Lock className="w-3 h-3" /> Lock
                               </Button>
                             </td>
                           </tr>
@@ -469,7 +487,7 @@ export default function AdminDashboard() {
                                 {m.status}
                               </Badge>
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-4 py-3 flex items-center gap-1.5">
                               <Button
                                 size="sm"
                                 variant={m.status === "suspended" ? "default" : "destructive"}
@@ -483,6 +501,14 @@ export default function AdminDashboard() {
                                 }}
                               >
                                 {m.status === "suspended" ? "Activate" : "Suspend"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs h-7 gap-1"
+                                onClick={() => setLockTarget({ userId: m.user_id, label: `${m.business_name} (${m.category})` })}
+                              >
+                                <Lock className="w-3 h-3" /> Lock
                               </Button>
                             </td>
                           </tr>
@@ -624,6 +650,15 @@ export default function AdminDashboard() {
         {/* ═══ REPORTING DASHBOARD ═══ */}
         {activeTab === "reporting" && <AdminReporting />}
       </main>
+
+      {/* User Lock Dialog - accessible from any user/agent/merchant row */}
+      <UserLockDialog
+        open={!!lockTarget}
+        onOpenChange={(o) => { if (!o) setLockTarget(null); }}
+        targetUserId={lockTarget?.userId ?? ""}
+        targetLabel={lockTarget?.label ?? ""}
+        onLocked={() => setLockTarget(null)}
+      />
     </div>
   );
 }
