@@ -8,7 +8,7 @@ import {
   UserCheck, UserX, ChevronRight, DollarSign,
   Globe, Activity, Target, Zap, AlertTriangle, Eye, EyeOff,
   Bell, UserPlus, History, Headphones, ArrowRightLeft,
-  Download, Search, X,
+  Download, Search, X, ListChecks, Banknote, FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -85,7 +85,10 @@ const DistributorDashboard = () => {
   const [floatAmount, setFloatAmount] = useState("");
   const [floatProcessing, setFloatProcessing] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
-  const [subView, setSubView] = useState<"home" | "agents" | "territory" | "earnings">("home");
+  const [subView, setSubView] = useState<"home" | "agents" | "territory" | "earnings" | "agentTxns">("home");
+  const [settleSheet, setSettleSheet] = useState(false);
+  const [settleAgent, setSettleAgent] = useState<AgentRow | null>(null);
+  const [settleProcessing, setSettleProcessing] = useState(false);
 
   // Notifications
   const [notifOpen, setNotifOpen] = useState(false);
@@ -227,6 +230,36 @@ const DistributorDashboard = () => {
     }
   };
 
+  /* ── Commission Settlement ── */
+  const settleCommission = async () => {
+    if (!settleAgent || settleProcessing) return;
+    setSettleProcessing(true);
+    try {
+      const agentProfile = await supabase.from("profiles").select("phone").eq("user_id", settleAgent.user_id).single();
+      if (!agentProfile.data) throw new Error("Agent profile not found");
+      const amount = settleAgent.commission_earned;
+      if (amount <= 0) throw new Error("No commission to settle");
+      const { error } = await supabase.rpc("transfer_money", {
+        p_recipient_phone: agentProfile.data.phone,
+        p_amount: amount,
+        p_fee: 0,
+        p_type: "send" as any,
+        p_description: `Commission settlement for ${settleAgent.business_name}`,
+        p_reference: `CS-${Date.now()}`,
+      });
+      if (error) throw error;
+      // Reset agent commission_earned after settlement
+      await supabase.from("agents").update({ commission_earned: 0 }).eq("id", settleAgent.id);
+      toast({ title: "Settled", description: `৳${fmt(amount)} commission paid to ${settleAgent.business_name}` });
+      setSettleAgent(null);
+      setSettleSheet(false);
+      loadData();
+    } catch (err: any) {
+      toast({ title: "Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setSettleProcessing(false);
+    }
+  };
   /* ── Auth guard ── */
   if (authLoading || loading) {
     return (
@@ -267,8 +300,8 @@ const DistributorDashboard = () => {
     { icon: UserPlus, label: "Create Agent", bg: "rgba(156,39,176,0.12)", ring: "1px solid rgba(156,39,176,0.25)", path: "/distributor/create-agent" },
     { icon: Send, label: "Float Send", bg: "rgba(33,150,243,0.12)", ring: "1px solid rgba(33,150,243,0.25)", action: "float" as const },
     { icon: Users, label: "Agents", bg: "rgba(76,175,80,0.12)", ring: "1px solid rgba(76,175,80,0.25)", action: "agents" as const },
-    { icon: ArrowRightLeft, label: "B2B Send", bg: "rgba(233,30,99,0.12)", ring: "1px solid rgba(233,30,99,0.25)", path: "/agent/b2b" },
-    { icon: MapPin, label: "Territory", bg: "rgba(255,87,34,0.12)", ring: "1px solid rgba(255,87,34,0.25)", action: "territory" as const },
+    { icon: ListChecks, label: "Agent Txns", bg: "rgba(103,58,183,0.12)", ring: "1px solid rgba(103,58,183,0.25)", action: "agentTxns" as const },
+    { icon: Banknote, label: "Settle", bg: "rgba(0,150,136,0.12)", ring: "1px solid rgba(0,150,136,0.25)", action: "settle" as const },
     { icon: TrendingUp, label: "Earnings", bg: "rgba(0,188,212,0.12)", ring: "1px solid rgba(0,188,212,0.25)", action: "earnings" as const },
     { icon: History, label: "History", bg: "rgba(255,193,7,0.12)", ring: "1px solid rgba(255,193,7,0.25)", path: "/agent/history" },
     { icon: Headphones, label: "Support", bg: "rgba(120,120,140,0.12)", ring: "1px solid rgba(120,120,140,0.25)", action: "support" as const },
@@ -282,8 +315,9 @@ const DistributorDashboard = () => {
       if (item.action === "float") setFloatSheet(true);
       else if (item.action === "support") setSupportOpen(true);
       else if (item.action === "agents") setSubView("agents");
-      else if (item.action === "territory") setSubView("territory");
       else if (item.action === "earnings") setSubView("earnings");
+      else if (item.action === "agentTxns") setSubView("agentTxns");
+      else if (item.action === "settle") setSettleSheet(true);
     }
   };
 
@@ -523,6 +557,13 @@ const DistributorDashboard = () => {
             </motion.div>
           )}
 
+          {/* ═══ Agent Txns Sub-View ═══ */}
+          {subView === "agentTxns" && (
+            <motion.div key="agentTxns" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
+              <AgentTxnsView agents={agents} />
+            </motion.div>
+          )}
+
           {/* ═══ Earnings Sub-View ═══ */}
           {subView === "earnings" && (
             <motion.div key="earnings" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
@@ -671,6 +712,79 @@ const DistributorDashboard = () => {
         <SheetContent side="bottom" className="rounded-t-3xl h-[80vh]">
           <SheetHeader><SheetTitle className="text-sm">Support</SheetTitle></SheetHeader>
           <div className="mt-4 h-full">{user && <SupportChat userId={user.id} />}</div>
+        </SheetContent>
+      </Sheet>
+
+      {/* ═══ Commission Settlement Sheet ═══ */}
+      <Sheet open={settleSheet} onOpenChange={v => { setSettleSheet(v); if (!v) setSettleAgent(null); }}>
+        <SheetContent side="bottom" className="rounded-t-3xl pb-8 max-h-[80vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="text-base flex items-center gap-2"><Banknote size={16} className="text-primary" /> Commission Settlement</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 space-y-4">
+            {settleAgent ? (
+              <>
+                <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
+                      <Building2 size={18} className="text-primary-foreground" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-foreground">{settleAgent.business_name || "Agent"}</p>
+                      <p className="text-[10px] text-muted-foreground">{settleAgent.territory_code || "—"}</p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => setSettleAgent(null)} className="h-7 text-[10px]">Change</Button>
+                  </div>
+                </div>
+
+                <Card className="p-4 border-0 shadow-card">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">Accumulated Commission</p>
+                  <p className="text-2xl font-extrabold text-foreground">৳{fmt(settleAgent.commission_earned)}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">This amount will be transferred to the agent's wallet and their commission counter will be reset to zero.</p>
+                </Card>
+
+                <Button
+                  onClick={settleCommission}
+                  disabled={settleAgent.commission_earned <= 0 || settleProcessing}
+                  className="w-full gradient-primary text-primary-foreground rounded-xl h-11"
+                >
+                  {settleProcessing ? "Processing…" : `Settle ৳${fmt(settleAgent.commission_earned)}`}
+                </Button>
+
+                {settleAgent.commission_earned <= 0 && (
+                  <p className="text-xs text-muted-foreground text-center">No pending commission to settle</p>
+                )}
+              </>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground mb-2">Select an agent to settle commission:</p>
+                {agents.filter(a => a.commission_earned > 0).length === 0 ? (
+                  <div className="text-center py-8">
+                    <CheckCircle2 size={28} className="text-primary mx-auto mb-2" />
+                    <p className="text-xs text-muted-foreground">All commissions are settled!</p>
+                  </div>
+                ) : (
+                  agents.filter(a => a.commission_earned > 0).sort((a, b) => b.commission_earned - a.commission_earned).map(ag => (
+                    <button key={ag.id} onClick={() => setSettleAgent(ag)} className="w-full flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/50 press-effect">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
+                          <Building2 size={14} className="text-primary-foreground" />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-xs font-semibold text-foreground">{ag.business_name || "Agent"}</p>
+                          <p className="text-[9px] text-muted-foreground">{ag.territory_code || "—"}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs font-bold text-primary">৳{fmt(ag.commission_earned)}</p>
+                        <ChevronRight size={12} className="text-muted-foreground" />
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
         </SheetContent>
       </Sheet>
     </div>
@@ -880,6 +994,174 @@ const EarningsView = ({ distInfo, agents }: { distInfo: DistInfo | null; agents:
           </div>
         )}
       </Card>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* ── Agent Transactions View ── */
+const AgentTxnsView = ({ agents }: { agents: AgentRow[] }) => {
+  const [selectedAgent, setSelectedAgent] = useState<AgentRow | null>(null);
+  const [txns, setTxns] = useState<any[]>([]);
+  const [loadingTxns, setLoadingTxns] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const loadAgentTxns = useCallback(async (agentUserId: string) => {
+    setLoadingTxns(true);
+    const { data } = await supabase
+      .from("transactions")
+      .select("*")
+      .eq("user_id", agentUserId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    setTxns(data ?? []);
+    setLoadingTxns(false);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedAgent) return;
+    loadAgentTxns(selectedAgent.user_id);
+
+    // Realtime subscription for selected agent's txns
+    const channel = supabase
+      .channel(`agent-txn-monitor-${selectedAgent.user_id}`)
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "transactions",
+        filter: `user_id=eq.${selectedAgent.user_id}`,
+      }, () => {
+        loadAgentTxns(selectedAgent.user_id);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [selectedAgent, loadAgentTxns]);
+
+  const txnColors: Record<string, string> = {
+    send: "text-destructive",
+    cashout: "text-destructive",
+    cashin: "text-primary",
+    receive: "text-primary",
+    payment: "text-destructive",
+    recharge: "text-destructive",
+    paybill: "text-destructive",
+    addmoney: "text-primary",
+    banktransfer: "text-destructive",
+    chargeback: "text-destructive",
+  };
+
+  const filteredTxns = txns.filter(t =>
+    !search ||
+    (t.recipient_name || "").toLowerCase().includes(search.toLowerCase()) ||
+    (t.recipient_phone || "").includes(search) ||
+    (t.short_id || "").toLowerCase().includes(search.toLowerCase()) ||
+    (t.type || "").toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+        <ListChecks size={14} className="text-primary" /> Agent Transaction Monitor
+      </h3>
+
+      {!selectedAgent ? (
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">Select an agent to monitor transactions:</p>
+          {agents.length === 0 ? (
+            <Card className="p-8 border-0 shadow-card text-center">
+              <Users size={28} className="text-muted-foreground mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">No agents in your network</p>
+            </Card>
+          ) : (
+            agents.map(ag => (
+              <button key={ag.id} onClick={() => setSelectedAgent(ag)} className="w-full flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/50 press-effect">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
+                    <Building2 size={14} className="text-primary-foreground" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-xs font-semibold text-foreground">{ag.business_name || "Agent"}</p>
+                    <Badge className={`text-[8px] px-1.5 py-0 ${statusColor[ag.status]}`}>{ag.status}</Badge>
+                  </div>
+                </div>
+                <ChevronRight size={14} className="text-muted-foreground" />
+              </button>
+            ))
+          )}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {/* Agent header */}
+          <div className="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/20">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
+                <Building2 size={14} className="text-primary-foreground" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-foreground">{selectedAgent.business_name || "Agent"}</p>
+                <p className="text-[9px] text-muted-foreground">{selectedAgent.territory_code || "—"} · {txns.length} txns loaded</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => loadAgentTxns(selectedAgent.user_id)}>
+                <RefreshCw size={12} />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => { setSelectedAgent(null); setTxns([]); }} className="h-7 text-[10px]">Back</Button>
+            </div>
+          </div>
+
+          {/* Realtime badge */}
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            <span className="text-[10px] text-muted-foreground">Live monitoring</span>
+          </div>
+
+          {/* Search */}
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder="Search by name, phone, ID, type..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 rounded-xl h-9 text-xs" />
+          </div>
+
+          {/* Transaction list */}
+          {loadingTxns ? (
+            <div className="flex justify-center py-8">
+              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
+            </div>
+          ) : filteredTxns.length === 0 ? (
+            <Card className="p-6 border-0 shadow-card text-center">
+              <FileText size={24} className="text-muted-foreground mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">{search ? "No matching transactions" : "No transactions yet"}</p>
+            </Card>
+          ) : (
+            <div className="space-y-1.5">
+              {filteredTxns.map(t => (
+                <Card key={t.id} className="p-3 border-0 shadow-card">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[8px] capitalize">{t.type}</Badge>
+                        <span className="text-[9px] text-muted-foreground font-mono">{t.short_id}</span>
+                        <Badge variant="outline" className={`text-[8px] ${t.status === "completed" ? "text-primary border-primary/30" : t.status === "reversed" ? "text-destructive border-destructive/30" : "text-accent border-accent/30"}`}>{t.status}</Badge>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1 truncate">
+                        {t.recipient_name || t.recipient_phone || t.description || "—"}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0 ml-2">
+                      <p className={`text-sm font-bold ${txnColors[t.type] || "text-foreground"}`}>
+                        {["receive", "cashin", "addmoney"].includes(t.type) ? "+" : "−"}৳{fmt(t.amount)}
+                      </p>
+                      {t.commission > 0 && <p className="text-[9px] text-primary">+৳{fmt(t.commission)} comm</p>}
+                      <p className="text-[9px] text-muted-foreground">{new Date(t.created_at).toLocaleTimeString()}</p>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
