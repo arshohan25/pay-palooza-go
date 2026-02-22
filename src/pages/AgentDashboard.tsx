@@ -200,7 +200,8 @@ const AgentDashboard = () => {
   const quickActions = [
     { icon: ArrowDownToLine, label: "Cash In", gradient: "gradient-cashout", path: "/agent/cashin" },
     { icon: ArrowRightLeft, label: "B2B Send", gradient: "gradient-accent", path: "/agent/b2b" },
-    { icon: UserPlus, label: "Register", gradient: "gradient-addmoney", path: "/agent/register" },
+    { icon: Banknote, label: "Bank", gradient: "gradient-addmoney", path: "/agent/bank" },
+    { icon: UserPlus, label: "Register", gradient: "gradient-primary", path: "/agent/register" },
     { icon: Receipt, label: "Bill Pay", gradient: "gradient-payment", path: "/agent/billpay" },
   ];
 
@@ -306,8 +307,8 @@ const AgentDashboard = () => {
       </div>
 
       <div className="max-w-xl mx-auto px-4 mt-5 space-y-5">
-        {/* ── Quick Actions → navigate to separate pages ── */}
-        <div className="grid grid-cols-4 gap-3">
+        {/* ── Quick Actions → scrollable row ── */}
+        <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
           {quickActions.map((item, i) => (
             <motion.button
               key={item.label}
@@ -317,12 +318,12 @@ const AgentDashboard = () => {
               animate="visible"
               whileTap={{ scale: 0.92 }}
               onClick={() => navigate(item.path)}
-              className="flex flex-col items-center gap-2 py-4 rounded-2xl bg-card shadow-card press-effect hover:shadow-elevated transition-shadow"
+              className="flex flex-col items-center gap-2 py-4 min-w-[72px] rounded-2xl bg-card shadow-card press-effect hover:shadow-elevated transition-shadow shrink-0"
             >
               <div className={`w-11 h-11 rounded-xl ${item.gradient} flex items-center justify-center shadow-sm`}>
                 <item.icon size={18} className="text-primary-foreground" />
               </div>
-              <span className="text-[10px] font-bold text-muted-foreground leading-tight">{item.label}</span>
+              <span className="text-[10px] font-bold text-muted-foreground leading-tight whitespace-nowrap">{item.label}</span>
             </motion.button>
           ))}
         </div>
