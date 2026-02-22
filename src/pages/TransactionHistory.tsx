@@ -75,9 +75,9 @@ const relativeDate = (iso: string) => {
   return format(d, "dd MMM yyyy · h:mm a");
 };
 
-interface TransactionHistoryProps { onClose?: () => void; onRefresh?: () => void; }
+interface TransactionHistoryProps { onClose?: () => void; onRefresh?: () => void; filterTypes?: TxCategory[]; }
 
-const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => {
+const TransactionHistory = ({ onClose, onRefresh, filterTypes }: TransactionHistoryProps) => {
   const { t } = useI18n();
   const { transactions: dbTxns, loading: txLoading, refetch } = useTransactions();
   const [activeTab, setActiveTab] = useState<TxCategory>("all");
@@ -94,20 +94,22 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
 
   // Map DB transactions to local Transaction shape
   const allTransactions: Transaction[] = useMemo(() =>
-    dbTxns.map((t) => {
-      const cfg = TX_ICON_MAP[t.type as Exclude<TxCategory, "all">];
-      const label = CATEGORIES.find((c) => c.id === t.type)?.label ?? t.type;
-      const isCredit = t.type === "addmoney" || t.type === "receive" || t.type === "cashin";
-      return {
-        id: t.id,
-        short_id: t.short_id || t.id.slice(0, 12).toUpperCase(),
-        category: t.type as Exclude<TxCategory, "all">,
-        name: t.recipient_name || t.description || label,
-        detail: t.description || label,
-        date: t.created_at,
-        amount: isCredit ? t.amount : -t.amount,
-      };
-    }), [dbTxns]);
+    dbTxns
+      .filter((t) => !filterTypes || filterTypes.includes(t.type as TxCategory))
+      .map((t) => {
+        const cfg = TX_ICON_MAP[t.type as Exclude<TxCategory, "all">];
+        const label = CATEGORIES.find((c) => c.id === t.type)?.label ?? t.type;
+        const isCredit = t.type === "addmoney" || t.type === "receive" || t.type === "cashin";
+        return {
+          id: t.id,
+          short_id: t.short_id || t.id.slice(0, 12).toUpperCase(),
+          category: t.type as Exclude<TxCategory, "all">,
+          name: t.recipient_name || t.description || label,
+          detail: t.description || label,
+          date: t.created_at,
+          amount: isCredit ? t.amount : -t.amount,
+        };
+      }), [dbTxns, filterTypes]);
 
   const triggerRefresh = () => {
     if (isRefreshing) return;
@@ -311,7 +313,7 @@ const TransactionHistory = ({ onClose, onRefresh }: TransactionHistoryProps) => 
           className="flex gap-1.5 overflow-x-auto pb-1"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
-          {CATEGORIES.map((cat) => {
+          {CATEGORIES.filter((cat) => !filterTypes || cat.id === "all" || filterTypes.includes(cat.id)).map((cat) => {
             const active = activeTab === cat.id;
             return (
               <motion.button
