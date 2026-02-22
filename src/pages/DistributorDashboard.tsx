@@ -22,6 +22,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "rec
 import { haptics } from "@/lib/haptics";
 import SupportChat from "@/components/SupportChat";
 import ShareReceiptSheet, { ReceiptData } from "@/components/ShareReceiptSheet";
+import TransactionHistory from "./TransactionHistory";
 
 /* ─── Types ─── */
 interface DistInfo {
@@ -85,7 +86,7 @@ const DistributorDashboard = () => {
   const [floatAmount, setFloatAmount] = useState("");
   const [floatProcessing, setFloatProcessing] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
-  const [subView, setSubView] = useState<"home" | "agents" | "territory" | "earnings" | "agentTxns">("home");
+  const [subView, setSubView] = useState<"home" | "agents" | "territory" | "earnings" | "agentTxns" | "history">("home");
   const [settleSheet, setSettleSheet] = useState(false);
   const [settleAgent, setSettleAgent] = useState<AgentRow | null>(null);
   const [settleProcessing, setSettleProcessing] = useState(false);
@@ -303,7 +304,7 @@ const DistributorDashboard = () => {
     { icon: ListChecks, label: "Agent Txns", bg: "rgba(103,58,183,0.12)", ring: "1px solid rgba(103,58,183,0.25)", action: "agentTxns" as const },
     { icon: Banknote, label: "Settle", bg: "rgba(0,150,136,0.12)", ring: "1px solid rgba(0,150,136,0.25)", action: "settle" as const },
     { icon: TrendingUp, label: "Earnings", bg: "rgba(0,188,212,0.12)", ring: "1px solid rgba(0,188,212,0.25)", action: "earnings" as const },
-    { icon: History, label: "History", bg: "rgba(255,193,7,0.12)", ring: "1px solid rgba(255,193,7,0.25)", path: "/agent/history" },
+    { icon: History, label: "History", bg: "rgba(255,193,7,0.12)", ring: "1px solid rgba(255,193,7,0.25)", action: "history" as const },
     { icon: Headphones, label: "Support", bg: "rgba(120,120,140,0.12)", ring: "1px solid rgba(120,120,140,0.25)", action: "support" as const },
   ];
 
@@ -318,6 +319,7 @@ const DistributorDashboard = () => {
       else if (item.action === "earnings") setSubView("earnings");
       else if (item.action === "agentTxns") setSubView("agentTxns");
       else if (item.action === "settle") setSettleSheet(true);
+      else if (item.action === "history") setSubView("history");
     }
   };
 
@@ -561,6 +563,13 @@ const DistributorDashboard = () => {
           {subView === "agentTxns" && (
             <motion.div key="agentTxns" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
               <AgentTxnsView agents={agents} />
+            </motion.div>
+          )}
+
+          {/* ═══ History Sub-View ═══ */}
+          {subView === "history" && (
+            <motion.div key="history" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
+              <TransactionHistory filterTypes={["send", "receive", "cashin", "cashout", "banktransfer", "addmoney"]} />
             </motion.div>
           )}
 
