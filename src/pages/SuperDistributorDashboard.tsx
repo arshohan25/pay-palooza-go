@@ -21,6 +21,7 @@ import { useNavigate } from "react-router-dom";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { haptics } from "@/lib/haptics";
 import SupportChat from "@/components/SupportChat";
+import TransactionHistory from "./TransactionHistory";
 
 /* ─── Types ─── */
 interface DistRow {
@@ -89,7 +90,7 @@ const SuperDistributorDashboard = () => {
   const [txnCount, setTxnCount] = useState(0);
 
   // Sub-views
-  const [subView, setSubView] = useState<"home" | "distributors" | "agents" | "alerts" | "analytics" | "distTxns" | "settle" | "reconcile">("home");
+  const [subView, setSubView] = useState<"home" | "distributors" | "agents" | "alerts" | "analytics" | "distTxns" | "settle" | "reconcile" | "history">("home");
 
   // Sheets
   const [distDetailSheet, setDistDetailSheet] = useState<DistRow | null>(null);
@@ -275,6 +276,7 @@ const SuperDistributorDashboard = () => {
     { icon: Banknote, label: "Settle", bg: "rgba(0,150,136,0.12)", ring: "1px solid rgba(0,150,136,0.25)", action: "settle" as const },
     { icon: FileBarChart, label: "Reconcile", bg: "rgba(255,152,0,0.12)", ring: "1px solid rgba(255,152,0,0.25)", action: "reconcile" as const },
     { icon: BarChart3, label: "Analytics", bg: "rgba(0,188,212,0.12)", ring: "1px solid rgba(0,188,212,0.25)", action: "analytics" as const },
+    { icon: History, label: "History", bg: "rgba(255,193,7,0.12)", ring: "1px solid rgba(255,193,7,0.25)", action: "history" as const },
     { icon: AlertTriangle, label: "Alerts", bg: "rgba(244,67,54,0.12)", ring: "1px solid rgba(244,67,54,0.25)", action: "alerts" as const },
     { icon: Headphones, label: "Support", bg: "rgba(120,120,140,0.12)", ring: "1px solid rgba(120,120,140,0.25)", action: "support" as const },
   ];
@@ -291,6 +293,7 @@ const SuperDistributorDashboard = () => {
       else if (item.action === "distTxns") setSubView("distTxns");
       else if (item.action === "settle") setSubView("settle");
       else if (item.action === "reconcile") setSubView("reconcile");
+      else if (item.action === "history") setSubView("history");
     }
   };
 
@@ -303,6 +306,19 @@ const SuperDistributorDashboard = () => {
   if (subView === "distTxns") return <DistTxnsView distributors={distributors} onBack={() => setSubView("home")} />;
   if (subView === "settle") return <SettleView distributors={distributors} balance={balance} onBack={() => setSubView("home")} onRefresh={loadData} toast={toast} />;
   if (subView === "reconcile") return <ReconcileView distributors={distributors} userId={user!.id} onBack={() => setSubView("home")} />;
+  if (subView === "history") return (
+    <div className="min-h-screen bg-background pb-6">
+      <header className="px-4 pt-5 pb-4" style={{ background: "linear-gradient(150deg, hsl(270 60% 40%) 0%, hsl(285 55% 30%) 100%)" }}>
+        <div className="max-w-xl mx-auto flex items-center gap-3">
+          <button onClick={() => setSubView("home")} className="tap-target text-primary-foreground"><ArrowLeft size={20} /></button>
+          <h1 className="text-base font-bold text-primary-foreground">Transaction History</h1>
+        </div>
+      </header>
+      <div className="max-w-xl mx-auto px-4 mt-4">
+        <TransactionHistory filterTypes={["send", "receive", "cashin", "cashout", "banktransfer", "addmoney"]} />
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-background pb-6">
