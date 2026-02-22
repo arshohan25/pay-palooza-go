@@ -89,7 +89,7 @@ export default function AdminDashboard() {
   const { isAdmin, loading: authLoading } = useAdmin();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
-  useSupportNotifications(activeTab);
+  const { unreadCount: supportUnread } = useSupportNotifications(activeTab);
   const [stats, setStats] = useState<Stats>({ totalUsers: 0, totalTransactions: 0, totalAgents: 0, totalMerchants: 0, openAlerts: 0 });
   const [transactions, setTransactions] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -178,6 +178,11 @@ export default function AdminDashboard() {
                     {stats.openAlerts}
                   </Badge>
                 )}
+                {item.id === "support" && supportUnread > 0 && (
+                  <Badge className="ml-auto text-xs px-1.5 py-0 bg-primary text-primary-foreground">
+                    {supportUnread}
+                  </Badge>
+                )}
               </button>
             ))}
           </div>
@@ -214,9 +219,14 @@ export default function AdminDashboard() {
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="inline-flex w-auto gap-1">
                 {NAV_ITEMS.map(item => (
-                  <TabsTrigger key={item.id} value={item.id} className="text-xs whitespace-nowrap">
+                  <TabsTrigger key={item.id} value={item.id} className="text-xs whitespace-nowrap relative">
                     <item.icon className="w-3.5 h-3.5 mr-1" />
                     {item.label}
+                    {item.id === "support" && supportUnread > 0 && (
+                      <span className="ml-1 min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                        {supportUnread}
+                      </span>
+                    )}
                   </TabsTrigger>
                 ))}
               </TabsList>

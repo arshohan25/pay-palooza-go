@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_canned_replies: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          label: string
+          sort_order: number
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          label: string
+          sort_order?: number
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          label?: string
+          sort_order?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       agents: {
         Row: {
           activated_at: string | null
