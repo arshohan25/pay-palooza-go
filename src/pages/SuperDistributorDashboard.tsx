@@ -89,7 +89,7 @@ const SuperDistributorDashboard = () => {
   const [txnCount, setTxnCount] = useState(0);
 
   // Sub-views
-  const [subView, setSubView] = useState<"home" | "distributors" | "agents" | "alerts" | "analytics">("home");
+  const [subView, setSubView] = useState<"home" | "distributors" | "agents" | "alerts" | "analytics" | "distTxns" | "settle">("home");
 
   // Sheets
   const [distDetailSheet, setDistDetailSheet] = useState<DistRow | null>(null);
@@ -271,10 +271,10 @@ const SuperDistributorDashboard = () => {
     { icon: UserPlus, label: "Create Dist.", bg: "rgba(156,39,176,0.12)", ring: "1px solid rgba(156,39,176,0.25)", path: "/super-distributor/create-distributor" },
     { icon: Send, label: "Float Send", bg: "rgba(33,150,243,0.12)", ring: "1px solid rgba(33,150,243,0.25)", action: "float" as const },
     { icon: Network, label: "Distributors", bg: "rgba(76,175,80,0.12)", ring: "1px solid rgba(76,175,80,0.25)", action: "distributors" as const },
-    { icon: Users, label: "All Agents", bg: "rgba(103,58,183,0.12)", ring: "1px solid rgba(103,58,183,0.25)", action: "agents" as const },
-    { icon: AlertTriangle, label: "Alerts", bg: "rgba(244,67,54,0.12)", ring: "1px solid rgba(244,67,54,0.25)", action: "alerts" as const },
+    { icon: ListChecks, label: "Dist Txns", bg: "rgba(103,58,183,0.12)", ring: "1px solid rgba(103,58,183,0.25)", action: "distTxns" as const },
+    { icon: Banknote, label: "Settle", bg: "rgba(0,150,136,0.12)", ring: "1px solid rgba(0,150,136,0.25)", action: "settle" as const },
     { icon: BarChart3, label: "Analytics", bg: "rgba(0,188,212,0.12)", ring: "1px solid rgba(0,188,212,0.25)", action: "analytics" as const },
-    { icon: History, label: "History", bg: "rgba(255,193,7,0.12)", ring: "1px solid rgba(255,193,7,0.25)", path: "/agent/history" },
+    { icon: AlertTriangle, label: "Alerts", bg: "rgba(244,67,54,0.12)", ring: "1px solid rgba(244,67,54,0.25)", action: "alerts" as const },
     { icon: Headphones, label: "Support", bg: "rgba(120,120,140,0.12)", ring: "1px solid rgba(120,120,140,0.25)", action: "support" as const },
   ];
 
@@ -285,9 +285,10 @@ const SuperDistributorDashboard = () => {
       if (item.action === "float") setFloatSheet(true);
       else if (item.action === "support") setSupportOpen(true);
       else if (item.action === "distributors") setSubView("distributors");
-      else if (item.action === "agents") setSubView("agents");
       else if (item.action === "alerts") setSubView("alerts");
       else if (item.action === "analytics") setSubView("analytics");
+      else if (item.action === "distTxns") setSubView("distTxns");
+      else if (item.action === "settle") setSubView("settle");
     }
   };
 
@@ -297,6 +298,8 @@ const SuperDistributorDashboard = () => {
   if (subView === "agents") return <AllAgentsView agents={agents} distributors={distributors} onBack={() => setSubView("home")} />;
   if (subView === "alerts") return <AlertsView alerts={alerts} onBack={() => setSubView("home")} />;
   if (subView === "analytics") return <AnalyticsView distributors={distributors} agents={agents} alerts={alerts} balance={balance} onBack={() => setSubView("home")} />;
+  if (subView === "distTxns") return <DistTxnsView distributors={distributors} onBack={() => setSubView("home")} />;
+  if (subView === "settle") return <SettleView distributors={distributors} balance={balance} onBack={() => setSubView("home")} onRefresh={loadData} toast={toast} />;
 
   return (
     <div className="min-h-screen bg-background pb-6">
@@ -929,6 +932,298 @@ const AnalyticsView = ({ distributors, agents, alerts, balance, onBack }: {
             </div>
           )}
         </Card>
+      </div>
+    </div>
+  );
+};
+
+/* ── Distributor Transaction Monitoring Sub-View ── */
+const DistTxnsView = ({ distributors, onBack }: { distributors: DistRow[]; onBack: () => void }) => {
+  const [selectedDist, setSelectedDist] = useState<DistRow | null>(null);
+  const [txns, setTxns] = useState<any[]>([]);
+  const [txnLoading, setTxnLoading] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const loadDistTxns = useCallback(async (userId: string) => {
+    setTxnLoading(true);
+    const { data } = await supabase
+      .from("transactions")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    setTxns(data ?? []);
+    setTxnLoading(false);
+  }, []);
+
+  // Realtime subscription
+  useEffect(() => {
+    if (!selectedDist) return;
+    loadDistTxns(selectedDist.user_id);
+    const channel = supabase
+      .channel(`sd-dist-txn-monitor-${selectedDist.user_id}`)
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "transactions",
+        filter: `user_id=eq.${selectedDist.user_id}`,
+      }, () => {
+        loadDistTxns(selectedDist.user_id);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [selectedDist, loadDistTxns]);
+
+  const filteredTxns = txns.filter(t =>
+    !search ||
+    (t.recipient_name || "").toLowerCase().includes(search.toLowerCase()) ||
+    (t.recipient_phone || "").includes(search) ||
+    (t.short_id || "").toLowerCase().includes(search.toLowerCase()) ||
+    (t.type || "").toLowerCase().includes(search.toLowerCase())
+  );
+
+  const txnTypeColor: Record<string, string> = {
+    send: "text-destructive", receive: "text-primary", cashout: "text-accent",
+    cashin: "text-primary", addmoney: "text-primary", payment: "text-destructive",
+    recharge: "text-destructive", paybill: "text-destructive", banktransfer: "text-accent",
+  };
+
+  return (
+    <div className="min-h-screen bg-background pb-6">
+      <header className="px-4 pt-5 pb-4" style={{ background: "linear-gradient(150deg, hsl(270 60% 40%) 0%, hsl(285 55% 30%) 100%)" }}>
+        <div className="max-w-xl mx-auto flex items-center gap-3">
+          <button onClick={selectedDist ? () => setSelectedDist(null) : onBack} className="tap-target text-primary-foreground"><ArrowLeft size={20} /></button>
+          <h1 className="text-base font-bold text-primary-foreground">{selectedDist ? selectedDist.business_name : "Distributor Transactions"}</h1>
+        </div>
+      </header>
+      <div className="max-w-xl mx-auto px-4 mt-4 space-y-4">
+        {!selectedDist ? (
+          <>
+            <p className="text-xs text-muted-foreground">Select a distributor to view their transactions in real-time</p>
+            <div className="space-y-2">
+              {distributors.map(d => (
+                <button key={d.id} onClick={() => setSelectedDist(d)} className="w-full flex items-center justify-between p-3 rounded-xl bg-card border border-border/50 press-effect shadow-card">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(156,39,176,0.12)" }}>
+                      <Network size={14} className="text-foreground" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-xs font-semibold text-foreground">{d.business_name}</p>
+                      <p className="text-[9px] text-muted-foreground">{(d.territory ?? []).join(", ") || "—"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className={`text-[9px] ${statusColor[d.status]}`}>{d.status}</Badge>
+                    <ChevronRight size={14} className="text-muted-foreground" />
+                  </div>
+                </button>
+              ))}
+              {distributors.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">No distributors in network</p>}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input placeholder="Search by name, phone, ID, type…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9 text-xs" />
+            </div>
+            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span>Live — updates automatically</span>
+              <Badge variant="secondary" className="text-[9px] ml-auto">{txns.length} txns</Badge>
+            </div>
+            {txnLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : filteredTxns.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-8">No transactions found</p>
+            ) : (
+              <div className="space-y-2">
+                {filteredTxns.map(t => (
+                  <Card key={t.id} className="p-3 border-0 shadow-card">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-[10px] font-bold capitalize ${txnTypeColor[t.type] || "text-foreground"}`}>{t.type}</span>
+                          <span className="text-[9px] text-muted-foreground">#{t.short_id}</span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{t.recipient_name || t.recipient_phone || t.description || "—"}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-xs font-bold ${["receive", "cashin", "addmoney"].includes(t.type) ? "text-primary" : "text-foreground"}`}>
+                          {["receive", "cashin", "addmoney"].includes(t.type) ? "+" : "-"}৳{fmt(t.amount)}
+                        </p>
+                        <p className="text-[9px] text-muted-foreground">{new Date(t.created_at).toLocaleTimeString()}</p>
+                      </div>
+                    </div>
+                    {t.fee > 0 && <p className="text-[9px] text-muted-foreground mt-1">Fee: ৳{fmt(t.fee)} · Balance: ৳{fmt(t.balance_after ?? 0)}</p>}
+                  </Card>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ── Commission Settlement Sub-View ── */
+const SettleView = ({ distributors, balance, onBack, onRefresh, toast }: {
+  distributors: DistRow[]; balance: number; onBack: () => void; onRefresh: () => void; toast: any;
+}) => {
+  const [processing, setProcessing] = useState(false);
+  const [settleAmount, setSettleAmount] = useState("");
+  const [selectedDist, setSelectedDist] = useState<DistRow | null>(null);
+  const [distBalances, setDistBalances] = useState<Record<string, { balance: number; phone: string }>>({});
+  const [loadingBalances, setLoadingBalances] = useState(true);
+
+  // Load distributor balances + phones
+  useEffect(() => {
+    const load = async () => {
+      setLoadingBalances(true);
+      const userIds = distributors.map(d => d.user_id);
+      if (userIds.length === 0) { setLoadingBalances(false); return; }
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, balance, phone")
+        .in("user_id", userIds);
+      const map: Record<string, { balance: number; phone: string }> = {};
+      (data ?? []).forEach(p => { map[p.user_id] = { balance: p.balance, phone: p.phone }; });
+      setDistBalances(map);
+      setLoadingBalances(false);
+    };
+    load();
+  }, [distributors]);
+
+  const settleCommission = async () => {
+    if (!selectedDist || processing) return;
+    setProcessing(true);
+    try {
+      const distProfile = distBalances[selectedDist.user_id];
+      if (!distProfile) throw new Error("Distributor profile not found");
+      const amount = Number(settleAmount);
+      if (!amount || amount <= 0) throw new Error("Enter a valid amount");
+      if (amount > balance) throw new Error("Insufficient float balance");
+
+      const { error } = await supabase.rpc("transfer_money", {
+        p_recipient_phone: distProfile.phone,
+        p_amount: amount,
+        p_fee: 0,
+        p_type: "send" as any,
+        p_description: `Commission settlement for ${selectedDist.business_name}`,
+        p_reference: `CS-SD-${Date.now()}`,
+      });
+      if (error) throw error;
+
+      toast({ title: "Settled", description: `৳${fmt(amount)} commission paid to ${selectedDist.business_name}` });
+      setSelectedDist(null);
+      setSettleAmount("");
+      onRefresh();
+    } catch (err: any) {
+      toast({ title: "Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const activeDists = distributors.filter(d => d.status === "active");
+  const totalNetworkCommission = activeDists.reduce((s, d) => s + (d.commission_rate * 100), 0);
+
+  return (
+    <div className="min-h-screen bg-background pb-6">
+      <header className="px-4 pt-5 pb-4" style={{ background: "linear-gradient(150deg, hsl(270 60% 40%) 0%, hsl(285 55% 30%) 100%)" }}>
+        <div className="max-w-xl mx-auto flex items-center gap-3">
+          <button onClick={selectedDist ? () => setSelectedDist(null) : onBack} className="tap-target text-primary-foreground"><ArrowLeft size={20} /></button>
+          <h1 className="text-base font-bold text-primary-foreground">Commission Settlement</h1>
+        </div>
+      </header>
+      <div className="max-w-xl mx-auto px-4 mt-4 space-y-4">
+        {/* Summary Card */}
+        <Card className="p-4 border-0 shadow-card">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-center">
+              <p className="text-[9px] text-muted-foreground">Your Float</p>
+              <p className="text-sm font-bold text-foreground">৳{fmt(balance)}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-accent/5 border border-accent/20 text-center">
+              <p className="text-[9px] text-muted-foreground">Active Distributors</p>
+              <p className="text-sm font-bold text-foreground">{activeDists.length}</p>
+            </div>
+          </div>
+        </Card>
+
+        {!selectedDist ? (
+          <>
+            <p className="text-xs text-muted-foreground">Select a distributor to settle commission</p>
+            {loadingBalances ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {activeDists.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-8">No active distributors</p>
+                ) : (
+                  activeDists.map(d => {
+                    const db = distBalances[d.user_id];
+                    return (
+                      <button key={d.id} onClick={() => setSelectedDist(d)} className="w-full flex items-center justify-between p-3 rounded-xl bg-card border border-border/50 press-effect shadow-card">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(0,150,136,0.12)" }}>
+                            <Banknote size={14} className="text-foreground" />
+                          </div>
+                          <div className="text-left">
+                            <p className="text-xs font-semibold text-foreground">{d.business_name}</p>
+                            <p className="text-[9px] text-muted-foreground">Rate: {(d.commission_rate * 100).toFixed(2)}% · Balance: ৳{fmt(db?.balance ?? 0)}</p>
+                          </div>
+                        </div>
+                        <ChevronRight size={14} className="text-muted-foreground" />
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </>
+        ) : (
+          <Card className="p-5 border-0 shadow-card space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "rgba(0,150,136,0.12)" }}>
+                <Banknote size={20} className="text-foreground" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-foreground">{selectedDist.business_name}</p>
+                <p className="text-[10px] text-muted-foreground">Commission Rate: {(selectedDist.commission_rate * 100).toFixed(2)}%</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="p-2.5 rounded-xl bg-muted/50 text-center">
+                <p className="text-[9px] text-muted-foreground">Dist. Balance</p>
+                <p className="text-sm font-bold text-foreground">৳{fmt(distBalances[selectedDist.user_id]?.balance ?? 0)}</p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-muted/50 text-center">
+                <p className="text-[9px] text-muted-foreground">Max Float</p>
+                <p className="text-sm font-bold text-foreground">৳{fmt(selectedDist.max_float)}</p>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs">Settlement Amount (৳)</Label>
+              <Input type="text" inputMode="numeric" placeholder="Enter commission amount" value={settleAmount} onChange={e => setSettleAmount(e.target.value.replace(/\D/g, ""))} />
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {[5000, 10000, 25000, 50000].map(a => (
+                <button key={a} onClick={() => setSettleAmount(String(a))} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-muted text-muted-foreground press-effect">৳{fmt(a)}</button>
+              ))}
+            </div>
+            <Button onClick={settleCommission} disabled={!settleAmount || Number(settleAmount) <= 0 || processing} className="w-full text-primary-foreground" style={{ background: "linear-gradient(135deg, hsl(270 60% 45%), hsl(285 55% 35%))" }}>
+              {processing ? "Settling…" : `Settle ৳${settleAmount ? fmt(Number(settleAmount)) : "0"}`}
+            </Button>
+          </Card>
+        )}
       </div>
     </div>
   );
