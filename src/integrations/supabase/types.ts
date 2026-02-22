@@ -646,6 +646,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_reverse_chargeback: {
+        Args: { p_chargeback_txn_id: string; p_reason: string }
+        Returns: Json
+      }
       generate_short_id: { Args: never; Returns: string }
       has_role: {
         Args: {
