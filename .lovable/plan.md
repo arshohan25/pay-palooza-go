@@ -1,33 +1,42 @@
 
 
-## Real-Time Fraud Alert Notifications for Admins
+## Admin User Activity Monitor -- Full End-to-End Visibility
 
-### What This Does
-When a new fraud alert is created in the system, any admin currently on the Admin Dashboard will instantly receive a toast notification with the alert details -- no need to manually refresh.
+### Overview
+Replace the current basic Transactions table with a comprehensive **Activity Monitor** that gives admins complete visibility into every user's activity across the system -- sender details, receiver details, transaction IDs, timestamps, fees, commissions, balances, and more.
 
-### How It Works
-- Subscribe to real-time `INSERT` events on the `fraud_alerts` table when the Admin Dashboard mounts
-- Display a sonner toast with the alert severity, rule triggered, and a prompt to check the Fraud tab
-- Auto-refresh the fraud alerts list when a new alert arrives
-- Clean up the subscription when leaving the dashboard
+### What Changes
+
+**1. New component: `src/components/admin/AdminActivityMonitor.tsx`**
+
+A dedicated activity monitoring component that replaces the current inline transactions table in the "Transactions" tab. Features:
+
+- **Rich table columns**: Short ID, Type, Sender (name + phone, resolved from `profiles`), Receiver (name + phone), Amount, Fee, Commission, Balance After, Status, Date-Time
+- **Expandable row detail**: Click any row to see a full detail panel with:
+  - Complete Transaction ID (UUID) and Short ID
+  - Sender name, phone, user ID
+  - Recipient name, phone
+  - Description, Reference
+  - Fee breakdown (fee, commission, balance after)
+  - Exact timestamp with full date-time
+- **Filters**: Filter by transaction type (send, receive, cashout, etc.), status (completed, pending, failed, reversed), and date range
+- **Search**: Search by phone number, name, transaction ID, or short ID
+- **Sender profile resolution**: Joins `profiles` table using `user_id` to show sender name and phone alongside each transaction
+- **Pagination**: Load more button for browsing beyond initial 100 records
+- **Real-time updates**: Subscribe to new transaction inserts to keep the list live
+
+**2. Update `src/pages/AdminDashboard.tsx`**
+- Import and render `AdminActivityMonitor` in the "transactions" tab instead of the current inline table
+- Remove the inline transactions table code
+
+**3. Update `src/hooks/use-admin.ts`**
+- Add `fetchAllTransactions()` helper that fetches transactions with higher limit (200) and all columns needed for the activity view
 
 ### Technical Details
 
-**File: `src/pages/AdminDashboard.tsx`**
-
-1. Add a Supabase Realtime channel subscription inside a `useEffect` that:
-   - Listens for `postgres_changes` with `event: 'INSERT'` on `public.fraud_alerts`
-   - On each new alert, fires a `toast.warning()` or `toast.error()` (based on severity) showing the rule name and severity
-   - Calls the existing `loadData()` / stats refresh to update the open alerts count in the stat cards
-2. Unsubscribe from the channel on component unmount
-
-**File: `src/components/admin/AdminFraudAlerts.tsx`**
-
-1. Add a Realtime subscription for `INSERT` events on `fraud_alerts`
-2. When a new alert arrives, prepend it to the local `alerts` state (avoiding a full refetch) and update the profiles map if the user is new
-3. Play the existing two-tone chime sound (reuse pattern from support notifications) for critical/high severity alerts
-4. Clean up subscription on unmount
-
-### No Database Changes Required
-Realtime is already enabled for `fraud_alerts` and RLS policies already allow admin/compliance users to see all alerts.
+- Sender info is resolved by fetching all unique `user_id` values from the transactions batch and querying `profiles` in bulk (same pattern used in `AdminFraudAlerts.tsx`)
+- The expandable row uses `framer-motion` AnimatePresence for smooth open/close (existing pattern)
+- Type filter uses a row of small buttons (existing pattern from fraud alerts status filter)
+- Date-time displayed in full format: "Feb 22, 2026, 03:45 PM"
+- No database schema changes required -- all data already exists in the `transactions` and `profiles` tables with admin RLS policies in place
 
