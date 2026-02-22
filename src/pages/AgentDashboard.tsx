@@ -15,6 +15,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import SupportChat from "@/components/SupportChat";
+import { MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -59,6 +61,7 @@ const AgentDashboard = () => {
   // Float Request & Support sheets
   const [floatSheetOpen, setFloatSheetOpen] = useState(false);
   const [supportSheetOpen, setSupportSheetOpen] = useState(false);
+  const [supportTab, setSupportTab] = useState<"faq" | "chat">("faq");
   const [floatAmount, setFloatAmount] = useState("");
   const [floatNote, setFloatNote] = useState("");
   const [floatSubmitting, setFloatSubmitting] = useState(false);
@@ -531,39 +534,62 @@ const AgentDashboard = () => {
         </SheetContent>
       </Sheet>
 
-      {/* ── Support Sheet ── */}
+      {/* ── Support Sheet with Live Chat ── */}
       <Sheet open={supportSheetOpen} onOpenChange={setSupportSheetOpen}>
-        <SheetContent side="bottom" className="rounded-t-3xl px-5 pb-8 max-h-[80vh] overflow-y-auto">
-          <SheetHeader className="mb-4">
+        <SheetContent side="bottom" className="rounded-t-3xl px-5 pb-8 max-h-[85vh] overflow-hidden flex flex-col">
+          <SheetHeader className="mb-3">
             <SheetTitle className="text-base font-extrabold">Agent Support</SheetTitle>
           </SheetHeader>
-          <div className="space-y-3">
-            {[
-              { q: "How to request more float?", a: "Tap 'Float Req' from Quick Actions and enter the amount. Your distributor will be notified." },
-              { q: "Cash In transaction failed?", a: "Check your balance and retry. If the issue persists, contact your distributor with the transaction ID." },
-              { q: "How is commission calculated?", a: "You earn 0.499% on every Cash In and Cash Out transaction, credited instantly." },
-              { q: "How to register a new customer?", a: "Tap 'Register' and fill in the customer's phone, name, and NID details." },
-              { q: "Bank transfer not reflecting?", a: "Bank transfers may take 1-2 business days. Check History for status updates." },
-            ].map((faq, i) => (
-              <details key={i} className="group">
-                <summary className="flex items-center justify-between cursor-pointer list-none p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
-                  <span className="text-xs font-semibold text-foreground pr-2">{faq.q}</span>
-                  <ChevronDown size={14} className="text-muted-foreground shrink-0 transition-transform group-open:rotate-180" />
-                </summary>
-                <p className="text-xs text-muted-foreground px-3 pt-2 pb-1 leading-relaxed">{faq.a}</p>
-              </details>
-            ))}
-            <div className="pt-3 border-t border-border/50 space-y-2">
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Need more help?</p>
-              <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" className="rounded-xl h-11 text-xs font-bold gap-2" onClick={() => { window.location.href = "tel:+8801800000000"; }}>
-                  <Phone size={14} /> Call Support
-                </Button>
-                <Button variant="outline" className="rounded-xl h-11 text-xs font-bold gap-2" onClick={() => { window.location.href = "mailto:support@agent.app"; }}>
-                  <Mail size={14} /> Email
-                </Button>
+
+          {/* Tab switcher */}
+          <div className="flex gap-1 p-1 bg-muted/60 rounded-xl mb-4">
+            <button
+              onClick={() => setSupportTab("faq")}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${supportTab === "faq" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <ChevronDown size={13} /> FAQ
+            </button>
+            <button
+              onClick={() => setSupportTab("chat")}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${supportTab === "chat" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <MessageCircle size={13} /> Live Chat
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-hidden">
+            {supportTab === "faq" ? (
+              <div className="space-y-3 overflow-y-auto max-h-[55vh] pr-1">
+                {[
+                  { q: "How to request more float?", a: "Tap 'Float Req' from Quick Actions and enter the amount. Your distributor will be notified." },
+                  { q: "Cash In transaction failed?", a: "Check your balance and retry. If the issue persists, contact your distributor with the transaction ID." },
+                  { q: "How is commission calculated?", a: "You earn 0.499% on every Cash In and Cash Out transaction, credited instantly." },
+                  { q: "How to register a new customer?", a: "Tap 'Register' and fill in the customer's phone, name, and NID details." },
+                  { q: "Bank transfer not reflecting?", a: "Bank transfers may take 1-2 business days. Check History for status updates." },
+                ].map((faq, i) => (
+                  <details key={i} className="group">
+                    <summary className="flex items-center justify-between cursor-pointer list-none p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
+                      <span className="text-xs font-semibold text-foreground pr-2">{faq.q}</span>
+                      <ChevronDown size={14} className="text-muted-foreground shrink-0 transition-transform group-open:rotate-180" />
+                    </summary>
+                    <p className="text-xs text-muted-foreground px-3 pt-2 pb-1 leading-relaxed">{faq.a}</p>
+                  </details>
+                ))}
+                <div className="pt-3 border-t border-border/50 space-y-2">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Need more help?</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" className="rounded-xl h-11 text-xs font-bold gap-2" onClick={() => { window.location.href = "tel:+8801800000000"; }}>
+                      <Phone size={14} /> Call Support
+                    </Button>
+                    <Button variant="outline" className="rounded-xl h-11 text-xs font-bold gap-2" onClick={() => setSupportTab("chat")}>
+                      <MessageCircle size={14} /> Live Chat
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              <SupportChat userId={user!.id} />
+            )}
           </div>
         </SheetContent>
       </Sheet>
