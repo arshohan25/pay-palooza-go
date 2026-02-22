@@ -75,9 +75,9 @@ const relativeDate = (iso: string) => {
   return format(d, "dd MMM yyyy · h:mm a");
 };
 
-interface TransactionHistoryProps { onClose?: () => void; onRefresh?: () => void; filterTypes?: TxCategory[]; agentView?: boolean; }
+interface TransactionHistoryProps { onClose?: () => void; onRefresh?: () => void; filterTypes?: TxCategory[]; agentView?: boolean; customLabels?: Record<string, string>; }
 
-const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView }: TransactionHistoryProps) => {
+const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, customLabels }: TransactionHistoryProps) => {
   const { t } = useI18n();
   const { transactions: dbTxns, loading: txLoading, refetch } = useTransactions();
   const [activeTab, setActiveTab] = useState<TxCategory>("all");
@@ -317,6 +317,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView }: Tran
         >
           {CATEGORIES.filter((cat) => !filterTypes || cat.id === "all" || filterTypes.includes(cat.id)).map((cat) => {
             const active = activeTab === cat.id;
+            const label = customLabels?.[cat.id] ?? cat.label;
             return (
               <motion.button
                 key={cat.id}
@@ -328,7 +329,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView }: Tran
                     : "bg-card border border-border/60 text-muted-foreground hover:text-foreground shadow-xs"
                 }`}
               >
-                {cat.label}
+                {label}
               </motion.button>
             );
           })}
