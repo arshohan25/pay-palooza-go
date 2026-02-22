@@ -22,6 +22,7 @@ import AdminDisputeResolution from "@/components/admin/AdminDisputeResolution";
 import AdminReporting from "@/components/admin/AdminReporting";
 import AdminSupportDashboard from "@/components/admin/AdminSupportDashboard";
 import AdminFeatureLocks from "@/components/admin/AdminFeatureLocks";
+import AdminFraudAlerts from "@/components/admin/AdminFraudAlerts";
 import UserLockDialog from "@/components/admin/UserLockDialog";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 
@@ -578,59 +579,7 @@ export default function AdminDashboard() {
         )}
 
         {/* ═══ FRAUD DETECTION ═══ */}
-        {activeTab === "alerts" && (
-          <Card className="border-0 shadow-[var(--shadow-card)]">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-destructive" /> Fraud Alerts
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-muted-foreground">
-                      <th className="text-left px-4 py-3 font-medium">Rule</th>
-                      <th className="text-left px-4 py-3 font-medium">Severity</th>
-                      <th className="text-left px-4 py-3 font-medium">Status</th>
-                      <th className="text-left px-4 py-3 font-medium hidden md:table-cell">User ID</th>
-                      <th className="text-left px-4 py-3 font-medium">Time</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {alerts.map((alert: any) => (
-                      <tr key={alert.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-3 font-medium text-foreground">{alert.rule_triggered}</td>
-                        <td className="px-4 py-3">
-                          <Badge variant="secondary" className={`text-xs ${SEVERITY_COLORS[alert.severity] ?? ""}`}>
-                            {alert.severity}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge variant="secondary" className={`text-xs ${STATUS_COLORS[alert.status] ?? ""}`}>
-                            {alert.status}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-xs font-mono text-muted-foreground hidden md:table-cell">
-                          {alert.user_id?.slice(0, 8)}…
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground text-xs">
-                          {new Date(alert.created_at).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {alerts.length === 0 && (
-                <div className="text-center py-12">
-                  <ShieldAlert className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-                  <p className="text-muted-foreground text-sm">No fraud alerts — system is clean</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+        {activeTab === "alerts" && <AdminFraudAlerts />}
 
         {/* ═══ CHARGE CONFIGURATION ═══ */}
         {activeTab === "charges" && <AdminChargeConfig />}
