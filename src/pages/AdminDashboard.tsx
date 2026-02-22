@@ -24,6 +24,7 @@ import AdminReporting from "@/components/admin/AdminReporting";
 import AdminSupportDashboard from "@/components/admin/AdminSupportDashboard";
 import AdminFeatureLocks from "@/components/admin/AdminFeatureLocks";
 import AdminFraudAlerts from "@/components/admin/AdminFraudAlerts";
+import AdminActivityMonitor from "@/components/admin/AdminActivityMonitor";
 import UserLockDialog from "@/components/admin/UserLockDialog";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 
@@ -553,58 +554,7 @@ export default function AdminDashboard() {
         )}
 
         {/* ═══ TRANSACTION MONITORING ═══ */}
-        {activeTab === "transactions" && (
-          <Card className="border-0 shadow-[var(--shadow-card)]">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-base">Transaction Monitor</CardTitle>
-              <div className="md:hidden relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Search…" className="pl-10 w-48" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-muted-foreground">
-                      <th className="text-left px-4 py-3 font-medium">ID</th>
-                      <th className="text-left px-4 py-3 font-medium">Type</th>
-                      <th className="text-left px-4 py-3 font-medium">Amount</th>
-                      <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Fee</th>
-                      <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Recipient</th>
-                      <th className="text-left px-4 py-3 font-medium">Status</th>
-                      <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">Time</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredTxns.map((txn: any) => (
-                      <tr key={txn.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-3 text-xs font-mono text-muted-foreground">{txn.id?.slice(0, 8)}…</td>
-                        <td className="px-4 py-3">
-                          <Badge variant="secondary" className={`text-xs ${TXN_TYPE_COLORS[txn.type] ?? ""}`}>
-                            {txn.type}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 font-semibold text-foreground">৳{txn.amount?.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">৳{txn.fee?.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{txn.recipient_phone || "—"}</td>
-                        <td className="px-4 py-3">
-                          <Badge variant="outline" className="text-xs">{txn.status}</Badge>
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground text-xs hidden lg:table-cell">
-                          {new Date(txn.created_at).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {filteredTxns.length === 0 && (
-                <p className="text-center text-muted-foreground py-8 text-sm">No transactions found</p>
-              )}
-            </CardContent>
-          </Card>
-        )}
+        {activeTab === "transactions" && <AdminActivityMonitor />}
 
         {/* ═══ FRAUD DETECTION ═══ */}
         {activeTab === "alerts" && <AdminFraudAlerts />}

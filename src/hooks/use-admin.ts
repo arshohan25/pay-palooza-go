@@ -65,6 +65,15 @@ export async function fetchRecentTransactions(limit = 20) {
   return data ?? [];
 }
 
+export async function fetchAllTransactions(limit = 200) {
+  const { data } = await supabase
+    .from("transactions")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return data ?? [];
+}
+
 export async function fetchAllUsers(limit = 50) {
   const { data } = await supabase
     .from("profiles")
