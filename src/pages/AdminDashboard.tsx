@@ -21,6 +21,7 @@ import AdminCommissionSetup from "@/components/admin/AdminCommissionSetup";
 import AdminDisputeResolution from "@/components/admin/AdminDisputeResolution";
 import AdminReporting from "@/components/admin/AdminReporting";
 import AdminSupportDashboard from "@/components/admin/AdminSupportDashboard";
+import { useSupportNotifications } from "@/hooks/use-support-notifications";
 
 interface Stats {
   totalUsers: number;
@@ -88,6 +89,7 @@ export default function AdminDashboard() {
   const { isAdmin, loading: authLoading } = useAdmin();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
+  useSupportNotifications(activeTab);
   const [stats, setStats] = useState<Stats>({ totalUsers: 0, totalTransactions: 0, totalAgents: 0, totalMerchants: 0, openAlerts: 0 });
   const [transactions, setTransactions] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
