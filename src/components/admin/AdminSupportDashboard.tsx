@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, User, Loader2, MessageCircle, ArrowLeft, CheckCheck, Check, Zap, ChevronDown } from "lucide-react";
+import { Send, Bot, User, Loader2, MessageCircle, ArrowLeft, CheckCheck, Check, Zap, ChevronDown, Plus, Trash2, Edit2, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/hooks/use-auth";
+import { toast } from "sonner";
 
 interface Conversation {
   id: string;
@@ -36,7 +37,7 @@ interface Message {
   read_at: string | null;
 }
 
-const CANNED_REPLIES = [
+const DEFAULT_CANNED_REPLIES = [
   { label: "Greeting", text: "Hello! Thank you for contacting EasyPay Support. How can I help you today?" },
   { label: "Processing", text: "I'm looking into your issue right now. Please give me a moment." },
   { label: "Transaction Issue", text: "I can see your transaction. Let me check the details and get back to you shortly." },
@@ -46,6 +47,13 @@ const CANNED_REPLIES = [
   { label: "Balance Query", text: "I've checked your account. Your current balance is reflected in your app. If you see a discrepancy, please share the transaction ID." },
   { label: "Closing", text: "Thank you for reaching out! If you need any further assistance, don't hesitate to contact us. Have a great day!" },
 ];
+
+interface CannedReply {
+  id?: string;
+  label: string;
+  text: string;
+  isDefault?: boolean;
+}
 
 const fmt = (d: string) =>
   new Date(d).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -60,9 +68,72 @@ export default function AdminSupportDashboard() {
   const [loading, setLoading] = useState(true);
   const [msgLoading, setMsgLoading] = useState(false);
   const [remoteTyping, setRemoteTyping] = useState(false);
+  const [cannedReplies, setCannedReplies] = useState<CannedReply[]>([]);
+  const [showAddReply, setShowAddReply] = useState(false);
+  const [newReplyLabel, setNewReplyLabel] = useState("");
+  const [newReplyText, setNewReplyText] = useState("");
+  const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
+  const [editLabel, setEditLabel] = useState("");
+  const [editText, setEditText] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load canned replies from DB + defaults
+  const loadCannedReplies = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("admin_canned_replies")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("sort_order", { ascending: true });
+
+    const dbReplies: CannedReply[] = (data ?? []).map(r => ({
+      id: r.id,
+      label: r.label,
+      text: r.content,
+    }));
+
+    // Merge: DB replies first, then defaults
+    const defaultReplies: CannedReply[] = DEFAULT_CANNED_REPLIES.map(r => ({ ...r, isDefault: true }));
+    setCannedReplies([...dbReplies, ...defaultReplies]);
+  }, [user]);
+
+  useEffect(() => { loadCannedReplies(); }, [loadCannedReplies]);
+
+  const addCannedReply = async () => {
+    if (!newReplyLabel.trim() || !newReplyText.trim() || !user) return;
+    const { error } = await supabase.from("admin_canned_replies").insert({
+      user_id: user.id,
+      label: newReplyLabel.trim(),
+      content: newReplyText.trim(),
+      sort_order: cannedReplies.filter(r => r.id).length,
+    });
+    if (error) { toast.error("Failed to save template"); return; }
+    toast.success("Template saved");
+    setNewReplyLabel("");
+    setNewReplyText("");
+    setShowAddReply(false);
+    loadCannedReplies();
+  };
+
+  const updateCannedReply = async (id: string) => {
+    if (!editLabel.trim() || !editText.trim()) return;
+    const { error } = await supabase.from("admin_canned_replies")
+      .update({ label: editLabel.trim(), content: editText.trim() })
+      .eq("id", id);
+    if (error) { toast.error("Failed to update"); return; }
+    toast.success("Template updated");
+    setEditingReplyId(null);
+    loadCannedReplies();
+  };
+
+  const deleteCannedReply = async (id: string) => {
+    const { error } = await supabase.from("admin_canned_replies").delete().eq("id", id);
+    if (error) { toast.error("Failed to delete"); return; }
+    toast.success("Template deleted");
+    loadCannedReplies();
+  };
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }), 60);
@@ -475,21 +546,113 @@ export default function AdminSupportDashboard() {
                         <ChevronDown size={10} />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-72 p-1.5" align="start" side="top">
+                    <PopoverContent className="w-80 p-2" align="start" side="top">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <p className="text-[10px] font-bold text-foreground">Quick Reply Templates</p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 text-[10px] gap-1 px-1.5 text-primary"
+                          onClick={() => setShowAddReply(!showAddReply)}
+                        >
+                          {showAddReply ? <X size={10} /> : <Plus size={10} />}
+                          {showAddReply ? "Cancel" : "Add"}
+                        </Button>
+                      </div>
+
+                      {/* Add new reply form */}
+                      {showAddReply && (
+                        <div className="mb-2 p-2 bg-muted/40 rounded-lg space-y-1.5">
+                          <Input
+                            value={newReplyLabel}
+                            onChange={e => setNewReplyLabel(e.target.value)}
+                            placeholder="Label (e.g. Refund)"
+                            className="h-7 text-[10px] rounded-md"
+                          />
+                          <Input
+                            value={newReplyText}
+                            onChange={e => setNewReplyText(e.target.value)}
+                            placeholder="Reply text..."
+                            className="h-7 text-[10px] rounded-md"
+                          />
+                          <Button
+                            size="sm"
+                            className="h-6 text-[10px] w-full"
+                            onClick={addCannedReply}
+                            disabled={!newReplyLabel.trim() || !newReplyText.trim()}
+                          >
+                            <Save size={10} className="mr-1" /> Save Template
+                          </Button>
+                        </div>
+                      )}
+
                       <ScrollArea className="max-h-52">
                         <div className="space-y-0.5">
-                          {CANNED_REPLIES.map((reply, i) => (
-                            <button
-                              key={i}
-                              onClick={() => {
-                                setInput(reply.text);
-                                inputRef.current?.focus();
-                              }}
-                              className="w-full text-left px-2.5 py-2 rounded-lg hover:bg-muted/60 transition-colors group"
-                            >
-                              <p className="text-[10px] font-semibold text-primary/80 group-hover:text-primary">{reply.label}</p>
-                              <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5">{reply.text}</p>
-                            </button>
+                          {cannedReplies.map((reply, i) => (
+                            <div key={reply.id || `default-${i}`} className="group">
+                              {editingReplyId === reply.id ? (
+                                <div className="p-2 bg-muted/40 rounded-lg space-y-1.5">
+                                  <Input
+                                    value={editLabel}
+                                    onChange={e => setEditLabel(e.target.value)}
+                                    className="h-7 text-[10px] rounded-md"
+                                  />
+                                  <Input
+                                    value={editText}
+                                    onChange={e => setEditText(e.target.value)}
+                                    className="h-7 text-[10px] rounded-md"
+                                  />
+                                  <div className="flex gap-1">
+                                    <Button size="sm" className="h-6 text-[10px] flex-1" onClick={() => updateCannedReply(reply.id!)}>
+                                      <Save size={10} className="mr-1" /> Save
+                                    </Button>
+                                    <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => setEditingReplyId(null)}>
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setInput(reply.text);
+                                    inputRef.current?.focus();
+                                  }}
+                                  className="w-full text-left px-2.5 py-2 rounded-lg hover:bg-muted/60 transition-colors"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-[10px] font-semibold text-primary/80 group-hover:text-primary">
+                                      {reply.label}
+                                      {reply.isDefault && <span className="text-muted-foreground/50 font-normal ml-1">(default)</span>}
+                                    </p>
+                                    {reply.id && (
+                                      <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditingReplyId(reply.id!);
+                                            setEditLabel(reply.label);
+                                            setEditText(reply.text);
+                                          }}
+                                          className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                                        >
+                                          <Edit2 size={10} />
+                                        </button>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            deleteCannedReply(reply.id!);
+                                          }}
+                                          className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                                        >
+                                          <Trash2 size={10} />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5">{reply.text}</p>
+                                </button>
+                              )}
+                            </div>
                           ))}
                         </div>
                       </ScrollArea>

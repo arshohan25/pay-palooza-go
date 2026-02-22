@@ -1,15 +1,16 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
 /**
  * Listens for new support messages from users and fires browser notifications + toasts.
- * Should be mounted once at the admin layout level (AdminDashboard).
+ * Also tracks total unread support message count for badge display.
  */
 export function useSupportNotifications(activeTab: string) {
   const { user } = useAuth();
   const permissionRef = useRef<NotificationPermission>("default");
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Request notification permission on mount
   useEffect(() => {
@@ -23,12 +24,25 @@ export function useSupportNotifications(activeTab: string) {
     }
   }, []);
 
+  // Fetch unread count
+  const fetchUnreadCount = useCallback(async () => {
+    if (!user) return;
+    const { count } = await supabase
+      .from("support_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("sender_role", "user")
+      .is("read_at", null);
+    setUnreadCount(count ?? 0);
+  }, [user]);
+
+  useEffect(() => {
+    fetchUnreadCount();
+  }, [fetchUnreadCount]);
+
   const notify = useCallback(
     (title: string, body: string) => {
-      // In-app toast always
       toast.info(title, { description: body, duration: 5000 });
 
-      // Browser notification if permission granted and tab not focused or not on support
       if (
         "Notification" in window &&
         permissionRef.current === "granted" &&
@@ -45,7 +59,7 @@ export function useSupportNotifications(activeTab: string) {
             n.close();
           };
         } catch {
-          // Notification API may not be available in all contexts
+          // Notification API may not be available
         }
       }
     },
@@ -66,11 +80,12 @@ export function useSupportNotifications(activeTab: string) {
         },
         async (payload) => {
           const msg = payload.new as { sender_role: string; content: string; conversation_id: string; sender_id: string };
-          // Only notify for user messages (not admin's own)
           if (msg.sender_role !== "user") return;
           if (msg.sender_id === user.id) return;
 
-          // Try to get user name
+          // Increment unread count
+          setUnreadCount(prev => prev + 1);
+
           const { data: conv } = await supabase
             .from("support_conversations")
             .select("user_id")
@@ -92,10 +107,25 @@ export function useSupportNotifications(activeTab: string) {
           notify("New Support Message", `${userName}: ${msg.content.slice(0, 80)}`);
         }
       )
+      // Also listen for read_at updates to decrement count
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "support_messages",
+        },
+        () => {
+          // Re-fetch on any update (read receipts)
+          fetchUnreadCount();
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, notify]);
+  }, [user, notify, fetchUnreadCount]);
+
+  return { unreadCount };
 }
