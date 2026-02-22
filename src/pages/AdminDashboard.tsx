@@ -26,6 +26,7 @@ import AdminFeatureLocks from "@/components/admin/AdminFeatureLocks";
 import AdminFraudAlerts from "@/components/admin/AdminFraudAlerts";
 import AdminActivityMonitor from "@/components/admin/AdminActivityMonitor";
 import AdminChargebackDialog from "@/components/admin/AdminChargebackDialog";
+import AdminChargebackHistory from "@/components/admin/AdminChargebackHistory";
 import UserLockDialog from "@/components/admin/UserLockDialog";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 
@@ -84,6 +85,7 @@ const NAV_ITEMS = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "users", label: "Users", icon: UserCog },
   { id: "transactions", label: "Transactions", icon: Receipt },
+  { id: "chargebacks", label: "Chargebacks", icon: RotateCcw },
   { id: "alerts", label: "Fraud", icon: AlertTriangle },
   { id: "charges", label: "Charges", icon: Settings },
   { id: "commissions", label: "Commissions", icon: Coins },
@@ -571,6 +573,9 @@ export default function AdminDashboard() {
 
         {/* ═══ TRANSACTION MONITORING ═══ */}
         {activeTab === "transactions" && <AdminActivityMonitor />}
+
+        {/* ═══ CHARGEBACK HISTORY ═══ */}
+        {activeTab === "chargebacks" && <AdminChargebackHistory />}
 
         {/* ═══ FRAUD DETECTION ═══ */}
         {activeTab === "alerts" && <AdminFraudAlerts />}
