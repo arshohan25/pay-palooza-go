@@ -5,7 +5,7 @@ import {
   Users, ArrowLeftRight, ShieldAlert, Store, UserCheck,
   TrendingUp, Activity, Search, RefreshCw, LogOut,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings,
-  ChevronLeft, Coins, Scale, BarChart3,
+  ChevronLeft, Coins, Scale, BarChart3, MessageCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import AdminChargeConfig from "@/components/admin/AdminChargeConfig";
 import AdminCommissionSetup from "@/components/admin/AdminCommissionSetup";
 import AdminDisputeResolution from "@/components/admin/AdminDisputeResolution";
 import AdminReporting from "@/components/admin/AdminReporting";
+import AdminSupportDashboard from "@/components/admin/AdminSupportDashboard";
 
 interface Stats {
   totalUsers: number;
@@ -79,6 +80,7 @@ const NAV_ITEMS = [
   { id: "charges", label: "Charges", icon: Settings },
   { id: "commissions", label: "Commissions", icon: Coins },
   { id: "disputes", label: "Disputes", icon: Scale },
+  { id: "support", label: "Support", icon: MessageCircle },
   { id: "reporting", label: "Reports", icon: BarChart3 },
 ];
 
@@ -598,6 +600,9 @@ export default function AdminDashboard() {
 
         {/* ═══ DISPUTE RESOLUTION ═══ */}
         {activeTab === "disputes" && <AdminDisputeResolution />}
+
+        {/* ═══ SUPPORT DASHBOARD ═══ */}
+        {activeTab === "support" && <AdminSupportDashboard />}
 
         {/* ═══ REPORTING DASHBOARD ═══ */}
         {activeTab === "reporting" && <AdminReporting />}
