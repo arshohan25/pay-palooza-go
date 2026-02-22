@@ -6,8 +6,15 @@ import {
   ArrowDownToLine, Wallet, TrendingUp, UserPlus, Receipt,
   ArrowLeft, RefreshCw, Users, BarChart3, Activity,
   Building2, Bell, ArrowRightLeft, Share2, X, Eye, EyeOff,
-  ChevronRight, Banknote, Shield, Clock,
+  ChevronRight, Banknote, Shield, Clock, History,
+  MessageCircleQuestion, CircleDollarSign, Headphones,
+  ChevronDown, Phone, Mail,
 } from "lucide-react";
+import { toast } from "sonner";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +55,13 @@ const AgentDashboard = () => {
   const [recentTxns, setRecentTxns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [txnCount, setTxnCount] = useState(0);
+
+  // Float Request & Support sheets
+  const [floatSheetOpen, setFloatSheetOpen] = useState(false);
+  const [supportSheetOpen, setSupportSheetOpen] = useState(false);
+  const [floatAmount, setFloatAmount] = useState("");
+  const [floatNote, setFloatNote] = useState("");
+  const [floatSubmitting, setFloatSubmitting] = useState(false);
 
   // Notifications
   const [notifOpen, setNotifOpen] = useState(false);
@@ -198,11 +212,14 @@ const AgentDashboard = () => {
   const todayCommission = todayTxns.reduce((sum, t) => sum + (t.commission || 0), 0);
 
   const quickActions = [
-    { icon: ArrowDownToLine, label: "Cash In", gradient: "gradient-cashout", path: "/agent/cashin" },
-    { icon: ArrowRightLeft, label: "B2B Send", gradient: "gradient-accent", path: "/agent/b2b" },
-    { icon: Banknote, label: "Bank", gradient: "gradient-addmoney", path: "/agent/bank" },
-    { icon: UserPlus, label: "Register", gradient: "gradient-primary", path: "/agent/register" },
-    { icon: Receipt, label: "Bill Pay", gradient: "gradient-payment", path: "/agent/billpay" },
+    { icon: ArrowDownToLine, label: "Cash In", bg: "rgba(76,175,80,0.12)", ring: "1px solid rgba(76,175,80,0.25)", path: "/agent/cashin" },
+    { icon: ArrowRightLeft, label: "B2B Send", bg: "rgba(233,30,99,0.12)", ring: "1px solid rgba(233,30,99,0.25)", path: "/agent/b2b" },
+    { icon: Banknote, label: "Bank", bg: "rgba(33,150,243,0.12)", ring: "1px solid rgba(33,150,243,0.25)", path: "/agent/bank" },
+    { icon: Receipt, label: "Bill Pay", bg: "rgba(255,193,7,0.12)", ring: "1px solid rgba(255,193,7,0.25)", path: "/agent/billpay" },
+    { icon: UserPlus, label: "Register", bg: "rgba(156,39,176,0.12)", ring: "1px solid rgba(156,39,176,0.25)", path: "/agent/register" },
+    { icon: CircleDollarSign, label: "Float Req", bg: "rgba(255,87,34,0.12)", ring: "1px solid rgba(255,87,34,0.25)", action: "float" as const },
+    { icon: History, label: "History", bg: "rgba(0,188,212,0.12)", ring: "1px solid rgba(0,188,212,0.25)", path: "/agent/history" },
+    { icon: Headphones, label: "Support", bg: "rgba(120,120,140,0.12)", ring: "1px solid rgba(120,120,140,0.25)", action: "support" as const },
   ];
 
   const stats = [
@@ -307,25 +324,37 @@ const AgentDashboard = () => {
       </div>
 
       <div className="max-w-xl mx-auto px-4 mt-5 space-y-5">
-        {/* ── Quick Actions → scrollable row ── */}
-        <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
-          {quickActions.map((item, i) => (
-            <motion.button
-              key={item.label}
-              custom={i}
-              variants={stagger}
-              initial="hidden"
-              animate="visible"
-              whileTap={{ scale: 0.92 }}
-              onClick={() => navigate(item.path)}
-              className="flex flex-col items-center gap-2 py-4 min-w-[72px] rounded-2xl bg-card shadow-card press-effect hover:shadow-elevated transition-shadow shrink-0"
-            >
-              <div className={`w-11 h-11 rounded-xl ${item.gradient} flex items-center justify-center shadow-sm`}>
-                <item.icon size={18} className="text-primary-foreground" />
-              </div>
-              <span className="text-[10px] font-bold text-muted-foreground leading-tight whitespace-nowrap">{item.label}</span>
-            </motion.button>
-          ))}
+        {/* ── Quick Actions Card Grid 4×2 ── */}
+        <div className="bg-card rounded-3xl shadow-card border border-border/60 p-4">
+          <div className="grid grid-cols-4 gap-y-5 gap-x-2">
+            {quickActions.map((item, i) => (
+              <motion.button
+                key={item.label}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: 0.04 + i * 0.05, ease: [0.23, 1, 0.32, 1] }}
+                whileTap={{ scale: 0.90 }}
+                onClick={() => {
+                  if ("action" in item && item.action === "float") setFloatSheetOpen(true);
+                  else if ("action" in item && item.action === "support") setSupportSheetOpen(true);
+                  else if ("path" in item && item.path) navigate(item.path);
+                }}
+                className="flex flex-col items-center gap-2.5 group outline-none"
+              >
+                <motion.div
+                  whileHover={{ scale: 1.06, y: -2 }}
+                  transition={{ type: "spring", stiffness: 380, damping: 22 }}
+                  className="relative flex items-center justify-center rounded-full shadow-sm group-hover:shadow-md transition-shadow duration-200 overflow-hidden"
+                  style={{ width: 52, height: 52, background: item.bg, outline: item.ring }}
+                >
+                  <item.icon size={20} className="text-foreground/80" />
+                </motion.div>
+                <span className="text-[10px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-colors duration-150 px-0.5">
+                  {item.label}
+                </span>
+              </motion.button>
+            ))}
+          </div>
         </div>
 
         {/* ── Stats Grid ── */}
@@ -460,6 +489,84 @@ const AgentDashboard = () => {
       </AnimatePresence>
 
       {receiptData && <ShareReceiptSheet open={receiptOpen} onClose={() => setReceiptOpen(false)} receipt={receiptData} />}
+
+      {/* ── Float Request Sheet ── */}
+      <Sheet open={floatSheetOpen} onOpenChange={setFloatSheetOpen}>
+        <SheetContent side="bottom" className="rounded-t-3xl px-5 pb-8">
+          <SheetHeader className="mb-4">
+            <SheetTitle className="text-base font-extrabold">Request Float Top-Up</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Amount (৳)</Label>
+              <Input type="number" placeholder="e.g. 50000" value={floatAmount} onChange={e => setFloatAmount(e.target.value)} className="h-12 rounded-xl text-lg font-bold" />
+              <div className="flex gap-2 mt-2">
+                {[10000, 25000, 50000, 100000].map(v => (
+                  <button key={v} onClick={() => setFloatAmount(String(v))} className="flex-1 py-1.5 rounded-lg bg-muted text-xs font-semibold text-foreground hover:bg-primary/10 transition-colors">
+                    ৳{fmt(v)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Note (optional)</Label>
+              <Textarea placeholder="Reason for float request..." value={floatNote} onChange={e => setFloatNote(e.target.value)} className="rounded-xl resize-none" rows={2} />
+            </div>
+            <Button
+              className="w-full h-12 rounded-xl text-sm font-bold gradient-primary text-primary-foreground"
+              disabled={!floatAmount || Number(floatAmount) <= 0 || floatSubmitting}
+              onClick={async () => {
+                setFloatSubmitting(true);
+                await new Promise(r => setTimeout(r, 800));
+                toast.success(`Float request of ৳${fmt(Number(floatAmount))} sent to distributor`);
+                setFloatAmount("");
+                setFloatNote("");
+                setFloatSheetOpen(false);
+                setFloatSubmitting(false);
+              }}
+            >
+              {floatSubmitting ? "Submitting..." : "Submit Request"}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Support Sheet ── */}
+      <Sheet open={supportSheetOpen} onOpenChange={setSupportSheetOpen}>
+        <SheetContent side="bottom" className="rounded-t-3xl px-5 pb-8 max-h-[80vh] overflow-y-auto">
+          <SheetHeader className="mb-4">
+            <SheetTitle className="text-base font-extrabold">Agent Support</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-3">
+            {[
+              { q: "How to request more float?", a: "Tap 'Float Req' from Quick Actions and enter the amount. Your distributor will be notified." },
+              { q: "Cash In transaction failed?", a: "Check your balance and retry. If the issue persists, contact your distributor with the transaction ID." },
+              { q: "How is commission calculated?", a: "You earn 0.499% on every Cash In and Cash Out transaction, credited instantly." },
+              { q: "How to register a new customer?", a: "Tap 'Register' and fill in the customer's phone, name, and NID details." },
+              { q: "Bank transfer not reflecting?", a: "Bank transfers may take 1-2 business days. Check History for status updates." },
+            ].map((faq, i) => (
+              <details key={i} className="group">
+                <summary className="flex items-center justify-between cursor-pointer list-none p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
+                  <span className="text-xs font-semibold text-foreground pr-2">{faq.q}</span>
+                  <ChevronDown size={14} className="text-muted-foreground shrink-0 transition-transform group-open:rotate-180" />
+                </summary>
+                <p className="text-xs text-muted-foreground px-3 pt-2 pb-1 leading-relaxed">{faq.a}</p>
+              </details>
+            ))}
+            <div className="pt-3 border-t border-border/50 space-y-2">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Need more help?</p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" className="rounded-xl h-11 text-xs font-bold gap-2" onClick={() => { window.location.href = "tel:+8801800000000"; }}>
+                  <Phone size={14} /> Call Support
+                </Button>
+                <Button variant="outline" className="rounded-xl h-11 text-xs font-bold gap-2" onClick={() => { window.location.href = "mailto:support@agent.app"; }}>
+                  <Mail size={14} /> Email
+                </Button>
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
