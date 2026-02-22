@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback, Fragment } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, ChevronDown, ChevronUp, Loader2, RefreshCw } from "lucide-react";
+import { Search, ChevronDown, ChevronUp, Loader2, RefreshCw, RotateCcw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import AdminChargebackDialog from "./AdminChargebackDialog";
 
 const TXN_TYPE_COLORS: Record<string, string> = {
   send: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300",
@@ -18,6 +19,7 @@ const TXN_TYPE_COLORS: Record<string, string> = {
   paybill: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
   addmoney: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
   banktransfer: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300",
+  chargeback: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
 };
 
 const STATUS_BADGE: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -27,7 +29,7 @@ const STATUS_BADGE: Record<string, "default" | "secondary" | "destructive" | "ou
   reversed: "outline",
 };
 
-const TXN_TYPES = ["all", "send", "receive", "cashout", "cashin", "payment", "recharge", "paybill", "addmoney", "banktransfer"];
+const TXN_TYPES = ["all", "send", "receive", "cashout", "cashin", "payment", "recharge", "paybill", "addmoney", "banktransfer", "chargeback"];
 const TXN_STATUSES = ["all", "completed", "pending", "failed", "reversed"];
 
 interface Profile {
@@ -46,6 +48,7 @@ export default function AdminActivityMonitor() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [chargebackTarget, setChargebackTarget] = useState<any>(null);
 
   const PAGE_SIZE = 100;
 
@@ -299,6 +302,32 @@ export default function AdminActivityMonitor() {
                                         {format(new Date(txn.created_at), "MMMM dd, yyyy, hh:mm:ss a")}
                                       </p>
                                     </div>
+                                    <div className="flex items-end">
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        className="text-xs h-7 gap-1"
+                                        onClick={async (e) => {
+                                          e.stopPropagation();
+                                          // Fetch current balance for this user
+                                          const { data: profile } = await supabase
+                                            .from("profiles")
+                                            .select("balance")
+                                            .eq("user_id", txn.user_id)
+                                            .single();
+                                          setChargebackTarget({
+                                            userId: txn.user_id,
+                                            name: sender?.name || null,
+                                            phone: sender?.phone || "—",
+                                            balance: profile?.balance ? Number(profile.balance) : 0,
+                                            referenceTxnId: txn.id,
+                                            prefillAmount: txn.amount,
+                                          });
+                                        }}
+                                      >
+                                        <RotateCcw className="w-3 h-3" /> Chargeback
+                                      </Button>
+                                    </div>
                                   </div>
                                 </motion.div>
                               </td>
@@ -332,6 +361,13 @@ export default function AdminActivityMonitor() {
           </>
         )}
       </CardContent>
+
+      <AdminChargebackDialog
+        target={chargebackTarget}
+        open={!!chargebackTarget}
+        onOpenChange={(v) => { if (!v) setChargebackTarget(null); }}
+        onSuccess={() => loadTransactions(0)}
+      />
     </Card>
   );
 }

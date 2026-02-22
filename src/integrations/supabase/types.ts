@@ -637,6 +637,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_chargeback: {
+        Args: {
+          p_amount: number
+          p_reason: string
+          p_reference_txn_id?: string
+          p_target_user_id: string
+        }
+        Returns: Json
+      }
       generate_short_id: { Args: never; Returns: string }
       has_role: {
         Args: {
@@ -732,6 +741,7 @@ export type Database = {
         | "receive"
         | "cashin"
         | "banktransfer"
+        | "chargeback"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -894,6 +904,7 @@ export const Constants = {
         "receive",
         "cashin",
         "banktransfer",
+        "chargeback",
       ],
     },
   },

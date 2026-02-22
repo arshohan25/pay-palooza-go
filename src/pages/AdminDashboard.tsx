@@ -5,7 +5,7 @@ import {
   Users, ArrowLeftRight, ShieldAlert, Store, UserCheck,
   TrendingUp, Activity, Search, RefreshCw, LogOut,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings,
-  ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock,
+  ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import AdminSupportDashboard from "@/components/admin/AdminSupportDashboard";
 import AdminFeatureLocks from "@/components/admin/AdminFeatureLocks";
 import AdminFraudAlerts from "@/components/admin/AdminFraudAlerts";
 import AdminActivityMonitor from "@/components/admin/AdminActivityMonitor";
+import AdminChargebackDialog from "@/components/admin/AdminChargebackDialog";
 import UserLockDialog from "@/components/admin/UserLockDialog";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 
@@ -62,6 +63,7 @@ const TXN_TYPE_COLORS: Record<string, string> = {
   paybill: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
   addmoney: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
   banktransfer: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300",
+  chargeback: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
 };
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -106,6 +108,7 @@ export default function AdminDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [userSubTab, setUserSubTab] = useState<"users" | "agents" | "merchants">("users");
   const [lockTarget, setLockTarget] = useState<{ userId: string; label: string } | null>(null);
+  const [chargebackTarget, setChargebackTarget] = useState<any>(null);
 
   const loadData = useCallback(async () => {
     setRefreshing(true);
@@ -414,13 +417,26 @@ export default function AdminDashboard() {
                               >
                                 {user.status === "suspended" ? "Activate" : "Suspend"}
                               </Button>
-                              <Button
+                               <Button
                                 size="sm"
                                 variant="outline"
                                 className="text-xs h-7 gap-1"
                                 onClick={() => setLockTarget({ userId: user.user_id, label: `${user.name || "User"} (${user.phone})` })}
                               >
                                 <Lock className="w-3 h-3" /> Lock
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="text-xs h-7 gap-1"
+                                onClick={() => setChargebackTarget({
+                                  userId: user.user_id,
+                                  name: user.name || null,
+                                  phone: user.phone,
+                                  balance: parseFloat(user.balance) || 0,
+                                })}
+                              >
+                                <RotateCcw className="w-3 h-3" /> Chargeback
                               </Button>
                             </td>
                           </tr>
@@ -585,6 +601,14 @@ export default function AdminDashboard() {
         targetUserId={lockTarget?.userId ?? ""}
         targetLabel={lockTarget?.label ?? ""}
         onLocked={() => setLockTarget(null)}
+      />
+
+      {/* Admin Chargeback Dialog */}
+      <AdminChargebackDialog
+        target={chargebackTarget}
+        open={!!chargebackTarget}
+        onOpenChange={(v) => { if (!v) setChargebackTarget(null); }}
+        onSuccess={loadData}
       />
     </div>
   );
