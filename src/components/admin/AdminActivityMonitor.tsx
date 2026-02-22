@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, Fragment } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, ChevronDown, ChevronUp, Loader2, RefreshCw, RotateCcw } from "lucide-react";
+import { Search, ChevronDown, ChevronUp, Loader2, RefreshCw, RotateCcw, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -123,6 +123,37 @@ export default function AdminActivityMonitor() {
 
   const getSender = (txn: any) => profiles[txn.user_id];
 
+  const exportCsv = () => {
+    const headers = ["Short ID", "Type", "Sender Name", "Sender Phone", "Receiver Name", "Receiver Phone", "Amount", "Fee", "Commission", "Balance After", "Status", "Description", "Reference", "Date"];
+    const csvRows = [headers.join(",")];
+    filtered.forEach(txn => {
+      const sender = profiles[txn.user_id];
+      csvRows.push([
+        txn.short_id,
+        txn.type,
+        `"${sender?.name || ""}"`,
+        sender?.phone || "",
+        `"${txn.recipient_name || ""}"`,
+        txn.recipient_phone || "",
+        txn.amount,
+        txn.fee,
+        txn.commission,
+        txn.balance_after ?? "",
+        txn.status,
+        `"${(txn.description || "").replace(/"/g, '""')}"`,
+        txn.reference || "",
+        format(new Date(txn.created_at), "yyyy-MM-dd HH:mm:ss"),
+      ].join(","));
+    });
+    const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `transactions-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Card className="border-0 shadow-[var(--shadow-card)]">
       <CardHeader className="pb-3">
@@ -138,6 +169,9 @@ export default function AdminActivityMonitor() {
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
+            <Button variant="outline" size="icon" onClick={exportCsv} disabled={filtered.length === 0} title="Export CSV">
+              <Download className="w-4 h-4" />
+            </Button>
             <Button variant="outline" size="icon" onClick={() => loadTransactions(0)} disabled={loading}>
               <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             </Button>
