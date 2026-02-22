@@ -46,9 +46,9 @@ const AgentTransactionHistory = () => {
         </div>
       </div>
 
-      {/* Reuse existing TransactionHistory component */}
+      {/* Reuse existing TransactionHistory component — agent-relevant types only */}
       <div className="max-w-xl mx-auto px-4">
-        <TransactionHistory />
+        <TransactionHistory filterTypes={["cashin", "cashout", "banktransfer", "paybill"]} />
       </div>
     </div>
   );
