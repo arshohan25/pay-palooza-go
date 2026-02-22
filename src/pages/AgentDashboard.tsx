@@ -394,7 +394,15 @@ const AgentDashboard = () => {
 
         {/* ── Recent Activity ── */}
         <div>
-          <h3 className="text-sm font-bold text-foreground mb-3">Recent Activity</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-foreground">Recent Activity</h3>
+            <button
+              onClick={() => navigate("/agent/history")}
+              className="flex items-center gap-0.5 text-[12px] font-semibold text-primary hover:text-primary/80 transition-colors press-effect"
+            >
+              See All <ChevronRight size={13} strokeWidth={2.5} />
+            </button>
+          </div>
           <Card className="border-0 shadow-card rounded-2xl overflow-hidden">
             {recentTxns.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
