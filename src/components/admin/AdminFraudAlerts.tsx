@@ -102,6 +102,55 @@ export default function AdminFraudAlerts() {
 
   useEffect(() => { loadAlerts(); }, [loadAlerts]);
 
+  // Real-time: prepend new alerts & play chime for high/critical
+  useEffect(() => {
+    const channel = supabase
+      .channel("fraud-alerts-list-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "fraud_alerts" },
+        async (payload) => {
+          const newAlert = payload.new as FraudAlert;
+          setAlerts(prev => [newAlert, ...prev]);
+
+          // Fetch profile if not cached
+          if (!profiles.has(newAlert.user_id)) {
+            const { data } = await supabase
+              .from("profiles")
+              .select("user_id, name, phone")
+              .eq("user_id", newAlert.user_id)
+              .single();
+            if (data) {
+              setProfiles(prev => new Map(prev).set(data.user_id, data));
+            }
+          }
+
+          // Play two-tone chime for high/critical severity
+          if (newAlert.severity === "critical" || newAlert.severity === "high") {
+            try {
+              const ctx = new AudioContext();
+              const play = (freq: number, start: number, dur: number) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.15, ctx.currentTime + start);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+                osc.start(ctx.currentTime + start);
+                osc.stop(ctx.currentTime + start + dur);
+              };
+              play(880, 0, 0.15);
+              play(1100, 0.18, 0.15);
+            } catch {}
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [profiles]);
+
   const handleAction = async () => {
     if (!actionDialog) return;
     setActionLoading(true);

@@ -16,6 +16,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useAdmin, fetchAdminStats, fetchRecentTransactions, fetchAllUsers, fetchFraudAlerts, fetchAllAgents, fetchAllMerchants, toggleUserStatus, toggleAgentStatus, toggleMerchantStatus } from "@/hooks/use-admin";
 import { toast } from "sonner";
 import { signOut } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 import AdminChargeConfig from "@/components/admin/AdminChargeConfig";
 import AdminCommissionSetup from "@/components/admin/AdminCommissionSetup";
 import AdminDisputeResolution from "@/components/admin/AdminDisputeResolution";
@@ -131,6 +132,33 @@ export default function AdminDashboard() {
     }
     if (isAdmin) loadData();
   }, [isAdmin, authLoading, navigate, loadData]);
+
+  // Real-time fraud alert notifications
+  useEffect(() => {
+    if (!isAdmin) return;
+    const channel = supabase
+      .channel("admin-fraud-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "fraud_alerts" },
+        (payload) => {
+          const alert = payload.new as any;
+          const severity = alert.severity ?? "medium";
+          const rule = alert.rule_triggered ?? "Unknown rule";
+          const toastFn = severity === "critical" || severity === "high" ? toast.error : toast.warning;
+          toastFn(`🚨 New Fraud Alert: ${rule}`, {
+            description: `Severity: ${severity.toUpperCase()}`,
+            duration: 8000,
+            action: { label: "View", onClick: () => setActiveTab("alerts") },
+          });
+          // Refresh stats to update the open alerts badge
+          fetchAdminStats().then(s => setStats(s));
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [isAdmin]);
 
   if (authLoading) {
     return (
