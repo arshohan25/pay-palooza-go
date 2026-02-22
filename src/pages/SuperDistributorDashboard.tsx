@@ -8,7 +8,7 @@ import {
   UserCheck, UserX, ChevronRight, DollarSign,
   Globe, Activity, Target, Zap, AlertTriangle, Eye, EyeOff,
   Bell, UserPlus, History, Headphones, Network, PieChart,
-  Crown, Banknote, Search, X, ListChecks, FileBarChart,
+  Crown, Banknote, Search, X, ListChecks, FileBarChart, Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -1338,12 +1338,79 @@ const ReconcileView = ({ distributors, userId, onBack }: {
 
   const totalNet = totalAllocated - totalReturned;
 
+  const exportCsv = () => {
+    const headers = ["Distributor", "Status", "Territory", "Allocated (৳)", "Returned (৳)", "Net Outstanding (৳)", "Current Balance (৳)", "Max Float (৳)", "Utilization (%)", "Float Txns"];
+    const rows = [headers.join(",")];
+    reconData.forEach(r => {
+      const util = r.dist.max_float > 0 ? ((r.currentBalance / r.dist.max_float) * 100).toFixed(1) : "0.0";
+      rows.push([
+        `"${r.dist.business_name}"`,
+        r.dist.status,
+        `"${(r.dist.territory ?? []).join(", ") || "—"}"`,
+        r.allocated,
+        r.returned,
+        r.net,
+        r.currentBalance,
+        r.dist.max_float,
+        util,
+        r.txnCount,
+      ].join(","));
+    });
+    rows.push("");
+    rows.push(`"Total",,,${totalAllocated},${totalReturned},${totalNet},,,,`);
+    const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `float-reconciliation-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportPdf = async () => {
+    const { default: jsPDF } = await import("jspdf");
+    await import("jspdf-autotable");
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    doc.setFontSize(16);
+    doc.text("Float Reconciliation Report", 14, 18);
+    doc.setFontSize(9);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 24);
+    doc.text(`Total Allocated: ৳${fmt(totalAllocated)}  |  Total Returned: ৳${fmt(totalReturned)}  |  Net Outstanding: ৳${fmt(Math.abs(totalNet))}`, 14, 30);
+
+    const tableRows = reconData.map(r => {
+      const util = r.dist.max_float > 0 ? ((r.currentBalance / r.dist.max_float) * 100).toFixed(1) + "%" : "0%";
+      return [r.dist.business_name, r.dist.status, (r.dist.territory ?? []).join(", ") || "—", `৳${fmt(r.allocated)}`, `৳${fmt(r.returned)}`, `৳${fmt(Math.abs(r.net))}`, `৳${fmt(r.currentBalance)}`, `৳${fmt(r.dist.max_float)}`, util, String(r.txnCount)];
+    });
+
+    (doc as any).autoTable({
+      startY: 34,
+      head: [["Distributor", "Status", "Territory", "Allocated", "Returned", "Net Out", "Balance", "Max Float", "Util.", "Txns"]],
+      body: tableRows,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [103, 58, 183] },
+    });
+
+    doc.save(`float-reconciliation-${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
+
   return (
     <div className="min-h-screen bg-background pb-6">
       <header className="px-4 pt-5 pb-4" style={{ background: "linear-gradient(150deg, hsl(270 60% 40%) 0%, hsl(285 55% 30%) 100%)" }}>
-        <div className="max-w-xl mx-auto flex items-center gap-3">
-          <button onClick={onBack} className="tap-target text-primary-foreground"><ArrowLeft size={20} /></button>
-          <h1 className="text-base font-bold text-primary-foreground">Float Reconciliation</h1>
+        <div className="max-w-xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={onBack} className="tap-target text-primary-foreground"><ArrowLeft size={20} /></button>
+            <h1 className="text-base font-bold text-primary-foreground">Float Reconciliation</h1>
+          </div>
+          {!loading && reconData.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <Button size="sm" variant="ghost" className="h-7 text-[10px] text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/10 gap-1" onClick={exportCsv}>
+                <Download size={12} /> CSV
+              </Button>
+              <Button size="sm" variant="ghost" className="h-7 text-[10px] text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/10 gap-1" onClick={exportPdf}>
+                <Download size={12} /> PDF
+              </Button>
+            </div>
+          )}
         </div>
       </header>
       <div className="max-w-xl mx-auto px-4 mt-4 space-y-4">
