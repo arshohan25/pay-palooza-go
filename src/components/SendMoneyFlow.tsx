@@ -23,6 +23,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import QrScannerModal from "@/components/QrScannerModal";
 import { useI18n } from "@/lib/i18n";
+import { useFeatureLocks } from "@/hooks/use-feature-locks";
+import FeatureLockedOverlay from "@/components/FeatureLockedOverlay";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = "recipient" | "amount" | "confirm" | "pin" | "success";
@@ -127,6 +129,8 @@ interface SendMoneyFlowProps { onClose: () => void; prefilledPhone?: string; onS
 
 const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProps) => {
   const { t } = useI18n();
+  const { isLocked } = useFeatureLocks();
+  const sendLock = isLocked("send_money");
   const [step, setStep]           = useState<Step>("recipient");
   const [direction, setDirection] = useState(1);
   const [recipient, setRecipient] = useState<Contact | null>(null);
@@ -283,6 +287,17 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   const recipientReceives = parseFloat((amtNum - feeFromAmount).toFixed(2));
 
   const PROGRESS_STEPS: Step[] = ["recipient", "amount", "confirm", "pin"];
+
+  if (sendLock.locked) {
+    return (
+      <FeatureLockedOverlay
+        featureName="Send Money"
+        reason={sendLock.reason}
+        expiresAt={sendLock.expiresAt}
+        onClose={onClose}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">

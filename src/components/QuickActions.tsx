@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { Lock } from "lucide-react";
 import {
   SendMoneyIcon,
   CashOutIcon,
@@ -12,6 +13,16 @@ import {
   MoreIcon,
 } from "./QuickActionIcons";
 import { useI18n } from "@/lib/i18n";
+import { useFeatureLocks } from "@/hooks/use-feature-locks";
+
+const FEATURE_MAP: Record<string, string> = {
+  send: "send_money",
+  cashout: "cash_out",
+  payment: "payment",
+  recharge: "mobile_recharge",
+  bill: "pay_bill",
+  shop: "payment",
+};
 
 const actionDefs = [
   { Icon: SendMoneyIcon, labelKey: "sendMoney" as const, id: "send", bgStyle: "rgba(233,30,140,0.12)", ringStyle: "1px solid rgba(233,30,140,0.25)", rippleColor: "rgba(233,30,140,0.35)" },
@@ -39,6 +50,7 @@ interface QuickActionsProps {
 
 const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney, onRefer, onShop }: QuickActionsProps) => {
   const { t } = useI18n();
+  const { isLocked } = useFeatureLocks();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [ripples, setRipples] = useState<Record<string, RippleState | null>>({});
   const rippleCounterRef = useRef(0);
@@ -77,6 +89,10 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
           const isHovered = hoveredId === action.id;
           const ripple = ripples[action.id];
           const label = t(action.labelKey);
+          const featureKey = FEATURE_MAP[action.id];
+          const lockStatus = featureKey ? isLocked(featureKey) : { locked: false };
+          const isFeatureLocked = lockStatus.locked;
+
           return (
             <motion.button
               key={action.id}
@@ -88,7 +104,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
               onTouchStart={(e) => triggerRipple(action.id, e)}
               onHoverStart={() => setHoveredId(action.id)}
               onHoverEnd={() => setHoveredId(null)}
-              className="flex flex-col items-center gap-2.5 group outline-none"
+              className={`flex flex-col items-center gap-2.5 group outline-none relative ${isFeatureLocked ? "opacity-60" : ""}`}
             >
               <motion.div
                 data-ripple-container
@@ -112,6 +128,13 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                   )}
                 </AnimatePresence>
                 <action.Icon isHovered={isHovered} />
+
+                {/* Lock badge */}
+                {isFeatureLocked && (
+                  <div className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-destructive flex items-center justify-center shadow-md z-10">
+                    <Lock className="w-2.5 h-2.5 text-destructive-foreground" />
+                  </div>
+                )}
               </motion.div>
               <span className="text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-colors duration-150 px-0.5">
                 {label}
