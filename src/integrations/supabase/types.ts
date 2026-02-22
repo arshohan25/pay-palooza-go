@@ -425,28 +425,34 @@ export type Database = {
       }
       support_conversations: {
         Row: {
+          admin_last_read_at: string | null
           created_at: string
           id: string
           status: string
           subject: string | null
           updated_at: string
           user_id: string
+          user_last_read_at: string | null
         }
         Insert: {
+          admin_last_read_at?: string | null
           created_at?: string
           id?: string
           status?: string
           subject?: string | null
           updated_at?: string
           user_id: string
+          user_last_read_at?: string | null
         }
         Update: {
+          admin_last_read_at?: string | null
           created_at?: string
           id?: string
           status?: string
           subject?: string | null
           updated_at?: string
           user_id?: string
+          user_last_read_at?: string | null
         }
         Relationships: []
       }
@@ -456,6 +462,7 @@ export type Database = {
           conversation_id: string
           created_at: string
           id: string
+          read_at: string | null
           sender_id: string
           sender_role: string
         }
@@ -464,6 +471,7 @@ export type Database = {
           conversation_id: string
           created_at?: string
           id?: string
+          read_at?: string | null
           sender_id: string
           sender_role?: string
         }
@@ -472,6 +480,7 @@ export type Database = {
           conversation_id?: string
           created_at?: string
           id?: string
+          read_at?: string | null
           sender_id?: string
           sender_role?: string
         }

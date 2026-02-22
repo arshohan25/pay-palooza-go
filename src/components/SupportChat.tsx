@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, User, Loader2 } from "lucide-react";
+import { Send, Bot, User, Loader2, Check, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -11,6 +11,7 @@ interface Message {
   sender_role: string;
   sender_id: string;
   created_at: string;
+  read_at: string | null;
 }
 
 interface SupportChatProps {
@@ -23,8 +24,10 @@ const SupportChat = ({ userId }: SupportChatProps) => {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [remoteTyping, setRemoteTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }), 60);
@@ -35,7 +38,6 @@ const SupportChat = ({ userId }: SupportChatProps) => {
     if (!userId) return;
     const init = async () => {
       setLoading(true);
-      // Find existing open conversation
       const { data: convs } = await supabase
         .from("support_conversations")
         .select("id")
@@ -57,7 +59,6 @@ const SupportChat = ({ userId }: SupportChatProps) => {
       }
       setConversationId(convId);
 
-      // Load messages
       const { data: msgs } = await supabase
         .from("support_messages")
         .select("*")
@@ -67,11 +68,19 @@ const SupportChat = ({ userId }: SupportChatProps) => {
       setMessages(msgs ?? []);
       setLoading(false);
       scrollToBottom();
+
+      // Mark admin messages as read
+      await supabase
+        .from("support_messages")
+        .update({ read_at: new Date().toISOString() })
+        .eq("conversation_id", convId)
+        .eq("sender_role", "admin")
+        .is("read_at", null);
     };
     init();
   }, [userId, scrollToBottom]);
 
-  // Realtime subscription
+  // Realtime subscription for messages
   useEffect(() => {
     if (!conversationId) return;
     const channel = supabase
@@ -88,11 +97,58 @@ const SupportChat = ({ userId }: SupportChatProps) => {
           return [...prev, msg];
         });
         scrollToBottom();
+        // Auto-read admin messages
+        if (msg.sender_role === "admin") {
+          supabase.from("support_messages").update({ read_at: new Date().toISOString() }).eq("id", msg.id).then();
+        }
+      })
+      .on("postgres_changes", {
+        event: "UPDATE",
+        schema: "public",
+        table: "support_messages",
+        filter: `conversation_id=eq.${conversationId}`,
+      }, (payload) => {
+        const updated = payload.new as Message;
+        setMessages(prev => prev.map(m => m.id === updated.id ? { ...m, read_at: updated.read_at } : m));
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, [conversationId, scrollToBottom]);
+    // Typing presence
+    const presenceChannel = supabase.channel(`typing-${conversationId}`, {
+      config: { presence: { key: userId } },
+    });
+    presenceChannel.on("presence", { event: "sync" }, () => {
+      const state = presenceChannel.presenceState();
+      const others = Object.entries(state).filter(([key]) => key !== userId);
+      const someoneTyping = others.some(([, presences]) =>
+        (presences as any[]).some((p: any) => p.typing && p.role === "admin")
+      );
+      setRemoteTyping(someoneTyping);
+    });
+    presenceChannel.subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.removeChannel(presenceChannel);
+    };
+  }, [conversationId, userId, scrollToBottom]);
+
+  // Send typing indicator
+  const sendTypingIndicator = useCallback(() => {
+    if (!conversationId) return;
+    const ch = supabase.channel(`typing-${conversationId}`, {
+      config: { presence: { key: userId } },
+    });
+    ch.subscribe(async (status) => {
+      if (status === "SUBSCRIBED") {
+        await ch.track({ typing: true, role: "user" });
+        if (typingTimeout.current) clearTimeout(typingTimeout.current);
+        typingTimeout.current = setTimeout(async () => {
+          await ch.track({ typing: false, role: "user" });
+        }, 2000);
+      }
+    });
+  }, [conversationId, userId]);
 
   const sendMessage = async () => {
     if (!input.trim() || !conversationId || sending) return;
@@ -100,13 +156,13 @@ const SupportChat = ({ userId }: SupportChatProps) => {
     setInput("");
     setSending(true);
 
-    // Optimistic add
     const optimisticMsg: Message = {
       id: `temp-${Date.now()}`,
       content: text,
       sender_role: "user",
       sender_id: userId,
       created_at: new Date().toISOString(),
+      read_at: null,
     };
     setMessages(prev => [...prev, optimisticMsg]);
     scrollToBottom();
@@ -169,14 +225,43 @@ const SupportChat = ({ userId }: SupportChatProps) => {
                 </div>
                 <div className={`rounded-2xl px-3 py-2 max-w-[75%] ${isMe ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted/60 text-foreground rounded-bl-md"}`}>
                   <p className="text-xs leading-relaxed break-words">{msg.content}</p>
-                  <p className={`text-[9px] mt-0.5 ${isMe ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
-                    {new Date(msg.created_at).toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" })}
-                  </p>
+                  <div className={`flex items-center gap-1 mt-0.5 ${isMe ? "justify-end" : ""}`}>
+                    <p className={`text-[9px] ${isMe ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
+                      {new Date(msg.created_at).toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                    {isMe && (
+                      msg.read_at ? (
+                        <CheckCheck size={10} className="text-primary-foreground/80" />
+                      ) : (
+                        <Check size={10} className="text-primary-foreground/40" />
+                      )
+                    )}
+                  </div>
                 </div>
               </motion.div>
             );
           })}
         </AnimatePresence>
+
+        {/* Typing indicator */}
+        {remoteTyping && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex gap-2 items-end"
+          >
+            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <Bot size={12} className="text-primary" />
+            </div>
+            <div className="bg-muted/60 rounded-2xl rounded-bl-md px-3 py-2">
+              <div className="flex gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {messages.length === 0 && (
           <div className="text-center py-6">
@@ -190,7 +275,10 @@ const SupportChat = ({ userId }: SupportChatProps) => {
         <Input
           ref={inputRef}
           value={input}
-          onChange={e => setInput(e.target.value)}
+          onChange={e => {
+            setInput(e.target.value);
+            sendTypingIndicator();
+          }}
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
           placeholder="Type a message..."
           className="flex-1 h-10 rounded-xl text-xs"
