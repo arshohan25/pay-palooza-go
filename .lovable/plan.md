@@ -1,35 +1,33 @@
 
 
-## Agent Dashboard Quick Actions Redesign and New Features
+## Real-Time Fraud Alert Notifications for Admins
 
-### What Changes
+### What This Does
+When a new fraud alert is created in the system, any admin currently on the Admin Dashboard will instantly receive a toast notification with the alert details -- no need to manually refresh.
 
-**1. Quick Actions: Card View with 2-Row Grid (4 columns x 2 rows)**
-
-Replace the current scrollable row with a styled card container holding 8 action tiles in a 4x2 grid layout, similar to the home screen's QuickActions component.
-
-Current actions (5): Cash In, B2B Send, Bank, Register, Bill Pay
-
-New layout with 3 additional features (8 total):
-| Cash In | B2B Send | Bank | Bill Pay |
-| Register | Float Req | History | Support |
-
-**2. New Features**
-
-- **Float Request**: A quick action that lets agents request float top-up from their distributor (shows a simple form with amount and note, then records the request).
-- **History**: Direct link to `/agent/history` (currently only accessible via "See All" in Recent Activity).
-- **Support**: Opens a help/support bottom sheet with common agent FAQs and a contact option.
+### How It Works
+- Subscribe to real-time `INSERT` events on the `fraud_alerts` table when the Admin Dashboard mounts
+- Display a sonner toast with the alert severity, rule triggered, and a prompt to check the Fraud tab
+- Auto-refresh the fraud alerts list when a new alert arrives
+- Clean up the subscription when leaving the dashboard
 
 ### Technical Details
 
-**File: `src/pages/AgentDashboard.tsx`**
+**File: `src/pages/AdminDashboard.tsx`**
 
-- Update `quickActions` array from 5 to 8 items with new entries for Float Request, History, and Support.
-- Replace the scrollable `flex` container (lines 311-329) with a Card-wrapped `grid grid-cols-4 gap-y-5 gap-x-2` layout matching the home screen style.
-- Each tile: icon in a colored rounded container + label below, inside a `motion.button` with tap animation.
-- Add state and UI for:
-  - **Float Request**: A bottom sheet modal with amount input and submit button. On submit, shows a success toast (no new DB table needed -- uses existing patterns).
-  - **Support**: A bottom sheet with FAQ items and a "Contact Admin" button.
+1. Add a Supabase Realtime channel subscription inside a `useEffect` that:
+   - Listens for `postgres_changes` with `event: 'INSERT'` on `public.fraud_alerts`
+   - On each new alert, fires a `toast.warning()` or `toast.error()` (based on severity) showing the rule name and severity
+   - Calls the existing `loadData()` / stats refresh to update the open alerts count in the stat cards
+2. Unsubscribe from the channel on component unmount
 
-**Styling**: The card container will use `bg-card rounded-3xl shadow-card border border-border/60 p-4` to match the home screen QuickActions card design, with each icon having its own gradient background.
+**File: `src/components/admin/AdminFraudAlerts.tsx`**
+
+1. Add a Realtime subscription for `INSERT` events on `fraud_alerts`
+2. When a new alert arrives, prepend it to the local `alerts` state (avoiding a full refetch) and update the profiles map if the user is new
+3. Play the existing two-tone chime sound (reuse pattern from support notifications) for critical/high severity alerts
+4. Clean up subscription on unmount
+
+### No Database Changes Required
+Realtime is already enabled for `fraud_alerts` and RLS policies already allow admin/compliance users to see all alerts.
 
