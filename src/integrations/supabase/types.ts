@@ -222,6 +222,45 @@ export type Database = {
           },
         ]
       }
+      feature_locks: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          feature: string
+          id: string
+          is_active: boolean
+          locked_at: string
+          locked_by: string
+          reason: string | null
+          target_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          feature: string
+          id?: string
+          is_active?: boolean
+          locked_at?: string
+          locked_by: string
+          reason?: string | null
+          target_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          feature?: string
+          id?: string
+          is_active?: boolean
+          locked_at?: string
+          locked_by?: string
+          reason?: string | null
+          target_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fee_config: {
         Row: {
           agent_commission: number | null
