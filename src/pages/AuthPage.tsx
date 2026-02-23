@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { haptics } from "@/lib/haptics";
 import { signUp, signIn, phoneToEmail } from "@/lib/auth";
+import { isWeakPin } from "@/lib/pinValidation";
 import { supabase } from "@/integrations/supabase/client";
 
 // ─── Storage keys (only for UX preferences, NOT auth) ─────────────────────────
@@ -352,13 +353,6 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   }, []);
 
   const isValidPhone = (p: string) => /^01[3-9]\d{8}$/.test(p);
-
-  // ── Weak PIN check ─────────────────────────────────────────────────────────
-  const isWeakPin = (p: string) => {
-    const seq = ["1234","2345","3456","4567","5678","6789","9876","8765","7654","6543","5432","4321"];
-    const rep = ["0000","1111","2222","3333","4444","5555","6666","7777","8888","9999"];
-    return seq.includes(p) || rep.includes(p);
-  };
 
   // ── Register: Phone → OTP → PIN → Name ────────────────────────────────────
   const handleRegisterPhone = () => {

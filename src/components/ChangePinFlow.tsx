@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, CheckCircle2, AlertCircle, Lock, ShieldCheck } from "lucide-react";
 
 import { signIn, changePin as changePinAuth } from "@/lib/auth";
+import { isWeakPin } from "@/lib/pinValidation";
 
 // PIN is now stored server-side via Supabase Auth
 // We validate the current PIN by attempting a sign-in
@@ -181,10 +182,8 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
     setNewPin(p);
     setError("");
     if (p.length === 4) {
-      const sequential = ["1234","2345","3456","4567","5678","6789","0123","9876","8765","7654","6543","5432","4321","3210"];
-      const repeated   = ["0000","1111","2222","3333","4444","5555","6666","7777","8888","9999"];
       setTimeout(() => {
-        if (sequential.includes(p) || repeated.includes(p)) {
+        if (isWeakPin(p)) {
           haptics.error();
           setError("PIN is too simple. Avoid sequential or repeated digits.");
           setTimeout(() => setNewPin(""), 600);
