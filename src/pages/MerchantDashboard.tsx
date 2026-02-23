@@ -120,6 +120,23 @@ const MerchantDashboard = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Real-time subscription for balance and transaction updates
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel('merchant-realtime')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `user_id=eq.${user.id}` }, (payload) => {
+        if (payload.new && typeof payload.new.balance === 'number') {
+          setBalance(payload.new.balance);
+        }
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'transactions', filter: `user_id=eq.${user.id}` }, (payload) => {
+        setTxns(prev => [payload.new as TxnRow, ...prev]);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
   const paymentTxns = useMemo(() => txns.filter(t => t.type === "payment"), [txns]);
 
   if (authLoading || loading) {
@@ -150,7 +167,7 @@ const MerchantDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* ── Premium Header ── */}
-      <header className="relative overflow-hidden px-4 pt-6 pb-24">
+      <header className="relative overflow-hidden px-4 pt-6 pb-14">
         {/* Gradient background with orbs */}
         <div className="absolute inset-0" style={{
           background: "linear-gradient(150deg, hsl(24 90% 50%) 0%, hsl(16 82% 40%) 40%, hsl(350 65% 35%) 100%)"
@@ -231,7 +248,7 @@ const MerchantDashboard = () => {
       </header>
 
       {/* ── Quick Stats Grid ── */}
-      <div className="max-w-xl mx-auto px-4 -mt-10 relative z-10">
+      <div className="max-w-xl mx-auto px-4 -mt-6 relative z-10">
         <motion.div
           variants={stagger.container} initial="hidden" animate="show"
           className="grid grid-cols-3 gap-2.5"
@@ -272,7 +289,7 @@ const MerchantDashboard = () => {
       </div>
 
       {/* ── Tab strip ── */}
-      <div className="max-w-xl mx-auto px-4 mt-5">
+      <div className="max-w-xl mx-auto px-4 mt-3">
         <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-2 bg-muted/50 rounded-2xl p-1.5">
           {tabItems.map(t => {
             const active = activeTab === t.id;
@@ -300,10 +317,10 @@ const MerchantDashboard = () => {
       </div>
 
       {/* ── Content ── */}
-      <div className="max-w-xl mx-auto px-4 py-5 pb-24">
+      <div className="max-w-xl mx-auto px-4 py-4 pb-24">
         <AnimatePresence mode="wait">
           <motion.div key={activeTab} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }}>
-            {activeTab === "overview"     && <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} />}
+            {activeTab === "overview"     && <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} onRefresh={loadData} />}
             {activeTab === "qr"           && <QRTab merchant={merchant} toast={toast} />}
             {activeTab === "paylinks"     && <PayLinksTab merchant={merchant} toast={toast} />}
             {activeTab === "transactions" && <TxnTab txns={paymentTxns} />}
@@ -446,7 +463,7 @@ const MerchantBenefitsPage = ({ navigate }: { navigate: (path: string) => void }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* ── Overview Tab ── */
-const MerchOverview = ({ merchant, balance, paymentTxns }: { merchant: MerchantInfo | null; balance: number; paymentTxns: TxnRow[] }) => {
+const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh }: { merchant: MerchantInfo | null; balance: number; paymentTxns: TxnRow[]; onRefresh: () => void }) => {
   const { toast } = useToast();
   const [showSendMoney, setShowSendMoney] = useState(false);
   const [showCashOut, setShowCashOut] = useState(false);
@@ -678,8 +695,8 @@ const MerchOverview = ({ merchant, balance, paymentTxns }: { merchant: MerchantI
       </motion.div>
 
       {/* Modals */}
-      <MerchantSendMoneySheet open={showSendMoney} onClose={() => setShowSendMoney(false)} />
-      <MerchantCashOutSheet open={showCashOut} onClose={() => setShowCashOut(false)} />
+      <MerchantSendMoneySheet open={showSendMoney} onClose={() => setShowSendMoney(false)} onSuccess={onRefresh} />
+      <MerchantCashOutSheet open={showCashOut} onClose={() => setShowCashOut(false)} onSuccess={onRefresh} />
       <MerchantAddBankSheet open={showAddBank} onClose={() => setShowAddBank(false)} merchant={merchant} />
       <MerchantSettlementConfigSheet open={showSettlementConfig} onClose={() => setShowSettlementConfig(false)} merchant={merchant} />
     </motion.div>
@@ -1318,7 +1335,7 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* ── Merchant Send Money Sheet ── */
-const MerchantSendMoneySheet = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
+const MerchantSendMoneySheet = ({ open, onClose, onSuccess }: { open: boolean; onClose: () => void; onSuccess?: () => void }) => {
   const { toast } = useToast();
   const [phone, setPhone] = useState("");
   const [amount, setAmount] = useState("");
@@ -1349,7 +1366,7 @@ const MerchantSendMoneySheet = ({ open, onClose }: { open: boolean; onClose: () 
       });
       if (error) throw error;
       toast({ title: "Sent ৳" + fmt(parsedAmount), description: `To ${phone} · Fee ৳${fee}` });
-      setPhone(""); setAmount(""); onClose();
+      setPhone(""); setAmount(""); onClose(); onSuccess?.();
     } catch (e: any) {
       toast({ title: "Failed", description: e.message || "Something went wrong", variant: "destructive" });
     } finally {
@@ -1407,7 +1424,7 @@ const MerchantSendMoneySheet = ({ open, onClose }: { open: boolean; onClose: () 
 };
 
 /* ── Merchant Cash Out Sheet ── */
-const MerchantCashOutSheet = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
+const MerchantCashOutSheet = ({ open, onClose, onSuccess }: { open: boolean; onClose: () => void; onSuccess?: () => void }) => {
   const { toast } = useToast();
   const [amount, setAmount] = useState("");
   const [agentId, setAgentId] = useState("");
@@ -1438,7 +1455,7 @@ const MerchantCashOutSheet = ({ open, onClose }: { open: boolean; onClose: () =>
       });
       if (error) throw error;
       toast({ title: "Cash Out ৳" + fmt(parsedAmount), description: `Fee: ৳${fmt(fee)} (1.15%)` });
-      setAmount(""); setAgentId(""); onClose();
+      setAmount(""); setAgentId(""); onClose(); onSuccess?.();
     } catch (e: any) {
       toast({ title: "Failed", description: e.message || "Something went wrong", variant: "destructive" });
     } finally {
