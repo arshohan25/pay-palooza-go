@@ -18,8 +18,30 @@ import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Step = "amount" | "source" | "details" | "pin" | "success";
-type Source = "bank" | "card";
+type Step = "amount" | "source" | "details" | "pin" | "processing" | "success";
+type Source = "bank" | "card" | "mfs";
+
+// ─── MFS Providers ───────────────────────────────────────────────────────────
+interface MfsProvider {
+  id: string;
+  name: string;
+  short: string;
+  color: string;
+  gradient: string;
+  accountLabel: string;
+  accountPlaceholder: string;
+  accountMaxLength: number;
+}
+
+const MFS_PROVIDERS: MfsProvider[] = [
+  { id: "bkash",   name: "bKash",          short: "bK", color: "#E2136E", gradient: "bg-[#E2136E]", accountLabel: "bKash Number",    accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
+  { id: "nagad",   name: "Nagad",           short: "Ng", color: "#F6921E", gradient: "bg-[#F6921E]", accountLabel: "Nagad Number",    accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
+  { id: "rocket",  name: "Rocket (DBBL)",   short: "Rk", color: "#8B2F8B", gradient: "bg-[#8B2F8B]", accountLabel: "Rocket Number",   accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
+  { id: "upay",    name: "Upay",            short: "Up", color: "#00A859", gradient: "bg-[#00A859]", accountLabel: "Upay Number",     accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
+  { id: "tap",     name: "Tap",             short: "Tp", color: "#1A73E8", gradient: "bg-[#1A73E8]", accountLabel: "Tap Number",      accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
+  { id: "mcash",   name: "mCash",           short: "mC", color: "#FF6600", gradient: "bg-[#FF6600]", accountLabel: "mCash Number",    accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
+  { id: "islamic", name: "Islamic Wallet",  short: "IW", color: "#2E7D32", gradient: "bg-[#2E7D32]", accountLabel: "Wallet Number",   accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
+];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 25000];
@@ -52,7 +74,7 @@ const generateTxnId = () => {
 // ─── Step config ──────────────────────────────────────────────────────────────
 const STEPS: Step[] = ["amount", "source", "details", "pin"];
 const STEP_LABELS: Record<Step, string> = {
-  amount: "Amount", source: "Source", details: "Details", pin: "PIN", success: "Done",
+  amount: "Amount", source: "Source", details: "Details", pin: "PIN", processing: "Processing", success: "Done",
 };
 
 // ─── Slide animation ──────────────────────────────────────────────────────────
@@ -90,6 +112,8 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   const [amount, setAmount]   = useState("");
   const [source, setSource]   = useState<Source | null>(null);
   const [bank, setBank]       = useState<typeof BANK_LIST[0] | null>(null);
+  const [mfsProvider, setMfsProvider] = useState<MfsProvider | null>(null);
+  const [mfsAccount, setMfsAccount]   = useState("");
   // Card fields
   const [cardNumber, setCardNumber] = useState("");
   const [cardName, setCardName]     = useState("");
@@ -134,12 +158,18 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   const handleSourceContinue = () => {
     if (!source) { setError("Please select a funding source."); return; }
     if (source === "bank" && !bank) { setError("Please select your bank."); return; }
+    if (source === "mfs" && !mfsProvider) { setError("Please select a payment provider."); return; }
     goTo("details");
   };
 
   const handleDetailsContinue = () => {
     if (source === "bank") {
-      // Bank transfer: just show the account details — user confirms they've transferred
+      goTo("pin");
+      return;
+    }
+    if (source === "mfs") {
+      const raw = mfsAccount.replace(/\D/g, "");
+      if (raw.length < 11) { setError(`Enter a valid ${mfsProvider?.accountLabel ?? "account number"}.`); return; }
       goTo("pin");
       return;
     }
@@ -158,14 +188,28 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
     if (processing) return;
     setProcessing(true);
     haptics.success();
+
+    // For MFS providers, show a processing screen
+    if (source === "mfs") {
+      setDir(1);
+      setStep("processing");
+      // Simulate payment gateway processing
+      await new Promise(r => setTimeout(r, 3000));
+    }
+
     txnTime.current = new Date();
     txnId.current = generateTxnId();
     const addAmt = parseFloat(amount) || 0;
+    const sourceLabel = source === "bank"
+      ? `Bank Transfer via ${bank?.name}`
+      : source === "mfs"
+        ? `${mfsProvider?.name} (${mfsAccount})`
+        : "Card Payment";
     await recordTransaction({
       type: "addmoney",
       amount: addAmt,
       fee: 0,
-      description: source === "bank" ? `Bank Transfer via ${bank?.name}` : "Card Payment",
+      description: sourceLabel,
       reference: txnId.current,
     });
     showTxnToast({ type: "Add Money", amount: `৳${addAmt.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-addmoney" });
@@ -370,7 +414,30 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                       ? <CheckCircle2 size={18} className="text-primary shrink-0" />
                       : <ChevronRight size={18} className="text-muted-foreground shrink-0" />
                     }
-                  </button>
+                   </button>
+                </div>
+
+                {/* MFS Providers */}
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mt-4">Mobile Financial Services</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {MFS_PROVIDERS.map((p) => {
+                    const sel = source === "mfs" && mfsProvider?.id === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => { setSource("mfs"); setMfsProvider(p); setError(""); }}
+                        className={`flex items-center gap-2.5 p-3 rounded-xl border transition-all text-left ${
+                          sel ? "border-primary bg-primary/5" : "border-border bg-card hover:border-primary/30"
+                        }`}
+                      >
+                        <div className={`${p.gradient} w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-xs shrink-0`}>
+                          {p.short}
+                        </div>
+                        <span className="text-xs font-semibold text-foreground leading-tight">{p.name}</span>
+                        {sel && <CheckCircle2 size={13} className="text-primary ml-auto shrink-0" />}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Bank selector (only when bank is chosen) */}
@@ -587,6 +654,104 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
               </div>
             )}
 
+            {/* ══ STEP 3c: MFS Details ══ */}
+            {step === "details" && source === "mfs" && mfsProvider && (
+              <div className="px-4 pt-6 pb-32 space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className={`${mfsProvider.gradient} w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0`}>
+                    {mfsProvider.short}
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Pay via</p>
+                    <p className="text-sm font-bold text-foreground">{mfsProvider.name}</p>
+                  </div>
+                </div>
+
+                {/* Amount recap */}
+                <div className="rounded-2xl border border-border bg-card shadow-card px-5 py-4 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Amount</span>
+                    <span className="text-foreground font-bold">৳{amtNum.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Gateway Fee</span>
+                    <span className="text-primary font-semibold">Free</span>
+                  </div>
+                </div>
+
+                {/* Account number input */}
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-muted-foreground">{mfsProvider.accountLabel}</label>
+                  <Input
+                    type="tel"
+                    inputMode="numeric"
+                    placeholder={mfsProvider.accountPlaceholder}
+                    value={mfsAccount}
+                    maxLength={mfsProvider.accountMaxLength}
+                    onChange={(e) => { setMfsAccount(e.target.value.replace(/\D/g, "")); setError(""); }}
+                    className="h-12 text-lg font-mono tracking-wider bg-card border-border"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Enter your registered {mfsProvider.name} number to receive the payment request.
+                  </p>
+                </div>
+
+                {/* How it works */}
+                <div className="rounded-xl bg-accent/10 border border-accent/25 px-4 py-3 space-y-2">
+                  <p className="text-xs font-semibold text-foreground">How it works:</p>
+                  <ol className="text-xs text-foreground/80 leading-relaxed space-y-1 list-decimal list-inside">
+                    <li>Enter your {mfsProvider.name} number above</li>
+                    <li>Confirm with your EasyPay PIN</li>
+                    <li>You'll receive a payment request on your {mfsProvider.name} app</li>
+                    <li>Approve the payment in {mfsProvider.name}</li>
+                    <li>Your EasyPay wallet will be credited instantly</li>
+                  </ol>
+                </div>
+
+                {error && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle size={12} /> {error}
+                  </p>
+                )}
+
+                <div className="flex items-center gap-2 px-1">
+                  <Shield size={13} className="text-primary shrink-0" />
+                  <p className="text-[11px] text-muted-foreground">
+                    Secured by {mfsProvider.name} Payment Gateway. Your credentials are never stored.
+                  </p>
+                </div>
+
+                <Button
+                  className="w-full h-11 gradient-addmoney border-0 text-white font-semibold"
+                  onClick={handleDetailsContinue}
+                >
+                  Continue to PIN
+                </Button>
+              </div>
+            )}
+
+            {/* ══ Processing Step ══ */}
+            {step === "processing" && (
+              <div className="flex flex-col items-center justify-center min-h-[60vh] px-5 gap-6">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+                  className={`w-20 h-20 rounded-2xl ${mfsProvider?.gradient ?? "gradient-addmoney"} flex items-center justify-center text-white shadow-glow`}
+                >
+                  <div className="w-10 h-10 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                </motion.div>
+                <div className="text-center space-y-2">
+                  <h2 className="text-xl font-bold text-foreground">Processing Payment</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Connecting to {mfsProvider?.name ?? "payment gateway"}...
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Please approve the payment request on your {mfsProvider?.name ?? "MFS"} app
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* ══ STEP 4: PIN ══ */}
             {step === "pin" && (
               <div className="px-4 pt-10 pb-32 space-y-8">
@@ -611,7 +776,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                   <div className="flex justify-between text-muted-foreground">
                     <span>Source</span>
                     <span className="text-foreground font-medium capitalize">
-                      {source === "bank" ? bank?.name : "Card"}
+                      {source === "bank" ? bank?.name : source === "mfs" ? mfsProvider?.name : "Card"}
                     </span>
                   </div>
                   <div className="h-px bg-border" />
@@ -701,7 +866,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                     {[
                       { label: "Transaction ID", value: txnId.current },
                       { label: "Date & Time",    value: txnTime.current.toLocaleString("en-GB", { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" }) },
-                      { label: "Source",         value: source === "bank" ? bank?.name ?? "Bank Transfer" : "Card" },
+                      { label: "Source",         value: source === "bank" ? bank?.name ?? "Bank Transfer" : source === "mfs" ? `${mfsProvider?.name} (${mfsAccount})` : "Card" },
                       { label: "Amount",         value: `৳${amtNum.toLocaleString()}` },
                       { label: "Fee",            value: "Free" },
                       { label: "Fee Source",     value: "N/A – No charge" },
@@ -757,7 +922,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
           gradient: "gradient-addmoney",
           txnId: txnId.current,
           rows: [
-            { label: "Source", value: source === "bank" ? bank?.name ?? "Bank Transfer" : "Card" },
+            { label: "Source", value: source === "bank" ? bank?.name ?? "Bank Transfer" : source === "mfs" ? `${mfsProvider?.name} (${mfsAccount})` : "Card" },
             { label: "Amount", value: `৳${(parseFloat(amount) || 0).toLocaleString()}` },
             { label: "Fee", value: "Free" },
             { label: "Status", value: source === "bank" ? "Pending (up to 24h)" : "Completed" },
