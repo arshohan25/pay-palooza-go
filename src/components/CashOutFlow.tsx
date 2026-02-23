@@ -2,6 +2,8 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { transferMoney, getBalance, recordTransaction } from "@/lib/balanceStore";
+import { verifyPin } from "@/lib/verifyPin";
+import { checkDailyLimit } from "@/lib/dailyLimits";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -249,14 +251,27 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
     if (processing) return;
     setProcessing(true);
+
+    // Verify PIN
+    const pinValid = await verifyPin(pin);
+    if (!pinValid) { setError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
+
+    // Check daily limit
+    const amtVal = parseFloat(amount) || 0;
+    const txnType = isBank ? "banktransfer" : "cashout";
+    const limitCheck = await checkDailyLimit(txnType, amtVal);
+    if (!limitCheck.allowed) {
+      setError(`Daily limit exceeded. Used ৳${limitCheck.used.toLocaleString()} of ৳${limitCheck.limit.toLocaleString()} today.`);
+      setProcessing(false);
+      return;
+    }
+
     haptics.success();
     txnTime.current = new Date();
-    const amtVal = parseFloat(amount) || 0;
     const feeVal = amtVal * (isMerchant ? 0.01 : 0.0119);
     const commissionVal = amtVal * 0.0049;
     try {
       if (isBank) {
-        // Bank transfer — single-sided, no in-system recipient
         await recordTransaction({
           type: "banktransfer",
           amount: amtVal,
@@ -266,7 +281,6 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
           reference: txnId.current,
         });
       } else {
-        // Agent cash out — dual-sided
         await transferMoney({
           recipientPhone: agent?.agentId ?? "",
           amount: amtVal,
@@ -285,7 +299,6 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
       return;
     }
     showTxnToast({ type: isBank ? "Bank Transfer" : "Cash Out", amount: `৳${amtVal.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-cashout" });
-    // Save bank account for future use
     if (isBank) {
       const bankShort = BANKS.find((b) => b.name === bankName)?.short ?? bankName.slice(0, 4).toUpperCase();
       saveBank({ bank_name: bankName, account_number: accountNumber, account_holder: accountHolder, short_code: bankShort });

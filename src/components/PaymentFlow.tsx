@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { transferMoney } from "@/lib/balanceStore";
+import { verifyPin } from "@/lib/verifyPin";
+import { checkDailyLimit } from "@/lib/dailyLimits";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -181,9 +183,22 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
     if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
     if (processing) return;
     setProcessing(true);
+
+    // Verify PIN
+    const pinValid = await verifyPin(pin);
+    if (!pinValid) { setError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
+
+    // Check daily limit
+    const amtVal = parseFloat(amount) || 0;
+    const limitCheck = await checkDailyLimit("payment", amtVal);
+    if (!limitCheck.allowed) {
+      setError(`Daily limit exceeded. Used ৳${limitCheck.used.toLocaleString()} of ৳${limitCheck.limit.toLocaleString()} today.`);
+      setProcessing(false);
+      return;
+    }
+
     haptics.success();
     txnTime.current = new Date();
-    const amtVal = parseFloat(amount) || 0;
     try {
       await transferMoney({
         recipientPhone: merchant?.merchantId ?? "",

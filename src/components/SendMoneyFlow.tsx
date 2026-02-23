@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { transferMoney, getBalance } from "@/lib/balanceStore";
+import { verifyPin } from "@/lib/verifyPin";
+import { checkDailyLimit } from "@/lib/dailyLimits";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -259,9 +261,22 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     if (pin.length < 4) { setError(t("enterYour4DigitPin")); return; }
     if (processing) return;
     setProcessing(true);
+
+    // Verify PIN
+    const pinValid = await verifyPin(pin);
+    if (!pinValid) { setError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
+
+    // Check daily limit
+    const amtVal = parseFloat(amount) || 0;
+    const limitCheck = await checkDailyLimit("send", amtVal);
+    if (!limitCheck.allowed) {
+      setError(`Daily limit exceeded. Used ৳${limitCheck.used.toLocaleString()} of ৳${limitCheck.limit.toLocaleString()} today.`);
+      setProcessing(false);
+      return;
+    }
+
     haptics.success();
     txnTime.current = new Date();
-    const amtVal = parseFloat(amount) || 0;
     const feeVal = calcSendFee(amtVal);
     await transferMoney({
       recipientPhone: recipient?.phone ?? "",
