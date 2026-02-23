@@ -290,6 +290,8 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
         console.error("Payment gateway error:", err);
         // Fall back to simulation on any error
         await simulateAndRecord(addAmt);
+      } finally {
+        setProcessing(false);
       }
       return;
     }
