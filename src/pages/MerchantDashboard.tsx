@@ -10,7 +10,8 @@ import {
   Zap, Gift, Star, ShieldCheck, Smartphone, Globe, TrendingDown,
   Target, Award, Sparkles, ArrowUpRight, ArrowDownRight, PieChart,
   Bell, Settings, HelpCircle, Landmark, BadgeCheck, Link, Share2,
-  ExternalLink, Plus, Trash2, Check
+  ExternalLink, Plus, Trash2, Check, Send, Banknote, Timer,
+  ArrowRightLeft, Repeat, HandCoins, CalendarClock, CircleDollarSign
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -411,6 +412,12 @@ const MerchantBenefitsPage = ({ navigate }: { navigate: (path: string) => void }
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* ── Overview Tab ── */
 const MerchOverview = ({ merchant, balance, paymentTxns }: { merchant: MerchantInfo | null; balance: number; paymentTxns: TxnRow[] }) => {
+  const { toast } = useToast();
+  const [showSendMoney, setShowSendMoney] = useState(false);
+  const [showCashOut, setShowCashOut] = useState(false);
+  const [showAddBank, setShowAddBank] = useState(false);
+  const [showSettlementConfig, setShowSettlementConfig] = useState(false);
+
   const totalRevenue = paymentTxns.reduce((s, t) => s + t.amount, 0);
   const mdrDeducted = Math.round(totalRevenue * (merchant?.mdr_rate ?? 0.015));
   const avgTxn = paymentTxns.length > 0 ? Math.round(totalRevenue / paymentTxns.length) : 0;
@@ -419,7 +426,6 @@ const MerchOverview = ({ merchant, balance, paymentTxns }: { merchant: MerchantI
   const todayTxns = paymentTxns.filter(t => new Date(t.created_at).toDateString() === new Date().toDateString());
   const todayRevenue = todayTxns.reduce((s, t) => s + t.amount, 0);
 
-  // Last 7 days daily breakdown
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (6 - i));
     const dayStr = d.toDateString();
@@ -428,15 +434,42 @@ const MerchOverview = ({ merchant, balance, paymentTxns }: { merchant: MerchantI
   });
   const maxDay = Math.max(...last7.map(d => d.amount), 1);
 
-  // Peak hour analysis
   const hourCounts: number[] = Array(24).fill(0);
   paymentTxns.forEach(t => { hourCounts[new Date(t.created_at).getHours()]++; });
   const peakHour = hourCounts.indexOf(Math.max(...hourCounts));
   const peakLabel = `${peakHour % 12 || 12}${peakHour < 12 ? "AM" : "PM"}`;
 
+  const quickActions = [
+    { icon: Send, label: "Send Money", desc: "Flat ৳5 fee", gradient: "from-blue-500 to-indigo-600", onClick: () => setShowSendMoney(true) },
+    { icon: HandCoins, label: "Cash Out", desc: "1.15% charge", gradient: "from-emerald-500 to-teal-600", onClick: () => setShowCashOut(true) },
+    { icon: Landmark, label: "Add Bank", desc: "Auto settle · 1%", gradient: "from-amber-500 to-orange-600", onClick: () => setShowAddBank(true) },
+    { icon: CalendarClock, label: "Settlement", desc: "Schedule", gradient: "from-purple-500 to-violet-600", onClick: () => setShowSettlementConfig(true) },
+  ];
+
   return (
     <motion.div variants={stagger.container} initial="hidden" animate="show" className="space-y-4">
-      {/* Revenue cards grid */}
+      {/* Quick Actions Grid */}
+      <motion.div variants={stagger.item}>
+        <div className="flex items-center justify-between mb-2.5 px-1">
+          <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+            <Zap size={14} className="text-primary" /> Merchant Services
+          </h3>
+        </div>
+        <div className="grid grid-cols-4 gap-2">
+          {quickActions.map(a => (
+            <motion.button key={a.label} whileTap={{ scale: 0.95 }} onClick={a.onClick}
+              className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-card shadow-card border border-border/40 hover:shadow-elevated transition-all press-effect">
+              <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${a.gradient} flex items-center justify-center shadow-sm`}>
+                <a.icon size={18} className="text-white" />
+              </div>
+              <span className="text-[10px] font-bold text-foreground leading-tight text-center">{a.label}</span>
+              <span className="text-[8px] text-muted-foreground font-medium">{a.desc}</span>
+            </motion.button>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Revenue cards */}
       <motion.div variants={stagger.item} className="grid grid-cols-2 gap-3">
         {[
           { label: "Total Revenue", value: `৳${fmt(totalRevenue)}`, icon: DollarSign, iconBg: "bg-emerald-500/10", iconColor: "text-emerald-600" },
@@ -454,7 +487,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns }: { merchant: MerchantI
         ))}
       </motion.div>
 
-      {/* Insights row */}
+      {/* Insights */}
       <motion.div variants={stagger.item}>
         <Card className="p-4 border-0 shadow-card">
           <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
@@ -480,6 +513,70 @@ const MerchOverview = ({ merchant, balance, paymentTxns }: { merchant: MerchantI
         </Card>
       </motion.div>
 
+      {/* Fee & Charges Card */}
+      <motion.div variants={stagger.item}>
+        <Card className="p-4 border-0 shadow-card">
+          <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+            <CircleDollarSign size={14} className="text-primary" /> Fee & Charges
+          </h3>
+          <div className="space-y-2">
+            {[
+              { label: "Send Money to User", fee: "Flat ৳5", icon: Send, color: "text-blue-600", bg: "bg-blue-500/10" },
+              { label: "Cash Out (Merchant)", fee: "1.15%", icon: HandCoins, color: "text-emerald-600", bg: "bg-emerald-500/10" },
+              { label: "Bank Auto-Settlement", fee: "1.00%", icon: Landmark, color: "text-amber-600", bg: "bg-amber-500/10" },
+              { label: "MDR on Payments", fee: `${((merchant?.mdr_rate ?? 0.015) * 100).toFixed(2)}%`, icon: Percent, color: "text-purple-600", bg: "bg-purple-500/10" },
+            ].map(item => (
+              <div key={item.label} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-muted/30 border border-border/30">
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-lg ${item.bg} flex items-center justify-center`}>
+                    <item.icon size={14} className={item.color} />
+                  </div>
+                  <span className="text-xs font-semibold text-foreground">{item.label}</span>
+                </div>
+                <Badge variant="secondary" className="text-[10px] font-bold">{item.fee}</Badge>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </motion.div>
+
+      {/* Settlement Status Card */}
+      <motion.div variants={stagger.item}>
+        <Card className="p-4 border-0 shadow-card relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-5" style={{
+            background: "radial-gradient(circle, hsl(var(--primary)) 0%, transparent 70%)"
+          }} />
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <Timer size={14} className="text-primary" /> Settlement Status
+            </h3>
+            <button onClick={() => setShowSettlementConfig(true)} className="text-[10px] font-semibold text-primary flex items-center gap-1">
+              <Settings size={11} /> Configure
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="p-3 rounded-xl bg-muted/30 border border-border/30">
+              <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">Frequency</p>
+              <p className="text-sm font-bold text-foreground mt-0.5">{merchant?.settlement_frequency || "T+1"}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-muted/30 border border-border/30">
+              <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">Bank Status</p>
+              <p className="text-sm font-bold text-foreground mt-0.5 flex items-center gap-1">
+                {merchant?.bank_name ? (<><CheckCircle2 size={12} className="text-emerald-500" /> Linked</>) : (<><Shield size={12} className="text-amber-500" /> Not Set</>)}
+              </p>
+            </div>
+            <div className="p-3 rounded-xl bg-muted/30 border border-border/30">
+              <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">Next Payout</p>
+              <p className="text-sm font-bold text-foreground mt-0.5">{new Date(Date.now() + 86400000).toLocaleDateString("en-BD", { month: "short", day: "numeric" })}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-muted/30 border border-border/30">
+              <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">Pending</p>
+              <p className="text-sm font-bold text-foreground mt-0.5">৳{fmt(todayRevenue)}</p>
+            </div>
+          </div>
+        </Card>
+      </motion.div>
+
       {/* 7-day chart */}
       <motion.div variants={stagger.item}>
         <Card className="p-4 border-0 shadow-card">
@@ -496,9 +593,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns }: { merchant: MerchantI
                   height: `${Math.max(6, (d.amount / maxDay) * 90)}px`,
                 }}>
                   <div className="absolute inset-0 rounded-lg" style={{
-                    background: i === 6
-                      ? "linear-gradient(180deg, hsl(24 90% 55%), hsl(350 65% 38%))"
-                      : "hsl(var(--muted))"
+                    background: i === 6 ? "linear-gradient(180deg, hsl(24 90% 55%), hsl(350 65% 38%))" : "hsl(var(--muted))"
                   }} />
                   {i === 6 && <div className="absolute inset-0 rounded-lg animate-pulse" style={{
                     background: "linear-gradient(180deg, hsl(24 90% 55% / 0.3), transparent)"
@@ -522,7 +617,6 @@ const MerchOverview = ({ merchant, balance, paymentTxns }: { merchant: MerchantI
             <div className="text-center py-8">
               <CreditCard size={32} className="text-muted-foreground/30 mx-auto mb-2" />
               <p className="text-xs text-muted-foreground">No payments yet</p>
-              <p className="text-[10px] text-muted-foreground/70 mt-1">Share your QR code to start receiving payments</p>
             </div>
           ) : (
             <div className="space-y-1">
@@ -547,6 +641,12 @@ const MerchOverview = ({ merchant, balance, paymentTxns }: { merchant: MerchantI
           )}
         </Card>
       </motion.div>
+
+      {/* Modals */}
+      <MerchantSendMoneySheet open={showSendMoney} onClose={() => setShowSendMoney(false)} />
+      <MerchantCashOutSheet open={showCashOut} onClose={() => setShowCashOut(false)} />
+      <MerchantAddBankSheet open={showAddBank} onClose={() => setShowAddBank(false)} merchant={merchant} />
+      <MerchantSettlementConfigSheet open={showSettlementConfig} onClose={() => setShowSettlementConfig(false)} merchant={merchant} />
     </motion.div>
   );
 };
@@ -1146,6 +1246,340 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
         </Card>
       </motion.div>
     </motion.div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* ── Merchant Send Money Sheet ── */
+const MerchantSendMoneySheet = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
+  const { toast } = useToast();
+  const [phone, setPhone] = useState("");
+  const [amount, setAmount] = useState("");
+  const [processing, setProcessing] = useState(false);
+
+  const fee = 5;
+  const parsedAmount = parseFloat(amount) || 0;
+  const total = parsedAmount + fee;
+
+  const handleSend = async () => {
+    if (!phone || phone.length < 11) {
+      toast({ title: "Invalid number", description: "Enter a valid 11-digit number", variant: "destructive" });
+      return;
+    }
+    if (parsedAmount <= 0 || parsedAmount > 50000) {
+      toast({ title: "Invalid amount", description: "Amount must be between ৳1 and ৳50,000", variant: "destructive" });
+      return;
+    }
+    setProcessing(true);
+    try {
+      const { data, error } = await supabase.rpc("transfer_money", {
+        p_recipient_phone: phone,
+        p_amount: parsedAmount,
+        p_fee: fee,
+        p_type: "send" as const,
+        p_description: "Merchant Send Money",
+      });
+      if (error) throw error;
+      toast({ title: "Sent ৳" + fmt(parsedAmount), description: `To ${phone} · Fee ৳${fee}` });
+      setPhone(""); setAmount(""); onClose();
+    } catch (e: any) {
+      toast({ title: "Failed", description: e.message || "Something went wrong", variant: "destructive" });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={onClose}>
+      <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", bounce: 0.15 }}
+        className="w-full max-w-xl bg-card rounded-t-3xl p-6 space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="w-12 h-1 bg-muted rounded-full mx-auto" />
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+            <Send size={18} className="text-white" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-foreground">Send Money</h3>
+            <p className="text-[11px] text-muted-foreground">Flat ৳5 fee per transaction</p>
+          </div>
+        </div>
+        <div>
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Recipient Number</label>
+          <Input placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))} className="h-12 rounded-xl text-lg" inputMode="numeric" />
+        </div>
+        <div>
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Amount</label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">৳</span>
+            <Input type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className="pl-8 h-12 rounded-xl text-lg" inputMode="decimal" />
+          </div>
+        </div>
+        {parsedAmount > 0 && (
+          <div className="p-3 rounded-xl bg-muted/40 text-xs space-y-1">
+            <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-semibold text-foreground">৳{fmt(parsedAmount)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Fee</span><span className="font-semibold text-foreground">৳{fee}</span></div>
+            <div className="flex justify-between border-t border-border/50 pt-1"><span className="font-bold text-foreground">Total</span><span className="font-bold text-foreground">৳{fmt(total)}</span></div>
+          </div>
+        )}
+        <Button onClick={handleSend} disabled={processing} className="w-full h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(217 80% 50%), hsl(226 75% 40%))" }}>
+          {processing ? "Sending..." : `Send ৳${fmt(parsedAmount)} → ${phone || "..."}`}
+        </Button>
+      </motion.div>
+    </div>
+  );
+};
+
+/* ── Merchant Cash Out Sheet ── */
+const MerchantCashOutSheet = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
+  const { toast } = useToast();
+  const [amount, setAmount] = useState("");
+  const [agentId, setAgentId] = useState("");
+  const [processing, setProcessing] = useState(false);
+
+  const parsedAmount = parseFloat(amount) || 0;
+  const fee = Math.round(parsedAmount * 0.0115 * 100) / 100;
+  const total = parsedAmount + fee;
+
+  const handleCashOut = async () => {
+    if (!agentId || agentId.length < 5) {
+      toast({ title: "Invalid Agent ID", description: "Enter a valid agent number", variant: "destructive" });
+      return;
+    }
+    if (parsedAmount < 30 || parsedAmount > 50000) {
+      toast({ title: "Invalid amount", description: "Amount must be between ৳30 and ৳50,000", variant: "destructive" });
+      return;
+    }
+    setProcessing(true);
+    try {
+      const { error } = await supabase.rpc("record_transaction", {
+        p_type: "cashout" as const,
+        p_amount: parsedAmount,
+        p_fee: fee,
+        p_recipient_phone: agentId,
+        p_description: "Merchant Cash Out",
+      });
+      if (error) throw error;
+      toast({ title: "Cash Out ৳" + fmt(parsedAmount), description: `Fee: ৳${fmt(fee)} (1.15%)` });
+      setAmount(""); setAgentId(""); onClose();
+    } catch (e: any) {
+      toast({ title: "Failed", description: e.message || "Something went wrong", variant: "destructive" });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={onClose}>
+      <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", bounce: 0.15 }}
+        className="w-full max-w-xl bg-card rounded-t-3xl p-6 space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="w-12 h-1 bg-muted rounded-full mx-auto" />
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+            <HandCoins size={18} className="text-white" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-foreground">Cash Out</h3>
+            <p className="text-[11px] text-muted-foreground">1.15% charge · Min ৳30 · Max ৳50,000</p>
+          </div>
+        </div>
+        <div>
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Agent Number</label>
+          <Input placeholder="Agent ID or number" value={agentId} onChange={e => setAgentId(e.target.value.replace(/\D/g, "").slice(0, 11))} className="h-12 rounded-xl" inputMode="numeric" />
+        </div>
+        <div>
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Amount</label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">৳</span>
+            <Input type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className="pl-8 h-12 rounded-xl text-lg" inputMode="decimal" />
+          </div>
+        </div>
+        {parsedAmount > 0 && (
+          <div className="p-3 rounded-xl bg-muted/40 text-xs space-y-1">
+            <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-semibold text-foreground">৳{fmt(parsedAmount)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Fee (1.15%)</span><span className="font-semibold text-foreground">৳{fmt(fee)}</span></div>
+            <div className="flex justify-between border-t border-border/50 pt-1"><span className="font-bold text-foreground">Total Deduction</span><span className="font-bold text-foreground">৳{fmt(total)}</span></div>
+          </div>
+        )}
+        <Button onClick={handleCashOut} disabled={processing} className="w-full h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(162 72% 38%), hsl(174 68% 28%))" }}>
+          {processing ? "Processing..." : `Cash Out ৳${fmt(parsedAmount)}`}
+        </Button>
+      </motion.div>
+    </div>
+  );
+};
+
+/* ── Merchant Add Bank Sheet ── */
+const MerchantAddBankSheet = ({ open, onClose, merchant }: { open: boolean; onClose: () => void; merchant: MerchantInfo | null }) => {
+  const { toast } = useToast();
+  const [bankName, setBankName] = useState(merchant?.bank_name || "");
+  const [accNumber, setAccNumber] = useState(merchant?.bank_account_number || "");
+  const [routing, setRouting] = useState(merchant?.bank_routing || "");
+  const [saving, setSaving] = useState(false);
+
+  const banks = ["Dutch-Bangla Bank", "Islami Bank", "BRAC Bank", "City Bank", "Eastern Bank", "Prime Bank", "Sonali Bank", "Janata Bank", "Agrani Bank", "Pubali Bank"];
+
+  const handleSave = async () => {
+    if (!bankName || !accNumber || accNumber.length < 8) {
+      toast({ title: "Incomplete details", description: "Please fill in bank name and account number", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("merchants").update({
+        bank_name: bankName,
+        bank_account_number: accNumber,
+        bank_routing: routing || null,
+      }).eq("id", merchant?.id || "");
+      if (error) throw error;
+      toast({ title: "Bank Added!", description: `${bankName} · ****${accNumber.slice(-4)} linked for auto-settlement (1% fee)` });
+      onClose();
+    } catch (e: any) {
+      toast({ title: "Failed", description: e.message || "Could not save bank details", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={onClose}>
+      <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", bounce: 0.15 }}
+        className="w-full max-w-xl bg-card rounded-t-3xl p-6 space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="w-12 h-1 bg-muted rounded-full mx-auto" />
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+            <Landmark size={18} className="text-white" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-foreground">Add Bank Account</h3>
+            <p className="text-[11px] text-muted-foreground">For auto-settlement · 1% transfer fee</p>
+          </div>
+        </div>
+
+        <div>
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Bank Name</label>
+          <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto scrollbar-none">
+            {banks.map(b => (
+              <button key={b} onClick={() => setBankName(b)}
+                className={`text-[11px] font-medium py-2 px-2.5 rounded-xl border transition-all text-left ${bankName === b ? "border-primary bg-primary/10 text-primary" : "border-border/50 text-foreground hover:bg-muted/30"}`}>{b}</button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Account Number</label>
+          <Input placeholder="Enter account number" value={accNumber} onChange={e => setAccNumber(e.target.value.replace(/\D/g, "").slice(0, 20))} className="h-12 rounded-xl" inputMode="numeric" />
+        </div>
+
+        <div>
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Routing Number (Optional)</label>
+          <Input placeholder="Enter routing number" value={routing} onChange={e => setRouting(e.target.value.replace(/\D/g, "").slice(0, 9))} className="h-12 rounded-xl" inputMode="numeric" />
+        </div>
+
+        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+          <p className="text-[10px] text-amber-700 dark:text-amber-300 font-medium flex items-start gap-2">
+            <Shield size={12} className="shrink-0 mt-0.5" />
+            A 1% fee applies when funds are auto-settled to your bank. Settlements process on your configured schedule.
+          </p>
+        </div>
+
+        <Button onClick={handleSave} disabled={saving} className="w-full h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(36 95% 50%), hsl(24 90% 45%))" }}>
+          {saving ? "Saving..." : "Link Bank Account"}
+        </Button>
+      </motion.div>
+    </div>
+  );
+};
+
+/* ── Merchant Settlement Config Sheet ── */
+const MerchantSettlementConfigSheet = ({ open, onClose, merchant }: { open: boolean; onClose: () => void; merchant: MerchantInfo | null }) => {
+  const { toast } = useToast();
+  const [frequency, setFrequency] = useState(merchant?.settlement_frequency || "T+1");
+  const [customTime, setCustomTime] = useState("09:00");
+  const [saving, setSaving] = useState(false);
+
+  const freqOptions = [
+    { id: "T+1", label: "T+1 (Next Day)", desc: "Settle next business day — Default", icon: Zap },
+    { id: "T+2", label: "T+2 (2 Days)", desc: "Settle every 2 business days", icon: Calendar },
+    { id: "Weekly", label: "Weekly", desc: "Settle once per week (Sunday)", icon: Repeat },
+    { id: "Monthly", label: "Monthly", desc: "Settle on 1st of each month", icon: CalendarClock },
+  ];
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("merchants").update({
+        settlement_frequency: frequency,
+      }).eq("id", merchant?.id || "");
+      if (error) throw error;
+      toast({ title: "Settlement Updated!", description: `Frequency set to ${frequency} · Time: ${customTime}` });
+      onClose();
+    } catch (e: any) {
+      toast({ title: "Failed", description: e.message || "Could not update", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={onClose}>
+      <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", bounce: 0.15 }}
+        className="w-full max-w-xl bg-card rounded-t-3xl p-6 space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="w-12 h-1 bg-muted rounded-full mx-auto" />
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
+            <CalendarClock size={18} className="text-white" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-foreground">Settlement Schedule</h3>
+            <p className="text-[11px] text-muted-foreground">Configure when you receive payouts</p>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          {freqOptions.map(opt => (
+            <button key={opt.id} onClick={() => setFrequency(opt.id)}
+              className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-all text-left ${frequency === opt.id ? "border-primary bg-primary/5 shadow-sm" : "border-border/50 hover:bg-muted/30"}`}>
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${frequency === opt.id ? "bg-primary/15" : "bg-muted/50"}`}>
+                <opt.icon size={16} className={frequency === opt.id ? "text-primary" : "text-muted-foreground"} />
+              </div>
+              <div className="flex-1">
+                <p className={`text-xs font-bold ${frequency === opt.id ? "text-primary" : "text-foreground"}`}>{opt.label}</p>
+                <p className="text-[10px] text-muted-foreground">{opt.desc}</p>
+              </div>
+              {frequency === opt.id && <CheckCircle2 size={16} className="text-primary" />}
+            </button>
+          ))}
+        </div>
+
+        <div>
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Settlement Time</label>
+          <Input type="time" value={customTime} onChange={e => setCustomTime(e.target.value)} className="h-12 rounded-xl" />
+          <p className="text-[9px] text-muted-foreground mt-1">When the settlement batch processes each cycle</p>
+        </div>
+
+        {merchant?.bank_name ? (
+          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+            <p className="text-[10px] text-emerald-700 dark:text-emerald-300 font-medium flex items-center gap-2">
+              <CheckCircle2 size={12} /> Settling to {merchant.bank_name} · ****{merchant.bank_account_number?.slice(-4)}
+            </p>
+          </div>
+        ) : (
+          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+            <p className="text-[10px] text-amber-700 dark:text-amber-300 font-medium flex items-center gap-2">
+              <Shield size={12} /> Add a bank account first to enable auto-settlement
+            </p>
+          </div>
+        )}
+
+        <Button onClick={handleSave} disabled={saving} className="w-full h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(270 60% 50%), hsl(280 55% 40%))" }}>
+          {saving ? "Saving..." : "Save Settlement Schedule"}
+        </Button>
+      </motion.div>
+    </div>
   );
 };
 
