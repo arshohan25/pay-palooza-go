@@ -11,7 +11,8 @@ import {
   Target, Award, Sparkles, ArrowUpRight, ArrowDownRight, PieChart,
   Bell, Settings, HelpCircle, Landmark, BadgeCheck, Link, Share2,
   ExternalLink, Plus, Trash2, Check, Send, Banknote, Timer,
-  ArrowRightLeft, Repeat, HandCoins, CalendarClock, CircleDollarSign, ScanLine
+  ArrowRightLeft, Repeat, HandCoins, CalendarClock, CircleDollarSign, ScanLine,
+  Lock, Delete
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import QRCode from "qrcode";
 import QrScannerModal from "@/components/QrScannerModal";
+import { verifyPin } from "@/lib/verifyPin";
+import SlideToConfirm from "@/components/SlideToConfirm";
+import { haptics } from "@/lib/haptics";
 
 /* ─── Types ─── */
 type MerchTab = "overview" | "qr" | "transactions" | "settlements" | "mdr" | "paylinks";
@@ -1341,12 +1345,21 @@ const MerchantSendMoneySheet = ({ open, onClose, onSuccess }: { open: boolean; o
   const [amount, setAmount] = useState("");
   const [processing, setProcessing] = useState(false);
   const [showQr, setShowQr] = useState(false);
+  const [step, setStep] = useState<"details" | "pin">("details");
+  const [pin, setPin] = useState("");
+  const [pinError, setPinError] = useState("");
+  const [pinVerified, setPinVerified] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   const fee = 5;
   const parsedAmount = parseFloat(amount) || 0;
   const total = parsedAmount + fee;
 
-  const handleSend = async () => {
+  const resetState = () => {
+    setPhone(""); setAmount(""); setStep("details"); setPin(""); setPinError(""); setPinVerified(false);
+  };
+
+  const goToPin = () => {
     if (!phone || phone.length < 11) {
       toast({ title: "Invalid number", description: "Enter a valid 11-digit number", variant: "destructive" });
       return;
@@ -1355,9 +1368,36 @@ const MerchantSendMoneySheet = ({ open, onClose, onSuccess }: { open: boolean; o
       toast({ title: "Invalid amount", description: "Amount must be between ৳1 and ৳50,000", variant: "destructive" });
       return;
     }
+    setStep("pin");
+    setPin(""); setPinError(""); setPinVerified(false);
+  };
+
+  const handlePinDigit = (d: string) => {
+    if (pin.length >= 4) return;
+    const next = pin + d;
+    setPin(next);
+    setPinError("");
+    if (next.length === 4) {
+      setVerifying(true);
+      verifyPin(next).then(ok => {
+        setVerifying(false);
+        if (ok) {
+          setPinVerified(true);
+          haptics.success();
+        } else {
+          setPinError("Incorrect PIN");
+          setPin("");
+          haptics.error();
+        }
+      });
+    }
+  };
+  const handlePinDelete = () => { setPin(p => p.slice(0, -1)); setPinError(""); };
+
+  const handleSend = async () => {
     setProcessing(true);
     try {
-      const { data, error } = await supabase.rpc("transfer_money", {
+      const { error } = await supabase.rpc("transfer_money", {
         p_recipient_phone: phone,
         p_amount: parsedAmount,
         p_fee: fee,
@@ -1366,7 +1406,7 @@ const MerchantSendMoneySheet = ({ open, onClose, onSuccess }: { open: boolean; o
       });
       if (error) throw error;
       toast({ title: "Sent ৳" + fmt(parsedAmount), description: `To ${phone} · Fee ৳${fee}` });
-      setPhone(""); setAmount(""); onClose(); onSuccess?.();
+      resetState(); onClose(); onSuccess?.();
     } catch (e: any) {
       toast({ title: "Failed", description: e.message || "Something went wrong", variant: "destructive" });
     } finally {
@@ -1377,7 +1417,7 @@ const MerchantSendMoneySheet = ({ open, onClose, onSuccess }: { open: boolean; o
   if (!open) return null;
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={onClose}>
+      <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={() => { resetState(); onClose(); }}>
         <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", bounce: 0.15 }}
           className="w-full max-w-xl bg-card rounded-t-3xl p-6 space-y-4" onClick={e => e.stopPropagation()}>
           <div className="w-12 h-1 bg-muted rounded-full mx-auto" />
@@ -1387,35 +1427,88 @@ const MerchantSendMoneySheet = ({ open, onClose, onSuccess }: { open: boolean; o
             </div>
             <div>
               <h3 className="text-base font-bold text-foreground">Send Money</h3>
-              <p className="text-[11px] text-muted-foreground">Flat ৳5 fee per transaction</p>
+              <p className="text-[11px] text-muted-foreground">{step === "pin" ? "Enter PIN to confirm" : "Flat ৳5 fee per transaction"}</p>
             </div>
           </div>
-          <div>
-            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Recipient Number</label>
-            <div className="flex gap-2">
-              <Input placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))} className="h-12 rounded-xl text-lg flex-1" inputMode="numeric" />
-              <Button variant="outline" className="h-12 w-12 rounded-xl shrink-0 border-dashed border-primary/40" onClick={() => setShowQr(true)}>
-                <ScanLine size={18} className="text-primary" />
-              </Button>
-            </div>
-          </div>
-          <div>
-            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Amount</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">৳</span>
-              <Input type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className="pl-8 h-12 rounded-xl text-lg" inputMode="decimal" />
-            </div>
-          </div>
-          {parsedAmount > 0 && (
-            <div className="p-3 rounded-xl bg-muted/40 text-xs space-y-1">
-              <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-semibold text-foreground">৳{fmt(parsedAmount)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Fee</span><span className="font-semibold text-foreground">৳{fee}</span></div>
-              <div className="flex justify-between border-t border-border/50 pt-1"><span className="font-bold text-foreground">Total</span><span className="font-bold text-foreground">৳{fmt(total)}</span></div>
-            </div>
-          )}
-          <Button onClick={handleSend} disabled={processing} className="w-full h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(217 80% 50%), hsl(226 75% 40%))" }}>
-            {processing ? "Sending..." : `Send ৳${fmt(parsedAmount)} → ${phone || "..."}`}
-          </Button>
+
+          <AnimatePresence mode="wait">
+            {step === "details" ? (
+              <motion.div key="details" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+                <div>
+                  <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Recipient Number</label>
+                  <div className="flex gap-2">
+                    <Input placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))} className="h-12 rounded-xl text-lg flex-1" inputMode="numeric" />
+                    <Button variant="outline" className="h-12 w-12 rounded-xl shrink-0 border-dashed border-primary/40" onClick={() => setShowQr(true)}>
+                      <ScanLine size={18} className="text-primary" />
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Amount</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">৳</span>
+                    <Input type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className="pl-8 h-12 rounded-xl text-lg" inputMode="decimal" />
+                  </div>
+                </div>
+                {parsedAmount > 0 && (
+                  <div className="p-3 rounded-xl bg-muted/40 text-xs space-y-1">
+                    <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-semibold text-foreground">৳{fmt(parsedAmount)}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Fee</span><span className="font-semibold text-foreground">৳{fee}</span></div>
+                    <div className="flex justify-between border-t border-border/50 pt-1"><span className="font-bold text-foreground">Total</span><span className="font-bold text-foreground">৳{fmt(total)}</span></div>
+                  </div>
+                )}
+                <Button onClick={goToPin} className="w-full h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(217 80% 50%), hsl(226 75% 40%))" }}>
+                  Continue → Enter PIN
+                </Button>
+              </motion.div>
+            ) : (
+              <motion.div key="pin" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-4">
+                {/* Summary */}
+                <div className="p-3 rounded-xl bg-muted/40 text-xs space-y-1">
+                  <div className="flex justify-between"><span className="text-muted-foreground">To</span><span className="font-semibold text-foreground">{phone}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-semibold text-foreground">৳{fmt(parsedAmount)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Fee</span><span className="font-semibold text-foreground">৳{fee}</span></div>
+                  <div className="flex justify-between border-t border-border/50 pt-1"><span className="font-bold text-foreground">Total</span><span className="font-bold text-foreground">৳{fmt(total)}</span></div>
+                </div>
+
+                {/* PIN dots */}
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <Lock size={14} className="text-muted-foreground" />
+                    <span className="text-xs font-semibold text-muted-foreground">Enter 4-Digit PIN</span>
+                  </div>
+                  <div className="flex justify-center gap-3 mb-2">
+                    {[0, 1, 2, 3].map(i => (
+                      <div key={i} className={`w-4 h-4 rounded-full transition-all duration-200 ${i < pin.length ? "bg-primary scale-110" : "bg-muted-foreground/20"}`} />
+                    ))}
+                  </div>
+                  {pinError && <p className="text-[11px] text-destructive font-medium">{pinError}</p>}
+                  {verifying && <p className="text-[11px] text-muted-foreground animate-pulse">Verifying...</p>}
+                </div>
+
+                {/* Numeric keypad */}
+                <div className="grid grid-cols-3 gap-2 max-w-[240px] mx-auto">
+                  {[1,2,3,4,5,6,7,8,9].map(d => (
+                    <button key={d} onClick={() => handlePinDigit(String(d))} disabled={verifying || pinVerified}
+                      className="h-12 rounded-xl bg-muted/50 hover:bg-muted text-lg font-bold text-foreground transition-colors press-effect">{d}</button>
+                  ))}
+                  <button onClick={() => setStep("details")} className="h-12 rounded-xl bg-muted/30 text-xs font-semibold text-muted-foreground">Back</button>
+                  <button onClick={() => handlePinDigit("0")} disabled={verifying || pinVerified}
+                    className="h-12 rounded-xl bg-muted/50 hover:bg-muted text-lg font-bold text-foreground transition-colors press-effect">0</button>
+                  <button onClick={handlePinDelete} disabled={verifying || pinVerified}
+                    className="h-12 rounded-xl bg-muted/30 flex items-center justify-center text-muted-foreground"><Delete size={18} /></button>
+                </div>
+
+                {/* Slide to confirm */}
+                <SlideToConfirm
+                  onConfirm={handleSend}
+                  label={processing ? "Sending..." : `Send ৳${fmt(parsedAmount)}`}
+                  disabled={!pinVerified || processing}
+                  pinComplete={pinVerified}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       </div>
       <QrScannerModal open={showQr} onClose={() => setShowQr(false)} onScan={(result) => setPhone(result.replace(/\D/g, "").slice(0, 11))} title="Scan Recipient QR" />
@@ -1430,12 +1523,21 @@ const MerchantCashOutSheet = ({ open, onClose, onSuccess }: { open: boolean; onC
   const [agentId, setAgentId] = useState("");
   const [processing, setProcessing] = useState(false);
   const [showQr, setShowQr] = useState(false);
+  const [step, setStep] = useState<"details" | "pin">("details");
+  const [pin, setPin] = useState("");
+  const [pinError, setPinError] = useState("");
+  const [pinVerified, setPinVerified] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   const parsedAmount = parseFloat(amount) || 0;
   const fee = Math.round(parsedAmount * 0.0115 * 100) / 100;
   const total = parsedAmount + fee;
 
-  const handleCashOut = async () => {
+  const resetState = () => {
+    setAmount(""); setAgentId(""); setStep("details"); setPin(""); setPinError(""); setPinVerified(false);
+  };
+
+  const goToPin = () => {
     if (!agentId || agentId.length < 5) {
       toast({ title: "Invalid Agent ID", description: "Enter a valid agent number", variant: "destructive" });
       return;
@@ -1444,6 +1546,33 @@ const MerchantCashOutSheet = ({ open, onClose, onSuccess }: { open: boolean; onC
       toast({ title: "Invalid amount", description: "Amount must be between ৳30 and ৳50,000", variant: "destructive" });
       return;
     }
+    setStep("pin");
+    setPin(""); setPinError(""); setPinVerified(false);
+  };
+
+  const handlePinDigit = (d: string) => {
+    if (pin.length >= 4) return;
+    const next = pin + d;
+    setPin(next);
+    setPinError("");
+    if (next.length === 4) {
+      setVerifying(true);
+      verifyPin(next).then(ok => {
+        setVerifying(false);
+        if (ok) {
+          setPinVerified(true);
+          haptics.success();
+        } else {
+          setPinError("Incorrect PIN");
+          setPin("");
+          haptics.error();
+        }
+      });
+    }
+  };
+  const handlePinDelete = () => { setPin(p => p.slice(0, -1)); setPinError(""); };
+
+  const handleCashOut = async () => {
     setProcessing(true);
     try {
       const { error } = await supabase.rpc("record_transaction", {
@@ -1455,7 +1584,7 @@ const MerchantCashOutSheet = ({ open, onClose, onSuccess }: { open: boolean; onC
       });
       if (error) throw error;
       toast({ title: "Cash Out ৳" + fmt(parsedAmount), description: `Fee: ৳${fmt(fee)} (1.15%)` });
-      setAmount(""); setAgentId(""); onClose(); onSuccess?.();
+      resetState(); onClose(); onSuccess?.();
     } catch (e: any) {
       toast({ title: "Failed", description: e.message || "Something went wrong", variant: "destructive" });
     } finally {
@@ -1466,7 +1595,7 @@ const MerchantCashOutSheet = ({ open, onClose, onSuccess }: { open: boolean; onC
   if (!open) return null;
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={onClose}>
+      <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={() => { resetState(); onClose(); }}>
         <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", bounce: 0.15 }}
           className="w-full max-w-xl bg-card rounded-t-3xl p-6 space-y-4" onClick={e => e.stopPropagation()}>
           <div className="w-12 h-1 bg-muted rounded-full mx-auto" />
@@ -1476,35 +1605,88 @@ const MerchantCashOutSheet = ({ open, onClose, onSuccess }: { open: boolean; onC
             </div>
             <div>
               <h3 className="text-base font-bold text-foreground">Cash Out</h3>
-              <p className="text-[11px] text-muted-foreground">1.15% charge · Min ৳30 · Max ৳50,000</p>
+              <p className="text-[11px] text-muted-foreground">{step === "pin" ? "Enter PIN to confirm" : "1.15% charge · Min ৳30 · Max ৳50,000"}</p>
             </div>
           </div>
-          <div>
-            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Agent Number</label>
-            <div className="flex gap-2">
-              <Input placeholder="Agent ID or number" value={agentId} onChange={e => setAgentId(e.target.value.replace(/\D/g, "").slice(0, 11))} className="h-12 rounded-xl flex-1" inputMode="numeric" />
-              <Button variant="outline" className="h-12 w-12 rounded-xl shrink-0 border-dashed border-primary/40" onClick={() => setShowQr(true)}>
-                <ScanLine size={18} className="text-primary" />
-              </Button>
-            </div>
-          </div>
-          <div>
-            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Amount</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">৳</span>
-              <Input type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className="pl-8 h-12 rounded-xl text-lg" inputMode="decimal" />
-            </div>
-          </div>
-          {parsedAmount > 0 && (
-            <div className="p-3 rounded-xl bg-muted/40 text-xs space-y-1">
-              <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-semibold text-foreground">৳{fmt(parsedAmount)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Fee (1.15%)</span><span className="font-semibold text-foreground">৳{fmt(fee)}</span></div>
-              <div className="flex justify-between border-t border-border/50 pt-1"><span className="font-bold text-foreground">Total Deduction</span><span className="font-bold text-foreground">৳{fmt(total)}</span></div>
-            </div>
-          )}
-          <Button onClick={handleCashOut} disabled={processing} className="w-full h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(162 72% 38%), hsl(174 68% 28%))" }}>
-            {processing ? "Processing..." : `Cash Out ৳${fmt(parsedAmount)}`}
-          </Button>
+
+          <AnimatePresence mode="wait">
+            {step === "details" ? (
+              <motion.div key="details" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+                <div>
+                  <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Agent Number</label>
+                  <div className="flex gap-2">
+                    <Input placeholder="Agent ID or number" value={agentId} onChange={e => setAgentId(e.target.value.replace(/\D/g, "").slice(0, 11))} className="h-12 rounded-xl flex-1" inputMode="numeric" />
+                    <Button variant="outline" className="h-12 w-12 rounded-xl shrink-0 border-dashed border-primary/40" onClick={() => setShowQr(true)}>
+                      <ScanLine size={18} className="text-primary" />
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Amount</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">৳</span>
+                    <Input type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className="pl-8 h-12 rounded-xl text-lg" inputMode="decimal" />
+                  </div>
+                </div>
+                {parsedAmount > 0 && (
+                  <div className="p-3 rounded-xl bg-muted/40 text-xs space-y-1">
+                    <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-semibold text-foreground">৳{fmt(parsedAmount)}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Fee (1.15%)</span><span className="font-semibold text-foreground">৳{fmt(fee)}</span></div>
+                    <div className="flex justify-between border-t border-border/50 pt-1"><span className="font-bold text-foreground">Total Deduction</span><span className="font-bold text-foreground">৳{fmt(total)}</span></div>
+                  </div>
+                )}
+                <Button onClick={goToPin} className="w-full h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(162 72% 38%), hsl(174 68% 28%))" }}>
+                  Continue → Enter PIN
+                </Button>
+              </motion.div>
+            ) : (
+              <motion.div key="pin" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-4">
+                {/* Summary */}
+                <div className="p-3 rounded-xl bg-muted/40 text-xs space-y-1">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Agent</span><span className="font-semibold text-foreground">{agentId}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-semibold text-foreground">৳{fmt(parsedAmount)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Fee (1.15%)</span><span className="font-semibold text-foreground">৳{fmt(fee)}</span></div>
+                  <div className="flex justify-between border-t border-border/50 pt-1"><span className="font-bold text-foreground">Total</span><span className="font-bold text-foreground">৳{fmt(total)}</span></div>
+                </div>
+
+                {/* PIN dots */}
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <Lock size={14} className="text-muted-foreground" />
+                    <span className="text-xs font-semibold text-muted-foreground">Enter 4-Digit PIN</span>
+                  </div>
+                  <div className="flex justify-center gap-3 mb-2">
+                    {[0, 1, 2, 3].map(i => (
+                      <div key={i} className={`w-4 h-4 rounded-full transition-all duration-200 ${i < pin.length ? "bg-primary scale-110" : "bg-muted-foreground/20"}`} />
+                    ))}
+                  </div>
+                  {pinError && <p className="text-[11px] text-destructive font-medium">{pinError}</p>}
+                  {verifying && <p className="text-[11px] text-muted-foreground animate-pulse">Verifying...</p>}
+                </div>
+
+                {/* Numeric keypad */}
+                <div className="grid grid-cols-3 gap-2 max-w-[240px] mx-auto">
+                  {[1,2,3,4,5,6,7,8,9].map(d => (
+                    <button key={d} onClick={() => handlePinDigit(String(d))} disabled={verifying || pinVerified}
+                      className="h-12 rounded-xl bg-muted/50 hover:bg-muted text-lg font-bold text-foreground transition-colors press-effect">{d}</button>
+                  ))}
+                  <button onClick={() => setStep("details")} className="h-12 rounded-xl bg-muted/30 text-xs font-semibold text-muted-foreground">Back</button>
+                  <button onClick={() => handlePinDigit("0")} disabled={verifying || pinVerified}
+                    className="h-12 rounded-xl bg-muted/50 hover:bg-muted text-lg font-bold text-foreground transition-colors press-effect">0</button>
+                  <button onClick={handlePinDelete} disabled={verifying || pinVerified}
+                    className="h-12 rounded-xl bg-muted/30 flex items-center justify-center text-muted-foreground"><Delete size={18} /></button>
+                </div>
+
+                {/* Slide to confirm */}
+                <SlideToConfirm
+                  onConfirm={handleCashOut}
+                  label={processing ? "Processing..." : `Cash Out ৳${fmt(parsedAmount)}`}
+                  disabled={!pinVerified || processing}
+                  pinComplete={pinVerified}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       </div>
       <QrScannerModal open={showQr} onClose={() => setShowQr(false)} onScan={(result) => setAgentId(result.replace(/\D/g, "").slice(0, 11))} title="Scan Agent QR" />
