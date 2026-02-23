@@ -9,8 +9,10 @@ import {
   Percent, Receipt, ChevronRight, Eye, BanknoteIcon, Users,
   Zap, Gift, Star, ShieldCheck, Smartphone, Globe, TrendingDown,
   Target, Award, Sparkles, ArrowUpRight, ArrowDownRight, PieChart,
-  Bell, Settings, HelpCircle, Landmark, BadgeCheck
+  Bell, Settings, HelpCircle, Landmark, BadgeCheck, Link, Share2,
+  ExternalLink, Plus, Trash2, Check
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +21,7 @@ import { useNavigate } from "react-router-dom";
 import QRCode from "qrcode";
 
 /* ─── Types ─── */
-type MerchTab = "overview" | "qr" | "transactions" | "settlements" | "mdr";
+type MerchTab = "overview" | "qr" | "transactions" | "settlements" | "mdr" | "paylinks";
 
 interface MerchantInfo {
   id: string;
@@ -56,6 +58,7 @@ const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 const tabItems: { id: MerchTab; icon: typeof QrCode; label: string }[] = [
   { id: "overview",     icon: BarChart3,    label: "Overview" },
   { id: "qr",           icon: QrCode,       label: "QR Code" },
+  { id: "paylinks",     icon: Link,         label: "Pay Links" },
   { id: "transactions", icon: ArrowUpDown,  label: "Transactions" },
   { id: "settlements",  icon: BanknoteIcon, label: "Settlements" },
   { id: "mdr",          icon: Percent,       label: "MDR" },
@@ -266,6 +269,7 @@ const MerchantDashboard = () => {
           <motion.div key={activeTab} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }}>
             {activeTab === "overview"     && <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} />}
             {activeTab === "qr"           && <QRTab merchant={merchant} toast={toast} />}
+            {activeTab === "paylinks"     && <PayLinksTab merchant={merchant} toast={toast} />}
             {activeTab === "transactions" && <TxnTab txns={paymentTxns} />}
             {activeTab === "settlements"  && <SettlementTab merchant={merchant} paymentTxns={paymentTxns} />}
             {activeTab === "mdr"          && <MDRTab merchant={merchant} paymentTxns={paymentTxns} />}
@@ -890,6 +894,252 @@ const MDRTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null; paym
                   {r.yours && <Badge className="text-[8px] bg-primary/10 text-primary border-0">Your Rate</Badge>}
                 </div>
                 <span className="font-bold text-foreground">{r.rate}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+/* ── Payment Links Tab ── */
+const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any }) => {
+  const [links, setLinks] = useState<{ id: string; amount: number | null; note: string; createdAt: Date; url: string }[]>([]);
+  const [amount, setAmount] = useState("");
+  const [note, setNote] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const baseUrl = window.location.origin;
+  const merchantCode = merchant?.qr_code_data || `MRC-${merchant?.id?.slice(0, 8) || "UNKNOWN"}`;
+
+  const generateLink = () => {
+    const id = Math.random().toString(36).slice(2, 10).toUpperCase();
+    const parsedAmount = amount ? parseFloat(amount) : null;
+
+    if (parsedAmount !== null && (isNaN(parsedAmount) || parsedAmount <= 0)) {
+      toast({ title: "Invalid amount", description: "Please enter a valid positive amount", variant: "destructive" });
+      return;
+    }
+    if (parsedAmount !== null && parsedAmount > 1000000) {
+      toast({ title: "Amount too high", description: "Maximum amount is ৳10,00,000", variant: "destructive" });
+      return;
+    }
+
+    const params = new URLSearchParams({ merchant: merchantCode, ref: id });
+    if (parsedAmount) params.set("amount", parsedAmount.toString());
+    if (note.trim()) params.set("note", note.trim());
+
+    const url = `${baseUrl}/pay?${params.toString()}`;
+
+    setLinks(prev => [{
+      id,
+      amount: parsedAmount,
+      note: note.trim(),
+      createdAt: new Date(),
+      url,
+    }, ...prev]);
+
+    setAmount("");
+    setNote("");
+    toast({ title: "Payment link created!", description: "Share it with your customer" });
+  };
+
+  const copyLink = (link: typeof links[0]) => {
+    navigator.clipboard.writeText(link.url);
+    setCopiedId(link.id);
+    toast({ title: "Link copied!", description: "Payment link copied to clipboard" });
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const shareLink = async (link: typeof links[0]) => {
+    const text = `Pay ${merchant?.business_name || "merchant"}${link.amount ? ` ৳${fmt(link.amount)}` : ""}${link.note ? ` — ${link.note}` : ""}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Payment Link", text, url: link.url });
+      } catch {}
+    } else {
+      copyLink(link);
+    }
+  };
+
+  const removeLink = (id: string) => {
+    setLinks(prev => prev.filter(l => l.id !== id));
+  };
+
+  return (
+    <motion.div variants={stagger.container} initial="hidden" animate="show" className="space-y-4">
+      {/* Create link card */}
+      <motion.div variants={stagger.item}>
+        <Card className="p-5 border-0 shadow-elevated relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-5" style={{
+            background: "radial-gradient(circle, hsl(24 90% 50%) 0%, transparent 70%)"
+          }} />
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Link size={18} className="text-primary" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-foreground">Create Payment Link</h3>
+                <p className="text-[10px] text-muted-foreground">Share with customers for remote payments</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">
+                  Amount (optional)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">৳</span>
+                  <Input
+                    type="number"
+                    placeholder="Leave empty for any amount"
+                    value={amount}
+                    onChange={e => setAmount(e.target.value)}
+                    className="pl-8 h-11 rounded-xl border-border/50 bg-muted/30 focus:bg-background"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">
+                  Note / Description
+                </label>
+                <Input
+                  placeholder="e.g. Invoice #123, Order for blue shirt"
+                  value={note}
+                  onChange={e => setNote(e.target.value)}
+                  maxLength={100}
+                  className="h-11 rounded-xl border-border/50 bg-muted/30 focus:bg-background"
+                />
+              </div>
+
+              <Button
+                onClick={generateLink}
+                className="w-full h-12 rounded-xl text-sm font-bold shadow-glow"
+                style={{ background: "linear-gradient(135deg, hsl(24 90% 50%), hsl(350 65% 38%))" }}
+              >
+                <Plus size={16} className="mr-1.5" /> Generate Payment Link
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </motion.div>
+
+      {/* How it works */}
+      <motion.div variants={stagger.item}>
+        <Card className="p-4 border-0 shadow-card">
+          <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+            <Sparkles size={14} className="text-primary" /> How It Works
+          </h3>
+          <div className="space-y-3">
+            {[
+              { step: "1", title: "Create a link", desc: "Set amount & note, generate a unique payment link" },
+              { step: "2", title: "Share with customer", desc: "Send via SMS, WhatsApp, email, or any messenger" },
+              { step: "3", title: "Get paid instantly", desc: "Customer pays through the link, money hits your account" },
+            ].map(s => (
+              <div key={s.step} className="flex items-start gap-3">
+                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <span className="text-xs font-bold text-primary">{s.step}</span>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-foreground">{s.title}</p>
+                  <p className="text-[10px] text-muted-foreground">{s.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </motion.div>
+
+      {/* Generated links */}
+      {links.length > 0 && (
+        <motion.div variants={stagger.item}>
+          <Card className="p-4 border-0 shadow-card">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-foreground">Your Payment Links</h3>
+              <Badge variant="secondary" className="text-[9px]">{links.length} links</Badge>
+            </div>
+            <div className="space-y-2.5">
+              {links.map(link => (
+                <motion.div
+                  key={link.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-3.5 rounded-xl bg-muted/30 border border-border/50"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-xs font-bold text-foreground">
+                          {link.amount ? `৳${fmt(link.amount)}` : "Open Amount"}
+                        </span>
+                        <Badge variant="secondary" className="text-[8px]">#{link.id}</Badge>
+                      </div>
+                      {link.note && (
+                        <p className="text-[10px] text-muted-foreground truncate">{link.note}</p>
+                      )}
+                    </div>
+                    <button onClick={() => removeLink(link.id)} className="tap-target text-muted-foreground hover:text-destructive transition-colors">
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+
+                  {/* URL preview */}
+                  <div className="bg-background/60 rounded-lg p-2 mb-2.5">
+                    <p className="text-[9px] text-muted-foreground font-mono truncate">{link.url}</p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 h-9 rounded-lg text-[11px]"
+                      onClick={() => copyLink(link)}
+                    >
+                      {copiedId === link.id ? (
+                        <><Check size={12} className="mr-1 text-primary" /> Copied!</>
+                      ) : (
+                        <><Copy size={12} className="mr-1" /> Copy Link</>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 h-9 rounded-lg text-[11px]"
+                      onClick={() => shareLink(link)}
+                    >
+                      <Share2 size={12} className="mr-1" /> Share
+                    </Button>
+                  </div>
+
+                  <p className="text-[8px] text-muted-foreground mt-2 text-right">
+                    Created {link.createdAt.toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Benefits */}
+      <motion.div variants={stagger.item}>
+        <Card className="p-4 border-0 shadow-card">
+          <h3 className="text-sm font-bold text-foreground mb-3">Why Use Payment Links?</h3>
+          <div className="grid grid-cols-2 gap-2.5">
+            {[
+              { icon: Globe, title: "Remote Payments", desc: "Accept payments from anywhere" },
+              { icon: Zap, title: "Instant Setup", desc: "No extra hardware needed" },
+              { icon: ShieldCheck, title: "Secure", desc: "End-to-end encrypted" },
+              { icon: Receipt, title: "Auto Tracked", desc: "All transactions logged" },
+            ].map(b => (
+              <div key={b.title} className="p-3 rounded-xl bg-muted/30 text-center">
+                <b.icon size={16} className="text-primary mx-auto mb-1.5" />
+                <p className="text-[11px] font-semibold text-foreground">{b.title}</p>
+                <p className="text-[9px] text-muted-foreground">{b.desc}</p>
               </div>
             ))}
           </div>
