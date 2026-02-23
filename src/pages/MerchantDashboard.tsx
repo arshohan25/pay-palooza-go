@@ -747,6 +747,38 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
               <Copy size={14} className="mr-1.5" /> Copy Code
             </Button>
           </div>
+
+          {/* Share QR to get payment */}
+          <Button
+            className="w-full h-12 rounded-xl text-sm font-bold mt-3 shadow-glow"
+            style={{ background: "linear-gradient(135deg, hsl(24 90% 50%), hsl(350 65% 38%))" }}
+            onClick={async () => {
+              const shareText = `Pay ${merchant?.business_name || "merchant"} via QR. Merchant Code: ${qrPayload}`;
+              const shareUrl = `${window.location.origin}/pay?merchant=${encodeURIComponent(qrPayload)}`;
+              if (navigator.share) {
+                try {
+                  const shareData: ShareData = { title: `Pay ${merchant?.business_name}`, text: shareText, url: shareUrl };
+                  // Try sharing QR image if possible
+                  if (qrDataUrl) {
+                    try {
+                      const res = await fetch(qrDataUrl);
+                      const blob = await res.blob();
+                      const file = new File([blob], "payment-qr.png", { type: "image/png" });
+                      if (navigator.canShare?.({ files: [file] })) {
+                        shareData.files = [file];
+                      }
+                    } catch {}
+                  }
+                  await navigator.share(shareData);
+                } catch {}
+              } else {
+                navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+                toast({ title: "Copied!", description: "Payment QR details copied to clipboard" });
+              }
+            }}
+          >
+            <Share2 size={16} className="mr-2" /> Share QR to Get Payment
+          </Button>
         </Card>
       </motion.div>
 
@@ -1364,20 +1396,9 @@ const MerchantSendMoneySheet = ({ open, onClose }: { open: boolean; onClose: () 
               <div className="flex justify-between border-t border-border/50 pt-1"><span className="font-bold text-foreground">Total</span><span className="font-bold text-foreground">৳{fmt(total)}</span></div>
             </div>
           )}
-          <div className="flex gap-2">
-            <Button onClick={handleSend} disabled={processing} className="flex-1 h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(217 80% 50%), hsl(226 75% 40%))" }}>
-              {processing ? "Sending..." : `Send ৳${fmt(parsedAmount)} → ${phone || "..."}`}
-            </Button>
-            <Button variant="outline" className="h-12 w-12 rounded-xl shrink-0" onClick={() => {
-              if (phone && parsedAmount > 0) {
-                const text = `Send ৳${fmt(parsedAmount)} to ${phone} (Fee: ৳${fee})`;
-                if (navigator.share) { navigator.share({ title: "Send Money", text }).catch(() => {}); }
-                else { navigator.clipboard.writeText(text); toast({ title: "Copied details!" }); }
-              }
-            }}>
-              <Share2 size={16} />
-            </Button>
-          </div>
+          <Button onClick={handleSend} disabled={processing} className="w-full h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(217 80% 50%), hsl(226 75% 40%))" }}>
+            {processing ? "Sending..." : `Send ৳${fmt(parsedAmount)} → ${phone || "..."}`}
+          </Button>
         </motion.div>
       </div>
       <QrScannerModal open={showQr} onClose={() => setShowQr(false)} onScan={(result) => setPhone(result.replace(/\D/g, "").slice(0, 11))} title="Scan Recipient QR" />
@@ -1464,20 +1485,9 @@ const MerchantCashOutSheet = ({ open, onClose }: { open: boolean; onClose: () =>
               <div className="flex justify-between border-t border-border/50 pt-1"><span className="font-bold text-foreground">Total Deduction</span><span className="font-bold text-foreground">৳{fmt(total)}</span></div>
             </div>
           )}
-          <div className="flex gap-2">
-            <Button onClick={handleCashOut} disabled={processing} className="flex-1 h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(162 72% 38%), hsl(174 68% 28%))" }}>
-              {processing ? "Processing..." : `Cash Out ৳${fmt(parsedAmount)}`}
-            </Button>
-            <Button variant="outline" className="h-12 w-12 rounded-xl shrink-0" onClick={() => {
-              if (agentId && parsedAmount > 0) {
-                const text = `Cash Out ৳${fmt(parsedAmount)} via Agent ${agentId} (Fee: ৳${fmt(fee)})`;
-                if (navigator.share) { navigator.share({ title: "Cash Out", text }).catch(() => {}); }
-                else { navigator.clipboard.writeText(text); toast({ title: "Copied details!" }); }
-              }
-            }}>
-              <Share2 size={16} />
-            </Button>
-          </div>
+          <Button onClick={handleCashOut} disabled={processing} className="w-full h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(162 72% 38%), hsl(174 68% 28%))" }}>
+            {processing ? "Processing..." : `Cash Out ৳${fmt(parsedAmount)}`}
+          </Button>
         </motion.div>
       </div>
       <QrScannerModal open={showQr} onClose={() => setShowQr(false)} onScan={(result) => setAgentId(result.replace(/\D/g, "").slice(0, 11))} title="Scan Agent QR" />
