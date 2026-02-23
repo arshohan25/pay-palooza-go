@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
 import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
+import DailyLimitBadge from "@/components/DailyLimitBadge";
 import {
   ChevronLeft,
   CheckCircle2,
@@ -598,7 +599,10 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       <p className="text-sm font-bold text-foreground truncate">{formatPhone(phone)}</p>
                     </div>
                   </div>
-                  <AvailableBalanceBadge />
+                  <div className="flex flex-col items-end gap-0.5">
+                    <AvailableBalanceBadge />
+                    <DailyLimitBadge txnType="recharge" />
+                  </div>
                 </div>
 
                 {/* Drive / Regular tabs */}
