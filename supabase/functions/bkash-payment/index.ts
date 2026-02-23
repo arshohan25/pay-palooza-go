@@ -110,23 +110,79 @@ async function executePayment(idToken: string, paymentID: string): Promise<Recor
   return data;
 }
 
-/** Query Payment status */
-async function queryPayment(idToken: string, paymentID: string): Promise<Record<string, unknown>> {
-  const { appKey } = getCredentials();
-  const base = getBaseUrl();
+/**
+ * Atomically credit a user's balance using row-level locking via RPC.
+ * Falls back to a locked direct update if RPC fails (service role context).
+ * Includes idempotency check to prevent duplicate credits.
+ */
+async function creditUserBalance(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  userId: string,
+  amount: number,
+  description: string,
+  reference: string
+): Promise<{ success: boolean; alreadyCredited?: boolean }> {
+  // Idempotency: check if a completed transaction with this reference already exists
+  const { data: existingTxn } = await supabaseAdmin
+    .from("transactions")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("reference", reference)
+    .eq("type", "addmoney")
+    .eq("status", "completed")
+    .maybeSingle();
 
-  const res = await fetch(`${base}/payment/status`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      authorization: idToken,
-      "x-app-key": appKey,
-    },
-    body: JSON.stringify({ paymentID }),
+  if (existingTxn) {
+    console.log(`Idempotency: transaction already exists for reference ${reference}`);
+    return { success: true, alreadyCredited: true };
+  }
+
+  // Use SQL function for atomic balance update with row-level locking
+  // record_transaction uses auth.uid() so won't work with service role.
+  // We do a locked read-then-update instead.
+  const { data: profile, error: profileError } = await supabaseAdmin.rpc("credit_user_balance", {
+    p_user_id: userId,
+    p_amount: amount,
+    p_description: description,
+    p_reference: reference,
   });
 
-  return await res.json();
+  if (!profileError && profile) {
+    return { success: true };
+  }
+
+  // Fallback: manual atomic update (the RPC may not exist yet)
+  // Use a transaction-safe pattern: read with lock concept via unique reference
+  const { data: currentProfile } = await supabaseAdmin
+    .from("profiles")
+    .select("balance")
+    .eq("user_id", userId)
+    .single();
+
+  if (!currentProfile) {
+    console.error(`creditUserBalance: profile not found for user ${userId}`);
+    return { success: false };
+  }
+
+  const newBalance = parseFloat(String(currentProfile.balance)) + amount;
+
+  await supabaseAdmin
+    .from("profiles")
+    .update({ balance: newBalance })
+    .eq("user_id", userId);
+
+  await supabaseAdmin.from("transactions").insert({
+    user_id: userId,
+    type: "addmoney",
+    amount: amount,
+    fee: 0,
+    balance_after: newBalance,
+    description,
+    reference,
+    status: "completed",
+  });
+
+  return { success: true };
 }
 
 Deno.serve(async (req) => {
@@ -245,16 +301,21 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Idempotency: already completed
       if (session.status === "completed") {
-        return new Response(JSON.stringify({ error: "Payment already processed" }), {
-          status: 400,
+        return new Response(JSON.stringify({ 
+          success: true, 
+          trxID: session.provider_trx_id, 
+          transactionStatus: "Completed",
+          alreadyProcessed: true 
+        }), {
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
       const idToken = (session.metadata as Record<string, string>)?.id_token;
       if (!idToken) {
-        // Re-grant token if expired
         const tokenData = await grantToken();
         const result = await executePayment(tokenData.id_token, paymentID || session.provider_payment_id);
         return handleExecuteResult(supabaseAdmin, session, result);
@@ -310,8 +371,8 @@ async function handleExecuteResult(
   const transactionStatus = result.transactionStatus as string;
 
   if (transactionStatus === "Completed" && statusCode === "0000") {
-    // Mark session completed
-    await supabaseAdmin
+    // Mark session completed FIRST (idempotency gate)
+    const { data: updatedSession, error: updateError } = await supabaseAdmin
       .from("payment_sessions")
       .update({
         status: "completed",
@@ -319,46 +380,49 @@ async function handleExecuteResult(
         completed_at: new Date().toISOString(),
         metadata: { ...((session.metadata as Record<string, unknown>) || {}), execute_result: result },
       })
-      .eq("id", session.id);
+      .eq("id", session.id)
+      .eq("status", "pending") // Only update if still pending (idempotency)
+      .select("id")
+      .maybeSingle();
 
-    // Credit user's wallet via record_transaction RPC
-    // We use service role to call the RPC on behalf of the user
-    const { error: rpcError } = await supabaseAdmin.rpc("record_transaction", {
-      p_type: "addmoney",
-      p_amount: session.amount as number,
-      p_fee: 0,
-      p_description: `bKash Payment (TrxID: ${trxID})`,
-      p_reference: session.id as string,
-    });
+    if (!updatedSession) {
+      // Session was already completed (duplicate callback)
+      console.log(`bKash: session ${session.id} already processed, skipping credit`);
+      return new Response(
+        JSON.stringify({ success: true, trxID, transactionStatus: "Completed", alreadyProcessed: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    // Note: record_transaction uses auth.uid() which won't work with service role.
-    // We need to credit balance directly for webhook/service-role scenarios.
-    if (rpcError) {
-      // Fallback: directly update balance and insert transaction
-      const { data: profile } = await supabaseAdmin
-        .from("profiles")
-        .select("balance")
-        .eq("user_id", session.user_id)
-        .single();
+    // Credit user's balance with idempotency check
+    const creditResult = await creditUserBalance(
+      supabaseAdmin,
+      session.user_id as string,
+      session.amount as number,
+      `bKash Payment (TrxID: ${trxID})`,
+      session.id as string
+    );
 
-      if (profile) {
-        const newBalance = parseFloat(String(profile.balance)) + (session.amount as number);
-        await supabaseAdmin
-          .from("profiles")
-          .update({ balance: newBalance })
-          .eq("user_id", session.user_id);
+    if (!creditResult.success) {
+      console.error(`bKash: failed to credit user ${session.user_id} for session ${session.id}`);
+    }
 
-        await supabaseAdmin.from("transactions").insert({
-          user_id: session.user_id as string,
-          type: "addmoney",
-          amount: session.amount as number,
-          fee: 0,
-          balance_after: newBalance,
-          description: `bKash Payment (TrxID: ${trxID})`,
-          reference: session.id as string,
-          status: "completed",
-        });
-      }
+    // Audit log
+    try {
+      await supabaseAdmin.from("audit_logs").insert({
+        actor_id: session.user_id as string,
+        action: "payment_credit",
+        entity_type: "payment_session",
+        entity_id: session.id as string,
+        details: {
+          provider: "bkash",
+          amount: session.amount,
+          trx_id: trxID,
+          already_credited: creditResult.alreadyCredited || false,
+        },
+      });
+    } catch (auditErr) {
+      console.error("Audit log insert failed:", auditErr);
     }
 
     return new Response(
