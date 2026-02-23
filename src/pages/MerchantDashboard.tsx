@@ -12,7 +12,7 @@ import {
   Bell, Settings, HelpCircle, Landmark, BadgeCheck, Link, Share2,
   ExternalLink, Plus, Trash2, Check, Send, Banknote, Timer,
   ArrowRightLeft, Repeat, HandCoins, CalendarClock, CircleDollarSign, ScanLine,
-  Lock, Delete
+  Lock, Delete, Menu, X, AlertTriangle, ChevronDown, Info
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import QrScannerModal from "@/components/QrScannerModal";
 import { verifyPin } from "@/lib/verifyPin";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import { haptics } from "@/lib/haptics";
+import DailyLimitBadge from "@/components/DailyLimitBadge";
 
 /* ─── Types ─── */
 type MerchTab = "overview" | "qr" | "transactions" | "settlements" | "mdr" | "paylinks";
@@ -61,13 +62,16 @@ interface TxnRow {
 /* ─── Helpers ─── */
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 
-const tabItems: { id: MerchTab; icon: typeof QrCode; label: string }[] = [
+const mainTabs: { id: MerchTab; icon: typeof QrCode; label: string }[] = [
   { id: "overview",     icon: BarChart3,    label: "Overview" },
   { id: "qr",           icon: QrCode,       label: "QR Code" },
-  { id: "paylinks",     icon: Link,         label: "Pay Links" },
-  { id: "transactions", icon: ArrowUpDown,  label: "Transactions" },
-  { id: "settlements",  icon: BanknoteIcon, label: "Settlements" },
-  { id: "mdr",          icon: Percent,       label: "MDR" },
+  { id: "transactions", icon: ArrowUpDown,  label: "History" },
+];
+
+const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: string }[] = [
+  { id: "paylinks",     icon: Link,         label: "Pay Links",        desc: "Create & share payment links" },
+  { id: "settlements",  icon: BanknoteIcon, label: "Settlement",       desc: "Bank payouts & schedule" },
+  { id: "mdr",          icon: Percent,      label: "Fees & Charges",   desc: "MDR rates & fee breakdown" },
 ];
 
 const stagger = {
@@ -88,6 +92,7 @@ const MerchantDashboard = () => {
   const [txns, setTxns] = useState<TxnRow[]>([]);
   const [isMerchant, setIsMerchant] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showMenu, setShowMenu] = useState(false);
   const balanceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const toggleBalance = () => {
@@ -192,8 +197,8 @@ const MerchantDashboard = () => {
               <button onClick={loadData} className="tap-target w-10 h-10 rounded-xl glass-hero flex items-center justify-center">
                 <RefreshCw size={16} />
               </button>
-              <button className="tap-target w-10 h-10 rounded-xl glass-hero flex items-center justify-center">
-                <Bell size={16} />
+              <button onClick={() => setShowMenu(true)} className="tap-target w-10 h-10 rounded-xl glass-hero flex items-center justify-center">
+                <Menu size={16} />
               </button>
             </div>
           </div>
@@ -295,7 +300,7 @@ const MerchantDashboard = () => {
       {/* ── Tab strip ── */}
       <div className="max-w-xl mx-auto px-4 mt-3">
         <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-2 bg-muted/50 rounded-2xl p-1.5">
-          {tabItems.map(t => {
+          {mainTabs.map(t => {
             const active = activeTab === t.id;
             return (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
@@ -333,6 +338,61 @@ const MerchantDashboard = () => {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* ── Hamburger Menu Drawer ── */}
+      <AnimatePresence>
+        {showMenu && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/60"
+              onClick={() => setShowMenu(false)}
+            />
+            <motion.div
+              initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
+              transition={{ type: "spring", bounce: 0.12, duration: 0.4 }}
+              className="fixed top-0 right-0 bottom-0 z-50 w-72 bg-card shadow-2xl flex flex-col"
+            >
+              <div className="flex items-center justify-between p-4 border-b border-border/50">
+                <h3 className="text-sm font-bold text-foreground">More Options</h3>
+                <button onClick={() => setShowMenu(false)} className="tap-target w-9 h-9 rounded-xl bg-muted/50 flex items-center justify-center">
+                  <X size={16} className="text-muted-foreground" />
+                </button>
+              </div>
+              <div className="flex-1 p-3 space-y-1.5">
+                {menuItems.map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => { setActiveTab(item.id); setShowMenu(false); }}
+                    className={`w-full flex items-center gap-3 p-3.5 rounded-xl text-left transition-all ${
+                      activeTab === item.id ? "bg-primary/10 border border-primary/20" : "hover:bg-muted/50"
+                    }`}
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                      activeTab === item.id ? "bg-primary/15" : "bg-muted/60"
+                    }`}>
+                      <item.icon size={18} className={activeTab === item.id ? "text-primary" : "text-muted-foreground"} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-xs font-bold ${activeTab === item.id ? "text-primary" : "text-foreground"}`}>{item.label}</p>
+                      <p className="text-[10px] text-muted-foreground">{item.desc}</p>
+                    </div>
+                    <ChevronRight size={14} className="text-muted-foreground" />
+                  </button>
+                ))}
+              </div>
+              <div className="p-4 border-t border-border/50">
+                <div className="p-3 rounded-xl bg-muted/30 text-center">
+                  <p className="text-[10px] text-muted-foreground">
+                    <Store size={12} className="inline mr-1" />
+                    {merchant?.business_name || "Merchant"} · {merchant?.category || "retail"}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -1339,56 +1399,75 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* ── Merchant Send Money Sheet ── */
+const MERCH_SEND_DAILY_LIMIT = 15000;
+const MERCH_SEND_MAX_QUOTA = 10;
+
 const MerchantSendMoneySheet = ({ open, onClose, onSuccess }: { open: boolean; onClose: () => void; onSuccess?: () => void }) => {
   const { toast } = useToast();
   const [phone, setPhone] = useState("");
   const [amount, setAmount] = useState("");
   const [processing, setProcessing] = useState(false);
   const [showQr, setShowQr] = useState(false);
-  const [step, setStep] = useState<"details" | "pin">("details");
+  const [step, setStep] = useState<"details" | "pin" | "success">("details");
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
   const [pinVerified, setPinVerified] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [dailyUsed, setDailyUsed] = useState(0);
+  const [dailyCount, setDailyCount] = useState(0);
+  const [successData, setSuccessData] = useState<{ amount: number; to: string; ref: string } | null>(null);
 
   const fee = 5;
   const parsedAmount = parseFloat(amount) || 0;
   const total = parsedAmount + fee;
+  const dailyRemaining = MERCH_SEND_DAILY_LIMIT - dailyUsed;
+  const quotaRemaining = MERCH_SEND_MAX_QUOTA - dailyCount;
+
+  useEffect(() => {
+    if (!open) return;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const { data } = await supabase
+        .from("transactions").select("amount")
+        .eq("user_id", session.user.id).eq("type", "send" as any)
+        .eq("status", "completed").gte("created_at", today.toISOString());
+      const rows = data ?? [];
+      setDailyUsed(rows.reduce((s, t) => s + Number(t.amount), 0));
+      setDailyCount(rows.length);
+    })();
+  }, [open]);
 
   const resetState = () => {
-    setPhone(""); setAmount(""); setStep("details"); setPin(""); setPinError(""); setPinVerified(false);
+    setPhone(""); setAmount(""); setStep("details"); setPin(""); setPinError(""); setPinVerified(false); setSuccessData(null);
   };
 
   const goToPin = () => {
     if (!phone || phone.length < 11) {
-      toast({ title: "Invalid number", description: "Enter a valid 11-digit number", variant: "destructive" });
-      return;
+      toast({ title: "Invalid number", description: "Enter a valid 11-digit number", variant: "destructive" }); return;
     }
     if (parsedAmount <= 0 || parsedAmount > 50000) {
-      toast({ title: "Invalid amount", description: "Amount must be between ৳1 and ৳50,000", variant: "destructive" });
-      return;
+      toast({ title: "Invalid amount", description: "Amount must be between ৳1 and ৳50,000", variant: "destructive" }); return;
     }
-    setStep("pin");
-    setPin(""); setPinError(""); setPinVerified(false);
+    if (parsedAmount > dailyRemaining) {
+      toast({ title: "Daily limit exceeded", description: `Only ৳${fmt(dailyRemaining)} remaining today`, variant: "destructive" }); return;
+    }
+    if (quotaRemaining <= 0) {
+      toast({ title: "Quota exhausted", description: `Max ${MERCH_SEND_MAX_QUOTA} Send Money transactions per day`, variant: "destructive" }); return;
+    }
+    setStep("pin"); setPin(""); setPinError(""); setPinVerified(false);
   };
 
   const handlePinDigit = (d: string) => {
     if (pin.length >= 4) return;
-    const next = pin + d;
-    setPin(next);
-    setPinError("");
+    const next = pin + d; setPin(next); setPinError("");
     if (next.length === 4) {
       setVerifying(true);
       verifyPin(next).then(ok => {
         setVerifying(false);
-        if (ok) {
-          setPinVerified(true);
-          haptics.success();
-        } else {
-          setPinError("Incorrect PIN");
-          setPin("");
-          haptics.error();
-        }
+        if (ok) { setPinVerified(true); haptics.success(); }
+        else { setPinError("Incorrect PIN"); setPin(""); haptics.error(); }
       });
     }
   };
@@ -1405,8 +1484,11 @@ const MerchantSendMoneySheet = ({ open, onClose, onSuccess }: { open: boolean; o
         p_description: "Merchant Send Money",
       });
       if (error) throw error;
-      toast({ title: "Sent ৳" + fmt(parsedAmount), description: `To ${phone} · Fee ৳${fee}` });
-      resetState(); onClose(); onSuccess?.();
+      const ref = `SM${Date.now().toString(36).toUpperCase()}`;
+      setSuccessData({ amount: parsedAmount, to: phone, ref });
+      setStep("success");
+      haptics.success();
+      onSuccess?.();
     } catch (e: any) {
       toast({ title: "Failed", description: e.message || "Something went wrong", variant: "destructive" });
     } finally {
@@ -1425,15 +1507,27 @@ const MerchantSendMoneySheet = ({ open, onClose, onSuccess }: { open: boolean; o
             <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
               <Send size={18} className="text-white" />
             </div>
-            <div>
+            <div className="flex-1">
               <h3 className="text-base font-bold text-foreground">Send Money</h3>
-              <p className="text-[11px] text-muted-foreground">{step === "pin" ? "Enter PIN to confirm" : "Flat ৳5 fee per transaction"}</p>
+              <p className="text-[11px] text-muted-foreground">{step === "success" ? "Transaction complete" : step === "pin" ? "Enter PIN to confirm" : "Flat ৳5 fee per transaction"}</p>
             </div>
           </div>
 
           <AnimatePresence mode="wait">
             {step === "details" ? (
               <motion.div key="details" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+                {/* Daily limit badge */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/30 border border-border/30">
+                  <div className="flex items-center gap-2">
+                    <Info size={12} className="text-muted-foreground" />
+                    <span className="text-[10px] text-muted-foreground font-medium">Daily: ৳{fmt(dailyRemaining)} left · {quotaRemaining}/{MERCH_SEND_MAX_QUOTA} txns</span>
+                  </div>
+                  <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className={`h-full rounded-full ${dailyRemaining < MERCH_SEND_DAILY_LIMIT * 0.2 ? "bg-amber-500" : "bg-primary"}`}
+                      style={{ width: `${Math.min(100, (dailyUsed / MERCH_SEND_DAILY_LIMIT) * 100)}%` }} />
+                  </div>
+                </div>
+
                 <div>
                   <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Recipient Number</label>
                   <div className="flex gap-2">
@@ -1444,7 +1538,7 @@ const MerchantSendMoneySheet = ({ open, onClose, onSuccess }: { open: boolean; o
                   </div>
                 </div>
                 <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Amount</label>
+                  <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Amount (Max ৳{fmt(MERCH_SEND_DAILY_LIMIT)}/day)</label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">৳</span>
                     <Input type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className="pl-8 h-12 rounded-xl text-lg" inputMode="decimal" />
@@ -1457,21 +1551,18 @@ const MerchantSendMoneySheet = ({ open, onClose, onSuccess }: { open: boolean; o
                     <div className="flex justify-between border-t border-border/50 pt-1"><span className="font-bold text-foreground">Total</span><span className="font-bold text-foreground">৳{fmt(total)}</span></div>
                   </div>
                 )}
-                <Button onClick={goToPin} className="w-full h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(217 80% 50%), hsl(226 75% 40%))" }}>
-                  Continue → Enter PIN
+                <Button onClick={goToPin} disabled={quotaRemaining <= 0 || dailyRemaining <= 0} className="w-full h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(217 80% 50%), hsl(226 75% 40%))" }}>
+                  {quotaRemaining <= 0 ? "Quota Exhausted" : dailyRemaining <= 0 ? "Limit Reached" : "Continue → Enter PIN"}
                 </Button>
               </motion.div>
-            ) : (
+            ) : step === "pin" ? (
               <motion.div key="pin" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-4">
-                {/* Summary */}
                 <div className="p-3 rounded-xl bg-muted/40 text-xs space-y-1">
                   <div className="flex justify-between"><span className="text-muted-foreground">To</span><span className="font-semibold text-foreground">{phone}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-semibold text-foreground">৳{fmt(parsedAmount)}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Fee</span><span className="font-semibold text-foreground">৳{fee}</span></div>
                   <div className="flex justify-between border-t border-border/50 pt-1"><span className="font-bold text-foreground">Total</span><span className="font-bold text-foreground">৳{fmt(total)}</span></div>
                 </div>
-
-                {/* PIN dots */}
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-2 mb-2">
                     <Lock size={14} className="text-muted-foreground" />
@@ -1485,8 +1576,6 @@ const MerchantSendMoneySheet = ({ open, onClose, onSuccess }: { open: boolean; o
                   {pinError && <p className="text-[11px] text-destructive font-medium">{pinError}</p>}
                   {verifying && <p className="text-[11px] text-muted-foreground animate-pulse">Verifying...</p>}
                 </div>
-
-                {/* Numeric keypad */}
                 <div className="grid grid-cols-3 gap-2 max-w-[240px] mx-auto">
                   {[1,2,3,4,5,6,7,8,9].map(d => (
                     <button key={d} onClick={() => handlePinDigit(String(d))} disabled={verifying || pinVerified}
@@ -1498,14 +1587,27 @@ const MerchantSendMoneySheet = ({ open, onClose, onSuccess }: { open: boolean; o
                   <button onClick={handlePinDelete} disabled={verifying || pinVerified}
                     className="h-12 rounded-xl bg-muted/30 flex items-center justify-center text-muted-foreground"><Delete size={18} /></button>
                 </div>
-
-                {/* Slide to confirm */}
-                <SlideToConfirm
-                  onConfirm={handleSend}
-                  label={processing ? "Sending..." : `Send ৳${fmt(parsedAmount)}`}
-                  disabled={!pinVerified || processing}
-                  pinComplete={pinVerified}
-                />
+                <SlideToConfirm onConfirm={handleSend} label={processing ? "Sending..." : `Send ৳${fmt(parsedAmount)}`} disabled={!pinVerified || processing} pinComplete={pinVerified} />
+              </motion.div>
+            ) : (
+              /* Success Card */
+              <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="space-y-4 text-center">
+                <div className="w-16 h-16 rounded-full bg-emerald-500/15 flex items-center justify-center mx-auto">
+                  <CheckCircle2 size={32} className="text-emerald-500" />
+                </div>
+                <div>
+                  <p className="text-xl font-black text-foreground">৳{fmt(successData?.amount ?? 0)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Sent to {successData?.to}</p>
+                </div>
+                <Card className="p-3 border-0 bg-muted/30 text-xs text-left space-y-1.5">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Type</span><span className="font-semibold text-foreground">Send Money</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Fee</span><span className="font-semibold text-foreground">৳{fee}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Ref</span><span className="font-mono text-foreground">{successData?.ref}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Time</span><span className="text-foreground">{new Date().toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" })}</span></div>
+                </Card>
+                <Button onClick={() => { resetState(); onClose(); }} className="w-full h-12 rounded-xl text-sm font-bold" variant="outline">
+                  Done
+                </Button>
               </motion.div>
             )}
           </AnimatePresence>
@@ -1517,56 +1619,75 @@ const MerchantSendMoneySheet = ({ open, onClose, onSuccess }: { open: boolean; o
 };
 
 /* ── Merchant Cash Out Sheet ── */
+const MERCH_CASHOUT_DAILY_LIMIT = 20000;
+const MERCH_CASHOUT_MAX_QUOTA = 5;
+
 const MerchantCashOutSheet = ({ open, onClose, onSuccess }: { open: boolean; onClose: () => void; onSuccess?: () => void }) => {
   const { toast } = useToast();
   const [amount, setAmount] = useState("");
   const [agentId, setAgentId] = useState("");
   const [processing, setProcessing] = useState(false);
   const [showQr, setShowQr] = useState(false);
-  const [step, setStep] = useState<"details" | "pin">("details");
+  const [step, setStep] = useState<"details" | "pin" | "success">("details");
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
   const [pinVerified, setPinVerified] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [dailyUsed, setDailyUsed] = useState(0);
+  const [dailyCount, setDailyCount] = useState(0);
+  const [successData, setSuccessData] = useState<{ amount: number; to: string; fee: number; ref: string } | null>(null);
 
   const parsedAmount = parseFloat(amount) || 0;
   const fee = Math.round(parsedAmount * 0.0115 * 100) / 100;
   const total = parsedAmount + fee;
+  const dailyRemaining = MERCH_CASHOUT_DAILY_LIMIT - dailyUsed;
+  const quotaRemaining = MERCH_CASHOUT_MAX_QUOTA - dailyCount;
+
+  useEffect(() => {
+    if (!open) return;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const { data } = await supabase
+        .from("transactions").select("amount")
+        .eq("user_id", session.user.id).eq("type", "cashout" as any)
+        .eq("status", "completed").gte("created_at", today.toISOString());
+      const rows = data ?? [];
+      setDailyUsed(rows.reduce((s, t) => s + Number(t.amount), 0));
+      setDailyCount(rows.length);
+    })();
+  }, [open]);
 
   const resetState = () => {
-    setAmount(""); setAgentId(""); setStep("details"); setPin(""); setPinError(""); setPinVerified(false);
+    setAmount(""); setAgentId(""); setStep("details"); setPin(""); setPinError(""); setPinVerified(false); setSuccessData(null);
   };
 
   const goToPin = () => {
     if (!agentId || agentId.length < 5) {
-      toast({ title: "Invalid Agent ID", description: "Enter a valid agent number", variant: "destructive" });
-      return;
+      toast({ title: "Invalid Agent ID", description: "Enter a valid agent number", variant: "destructive" }); return;
     }
     if (parsedAmount < 30 || parsedAmount > 50000) {
-      toast({ title: "Invalid amount", description: "Amount must be between ৳30 and ৳50,000", variant: "destructive" });
-      return;
+      toast({ title: "Invalid amount", description: "Amount must be between ৳30 and ৳50,000", variant: "destructive" }); return;
     }
-    setStep("pin");
-    setPin(""); setPinError(""); setPinVerified(false);
+    if (parsedAmount > dailyRemaining) {
+      toast({ title: "Daily limit exceeded", description: `Only ৳${fmt(dailyRemaining)} remaining today`, variant: "destructive" }); return;
+    }
+    if (quotaRemaining <= 0) {
+      toast({ title: "Quota exhausted", description: `Max ${MERCH_CASHOUT_MAX_QUOTA} Cash Out transactions per day`, variant: "destructive" }); return;
+    }
+    setStep("pin"); setPin(""); setPinError(""); setPinVerified(false);
   };
 
   const handlePinDigit = (d: string) => {
     if (pin.length >= 4) return;
-    const next = pin + d;
-    setPin(next);
-    setPinError("");
+    const next = pin + d; setPin(next); setPinError("");
     if (next.length === 4) {
       setVerifying(true);
       verifyPin(next).then(ok => {
         setVerifying(false);
-        if (ok) {
-          setPinVerified(true);
-          haptics.success();
-        } else {
-          setPinError("Incorrect PIN");
-          setPin("");
-          haptics.error();
-        }
+        if (ok) { setPinVerified(true); haptics.success(); }
+        else { setPinError("Incorrect PIN"); setPin(""); haptics.error(); }
       });
     }
   };
@@ -1583,8 +1704,11 @@ const MerchantCashOutSheet = ({ open, onClose, onSuccess }: { open: boolean; onC
         p_description: "Merchant Cash Out",
       });
       if (error) throw error;
-      toast({ title: "Cash Out ৳" + fmt(parsedAmount), description: `Fee: ৳${fmt(fee)} (1.15%)` });
-      resetState(); onClose(); onSuccess?.();
+      const ref = `CO${Date.now().toString(36).toUpperCase()}`;
+      setSuccessData({ amount: parsedAmount, to: agentId, fee, ref });
+      setStep("success");
+      haptics.success();
+      onSuccess?.();
     } catch (e: any) {
       toast({ title: "Failed", description: e.message || "Something went wrong", variant: "destructive" });
     } finally {
@@ -1603,15 +1727,27 @@ const MerchantCashOutSheet = ({ open, onClose, onSuccess }: { open: boolean; onC
             <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
               <HandCoins size={18} className="text-white" />
             </div>
-            <div>
+            <div className="flex-1">
               <h3 className="text-base font-bold text-foreground">Cash Out</h3>
-              <p className="text-[11px] text-muted-foreground">{step === "pin" ? "Enter PIN to confirm" : "1.15% charge · Min ৳30 · Max ৳50,000"}</p>
+              <p className="text-[11px] text-muted-foreground">{step === "success" ? "Transaction complete" : step === "pin" ? "Enter PIN to confirm" : "1.15% charge · Min ৳30 · Max ৳50,000"}</p>
             </div>
           </div>
 
           <AnimatePresence mode="wait">
             {step === "details" ? (
               <motion.div key="details" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+                {/* Daily limit badge */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/30 border border-border/30">
+                  <div className="flex items-center gap-2">
+                    <Info size={12} className="text-muted-foreground" />
+                    <span className="text-[10px] text-muted-foreground font-medium">Daily: ৳{fmt(dailyRemaining)} left · {quotaRemaining}/{MERCH_CASHOUT_MAX_QUOTA} txns</span>
+                  </div>
+                  <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className={`h-full rounded-full ${dailyRemaining < MERCH_CASHOUT_DAILY_LIMIT * 0.2 ? "bg-amber-500" : "bg-primary"}`}
+                      style={{ width: `${Math.min(100, (dailyUsed / MERCH_CASHOUT_DAILY_LIMIT) * 100)}%` }} />
+                  </div>
+                </div>
+
                 <div>
                   <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Agent Number</label>
                   <div className="flex gap-2">
@@ -1622,7 +1758,7 @@ const MerchantCashOutSheet = ({ open, onClose, onSuccess }: { open: boolean; onC
                   </div>
                 </div>
                 <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Amount</label>
+                  <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Amount (Max ৳{fmt(MERCH_CASHOUT_DAILY_LIMIT)}/day)</label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">৳</span>
                     <Input type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className="pl-8 h-12 rounded-xl text-lg" inputMode="decimal" />
@@ -1635,21 +1771,18 @@ const MerchantCashOutSheet = ({ open, onClose, onSuccess }: { open: boolean; onC
                     <div className="flex justify-between border-t border-border/50 pt-1"><span className="font-bold text-foreground">Total Deduction</span><span className="font-bold text-foreground">৳{fmt(total)}</span></div>
                   </div>
                 )}
-                <Button onClick={goToPin} className="w-full h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(162 72% 38%), hsl(174 68% 28%))" }}>
-                  Continue → Enter PIN
+                <Button onClick={goToPin} disabled={quotaRemaining <= 0 || dailyRemaining <= 0} className="w-full h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(162 72% 38%), hsl(174 68% 28%))" }}>
+                  {quotaRemaining <= 0 ? "Quota Exhausted" : dailyRemaining <= 0 ? "Limit Reached" : "Continue → Enter PIN"}
                 </Button>
               </motion.div>
-            ) : (
+            ) : step === "pin" ? (
               <motion.div key="pin" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-4">
-                {/* Summary */}
                 <div className="p-3 rounded-xl bg-muted/40 text-xs space-y-1">
                   <div className="flex justify-between"><span className="text-muted-foreground">Agent</span><span className="font-semibold text-foreground">{agentId}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-semibold text-foreground">৳{fmt(parsedAmount)}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Fee (1.15%)</span><span className="font-semibold text-foreground">৳{fmt(fee)}</span></div>
                   <div className="flex justify-between border-t border-border/50 pt-1"><span className="font-bold text-foreground">Total</span><span className="font-bold text-foreground">৳{fmt(total)}</span></div>
                 </div>
-
-                {/* PIN dots */}
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-2 mb-2">
                     <Lock size={14} className="text-muted-foreground" />
@@ -1663,8 +1796,6 @@ const MerchantCashOutSheet = ({ open, onClose, onSuccess }: { open: boolean; onC
                   {pinError && <p className="text-[11px] text-destructive font-medium">{pinError}</p>}
                   {verifying && <p className="text-[11px] text-muted-foreground animate-pulse">Verifying...</p>}
                 </div>
-
-                {/* Numeric keypad */}
                 <div className="grid grid-cols-3 gap-2 max-w-[240px] mx-auto">
                   {[1,2,3,4,5,6,7,8,9].map(d => (
                     <button key={d} onClick={() => handlePinDigit(String(d))} disabled={verifying || pinVerified}
@@ -1676,14 +1807,27 @@ const MerchantCashOutSheet = ({ open, onClose, onSuccess }: { open: boolean; onC
                   <button onClick={handlePinDelete} disabled={verifying || pinVerified}
                     className="h-12 rounded-xl bg-muted/30 flex items-center justify-center text-muted-foreground"><Delete size={18} /></button>
                 </div>
-
-                {/* Slide to confirm */}
-                <SlideToConfirm
-                  onConfirm={handleCashOut}
-                  label={processing ? "Processing..." : `Cash Out ৳${fmt(parsedAmount)}`}
-                  disabled={!pinVerified || processing}
-                  pinComplete={pinVerified}
-                />
+                <SlideToConfirm onConfirm={handleCashOut} label={processing ? "Processing..." : `Cash Out ৳${fmt(parsedAmount)}`} disabled={!pinVerified || processing} pinComplete={pinVerified} />
+              </motion.div>
+            ) : (
+              /* Success Card */
+              <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="space-y-4 text-center">
+                <div className="w-16 h-16 rounded-full bg-emerald-500/15 flex items-center justify-center mx-auto">
+                  <CheckCircle2 size={32} className="text-emerald-500" />
+                </div>
+                <div>
+                  <p className="text-xl font-black text-foreground">৳{fmt(successData?.amount ?? 0)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Cashed out to Agent {successData?.to}</p>
+                </div>
+                <Card className="p-3 border-0 bg-muted/30 text-xs text-left space-y-1.5">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Type</span><span className="font-semibold text-foreground">Cash Out</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Fee (1.15%)</span><span className="font-semibold text-foreground">৳{fmt(successData?.fee ?? 0)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Ref</span><span className="font-mono text-foreground">{successData?.ref}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Time</span><span className="text-foreground">{new Date().toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" })}</span></div>
+                </Card>
+                <Button onClick={() => { resetState(); onClose(); }} className="w-full h-12 rounded-xl text-sm font-bold" variant="outline">
+                  Done
+                </Button>
               </motion.div>
             )}
           </AnimatePresence>
