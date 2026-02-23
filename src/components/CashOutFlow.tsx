@@ -155,7 +155,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const [error, setError] = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const [showShare, setShowShare] = useState(false);
-  const [isMerchant, setIsMerchant] = useState(false);
+  
   // Bank transfer state
   const [bankName, setBankName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
@@ -269,7 +269,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
 
     haptics.success();
     txnTime.current = new Date();
-    const feeVal = amtVal * (isMerchant ? 0.01 : 0.0119);
+    const feeVal = amtVal * 0.0119;
     const commissionVal = amtVal * 0.0049;
     try {
       if (isBank) {
@@ -308,9 +308,9 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     setStep("success");
   };
 
-  // Fee: 1.19% personal, 1% merchant
-  const FEE_RATE = isMerchant ? 0.01 : 0.0119;
-  const FEE_LABEL = isMerchant ? "1%" : "1.19%";
+  // Fee: 1.19%
+  const FEE_RATE = 0.0119;
+  const FEE_LABEL = "1.19%";
   const BALANCE = getBalance();
   const calcCashOutFee = (amt: number) => amt * FEE_RATE;
   const feeNum = parseFloat(amount) > 0 ? calcCashOutFee(parseFloat(amount)) : 0;
@@ -405,7 +405,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                     <div className="flex-1">
                       <p className="text-base font-bold text-foreground">{t("agentCashOut")}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{t("withdrawFromAgentDesc")}</p>
-                      <p className="text-xs text-primary font-semibold mt-1">Fee: 1.19% ({t("personal")}) · 1% ({t("merchant")})</p>
+                      <p className="text-xs text-primary font-semibold mt-1">Fee: 1.19%</p>
                     </div>
                     <ChevronLeft size={18} className="text-muted-foreground rotate-180 shrink-0" />
                   </button>
@@ -420,7 +420,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                     <div className="flex-1">
                       <p className="text-base font-bold text-foreground">{t("flowBankTransfer")}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{t("transferToBankDesc")}</p>
-                      <p className="text-xs text-primary font-semibold mt-1">Fee: 1.19% ({t("personal")}) · 1% ({t("merchant")})</p>
+                      <p className="text-xs text-primary font-semibold mt-1">Fee: 1.19%</p>
                     </div>
                     <ChevronLeft size={18} className="text-muted-foreground rotate-180 shrink-0" />
                   </button>
@@ -657,25 +657,6 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   </div>
                 )}
 
-                {/* Merchant / Personal toggle */}
-                <div className="flex items-center gap-2 p-3 rounded-2xl bg-muted/50 border border-border">
-                  <button
-                    onClick={() => setIsMerchant(false)}
-                    className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${
-                      !isMerchant ? "gradient-cashout text-white shadow-card" : "text-muted-foreground"
-                    }`}
-                  >
-                    {t("personal")} (1.19%)
-                  </button>
-                  <button
-                    onClick={() => setIsMerchant(true)}
-                    className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${
-                      isMerchant ? "gradient-cashout text-white shadow-card" : "text-muted-foreground"
-                    }`}
-                  >
-                    {t("merchant")} (1%)
-                  </button>
-                </div>
 
                 {/* Big amount input */}
                 <div className="space-y-2">
