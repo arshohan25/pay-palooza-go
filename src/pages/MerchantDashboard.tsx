@@ -130,7 +130,34 @@ const MerchantDashboard = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Sound alert for incoming payments
+  const playPaymentSound = useCallback(() => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const playTone = (freq: number, start: number, dur: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.25, ctx.currentTime + start);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + start + dur);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(ctx.currentTime + start);
+        osc.stop(ctx.currentTime + start + dur);
+      };
+      playTone(880, 0, 0.15);
+      playTone(1100, 0.12, 0.15);
+      playTone(1320, 0.24, 0.2);
+    } catch {}
+  }, []);
+
   // Real-time subscription for balance and transaction updates
+  const knownTxnIdsRef = React.useRef(new Set<string>());
+  useEffect(() => {
+    // Seed known IDs to avoid alerting on initial load
+    txns.forEach(t => knownTxnIdsRef.current.add(t.id));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!user) return;
     const channel = supabase
@@ -141,11 +168,38 @@ const MerchantDashboard = () => {
         }
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'transactions', filter: `user_id=eq.${user.id}` }, (payload) => {
-        setTxns(prev => [payload.new as TxnRow, ...prev]);
+        const newTxn = payload.new as TxnRow;
+        setTxns(prev => [newTxn, ...prev]);
+
+        // Only alert for incoming payments (receive/payment/cashin/addmoney)
+        if (!knownTxnIdsRef.current.has(newTxn.id) && ["receive", "payment", "cashin", "addmoney"].includes(newTxn.type)) {
+          knownTxnIdsRef.current.add(newTxn.id);
+          playPaymentSound();
+          haptics.success();
+          toast({
+            title: `💰 Payment Received!`,
+            description: `৳${fmt(newTxn.amount)} from ${newTxn.recipient_name || newTxn.recipient_phone || "Customer"}`,
+          });
+          // Browser notification
+          if (Notification.permission === "granted") {
+            new Notification("Payment Received 💰", {
+              body: `৳${fmt(newTxn.amount)} from ${newTxn.recipient_name || newTxn.recipient_phone || "Customer"}`,
+              icon: "/icons/icon-192.png",
+            });
+          }
+        }
+        knownTxnIdsRef.current.add(newTxn.id);
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user]);
+  }, [user, playPaymentSound, toast]);
+
+  // Request notification permission on mount
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
 
   const paymentTxns = useMemo(() => txns.filter(t => t.type === "payment"), [txns]);
 
