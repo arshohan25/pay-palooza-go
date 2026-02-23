@@ -116,6 +116,17 @@ export default function AdminFeatureLocks() {
     fetchLocks();
   }, [fetchLocks]);
 
+  // Realtime: auto-refresh when locks change
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-feature-locks-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "feature_locks" }, () => {
+        fetchLocks();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchLocks]);
+
   const searchUsers = useCallback(async (q: string) => {
     if (q.length < 2) { setUserResults([]); return; }
     setSearching(true);

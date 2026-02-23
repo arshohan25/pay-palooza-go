@@ -51,6 +51,17 @@ export default function AdminDisputeResolution() {
 
   useEffect(() => { load(); }, []);
 
+  // Realtime: auto-refresh disputes on any change
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-disputes-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "disputes" }, () => {
+        load();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   const openView = (d: Dispute) => {
     setViewing(d);
     setNewStatus(d.status);

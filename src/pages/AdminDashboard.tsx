@@ -139,32 +139,64 @@ export default function AdminDashboard() {
     if (isAdmin) loadData();
   }, [isAdmin, authLoading, navigate, loadData]);
 
-  // Real-time fraud alert notifications
+  // Real-time: listen to all key tables for live admin updates
   useEffect(() => {
     if (!isAdmin) return;
     const channel = supabase
-      .channel("admin-fraud-realtime")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "fraud_alerts" },
-        (payload) => {
-          const alert = payload.new as any;
-          const severity = alert.severity ?? "medium";
-          const rule = alert.rule_triggered ?? "Unknown rule";
-          const toastFn = severity === "critical" || severity === "high" ? toast.error : toast.warning;
-          toastFn(`🚨 New Fraud Alert: ${rule}`, {
-            description: `Severity: ${severity.toUpperCase()}`,
-            duration: 8000,
-            action: { label: "View", onClick: () => setActiveTab("alerts") },
-          });
-          // Refresh stats to update the open alerts badge
-          fetchAdminStats().then(s => setStats(s));
-        }
-      )
+      .channel("admin-global-realtime")
+      // New fraud alerts → toast + refresh stats
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "fraud_alerts" }, (payload) => {
+        const alert = payload.new as any;
+        const severity = alert.severity ?? "medium";
+        const rule = alert.rule_triggered ?? "Unknown rule";
+        const toastFn = severity === "critical" || severity === "high" ? toast.error : toast.warning;
+        toastFn(`🚨 New Fraud Alert: ${rule}`, {
+          description: `Severity: ${severity.toUpperCase()}`,
+          duration: 8000,
+          action: { label: "View", onClick: () => setActiveTab("alerts") },
+        });
+        loadData();
+      })
+      // Fraud alert status changes
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "fraud_alerts" }, () => {
+        fetchAdminStats().then(s => setStats(s));
+      })
+      // New transactions → refresh overview stats + transaction list
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "transactions" }, () => {
+        loadData();
+      })
+      // Profile changes (status, balance) → refresh user list + stats
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles" }, () => {
+        fetchAllUsers(100).then(u => setUsers(u));
+        fetchAdminStats().then(s => setStats(s));
+      })
+      // New profiles → refresh stats
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "profiles" }, () => {
+        fetchAdminStats().then(s => setStats(s));
+        fetchAllUsers(100).then(u => setUsers(u));
+      })
+      // Feature lock changes
+      .on("postgres_changes", { event: "*", schema: "public", table: "feature_locks" }, () => {
+        // Admin locks tab auto-refreshes via its own component
+      })
+      // Dispute changes
+      .on("postgres_changes", { event: "*", schema: "public", table: "disputes" }, () => {
+        // Disputes tab auto-refreshes via its own component
+      })
+      // Agent changes → refresh agents list + stats
+      .on("postgres_changes", { event: "*", schema: "public", table: "agents" }, () => {
+        fetchAllAgents(100).then(ag => setAgents(ag));
+        fetchAdminStats().then(s => setStats(s));
+      })
+      // Merchant changes → refresh merchants list + stats
+      .on("postgres_changes", { event: "*", schema: "public", table: "merchants" }, () => {
+        fetchAllMerchants(100).then(m => setMerchants(m));
+        fetchAdminStats().then(s => setStats(s));
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [isAdmin]);
+  }, [isAdmin, loadData]);
 
   if (authLoading) {
     return (
