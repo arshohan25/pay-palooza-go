@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { I18nProvider } from "@/lib/i18n";
+import RoleGuard from "@/components/RoleGuard";
 import Index from "./pages/Index";
 import AdminDashboard from "./pages/AdminDashboard";
 import AgentDashboard from "./pages/AgentDashboard";
@@ -33,19 +34,19 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/agent" element={<AgentDashboard />} />
-              <Route path="/agent/cashin" element={<AgentCashIn />} />
-              <Route path="/agent/b2b" element={<AgentB2B />} />
-              <Route path="/agent/register" element={<AgentRegister />} />
-              <Route path="/agent/billpay" element={<AgentBillPay />} />
-              <Route path="/agent/history" element={<AgentTransactionHistory />} />
-              <Route path="/agent/bank" element={<AgentBankTransfer />} />
-              <Route path="/distributor" element={<DistributorDashboard />} />
-              <Route path="/distributor/create-agent" element={<DistributorCreateAgent />} />
-              <Route path="/super-distributor" element={<SuperDistributorDashboard />} />
-              <Route path="/super-distributor/create-distributor" element={<SuperDistributorCreateDistributor />} />
-              <Route path="/merchant" element={<MerchantDashboard />} />
+              <Route path="/admin" element={<RoleGuard roles={["admin"]}><AdminDashboard /></RoleGuard>} />
+              <Route path="/agent" element={<RoleGuard roles={["agent", "admin"]}><AgentDashboard /></RoleGuard>} />
+              <Route path="/agent/cashin" element={<RoleGuard roles={["agent", "admin"]}><AgentCashIn /></RoleGuard>} />
+              <Route path="/agent/b2b" element={<RoleGuard roles={["agent", "admin"]}><AgentB2B /></RoleGuard>} />
+              <Route path="/agent/register" element={<RoleGuard roles={["agent", "admin"]}><AgentRegister /></RoleGuard>} />
+              <Route path="/agent/billpay" element={<RoleGuard roles={["agent", "admin"]}><AgentBillPay /></RoleGuard>} />
+              <Route path="/agent/history" element={<RoleGuard roles={["agent", "admin"]}><AgentTransactionHistory /></RoleGuard>} />
+              <Route path="/agent/bank" element={<RoleGuard roles={["agent", "admin"]}><AgentBankTransfer /></RoleGuard>} />
+              <Route path="/distributor" element={<RoleGuard roles={["distributor", "admin"]}><DistributorDashboard /></RoleGuard>} />
+              <Route path="/distributor/create-agent" element={<RoleGuard roles={["distributor", "admin"]}><DistributorCreateAgent /></RoleGuard>} />
+              <Route path="/super-distributor" element={<RoleGuard roles={["super_distributor", "admin"]}><SuperDistributorDashboard /></RoleGuard>} />
+              <Route path="/super-distributor/create-distributor" element={<RoleGuard roles={["super_distributor", "admin"]}><SuperDistributorCreateDistributor /></RoleGuard>} />
+              <Route path="/merchant" element={<RoleGuard roles={["merchant", "admin"]}><MerchantDashboard /></RoleGuard>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
