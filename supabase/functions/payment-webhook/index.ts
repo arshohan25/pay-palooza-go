@@ -7,6 +7,63 @@ const corsHeaders = {
 };
 
 /**
+ * Atomically credit a user's balance with idempotency check.
+ */
+async function creditUserBalance(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  userId: string,
+  amount: number,
+  description: string,
+  reference: string
+): Promise<{ success: boolean; alreadyCredited?: boolean }> {
+  // Idempotency: check if a completed transaction with this reference already exists
+  const { data: existingTxn } = await supabaseAdmin
+    .from("transactions")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("reference", reference)
+    .eq("type", "addmoney")
+    .eq("status", "completed")
+    .maybeSingle();
+
+  if (existingTxn) {
+    console.log(`Idempotency: transaction already exists for reference ${reference}`);
+    return { success: true, alreadyCredited: true };
+  }
+
+  const { data: currentProfile } = await supabaseAdmin
+    .from("profiles")
+    .select("balance")
+    .eq("user_id", userId)
+    .single();
+
+  if (!currentProfile) {
+    console.error(`creditUserBalance: profile not found for user ${userId}`);
+    return { success: false };
+  }
+
+  const newBalance = parseFloat(String(currentProfile.balance)) + amount;
+
+  await supabaseAdmin
+    .from("profiles")
+    .update({ balance: newBalance })
+    .eq("user_id", userId);
+
+  await supabaseAdmin.from("transactions").insert({
+    user_id: userId,
+    type: "addmoney",
+    amount,
+    fee: 0,
+    balance_after: newBalance,
+    description,
+    reference,
+    status: "completed",
+  });
+
+  return { success: true };
+}
+
+/**
  * Unified webhook/callback handler for payment providers (bKash, Nagad).
  * This is called by the payment provider after the user completes/cancels payment.
  */
@@ -154,34 +211,9 @@ async function handleNagadCallback(
   }
 
   if (status === "Success" || status === "000") {
-    // Credit the user's wallet
+    // Idempotency gate: only process if session is still pending
     if (session.status !== "completed") {
-      const { data: profile } = await supabaseAdmin
-        .from("profiles")
-        .select("balance")
-        .eq("user_id", session.user_id)
-        .single();
-
-      if (profile) {
-        const newBalance = parseFloat(String(profile.balance)) + parseFloat(String(session.amount));
-        await supabaseAdmin
-          .from("profiles")
-          .update({ balance: newBalance })
-          .eq("user_id", session.user_id);
-
-        await supabaseAdmin.from("transactions").insert({
-          user_id: session.user_id,
-          type: "addmoney",
-          amount: session.amount,
-          fee: 0,
-          balance_after: newBalance,
-          description: `Nagad Payment (Ref: ${paymentRefId || session.provider_payment_id})`,
-          reference: session.id,
-          status: "completed",
-        });
-      }
-
-      await supabaseAdmin
+      const { data: updatedSession } = await supabaseAdmin
         .from("payment_sessions")
         .update({
           status: "completed",
@@ -192,7 +224,42 @@ async function handleNagadCallback(
             callback_data: callbackData,
           },
         })
-        .eq("id", session.id);
+        .eq("id", session.id)
+        .eq("status", "pending") // Only update if still pending
+        .select("id")
+        .maybeSingle();
+
+      if (updatedSession) {
+        // Credit user's balance with idempotency check
+        const creditResult = await creditUserBalance(
+          supabaseAdmin,
+          session.user_id as string,
+          parseFloat(String(session.amount)),
+          `Nagad Payment (Ref: ${paymentRefId || session.provider_payment_id})`,
+          session.id as string
+        );
+
+        // Audit log
+        try {
+          await supabaseAdmin.from("audit_logs").insert({
+            actor_id: session.user_id as string,
+            action: "payment_credit_webhook",
+            entity_type: "payment_session",
+            entity_id: session.id as string,
+            details: {
+              provider: "nagad",
+              amount: session.amount,
+              ref_id: paymentRefId,
+              callback_data: callbackData,
+              already_credited: creditResult.alreadyCredited || false,
+            },
+          });
+        } catch (auditErr) {
+          console.error("Audit log insert failed:", auditErr);
+        }
+      } else {
+        console.log(`Nagad webhook: session ${session.id} already processed, skipping credit`);
+      }
     }
   } else {
     await supabaseAdmin

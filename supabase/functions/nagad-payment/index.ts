@@ -26,8 +26,6 @@ function getCredentials() {
   return { merchantId, merchantPrivateKey, pgPublicKey };
 }
 
-// ── Crypto helpers for Nagad RSA signing/encryption ──
-
 async function importPrivateKey(pem: string): Promise<CryptoKey> {
   const pemContent = pem.replace(/-----BEGIN (?:RSA )?PRIVATE KEY-----/g, "")
     .replace(/-----END (?:RSA )?PRIVATE KEY-----/g, "")
@@ -90,6 +88,63 @@ const commonHeaders = {
   "X-KM-Api-Version": "v-0.2.0",
   "X-KM-IP-V4": "192.168.0.1",
 };
+
+/**
+ * Atomically credit a user's balance with idempotency check.
+ */
+async function creditUserBalance(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  userId: string,
+  amount: number,
+  description: string,
+  reference: string
+): Promise<{ success: boolean; alreadyCredited?: boolean }> {
+  // Idempotency: check if a completed transaction with this reference already exists
+  const { data: existingTxn } = await supabaseAdmin
+    .from("transactions")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("reference", reference)
+    .eq("type", "addmoney")
+    .eq("status", "completed")
+    .maybeSingle();
+
+  if (existingTxn) {
+    console.log(`Idempotency: transaction already exists for reference ${reference}`);
+    return { success: true, alreadyCredited: true };
+  }
+
+  const { data: currentProfile } = await supabaseAdmin
+    .from("profiles")
+    .select("balance")
+    .eq("user_id", userId)
+    .single();
+
+  if (!currentProfile) {
+    console.error(`creditUserBalance: profile not found for user ${userId}`);
+    return { success: false };
+  }
+
+  const newBalance = parseFloat(String(currentProfile.balance)) + amount;
+
+  await supabaseAdmin
+    .from("profiles")
+    .update({ balance: newBalance })
+    .eq("user_id", userId);
+
+  await supabaseAdmin.from("transactions").insert({
+    user_id: userId,
+    type: "addmoney",
+    amount,
+    fee: 0,
+    balance_after: newBalance,
+    description,
+    reference,
+    status: "completed",
+  });
+
+  return { success: true };
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -276,9 +331,10 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Idempotency: already completed
       if (session.status === "completed") {
         return new Response(
-          JSON.stringify({ success: true, status: "completed", provider_trx_id: session.provider_trx_id }),
+          JSON.stringify({ success: true, status: "completed", provider_trx_id: session.provider_trx_id, alreadyProcessed: true }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -286,7 +342,6 @@ Deno.serve(async (req) => {
       // Query Nagad for verification
       const { merchantId } = getCredentials();
       const base = getBaseUrl();
-      const orderId = (session.metadata as Record<string, unknown>)?.order_id;
 
       const verifyRes = await fetch(
         `${base}/verify/payment/${session.provider_payment_id}`,
@@ -302,40 +357,53 @@ Deno.serve(async (req) => {
       const verifyData = await verifyRes.json();
 
       if (verifyData.status === "Success" || verifyData.statusCode === "000") {
-        // Credit user's wallet
-        const { data: profile } = await supabaseAdmin
-          .from("profiles")
-          .select("balance")
-          .eq("user_id", userId)
-          .single();
-
-        if (profile) {
-          const newBalance = parseFloat(String(profile.balance)) + (session.amount as number);
-          await supabaseAdmin
-            .from("profiles")
-            .update({ balance: newBalance })
-            .eq("user_id", userId);
-
-          await supabaseAdmin.from("transactions").insert({
-            user_id: userId,
-            type: "addmoney",
-            amount: session.amount,
-            fee: 0,
-            balance_after: newBalance,
-            description: `Nagad Payment (Ref: ${session.provider_payment_id})`,
-            reference: session.id,
-            status: "completed",
-          });
-        }
-
-        await supabaseAdmin
+        // Mark session completed FIRST (idempotency gate)
+        const { data: updatedSession } = await supabaseAdmin
           .from("payment_sessions")
           .update({
             status: "completed",
             provider_trx_id: verifyData.issuerPaymentRefNo || verifyData.paymentRefId,
             completed_at: new Date().toISOString(),
           })
-          .eq("id", session.id);
+          .eq("id", session.id)
+          .eq("status", "pending") // Only update if still pending
+          .select("id")
+          .maybeSingle();
+
+        if (!updatedSession) {
+          // Already processed
+          return new Response(
+            JSON.stringify({ success: true, status: "completed", alreadyProcessed: true }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Credit user's balance with idempotency
+        const creditResult = await creditUserBalance(
+          supabaseAdmin,
+          userId,
+          session.amount as number,
+          `Nagad Payment (Ref: ${session.provider_payment_id})`,
+          session.id as string
+        );
+
+        // Audit log
+        try {
+          await supabaseAdmin.from("audit_logs").insert({
+            actor_id: userId,
+            action: "payment_credit",
+            entity_type: "payment_session",
+            entity_id: session.id as string,
+            details: {
+              provider: "nagad",
+              amount: session.amount,
+              ref_id: verifyData.issuerPaymentRefNo || verifyData.paymentRefId,
+              already_credited: creditResult.alreadyCredited || false,
+            },
+          });
+        } catch (auditErr) {
+          console.error("Audit log insert failed:", auditErr);
+        }
 
         return new Response(
           JSON.stringify({ success: true, status: "completed" }),
