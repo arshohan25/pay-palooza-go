@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import { supabase } from "@/integrations/supabase/client";
+import { verifyPin } from "@/lib/verifyPin";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 
@@ -35,6 +36,8 @@ const AgentBillPay = () => {
     if (processing) return;
     setProcessing(true);
     try {
+      const pinValid = await verifyPin(pin);
+      if (!pinValid) { toast({ title: "Wrong PIN", description: "Incorrect PIN. Please try again.", variant: "destructive" }); setPin(""); setProcessing(false); return; }
       const { error } = await supabase.rpc("record_transaction", {
         p_type: "paybill" as any,
         p_amount: Number(amount),

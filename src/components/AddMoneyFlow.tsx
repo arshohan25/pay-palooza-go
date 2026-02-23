@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { recordTransaction } from "@/lib/balanceStore";
+import { verifyPin } from "@/lib/verifyPin";
+import { checkDailyLimit } from "@/lib/dailyLimits";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -188,9 +190,23 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
     if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
     if (processing) return;
     setProcessing(true);
+
+    // Verify PIN
+    const pinValid = await verifyPin(pin);
+    if (!pinValid) { setError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
+
+    // Check daily limit
+    const addAmt = parseFloat(amount) || 0;
+    const limitCheck = await checkDailyLimit("addmoney", addAmt);
+    if (!limitCheck.allowed) {
+      setError(`Daily limit exceeded. Used ৳${limitCheck.used.toLocaleString()} of ৳${limitCheck.limit.toLocaleString()} today.`);
+      setProcessing(false);
+      return;
+    }
+
     haptics.success();
 
-    const addAmt = parseFloat(amount) || 0;
+    // addAmt already declared above for limit check
 
     // For bKash and Nagad, attempt real gateway integration
     if (source === "mfs" && (mfsProvider?.id === "bkash" || mfsProvider?.id === "nagad")) {

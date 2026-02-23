@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
 import { recordTransaction } from "@/lib/balanceStore";
+import { verifyPin } from "@/lib/verifyPin";
+import { checkDailyLimit } from "@/lib/dailyLimits";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -255,8 +257,21 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
     if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
     if (processing) return;
     setProcessing(true);
-    haptics.success();
+
+    // Verify PIN
+    const pinValid = await verifyPin(pin);
+    if (!pinValid) { setError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
+
+    // Check daily limit
     const dueAmt = billInfo?.due ?? 0;
+    const limitCheck = await checkDailyLimit("paybill", dueAmt);
+    if (!limitCheck.allowed) {
+      setError(`Daily limit exceeded. Used ৳${limitCheck.used.toLocaleString()} of ৳${limitCheck.limit.toLocaleString()} today.`);
+      setProcessing(false);
+      return;
+    }
+
+    haptics.success();
     await recordTransaction({
       type: "paybill",
       amount: dueAmt,
