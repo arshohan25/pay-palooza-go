@@ -28,7 +28,7 @@ import { haptics } from "@/lib/haptics";
 import DailyLimitBadge from "@/components/DailyLimitBadge";
 
 /* ─── Types ─── */
-type MerchTab = "overview" | "qr" | "transactions" | "settlements" | "mdr" | "paylinks";
+type MerchTab = "overview" | "qr" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics";
 
 interface MerchantInfo {
   id: string;
@@ -68,6 +68,7 @@ const mainTabs: { id: MerchTab; icon: typeof QrCode; label: string }[] = [
 ];
 
 const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: string }[] = [
+  { id: "analytics",    icon: PieChart,     label: "Analytics",        desc: "Insights, revenue & customers" },
   { id: "transactions", icon: ArrowUpDown,  label: "History",          desc: "View all transactions" },
   { id: "paylinks",     icon: Link,         label: "Pay Links",        desc: "Create & share payment links" },
   { id: "settlements",  icon: BanknoteIcon, label: "Settlement",       desc: "Bank payouts & schedule" },
@@ -331,6 +332,7 @@ const MerchantDashboard = () => {
           <motion.div key={activeTab} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }}>
             {activeTab === "overview"     && <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} onRefresh={loadData} />}
             {activeTab === "qr"           && <QRTab merchant={merchant} toast={toast} />}
+            {activeTab === "analytics"    && <AnalyticsTab merchant={merchant} paymentTxns={paymentTxns} />}
             {activeTab === "paylinks"     && <PayLinksTab merchant={merchant} toast={toast} />}
             {activeTab === "transactions" && <TxnTab txns={paymentTxns} />}
             {activeTab === "settlements"  && <SettlementTab merchant={merchant} paymentTxns={paymentTxns} />}
@@ -649,7 +651,275 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh }: { merchant
   );
 };
 
-/* ── QR Code Tab ── */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* ── Analytics Tab ── */
+const AnalyticsTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null; paymentTxns: TxnRow[] }) => {
+  const totalRevenue = paymentTxns.reduce((s, t) => s + t.amount, 0);
+  const mdrDeducted = Math.round(totalRevenue * (merchant?.mdr_rate ?? 0.015));
+  const avgTxn = paymentTxns.length > 0 ? Math.round(totalRevenue / paymentTxns.length) : 0;
+  const uniqueCustomers = new Set(paymentTxns.map(t => t.recipient_phone)).size;
+
+  const todayTxns = paymentTxns.filter(t => new Date(t.created_at).toDateString() === new Date().toDateString());
+  const todayRevenue = todayTxns.reduce((s, t) => s + t.amount, 0);
+
+  const last7 = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (6 - i));
+    const dayStr = d.toDateString();
+    const dayTxns = paymentTxns.filter(t => new Date(t.created_at).toDateString() === dayStr);
+    return { day: d.toLocaleDateString("en-BD", { weekday: "short" }), amount: dayTxns.reduce((s, t) => s + t.amount, 0), count: dayTxns.length };
+  });
+  const maxDay = Math.max(...last7.map(d => d.amount), 1);
+
+  const hourCounts: number[] = Array(24).fill(0);
+  paymentTxns.forEach(t => { hourCounts[new Date(t.created_at).getHours()]++; });
+  const peakHour = hourCounts.indexOf(Math.max(...hourCounts));
+  const peakLabel = `${peakHour % 12 || 12}${peakHour < 12 ? "AM" : "PM"}`;
+
+  // Top customers
+  const customerMap = new Map<string, { name: string; total: number; count: number }>();
+  paymentTxns.forEach(t => {
+    const key = t.recipient_phone || "unknown";
+    const existing = customerMap.get(key);
+    if (existing) { existing.total += t.amount; existing.count++; }
+    else { customerMap.set(key, { name: t.recipient_name || key, total: t.amount, count: 1 }); }
+  });
+  const topCustomers = Array.from(customerMap.values()).sort((a, b) => b.total - a.total).slice(0, 5);
+
+  // Last 30 days weekly breakdown
+  const last30Revenue = paymentTxns
+    .filter(t => new Date(t.created_at) > new Date(Date.now() - 30 * 86400000))
+    .reduce((s, t) => s + t.amount, 0);
+  const prev30Revenue = paymentTxns
+    .filter(t => { const d = new Date(t.created_at); return d > new Date(Date.now() - 60 * 86400000) && d <= new Date(Date.now() - 30 * 86400000); })
+    .reduce((s, t) => s + t.amount, 0);
+  const monthGrowth = prev30Revenue > 0 ? ((last30Revenue - prev30Revenue) / prev30Revenue * 100) : 0;
+
+  return (
+    <motion.div variants={stagger.container} initial="hidden" animate="show" className="space-y-4">
+      {/* Quick Insights */}
+      <motion.div variants={stagger.item}>
+        <Card className="p-4 border-0 shadow-card">
+          <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+            <Target size={14} className="text-primary" /> Quick Insights
+          </h3>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="text-center p-2.5 rounded-xl bg-muted/40">
+              <Users size={14} className="text-primary mx-auto mb-1" />
+              <p className="text-sm font-bold text-foreground">{uniqueCustomers}</p>
+              <p className="text-[9px] text-muted-foreground">Unique Customers</p>
+            </div>
+            <div className="text-center p-2.5 rounded-xl bg-muted/40">
+              <Clock size={14} className="text-primary mx-auto mb-1" />
+              <p className="text-sm font-bold text-foreground">{peakLabel}</p>
+              <p className="text-[9px] text-muted-foreground">Peak Hour</p>
+            </div>
+            <div className="text-center p-2.5 rounded-xl bg-muted/40">
+              <Award size={14} className="text-primary mx-auto mb-1" />
+              <p className="text-sm font-bold text-foreground">{((merchant?.mdr_rate ?? 0.015) * 100).toFixed(1)}%</p>
+              <p className="text-[9px] text-muted-foreground">MDR Rate</p>
+            </div>
+          </div>
+        </Card>
+      </motion.div>
+
+      {/* Revenue Summary Cards */}
+      <motion.div variants={stagger.item} className="grid grid-cols-2 gap-3">
+        {[
+          { label: "Total Revenue", value: `৳${fmt(totalRevenue)}`, icon: DollarSign, iconBg: "bg-emerald-500/10", iconColor: "text-emerald-600" },
+          { label: "Today's Revenue", value: `৳${fmt(todayRevenue)}`, icon: TrendingUp, iconBg: "bg-amber-500/10", iconColor: "text-amber-600" },
+          { label: "MDR Deducted", value: `৳${fmt(mdrDeducted)}`, icon: Percent, iconBg: "bg-destructive/10", iconColor: "text-destructive" },
+          { label: "Avg Transaction", value: `৳${fmt(avgTxn)}`, icon: Receipt, iconBg: "bg-blue-500/10", iconColor: "text-blue-600" },
+        ].map(s => (
+          <Card key={s.label} className="p-3.5 border-0 shadow-card hover:shadow-elevated transition-shadow">
+            <div className={`w-9 h-9 rounded-xl ${s.iconBg} flex items-center justify-center mb-2.5`}>
+              <s.icon size={17} className={s.iconColor} />
+            </div>
+            <p className="text-lg font-extrabold text-foreground leading-tight">{s.value}</p>
+            <p className="text-[10px] text-muted-foreground font-medium mt-0.5">{s.label}</p>
+          </Card>
+        ))}
+      </motion.div>
+
+      {/* 30-day Growth */}
+      <motion.div variants={stagger.item}>
+        <Card className="p-4 border-0 shadow-card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">30-Day Revenue</p>
+              <p className="text-xl font-extrabold text-foreground mt-0.5">৳{fmt(last30Revenue)}</p>
+            </div>
+            <div className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold ${monthGrowth >= 0 ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive"}`}>
+              {monthGrowth >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+              {Math.abs(monthGrowth).toFixed(1)}%
+            </div>
+          </div>
+          <p className="text-[9px] text-muted-foreground mt-1">vs previous 30 days</p>
+        </Card>
+      </motion.div>
+
+      {/* 7-Day Revenue Chart */}
+      <motion.div variants={stagger.item}>
+        <Card className="p-4 border-0 shadow-card">
+          <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+            <BarChart3 size={14} className="text-primary" /> Last 7 Days Revenue
+          </h3>
+          <div className="flex items-end gap-2 h-32">
+            {last7.map((d, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
+                <p className="text-[8px] text-muted-foreground font-semibold">
+                  {d.amount > 999 ? `${(d.amount / 1000).toFixed(0)}k` : d.amount > 0 ? `৳${d.amount}` : "—"}
+                </p>
+                <div className="w-full rounded-lg transition-all relative overflow-hidden" style={{
+                  height: `${Math.max(6, (d.amount / maxDay) * 90)}px`,
+                }}>
+                  <div className="absolute inset-0 rounded-lg" style={{
+                    background: i === 6 ? "linear-gradient(180deg, hsl(24 90% 55%), hsl(350 65% 38%))" : "hsl(var(--muted))"
+                  }} />
+                  {i === 6 && <div className="absolute inset-0 rounded-lg animate-pulse" style={{
+                    background: "linear-gradient(180deg, hsl(24 90% 55% / 0.3), transparent)"
+                  }} />}
+                </div>
+                <p className={`text-[9px] font-medium ${i === 6 ? "text-foreground font-bold" : "text-muted-foreground"}`}>{d.day}</p>
+              </div>
+            ))}
+          </div>
+          {/* daily txn counts */}
+          <div className="flex gap-2 mt-3 pt-3 border-t border-border/40">
+            {last7.map((d, i) => (
+              <div key={i} className="flex-1 text-center">
+                <p className="text-[9px] font-bold text-muted-foreground">{d.count}</p>
+                <p className="text-[7px] text-muted-foreground/60">txns</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </motion.div>
+
+      {/* Fee & Charges Summary */}
+      <motion.div variants={stagger.item}>
+        <Card className="p-4 border-0 shadow-card">
+          <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+            <CircleDollarSign size={14} className="text-primary" /> Fee & Charges
+          </h3>
+          <div className="space-y-2">
+            {[
+              { label: "Send Money to User", fee: "Flat ৳5", icon: Send, color: "text-blue-600", bg: "bg-blue-500/10" },
+              { label: "Cash Out (Merchant)", fee: "1.15%", icon: HandCoins, color: "text-emerald-600", bg: "bg-emerald-500/10" },
+              { label: "Bank Auto-Settlement", fee: "1.00%", icon: Landmark, color: "text-amber-600", bg: "bg-amber-500/10" },
+              { label: "MDR on Payments", fee: `${((merchant?.mdr_rate ?? 0.015) * 100).toFixed(2)}%`, icon: Percent, color: "text-purple-600", bg: "bg-purple-500/10" },
+            ].map(item => (
+              <div key={item.label} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-muted/30 border border-border/30">
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-lg ${item.bg} flex items-center justify-center`}>
+                    <item.icon size={14} className={item.color} />
+                  </div>
+                  <span className="text-xs font-semibold text-foreground">{item.label}</span>
+                </div>
+                <Badge variant="secondary" className="text-[10px] font-bold">{item.fee}</Badge>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </motion.div>
+
+      {/* Settlement Status */}
+      <motion.div variants={stagger.item}>
+        <Card className="p-4 border-0 shadow-card relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-5" style={{
+            background: "radial-gradient(circle, hsl(var(--primary)) 0%, transparent 70%)"
+          }} />
+          <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+            <Timer size={14} className="text-primary" /> Settlement Status
+          </h3>
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="p-3 rounded-xl bg-muted/30 border border-border/30">
+              <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">Frequency</p>
+              <p className="text-sm font-bold text-foreground mt-0.5">{merchant?.settlement_frequency || "T+1"}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-muted/30 border border-border/30">
+              <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">Bank Status</p>
+              <p className="text-sm font-bold text-foreground mt-0.5 flex items-center gap-1">
+                {merchant?.bank_name ? (<><CheckCircle2 size={12} className="text-emerald-500" /> Linked</>) : (<><Shield size={12} className="text-amber-500" /> Not Set</>)}
+              </p>
+            </div>
+            <div className="p-3 rounded-xl bg-muted/30 border border-border/30">
+              <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">Next Payout</p>
+              <p className="text-sm font-bold text-foreground mt-0.5">{new Date(Date.now() + 86400000).toLocaleDateString("en-BD", { month: "short", day: "numeric" })}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-muted/30 border border-border/30">
+              <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">Pending</p>
+              <p className="text-sm font-bold text-foreground mt-0.5">৳{fmt(todayRevenue)}</p>
+            </div>
+          </div>
+        </Card>
+      </motion.div>
+
+      {/* Top Customers */}
+      <motion.div variants={stagger.item}>
+        <Card className="p-4 border-0 shadow-card">
+          <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+            <Star size={14} className="text-primary" /> Top Customers
+          </h3>
+          {topCustomers.length === 0 ? (
+            <div className="text-center py-6">
+              <Users size={28} className="text-muted-foreground/30 mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">No customer data yet</p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {topCustomers.map((c, i) => (
+                <div key={i} className="flex items-center justify-between py-2.5 px-2 rounded-xl hover:bg-muted/30 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
+                      #{i + 1}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-foreground truncate max-w-[140px]">{c.name}</p>
+                      <p className="text-[9px] text-muted-foreground">{c.count} transactions</p>
+                    </div>
+                  </div>
+                  <p className="text-xs font-bold text-foreground">৳{fmt(c.total)}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </motion.div>
+
+      {/* Hourly Activity Heatmap */}
+      <motion.div variants={stagger.item}>
+        <Card className="p-4 border-0 shadow-card">
+          <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+            <Clock size={14} className="text-primary" /> Hourly Activity
+          </h3>
+          <div className="grid grid-cols-12 gap-1">
+            {hourCounts.map((count, h) => {
+              const maxCount = Math.max(...hourCounts, 1);
+              const intensity = count / maxCount;
+              return (
+                <div key={h} className="flex flex-col items-center gap-1">
+                  <div
+                    className="w-full aspect-square rounded-md transition-colors"
+                    style={{
+                      background: intensity > 0
+                        ? `hsl(24 90% 50% / ${0.15 + intensity * 0.7})`
+                        : "hsl(var(--muted) / 0.5)"
+                    }}
+                    title={`${h}:00 — ${count} txns`}
+                  />
+                  {h % 3 === 0 && <p className="text-[7px] text-muted-foreground">{h}</p>}
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-[9px] text-muted-foreground mt-2 text-center">Hours (0–23) • Darker = more transactions</p>
+        </Card>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+
 const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any }) => {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const qrPayload = merchant?.qr_code_data || `MRC-${merchant?.id?.slice(0, 8) || "UNKNOWN"}`;
