@@ -402,6 +402,54 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_sessions: {
+        Row: {
+          amount: number
+          callback_url: string | null
+          completed_at: string | null
+          created_at: string
+          fee: number
+          id: string
+          metadata: Json | null
+          provider: string
+          provider_payment_id: string | null
+          provider_trx_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          callback_url?: string | null
+          completed_at?: string | null
+          created_at?: string
+          fee?: number
+          id?: string
+          metadata?: Json | null
+          provider: string
+          provider_payment_id?: string | null
+          provider_trx_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          callback_url?: string | null
+          completed_at?: string | null
+          created_at?: string
+          fee?: number
+          id?: string
+          metadata?: Json | null
+          provider?: string
+          provider_payment_id?: string | null
+          provider_trx_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pin_reset_attempts: {
         Row: {
           attempted_at: string

@@ -1,1 +1,10 @@
 project_id = "lmgsxyzytssddijjxbzc"
+
+[functions.bkash-payment]
+verify_jwt = false
+
+[functions.nagad-payment]
+verify_jwt = false
+
+[functions.payment-webhook]
+verify_jwt = false

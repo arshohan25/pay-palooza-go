@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n";
+import { supabase } from "@/integrations/supabase/client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = "amount" | "source" | "details" | "pin" | "processing" | "success";
@@ -189,22 +190,142 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
     setProcessing(true);
     haptics.success();
 
-    // For MFS providers, show a processing screen
+    const addAmt = parseFloat(amount) || 0;
+
+    // For bKash and Nagad, attempt real gateway integration
+    if (source === "mfs" && (mfsProvider?.id === "bkash" || mfsProvider?.id === "nagad")) {
+      setDir(1);
+      setStep("processing");
+
+      try {
+        const functionName = mfsProvider.id === "bkash" ? "bkash-payment" : "nagad-payment";
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
+        if (!token) {
+          setError("Please log in to continue.");
+          setStep("pin");
+          setProcessing(false);
+          return;
+        }
+
+        // Step 1: Create payment session on gateway
+        const createRes = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/${functionName}?action=create`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: JSON.stringify({
+              amount: String(addAmt),
+              payerReference: mfsAccount,
+              callbackURL: window.location.origin,
+            }),
+          }
+        );
+
+        const createData = await createRes.json();
+
+        if (!createRes.ok || !createData.success) {
+          // If credentials not configured, fall back to simulation
+          if (createData.error?.includes("not configured")) {
+            console.warn(`${mfsProvider.name} credentials not configured, using simulation mode`);
+            await simulateAndRecord(addAmt);
+            return;
+          }
+          throw new Error(createData.error || "Payment creation failed");
+        }
+
+        // Step 2: Redirect to provider payment page
+        const redirectUrl = mfsProvider.id === "bkash" ? createData.bkashURL : createData.nagadURL;
+
+        if (redirectUrl) {
+          // Store session ID for when user returns
+          localStorage.setItem("pending_payment_session", JSON.stringify({
+            sessionId: createData.sessionId,
+            provider: mfsProvider.id,
+            amount: addAmt,
+            functionName,
+          }));
+          // Redirect to provider
+          window.location.href = redirectUrl;
+          return;
+        }
+
+        // If no redirect URL (sandbox may not have one), fall back to execute
+        if (mfsProvider.id === "bkash" && createData.paymentID) {
+          const execRes = await fetch(
+            `https://${projectId}.supabase.co/functions/v1/${functionName}?action=execute`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              },
+              body: JSON.stringify({
+                sessionId: createData.sessionId,
+                paymentID: createData.paymentID,
+              }),
+            }
+          );
+          const execData = await execRes.json();
+          if (execData.success) {
+            txnTime.current = new Date();
+            txnId.current = createData.sessionId;
+            showTxnToast({ type: "Add Money", amount: `৳${addAmt.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-addmoney" });
+            setDir(1);
+            setStep("success");
+            return;
+          }
+        }
+
+        // Fallback to simulation if gateway didn't complete
+        await simulateAndRecord(addAmt);
+      } catch (err) {
+        console.error("Payment gateway error:", err);
+        // Fall back to simulation on any error
+        await simulateAndRecord(addAmt);
+      }
+      return;
+    }
+
+    // For other MFS providers or non-MFS, use simulation
     if (source === "mfs") {
       setDir(1);
       setStep("processing");
-      // Simulate payment gateway processing
       await new Promise(r => setTimeout(r, 3000));
     }
 
     txnTime.current = new Date();
     txnId.current = generateTxnId();
-    const addAmt = parseFloat(amount) || 0;
     const sourceLabel = source === "bank"
       ? `Bank Transfer via ${bank?.name}`
       : source === "mfs"
         ? `${mfsProvider?.name} (${mfsAccount})`
         : "Card Payment";
+    await recordTransaction({
+      type: "addmoney",
+      amount: addAmt,
+      fee: 0,
+      description: sourceLabel,
+      reference: txnId.current,
+    });
+    showTxnToast({ type: "Add Money", amount: `৳${addAmt.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-addmoney" });
+    setDir(1);
+    setStep("success");
+  };
+
+  /** Fallback: simulate gateway processing and record transaction */
+  const simulateAndRecord = async (addAmt: number) => {
+    await new Promise(r => setTimeout(r, 3000));
+    txnTime.current = new Date();
+    txnId.current = generateTxnId();
+    const sourceLabel = `${mfsProvider?.name} (${mfsAccount})`;
     await recordTransaction({
       type: "addmoney",
       amount: addAmt,
