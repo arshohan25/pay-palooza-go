@@ -56,9 +56,10 @@ const SuperDistributorCreateDistributor = () => {
       const email = `${cleaned}@easypay.local`;
 
       // 2. Create auth account for distributor
+      const randomPin = String(Math.floor(1000 + Math.random() * 9000));
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
-        password: `${cleaned.slice(-4)}EP`,
+        password: `${randomPin}EP`,
         options: { data: { phone: cleaned, display_name: name || businessName } },
       });
       if (signUpError) throw signUpError;
@@ -106,7 +107,7 @@ const SuperDistributorCreateDistributor = () => {
         <div className="text-center">
           <h2 className="text-lg font-bold text-foreground">Distributor Created!</h2>
           <p className="text-sm text-muted-foreground mt-1">{businessName} is now active</p>
-          <p className="text-xs text-muted-foreground mt-2">Login: {phone.replace(/\D/g, "").replace(/^(\+?88)/, "")} / last 4 digits of phone</p>
+          <p className="text-xs text-muted-foreground mt-2">A random PIN was generated. They should use "Forgot PIN" to set their own.</p>
         </div>
         <div className="flex gap-3">
           <Button variant="outline" onClick={() => { setSuccess(false); setPhone(""); setName(""); setBusinessName(""); setTerritory(""); setMaxFloat("10000000"); setCommissionRate("0.20"); }}>
@@ -181,7 +182,7 @@ const SuperDistributorCreateDistributor = () => {
         </Card>
 
         <p className="text-[10px] text-muted-foreground text-center">
-          The distributor will be able to login with their phone number and last 4 digits of phone as PIN.
+          The distributor will receive a random PIN and can reset it via "Forgot PIN".
         </p>
       </div>
     </div>
