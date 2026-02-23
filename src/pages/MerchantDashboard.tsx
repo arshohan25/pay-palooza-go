@@ -65,10 +65,10 @@ const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 const mainTabs: { id: MerchTab; icon: typeof QrCode; label: string }[] = [
   { id: "overview",     icon: BarChart3,    label: "Overview" },
   { id: "qr",           icon: QrCode,       label: "QR Code" },
-  { id: "transactions", icon: ArrowUpDown,  label: "History" },
 ];
 
 const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: string }[] = [
+  { id: "transactions", icon: ArrowUpDown,  label: "History",          desc: "View all transactions" },
   { id: "paylinks",     icon: Link,         label: "Pay Links",        desc: "Create & share payment links" },
   { id: "settlements",  icon: BanknoteIcon, label: "Settlement",       desc: "Bank payouts & schedule" },
   { id: "mdr",          icon: Percent,      label: "Fees & Charges",   desc: "MDR rates & fee breakdown" },
