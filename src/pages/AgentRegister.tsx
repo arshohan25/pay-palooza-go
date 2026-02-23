@@ -23,9 +23,11 @@ const AgentRegister = () => {
     setProcessing(true);
     try {
       const email = `${phone}@easypay.local`;
+      // Generate random PIN instead of predictable phone-derived one
+      const randomPin = String(Math.floor(1000 + Math.random() * 9000));
       const { error } = await supabase.auth.signUp({
         email,
-        password: `${phone.slice(-4)}EP`,
+        password: `${randomPin}EP`,
         options: { data: { phone, name } },
       });
       if (error) throw error;

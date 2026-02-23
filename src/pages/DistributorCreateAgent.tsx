@@ -39,9 +39,10 @@ const DistributorCreateAgent = () => {
 
       // 2. Create auth account for agent
       const email = `${phone}@easypay.local`;
+      const randomPin = String(Math.floor(1000 + Math.random() * 9000));
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
-        password: `${phone.slice(-4)}EP`,
+        password: `${randomPin}EP`,
         options: { data: { phone, name: name || businessName } },
       });
       if (signUpError) throw signUpError;
@@ -128,9 +129,8 @@ const DistributorCreateAgent = () => {
               <p className="text-lg font-extrabold text-foreground">Agent Created!</p>
               <p className="text-sm text-muted-foreground">{businessName || name || phone} is now part of your network</p>
               <div className="p-3 rounded-xl bg-muted/50 text-left space-y-1">
-                <p className="text-[10px] text-muted-foreground">Login Credentials:</p>
-                <p className="text-xs font-mono text-foreground">Email: {phone}@easypay.local</p>
-                <p className="text-xs font-mono text-foreground">Password: {phone.slice(-4)}EP</p>
+                <p className="text-[10px] text-muted-foreground">Account Created</p>
+                <p className="text-xs text-foreground">A random PIN has been generated. The agent must use "Forgot PIN" to set their own PIN.</p>
               </div>
               <Button onClick={resetForm} className="w-full rounded-xl h-11 text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(217 80% 50%), hsl(226 75% 40%))" }}>
                 <UserPlus size={16} className="mr-2 text-primary-foreground" />

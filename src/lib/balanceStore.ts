@@ -34,26 +34,19 @@ export async function fetchBalance(): Promise<number> {
   return balance;
 }
 
-/** Update balance in DB and locally */
-async function updateDbBalance(newBalance: number): Promise<void> {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user) return;
-
-  balance = Math.max(0, newBalance);
-  notify(); // optimistic local update
-
-  await supabase
-    .from("profiles")
-    .update({ balance })
-    .eq("user_id", session.user.id);
+/** @deprecated Balance updates now happen server-side only via RPCs */
+async function updateDbBalance(_newBalance: number): Promise<void> {
+  console.warn("Direct balance updates are disabled. Use server-side RPCs.");
 }
 
-export const deductBalance = async (amount: number) => {
-  await updateDbBalance(balance - amount);
+/** @deprecated Use recordTransaction() or transferMoney() RPC instead. These are no-ops kept for API compatibility. */
+export const deductBalance = async (_amount: number) => {
+  console.warn("deductBalance is deprecated. Use recordTransaction() RPC for all balance changes.");
 };
 
-export const addBalance = async (amount: number) => {
-  await updateDbBalance(balance + amount);
+/** @deprecated Use recordTransaction() or transferMoney() RPC instead. These are no-ops kept for API compatibility. */
+export const addBalance = async (_amount: number) => {
+  console.warn("addBalance is deprecated. Use recordTransaction() RPC for all balance changes.");
 };
 
 export const onBalanceChange = (fn: (b: number) => void) => {
