@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -6,12 +6,12 @@ import {
   ArrowLeft, RefreshCw, QrCode, BarChart3, Wallet, Clock,
   Shield, Building2, Store, TrendingUp, DollarSign, Copy,
   CheckCircle2, Calendar, ArrowUpDown, Download, CreditCard,
-  Percent, Receipt, ChevronRight, Eye, BanknoteIcon, Users,
+  Percent, Receipt, ChevronRight, Eye, EyeOff, BanknoteIcon, Users,
   Zap, Gift, Star, ShieldCheck, Smartphone, Globe, TrendingDown,
   Target, Award, Sparkles, ArrowUpRight, ArrowDownRight, PieChart,
   Bell, Settings, HelpCircle, Landmark, BadgeCheck, Link, Share2,
   ExternalLink, Plus, Trash2, Check, Send, Banknote, Timer,
-  ArrowRightLeft, Repeat, HandCoins, CalendarClock, CircleDollarSign
+  ArrowRightLeft, Repeat, HandCoins, CalendarClock, CircleDollarSign, ScanLine
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import QRCode from "qrcode";
+import QrScannerModal from "@/components/QrScannerModal";
 
 /* ─── Types ─── */
 type MerchTab = "overview" | "qr" | "transactions" | "settlements" | "mdr" | "paylinks";
@@ -79,9 +80,27 @@ const MerchantDashboard = () => {
   const [activeTab, setActiveTab] = useState<MerchTab>("overview");
   const [merchant, setMerchant] = useState<MerchantInfo | null>(null);
   const [balance, setBalance] = useState(0);
+  const [showBalance, setShowBalance] = useState(false);
   const [txns, setTxns] = useState<TxnRow[]>([]);
   const [isMerchant, setIsMerchant] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
+  const balanceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const toggleBalance = () => {
+    setShowBalance(v => {
+      if (!v) {
+        if (balanceTimerRef.current) clearTimeout(balanceTimerRef.current);
+        balanceTimerRef.current = setTimeout(() => setShowBalance(false), 5000);
+      } else {
+        if (balanceTimerRef.current) clearTimeout(balanceTimerRef.current);
+      }
+      return !v;
+    });
+  };
+
+  useEffect(() => {
+    return () => { if (balanceTimerRef.current) clearTimeout(balanceTimerRef.current); };
+  }, []);
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -180,18 +199,34 @@ const MerchantDashboard = () => {
             </div>
           </div>
 
-          {/* Balance hero */}
-          <div className="glass-hero rounded-2xl p-4">
+          {/* Balance hero — tap to reveal, 5s auto-hide */}
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={toggleBalance}
+            className="glass-hero rounded-2xl p-4 w-full text-left"
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[11px] font-medium text-white/60 uppercase tracking-wider">Available Balance</p>
-                <p className="text-3xl font-black tracking-tight mt-0.5">৳{fmt(balance)}</p>
+                <AnimatePresence mode="wait">
+                  {showBalance ? (
+                    <motion.p key="bal" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="text-3xl font-black tracking-tight mt-0.5 flex items-center gap-2">
+                      ৳{fmt(balance)}
+                      <EyeOff size={14} className="opacity-50" />
+                    </motion.p>
+                  ) : (
+                    <motion.div key="hidden" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="flex items-center gap-2 mt-1.5 bg-white/10 rounded-xl px-3 py-1.5 w-fit">
+                      <Eye size={13} className="opacity-80" />
+                      <span className="text-[12px] font-semibold opacity-90">Tap to see balance</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
               <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center">
                 <Wallet size={22} />
               </div>
             </div>
-          </div>
+          </motion.button>
         </div>
       </header>
 
@@ -1256,6 +1291,7 @@ const MerchantSendMoneySheet = ({ open, onClose }: { open: boolean; onClose: () 
   const [phone, setPhone] = useState("");
   const [amount, setAmount] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [showQr, setShowQr] = useState(false);
 
   const fee = 5;
   const parsedAmount = parseFloat(amount) || 0;
@@ -1291,42 +1327,61 @@ const MerchantSendMoneySheet = ({ open, onClose }: { open: boolean; onClose: () 
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={onClose}>
-      <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", bounce: 0.15 }}
-        className="w-full max-w-xl bg-card rounded-t-3xl p-6 space-y-4" onClick={e => e.stopPropagation()}>
-        <div className="w-12 h-1 bg-muted rounded-full mx-auto" />
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-            <Send size={18} className="text-white" />
+    <>
+      <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={onClose}>
+        <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", bounce: 0.15 }}
+          className="w-full max-w-xl bg-card rounded-t-3xl p-6 space-y-4" onClick={e => e.stopPropagation()}>
+          <div className="w-12 h-1 bg-muted rounded-full mx-auto" />
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+              <Send size={18} className="text-white" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-foreground">Send Money</h3>
+              <p className="text-[11px] text-muted-foreground">Flat ৳5 fee per transaction</p>
+            </div>
           </div>
           <div>
-            <h3 className="text-base font-bold text-foreground">Send Money</h3>
-            <p className="text-[11px] text-muted-foreground">Flat ৳5 fee per transaction</p>
+            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Recipient Number</label>
+            <div className="flex gap-2">
+              <Input placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))} className="h-12 rounded-xl text-lg flex-1" inputMode="numeric" />
+              <Button variant="outline" className="h-12 w-12 rounded-xl shrink-0 border-dashed border-primary/40" onClick={() => setShowQr(true)}>
+                <ScanLine size={18} className="text-primary" />
+              </Button>
+            </div>
           </div>
-        </div>
-        <div>
-          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Recipient Number</label>
-          <Input placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))} className="h-12 rounded-xl text-lg" inputMode="numeric" />
-        </div>
-        <div>
-          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Amount</label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">৳</span>
-            <Input type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className="pl-8 h-12 rounded-xl text-lg" inputMode="decimal" />
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Amount</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">৳</span>
+              <Input type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className="pl-8 h-12 rounded-xl text-lg" inputMode="decimal" />
+            </div>
           </div>
-        </div>
-        {parsedAmount > 0 && (
-          <div className="p-3 rounded-xl bg-muted/40 text-xs space-y-1">
-            <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-semibold text-foreground">৳{fmt(parsedAmount)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Fee</span><span className="font-semibold text-foreground">৳{fee}</span></div>
-            <div className="flex justify-between border-t border-border/50 pt-1"><span className="font-bold text-foreground">Total</span><span className="font-bold text-foreground">৳{fmt(total)}</span></div>
+          {parsedAmount > 0 && (
+            <div className="p-3 rounded-xl bg-muted/40 text-xs space-y-1">
+              <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-semibold text-foreground">৳{fmt(parsedAmount)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Fee</span><span className="font-semibold text-foreground">৳{fee}</span></div>
+              <div className="flex justify-between border-t border-border/50 pt-1"><span className="font-bold text-foreground">Total</span><span className="font-bold text-foreground">৳{fmt(total)}</span></div>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button onClick={handleSend} disabled={processing} className="flex-1 h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(217 80% 50%), hsl(226 75% 40%))" }}>
+              {processing ? "Sending..." : `Send ৳${fmt(parsedAmount)} → ${phone || "..."}`}
+            </Button>
+            <Button variant="outline" className="h-12 w-12 rounded-xl shrink-0" onClick={() => {
+              if (phone && parsedAmount > 0) {
+                const text = `Send ৳${fmt(parsedAmount)} to ${phone} (Fee: ৳${fee})`;
+                if (navigator.share) { navigator.share({ title: "Send Money", text }).catch(() => {}); }
+                else { navigator.clipboard.writeText(text); toast({ title: "Copied details!" }); }
+              }
+            }}>
+              <Share2 size={16} />
+            </Button>
           </div>
-        )}
-        <Button onClick={handleSend} disabled={processing} className="w-full h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(217 80% 50%), hsl(226 75% 40%))" }}>
-          {processing ? "Sending..." : `Send ৳${fmt(parsedAmount)} → ${phone || "..."}`}
-        </Button>
-      </motion.div>
-    </div>
+        </motion.div>
+      </div>
+      <QrScannerModal open={showQr} onClose={() => setShowQr(false)} onScan={(result) => setPhone(result.replace(/\D/g, "").slice(0, 11))} title="Scan Recipient QR" />
+    </>
   );
 };
 
@@ -1336,6 +1391,7 @@ const MerchantCashOutSheet = ({ open, onClose }: { open: boolean; onClose: () =>
   const [amount, setAmount] = useState("");
   const [agentId, setAgentId] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [showQr, setShowQr] = useState(false);
 
   const parsedAmount = parseFloat(amount) || 0;
   const fee = Math.round(parsedAmount * 0.0115 * 100) / 100;
@@ -1371,42 +1427,61 @@ const MerchantCashOutSheet = ({ open, onClose }: { open: boolean; onClose: () =>
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={onClose}>
-      <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", bounce: 0.15 }}
-        className="w-full max-w-xl bg-card rounded-t-3xl p-6 space-y-4" onClick={e => e.stopPropagation()}>
-        <div className="w-12 h-1 bg-muted rounded-full mx-auto" />
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-            <HandCoins size={18} className="text-white" />
+    <>
+      <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={onClose}>
+        <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", bounce: 0.15 }}
+          className="w-full max-w-xl bg-card rounded-t-3xl p-6 space-y-4" onClick={e => e.stopPropagation()}>
+          <div className="w-12 h-1 bg-muted rounded-full mx-auto" />
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+              <HandCoins size={18} className="text-white" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-foreground">Cash Out</h3>
+              <p className="text-[11px] text-muted-foreground">1.15% charge · Min ৳30 · Max ৳50,000</p>
+            </div>
           </div>
           <div>
-            <h3 className="text-base font-bold text-foreground">Cash Out</h3>
-            <p className="text-[11px] text-muted-foreground">1.15% charge · Min ৳30 · Max ৳50,000</p>
+            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Agent Number</label>
+            <div className="flex gap-2">
+              <Input placeholder="Agent ID or number" value={agentId} onChange={e => setAgentId(e.target.value.replace(/\D/g, "").slice(0, 11))} className="h-12 rounded-xl flex-1" inputMode="numeric" />
+              <Button variant="outline" className="h-12 w-12 rounded-xl shrink-0 border-dashed border-primary/40" onClick={() => setShowQr(true)}>
+                <ScanLine size={18} className="text-primary" />
+              </Button>
+            </div>
           </div>
-        </div>
-        <div>
-          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Agent Number</label>
-          <Input placeholder="Agent ID or number" value={agentId} onChange={e => setAgentId(e.target.value.replace(/\D/g, "").slice(0, 11))} className="h-12 rounded-xl" inputMode="numeric" />
-        </div>
-        <div>
-          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Amount</label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">৳</span>
-            <Input type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className="pl-8 h-12 rounded-xl text-lg" inputMode="decimal" />
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Amount</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">৳</span>
+              <Input type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className="pl-8 h-12 rounded-xl text-lg" inputMode="decimal" />
+            </div>
           </div>
-        </div>
-        {parsedAmount > 0 && (
-          <div className="p-3 rounded-xl bg-muted/40 text-xs space-y-1">
-            <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-semibold text-foreground">৳{fmt(parsedAmount)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Fee (1.15%)</span><span className="font-semibold text-foreground">৳{fmt(fee)}</span></div>
-            <div className="flex justify-between border-t border-border/50 pt-1"><span className="font-bold text-foreground">Total Deduction</span><span className="font-bold text-foreground">৳{fmt(total)}</span></div>
+          {parsedAmount > 0 && (
+            <div className="p-3 rounded-xl bg-muted/40 text-xs space-y-1">
+              <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-semibold text-foreground">৳{fmt(parsedAmount)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Fee (1.15%)</span><span className="font-semibold text-foreground">৳{fmt(fee)}</span></div>
+              <div className="flex justify-between border-t border-border/50 pt-1"><span className="font-bold text-foreground">Total Deduction</span><span className="font-bold text-foreground">৳{fmt(total)}</span></div>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button onClick={handleCashOut} disabled={processing} className="flex-1 h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(162 72% 38%), hsl(174 68% 28%))" }}>
+              {processing ? "Processing..." : `Cash Out ৳${fmt(parsedAmount)}`}
+            </Button>
+            <Button variant="outline" className="h-12 w-12 rounded-xl shrink-0" onClick={() => {
+              if (agentId && parsedAmount > 0) {
+                const text = `Cash Out ৳${fmt(parsedAmount)} via Agent ${agentId} (Fee: ৳${fmt(fee)})`;
+                if (navigator.share) { navigator.share({ title: "Cash Out", text }).catch(() => {}); }
+                else { navigator.clipboard.writeText(text); toast({ title: "Copied details!" }); }
+              }
+            }}>
+              <Share2 size={16} />
+            </Button>
           </div>
-        )}
-        <Button onClick={handleCashOut} disabled={processing} className="w-full h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(162 72% 38%), hsl(174 68% 28%))" }}>
-          {processing ? "Processing..." : `Cash Out ৳${fmt(parsedAmount)}`}
-        </Button>
-      </motion.div>
-    </div>
+        </motion.div>
+      </div>
+      <QrScannerModal open={showQr} onClose={() => setShowQr(false)} onScan={(result) => setAgentId(result.replace(/\D/g, "").slice(0, 11))} title="Scan Agent QR" />
+    </>
   );
 };
 
