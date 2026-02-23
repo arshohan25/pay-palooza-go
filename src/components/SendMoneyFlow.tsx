@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
 import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
+import DailyLimitBadge from "@/components/DailyLimitBadge";
 import {
   ChevronLeft,
   Search,
@@ -470,7 +471,10 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-semibold text-foreground">{t("enterAmount")}</label>
-                    <AvailableBalanceBadge />
+                    <div className="flex flex-col items-end gap-0.5">
+                      <AvailableBalanceBadge />
+                      <DailyLimitBadge txnType="send" />
+                    </div>
                   </div>
                   <div className="relative flex items-center">
                     <span className="absolute left-4 text-2xl font-bold text-muted-foreground">৳</span>
