@@ -61,7 +61,7 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     hideTimerRef.current = setTimeout(() => {
       setShowBalance(false);
-    }, 8000);
+    }, 5000);
   }, []);
 
   const handleToggleBalance = () => {
