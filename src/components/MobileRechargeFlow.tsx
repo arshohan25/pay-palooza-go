@@ -396,6 +396,30 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
       reference: txnId.current,
       description: packDesc + modeTag,
     });
+
+    // ── Drive cashback: credit cashback amount back to user ──
+    const cashbackAmt = selectedPack?.cashback ?? 0;
+    if (cashbackAmt > 0 && selectedPack?.type === "drive") {
+      try {
+        await recordTransaction({
+          type: "addmoney",
+          amount: cashbackAmt,
+          fee: 0,
+          recipientPhone: phone,
+          recipientName: detectedOp?.name,
+          reference: `CB-${txnId.current}`,
+          description: `Drive Cashback: ${selectedPack.name}`,
+        });
+        showTxnToast({
+          type: "Drive Cashback",
+          amount: `+৳${cashbackAmt.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
+          gradient: "bg-gradient-to-b from-amber-500 to-yellow-500",
+        });
+      } catch {
+        // Cashback failed silently — don't block the recharge success
+      }
+    }
+
     showTxnToast({
       type: apiProcessed ? "Live Recharge" : "Mobile Recharge",
       amount: `৳${effectivePrice.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,

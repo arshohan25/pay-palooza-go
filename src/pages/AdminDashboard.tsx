@@ -35,6 +35,7 @@ import AdminRechargePackManager from "@/components/admin/AdminRechargePackManage
 import AdminRechargeAnalytics from "@/components/admin/AdminRechargeAnalytics";
 import AdminRechargeImportExport from "@/components/admin/AdminRechargeImportExport";
 import AdminRechargeApiConnect from "@/components/admin/AdminRechargeApiConnect";
+import AdminRechargeLog from "@/components/admin/AdminRechargeLog";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 
 interface Stats {
@@ -46,13 +47,14 @@ interface Stats {
 }
 
 const RechargeSection = () => {
-  const [subTab, setSubTab] = useState<"packs" | "analytics" | "import" | "apiconnect">("packs");
+  const [subTab, setSubTab] = useState<"packs" | "analytics" | "import" | "apiconnect" | "log">("packs");
   return (
     <div className="space-y-4">
       <div className="flex gap-2 flex-wrap">
         {[
           { key: "packs" as const, label: "Manage Packs" },
           { key: "analytics" as const, label: "Analytics" },
+          { key: "log" as const, label: "Txn Log" },
           { key: "import" as const, label: "Import / Export" },
           { key: "apiconnect" as const, label: "API Connect" },
         ].map(t => (
@@ -68,6 +70,7 @@ const RechargeSection = () => {
       </div>
       {subTab === "packs" && <AdminRechargePackManager />}
       {subTab === "analytics" && <AdminRechargeAnalytics />}
+      {subTab === "log" && <AdminRechargeLog />}
       {subTab === "import" && <AdminRechargeImportExport />}
       {subTab === "apiconnect" && <AdminRechargeApiConnect />}
     </div>
