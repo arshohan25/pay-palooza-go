@@ -5,7 +5,7 @@ import {
   Users, ArrowLeftRight, ShieldAlert, Store, UserCheck,
   TrendingUp, Activity, Search, RefreshCw, LogOut,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings,
-  ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package,
+  ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,8 @@ import AdminChargebackDialog from "@/components/admin/AdminChargebackDialog";
 import AdminChargebackHistory from "@/components/admin/AdminChargebackHistory";
 import UserLockDialog from "@/components/admin/UserLockDialog";
 import AdminOrderManagement from "@/components/admin/AdminOrderManagement";
+import AdminGatewayConfig from "@/components/admin/AdminGatewayConfig";
+import AdminGlobalToggles from "@/components/admin/AdminGlobalToggles";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 
 interface Stats {
@@ -94,6 +96,8 @@ const NAV_ITEMS = [
   { id: "support", label: "Support", icon: MessageCircle },
   { id: "locks", label: "Locks", icon: Lock },
   { id: "orders", label: "Orders", icon: Package },
+  { id: "gateways", label: "Gateways", icon: CreditCard },
+  { id: "toggles", label: "Toggles", icon: ToggleRight },
   { id: "reporting", label: "Reports", icon: BarChart3 },
 ];
 
@@ -631,6 +635,12 @@ export default function AdminDashboard() {
 
         {/* ═══ ORDER MANAGEMENT ═══ */}
         {activeTab === "orders" && <AdminOrderManagement />}
+
+        {/* ═══ PAYMENT GATEWAYS ═══ */}
+        {activeTab === "gateways" && <AdminGatewayConfig />}
+
+        {/* ═══ GLOBAL FEATURE TOGGLES ═══ */}
+        {activeTab === "toggles" && <AdminGlobalToggles />}
 
         {/* ═══ REPORTING DASHBOARD ═══ */}
         {activeTab === "reporting" && <AdminReporting />}

@@ -351,6 +351,39 @@ export type Database = {
         }
         Relationships: []
       }
+      global_feature_toggles: {
+        Row: {
+          created_at: string
+          description: string | null
+          feature_key: string
+          id: string
+          is_enabled: boolean
+          label: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          feature_key: string
+          id?: string
+          is_enabled?: boolean
+          label: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          feature_key?: string
+          id?: string
+          is_enabled?: boolean
+          label?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       merchants: {
         Row: {
           bank_account_number: string | null
@@ -483,6 +516,39 @@ export type Database = {
           phone?: string
           purpose?: string
           verified?: boolean
+        }
+        Relationships: []
+      }
+      payment_gateways: {
+        Row: {
+          config: Json
+          created_at: string
+          display_name: string
+          id: string
+          is_enabled: boolean
+          provider: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          display_name: string
+          id?: string
+          is_enabled?: boolean
+          provider: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_enabled?: boolean
+          provider?: string
+          sort_order?: number
+          updated_at?: string
         }
         Relationships: []
       }

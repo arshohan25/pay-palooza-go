@@ -1,0 +1,308 @@
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import {
+  CreditCard, Plus, Pencil, Trash2, Loader2, Power, PowerOff, Eye, EyeOff, Save, X,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+interface Gateway {
+  id: string;
+  provider: string;
+  display_name: string;
+  config: Record<string, string>;
+  is_enabled: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+const DEFAULT_FIELDS: Record<string, string[]> = {
+  bkash: ["BKASH_APP_KEY", "BKASH_APP_SECRET", "BKASH_USERNAME", "BKASH_PASSWORD"],
+  nagad: ["NAGAD_MERCHANT_ID", "NAGAD_MERCHANT_KEY", "NAGAD_PUBLIC_KEY"],
+  rocket: ["ROCKET_MERCHANT_ID", "ROCKET_API_KEY"],
+  upay: ["UPAY_MERCHANT_ID", "UPAY_API_KEY"],
+  tap: ["TAP_MERCHANT_ID", "TAP_API_KEY"],
+  mcash: ["MCASH_MERCHANT_ID", "MCASH_API_KEY"],
+};
+
+export default function AdminGatewayConfig() {
+  const [gateways, setGateways] = useState<Gateway[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editGw, setEditGw] = useState<Gateway | null>(null);
+  const [editConfig, setEditConfig] = useState<Record<string, string>>({});
+  const [editName, setEditName] = useState("");
+  const [editProvider, setEditProvider] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
+  const [deleteGw, setDeleteGw] = useState<Gateway | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+
+  const loadGateways = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("payment_gateways")
+      .select("*")
+      .order("sort_order");
+    if (error) {
+      toast.error("Failed to load gateways");
+    } else {
+      setGateways((data as any[]) ?? []);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { loadGateways(); }, [loadGateways]);
+
+  // Realtime
+  useEffect(() => {
+    const ch = supabase
+      .channel("admin-gateways")
+      .on("postgres_changes", { event: "*", schema: "public", table: "payment_gateways" }, () => loadGateways())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [loadGateways]);
+
+  const toggleEnabled = async (gw: Gateway) => {
+    const { error } = await supabase
+      .from("payment_gateways")
+      .update({ is_enabled: !gw.is_enabled } as any)
+      .eq("id", gw.id);
+    if (error) toast.error("Failed to toggle");
+    else toast.success(`${gw.display_name} ${!gw.is_enabled ? "enabled" : "disabled"}`);
+  };
+
+  const openEdit = (gw: Gateway) => {
+    setEditGw(gw);
+    setEditName(gw.display_name);
+    setEditProvider(gw.provider);
+    const fields = DEFAULT_FIELDS[gw.provider] ?? [];
+    const cfg: Record<string, string> = {};
+    fields.forEach(f => { cfg[f] = (gw.config as any)?.[f] ?? ""; });
+    // Also include any extra keys already in config
+    Object.keys(gw.config || {}).forEach(k => { if (!cfg[k]) cfg[k] = (gw.config as any)[k]; });
+    setEditConfig(cfg);
+    setShowSecrets({});
+  };
+
+  const openAdd = () => {
+    setAddOpen(true);
+    setEditGw(null);
+    setEditName("");
+    setEditProvider("");
+    setEditConfig({});
+    setShowSecrets({});
+  };
+
+  const saveGateway = async () => {
+    if (!editName.trim()) { toast.error("Name is required"); return; }
+    setSaving(true);
+
+    if (editGw) {
+      // Update existing
+      const { error } = await supabase
+        .from("payment_gateways")
+        .update({ display_name: editName, config: editConfig } as any)
+        .eq("id", editGw.id);
+      if (error) toast.error("Failed to save");
+      else { toast.success("Gateway updated"); setEditGw(null); }
+    } else {
+      // Create new
+      if (!editProvider.trim()) { toast.error("Provider key is required"); setSaving(false); return; }
+      const { error } = await supabase
+        .from("payment_gateways")
+        .insert({ provider: editProvider.toLowerCase().replace(/\s+/g, "_"), display_name: editName, config: editConfig, sort_order: gateways.length + 1 } as any);
+      if (error) {
+        if (error.code === "23505") toast.error("Provider already exists");
+        else toast.error("Failed to create");
+      } else { toast.success("Gateway added"); setAddOpen(false); }
+    }
+    setSaving(false);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteGw) return;
+    const { error } = await supabase.from("payment_gateways").delete().eq("id", deleteGw.id);
+    if (error) toast.error("Failed to delete");
+    else toast.success(`${deleteGw.display_name} removed`);
+    setDeleteGw(null);
+  };
+
+  const addConfigField = () => {
+    const key = prompt("Enter credential key name (e.g. API_KEY):");
+    if (key?.trim()) setEditConfig(prev => ({ ...prev, [key.trim()]: "" }));
+  };
+
+  const removeConfigField = (key: string) => {
+    setEditConfig(prev => { const n = { ...prev }; delete n[key]; return n; });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-16">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-bold text-foreground">Payment Gateways</h3>
+          <p className="text-sm text-muted-foreground">Add, edit, remove & toggle payment providers</p>
+        </div>
+        <Button onClick={openAdd} className="gap-1.5">
+          <Plus className="w-4 h-4" /> Add Gateway
+        </Button>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {gateways.map(gw => {
+          const configKeys = Object.keys(gw.config || {});
+          const hasCredentials = configKeys.some(k => !!(gw.config as any)[k]);
+          return (
+            <Card key={gw.id} className={`border shadow-[var(--shadow-card)] transition-opacity ${!gw.is_enabled ? "opacity-60" : ""}`}>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-primary" />
+                    {gw.display_name}
+                  </CardTitle>
+                  <Switch
+                    checked={gw.is_enabled}
+                    onCheckedChange={() => toggleEnabled(gw)}
+                  />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">{gw.provider}</Badge>
+                  {gw.is_enabled ? (
+                    <Badge className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                      <Power className="w-3 h-3 mr-1" /> Live
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-xs">
+                      <PowerOff className="w-3 h-3 mr-1" /> Off
+                    </Badge>
+                  )}
+                  {hasCredentials ? (
+                    <Badge className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Configured</Badge>
+                  ) : (
+                    <Badge variant="destructive" className="text-xs">No Credentials</Badge>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="text-xs gap-1 flex-1" onClick={() => openEdit(gw)}>
+                    <Pencil className="w-3 h-3" /> Edit
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs gap-1 text-destructive hover:text-destructive" onClick={() => setDeleteGw(gw)}>
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {gateways.length === 0 && (
+        <p className="text-center text-muted-foreground py-8">No payment gateways configured</p>
+      )}
+
+      {/* Edit / Add Dialog */}
+      <Dialog open={!!editGw || addOpen} onOpenChange={(o) => { if (!o) { setEditGw(null); setAddOpen(false); } }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editGw ? `Edit ${editGw.display_name}` : "Add Payment Gateway"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {!editGw && (
+              <div className="space-y-2">
+                <Label>Provider Key</Label>
+                <Input placeholder="e.g. bkash" value={editProvider} onChange={e => setEditProvider(e.target.value)} />
+                <p className="text-xs text-muted-foreground">Unique identifier, lowercase</p>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>Display Name</Label>
+              <Input value={editName} onChange={e => setEditName(e.target.value)} placeholder="e.g. bKash" />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Credentials</Label>
+                <Button variant="ghost" size="sm" className="text-xs h-6 gap-1" onClick={addConfigField}>
+                  <Plus className="w-3 h-3" /> Add Field
+                </Button>
+              </div>
+              {Object.entries(editConfig).map(([key, val]) => (
+                <div key={key} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono text-muted-foreground">{key}</span>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => setShowSecrets(p => ({ ...p, [key]: !p[key] }))}>
+                        {showSecrets[key] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-destructive" onClick={() => removeConfigField(key)}>
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <Input
+                    type={showSecrets[key] ? "text" : "password"}
+                    value={val}
+                    onChange={e => setEditConfig(p => ({ ...p, [key]: e.target.value }))}
+                    placeholder="Enter value…"
+                    className="font-mono text-sm"
+                  />
+                </div>
+              ))}
+              {Object.keys(editConfig).length === 0 && (
+                <p className="text-xs text-muted-foreground">No credentials added yet. Click "Add Field" above.</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setEditGw(null); setAddOpen(false); }}>Cancel</Button>
+            <Button onClick={saveGateway} disabled={saving} className="gap-1.5">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteGw} onOpenChange={(o) => { if (!o) setDeleteGw(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove {deleteGw?.display_name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this payment gateway and its stored credentials.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
