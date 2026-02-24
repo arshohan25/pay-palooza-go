@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import {
   Search, X, CalendarIcon, SlidersHorizontal,
-  CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw, Share2,
+  CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw, Share2, Coins,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { useTransactions, DbTransaction } from "@/hooks/use-transactions";
 import {
   TxSendIcon, TxReceiveIcon, TxCashOutIcon,
   TxRechargeIcon, TxBillIcon, TxBankIcon, TxPaymentIcon, TxBankTransferIcon,
+  TxCashbackIcon,
 } from "@/components/QuickActionIcons";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -30,6 +31,7 @@ interface Transaction {
   detail: string;
   date: string;
   amount: number;
+  _isCashback?: boolean;
 }
 
 const CATEGORIES: { id: TxCategory; label: string }[] = [
@@ -98,18 +100,22 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
       .filter((t) => !filterTypes || filterTypes.includes(t.type as TxCategory))
       .map((t) => {
         const cfg = TX_ICON_MAP[t.type as Exclude<TxCategory, "all">];
-        const label = CATEGORIES.find((c) => c.id === t.type)?.label ?? t.type;
+        const isCashback = t.type === "addmoney" && (t.description?.startsWith("Drive Cashback:") || t.reference?.startsWith("CB-") || false);
+        const label = isCashback ? "Drive Cashback" : (CATEGORIES.find((c) => c.id === t.type)?.label ?? t.type);
         const isCredit = agentView
-          ? t.type === "cashout" // Agent: cashout = credit (receives from customer), cashin = debit (gives to customer)
+          ? t.type === "cashout"
           : t.type === "addmoney" || t.type === "receive" || t.type === "cashin";
         return {
           id: t.id,
           short_id: t.short_id || t.id.slice(0, 12).toUpperCase(),
           category: t.type as Exclude<TxCategory, "all">,
-          name: t.recipient_name || t.description || label,
-          detail: t.description || label,
+          name: isCashback
+            ? (t.description?.replace("Drive Cashback: ", "") || "Cashback")
+            : (t.recipient_name || t.description || label),
+          detail: isCashback ? "Drive Cashback" : (t.description || label),
           date: t.created_at,
           amount: isCredit ? t.amount : -t.amount,
+          _isCashback: isCashback,
         };
       }), [dbTxns, filterTypes]);
 
@@ -384,9 +390,10 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
             {filtered.map((tx, i) => {
               const cfg      = TX_ICON_MAP[tx.category];
               const isCredit = tx.amount > 0;
-              const IconComp = isCredit ? cfg.ReceiveIcon : cfg.Icon;
-              const bgStyle  = isCredit ? cfg.receiveBg : cfg.bg;
-              const ringStyle = isCredit ? cfg.receiveRing : cfg.ring;
+              const isCB     = tx._isCashback;
+              const IconComp = isCB ? TxCashbackIcon : (isCredit ? cfg.ReceiveIcon : cfg.Icon);
+              const bgStyle  = isCB ? "rgba(245,158,11,0.15)" : (isCredit ? cfg.receiveBg : cfg.bg);
+              const ringStyle = isCB ? "1px solid rgba(245,158,11,0.3)" : (isCredit ? cfg.receiveRing : cfg.ring);
 
               return (
                 <motion.button
@@ -395,7 +402,9 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.035, ease: [0.23, 1, 0.32, 1] }}
                   onClick={() => setSelectedTx(tx)}
-                  className="w-full flex items-center gap-3.5 px-4 py-3.5 hover:bg-muted/40 active:bg-muted/60 transition-colors border-b border-border/50 last:border-0 text-left"
+                  className={`w-full flex items-center gap-3.5 px-4 py-3.5 hover:bg-muted/40 active:bg-muted/60 transition-colors border-b border-border/50 last:border-0 text-left ${
+                    isCB ? "bg-amber-50/50 dark:bg-amber-950/20" : ""
+                  }`}
                 >
                   {/* Illustrated icon circle */}
                   <div
@@ -407,14 +416,21 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13.5px] font-semibold text-foreground truncate">{tx.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-[13.5px] font-semibold text-foreground truncate">{tx.name}</p>
+                      {isCB && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                          <Coins size={9} /> CASHBACK
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[11px] text-muted-foreground truncate mt-0.5">{tx.detail}</p>
                     <p className="text-[10.5px] text-muted-foreground/60 mt-0.5">{relativeDate(tx.date)}</p>
                   </div>
 
                   {/* Amount */}
                   <div className="shrink-0 text-right max-w-[90px]">
-                    <span className={`text-[13px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
+                    <span className={`text-[13px] font-bold ${isCB ? "text-amber-600 dark:text-amber-400" : isCredit ? "text-primary" : "text-foreground"}`}>
                       {isCredit ? "+" : "−"}৳{Math.abs(tx.amount).toLocaleString()}
                     </span>
                   </div>
