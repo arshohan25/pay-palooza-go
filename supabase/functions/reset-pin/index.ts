@@ -14,10 +14,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { phone, newPin, verificationType, verificationValue } = await req.json();
+    const { phone, newPin, otpCode } = await req.json();
 
     // Validate inputs
-    if (!phone || !newPin || !verificationType || verificationValue === undefined) {
+    if (!phone || !newPin || !otpCode) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -38,7 +38,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Reject weak PINs (sequential or repeated digits)
+    if (!/^\d{6}$/.test(otpCode)) {
+      return new Response(
+        JSON.stringify({ error: "OTP must be 6 digits" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Reject weak PINs
     const SEQUENTIAL = ["0123","1234","2345","3456","4567","5678","6789","9876","8765","7654","6543","5432","4321","3210"];
     const REPEATED = ["0000","1111","2222","3333","4444","5555","6666","7777","8888","9999"];
     if (SEQUENTIAL.includes(newPin) || REPEATED.includes(newPin)) {
@@ -48,7 +55,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create admin client
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -72,63 +78,54 @@ Deno.serve(async (req) => {
     // Record this attempt
     await supabaseAdmin.from("pin_reset_attempts").insert({ phone, success: false });
 
-    // Find user profile by phone — use generic error to prevent enumeration
+    // Verify OTP code
+    const { data: otpRecord, error: otpError } = await supabaseAdmin
+      .from("otp_codes")
+      .select("id, expires_at")
+      .eq("phone", phone)
+      .eq("code", otpCode)
+      .eq("purpose", "pin_reset")
+      .eq("verified", false)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (otpError || !otpRecord) {
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired OTP. Please request a new one." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check expiry
+    if (new Date(otpRecord.expires_at) < new Date()) {
+      return new Response(
+        JSON.stringify({ error: "OTP has expired. Please request a new one." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Mark OTP as used
+    await supabaseAdmin
+      .from("otp_codes")
+      .update({ verified: true })
+      .eq("id", otpRecord.id);
+
+    // Find user profile by phone
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("user_id, balance")
+      .select("user_id")
       .eq("phone", phone)
       .maybeSingle();
 
     if (profileError || !profile) {
       return new Response(
-        JSON.stringify({ error: "Verification failed. Please check your details." }),
+        JSON.stringify({ error: "Account not found." }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Verify identity
-    if (verificationType === "balance") {
-      const inputBalance = parseFloat(verificationValue);
-      const actualBalance = parseFloat(String(profile.balance));
-      if (isNaN(inputBalance) || Math.abs(inputBalance - actualBalance) > 0.01) {
-        return new Response(
-          JSON.stringify({ error: "Verification failed. Please check your details." }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-    } else if (verificationType === "lastTransaction") {
-      const { data: lastTxn } = await supabaseAdmin
-        .from("transactions")
-        .select("amount")
-        .eq("user_id", profile.user_id)
-        .in("type", ["send", "cashout", "payment", "recharge", "paybill"])
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (!lastTxn) {
-        return new Response(
-          JSON.stringify({ error: "Verification failed. Please check your details." }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const inputAmount = parseFloat(verificationValue);
-      const actualAmount = parseFloat(String(lastTxn.amount));
-      if (isNaN(inputAmount) || Math.abs(inputAmount - actualAmount) > 0.01) {
-        return new Response(
-          JSON.stringify({ error: "Verification failed. Please check your details." }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-    } else {
-      return new Response(
-        JSON.stringify({ error: "Invalid verification type" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Identity verified — reset password using admin API
+    // Reset password using admin API
     const password = `${newPin}EP`;
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
       profile.user_id,
@@ -155,6 +152,7 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    console.error("reset-pin error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
