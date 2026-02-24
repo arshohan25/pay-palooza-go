@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import SlideToConfirm from "@/components/SlideToConfirm";
+
 import { supabase } from "@/integrations/supabase/client";
 import { verifyPin } from "@/lib/verifyPin";
 
@@ -112,7 +113,7 @@ const AgentBillPay = () => {
                 <Label className="text-xs font-semibold">Enter PIN</Label>
                 <Input type="password" inputMode="numeric" maxLength={4} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} placeholder="••••" className="text-center text-lg tracking-[0.5em] rounded-xl h-12 mt-1" />
               </div>
-              <SlideToConfirm onConfirm={handlePay} disabled={!accountNo || !amount || pin.length < 4 || processing} label={processing ? "Processing…" : "Slide to Pay"} />
+              <SlideToConfirm onConfirm={handlePay} disabled={!accountNo || !amount || pin.length < 4 || processing} label={processing ? "Processing…" : "Slide to Pay"} icon={Receipt} />
               <Button variant="ghost" onClick={() => setStep("select")} className="w-full text-muted-foreground">Back</Button>
             </Card>
           </motion.div>

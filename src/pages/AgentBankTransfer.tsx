@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import SlideToConfirm from "@/components/SlideToConfirm";
+
 import { useSavedBanks, SavedBankAccount } from "@/hooks/use-saved-banks";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -287,6 +288,7 @@ const AgentBankTransfer = () => {
                   onConfirm={handleConfirm}
                   disabled={pin.length < 4 || processing}
                   label={processing ? "Processing…" : `Slide to ${mode === "send" ? "Send" : "Receive"}`}
+                  icon={Building2}
                 />
                 <Button variant="ghost" onClick={() => setStep("form")} className="w-full text-muted-foreground">Cancel</Button>
               </Card>

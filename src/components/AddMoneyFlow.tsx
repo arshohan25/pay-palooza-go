@@ -14,7 +14,7 @@ import DailyLimitBadge from "@/components/DailyLimitBadge";
 import {
   ChevronLeft, CheckCircle2, AlertCircle,
   Landmark, CreditCard, Lock, ChevronRight,
-  Copy, CheckCheck, Shield, Info,
+  Copy, CheckCheck, Shield, Info, Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -964,6 +964,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                   gradient="gradient-addmoney"
                   disabled={pin.length < 4 || processing}
                   pinComplete={pin.length === 4}
+                  icon={Wallet}
                 />
               </div>
             )}

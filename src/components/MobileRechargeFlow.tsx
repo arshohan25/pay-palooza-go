@@ -8,6 +8,7 @@ import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
+
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
 import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
 import DailyLimitBadge from "@/components/DailyLimitBadge";
@@ -1001,6 +1002,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                   gradient="gradient-accent"
                   disabled={pin.length < 4 || processing}
                   pinComplete={pin.length === 4}
+                  icon={Smartphone}
                 />
               </div>
             )}

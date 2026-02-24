@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from "framer-motion";
-import { ChevronRight, CheckCircle2, ArrowRight } from "lucide-react";
+import { ChevronRight, CheckCircle2, ArrowRight, type LucideIcon } from "lucide-react";
 import { haptics } from "@/lib/haptics";
 
 interface SlideToConfirmProps {
@@ -10,6 +10,8 @@ interface SlideToConfirmProps {
   disabled?: boolean;
   /** When true, fires an attention bounce after a 200ms delay */
   pinComplete?: boolean;
+  /** Custom icon for the thumb – defaults to ArrowRight */
+  icon?: LucideIcon;
 }
 
 const THUMB = 56;
@@ -21,6 +23,7 @@ const SlideToConfirm = ({
   gradient = "gradient-primary",
   disabled = false,
   pinComplete = false,
+  icon: Icon = ArrowRight,
 }: SlideToConfirmProps) => {
   const trackRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLDivElement>(null);
@@ -100,10 +103,10 @@ const SlideToConfirm = ({
         style={{ width: fillWidth }}
       />
 
-      {/* Zigzag chevron label */}
+      {/* Zigzag chevron label – centered in the slideable area (offset by thumb) */}
       <motion.div
-        className="absolute inset-0 flex items-center justify-center pointer-events-none gap-2"
-        style={{ opacity: labelOpacity }}
+        className="absolute inset-y-0 flex items-center justify-center pointer-events-none gap-2"
+        style={{ opacity: labelOpacity, left: THUMB + PADDING * 2, right: 0 }}
       >
         <motion.span
           className="flex items-center"
@@ -153,7 +156,7 @@ const SlideToConfirm = ({
             {confirmed ? (
               <CheckCircle2 size={24} strokeWidth={2.5} />
             ) : (
-              <ArrowRight size={22} strokeWidth={2.5} />
+              <Icon size={22} strokeWidth={2.5} />
             )}
           </motion.div>
         </AnimatePresence>
