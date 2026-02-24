@@ -12,6 +12,7 @@ import { getBalance, recordTransaction, addBalance, onBalanceChange, transferMon
 import { useI18n } from "@/lib/i18n";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { supabase } from "@/integrations/supabase/client";
+import { useOrderNotifications } from "@/hooks/use-order-notifications";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Product {
@@ -580,6 +581,63 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
 
   // Orders
   const [orders, setOrders]           = useState<Order[]>(SAMPLE_ORDERS);
+
+  // Real-time order status updates from admin
+  useOrderNotifications((update) => {
+    setOrders(prev => prev.map(o => {
+      if (o.orderNum === update.order_num || o.id === update.id) {
+        const newStatus = update.status as Order["status"];
+        return { ...o, status: newStatus, timeline: makeTimeline(newStatus, o.date) };
+      }
+      return o;
+    }));
+  });
+
+  // Fetch user's orders from database on mount
+  useEffect(() => {
+    const fetchDbOrders = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const { data } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (data && data.length > 0) {
+        const dbOrders: Order[] = data.map((o: any) => ({
+          id: o.id,
+          orderNum: o.order_num,
+          date: new Date(o.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+          items: (Array.isArray(o.items) ? o.items : []).map((item: any) => ({
+            ...PRODUCTS.find(p => p.id === item.id) ?? { id: item.id, name: item.name, brand: item.brand ?? "", rating: 0, reviews: 0, emoji: item.emoji ?? "📦", category: "" },
+            price: item.price,
+            qty: item.qty,
+          })),
+          total: Number(o.total),
+          address: {
+            id: "db", label: "Shipping",
+            name: o.shipping_name ?? "",
+            line1: o.shipping_address?.split(",")[0] ?? "",
+            line2: o.shipping_address?.split(",").slice(1).join(",").trim() ?? "",
+            city: o.shipping_city ?? "",
+            phone: o.shipping_phone ?? "",
+          },
+          paymentMethod: (o.payment_method ?? "wallet") as PaymentMethod,
+          status: o.status as Order["status"],
+          estimatedDelivery: o.estimated_delivery ?? "",
+          timeline: makeTimeline(o.status as Order["status"], new Date(o.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })),
+        }));
+        setOrders(prev => {
+          // Merge: DB orders take priority, keep sample orders that aren't in DB
+          const dbIds = new Set(dbOrders.map(o => o.orderNum));
+          const kept = prev.filter(o => !dbIds.has(o.orderNum));
+          return [...dbOrders, ...kept];
+        });
+      }
+    };
+    fetchDbOrders();
+  }, []);
 
   // Reviews
   const [reviews, setReviews]         = useState<Review[]>(SAMPLE_REVIEWS);
