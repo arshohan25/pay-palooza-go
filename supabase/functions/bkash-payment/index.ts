@@ -15,21 +15,23 @@ function getBaseUrl(): string {
   return mode === "live" ? BKASH_LIVE_BASE : BKASH_SANDBOX_BASE;
 }
 
-function getCredentials() {
+function getCredentials(): { appKey: string; appSecret: string; username: string; password: string } | null {
   const appKey = Deno.env.get("BKASH_APP_KEY");
   const appSecret = Deno.env.get("BKASH_APP_SECRET");
   const username = Deno.env.get("BKASH_USERNAME");
   const password = Deno.env.get("BKASH_PASSWORD");
 
   if (!appKey || !appSecret || !username || !password) {
-    throw new Error("bKash credentials not configured. Required: BKASH_APP_KEY, BKASH_APP_SECRET, BKASH_USERNAME, BKASH_PASSWORD");
+    return null; // credentials not configured – use simulated mode
   }
   return { appKey, appSecret, username, password };
 }
 
 /** Step 1: Grant Token */
 async function grantToken(): Promise<{ id_token: string; token_type: string }> {
-  const { appKey, appSecret, username, password } = getCredentials();
+  const creds = getCredentials();
+  if (!creds) throw new Error("No credentials");
+  const { appKey, appSecret, username, password } = creds;
   const base = getBaseUrl();
 
   const res = await fetch(`${base}/token/grant`, {
@@ -58,7 +60,8 @@ async function createPayment(params: {
   callbackURL: string;
   payerReference: string;
 }): Promise<{ paymentID: string; bkashURL: string; statusCode: string }> {
-  const { appKey } = getCredentials();
+  const creds = getCredentials();
+  if (!creds) throw new Error("No credentials");
   const base = getBaseUrl();
 
   const res = await fetch(`${base}/create`, {
@@ -67,7 +70,7 @@ async function createPayment(params: {
       "Content-Type": "application/json",
       Accept: "application/json",
       authorization: params.idToken,
-      "x-app-key": appKey,
+      "x-app-key": creds.appKey,
     },
     body: JSON.stringify({
       mode: "0011",
@@ -89,7 +92,8 @@ async function createPayment(params: {
 
 /** Step 3: Execute Payment (called after user completes payment on bKash page) */
 async function executePayment(idToken: string, paymentID: string): Promise<Record<string, unknown>> {
-  const { appKey } = getCredentials();
+  const creds = getCredentials();
+  if (!creds) throw new Error("No credentials");
   const base = getBaseUrl();
 
   const res = await fetch(`${base}/execute`, {
@@ -98,7 +102,7 @@ async function executePayment(idToken: string, paymentID: string): Promise<Recor
       "Content-Type": "application/json",
       Accept: "application/json",
       authorization: idToken,
-      "x-app-key": appKey,
+      "x-app-key": creds.appKey,
     },
     body: JSON.stringify({ paymentID }),
   });
@@ -233,6 +237,21 @@ Deno.serve(async (req) => {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+
+      const creds = getCredentials();
+
+      // ── Simulated mode when credentials are not configured ──
+      if (!creds) {
+        console.log("bKash: No credentials configured – using simulated mode");
+        return new Response(
+          JSON.stringify({
+            success: true,
+            simulated: true,
+            message: "bKash credentials not configured. Simulated payment – use the app's fallback flow.",
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
 
       // Grant token
