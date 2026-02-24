@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import QrScannerModal from "@/components/QrScannerModal";
 import { useI18n } from "@/lib/i18n";
+import FeatureGuard from "@/components/FeatureGuard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = "merchant" | "amount" | "pin" | "success";
@@ -571,4 +572,10 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
   );
 };
 
-export default PaymentFlow;
+const PaymentFlowGuarded = (props: PaymentFlowProps) => (
+  <FeatureGuard featureKey="payment" onClose={props.onClose}>
+    <PaymentFlow {...props} />
+  </FeatureGuard>
+);
+
+export default PaymentFlowGuarded;

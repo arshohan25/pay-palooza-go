@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import QrScannerModal from "@/components/QrScannerModal";
 import { useI18n } from "@/lib/i18n";
 import { useFeatureLocks } from "@/hooks/use-feature-locks";
+import FeatureGuard from "@/components/FeatureGuard";
 import FeatureLockedOverlay from "@/components/FeatureLockedOverlay";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -763,4 +764,10 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   );
 };
 
-export default SendMoneyFlow;
+const SendMoneyFlowGuarded = (props: SendMoneyFlowProps) => (
+  <FeatureGuard featureKey="send_money" onClose={props.onClose}>
+    <SendMoneyFlow {...props} />
+  </FeatureGuard>
+);
+
+export default SendMoneyFlowGuarded;

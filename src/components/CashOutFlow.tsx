@@ -32,6 +32,7 @@ import QrScannerModal from "@/components/QrScannerModal";
 import { useSavedBanks } from "@/hooks/use-saved-banks";
 import { useI18n } from "@/lib/i18n";
 import { useFeatureLocks } from "@/hooks/use-feature-locks";
+import FeatureGuard from "@/components/FeatureGuard";
 import FeatureLockedOverlay from "@/components/FeatureLockedOverlay";
 import {
   AlertDialog,
@@ -1009,6 +1010,12 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   );
 };
 
-export default CashOutFlow;
+const CashOutFlowGuarded = (props: CashOutFlowProps) => (
+  <FeatureGuard featureKey="cash_out" onClose={props.onClose}>
+    <CashOutFlow {...props} />
+  </FeatureGuard>
+);
+
+export default CashOutFlowGuarded;
 
 

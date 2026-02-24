@@ -27,6 +27,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n";
+import FeatureGuard from "@/components/FeatureGuard";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Step = "type" | "account" | "bill" | "pin" | "success";
@@ -633,5 +634,11 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
   );
 };
 
-export default PayBillFlow;
+const PayBillFlowGuarded = (props: PayBillFlowProps) => (
+  <FeatureGuard featureKey="pay_bill" onClose={props.onClose}>
+    <PayBillFlow {...props} />
+  </FeatureGuard>
+);
+
+export default PayBillFlowGuarded;
 

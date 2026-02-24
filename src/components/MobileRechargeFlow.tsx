@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n";
+import FeatureGuard from "@/components/FeatureGuard";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Step = "number" | "packs" | "amount" | "pin" | "success";
@@ -1151,4 +1152,10 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
   );
 };
 
-export default MobileRechargeFlow;
+const MobileRechargeFlowGuarded = (props: MobileRechargeFlowProps) => (
+  <FeatureGuard featureKey="mobile_recharge" onClose={props.onClose}>
+    <MobileRechargeFlow {...props} />
+  </FeatureGuard>
+);
+
+export default MobileRechargeFlowGuarded;
