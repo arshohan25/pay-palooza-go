@@ -34,6 +34,7 @@ import AdminGlobalToggles from "@/components/admin/AdminGlobalToggles";
 import AdminRechargePackManager from "@/components/admin/AdminRechargePackManager";
 import AdminRechargeAnalytics from "@/components/admin/AdminRechargeAnalytics";
 import AdminRechargeImportExport from "@/components/admin/AdminRechargeImportExport";
+import AdminRechargeApiConnect from "@/components/admin/AdminRechargeApiConnect";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 
 interface Stats {
@@ -45,14 +46,15 @@ interface Stats {
 }
 
 const RechargeSection = () => {
-  const [subTab, setSubTab] = useState<"packs" | "analytics" | "import">("packs");
+  const [subTab, setSubTab] = useState<"packs" | "analytics" | "import" | "apiconnect">("packs");
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         {[
           { key: "packs" as const, label: "Manage Packs" },
           { key: "analytics" as const, label: "Analytics" },
           { key: "import" as const, label: "Import / Export" },
+          { key: "apiconnect" as const, label: "API Connect" },
         ].map(t => (
           <Button
             key={t.key}
@@ -67,6 +69,7 @@ const RechargeSection = () => {
       {subTab === "packs" && <AdminRechargePackManager />}
       {subTab === "analytics" && <AdminRechargeAnalytics />}
       {subTab === "import" && <AdminRechargeImportExport />}
+      {subTab === "apiconnect" && <AdminRechargeApiConnect />}
     </div>
   );
 };

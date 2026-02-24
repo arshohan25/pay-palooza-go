@@ -335,6 +335,8 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
   };
 
   const [processing, setProcessing] = useState(false);
+  const [apiStatus, setApiStatus] = useState<string | null>(null);
+
   const handlePinConfirm = async () => {
     if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
     if (processing) return;
@@ -355,6 +357,33 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     haptics.success();
     txnTime.current = new Date();
     txnId.current   = generateTxnId();
+
+    // Try real-time API recharge if operator has it enabled
+    let apiProcessed = false;
+    if (operator) {
+      setApiStatus(`Processing via ${operator.name} API...`);
+      try {
+        const { data, error: fnErr } = await supabase.functions.invoke("process-recharge", {
+          body: {
+            operator: operator.name,
+            phone: phone.replace(/\D/g, ""),
+            amount: effectivePrice,
+            pack_name: selectedPack?.name,
+          },
+        });
+        if (!fnErr && data?.api_available && data?.success) {
+          apiProcessed = true;
+          setApiStatus("Recharge confirmed by operator");
+        } else if (data?.api_available && !data?.success) {
+          // API available but failed — fall back to local
+          setApiStatus("API error, recording locally");
+        }
+      } catch {
+        // Edge function unreachable — fall back silently
+      }
+    }
+    setApiStatus(null);
+
     await recordTransaction({
       type: "recharge",
       amount: effectivePrice,
@@ -364,7 +393,11 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
       reference: txnId.current,
       description: selectedPack ? selectedPack.name : `Recharge ৳${effectivePrice}`,
     });
-    showTxnToast({ type: "Mobile Recharge", amount: `৳${effectivePrice.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-accent" });
+    showTxnToast({
+      type: apiProcessed ? "Live Recharge" : "Mobile Recharge",
+      amount: `৳${effectivePrice.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
+      gradient: "gradient-accent",
+    });
     setDirection(1);
     setStep("success");
   };
