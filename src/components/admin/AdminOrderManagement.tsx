@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   Package, Search, RefreshCw, ChevronDown, ChevronUp,
   Truck, CheckCircle2, XCircle, Clock, MapPin, CreditCard, Wallet,
-  Eye, Filter,
+  Eye, Filter, Ban, Undo2, AlertTriangle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,10 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -71,6 +74,9 @@ export default function AdminOrderManagement() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedOrder, setSelectedOrder] = useState<OrderRow | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<OrderRow | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelling, setCancelling] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -141,6 +147,84 @@ export default function AdminOrderManagement() {
       }
     }
     setUpdatingId(null);
+  };
+
+  const cancelOrderWithRefund = async () => {
+    if (!cancelTarget) return;
+    setCancelling(true);
+
+    // 1. Update order status to cancelled
+    const { error: updateErr } = await supabase
+      .from("orders")
+      .update({ status: "cancelled", notes: `Admin cancelled: ${cancelReason || "No reason provided"}` })
+      .eq("id", cancelTarget.id);
+
+    if (updateErr) {
+      toast.error("Failed to cancel order");
+      setCancelling(false);
+      return;
+    }
+
+    // 2. Refund to wallet if paid via wallet
+    if (cancelTarget.payment_method === "wallet" && cancelTarget.total > 0) {
+      // Use admin_chargeback in reverse: credit via addmoney-style refund
+      // We'll directly update balance + insert transaction using service-level RPC
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("balance")
+        .eq("user_id", cancelTarget.user_id)
+        .single();
+
+      if (profile) {
+        const newBalance = Number(profile.balance) + cancelTarget.total;
+        // Update balance
+        await supabase
+          .from("profiles")
+          .update({ balance: newBalance } as any)
+          .eq("user_id", cancelTarget.user_id);
+
+        // Record refund transaction
+        await supabase.from("transactions").insert({
+          user_id: cancelTarget.user_id,
+          type: "addmoney" as any,
+          amount: cancelTarget.total,
+          fee: 0,
+          balance_after: newBalance,
+          description: `Refund for order ${cancelTarget.order_num}: ${cancelReason || "Admin cancellation"}`,
+          reference: cancelTarget.id,
+          status: "completed" as any,
+        });
+
+        toast.success(`৳${cancelTarget.total.toLocaleString()} refunded to customer wallet`);
+      }
+    }
+
+    // 3. Log in audit
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await supabase.from("audit_logs").insert({
+        actor_id: session.user.id,
+        action: "order_cancellation",
+        entity_type: "order",
+        entity_id: cancelTarget.id,
+        details: {
+          order_num: cancelTarget.order_num,
+          total: cancelTarget.total,
+          reason: cancelReason,
+          refunded: cancelTarget.payment_method === "wallet",
+        },
+      });
+    }
+
+    setOrders(prev => prev.map(o => o.id === cancelTarget.id ? { ...o, status: "cancelled" } : o));
+    if (selectedOrder?.id === cancelTarget.id) {
+      setSelectedOrder(prev => prev ? { ...prev, status: "cancelled" } : null);
+    }
+
+    toast.success(`Order ${cancelTarget.order_num} cancelled`);
+    setCancelTarget(null);
+    setCancelReason("");
+    setCancelling(false);
   };
 
   const filtered = orders.filter(o => {
@@ -276,20 +360,30 @@ export default function AdminOrderManagement() {
                             <Eye className="w-3 h-3" /> View
                           </Button>
                           {order.status !== "delivered" && order.status !== "cancelled" && (
-                            <Select
-                              value={order.status}
-                              onValueChange={(v) => updateOrderStatus(order.id, v)}
-                              disabled={updatingId === order.id}
-                            >
-                              <SelectTrigger className="h-7 text-xs w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {STATUS_OPTIONS.map(s => (
-                                  <SelectItem key={s} value={s}>{STATUS_CONFIG[s].label}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <>
+                              <Select
+                                value={order.status}
+                                onValueChange={(v) => updateOrderStatus(order.id, v)}
+                                disabled={updatingId === order.id}
+                              >
+                                <SelectTrigger className="h-7 text-xs w-32">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {STATUS_OPTIONS.filter(s => s !== "cancelled").map(s => (
+                                    <SelectItem key={s} value={s}>{STATUS_CONFIG[s].label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs h-7 gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
+                                onClick={() => setCancelTarget(order)}
+                              >
+                                <Ban className="w-3 h-3" /> Cancel
+                              </Button>
+                            </>
                           )}
                         </div>
                       </td>
@@ -392,28 +486,110 @@ export default function AdminOrderManagement() {
                 )}
               </div>
 
-              {/* Status update */}
+               {/* Status update + Cancel */}
               {selectedOrder.status !== "delivered" && selectedOrder.status !== "cancelled" && (
-                <div className="flex items-center gap-3 pt-2">
-                  <p className="text-sm font-medium text-foreground">Update Status:</p>
-                  <Select
-                    value={selectedOrder.status}
-                    onValueChange={(v) => updateOrderStatus(selectedOrder.id, v)}
-                    disabled={updatingId === selectedOrder.id}
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center gap-3">
+                    <p className="text-sm font-medium text-foreground">Update Status:</p>
+                    <Select
+                      value={selectedOrder.status}
+                      onValueChange={(v) => updateOrderStatus(selectedOrder.id, v)}
+                      disabled={updatingId === selectedOrder.id}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUS_OPTIONS.filter(s => s !== "cancelled").map(s => (
+                          <SelectItem key={s} value={s}>{STATUS_CONFIG[s].label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full border-destructive/40 text-destructive hover:bg-destructive/10 gap-2"
+                    onClick={() => { setCancelTarget(selectedOrder); setSelectedOrder(null); }}
                   >
-                    <SelectTrigger className="flex-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATUS_OPTIONS.map(s => (
-                        <SelectItem key={s} value={s}>{STATUS_CONFIG[s].label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <Ban className="w-4 h-4" />
+                    Cancel Order & Refund
+                  </Button>
                 </div>
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel + Refund Confirmation Dialog */}
+      <Dialog open={!!cancelTarget} onOpenChange={(o) => { if (!o) { setCancelTarget(null); setCancelReason(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" />
+              Cancel Order
+            </DialogTitle>
+            <DialogDescription>
+              This will cancel order <span className="font-mono font-bold">{cancelTarget?.order_num}</span> and cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          {cancelTarget && (
+            <div className="space-y-4">
+              {/* Refund info */}
+              <Card className="border border-destructive/20 bg-destructive/5">
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Customer</span>
+                    <span className="text-sm font-medium text-foreground">{cancelTarget.profile_name}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Order Total</span>
+                    <span className="text-sm font-bold text-foreground">৳{fmt(cancelTarget.total)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Refund</span>
+                    <Badge variant="secondary" className={cancelTarget.payment_method === "wallet"
+                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                      : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                    }>
+                      {cancelTarget.payment_method === "wallet" ? (
+                        <><Undo2 className="w-3 h-3 mr-1" /> ৳{fmt(cancelTarget.total)} → Wallet</>
+                      ) : (
+                        "Manual card refund required"
+                      )}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Reason */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Cancellation Reason</label>
+                <Textarea
+                  placeholder="Enter reason for cancellation…"
+                  value={cancelReason}
+                  onChange={e => setCancelReason(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setCancelTarget(null); setCancelReason(""); }} disabled={cancelling}>
+              Keep Order
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={cancelOrderWithRefund}
+              disabled={cancelling}
+              className="gap-2"
+            >
+              {cancelling ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
+              {cancelling ? "Processing…" : "Cancel & Refund"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
