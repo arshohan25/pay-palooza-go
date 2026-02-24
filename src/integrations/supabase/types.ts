@@ -456,36 +456,6 @@ export type Database = {
         }
         Relationships: []
       }
-      otp_codes: {
-        Row: {
-          code: string
-          created_at: string
-          expires_at: string
-          id: string
-          phone: string
-          purpose: string
-          verified: boolean
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          expires_at?: string
-          id?: string
-          phone: string
-          purpose?: string
-          verified?: boolean
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          expires_at?: string
-          id?: string
-          phone?: string
-          purpose?: string
-          verified?: boolean
-        }
-        Relationships: []
-      }
       payment_sessions: {
         Row: {
           amount: number
@@ -739,27 +709,6 @@ export type Database = {
           short_id?: string
           status?: Database["public"]["Enums"]["txn_status"]
           type?: Database["public"]["Enums"]["txn_type"]
-          user_id?: string
-        }
-        Relationships: []
-      }
-      transfer_rate_limits: {
-        Row: {
-          created_at: string
-          id: string
-          rpc_name: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          rpc_name?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          rpc_name?: string
           user_id?: string
         }
         Relationships: []

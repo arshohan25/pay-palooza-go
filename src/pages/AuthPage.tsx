@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, AlertCircle, Eye, EyeOff, ArrowRight, RefreshCw,
   Shield, CheckCircle2, UserRound, Delete, Smartphone,
-  Lock, Star, Zap, Globe, Fingerprint,
+  Lock, Star, Zap, Globe, Fingerprint, Wallet, Receipt,
 } from "lucide-react";
 import { haptics } from "@/lib/haptics";
 import { signUp, signIn, phoneToEmail } from "@/lib/auth";
@@ -146,7 +146,7 @@ type Mode =
   | "landing"
   | "register_phone" | "register_otp" | "register_pin" | "register_name"
   | "login_phone" | "login_pin"
-  | "forgot_phone" | "forgot_otp" | "forgot_pin"
+  | "forgot_otp" | "forgot_verify" | "forgot_pin"
   | "success";
 
 // ─── Step progress ────────────────────────────────────────────────────────────
@@ -341,8 +341,8 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const [error, setError]           = useState("");
   const [userName, setUserName]     = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [forgotPhone, setForgotPhone] = useState("");
-  const [devOtp, setDevOtp] = useState<string | null>(null);
+  const [verifyType, setVerifyType] = useState<"balance" | "lastTransaction">("balance");
+  const [verifyValue, setVerifyValue] = useState("");
 
   // Check if returning user (has phone stored locally for UX only)
   const returningPhone = localStorage.getItem(DEVICE_KEY) ?? "";
@@ -502,35 +502,20 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     }
   }, [phone, returningPhone, goTo, onAuthenticated, t]);
 
-  // ── Forgot PIN: Phone → OTP (server-sent) → new PIN → server reset ─────────
-  const handleForgotPhone = async () => {
-    const targetPhone = forgotPhone || phone || returningPhone;
-    if (!isValidPhone(targetPhone)) { setError(t.validPhone); return; }
-    setIsSubmitting(true); setError("");
-    try {
-      const res = await supabase.functions.invoke("reset-pin", {
-        body: { action: "send-otp", phone: targetPhone },
-      });
-      if (res.error) { setError(t.authError); haptics.error(); return; }
-      // In dev mode, show the OTP in a toast
-      if (res.data?.dev_otp) {
-        setDevOtp(res.data.dev_otp);
-      }
-      setForgotPhone(targetPhone);
-      setOtp(""); goTo("forgot_otp");
-    } catch {
-      setError(t.authError); haptics.error();
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
+  // ── Forgot PIN: OTP → Verify Identity → new PIN → server reset ─────────
   const handleForgotOtp = useCallback((val?: string) => {
     const v = val ?? otp;
     if (v.length < 6) { setError(t.enterOtp); return; }
-    // OTP will be verified server-side when resetting PIN
-    setPin(""); setConfirmPin(""); setConfirmStage(false); goTo("forgot_pin");
+    if (v !== DEMO_OTP) { setError(t.incorrectOtp); haptics.error(); return; }
+    setVerifyType("balance"); setVerifyValue(""); goTo("forgot_verify");
   }, [otp, goTo, t]);
+
+  const handleForgotVerify = useCallback(() => {
+    if (!verifyValue.trim()) { setError("Please enter a value."); return; }
+    const num = parseFloat(verifyValue);
+    if (isNaN(num) || num < 0) { setError("Enter a valid amount."); return; }
+    setPin(""); setConfirmPin(""); setConfirmStage(false); goTo("forgot_pin");
+  }, [verifyValue, goTo]);
 
   const handleForgotPin = useCallback(async (currentPin: string, currentConfirm: string, stage: boolean) => {
     if (!stage) {
@@ -540,16 +525,15 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     } else {
       if (currentConfirm.length < 4) return;
       if (currentPin !== currentConfirm) { setError(t.pinsDontMatch); haptics.error(); setConfirmPin(""); return; }
-      // Call edge function to verify OTP + reset PIN
+      // Call edge function to verify identity + reset PIN
       setIsSubmitting(true); setError("");
       try {
-        const targetPhone = forgotPhone || phone || returningPhone;
         const res = await supabase.functions.invoke("reset-pin", {
           body: {
-            action: "verify-otp-and-reset",
-            phone: targetPhone,
-            otp,
+            phone: phone || returningPhone,
             newPin: currentPin,
+            verificationType: verifyType,
+            verificationValue: verifyValue,
           },
         });
         if (res.error || res.data?.error) {
@@ -559,8 +543,8 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
           haptics.success(); setConfirmStage(false);
           // Auto sign in with new PIN
           try {
-            await signIn(targetPhone, currentPin);
-            localStorage.setItem(DEVICE_KEY, targetPhone);
+            await signIn(phone || returningPhone, currentPin);
+            localStorage.setItem(DEVICE_KEY, phone || returningPhone);
             goTo("success");
             setTimeout(onAuthenticated, 1500);
           } catch {
@@ -574,7 +558,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
         setIsSubmitting(false);
       }
     }
-  }, [goTo, t, phone, forgotPhone, returningPhone, otp, onAuthenticated]);
+  }, [goTo, t, phone, returningPhone, verifyType, verifyValue, onAuthenticated]);
 
   // ── Keypad handlers ────────────────────────────────────────────────────────
   const handleOtpKey = (k: string, onComplete: (val: string) => void) => {
@@ -617,11 +601,11 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     }
     if (mode === "register_name") { goTo("register_pin", -1); return; }
     if (mode === "login_pin")     { setPin(""); goTo("login_phone", -1); return; }
-    if (mode === "forgot_phone")  { goTo("login_pin", -1); return; }
-    if (mode === "forgot_otp")    { setOtp(""); setDevOtp(null); goTo("forgot_phone", -1); return; }
+    if (mode === "forgot_otp")    { setOtp(""); goTo("login_pin", -1); return; }
+    if (mode === "forgot_verify") { setVerifyValue(""); goTo("forgot_otp", -1); return; }
     if (mode === "forgot_pin")    {
       if (confirmStage) { setConfirmStage(false); setConfirmPin(""); return; }
-      setPin(""); setConfirmPin(""); goTo("forgot_otp", -1); return;
+      setPin(""); setConfirmPin(""); goTo("forgot_verify", -1); return;
     }
   };
 
@@ -699,7 +683,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 </button>
               ) : (
                 <button className="w-full text-sm text-center py-1 text-muted-foreground"
-                  onClick={() => { setPin(""); setOtp(""); setForgotPhone(returningPhone); goTo("forgot_phone"); }}>
+                  onClick={() => { setPin(""); setOtp(""); goTo("forgot_otp"); }}>
                   {t.forgotPin}
                 </button>
               )}
@@ -761,7 +745,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 }}
                 onDelete={() => setPin(p => p.slice(0, -1))} />
               <div className="flex items-center gap-6">
-                <button onClick={() => { setPin(""); setOtp(""); setForgotPhone(phone || returningPhone); goTo("forgot_phone"); }}
+                <button onClick={() => { setPin(""); setOtp(""); goTo("forgot_otp"); }}
                   className="text-sm text-white/50 hover:text-white/80 transition-colors">{t.forgotPin}</button>
                 <button onClick={() => setShowPin(v => !v)}
                   className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors">
@@ -888,7 +872,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                               {mode === "forgot_otp" ? t.resetPin : t.verifyNumber}
                             </h2>
                             <p className="text-sm text-muted-foreground">
-                              {t.codeSent} <span className="font-bold text-foreground">+880 {mode === "forgot_otp" ? forgotPhone : (phone || returningPhone)}</span>
+                              {t.codeSent} <span className="font-bold text-foreground">+880 {phone || returningPhone}</span>
                             </p>
                           </div>
                           <OtpBoxes value={otp} error={!!error} />
@@ -901,15 +885,12 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                           <div className="flex items-center gap-2 p-3 rounded-xl bg-accent/8 border border-accent/20">
                             <span className="text-sm">💡</span>
                             <p className="text-[11px] text-muted-foreground">
-                              {mode === "forgot_otp" && devOtp
-                                ? <>{lang === "en" ? "Dev mode — Your OTP:" : "ডেভ মোড — আপনার ওটিপি:"} <strong className="text-foreground font-black text-sm">{devOtp}</strong></>
-                                : <>{t.demoMode} <strong className="text-foreground font-black text-sm">123456</strong></>
-                              }
+                              {t.demoMode} <strong className="text-foreground font-black text-sm">123456</strong>
                             </p>
                           </div>
                           <NumPad onKey={(k) => handleOtpKey(k, onComplete)} onDelete={() => { setOtp(p => p.slice(0, -1)); setError(""); }} />
                           <div className="flex items-center justify-between pt-1">
-                            <button className="flex items-center gap-1.5 text-sm text-muted-foreground" onClick={() => { setOtp(""); setError(""); if (mode === "forgot_otp") handleForgotPhone(); }}>
+                            <button className="flex items-center gap-1.5 text-sm text-muted-foreground" onClick={() => { setOtp(""); setError(""); }}>
                               <RefreshCw size={13} /> {t.resendOtp}
                             </button>
                             <motion.button whileTap={{ scale: 0.95 }}
@@ -922,24 +903,71 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                       );
                     })()}
 
-                    {/* ── FORGOT: PHONE ENTRY ── */}
-                    {mode === "forgot_phone" && (
+                    {/* ── VERIFY IDENTITY (forgot flow) ── */}
+                    {mode === "forgot_verify" && (
                       <div className="space-y-6">
                         <div className="space-y-1">
                           <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/15 flex items-center justify-center mb-3">
-                            <Smartphone size={22} className="text-primary" />
+                            <Shield size={22} className="text-primary" />
                           </div>
-                          <h2 className="text-2xl font-black text-foreground tracking-tight">{t.resetPin}</h2>
-                          <p className="text-sm text-muted-foreground">
-                            {lang === "en" ? "Enter your registered phone number to receive an OTP." : "ওটিপি পেতে আপনার নিবন্ধিত নম্বর দিন।"}
-                          </p>
+                          <h2 className="text-2xl font-black text-foreground tracking-tight">{t.verifyIdentity}</h2>
+                          <p className="text-sm text-muted-foreground">{t.verifyIdentityHint}</p>
                         </div>
-                        <PhoneInput value={forgotPhone} onChange={(v) => { setForgotPhone(v); setError(""); }} error={error} autoFocus />
+
+                        {/* Verification method toggle */}
+                        <div className="flex gap-2">
+                          {([
+                            { key: "balance" as const, icon: Wallet, label: t.useBalance },
+                            { key: "lastTransaction" as const, icon: Receipt, label: t.useLastTxn },
+                          ]).map(({ key, icon: Icon, label }) => (
+                            <motion.button key={key} whileTap={{ scale: 0.95 }}
+                              onClick={() => { setVerifyType(key); setVerifyValue(""); setError(""); }}
+                              className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${
+                                verifyType === key
+                                  ? "border-primary bg-primary/8 shadow-glow"
+                                  : "border-border bg-card hover:border-primary/30"
+                              }`}>
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                                verifyType === key ? "bg-primary/15" : "bg-muted"
+                              }`}>
+                                <Icon size={18} className={verifyType === key ? "text-primary" : "text-muted-foreground"} />
+                              </div>
+                              <span className={`text-xs font-bold ${verifyType === key ? "text-primary" : "text-muted-foreground"}`}>{label}</span>
+                            </motion.button>
+                          ))}
+                        </div>
+
+                        {/* Amount input */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-semibold text-foreground">
+                            {verifyType === "balance" ? t.enterBalance : t.enterLastTxn}
+                          </label>
+                          <div className={`flex items-center h-16 bg-card border-2 rounded-2xl overflow-hidden transition-all shadow-card ${
+                            error ? "border-destructive" : "border-border focus-within:border-primary focus-within:shadow-glow"
+                          }`}>
+                            <span className="pl-4 pr-2 text-lg font-black text-muted-foreground">৳</span>
+                            <input
+                              type="text" inputMode="decimal"
+                              placeholder="0.00"
+                              value={verifyValue}
+                              onChange={(e) => { setVerifyValue(e.target.value.replace(/[^0-9.]/g, "")); setError(""); }}
+                              autoFocus
+                              className="flex-1 h-full px-2 text-lg font-bold bg-transparent focus:outline-none placeholder:text-muted-foreground/30"
+                            />
+                          </div>
+                          {error && (
+                            <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                              className="text-xs text-destructive flex items-center gap-1.5 px-1">
+                              <AlertCircle size={12} /> {error}
+                            </motion.p>
+                          )}
+                        </div>
+
                         <motion.button whileTap={{ scale: 0.97 }}
                           className="w-full h-14 gradient-hero text-white font-bold text-[15px] rounded-2xl shadow-glow flex items-center justify-center gap-2 disabled:opacity-40"
-                          onClick={handleForgotPhone}
-                          disabled={forgotPhone.length < 11 || isSubmitting}>
-                          {isSubmitting ? (lang === "en" ? "Sending OTP…" : "ওটিপি পাঠানো হচ্ছে…") : t.sendOtp} <ArrowRight size={17} />
+                          onClick={handleForgotVerify}
+                          disabled={!verifyValue.trim()}>
+                          {t.verifyAndReset} <ArrowRight size={17} />
                         </motion.button>
                       </div>
                     )}
