@@ -4,7 +4,6 @@ import { X, Copy, CheckCheck, Share2, Download } from "lucide-react";
 import QRCode from "qrcode";
 import { Button } from "@/components/ui/button";
 import { haptics } from "@/lib/haptics";
-import { generateWalletId } from "@/lib/walletId";
 import { useI18n } from "@/lib/i18n";
 
 interface WalletShareSheetProps {
@@ -20,7 +19,7 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
-  const walletId = generateWalletId(userId);
+  const walletId = userId;
 
   useEffect(() => {
     if (!open || !canvasRef.current) return;
