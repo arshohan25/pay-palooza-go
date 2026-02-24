@@ -5,7 +5,7 @@ import {
   Users, ArrowLeftRight, ShieldAlert, Store, UserCheck,
   TrendingUp, Activity, Search, RefreshCw, LogOut,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings,
-  ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight,
+  ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ import UserLockDialog from "@/components/admin/UserLockDialog";
 import AdminOrderManagement from "@/components/admin/AdminOrderManagement";
 import AdminGatewayConfig from "@/components/admin/AdminGatewayConfig";
 import AdminGlobalToggles from "@/components/admin/AdminGlobalToggles";
+import AdminRechargePackManager from "@/components/admin/AdminRechargePackManager";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 
 interface Stats {
@@ -98,6 +99,7 @@ const NAV_ITEMS = [
   { id: "orders", label: "Orders", icon: Package },
   { id: "gateways", label: "Gateways", icon: CreditCard },
   { id: "toggles", label: "Toggles", icon: ToggleRight },
+  { id: "recharge", label: "Recharge", icon: Smartphone },
   { id: "reporting", label: "Reports", icon: BarChart3 },
 ];
 
@@ -641,6 +643,9 @@ export default function AdminDashboard() {
 
         {/* ═══ GLOBAL FEATURE TOGGLES ═══ */}
         {activeTab === "toggles" && <AdminGlobalToggles />}
+
+        {/* ═══ RECHARGE PACK MANAGER ═══ */}
+        {activeTab === "recharge" && <AdminRechargePackManager />}
 
         {/* ═══ REPORTING DASHBOARD ═══ */}
         {activeTab === "reporting" && <AdminReporting />}

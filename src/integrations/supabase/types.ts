@@ -657,6 +657,63 @@ export type Database = {
         }
         Relationships: []
       }
+      recharge_packs: {
+        Row: {
+          badge: string | null
+          cashback: number | null
+          created_at: string
+          details: string
+          highlight: boolean
+          id: string
+          is_active: boolean
+          name: string
+          operator: string
+          price: number
+          sort_order: number
+          sub_category: string | null
+          tag: string | null
+          type: string
+          updated_at: string
+          validity: string
+        }
+        Insert: {
+          badge?: string | null
+          cashback?: number | null
+          created_at?: string
+          details: string
+          highlight?: boolean
+          id?: string
+          is_active?: boolean
+          name: string
+          operator: string
+          price: number
+          sort_order?: number
+          sub_category?: string | null
+          tag?: string | null
+          type?: string
+          updated_at?: string
+          validity: string
+        }
+        Update: {
+          badge?: string | null
+          cashback?: number | null
+          created_at?: string
+          details?: string
+          highlight?: boolean
+          id?: string
+          is_active?: boolean
+          name?: string
+          operator?: string
+          price?: number
+          sort_order?: number
+          sub_category?: string | null
+          tag?: string | null
+          type?: string
+          updated_at?: string
+          validity?: string
+        }
+        Relationships: []
+      }
       saved_bank_accounts: {
         Row: {
           account_holder: string

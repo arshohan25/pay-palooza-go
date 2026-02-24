@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
 import { recordTransaction } from "@/lib/balanceStore";
@@ -8,6 +8,8 @@ import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
+import { supabase } from "@/integrations/supabase/client";
+import { useGlobalToggles } from "@/hooks/use-global-toggles";
 
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
 import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
@@ -122,110 +124,7 @@ const OperatorLogo = ({ op, size = "md" }: { op: OperatorDef; size?: "xs" | "sm"
 };
 
 // ─── Pack Data ────────────────────────────────────────────────────────────────
-const PACKS: Record<string, Pack[]> = {
-  Grameenphone: [
-    // ── Drive (earn cashback) ──
-    { id: "gp-d1", name: "MyPlan Unlimited",  details: "Unlimited calls + 10GB data + 200 SMS", validity: "30 days", price: 399, badge: "Best Value", tag: "Hot",     highlight: true,  type: "drive", cashback: 20 },
-    { id: "gp-d2", name: "Weekend Blast",      details: "5GB weekend + 100 min any net",         validity: "3 days",  price: 79,  badge: "Limited",   tag: "Limited", highlight: true,  type: "drive", cashback: 5  },
-    { id: "gp-d3", name: "GP Exclusive Deal",  details: "3GB + 200 min + 1GB night bonus",       validity: "10 days", price: 149, badge: "New",       tag: "New",     highlight: false, type: "drive", cashback: 8  },
-    { id: "gp-d4", name: "Super Saver 7",      details: "7GB high-speed + 120 min + 80 SMS",     validity: "7 days",  price: 189, badge: "Popular",   tag: "Popular", highlight: false, type: "drive", cashback: 10 },
-    // ── Regular – Internet ──
-    { id: "gp-i1", name: "1GB Starter",   details: "1GB 4G data",               validity: "3 days",  price: 29,  type: "regular", subCategory: "internet" },
-    { id: "gp-i2", name: "3GB Weekly",    details: "3GB 4G data",               validity: "7 days",  price: 69,  type: "regular", subCategory: "internet", highlight: true, badge: "Popular" },
-    { id: "gp-i3", name: "10GB Monthly",  details: "10GB 4G data",              validity: "30 days", price: 189, type: "regular", subCategory: "internet", badge: "Best Deal" },
-    { id: "gp-i4", name: "20GB+ Monthly", details: "20GB 4G + 10GB night data", validity: "30 days", price: 329, type: "regular", subCategory: "internet" },
-    { id: "gp-i5", name: "50GB Max",      details: "50GB 4G data, no throttle", validity: "30 days", price: 699, type: "regular", subCategory: "internet" },
-    // ── Regular – Minutes ──
-    { id: "gp-m1", name: "100 Min",  details: "100 min GP-GP calls",       validity: "7 days",  price: 35,  type: "regular", subCategory: "minutes" },
-    { id: "gp-m2", name: "200 Min",  details: "200 min any network",       validity: "14 days", price: 89,  type: "regular", subCategory: "minutes", highlight: true },
-    { id: "gp-m3", name: "500 Min",  details: "500 min any net + 50 SMS",  validity: "30 days", price: 179, type: "regular", subCategory: "minutes", badge: "Popular" },
-    { id: "gp-m4", name: "1000 Min", details: "1000 min GP-GP",            validity: "30 days", price: 299, type: "regular", subCategory: "minutes" },
-    // ── Regular – Bundles ──
-    { id: "gp-b1", name: "Starter Bundle",  details: "500MB + 100 min + 50 SMS",   validity: "7 days",  price: 89,  type: "regular", subCategory: "bundles" },
-    { id: "gp-b2", name: "Smart Bundle",    details: "2GB + 300 min + 100 SMS",    validity: "30 days", price: 249, type: "regular", subCategory: "bundles", badge: "Popular", highlight: true },
-    { id: "gp-b3", name: "Premium Bundle",  details: "5GB + 600 min + 200 SMS",    validity: "30 days", price: 449, type: "regular", subCategory: "bundles" },
-    { id: "gp-b4", name: "Ultimate Bundle", details: "15GB + Unlimited min & SMS", validity: "30 days", price: 799, type: "regular", subCategory: "bundles", badge: "Top Tier" },
-    // ── Regular – Call Rates ──
-    { id: "gp-cr1", name: "GP-GP Rate",   details: "0.25 paisa/sec on-net",     validity: "Ongoing", price: 20, type: "regular", subCategory: "callrates" },
-    { id: "gp-cr2", name: "Any Net Rate", details: "0.60 paisa/sec off-net",    validity: "Ongoing", price: 30, type: "regular", subCategory: "callrates" },
-    { id: "gp-cr3", name: "FnF Pack",     details: "10 FnF at 0.10 paisa/sec", validity: "30 days", price: 25, type: "regular", subCategory: "callrates", highlight: true },
-  ],
-  Robi: [
-    { id: "rb-d1", name: "Robi Unlimited",  details: "Unlimited calls + 8GB data + 150 SMS", validity: "30 days", price: 349, badge: "Best Value", tag: "Hot",     highlight: true,  type: "drive", cashback: 18 },
-    { id: "rb-d2", name: "Robi Weekend",    details: "3GB weekend + 80 min any net",          validity: "3 days",  price: 65,  badge: "Limited",   tag: "Limited", highlight: false, type: "drive", cashback: 4  },
-    { id: "rb-d3", name: "Robi Smart Deal", details: "2GB + 180 min + 1GB night bonus",       validity: "10 days", price: 129, badge: "New",       tag: "New",     highlight: false, type: "drive", cashback: 7  },
-    { id: "rb-d4", name: "Robi Weekly Pro", details: "5GB + 100 min + 60 SMS",                validity: "7 days",  price: 159, badge: "Popular",   tag: "Popular", highlight: true,  type: "drive", cashback: 9  },
-    { id: "rb-i1", name: "500MB Pack",    details: "500MB 4G data",          validity: "3 days",  price: 24,  type: "regular", subCategory: "internet" },
-    { id: "rb-i2", name: "2GB Weekly",    details: "2GB 4G data",            validity: "7 days",  price: 59,  type: "regular", subCategory: "internet", highlight: true, badge: "Popular" },
-    { id: "rb-i3", name: "8GB Monthly",   details: "8GB 4G data",            validity: "30 days", price: 169, type: "regular", subCategory: "internet", badge: "Best Deal" },
-    { id: "rb-i4", name: "15GB+ Monthly", details: "15GB 4G + 5GB night",    validity: "30 days", price: 299, type: "regular", subCategory: "internet" },
-    { id: "rb-m1", name: "50 Min",  details: "50 min Robi-Robi",  validity: "3 days",  price: 20,  type: "regular", subCategory: "minutes" },
-    { id: "rb-m2", name: "150 Min", details: "150 min any net",   validity: "7 days",  price: 59,  type: "regular", subCategory: "minutes", highlight: true },
-    { id: "rb-m3", name: "400 Min", details: "400 min any net",   validity: "28 days", price: 149, type: "regular", subCategory: "minutes", badge: "Popular" },
-    { id: "rb-m4", name: "800 Min", details: "800 min Robi-Robi", validity: "30 days", price: 259, type: "regular", subCategory: "minutes" },
-    { id: "rb-b1", name: "Mini Bundle",  details: "300MB + 60 min + 30 SMS",  validity: "7 days",  price: 69,  type: "regular", subCategory: "bundles" },
-    { id: "rb-b2", name: "Value Bundle", details: "1.5GB + 250 min + 80 SMS", validity: "30 days", price: 199, type: "regular", subCategory: "bundles", highlight: true, badge: "Popular" },
-    { id: "rb-b3", name: "Super Bundle", details: "4GB + 500 min + 150 SMS",  validity: "30 days", price: 399, type: "regular", subCategory: "bundles" },
-    { id: "rb-cr1", name: "Robi-Robi",   details: "0.20 paisa/sec on-net",    validity: "Ongoing", price: 18, type: "regular", subCategory: "callrates" },
-    { id: "rb-cr2", name: "Any Network", details: "0.55 paisa/sec off-net",   validity: "Ongoing", price: 28, type: "regular", subCategory: "callrates", highlight: true },
-    { id: "rb-cr3", name: "FnF 5",       details: "5 FnF at 0.15 paisa/sec", validity: "30 days", price: 20, type: "regular", subCategory: "callrates" },
-  ],
-  Banglalink: [
-    { id: "bl-d1", name: "BL Freedom Pack", details: "Unlimited calls + 9GB data + 200 SMS", validity: "30 days", price: 379, badge: "Best Value", tag: "Hot",     highlight: true,  type: "drive", cashback: 19 },
-    { id: "bl-d2", name: "BL Weekly Star",  details: "4GB weekend + 120 min any net",         validity: "3 days",  price: 75,  badge: "Limited",   tag: "Limited", highlight: false, type: "drive", cashback: 5  },
-    { id: "bl-d3", name: "BL Flash Offer",  details: "2.5GB + 200 min + 80 SMS",              validity: "10 days", price: 139, badge: "New",       tag: "New",     highlight: false, type: "drive", cashback: 7  },
-    { id: "bl-d4", name: "BL Social Pack",  details: "5GB social media + 100 min",            validity: "7 days",  price: 169, badge: "Popular",   tag: "Popular", highlight: true,  type: "drive", cashback: 9  },
-    { id: "bl-i1", name: "500MB Starter", details: "500MB 4G data",       validity: "3 days",  price: 22,  type: "regular", subCategory: "internet" },
-    { id: "bl-i2", name: "2.5GB Weekly",  details: "2.5GB 4G data",       validity: "7 days",  price: 65,  type: "regular", subCategory: "internet", highlight: true, badge: "Popular" },
-    { id: "bl-i3", name: "9GB Monthly",   details: "9GB 4G data",         validity: "30 days", price: 175, type: "regular", subCategory: "internet", badge: "Best Deal" },
-    { id: "bl-i4", name: "18GB+ Monthly", details: "18GB 4G + 8GB night", validity: "30 days", price: 310, type: "regular", subCategory: "internet" },
-    { id: "bl-m1", name: "75 Min",  details: "75 min BL-BL calls",  validity: "5 days",  price: 25,  type: "regular", subCategory: "minutes" },
-    { id: "bl-m2", name: "180 Min", details: "180 min any network",  validity: "10 days", price: 69,  type: "regular", subCategory: "minutes", highlight: true },
-    { id: "bl-m3", name: "450 Min", details: "450 min any net",      validity: "30 days", price: 159, type: "regular", subCategory: "minutes", badge: "Popular" },
-    { id: "bl-m4", name: "900 Min", details: "900 min BL-BL",        validity: "30 days", price: 289, type: "regular", subCategory: "minutes" },
-    { id: "bl-b1", name: "Combo Saver", details: "400MB + 80 min + 40 SMS",  validity: "7 days",  price: 79,  type: "regular", subCategory: "bundles" },
-    { id: "bl-b2", name: "Combo Plus",  details: "2GB + 280 min + 100 SMS",  validity: "30 days", price: 229, type: "regular", subCategory: "bundles", highlight: true, badge: "Popular" },
-    { id: "bl-b3", name: "Mega Combo",  details: "5GB + 550 min + 180 SMS",  validity: "30 days", price: 419, type: "regular", subCategory: "bundles" },
-    { id: "bl-cr1", name: "BL-BL Rate", details: "0.22 paisa/sec on-net",   validity: "Ongoing", price: 19, type: "regular", subCategory: "callrates" },
-    { id: "bl-cr2", name: "Other Net",  details: "0.58 paisa/sec off-net",  validity: "Ongoing", price: 29, type: "regular", subCategory: "callrates", highlight: true },
-    { id: "bl-cr3", name: "FnF 8",      details: "8 FnF at 0.12 paisa/sec", validity: "30 days", price: 22, type: "regular", subCategory: "callrates" },
-  ],
-  Teletalk: [
-    { id: "tt-d1", name: "Agami Unlimited", details: "Unlimited calls + 5GB data + 100 SMS", validity: "30 days", price: 299, badge: "Best Value", tag: "Hot",     highlight: true,  type: "drive", cashback: 15 },
-    { id: "tt-d2", name: "Smart Weekend",   details: "2GB weekend + 80 min",                  validity: "3 days",  price: 55,  badge: "Limited",   tag: "Limited", highlight: false, type: "drive", cashback: 3  },
-    { id: "tt-d3", name: "Student Special", details: "1.5GB + 150 min + 50 SMS",              validity: "7 days",  price: 89,  badge: "New",       tag: "New",     highlight: false, type: "drive", cashback: 5  },
-    { id: "tt-i1", name: "300MB Starter", details: "300MB 4G data", validity: "3 days",  price: 19,  type: "regular", subCategory: "internet" },
-    { id: "tt-i2", name: "1.5GB Weekly",  details: "1.5GB 4G data", validity: "7 days",  price: 49,  type: "regular", subCategory: "internet", highlight: true, badge: "Popular" },
-    { id: "tt-i3", name: "6GB Monthly",   details: "6GB 4G data",   validity: "30 days", price: 149, type: "regular", subCategory: "internet", badge: "Best Deal" },
-    { id: "tt-m1", name: "60 Min",  details: "60 min TT-TT calls", validity: "5 days",  price: 22,  type: "regular", subCategory: "minutes" },
-    { id: "tt-m2", name: "150 Min", details: "150 min any net",    validity: "10 days", price: 55,  type: "regular", subCategory: "minutes", highlight: true },
-    { id: "tt-m3", name: "350 Min", details: "350 min any net",    validity: "30 days", price: 139, type: "regular", subCategory: "minutes", badge: "Popular" },
-    { id: "tt-b1", name: "Basic Bundle", details: "250MB + 50 min + 20 SMS", validity: "7 days",  price: 59,  type: "regular", subCategory: "bundles" },
-    { id: "tt-b2", name: "Value Bundle", details: "1GB + 200 min + 60 SMS",  validity: "30 days", price: 179, type: "regular", subCategory: "bundles", highlight: true, badge: "Popular" },
-    { id: "tt-cr1", name: "TT-TT Rate",  details: "0.18 paisa/sec on-net",  validity: "Ongoing", price: 15, type: "regular", subCategory: "callrates", highlight: true },
-    { id: "tt-cr2", name: "Other Net",   details: "0.50 paisa/sec off-net", validity: "Ongoing", price: 25, type: "regular", subCategory: "callrates" },
-  ],
-  Airtel: [
-    { id: "at-d1", name: "Airtel Infinity",  details: "Unlimited calls + 12GB data + 200 SMS", validity: "30 days", price: 429, badge: "Best Value", tag: "Hot",     highlight: true,  type: "drive", cashback: 22 },
-    { id: "at-d2", name: "Weekly Champ",     details: "4GB + 130 min any net",                  validity: "7 days",  price: 99,  badge: "Limited",   tag: "Limited", highlight: false, type: "drive", cashback: 6  },
-    { id: "at-d3", name: "Airtel Exclusive", details: "3GB + 250 min + 1GB social",             validity: "10 days", price: 159, badge: "New",       tag: "New",     highlight: false, type: "drive", cashback: 8  },
-    { id: "at-d4", name: "Daily Boost Pro",  details: "2GB + 60 min + unlimited SMS",           validity: "5 days",  price: 89,  badge: "Popular",   tag: "Popular", highlight: true,  type: "drive", cashback: 5  },
-    { id: "at-i1", name: "750MB Starter",  details: "750MB 4G data",        validity: "3 days",  price: 27,  type: "regular", subCategory: "internet" },
-    { id: "at-i2", name: "3GB Weekly",     details: "3GB 4G data",          validity: "7 days",  price: 69,  type: "regular", subCategory: "internet", highlight: true, badge: "Popular" },
-    { id: "at-i3", name: "12GB Monthly",   details: "12GB 4G data",         validity: "30 days", price: 199, type: "regular", subCategory: "internet", badge: "Best Deal" },
-    { id: "at-i4", name: "25GB+ Monthly",  details: "25GB 4G + 12GB night", validity: "30 days", price: 349, type: "regular", subCategory: "internet" },
-    { id: "at-m1", name: "80 Min",  details: "80 min Airtel-Airtel", validity: "5 days",  price: 28,  type: "regular", subCategory: "minutes" },
-    { id: "at-m2", name: "200 Min", details: "200 min any net",      validity: "14 days", price: 79,  type: "regular", subCategory: "minutes", highlight: true },
-    { id: "at-m3", name: "500 Min", details: "500 min any net",      validity: "30 days", price: 169, type: "regular", subCategory: "minutes", badge: "Popular" },
-    { id: "at-b1", name: "Starter Pack", details: "400MB + 90 min + 45 SMS",  validity: "7 days",  price: 79,  type: "regular", subCategory: "bundles" },
-    { id: "at-b2", name: "Smart Pack",   details: "2GB + 320 min + 110 SMS",  validity: "30 days", price: 259, type: "regular", subCategory: "bundles", highlight: true, badge: "Popular" },
-    { id: "at-b3", name: "Pro Pack",     details: "6GB + 650 min + 200 SMS",  validity: "30 days", price: 469, type: "regular", subCategory: "bundles" },
-    { id: "at-cr1", name: "Airtel-Airtel", details: "0.23 paisa/sec on-net",   validity: "Ongoing", price: 20, type: "regular", subCategory: "callrates" },
-    { id: "at-cr2", name: "Any Network",   details: "0.57 paisa/sec off-net",  validity: "Ongoing", price: 27, type: "regular", subCategory: "callrates", highlight: true },
-    { id: "at-cr3", name: "FnF 6",         details: "6 FnF at 0.13 paisa/sec", validity: "30 days", price: 22, type: "regular", subCategory: "callrates" },
-  ],
-};
-
+// Pack data is now fetched from the database in the component below
 // ─── Sub-category config ──────────────────────────────────────────────────────
 const SUB_CATEGORIES: { id: SubCategory; label: string; icon: typeof Wifi }[] = [
   { id: "internet",  label: "Internet",   icon: Wifi },
@@ -310,7 +209,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
   const [step, setStep]               = useState<Step>("number");
   const [direction, setDirection]     = useState(1);
   const [phone, setPhone]             = useState("");
-  const [selectedOp, setSelectedOp]   = useState<OperatorDef | null>(null); // operator for packs screen
+  const [selectedOp, setSelectedOp]   = useState<OperatorDef | null>(null);
   const [selectedPack, setSelectedPack] = useState<Pack | null>(null);
   const [customAmount, setCustomAmount] = useState("");
   const [offerType, setOfferType]     = useState<OfferType>("drive");
@@ -321,14 +220,53 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
   const txnTime = useRef(new Date());
   const txnId   = useRef(generateTxnId());
 
+  // Fetch packs from DB
+  const [dbPacks, setDbPacks] = useState<Pack[]>([]);
+  const { isDisabled } = useGlobalToggles();
+  const driveHidden = isDisabled("drive_offers");
+
+  const loadPacks = useCallback(async () => {
+    const { data } = await supabase
+      .from("recharge_packs")
+      .select("*")
+      .eq("is_active", true)
+      .order("sort_order");
+    if (data) {
+      setDbPacks((data as any[]).map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        details: p.details,
+        validity: p.validity,
+        price: p.price,
+        badge: p.badge ?? undefined,
+        tag: p.tag ?? undefined,
+        highlight: p.highlight,
+        type: p.type as OfferType,
+        subCategory: p.sub_category as SubCategory | undefined,
+        cashback: p.cashback ?? 0,
+        _operator: p.operator,
+      })));
+    }
+  }, []);
+
+  useEffect(() => { loadPacks(); }, [loadPacks]);
+
+  // Realtime sync
+  useEffect(() => {
+    const ch = supabase
+      .channel("recharge-packs-user")
+      .on("postgres_changes", { event: "*", schema: "public", table: "recharge_packs" }, () => loadPacks())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [loadPacks]);
+
   useEffect(() => { if (step === "success") { fireSuccessConfetti(); addTxnNotif(); } }, [step]);
 
   const stepIndex = STEPS.indexOf(step);
-  // The operator used throughout - either detected from phone or explicitly chosen
   const detectedOp = detectOperator(phone);
   const operator   = selectedOp ?? detectedOp;
-  const allPacks   = operator ? (PACKS[operator.name] ?? []) : [];
-  const drivePacks = allPacks.filter((p) => p.type === "drive");
+  const allPacks   = operator ? dbPacks.filter((p: any) => p._operator === operator.name) : [];
+  const drivePacks = driveHidden ? [] : allPacks.filter((p) => p.type === "drive");
   const regularPacks = allPacks.filter((p) => p.type === "regular" && p.subCategory === subCategory);
 
   const goTo = (next: Step) => {
@@ -364,7 +302,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     }
     setSelectedPack(null);
     setCustomAmount("");
-    setOfferType("drive");
+    setOfferType(driveHidden ? "regular" : "drive");
     setSubCategory("internet");
     setError("");
     haptics.medium();
@@ -574,10 +512,12 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                         </div>
                         {/* Drive cashback hint on operator card */}
                         <div className="flex flex-col items-end gap-1 shrink-0">
-                          <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-full">
-                            <Coins size={9} />
-                            Drive
-                          </div>
+                          {!driveHidden && (
+                            <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-full">
+                              <Coins size={9} />
+                              Drive
+                            </div>
+                          )}
                           <ChevronRight size={14} className="text-muted-foreground" />
                         </div>
                       </motion.button>
@@ -610,15 +550,17 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                 {/* Drive / Regular tabs */}
                 <div className="px-4 pb-3 shrink-0">
                   <div className="flex bg-muted rounded-2xl p-1 gap-1">
-                    <button
-                      onClick={() => { setOfferType("drive"); setError(""); }}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                        offerType === "drive" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
-                      }`}
-                    >
-                      <Flame size={14} className={offerType === "drive" ? "text-amber-500" : ""} />
-                      ⚡ Drive
-                    </button>
+                    {!driveHidden && (
+                      <button
+                        onClick={() => { setOfferType("drive"); setError(""); }}
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                          offerType === "drive" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+                        }`}
+                      >
+                        <Flame size={14} className={offerType === "drive" ? "text-amber-500" : ""} />
+                        ⚡ Drive
+                      </button>
+                    )}
                     <button
                       onClick={() => { setOfferType("regular"); setError(""); }}
                       className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold transition-all ${
