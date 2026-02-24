@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.send-otp]
 verify_jwt = false
+
+[functions.test-recharge-api]
+verify_jwt = false
+
+[functions.process-recharge]
+verify_jwt = false

@@ -657,6 +657,45 @@ export type Database = {
         }
         Relationships: []
       }
+      recharge_api_configs: {
+        Row: {
+          api_base_url: string | null
+          config: Json
+          created_at: string
+          display_name: string
+          id: string
+          is_enabled: boolean
+          last_tested: string | null
+          operator: string
+          test_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          api_base_url?: string | null
+          config?: Json
+          created_at?: string
+          display_name: string
+          id?: string
+          is_enabled?: boolean
+          last_tested?: string | null
+          operator: string
+          test_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          api_base_url?: string | null
+          config?: Json
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_enabled?: boolean
+          last_tested?: string | null
+          operator?: string
+          test_status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       recharge_packs: {
         Row: {
           badge: string | null
