@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronRight, X, Copy, CheckCircle2, Hash, User, Tag, FileText, Clock } from "lucide-react";
+import { ChevronRight, X, Copy, CheckCircle2, Hash, User, Tag, FileText, Clock, Coins } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { useTransactions, DbTransaction } from "@/hooks/use-transactions";
@@ -13,7 +13,13 @@ import {
   TxBankIcon,
   TxPaymentIcon,
   TxBankTransferIcon,
+  TxCashbackIcon,
 } from "./QuickActionIcons";
+
+// Detect cashback transactions from drive pack recharges
+function isCashbackTx(tx: DbTransaction): boolean {
+  return tx.type === "addmoney" && (tx.description?.startsWith("Drive Cashback:") || tx.reference?.startsWith("CB-") || false);
+}
 
 // Icon/color config per transaction type
 const TX_CONFIG: Record<string, {
@@ -33,6 +39,13 @@ const TX_CONFIG: Record<string, {
   banktransfer: { Icon: TxBankTransferIcon, bg: "rgba(63,81,181,0.12)", ring: "1px solid rgba(63,81,181,0.2)", label: "Bank Transfer" },
 };
 
+const CASHBACK_CONFIG = {
+  Icon: TxCashbackIcon,
+  bg: "rgba(245,158,11,0.15)",
+  ring: "1px solid rgba(245,158,11,0.3)",
+  label: "Drive Cashback",
+};
+
 const RECEIVE_CONFIG = {
   Icon: TxReceiveIcon,
   bg: "rgba(76,175,80,0.12)",
@@ -40,15 +53,19 @@ const RECEIVE_CONFIG = {
 };
 
 function getTxDisplay(tx: DbTransaction) {
+  const cashback = isCashbackTx(tx);
   const isCredit = tx.type === "addmoney" || tx.type === "receive" || tx.type === "cashin";
-  const cfg = TX_CONFIG[tx.type] ?? TX_CONFIG.send;
+  const cfg = cashback ? CASHBACK_CONFIG : (TX_CONFIG[tx.type] ?? TX_CONFIG.send);
   return {
-    icon: isCredit ? RECEIVE_CONFIG.Icon : cfg.Icon,
-    bg: isCredit ? RECEIVE_CONFIG.bg : cfg.bg,
-    ring: isCredit ? RECEIVE_CONFIG.ring : cfg.ring,
-    label: cfg.label,
-    name: tx.recipient_name || tx.description || cfg.label,
+    icon: cashback ? CASHBACK_CONFIG.Icon : (isCredit ? RECEIVE_CONFIG.Icon : cfg.Icon),
+    bg: cashback ? CASHBACK_CONFIG.bg : (isCredit ? RECEIVE_CONFIG.bg : cfg.bg),
+    ring: cashback ? CASHBACK_CONFIG.ring : (isCredit ? RECEIVE_CONFIG.ring : cfg.ring),
+    label: cashback ? "Drive Cashback" : cfg.label,
+    name: cashback
+      ? (tx.description?.replace("Drive Cashback: ", "") || "Cashback")
+      : (tx.recipient_name || tx.description || cfg.label),
     amount: isCredit ? tx.amount : -tx.amount,
+    isCashback: cashback,
   };
 }
 
@@ -123,14 +140,21 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
               style={{ background: display.bg, outline: display.ring }}>
               <display.icon />
             </div>
-            <p className="text-[26px] font-bold text-foreground">
+            <p className={`text-[26px] font-bold ${display.isCashback ? "text-amber-600 dark:text-amber-400" : "text-foreground"}`}>
               {isCredit ? "+" : "−"}৳{Math.abs(display.amount).toLocaleString()}
             </p>
             <p className="text-[12.5px] text-muted-foreground mt-0.5">{display.label}</p>
-            <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-primary/10">
-              <CheckCircle2 size={12} className="text-primary" />
-              <span className="text-[11px] font-bold text-primary capitalize">{tx.status}</span>
-            </div>
+            {display.isCashback ? (
+              <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30">
+                <Coins size={12} className="text-amber-600 dark:text-amber-400" />
+                <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300">Drive Cashback</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-primary/10">
+                <CheckCircle2 size={12} className="text-primary" />
+                <span className="text-[11px] font-bold text-primary capitalize">{tx.status}</span>
+              </div>
+            )}
           </div>
 
           <div className="h-px bg-border/60 mb-3" />
@@ -195,18 +219,27 @@ const TransactionList = ({ onSeeAll, refreshKey }: TransactionListProps) => {
                 initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, delay: 0.3 + index * 0.06, ease: [0.23, 1, 0.32, 1] }}
                 onClick={() => setSelectedTx(tx)}
-                className="w-full flex items-center gap-3.5 px-4 py-3.5 hover:bg-muted/40 active:bg-muted/60 transition-colors border-b border-border/50 last:border-0 text-left"
+                className={`w-full flex items-center gap-3.5 px-4 py-3.5 hover:bg-muted/40 active:bg-muted/60 transition-colors border-b border-border/50 last:border-0 text-left ${
+                  display.isCashback ? "bg-amber-50/50 dark:bg-amber-950/20" : ""
+                }`}
               >
                 <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
                   style={{ background: display.bg, outline: display.ring }}>
                   <display.icon />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13.5px] font-semibold text-foreground truncate">{display.name}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-[13.5px] font-semibold text-foreground truncate">{display.name}</p>
+                    {display.isCashback && (
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                        <Coins size={9} /> CASHBACK
+                      </span>
+                    )}
+                  </div>
                   <p className="text-[11.5px] text-muted-foreground mt-0.5">{relativeDate(tx.created_at)}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <span className={`text-[14px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
+                  <span className={`text-[14px] font-bold ${display.isCashback ? "text-amber-600 dark:text-amber-400" : isCredit ? "text-primary" : "text-foreground"}`}>
                     {isCredit ? "+" : "−"}৳{Math.abs(display.amount).toLocaleString()}
                   </span>
                   <p className="text-[10.5px] text-muted-foreground mt-0.5">{display.label}</p>

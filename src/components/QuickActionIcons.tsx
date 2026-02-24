@@ -480,3 +480,22 @@ export const TxPaymentIcon = () => (
     <rect x="32" y="32" width="5" height="5" rx="1" fill="#9C27B0"/>
   </svg>
 );
+
+export const TxCashbackIcon = () => (
+  <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+    <defs>
+      <linearGradient id="txCashbackGrad" x1="4" y1="4" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#F59E0B"/>
+        <stop offset="100%" stopColor="#D97706"/>
+      </linearGradient>
+    </defs>
+    {/* Coin circle */}
+    <circle cx="22" cy="22" r="16" fill="url(#txCashbackGrad)"/>
+    <circle cx="22" cy="22" r="13" fill="none" stroke="#FDE68A" strokeWidth="1.5" strokeDasharray="4 2"/>
+    {/* Taka symbol */}
+    <text x="22" y="25" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="serif">৳</text>
+    {/* Return arrow */}
+    <path d="M34 12 L38 8 L38 14 L32 14 Z" fill="#FDE68A"/>
+    <path d="M38 11 Q 38 6, 32 6 L28 6" stroke="#FDE68A" strokeWidth="2" fill="none" strokeLinecap="round"/>
+  </svg>
+);
