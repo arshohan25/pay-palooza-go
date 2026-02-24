@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n";
+import FeatureGuard from "@/components/FeatureGuard";
 import { supabase } from "@/integrations/supabase/client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1079,5 +1080,11 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   );
 };
 
-export default AddMoneyFlow;
+const AddMoneyFlowGuarded = (props: AddMoneyFlowProps) => (
+  <FeatureGuard featureKey="add_money" onClose={props.onClose}>
+    <AddMoneyFlow {...props} />
+  </FeatureGuard>
+);
+
+export default AddMoneyFlowGuarded;
 

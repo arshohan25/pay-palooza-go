@@ -13,6 +13,7 @@ import { useI18n } from "@/lib/i18n";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrderNotifications } from "@/hooks/use-order-notifications";
+import FeatureGuard from "@/components/FeatureGuard";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Product {
@@ -1567,4 +1568,10 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
   );
 };
 
-export default ShopFlow;
+const ShopFlowGuarded = (props: ShopFlowProps) => (
+  <FeatureGuard featureKey="payment" onClose={props.onClose}>
+    <ShopFlow {...props} />
+  </FeatureGuard>
+);
+
+export default ShopFlowGuarded;
