@@ -32,6 +32,8 @@ import AdminOrderManagement from "@/components/admin/AdminOrderManagement";
 import AdminGatewayConfig from "@/components/admin/AdminGatewayConfig";
 import AdminGlobalToggles from "@/components/admin/AdminGlobalToggles";
 import AdminRechargePackManager from "@/components/admin/AdminRechargePackManager";
+import AdminRechargeAnalytics from "@/components/admin/AdminRechargeAnalytics";
+import AdminRechargeImportExport from "@/components/admin/AdminRechargeImportExport";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 
 interface Stats {
@@ -41,6 +43,34 @@ interface Stats {
   totalMerchants: number;
   openAlerts: number;
 }
+
+const RechargeSection = () => {
+  const [subTab, setSubTab] = useState<"packs" | "analytics" | "import">("packs");
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        {[
+          { key: "packs" as const, label: "Manage Packs" },
+          { key: "analytics" as const, label: "Analytics" },
+          { key: "import" as const, label: "Import / Export" },
+        ].map(t => (
+          <Button
+            key={t.key}
+            variant={subTab === t.key ? "default" : "outline"}
+            size="sm"
+            onClick={() => setSubTab(t.key)}
+          >
+            {t.label}
+          </Button>
+        ))}
+      </div>
+      {subTab === "packs" && <AdminRechargePackManager />}
+      {subTab === "analytics" && <AdminRechargeAnalytics />}
+      {subTab === "import" && <AdminRechargeImportExport />}
+    </div>
+  );
+};
+
 
 const StatCard = ({ icon: Icon, label, value, color }: { icon: any; label: string; value: number; color: string }) => (
   <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
@@ -645,7 +675,7 @@ export default function AdminDashboard() {
         {activeTab === "toggles" && <AdminGlobalToggles />}
 
         {/* ═══ RECHARGE PACK MANAGER ═══ */}
-        {activeTab === "recharge" && <AdminRechargePackManager />}
+        {activeTab === "recharge" && <RechargeSection />}
 
         {/* ═══ REPORTING DASHBOARD ═══ */}
         {activeTab === "reporting" && <AdminReporting />}
