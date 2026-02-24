@@ -14,8 +14,9 @@ interface SlideToConfirmProps {
   icon?: LucideIcon;
 }
 
-const THUMB = 56;
+const THUMB = 48;
 const PADDING = 4;
+const TRACK_H = THUMB + PADDING * 2; // 56px total
 
 const SlideToConfirm = ({
   onConfirm,
@@ -30,6 +31,7 @@ const SlideToConfirm = ({
   const [confirmed, setConfirmed] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [bounceTick, setBounceTick] = useState(0);
+  const [iconPulse, setIconPulse] = useState(false);
 
   const x = useMotionValue(0);
 
@@ -49,12 +51,21 @@ const SlideToConfirm = ({
     return Math.max(0, 1 - x.get() / (max * 0.4));
   });
 
-  // Fire attention bounce 200ms after PIN complete
+  // Reset slider when disabled flips back (e.g. wrong PIN clears pin state)
+  useEffect(() => {
+    if (disabled && !confirmed) {
+      animate(x, 0, { type: "spring", stiffness: 380, damping: 28 });
+    }
+  }, [disabled, confirmed, x]);
+
+  // Fire attention bounce + icon pulse 200ms after PIN complete
   useEffect(() => {
     if (!pinComplete || disabled || confirmed) return;
     const timer = setTimeout(() => {
       setBounceTick((t) => t + 1);
+      setIconPulse(true);
       haptics.light();
+      setTimeout(() => setIconPulse(false), 600);
     }, 200);
     return () => clearTimeout(timer);
   }, [pinComplete, disabled, confirmed]);
@@ -92,10 +103,10 @@ const SlideToConfirm = ({
   return (
     <div
       ref={trackRef}
-      className={`relative h-14 rounded-2xl overflow-hidden select-none ${
+      className={`relative rounded-2xl overflow-hidden select-none ${
         disabled ? "opacity-40 pointer-events-none" : ""
       }`}
-      style={{ background: "hsl(var(--muted))" }}
+      style={{ background: "hsl(var(--muted))", height: TRACK_H }}
     >
       {/* Filled gradient track */}
       <motion.div
@@ -122,7 +133,7 @@ const SlideToConfirm = ({
         </span>
       </motion.div>
 
-      {/* Draggable thumb */}
+      {/* Draggable thumb – vertically centered with equal margin */}
       <motion.div
         ref={thumbRef}
         drag="x"
@@ -149,14 +160,22 @@ const SlideToConfirm = ({
           <motion.div
             key={confirmed ? "check" : "lock"}
             initial={{ scale: 0.4, opacity: 0, rotate: -20 }}
-            animate={{ scale: 1, opacity: 1, rotate: 0 }}
+            animate={{
+              scale: iconPulse && !confirmed ? [1, 1.35, 1] : 1,
+              opacity: 1,
+              rotate: 0,
+            }}
             exit={{ scale: 0.4, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 420, damping: 22 }}
+            transition={
+              iconPulse && !confirmed
+                ? { scale: { duration: 0.5, ease: "easeInOut" }, type: "spring", stiffness: 420, damping: 22 }
+                : { type: "spring", stiffness: 420, damping: 22 }
+            }
           >
             {confirmed ? (
-              <CheckCircle2 size={24} strokeWidth={2.5} />
+              <CheckCircle2 size={22} strokeWidth={2.5} />
             ) : (
-              <Icon size={22} strokeWidth={2.5} />
+              <Icon size={20} strokeWidth={2.5} />
             )}
           </motion.div>
         </AnimatePresence>
@@ -164,5 +183,4 @@ const SlideToConfirm = ({
     </div>
   );
 };
-
 export default SlideToConfirm;
