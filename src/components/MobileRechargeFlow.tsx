@@ -384,6 +384,9 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     }
     setApiStatus(null);
 
+    const packDesc = selectedPack ? selectedPack.name : `Recharge ৳${effectivePrice}`;
+    const modeTag = apiProcessed ? " [API]" : " [LOCAL]";
+
     await recordTransaction({
       type: "recharge",
       amount: effectivePrice,
@@ -391,7 +394,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
       recipientPhone: phone,
       recipientName: detectedOp?.name,
       reference: txnId.current,
-      description: selectedPack ? selectedPack.name : `Recharge ৳${effectivePrice}`,
+      description: packDesc + modeTag,
     });
     showTxnToast({
       type: apiProcessed ? "Live Recharge" : "Mobile Recharge",

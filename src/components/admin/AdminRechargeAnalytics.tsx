@@ -20,6 +20,8 @@ interface PackStat {
   count: number;
   revenue: number;
   operator?: string;
+  apiCount: number;
+  localCount: number;
 }
 
 export default function AdminRechargeAnalytics() {
@@ -28,6 +30,8 @@ export default function AdminRechargeAnalytics() {
   const [period, setPeriod] = useState("30");
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const [totalApi, setTotalApi] = useState(0);
+  const [totalLocal, setTotalLocal] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -50,21 +54,34 @@ export default function AdminRechargeAnalytics() {
       return;
     }
 
-    // Group by pack name (description)
+    // Group by pack name (description without mode tag)
     const map = new Map<string, PackStat>();
     let rev = 0;
+    let apiTotal = 0;
+    let localTotal = 0;
     for (const t of txns) {
-      const key = t.description || "Custom Amount";
+      const raw = t.description || "Custom Amount";
+      const isApi = raw.endsWith(" [API]");
+      const isLocal = raw.endsWith(" [LOCAL]");
+      const key = raw.replace(/ \[(API|LOCAL)\]$/, "");
+
+      if (isApi) apiTotal++;
+      else localTotal++;
+
       const existing = map.get(key);
       if (existing) {
         existing.count++;
         existing.revenue += t.amount;
+        if (isApi) existing.apiCount++;
+        else existing.localCount++;
       } else {
         map.set(key, {
           name: key,
           count: 1,
           revenue: t.amount,
           operator: t.recipient_name || undefined,
+          apiCount: isApi ? 1 : 0,
+          localCount: isApi ? 0 : 1,
         });
       }
       rev += t.amount;
@@ -74,6 +91,8 @@ export default function AdminRechargeAnalytics() {
     setStats(sorted);
     setTotalRevenue(rev);
     setTotalCount(txns.length);
+    setTotalApi(apiTotal);
+    setTotalLocal(localTotal);
     setLoading(false);
   }, [period]);
 
@@ -113,7 +132,7 @@ export default function AdminRechargeAnalytics() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Card className="border-0 shadow-[var(--shadow-card)]">
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-foreground">{totalCount.toLocaleString()}</p>
@@ -130,6 +149,18 @@ export default function AdminRechargeAnalytics() {
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-foreground">{stats.length}</p>
             <p className="text-xs text-muted-foreground">Unique Packs</p>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-[var(--shadow-card)]">
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{totalApi.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">Via Live API</p>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-[var(--shadow-card)]">
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{totalLocal.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">Local Record</p>
           </CardContent>
         </Card>
       </div>
@@ -182,9 +213,19 @@ export default function AdminRechargeAnalytics() {
                       <Badge variant="outline" className="text-[10px]">{s.operator}</Badge>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    ৳{s.revenue.toLocaleString()} revenue
-                  </p>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
+                    <span>৳{s.revenue.toLocaleString()} revenue</span>
+                    {s.apiCount > 0 && (
+                      <Badge className="text-[9px] px-1 py-0 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                        API: {s.apiCount}
+                      </Badge>
+                    )}
+                    {s.localCount > 0 && (
+                      <Badge className="text-[9px] px-1 py-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                        Local: {s.localCount}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <TrendingUp className="w-3.5 h-3.5 text-primary" />
