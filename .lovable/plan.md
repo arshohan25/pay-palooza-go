@@ -1,123 +1,73 @@
 
+# Recharge API Connect Section
 
-## Admin Chargeback Feature
+## Overview
+Add a new "API Connect" sub-tab inside the existing Recharge section of the Admin Dashboard. This section allows admins to configure API credentials for each mobile operator (GP, Robi, Banglalink, Teletalk, Airtel) to enable real-time recharge processing through operator APIs instead of just recording local transactions.
 
-### Overview
-Allow admins to deduct (charge back) funds from any user's account directly from the Admin Dashboard. This is useful for reversing fraudulent transactions, correcting errors, or enforcing penalties. Every chargeback is recorded as a transaction with full audit trail.
+## What It Does
+- Admins can configure API credentials (API Key, Secret, Merchant ID, Callback URL, etc.) per operator
+- Each operator connection has an enable/disable toggle
+- A "Test Connection" button sends a ping to verify credentials work
+- The MobileRechargeFlow will check if an operator has a live API connection and, if so, call a backend function to process the recharge in real-time
 
-### What Changes
+## Technical Plan
 
-**1. New database function: `admin_chargeback` (migration)**
+### 1. Database: New `recharge_api_configs` table
+Create a migration to add:
 
-A `SECURITY DEFINER` RPC that:
-- Accepts target user ID, amount, reason/description, and optional reference transaction ID
-- Verifies the caller has the `admin` role using `has_role()`
-- Locks the target user's profile row (`FOR UPDATE`) to prevent race conditions
-- Deducts the specified amount from their balance (capped at 0 -- balance cannot go negative)
-- Inserts a transaction record of type `chargeback` for the target user
-- Inserts an audit log entry recording which admin performed the chargeback
-- Returns the new balance and success status
-
-Also adds `chargeback` to the `txn_type` enum so it integrates with the existing transaction system.
-
-**2. New component: `src/components/admin/AdminChargebackDialog.tsx`**
-
-A dialog/modal that admins can trigger from:
-- The Activity Monitor (per-transaction "Chargeback" button in expanded row details)
-- The User Management tab (per-user "Chargeback" button)
-
-The dialog includes:
-- Read-only display of the target user (name, phone, current balance)
-- Amount input field with validation (must be positive, cannot exceed user's balance)
-- Reason/description textarea (required)
-- Optional reference to original transaction ID
-- Confirmation step before executing
-- Success/error feedback via toast
-
-**3. Update `src/components/admin/AdminActivityMonitor.tsx`**
-
-- Add a "Chargeback" button in the expanded row detail panel for each transaction
-- Clicking it opens the chargeback dialog pre-filled with the transaction's user, amount, and reference ID
-
-**4. Update `src/pages/AdminDashboard.tsx`**
-
-- Add a "Chargeback" button in the Users sub-tab for each user row
-- Clicking it opens the chargeback dialog pre-filled with the user's info
-
-### Technical Details
-
-**Database migration SQL:**
-```sql
--- Add chargeback to txn_type enum
-ALTER TYPE public.txn_type ADD VALUE IF NOT EXISTS 'chargeback';
-
--- Admin chargeback RPC
-CREATE OR REPLACE FUNCTION public.admin_chargeback(
-  p_target_user_id UUID,
-  p_amount NUMERIC,
-  p_reason TEXT,
-  p_reference_txn_id UUID DEFAULT NULL
-)
-RETURNS JSON
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-DECLARE
-  v_admin_id UUID;
-  v_target_balance NUMERIC;
-  v_new_balance NUMERIC;
-  v_actual_deduction NUMERIC;
-BEGIN
-  v_admin_id := auth.uid();
-  IF v_admin_id IS NULL OR NOT has_role(v_admin_id, 'admin') THEN
-    RAISE EXCEPTION 'Unauthorized: admin role required';
-  END IF;
-
-  SELECT balance INTO v_target_balance
-  FROM profiles WHERE user_id = p_target_user_id FOR UPDATE;
-
-  IF v_target_balance IS NULL THEN
-    RAISE EXCEPTION 'Target user not found';
-  END IF;
-
-  v_actual_deduction := LEAST(p_amount, v_target_balance);
-  v_new_balance := v_target_balance - v_actual_deduction;
-
-  UPDATE profiles SET balance = v_new_balance
-  WHERE user_id = p_target_user_id;
-
-  INSERT INTO transactions (user_id, type, amount, fee, balance_after,
-    description, reference, status)
-  VALUES (p_target_user_id, 'chargeback', v_actual_deduction, 0,
-    v_new_balance, p_reason,
-    COALESCE(p_reference_txn_id::text, NULL), 'completed');
-
-  INSERT INTO audit_logs (actor_id, action, entity_type, entity_id, details)
-  VALUES (v_admin_id, 'chargeback', 'profile', p_target_user_id,
-    jsonb_build_object(
-      'amount', v_actual_deduction,
-      'reason', p_reason,
-      'previous_balance', v_target_balance,
-      'new_balance', v_new_balance,
-      'reference_txn_id', p_reference_txn_id
-    ));
-
-  RETURN json_build_object(
-    'success', true,
-    'deducted', v_actual_deduction,
-    'new_balance', v_new_balance
-  );
-END;
-$$;
+```text
+recharge_api_configs
+  id            uuid PK
+  operator      text NOT NULL UNIQUE (Grameenphone, Robi, Banglalink, Teletalk, Airtel)
+  display_name  text NOT NULL
+  api_base_url  text
+  config        jsonb DEFAULT '{}'  (stores API_KEY, API_SECRET, MERCHANT_ID, etc.)
+  is_enabled    boolean DEFAULT false
+  last_tested   timestamptz
+  test_status   text  ('success' | 'failed' | null)
+  created_at    timestamptz DEFAULT now()
+  updated_at    timestamptz DEFAULT now()
 ```
 
-**Chargeback dialog flow:**
-1. Admin clicks "Chargeback" on a user or transaction row
-2. Dialog shows user info and current balance
-3. Admin enters amount and mandatory reason
-4. Clicks "Confirm Chargeback" -- calls `supabase.rpc("admin_chargeback", {...})`
-5. On success: toast confirmation, close dialog, refresh data
-6. On error: toast error message
+RLS: Admin-only full access (matching existing pattern with `has_role(auth.uid(), 'admin')`).
 
-**No new RLS policies needed** -- the function uses `SECURITY DEFINER` with an internal admin role check, same pattern as `transfer_money` and `record_transaction`.
+### 2. New Component: `AdminRechargeApiConnect.tsx`
+- Lists all 5 operators as cards (pre-seeded or dynamically created on first visit)
+- Each card shows: operator logo/name, connection status badge (Connected/Not Configured/Failed), enable/disable toggle
+- Edit dialog for each operator with fields: API Base URL + dynamic credential fields (show/hide secrets, add/remove fields -- same pattern as `AdminGatewayConfig.tsx`)
+- "Test Connection" button that calls a backend function to validate credentials
+- Real-time sync via Supabase channel
+
+### 3. Backend Function: `test-recharge-api` Edge Function
+- Accepts operator name and credentials
+- Makes a lightweight health-check/ping call to the operator's API endpoint
+- Returns success/failure status
+- Updates `last_tested` and `test_status` in the database
+
+### 4. Backend Function: `process-recharge` Edge Function
+- Called by the MobileRechargeFlow when an operator has `is_enabled = true`
+- Fetches credentials from `recharge_api_configs` table
+- Sends the recharge request to the operator's API
+- Returns success/failure with operator transaction ID
+- On success, records the transaction normally
+
+### 5. Update `RechargeSection` in AdminDashboard
+- Add a 4th sub-tab button: "API Connect"
+- Renders the new `AdminRechargeApiConnect` component
+
+### 6. Update `MobileRechargeFlow.tsx`
+- Before processing a recharge, check if the detected operator has an enabled API config
+- If enabled: call the `process-recharge` edge function for real-time processing
+- If not enabled: fall back to existing local transaction recording (current behavior)
+- Show appropriate status messaging (e.g., "Processing via GP API..." vs "Recharge recorded")
+
+## Files to Create
+- `src/components/admin/AdminRechargeApiConnect.tsx` -- main admin UI component
+- `supabase/functions/test-recharge-api/index.ts` -- connection test endpoint
+- `supabase/functions/process-recharge/index.ts` -- real-time recharge processing endpoint
+- Database migration for `recharge_api_configs` table
+
+## Files to Modify
+- `src/pages/AdminDashboard.tsx` -- add "API Connect" sub-tab to RechargeSection
+- `src/components/MobileRechargeFlow.tsx` -- integrate real-time recharge call
+- `supabase/config.toml` -- register new edge functions with `verify_jwt = false`
