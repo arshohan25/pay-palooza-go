@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
-  Loader2, Plus, Pencil, Trash2, Save, Smartphone, Flame, Package, Search,
+  Loader2, Plus, Pencil, Trash2, Save, Smartphone, Flame, Package, Search, Copy, GripVertical,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,15 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
+import {
+  DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove, SortableContext, sortableKeyboardCoordinates,
+  useSortable, verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 const OPERATORS = ["Grameenphone", "Robi", "Banglalink", "Teletalk", "Airtel"];
 const TYPES = ["drive", "regular"];
@@ -58,6 +67,75 @@ const emptyPack = (): Partial<Pack> => ({
   is_active: true,
 });
 
+/* ─── Sortable Row ─── */
+function SortablePackRow({
+  pack, onEdit, onDelete, onToggle, onDuplicate,
+}: {
+  pack: Pack;
+  onEdit: (p: Pack) => void;
+  onDelete: (p: Pack) => void;
+  onToggle: (p: Pack) => void;
+  onDuplicate: (p: Pack) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: pack.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : undefined,
+    zIndex: isDragging ? 10 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-2 px-4 py-3 hover:bg-muted/30 transition-colors ${!pack.is_active ? "opacity-50" : ""}`}
+    >
+      {/* Drag handle */}
+      <button
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing touch-none p-0.5 text-muted-foreground hover:text-foreground"
+        aria-label="Drag to reorder"
+      >
+        <GripVertical className="w-4 h-4" />
+      </button>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="text-sm font-medium text-foreground">{pack.name}</p>
+          <Badge variant="outline" className="text-[10px]">{pack.operator}</Badge>
+          {pack.type === "drive" ? (
+            <Badge className="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+              <Flame className="w-2.5 h-2.5 mr-0.5" /> Drive
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="text-[10px]">{pack.sub_category}</Badge>
+          )}
+          {pack.tag && <Badge className="text-[10px]">{pack.tag}</Badge>}
+        </div>
+        <p className="text-xs text-muted-foreground truncate">{pack.details}</p>
+        <p className="text-xs text-muted-foreground">
+          ৳{pack.price} · {pack.validity}
+          {pack.cashback > 0 && ` · Cashback ৳${pack.cashback}`}
+        </p>
+      </div>
+      <div className="flex items-center gap-1 shrink-0">
+        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onDuplicate(pack)} title="Duplicate">
+          <Copy className="w-3.5 h-3.5" />
+        </Button>
+        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onEdit(pack)}>
+          <Pencil className="w-3.5 h-3.5" />
+        </Button>
+        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => onDelete(pack)}>
+          <Trash2 className="w-3.5 h-3.5" />
+        </Button>
+        <Switch checked={pack.is_active} onCheckedChange={() => onToggle(pack)} />
+      </div>
+    </div>
+  );
+}
+
 export default function AdminRechargePackManager() {
   const [packs, setPacks] = useState<Pack[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,8 +148,12 @@ export default function AdminRechargePackManager() {
   const [deletePack, setDeletePack] = useState<Pack | null>(null);
   const { isDisabled: isFeatureDisabled } = useGlobalToggles();
 
-  // Drive toggle state
   const driveDisabled = isFeatureDisabled("drive_offers");
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -96,7 +178,6 @@ export default function AdminRechargePackManager() {
   }, [load]);
 
   const toggleDrive = async () => {
-    // Check if drive_offers toggle exists
     const { data: existing } = await supabase
       .from("global_feature_toggles")
       .select("id, is_enabled")
@@ -110,7 +191,6 @@ export default function AdminRechargePackManager() {
         .eq("id", existing.id);
       toast.success(`Drive offers ${!existing.is_enabled ? "enabled" : "disabled"}`);
     } else {
-      // Create the toggle
       await supabase
         .from("global_feature_toggles")
         .insert({
@@ -124,14 +204,19 @@ export default function AdminRechargePackManager() {
     }
   };
 
-  const openAdd = () => {
-    setEditPack(emptyPack());
-    setIsNew(true);
-  };
+  const openAdd = () => { setEditPack(emptyPack()); setIsNew(true); };
+  const openEdit = (p: Pack) => { setEditPack({ ...p }); setIsNew(false); };
 
-  const openEdit = (p: Pack) => {
-    setEditPack({ ...p });
-    setIsNew(false);
+  const duplicatePack = async (p: Pack) => {
+    const { id, ...rest } = p;
+    const payload = {
+      ...rest,
+      name: `${p.name} (copy)`,
+      sort_order: p.sort_order + 1,
+    };
+    const { error } = await supabase.from("recharge_packs").insert(payload as any);
+    if (error) toast.error("Failed to duplicate");
+    else toast.success(`Duplicated "${p.name}"`);
   };
 
   const savePack = async () => {
@@ -180,6 +265,32 @@ export default function AdminRechargePackManager() {
     await supabase.from("recharge_packs").update({ is_active: !p.is_active } as any).eq("id", p.id);
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = filtered.findIndex(p => p.id === active.id);
+    const newIndex = filtered.findIndex(p => p.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(filtered, oldIndex, newIndex);
+
+    // Optimistic update
+    setPacks(prev => {
+      const filteredIds = new Set(reordered.map(p => p.id));
+      const others = prev.filter(p => !filteredIds.has(p.id));
+      const updated = reordered.map((p, i) => ({ ...p, sort_order: i }));
+      return [...others, ...updated].sort((a, b) => a.operator.localeCompare(b.operator) || a.sort_order - b.sort_order);
+    });
+
+    // Persist new sort orders
+    const updates = reordered.map((p, i) =>
+      supabase.from("recharge_packs").update({ sort_order: i } as any).eq("id", p.id)
+    );
+    await Promise.all(updates);
+    toast.success("Order updated");
+  };
+
   const filtered = packs.filter(p => {
     if (filterOp !== "all" && p.operator !== filterOp) return false;
     if (filterType !== "all" && p.type !== filterType) return false;
@@ -202,11 +313,10 @@ export default function AdminRechargePackManager() {
         <div>
           <h3 className="text-lg font-bold text-foreground">Recharge Pack Manager</h3>
           <p className="text-sm text-muted-foreground">
-            Manage mobile recharge packs for all operators ({packs.length} total)
+            Manage mobile recharge packs for all operators ({packs.length} total) · Drag to reorder
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {/* Drive toggle */}
           <div className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-2">
             <Flame className={`w-4 h-4 ${driveDisabled ? "text-muted-foreground" : "text-amber-500"}`} />
             <span className="text-sm font-medium text-foreground">Drive</span>
@@ -221,18 +331,14 @@ export default function AdminRechargePackManager() {
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
         <Select value={filterOp} onValueChange={setFilterOp}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Operator" />
-          </SelectTrigger>
+          <SelectTrigger className="w-40"><SelectValue placeholder="Operator" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Operators</SelectItem>
             {OPERATORS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="w-32">
-            <SelectValue placeholder="Type" />
-          </SelectTrigger>
+          <SelectTrigger className="w-32"><SelectValue placeholder="Type" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
             <SelectItem value="drive">Drive</SelectItem>
@@ -245,43 +351,25 @@ export default function AdminRechargePackManager() {
         </div>
       </div>
 
-      {/* Pack list */}
+      {/* Pack list with drag-and-drop */}
       <Card className="border-0 shadow-[var(--shadow-card)]">
         <CardContent className="p-0">
-          <div className="divide-y divide-border">
-            {filtered.map(p => (
-              <div key={p.id} className={`flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors ${!p.is_active ? "opacity-50" : ""}`}>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-sm font-medium text-foreground">{p.name}</p>
-                    <Badge variant="outline" className="text-[10px]">{p.operator}</Badge>
-                    {p.type === "drive" ? (
-                      <Badge className="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
-                        <Flame className="w-2.5 h-2.5 mr-0.5" /> Drive
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary" className="text-[10px]">{p.sub_category}</Badge>
-                    )}
-                    {p.tag && <Badge className="text-[10px]">{p.tag}</Badge>}
-                  </div>
-                  <p className="text-xs text-muted-foreground truncate">{p.details}</p>
-                  <p className="text-xs text-muted-foreground">
-                    ৳{p.price} · {p.validity}
-                    {p.cashback > 0 && ` · Cashback ৳${p.cashback}`}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openEdit(p)}>
-                    <Pencil className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => setDeletePack(p)}>
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                  <Switch checked={p.is_active} onCheckedChange={() => toggleActive(p)} />
-                </div>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={filtered.map(p => p.id)} strategy={verticalListSortingStrategy}>
+              <div className="divide-y divide-border">
+                {filtered.map(p => (
+                  <SortablePackRow
+                    key={p.id}
+                    pack={p}
+                    onEdit={openEdit}
+                    onDelete={setDeletePack}
+                    onToggle={toggleActive}
+                    onDuplicate={duplicatePack}
+                  />
+                ))}
               </div>
-            ))}
-          </div>
+            </SortableContext>
+          </DndContext>
           {filtered.length === 0 && (
             <p className="text-center text-muted-foreground py-8 text-sm">No packs found</p>
           )}
