@@ -402,6 +402,60 @@ export type Database = {
         }
         Relationships: []
       }
+      orders: {
+        Row: {
+          created_at: string
+          estimated_delivery: string | null
+          id: string
+          items: Json
+          notes: string | null
+          order_num: string
+          payment_method: string
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_name: string | null
+          shipping_phone: string | null
+          status: string
+          total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          estimated_delivery?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          order_num?: string
+          payment_method?: string
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_name?: string | null
+          shipping_phone?: string | null
+          status?: string
+          total?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          estimated_delivery?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          order_num?: string
+          payment_method?: string
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_name?: string | null
+          shipping_phone?: string | null
+          status?: string
+          total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       payment_sessions: {
         Row: {
           amount: number

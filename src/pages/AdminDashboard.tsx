@@ -5,7 +5,7 @@ import {
   Users, ArrowLeftRight, ShieldAlert, Store, UserCheck,
   TrendingUp, Activity, Search, RefreshCw, LogOut,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings,
-  ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw,
+  ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ import AdminActivityMonitor from "@/components/admin/AdminActivityMonitor";
 import AdminChargebackDialog from "@/components/admin/AdminChargebackDialog";
 import AdminChargebackHistory from "@/components/admin/AdminChargebackHistory";
 import UserLockDialog from "@/components/admin/UserLockDialog";
+import AdminOrderManagement from "@/components/admin/AdminOrderManagement";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 
 interface Stats {
@@ -92,6 +93,7 @@ const NAV_ITEMS = [
   { id: "disputes", label: "Disputes", icon: Scale },
   { id: "support", label: "Support", icon: MessageCircle },
   { id: "locks", label: "Locks", icon: Lock },
+  { id: "orders", label: "Orders", icon: Package },
   { id: "reporting", label: "Reports", icon: BarChart3 },
 ];
 
@@ -626,6 +628,9 @@ export default function AdminDashboard() {
 
         {/* ═══ FEATURE LOCKS ═══ */}
         {activeTab === "locks" && <AdminFeatureLocks />}
+
+        {/* ═══ ORDER MANAGEMENT ═══ */}
+        {activeTab === "orders" && <AdminOrderManagement />}
 
         {/* ═══ REPORTING DASHBOARD ═══ */}
         {activeTab === "reporting" && <AdminReporting />}

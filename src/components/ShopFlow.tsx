@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { getBalance, recordTransaction, addBalance, onBalanceChange, transferMoney } from "@/lib/balanceStore";
 import { useI18n } from "@/lib/i18n";
 import { fireSuccessConfetti } from "@/lib/confetti";
+import { supabase } from "@/integrations/supabase/client";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Product {
@@ -697,13 +698,33 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
     }
     const num = `ORD-${Date.now().toString(36).toUpperCase().slice(-6)}`;
     const dateStr = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const estDelivery = new Date(Date.now() + 5 * 86400000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
     const newOrder: Order = {
       id: `o${Date.now()}`, orderNum: num, date: dateStr, items: [...cart], total: cartTotal,
       address: selectedAddress, paymentMethod: payMethod, status: "processing",
-      estimatedDelivery: new Date(Date.now() + 5 * 86400000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      estimatedDelivery: estDelivery,
       timeline: makeTimeline("processing", dateStr),
     };
     setOrders(prev => [newOrder, ...prev]);
+
+    // Persist to database
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await supabase.from("orders").insert({
+        user_id: session.user.id,
+        order_num: num,
+        status: "processing",
+        total: cartTotal,
+        payment_method: payMethod,
+        shipping_name: selectedAddress.name,
+        shipping_address: `${selectedAddress.line1}, ${selectedAddress.line2}`,
+        shipping_city: selectedAddress.city,
+        shipping_phone: selectedAddress.phone,
+        items: cart.map(c => ({ id: c.id, name: c.name, brand: c.brand, price: c.price, qty: c.qty, emoji: c.emoji })),
+        estimated_delivery: estDelivery,
+      } as any);
+    }
+
     setOrderNum(num);
     setLastOrderTotal(cartTotal);
     setLastPayMethod(payMethod);
