@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   Package, Search, RefreshCw, ChevronDown, ChevronUp,
   Truck, CheckCircle2, XCircle, Clock, MapPin, CreditCard, Wallet,
-  Eye, Filter, Ban, Undo2, AlertTriangle,
+  Eye, Filter, Ban, Undo2, AlertTriangle, CheckSquare,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -77,6 +78,9 @@ export default function AdminOrderManagement() {
   const [cancelTarget, setCancelTarget] = useState<OrderRow | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState<string>("");
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -227,6 +231,14 @@ export default function AdminOrderManagement() {
     setCancelling(false);
   };
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
   const filtered = orders.filter(o => {
     const matchesStatus = statusFilter === "all" || o.status === statusFilter;
     const q = search.toLowerCase();
@@ -237,6 +249,37 @@ export default function AdminOrderManagement() {
       o.shipping_name?.toLowerCase().includes(q);
     return matchesStatus && matchesSearch;
   });
+
+  const bulkEligible = filtered.filter(o => o.status !== "delivered" && o.status !== "cancelled");
+
+  const toggleSelectAll = () => {
+    const allIds = bulkEligible.map(o => o.id);
+    const allSelected = allIds.length > 0 && allIds.every(id => selectedIds.has(id));
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(allIds));
+    }
+  };
+
+  const bulkUpdateStatus = async () => {
+    if (!bulkStatus || selectedIds.size === 0) return;
+    setBulkUpdating(true);
+    const ids = [...selectedIds];
+    const { error } = await supabase
+      .from("orders")
+      .update({ status: bulkStatus })
+      .in("id", ids);
+    if (error) {
+      toast.error("Failed to update orders");
+    } else {
+      toast.success(`${ids.length} order(s) updated to ${STATUS_CONFIG[bulkStatus]?.label ?? bulkStatus}`);
+      setOrders(prev => prev.map(o => ids.includes(o.id) ? { ...o, status: bulkStatus } : o));
+      setSelectedIds(new Set());
+      setBulkStatus("");
+    }
+    setBulkUpdating(false);
+  };
 
   const statusCounts = STATUS_OPTIONS.reduce((acc, s) => {
     acc[s] = orders.filter(o => o.status === s).length;
@@ -301,6 +344,49 @@ export default function AdminOrderManagement() {
         </Button>
       </div>
 
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="border-primary/30 bg-primary/5 shadow-[var(--shadow-card)]">
+            <CardContent className="p-3 flex flex-col sm:flex-row items-center gap-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <CheckSquare className="w-4 h-4 text-primary" />
+                {selectedIds.size} order{selectedIds.size !== 1 ? "s" : ""} selected
+              </div>
+              <div className="flex items-center gap-2 flex-1">
+                <Select value={bulkStatus} onValueChange={setBulkStatus}>
+                  <SelectTrigger className="w-full sm:w-44 h-8 text-xs">
+                    <SelectValue placeholder="Select new status…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.filter(s => s !== "cancelled").map(s => (
+                      <SelectItem key={s} value={s}>{STATUS_CONFIG[s].label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  className="h-8 text-xs gap-1"
+                  disabled={!bulkStatus || bulkUpdating}
+                  onClick={bulkUpdateStatus}
+                >
+                  {bulkUpdating ? <RefreshCw className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                  Apply
+                </Button>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 text-xs"
+                onClick={() => { setSelectedIds(new Set()); setBulkStatus(""); }}
+              >
+                Clear
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
       {/* Orders table */}
       <Card className="border-0 shadow-[var(--shadow-card)]">
         <CardHeader className="pb-2">
@@ -314,6 +400,13 @@ export default function AdminOrderManagement() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-muted-foreground">
+                  <th className="px-3 py-3 w-10">
+                    <Checkbox
+                      checked={bulkEligible.length > 0 && bulkEligible.every(o => selectedIds.has(o.id))}
+                      onCheckedChange={toggleSelectAll}
+                      aria-label="Select all"
+                    />
+                  </th>
                   <th className="text-left px-4 py-3 font-medium">Order #</th>
                   <th className="text-left px-4 py-3 font-medium">Customer</th>
                   <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Items</th>
@@ -327,7 +420,16 @@ export default function AdminOrderManagement() {
                 {filtered.map((order) => {
                   const cfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.processing;
                   return (
-                    <tr key={order.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                    <tr key={order.id} className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${selectedIds.has(order.id) ? "bg-primary/5" : ""}`}>
+                      <td className="px-3 py-3">
+                        {order.status !== "delivered" && order.status !== "cancelled" ? (
+                          <Checkbox
+                            checked={selectedIds.has(order.id)}
+                            onCheckedChange={() => toggleSelect(order.id)}
+                            aria-label={`Select order ${order.order_num}`}
+                          />
+                        ) : <span className="w-4 h-4 block" />}
+                      </td>
                       <td className="px-4 py-3 font-mono font-semibold text-foreground text-xs">
                         {order.order_num}
                       </td>
