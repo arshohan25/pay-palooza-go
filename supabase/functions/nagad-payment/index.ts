@@ -6,24 +6,53 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Nagad Payment Gateway endpoints
 const NAGAD_SANDBOX_BASE = "http://sandbox.mynagad.com:10080/remote-payment-gateway-1.0/api/dfs";
 const NAGAD_LIVE_BASE = "https://api.mynagad.com/api/dfs";
 
-function getBaseUrl(): string {
-  const mode = Deno.env.get("NAGAD_MODE") || "sandbox";
+interface NagadCredentials {
+  merchantId: string;
+  merchantPrivateKey: string;
+  pgPublicKey: string;
+  mode: string;
+}
+
+function getBaseUrl(mode: string): string {
   return mode === "live" ? NAGAD_LIVE_BASE : NAGAD_SANDBOX_BASE;
 }
 
-function getCredentials() {
+/**
+ * Read Nagad credentials from payment_gateways DB table (service role).
+ * Falls back to env vars for backward compatibility.
+ */
+async function getCredentials(supabaseAdmin: ReturnType<typeof createClient>): Promise<NagadCredentials> {
+  // Try DB first
+  const { data } = await supabaseAdmin
+    .from("payment_gateways")
+    .select("config, is_enabled")
+    .eq("provider", "nagad")
+    .maybeSingle();
+
+  if (data?.is_enabled && data.config) {
+    const c = data.config as Record<string, string>;
+    if (c.merchant_id && c.merchant_private_key && c.pg_public_key) {
+      return {
+        merchantId: c.merchant_id,
+        merchantPrivateKey: c.merchant_private_key,
+        pgPublicKey: c.pg_public_key,
+        mode: c.mode || "sandbox",
+      };
+    }
+  }
+
+  // Fallback to env vars
   const merchantId = Deno.env.get("NAGAD_MERCHANT_ID");
   const merchantPrivateKey = Deno.env.get("NAGAD_MERCHANT_PRIVATE_KEY");
   const pgPublicKey = Deno.env.get("NAGAD_PG_PUBLIC_KEY");
 
   if (!merchantId || !merchantPrivateKey || !pgPublicKey) {
-    throw new Error("Nagad credentials not configured. Required: NAGAD_MERCHANT_ID, NAGAD_MERCHANT_PRIVATE_KEY, NAGAD_PG_PUBLIC_KEY");
+    throw new Error("Nagad credentials not configured. Set them in Admin → Gateways or via environment variables.");
   }
-  return { merchantId, merchantPrivateKey, pgPublicKey };
+  return { merchantId, merchantPrivateKey, pgPublicKey, mode: Deno.env.get("NAGAD_MODE") || "sandbox" };
 }
 
 async function importPrivateKey(pem: string): Promise<CryptoKey> {
@@ -31,13 +60,7 @@ async function importPrivateKey(pem: string): Promise<CryptoKey> {
     .replace(/-----END (?:RSA )?PRIVATE KEY-----/g, "")
     .replace(/\s/g, "");
   const binaryDer = Uint8Array.from(atob(pemContent), (c) => c.charCodeAt(0));
-  return await crypto.subtle.importKey(
-    "pkcs8",
-    binaryDer,
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
+  return await crypto.subtle.importKey("pkcs8", binaryDer, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
 }
 
 async function importPublicKey(pem: string): Promise<CryptoKey> {
@@ -45,13 +68,7 @@ async function importPublicKey(pem: string): Promise<CryptoKey> {
     .replace(/-----END PUBLIC KEY-----/g, "")
     .replace(/\s/g, "");
   const binaryDer = Uint8Array.from(atob(pemContent), (c) => c.charCodeAt(0));
-  return await crypto.subtle.importKey(
-    "spki",
-    binaryDer,
-    { name: "RSA-OAEP", hash: "SHA-256" },
-    false,
-    ["encrypt"]
-  );
+  return await crypto.subtle.importKey("spki", binaryDer, { name: "RSA-OAEP", hash: "SHA-256" }, false, ["encrypt"]);
 }
 
 async function signData(data: string, privateKeyPem: string): Promise<string> {
@@ -89,9 +106,6 @@ const commonHeaders = {
   "X-KM-IP-V4": "192.168.0.1",
 };
 
-/**
- * Atomically credit a user's balance with idempotency check.
- */
 async function creditUserBalance(
   supabaseAdmin: ReturnType<typeof createClient>,
   userId: string,
@@ -99,7 +113,6 @@ async function creditUserBalance(
   description: string,
   reference: string
 ): Promise<{ success: boolean; alreadyCredited?: boolean }> {
-  // Idempotency: check if a completed transaction with this reference already exists
   const { data: existingTxn } = await supabaseAdmin
     .from("transactions")
     .select("id")
@@ -187,7 +200,7 @@ Deno.serve(async (req) => {
 
     if (action === "create") {
       const { amount, callbackURL } = await req.json();
-      const { merchantId, merchantPrivateKey, pgPublicKey } = getCredentials();
+      const creds = await getCredentials(supabaseAdmin);
 
       if (!amount || parseFloat(amount) <= 0) {
         return new Response(JSON.stringify({ error: "Invalid amount" }), {
@@ -198,27 +211,23 @@ Deno.serve(async (req) => {
 
       const orderId = generateOrderId();
       const timestamp = generateTimestamp();
-      const base = getBaseUrl();
+      const base = getBaseUrl(creds.mode);
 
-      // Step 1: Initialize payment
       const sensitiveData = JSON.stringify({
-        merchantId,
+        merchantId: creds.merchantId,
         datetime: timestamp,
         orderId,
         challenge: crypto.randomUUID(),
       });
 
-      const signature = await signData(sensitiveData, merchantPrivateKey);
-      const encryptedSensitiveData = await encryptData(sensitiveData, pgPublicKey);
+      const signature = await signData(sensitiveData, creds.merchantPrivateKey);
+      const encryptedSensitiveData = await encryptData(sensitiveData, creds.pgPublicKey);
 
       const initRes = await fetch(
-        `${base}/check-out/initialize/${merchantId}/${orderId}`,
+        `${base}/check-out/initialize/${creds.merchantId}/${orderId}`,
         {
           method: "POST",
-          headers: {
-            ...commonHeaders,
-            "X-KM-MC-Id": merchantId,
-          },
+          headers: { ...commonHeaders, "X-KM-MC-Id": creds.merchantId },
           body: JSON.stringify({
             accountNumber: "",
             dateTime: timestamp,
@@ -233,7 +242,6 @@ Deno.serve(async (req) => {
         throw new Error(`Nagad initialize failed: ${JSON.stringify(initData)}`);
       }
 
-      // Create session in DB
       const { data: session, error: sessionError } = await supabaseAdmin
         .from("payment_sessions")
         .insert({
@@ -242,38 +250,31 @@ Deno.serve(async (req) => {
           amount: parseFloat(amount),
           status: "pending",
           callback_url: callbackURL || null,
-          metadata: {
-            order_id: orderId,
-            init_response: initData,
-          },
+          metadata: { order_id: orderId, init_response: initData },
         })
         .select("id")
         .single();
 
       if (sessionError) throw sessionError;
 
-      // Step 2: Complete checkout (payment creation)
       const paymentReferenceId = initData.paymentReferenceId;
 
       const completeData = JSON.stringify({
-        merchantId,
+        merchantId: creds.merchantId,
         orderId,
         currencyCode: "050",
         amount: String(parseFloat(amount)),
         challenge: initData.challenge || crypto.randomUUID(),
       });
 
-      const completeSignature = await signData(completeData, merchantPrivateKey);
-      const encryptedCompleteData = await encryptData(completeData, pgPublicKey);
+      const completeSignature = await signData(completeData, creds.merchantPrivateKey);
+      const encryptedCompleteData = await encryptData(completeData, creds.pgPublicKey);
 
       const completeRes = await fetch(
         `${base}/check-out/complete/${paymentReferenceId}`,
         {
           method: "POST",
-          headers: {
-            ...commonHeaders,
-            "X-KM-MC-Id": merchantId,
-          },
+          headers: { ...commonHeaders, "X-KM-MC-Id": creds.merchantId },
           body: JSON.stringify({
             sensitiveData: encryptedCompleteData,
             signature: completeSignature,
@@ -285,20 +286,14 @@ Deno.serve(async (req) => {
 
       const completeResult = await completeRes.json();
 
-      // Update session with Nagad reference
       await supabaseAdmin
         .from("payment_sessions")
         .update({
           provider_payment_id: paymentReferenceId,
-          metadata: {
-            order_id: orderId,
-            init_response: initData,
-            complete_response: completeResult,
-          },
+          metadata: { order_id: orderId, init_response: initData, complete_response: completeResult },
         })
         .eq("id", session.id);
 
-      // Nagad returns a callbackUrl for redirect
       const nagadCallbackUrl = completeResult.callBackUrl || completeResult.callbackUrl;
 
       return new Response(
@@ -314,7 +309,6 @@ Deno.serve(async (req) => {
     }
 
     if (action === "verify") {
-      // Verify a payment after callback
       const { sessionId } = await req.json();
 
       const { data: session } = await supabaseAdmin
@@ -331,7 +325,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Idempotency: already completed
       if (session.status === "completed") {
         return new Response(
           JSON.stringify({ success: true, status: "completed", provider_trx_id: session.provider_trx_id, alreadyProcessed: true }),
@@ -339,25 +332,20 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Query Nagad for verification
-      const { merchantId } = getCredentials();
-      const base = getBaseUrl();
+      const creds = await getCredentials(supabaseAdmin);
+      const base = getBaseUrl(creds.mode);
 
       const verifyRes = await fetch(
         `${base}/verify/payment/${session.provider_payment_id}`,
         {
           method: "GET",
-          headers: {
-            ...commonHeaders,
-            "X-KM-MC-Id": merchantId,
-          },
+          headers: { ...commonHeaders, "X-KM-MC-Id": creds.merchantId },
         }
       );
 
       const verifyData = await verifyRes.json();
 
       if (verifyData.status === "Success" || verifyData.statusCode === "000") {
-        // Mark session completed FIRST (idempotency gate)
         const { data: updatedSession } = await supabaseAdmin
           .from("payment_sessions")
           .update({
@@ -366,19 +354,17 @@ Deno.serve(async (req) => {
             completed_at: new Date().toISOString(),
           })
           .eq("id", session.id)
-          .eq("status", "pending") // Only update if still pending
+          .eq("status", "pending")
           .select("id")
           .maybeSingle();
 
         if (!updatedSession) {
-          // Already processed
           return new Response(
             JSON.stringify({ success: true, status: "completed", alreadyProcessed: true }),
             { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
 
-        // Credit user's balance with idempotency
         const creditResult = await creditUserBalance(
           supabaseAdmin,
           userId,
@@ -387,7 +373,6 @@ Deno.serve(async (req) => {
           session.id as string
         );
 
-        // Audit log
         try {
           await supabaseAdmin.from("audit_logs").insert({
             actor_id: userId,

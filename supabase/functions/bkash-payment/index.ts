@@ -10,39 +10,68 @@ const corsHeaders = {
 const BKASH_SANDBOX_BASE = "https://tokenized.sandbox.bka.sh/v1.2.0-beta/tokenized/checkout";
 const BKASH_LIVE_BASE = "https://tokenized.pay.bka.sh/v1.2.0-beta/tokenized/checkout";
 
-function getBaseUrl(): string {
-  const mode = Deno.env.get("BKASH_MODE") || "sandbox";
+interface BkashCredentials {
+  appKey: string;
+  appSecret: string;
+  username: string;
+  password: string;
+  mode: string;
+}
+
+function getBaseUrl(mode: string): string {
   return mode === "live" ? BKASH_LIVE_BASE : BKASH_SANDBOX_BASE;
 }
 
-function getCredentials(): { appKey: string; appSecret: string; username: string; password: string } | null {
+/**
+ * Read bKash credentials from payment_gateways DB table (service role).
+ * Falls back to env vars for backward compatibility.
+ */
+async function getCredentials(supabaseAdmin: ReturnType<typeof createClient>): Promise<BkashCredentials | null> {
+  // Try DB first
+  const { data } = await supabaseAdmin
+    .from("payment_gateways")
+    .select("config, is_enabled")
+    .eq("provider", "bkash")
+    .maybeSingle();
+
+  if (data?.is_enabled && data.config) {
+    const c = data.config as Record<string, string>;
+    if (c.app_key && c.app_secret && c.username && c.password) {
+      return {
+        appKey: c.app_key,
+        appSecret: c.app_secret,
+        username: c.username,
+        password: c.password,
+        mode: c.mode || "sandbox",
+      };
+    }
+  }
+
+  // Fallback to env vars
   const appKey = Deno.env.get("BKASH_APP_KEY");
   const appSecret = Deno.env.get("BKASH_APP_SECRET");
   const username = Deno.env.get("BKASH_USERNAME");
   const password = Deno.env.get("BKASH_PASSWORD");
 
   if (!appKey || !appSecret || !username || !password) {
-    return null; // credentials not configured – use simulated mode
+    return null;
   }
-  return { appKey, appSecret, username, password };
+  return { appKey, appSecret, username, password, mode: Deno.env.get("BKASH_MODE") || "sandbox" };
 }
 
 /** Step 1: Grant Token */
-async function grantToken(): Promise<{ id_token: string; token_type: string }> {
-  const creds = getCredentials();
-  if (!creds) throw new Error("No credentials");
-  const { appKey, appSecret, username, password } = creds;
-  const base = getBaseUrl();
+async function grantToken(creds: BkashCredentials): Promise<{ id_token: string; token_type: string }> {
+  const base = getBaseUrl(creds.mode);
 
   const res = await fetch(`${base}/token/grant`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
-      username,
-      password,
+      username: creds.username,
+      password: creds.password,
     },
-    body: JSON.stringify({ app_key: appKey, app_secret: appSecret }),
+    body: JSON.stringify({ app_key: creds.appKey, app_secret: creds.appSecret }),
   });
 
   const data = await res.json();
@@ -53,16 +82,14 @@ async function grantToken(): Promise<{ id_token: string; token_type: string }> {
 }
 
 /** Step 2: Create Payment */
-async function createPayment(params: {
+async function createPayment(creds: BkashCredentials, params: {
   idToken: string;
   amount: string;
   merchantInvoiceNumber: string;
   callbackURL: string;
   payerReference: string;
 }): Promise<{ paymentID: string; bkashURL: string; statusCode: string }> {
-  const creds = getCredentials();
-  if (!creds) throw new Error("No credentials");
-  const base = getBaseUrl();
+  const base = getBaseUrl(creds.mode);
 
   const res = await fetch(`${base}/create`, {
     method: "POST",
@@ -90,11 +117,9 @@ async function createPayment(params: {
   return data;
 }
 
-/** Step 3: Execute Payment (called after user completes payment on bKash page) */
-async function executePayment(idToken: string, paymentID: string): Promise<Record<string, unknown>> {
-  const creds = getCredentials();
-  if (!creds) throw new Error("No credentials");
-  const base = getBaseUrl();
+/** Step 3: Execute Payment */
+async function executePayment(creds: BkashCredentials, idToken: string, paymentID: string): Promise<Record<string, unknown>> {
+  const base = getBaseUrl(creds.mode);
 
   const res = await fetch(`${base}/execute`, {
     method: "POST",
@@ -115,9 +140,7 @@ async function executePayment(idToken: string, paymentID: string): Promise<Recor
 }
 
 /**
- * Atomically credit a user's balance using row-level locking via RPC.
- * Falls back to a locked direct update if RPC fails (service role context).
- * Includes idempotency check to prevent duplicate credits.
+ * Atomically credit a user's balance with idempotency check.
  */
 async function creditUserBalance(
   supabaseAdmin: ReturnType<typeof createClient>,
@@ -126,7 +149,6 @@ async function creditUserBalance(
   description: string,
   reference: string
 ): Promise<{ success: boolean; alreadyCredited?: boolean }> {
-  // Idempotency: check if a completed transaction with this reference already exists
   const { data: existingTxn } = await supabaseAdmin
     .from("transactions")
     .select("id")
@@ -141,9 +163,6 @@ async function creditUserBalance(
     return { success: true, alreadyCredited: true };
   }
 
-  // Use SQL function for atomic balance update with row-level locking
-  // record_transaction uses auth.uid() so won't work with service role.
-  // We do a locked read-then-update instead.
   const { data: profile, error: profileError } = await supabaseAdmin.rpc("credit_user_balance", {
     p_user_id: userId,
     p_amount: amount,
@@ -155,8 +174,6 @@ async function creditUserBalance(
     return { success: true };
   }
 
-  // Fallback: manual atomic update (the RPC may not exist yet)
-  // Use a transaction-safe pattern: read with lock concept via unique reference
   const { data: currentProfile } = await supabaseAdmin
     .from("profiles")
     .select("balance")
@@ -229,7 +246,6 @@ Deno.serve(async (req) => {
     const userId = user.id;
 
     if (action === "create") {
-      // ─── Create Payment Session ───
       const { amount, payerReference, callbackURL } = await req.json();
 
       if (!amount || parseFloat(amount) <= 0) {
@@ -239,9 +255,8 @@ Deno.serve(async (req) => {
         });
       }
 
-      const creds = getCredentials();
+      const creds = await getCredentials(supabaseAdmin);
 
-      // ── Simulated mode when credentials are not configured ──
       if (!creds) {
         console.log("bKash: No credentials configured – using simulated mode");
         return new Response(
@@ -254,10 +269,8 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Grant token
-      const tokenData = await grantToken();
+      const tokenData = await grantToken(creds);
 
-      // Create payment session in DB first
       const { data: session, error: sessionError } = await supabaseAdmin
         .from("payment_sessions")
         .insert({
@@ -272,8 +285,7 @@ Deno.serve(async (req) => {
 
       if (sessionError) throw sessionError;
 
-      // Create bKash payment
-      const paymentData = await createPayment({
+      const paymentData = await createPayment(creds, {
         idToken: tokenData.id_token,
         amount: String(parseFloat(amount)),
         merchantInvoiceNumber: session.id,
@@ -281,7 +293,6 @@ Deno.serve(async (req) => {
         payerReference: payerReference || "01XXXXXXXXX",
       });
 
-      // Update session with bKash payment ID
       await supabaseAdmin
         .from("payment_sessions")
         .update({
@@ -302,10 +313,8 @@ Deno.serve(async (req) => {
     }
 
     if (action === "execute") {
-      // ─── Execute Payment after user returns from bKash ───
       const { sessionId, paymentID } = await req.json();
 
-      // Verify session belongs to user
       const { data: session } = await supabaseAdmin
         .from("payment_sessions")
         .select("*")
@@ -320,7 +329,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Idempotency: already completed
       if (session.status === "completed") {
         return new Response(JSON.stringify({ 
           success: true, 
@@ -333,14 +341,17 @@ Deno.serve(async (req) => {
         });
       }
 
+      const creds = await getCredentials(supabaseAdmin);
+      if (!creds) throw new Error("bKash credentials not available");
+
       const idToken = (session.metadata as Record<string, string>)?.id_token;
       if (!idToken) {
-        const tokenData = await grantToken();
-        const result = await executePayment(tokenData.id_token, paymentID || session.provider_payment_id);
+        const tokenData = await grantToken(creds);
+        const result = await executePayment(creds, tokenData.id_token, paymentID || session.provider_payment_id);
         return handleExecuteResult(supabaseAdmin, session, result);
       }
 
-      const result = await executePayment(idToken, paymentID || session.provider_payment_id);
+      const result = await executePayment(creds, idToken, paymentID || session.provider_payment_id);
       return handleExecuteResult(supabaseAdmin, session, result);
     }
 
@@ -390,8 +401,7 @@ async function handleExecuteResult(
   const transactionStatus = result.transactionStatus as string;
 
   if (transactionStatus === "Completed" && statusCode === "0000") {
-    // Mark session completed FIRST (idempotency gate)
-    const { data: updatedSession, error: updateError } = await supabaseAdmin
+    const { data: updatedSession } = await supabaseAdmin
       .from("payment_sessions")
       .update({
         status: "completed",
@@ -400,12 +410,11 @@ async function handleExecuteResult(
         metadata: { ...((session.metadata as Record<string, unknown>) || {}), execute_result: result },
       })
       .eq("id", session.id)
-      .eq("status", "pending") // Only update if still pending (idempotency)
+      .eq("status", "pending")
       .select("id")
       .maybeSingle();
 
     if (!updatedSession) {
-      // Session was already completed (duplicate callback)
       console.log(`bKash: session ${session.id} already processed, skipping credit`);
       return new Response(
         JSON.stringify({ success: true, trxID, transactionStatus: "Completed", alreadyProcessed: true }),
@@ -413,7 +422,6 @@ async function handleExecuteResult(
       );
     }
 
-    // Credit user's balance with idempotency check
     const creditResult = await creditUserBalance(
       supabaseAdmin,
       session.user_id as string,
@@ -426,7 +434,6 @@ async function handleExecuteResult(
       console.error(`bKash: failed to credit user ${session.user_id} for session ${session.id}`);
     }
 
-    // Audit log
     try {
       await supabaseAdmin.from("audit_logs").insert({
         actor_id: session.user_id as string,
@@ -449,7 +456,6 @@ async function handleExecuteResult(
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } else {
-    // Payment failed or cancelled
     await supabaseAdmin
       .from("payment_sessions")
       .update({

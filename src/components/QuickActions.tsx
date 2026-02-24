@@ -14,6 +14,7 @@ import {
 } from "./QuickActionIcons";
 import { useI18n } from "@/lib/i18n";
 import { useFeatureLocks } from "@/hooks/use-feature-locks";
+import { useGlobalToggles } from "@/hooks/use-global-toggles";
 
 const FEATURE_MAP: Record<string, string> = {
   send: "send_money",
@@ -51,6 +52,7 @@ interface QuickActionsProps {
 const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney, onRefer, onShop }: QuickActionsProps) => {
   const { t } = useI18n();
   const { isLocked } = useFeatureLocks();
+  const { isDisabled: isGloballyDisabled } = useGlobalToggles();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [ripples, setRipples] = useState<Record<string, RippleState | null>>({});
   const rippleCounterRef = useRef(0);
@@ -71,6 +73,12 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   }, []);
 
   const handleAction = (id: string, label: string) => {
+    // Check global toggle
+    const featureKey = FEATURE_MAP[id];
+    if (featureKey && isGloballyDisabled(featureKey)) {
+      toast.error(`${label} is currently unavailable.`);
+      return;
+    }
     if (id === "send") return onSendMoney();
     if (id === "cashout") return onCashOut();
     if (id === "payment") return onPayment();
@@ -92,6 +100,8 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
           const featureKey = FEATURE_MAP[action.id];
           const lockStatus = featureKey ? isLocked(featureKey) : { locked: false };
           const isFeatureLocked = lockStatus.locked;
+          const isGlobalOff = featureKey ? isGloballyDisabled(featureKey) : false;
+          const isUnavailable = isFeatureLocked || isGlobalOff;
 
           return (
             <motion.button
@@ -104,7 +114,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
               onTouchStart={(e) => triggerRipple(action.id, e)}
               onHoverStart={() => setHoveredId(action.id)}
               onHoverEnd={() => setHoveredId(null)}
-              className={`flex flex-col items-center gap-2.5 group outline-none relative ${isFeatureLocked ? "opacity-60" : ""}`}
+              className={`flex flex-col items-center gap-2.5 group outline-none relative ${isUnavailable ? "opacity-60" : ""}`}
             >
               <motion.div
                 data-ripple-container
