@@ -261,107 +261,31 @@ export default function AdminDashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col border-r border-border bg-card p-4 gap-1 fixed inset-y-0 left-0 z-30">
-        <div className="flex items-center gap-3 px-3 py-4 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-            <ShieldAlert className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="font-bold text-foreground text-lg leading-tight">Admin</h1>
-            <p className="text-xs text-muted-foreground">EasyPay Backoffice</p>
-          </div>
-        </div>
-
-        <ScrollArea className="flex-1">
-          <div className="space-y-1">
-            {NAV_ITEMS.map(item => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                  activeTab === item.id
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                <item.icon className="w-5 h-5" />
-                {item.label}
-                {item.id === "alerts" && stats.openAlerts > 0 && (
-                  <Badge variant="destructive" className="ml-auto text-xs px-1.5 py-0">
-                    {stats.openAlerts}
-                  </Badge>
-                )}
-                {item.id === "support" && supportUnread > 0 && (
-                  <Badge className="ml-auto text-xs px-1.5 py-0 bg-primary text-primary-foreground">
-                    {supportUnread}
-                  </Badge>
-                )}
-              </button>
-            ))}
-          </div>
-        </ScrollArea>
-
-        <div className="mt-auto space-y-2 pt-4 border-t border-border">
-          <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground" onClick={() => navigate("/")}>
-            <ChevronLeft className="w-4 h-4" /> Back to App
-          </Button>
-          <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground" onClick={() => signOut()}>
-            <LogOut className="w-4 h-4" /> Sign Out
-          </Button>
-        </div>
-      </aside>
-
-      {/* Main content */}
-      <main className="flex-1 p-4 md:p-8 overflow-auto md:ml-64">
-        {/* Mobile nav */}
-        <div className="md:hidden mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Top header */}
+      <header className="sticky top-0 z-30 bg-card border-b border-border">
+        <div className="flex items-center justify-between px-4 md:px-6 py-3">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="shrink-0">
               <ChevronLeft className="w-5 h-5" />
             </Button>
-            <h1 className="font-bold text-lg text-foreground">Admin</h1>
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                <ShieldAlert className="w-4 h-4 text-primary-foreground" />
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="font-bold text-foreground text-base leading-tight">Admin</h1>
+                <p className="text-[10px] text-muted-foreground">EasyPay Backoffice</p>
+              </div>
+              <h1 className="sm:hidden font-bold text-foreground text-base">Admin</h1>
+            </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={loadData} disabled={refreshing}>
-            <RefreshCw className={`w-5 h-5 ${refreshing ? "animate-spin" : ""}`} />
-          </Button>
-        </div>
-
-        {/* Mobile tabs - horizontally scrollable */}
-        <div className="md:hidden mb-4">
-          <ScrollArea className="w-full">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="inline-flex w-auto gap-1">
-                {NAV_ITEMS.map(item => (
-                  <TabsTrigger key={item.id} value={item.id} className="text-xs whitespace-nowrap relative">
-                    <item.icon className="w-3.5 h-3.5 mr-1" />
-                    {item.label}
-                    {item.id === "support" && supportUnread > 0 && (
-                      <span className="ml-1 min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
-                        {supportUnread}
-                      </span>
-                    )}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
-        </div>
-
-        {/* Header bar (desktop) */}
-        <div className="hidden md:flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-2xl font-bold text-foreground capitalize">{activeTab === "alerts" ? "Fraud Detection" : activeTab}</h2>
-            <p className="text-sm text-muted-foreground">EasyPay MFS Admin Backoffice</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="relative">
+          <div className="flex items-center gap-2">
+            <div className="relative hidden md:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Search users, transactions…"
-                className="pl-10 w-72"
+                className="pl-10 w-64"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
@@ -369,8 +293,46 @@ export default function AdminDashboard() {
             <Button variant="outline" size="icon" onClick={loadData} disabled={refreshing}>
               <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
             </Button>
+            <Button variant="ghost" size="icon" className="hidden md:inline-flex" onClick={() => signOut()}>
+              <LogOut className="w-4 h-4" />
+            </Button>
           </div>
         </div>
+
+        {/* Horizontal nav menubar */}
+        <ScrollArea className="w-full">
+          <nav className="flex items-center gap-0.5 px-4 md:px-6 pb-2">
+            {NAV_ITEMS.map(item => (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                  activeTab === item.id
+                    ? "bg-primary/10 text-primary border border-primary/20"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"
+                }`}
+              >
+                <item.icon className="w-3.5 h-3.5" />
+                {item.label}
+                {item.id === "alerts" && stats.openAlerts > 0 && (
+                  <span className="min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {stats.openAlerts}
+                  </span>
+                )}
+                {item.id === "support" && supportUnread > 0 && (
+                  <span className="min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {supportUnread}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      </header>
+
+      {/* Main content */}
+      <main className="flex-1 p-4 md:p-8 overflow-auto">
 
         {/* ═══ OVERVIEW ═══ */}
         {activeTab === "overview" && (
