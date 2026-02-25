@@ -1,0 +1,151 @@
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, Ticket, MessageCircle, Clock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/lib/i18n";
+import { format } from "date-fns";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import SupportChat from "@/components/SupportChat";
+
+interface Conversation {
+  id: string;
+  subject: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+const statusConfig: Record<string, { icon: typeof Clock; class: string }> = {
+  open: { icon: Clock, class: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
+  closed: { icon: CheckCircle2, class: "text-muted-foreground bg-muted border-border" },
+  resolved: { icon: CheckCircle2, class: "text-primary bg-primary/10 border-primary/20" },
+};
+
+const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
+  const { t } = useI18n();
+  const [tickets, setTickets] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedTicket, setSelectedTicket] = useState<Conversation | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) { setLoading(false); return; }
+      setUserId(session.user.id);
+      const { data } = await supabase
+        .from("support_conversations")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .order("created_at", { ascending: false });
+      setTickets(data ?? []);
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  const getStatusKey = (status: string) => {
+    if (status === "open") return "open";
+    if (status === "resolved") return "resolved";
+    return "closed";
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      transition={{ duration: 0.3 }}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <button
+          onClick={onBack}
+          className="w-9 h-9 rounded-2xl bg-card border border-border/60 flex items-center justify-center hover:bg-muted/60 transition-colors"
+        >
+          <ArrowLeft size={16} />
+        </button>
+        <div>
+          <h1 className="text-lg font-bold text-foreground">{t("myTickets")}</h1>
+          <p className="text-xs text-muted-foreground">{t("myTicketsSub")}</p>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : tickets.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-16 h-16 rounded-3xl gradient-primary flex items-center justify-center text-primary-foreground mb-4">
+            <Ticket size={28} />
+          </div>
+          <p className="font-semibold text-foreground">{t("noTicketsYet")}</p>
+          <p className="text-sm text-muted-foreground mt-1">{t("noTicketsDesc")}</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <AnimatePresence>
+            {tickets.map((ticket, i) => {
+              const statusKey = getStatusKey(ticket.status);
+              const cfg = statusConfig[statusKey] || statusConfig.open;
+              const StatusIcon = cfg.icon;
+              return (
+                <motion.button
+                  key={ticket.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  onClick={() => setSelectedTicket(ticket)}
+                  className="w-full bg-card rounded-2xl border border-border/60 p-4 text-left hover:bg-muted/40 active:bg-muted/60 transition-colors shadow-card"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${cfg.class}`}>
+                      <StatusIcon size={16} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13.5px] font-semibold text-foreground truncate">
+                        {ticket.subject || "General Support"}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${cfg.class}`}>
+                          {t(statusKey as any)}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {format(new Date(ticket.created_at), "MMM d, yyyy")}
+                        </span>
+                      </div>
+                    </div>
+                    <MessageCircle size={14} className="text-muted-foreground/50 mt-1 shrink-0" />
+                  </div>
+                </motion.button>
+              );
+            })}
+          </AnimatePresence>
+        </div>
+      )}
+
+      {/* Chat Sheet for selected ticket */}
+      <Sheet open={!!selectedTicket} onOpenChange={(open) => { if (!open) setSelectedTicket(null); }}>
+        <SheetContent side="bottom" className="rounded-t-3xl h-[85vh] flex flex-col p-0">
+          <SheetHeader className="px-6 pt-5 pb-3">
+            <SheetTitle className="text-base truncate">
+              {selectedTicket?.subject || "General Support"}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-hidden">
+            {userId ? (
+              <SupportChat userId={userId} />
+            ) : (
+              <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                {t("signInToContact")}
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+    </motion.div>
+  );
+};
+
+export default MyTicketsPage;
