@@ -6,13 +6,12 @@ import {
   TrendingUp, Activity, Search, RefreshCw, LogOut,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
+  Menu,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useAdmin, fetchAdminStats, fetchRecentTransactions, fetchAllUsers, fetchFraudAlerts, fetchAllAgents, fetchAllMerchants, toggleUserStatus, toggleAgentStatus, toggleMerchantStatus } from "@/hooks/use-admin";
 import { toast } from "sonner";
 import { signOut } from "@/lib/auth";
@@ -155,6 +154,7 @@ export default function AdminDashboard() {
   const [userSubTab, setUserSubTab] = useState<"users" | "agents" | "merchants">("users");
   const [lockTarget, setLockTarget] = useState<{ userId: string; label: string } | null>(null);
   const [chargebackTarget, setChargebackTarget] = useState<any>(null);
+  const [showNavMenu, setShowNavMenu] = useState(false);
 
   const loadData = useCallback(async () => {
     setRefreshing(true);
@@ -265,7 +265,7 @@ export default function AdminDashboard() {
       {/* Top header */}
       <header className="sticky top-0 z-30 bg-card border-b border-border">
         <div className="flex items-center justify-between px-4 md:px-6 py-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="shrink-0">
               <ChevronLeft className="w-5 h-5" />
             </Button>
@@ -273,11 +273,7 @@ export default function AdminDashboard() {
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <ShieldAlert className="w-4 h-4 text-primary-foreground" />
               </div>
-              <div className="hidden sm:block">
-                <h1 className="font-bold text-foreground text-base leading-tight">Admin</h1>
-                <p className="text-[10px] text-muted-foreground">EasyPay Backoffice</p>
-              </div>
-              <h1 className="sm:hidden font-bold text-foreground text-base">Admin</h1>
+              <h1 className="font-bold text-foreground text-base">Admin</h1>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -300,35 +296,80 @@ export default function AdminDashboard() {
         </div>
 
         {/* Horizontal nav menubar */}
-        <ScrollArea className="w-full">
-          <nav className="flex items-center gap-0.5 px-4 md:px-6 pb-2">
-            {NAV_ITEMS.map(item => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                  activeTab === item.id
-                    ? "bg-primary/10 text-primary border border-primary/20"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"
-                }`}
-              >
-                <item.icon className="w-3.5 h-3.5" />
-                {item.label}
-                {item.id === "alerts" && stats.openAlerts > 0 && (
-                  <span className="min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
-                    {stats.openAlerts}
-                  </span>
-                )}
-                {item.id === "support" && supportUnread > 0 && (
-                  <span className="min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
-                    {supportUnread}
-                  </span>
-                )}
-              </button>
-            ))}
-          </nav>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+        <div className="flex items-center gap-1 px-4 md:px-6 pb-2">
+          {/* Hamburger menu for full nav list */}
+          <div className="relative shrink-0">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-7 w-7 rounded-lg"
+              onClick={() => setShowNavMenu(!showNavMenu)}
+            >
+              <Menu className="w-3.5 h-3.5" />
+            </Button>
+            {showNavMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowNavMenu(false)} />
+                <div className="absolute left-0 top-full mt-1 z-50 bg-card border border-border rounded-xl shadow-lg p-2 w-52 max-h-[70vh] overflow-y-auto">
+                  {NAV_ITEMS.map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => { setActiveTab(item.id); setShowNavMenu(false); }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        activeTab === item.id
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }`}
+                    >
+                      <item.icon className="w-4 h-4 shrink-0" />
+                      {item.label}
+                      {item.id === "alerts" && stats.openAlerts > 0 && (
+                        <span className="ml-auto min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                          {stats.openAlerts}
+                        </span>
+                      )}
+                      {item.id === "support" && supportUnread > 0 && (
+                        <span className="ml-auto min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                          {supportUnread}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Scrollable tabs */}
+          <div className="flex-1 overflow-x-auto scrollbar-hide">
+            <nav className="flex items-center gap-0.5 w-max">
+              {NAV_ITEMS.map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                    activeTab === item.id
+                      ? "bg-primary/10 text-primary border border-primary/20"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"
+                  }`}
+                >
+                  <item.icon className="w-3.5 h-3.5" />
+                  {item.label}
+                  {item.id === "alerts" && stats.openAlerts > 0 && (
+                    <span className="min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                      {stats.openAlerts}
+                    </span>
+                  )}
+                  {item.id === "support" && supportUnread > 0 && (
+                    <span className="min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                      {supportUnread}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </div>
       </header>
 
       {/* Main content */}
