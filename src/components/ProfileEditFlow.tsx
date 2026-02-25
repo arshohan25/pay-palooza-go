@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, Camera, CheckCircle2, AlertCircle, User, Mail, Pencil } from "lucide-react";
+import { ChevronLeft, Camera, CheckCircle2, AlertCircle, User, Mail, Pencil, Send, ShieldCheck } from "lucide-react";
 import { haptics } from "@/lib/haptics";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,9 +62,15 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
   const [photo, setPhoto]         = useState(getDisplayPhoto());
   const [nameError, setNameError] = useState("");
   const [email, setEmail]         = useState("");
-  const [confirmEmail, setConfirmEmail] = useState("");
   const [emailError, setEmailError]     = useState("");
   const [savedEmail, setSavedEmail]     = useState<string | null>(null);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [otpSent, setOtpSent]     = useState(false);
+  const [otp, setOtp]             = useState("");
+  const [otpError, setOtpError]   = useState("");
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [otpCooldown, setOtpCooldown]   = useState(0);
   const [saved, setSaved]         = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [saving, setSaving]       = useState(false);
@@ -82,12 +88,19 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
         .single();
       if (data?.email) {
         setEmail(data.email);
-        setConfirmEmail(data.email);
         setSavedEmail(data.email);
+        setEmailVerified(true); // existing email is already verified
       }
     };
     load();
   }, []);
+
+  // Cooldown timer
+  useEffect(() => {
+    if (otpCooldown <= 0) return;
+    const t = setTimeout(() => setOtpCooldown(otpCooldown - 1), 1000);
+    return () => clearTimeout(t);
+  }, [otpCooldown]);
 
   const handlePhotoFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -118,17 +131,82 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
     if (nameError) setNameError(validateName(v));
   };
 
+  const handleSendOtp = async () => {
+    const trimmed = email.trim();
+    const emailErr = validateEmail(trimmed);
+    if (emailErr || !trimmed) { setEmailError(emailErr || "Email is required."); haptics.error(); return; }
+
+    setSendingOtp(true);
+    setEmailError("");
+    setOtpError("");
+    try {
+      const { data, error } = await supabase.functions.invoke("send-email-otp", {
+        body: { email: trimmed, action: "send" },
+      });
+      if (error) throw error;
+      if (data?.error) { setEmailError(data.error); haptics.error(); return; }
+      setOtpSent(true);
+      setOtpCooldown(60);
+      haptics.light();
+      // DEV: show OTP in toast for testing
+      if (data?.dev_otp) {
+        toast.info(`Dev OTP: ${data.dev_otp}`, { duration: 15000 });
+      }
+      toast.success("OTP sent to your email");
+    } catch {
+      toast.error("Failed to send OTP");
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (otp.length !== 6) { setOtpError("Enter the 6-digit OTP"); haptics.error(); return; }
+    setVerifyingOtp(true);
+    setOtpError("");
+    try {
+      const { data, error } = await supabase.functions.invoke("send-email-otp", {
+        body: { email: email.trim(), action: "verify", code: otp },
+      });
+      if (error) throw error;
+      if (data?.error) { setOtpError(data.error); haptics.error(); return; }
+      if (data?.verified) {
+        setEmailVerified(true);
+        haptics.success();
+        toast.success("Email verified!");
+      }
+    } catch {
+      toast.error("Verification failed");
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
+  const handleEmailChange = (v: string) => {
+    setEmail(v);
+    if (emailError) setEmailError("");
+    // If email changed from saved, reset verification
+    if (v.trim() !== (savedEmail ?? "")) {
+      setEmailVerified(false);
+      setOtpSent(false);
+      setOtp("");
+      setOtpError("");
+    } else {
+      setEmailVerified(true); // back to saved email = already verified
+    }
+  };
+
   const handleSave = async () => {
     const nameErr = validateName(name);
     if (nameErr) { setNameError(nameErr); haptics.error(); return; }
 
-    // Validate email
     const trimmedEmail = email.trim();
     if (trimmedEmail) {
       const emailErr = validateEmail(trimmedEmail);
       if (emailErr) { setEmailError(emailErr); haptics.error(); return; }
-      if (trimmedEmail !== confirmEmail.trim()) {
-        setEmailError("Email addresses do not match.");
+      // Must verify if email changed
+      if (trimmedEmail !== (savedEmail ?? "") && !emailVerified) {
+        setEmailError("Please verify your email with OTP first.");
         haptics.error();
         return;
       }
@@ -138,7 +216,6 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
     setDisplayName(name.trim());
     setDisplayPhoto(photo);
 
-    // Save email to database if changed
     if (trimmedEmail !== (savedEmail ?? "")) {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
@@ -164,7 +241,7 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
   };
 
   const emailChanged = email.trim() !== (savedEmail ?? "");
-  const hasChanges = name !== getDisplayName() || photo !== getDisplayPhoto() || emailChanged;
+  const hasChanges = name !== getDisplayName() || photo !== getDisplayPhoto() || (emailChanged && emailVerified);
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
@@ -303,33 +380,89 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
                 <label className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground px-1 flex items-center gap-1.5">
                   <Mail size={11} /> Email Address
                 </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError(""); }}
-                  maxLength={255}
-                  placeholder="your@email.com"
-                  className={`w-full h-14 px-4 text-base font-semibold bg-card border-2 rounded-2xl focus:outline-none transition-all placeholder:font-normal placeholder:text-muted-foreground/40 ${
-                    emailError ? "border-destructive" : "border-border focus:border-primary focus:shadow-glow"
-                  }`}
-                />
-                {email.trim() && (
-                  <div className="pt-1">
-                    <label className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground px-1 flex items-center gap-1.5 mb-2">
-                      <Mail size={11} /> Confirm Email
-                    </label>
-                    <input
-                      type="email"
-                      value={confirmEmail}
-                      onChange={(e) => { setConfirmEmail(e.target.value); if (emailError) setEmailError(""); }}
-                      maxLength={255}
-                      placeholder="Re-enter your email"
-                      className={`w-full h-14 px-4 text-base font-semibold bg-card border-2 rounded-2xl focus:outline-none transition-all placeholder:font-normal placeholder:text-muted-foreground/40 ${
-                        emailError ? "border-destructive" : "border-border focus:border-primary focus:shadow-glow"
-                      }`}
-                    />
-                  </div>
-                )}
+                <div className="relative">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => handleEmailChange(e.target.value)}
+                    maxLength={255}
+                    placeholder="your@email.com"
+                    
+                    className={`w-full h-14 px-4 pr-24 text-base font-semibold bg-card border-2 rounded-2xl focus:outline-none transition-all placeholder:font-normal placeholder:text-muted-foreground/40 ${
+                      emailError ? "border-destructive" : emailVerified && email.trim() ? "border-primary/50" : "border-border focus:border-primary focus:shadow-glow"
+                    }`}
+                  />
+                  {email.trim() && emailVerified && (
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                      <ShieldCheck size={11} /> Verified
+                    </span>
+                  )}
+                  {email.trim() && !emailVerified && !otpSent && (
+                    <button
+                      onClick={handleSendOtp}
+                      disabled={sendingOtp}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[11px] font-bold text-primary-foreground gradient-primary px-3 py-1.5 rounded-xl disabled:opacity-50 transition-opacity"
+                    >
+                      <Send size={11} /> {sendingOtp ? "Sending…" : "Send OTP"}
+                    </button>
+                  )}
+                </div>
+
+                {/* OTP input */}
+                <AnimatePresence>
+                  {otpSent && !emailVerified && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="space-y-2 pt-1"
+                    >
+                      <label className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground px-1 flex items-center gap-1.5">
+                        <ShieldCheck size={11} /> Enter OTP
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={otp}
+                          onChange={(e) => { setOtp(e.target.value.replace(/\D/g, "").slice(0, 6)); if (otpError) setOtpError(""); }}
+                          maxLength={6}
+                          placeholder="6-digit code"
+                          className={`flex-1 h-14 px-4 text-center text-lg font-bold tracking-[0.3em] bg-card border-2 rounded-2xl focus:outline-none transition-all placeholder:font-normal placeholder:text-muted-foreground/40 placeholder:tracking-normal ${
+                            otpError ? "border-destructive" : "border-border focus:border-primary focus:shadow-glow"
+                          }`}
+                        />
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          onClick={handleVerifyOtp}
+                          disabled={otp.length !== 6 || verifyingOtp}
+                          className="h-14 px-5 gradient-primary text-primary-foreground font-bold text-sm rounded-2xl shadow-glow disabled:opacity-40 disabled:cursor-not-allowed transition-opacity flex items-center gap-1.5"
+                        >
+                          <CheckCircle2 size={15} />
+                          {verifyingOtp ? "…" : "Verify"}
+                        </motion.button>
+                      </div>
+                      {otpError && (
+                        <p className="text-xs text-destructive flex items-center gap-1.5 px-1">
+                          <AlertCircle size={12} /> {otpError}
+                        </p>
+                      )}
+                      <div className="flex items-center justify-between px-1">
+                        <p className="text-[11px] text-muted-foreground">
+                          Check your email for the verification code
+                        </p>
+                        <button
+                          onClick={handleSendOtp}
+                          disabled={otpCooldown > 0 || sendingOtp}
+                          className="text-[11px] font-semibold text-primary disabled:text-muted-foreground transition-colors"
+                        >
+                          {otpCooldown > 0 ? `Resend in ${otpCooldown}s` : "Resend OTP"}
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 <AnimatePresence>
                   {emailError && (
                     <motion.p
@@ -340,9 +473,6 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
                     </motion.p>
                   )}
                 </AnimatePresence>
-                <p className="text-[11px] text-muted-foreground px-1">
-                  Enter your email twice to confirm. This prevents typos.
-                </p>
               </div>
 
               {/* Save button */}
