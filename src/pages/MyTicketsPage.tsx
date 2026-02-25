@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Ticket, MessageCircle, Clock, CheckCircle2, Loader2, Plus, Lock, Info } from "lucide-react";
+import { ArrowLeft, Ticket, MessageCircle, Clock, CheckCircle2, Loader2, Plus, Lock, Info, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import { format } from "date-fns";
@@ -17,12 +17,54 @@ interface Conversation {
   status: string;
   created_at: string;
   updated_at: string;
+  rating: number | null;
+  user_last_read_at: string | null;
+}
+
+interface UnreadCounts {
+  [conversationId: string]: number;
 }
 
 const statusConfig: Record<string, { icon: typeof Clock; class: string }> = {
   open: { icon: Clock, class: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
   closed: { icon: CheckCircle2, class: "text-muted-foreground bg-muted border-border" },
   resolved: { icon: CheckCircle2, class: "text-primary bg-primary/10 border-primary/20" },
+};
+
+const StarRating = ({
+  rating,
+  onRate,
+  readonly,
+}: {
+  rating: number | null;
+  onRate?: (r: number) => void;
+  readonly?: boolean;
+}) => {
+  const [hover, setHover] = useState(0);
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          disabled={readonly}
+          onClick={(e) => { e.stopPropagation(); onRate?.(star); }}
+          onMouseEnter={() => !readonly && setHover(star)}
+          onMouseLeave={() => !readonly && setHover(0)}
+          className={`transition-colors ${readonly ? "cursor-default" : "cursor-pointer hover:scale-110"}`}
+        >
+          <Star
+            size={14}
+            className={
+              (hover || rating || 0) >= star
+                ? "fill-amber-400 text-amber-400"
+                : "text-muted-foreground/30"
+            }
+          />
+        </button>
+      ))}
+    </div>
+  );
 };
 
 const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
@@ -35,6 +77,7 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
   const [ticketSubject, setTicketSubject] = useState("");
   const [ticketDesc, setTicketDesc] = useState("");
   const [ticketLoading, setTicketLoading] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState<UnreadCounts>({});
 
   const loadTickets = async (uid?: string) => {
     const id = uid ?? userId;
@@ -44,7 +87,27 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
       .select("*")
       .eq("user_id", id)
       .order("created_at", { ascending: false });
-    setTickets(data ?? []);
+    setTickets((data as Conversation[]) ?? []);
+    if (data) loadUnreadCounts(data as Conversation[], id);
+  };
+
+  const loadUnreadCounts = async (convos: Conversation[], uid: string) => {
+    const counts: UnreadCounts = {};
+    await Promise.all(
+      convos.map(async (c) => {
+        let query = supabase
+          .from("support_messages")
+          .select("id", { count: "exact", head: true })
+          .eq("conversation_id", c.id)
+          .eq("sender_role", "admin");
+        if (c.user_last_read_at) {
+          query = query.gt("created_at", c.user_last_read_at);
+        }
+        const { count } = await query;
+        if (count && count > 0) counts[c.id] = count;
+      })
+    );
+    setUnreadCounts(counts);
   };
 
   useEffect(() => {
@@ -68,6 +131,11 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
         { event: "*", schema: "public", table: "support_conversations", filter: `user_id=eq.${userId}` },
         () => { loadTickets(); }
       )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "support_messages" },
+        () => { loadTickets(); }
+      )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [userId]);
@@ -76,6 +144,31 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
     if (status === "open") return "open";
     if (status === "resolved") return "resolved";
     return "closed";
+  };
+
+  const handleRate = async (ticketId: string, rating: number) => {
+    const { error } = await supabase
+      .from("support_conversations")
+      .update({ rating } as any)
+      .eq("id", ticketId);
+    if (error) {
+      toast.error(t("ticketFailed"));
+    } else {
+      toast.success(t("ratingSubmitted"));
+      setTickets((prev) => prev.map((t) => t.id === ticketId ? { ...t, rating } : t));
+    }
+  };
+
+  const handleOpenTicket = async (ticket: Conversation) => {
+    setSelectedTicket(ticket);
+    // Mark as read
+    if (userId) {
+      await supabase
+        .from("support_conversations")
+        .update({ user_last_read_at: new Date().toISOString() })
+        .eq("id", ticket.id);
+      setUnreadCounts((prev) => { const n = { ...prev }; delete n[ticket.id]; return n; });
+    }
   };
 
   const handleSubmitTicket = async () => {
@@ -167,6 +260,7 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
               const cfg = statusConfig[statusKey] || statusConfig.open;
               const StatusIcon = cfg.icon;
               const isClosed = statusKey === "closed" || statusKey === "resolved";
+              const unread = unreadCounts[ticket.id] || 0;
               return (
                 <motion.div
                   key={ticket.id}
@@ -175,7 +269,7 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
                   transition={{ delay: i * 0.05 }}
                 >
                   <button
-                    onClick={() => { if (isClosed) return; setSelectedTicket(ticket); }}
+                    onClick={() => { if (isClosed) return; handleOpenTicket(ticket); }}
                     className={`w-full bg-card rounded-2xl border border-border/60 p-4 text-left transition-colors shadow-card ${isClosed ? "opacity-60 cursor-not-allowed" : "hover:bg-muted/40 active:bg-muted/60"}`}
                   >
                     <div className="flex items-start gap-3">
@@ -195,19 +289,43 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
                           </span>
                         </div>
                       </div>
-                      {isClosed ? (
-                        <Lock size={14} className="text-muted-foreground/50 mt-1 shrink-0" />
-                      ) : (
-                        <MessageCircle size={14} className="text-muted-foreground/50 mt-1 shrink-0" />
-                      )}
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        {isClosed ? (
+                          <Lock size={14} className="text-muted-foreground/50 mt-1" />
+                        ) : (
+                          <div className="relative">
+                            <MessageCircle size={14} className="text-muted-foreground/50 mt-1" />
+                            {unread > 0 && (
+                              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">
+                                {unread > 9 ? "9+" : unread}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </button>
+                  {/* Closed ticket hint + rating */}
                   {isClosed && (
-                    <div className="flex items-start gap-1.5 mt-1.5 px-2">
-                      <Info size={12} className="text-muted-foreground/60 shrink-0 mt-0.5" />
-                      <p className="text-[10px] text-muted-foreground/70 leading-snug">
-                        {t("ticketClosedHint")}
-                      </p>
+                    <div className="mt-1.5 px-2 space-y-1.5">
+                      <div className="flex items-start gap-1.5">
+                        <Info size={12} className="text-muted-foreground/60 shrink-0 mt-0.5" />
+                        <p className="text-[10px] text-muted-foreground/70 leading-snug">
+                          {t("ticketClosedHint")}
+                        </p>
+                      </div>
+                      {statusKey === "resolved" && (
+                        <div className="flex items-center gap-2 pl-0.5" onClick={(e) => e.stopPropagation()}>
+                          <span className="text-[10px] text-muted-foreground font-medium">
+                            {ticket.rating ? t("yourRating") : t("rateExperience")}
+                          </span>
+                          <StarRating
+                            rating={ticket.rating}
+                            readonly={!!ticket.rating}
+                            onRate={(r) => handleRate(ticket.id, r)}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </motion.div>

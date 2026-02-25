@@ -791,6 +791,7 @@ export type Database = {
           admin_last_read_at: string | null
           created_at: string
           id: string
+          rating: number | null
           status: string
           subject: string | null
           updated_at: string
@@ -801,6 +802,7 @@ export type Database = {
           admin_last_read_at?: string | null
           created_at?: string
           id?: string
+          rating?: number | null
           status?: string
           subject?: string | null
           updated_at?: string
@@ -811,6 +813,7 @@ export type Database = {
           admin_last_read_at?: string | null
           created_at?: string
           id?: string
+          rating?: number | null
           status?: string
           subject?: string | null
           updated_at?: string
