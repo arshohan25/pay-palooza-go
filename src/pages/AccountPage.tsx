@@ -5,7 +5,7 @@ import {
   Shield, Bell, Fingerprint, BarChart3, CreditCard,
   Gift, Lock, LogOut, BadgeCheck, AlertCircle,
   BellOff, Pencil, PlayCircle, Globe,
-  MessageCircle, Mail, Ticket,
+  MessageCircle, Mail, Ticket, ClipboardList,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ import SupportChat from "@/components/SupportChat";
 import LimitsPage from "@/pages/LimitsPage";
 import SpendingInsightsPage from "@/pages/SpendingInsightsPage";
 import ReferPage from "@/pages/ReferPage";
+import MyTicketsPage from "@/pages/MyTicketsPage";
 import { generateWalletId } from "@/lib/walletId";
 import { useI18n } from "@/lib/i18n";
 import { useUserRoles } from "@/hooks/use-user-roles";
@@ -38,7 +39,7 @@ const ROLE_STYLES: Record<string, { label: string; bg: string; text: string }> =
 
 const ONBOARDING_KEY = "mfs_onboarding_done";
 
-type SubPage = "limits" | "insights" | "refer" | null;
+type SubPage = "limits" | "insights" | "refer" | "tickets" | null;
 
 
 
@@ -165,6 +166,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   if (subPage === "limits")   return <LimitsPage           onBack={() => setSubPage(null)} />;
   if (subPage === "insights") return <SpendingInsightsPage onBack={() => setSubPage(null)} />;
   if (subPage === "refer")    return <ReferPage            onBack={() => setSubPage(null)} />;
+  if (subPage === "tickets")  return <MyTicketsPage        onBack={() => setSubPage(null)} />;
 
   const handleCopy = async () => {
     try { await navigator.clipboard.writeText(walletId); }
@@ -309,27 +311,34 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
         </Section>
 
         {/* ── Support & Help ── */}
-        <Section title="Support & Help">
+        <Section title={t("sectionSupport")}>
           <MenuRow
             icon={MessageCircle}
             iconClass="gradient-primary"
-            label="Live Chat"
-            sub="Chat with our support team"
+            label={t("liveChat")}
+            sub={t("liveChatSub")}
             onClick={() => setShowSupport(true)}
           />
           <MenuRow
             icon={Ticket}
             iconClass="gradient-send"
-            label="Submit a Ticket"
-            sub="Describe your issue in detail"
+            label={t("submitTicket")}
+            sub={t("submitTicketSub")}
             onClick={() => setShowTicketForm(true)}
           />
           <MenuRow
             icon={Mail}
             iconClass="gradient-accent"
-            label="Email Us"
+            label={t("emailUs")}
             sub="EasyPay@smartshop.bd"
             onClick={() => window.open("mailto:EasyPay@smartshop.bd?subject=Support%20Request", "_self")}
+          />
+          <MenuRow
+            icon={ClipboardList}
+            iconClass="gradient-cashout"
+            label={t("myTickets")}
+            sub={t("myTicketsSub")}
+            onClick={() => setSubPage("tickets")}
           />
         </Section>
 
@@ -373,14 +382,14 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
       <Sheet open={showSupport} onOpenChange={setShowSupport}>
         <SheetContent side="bottom" className="rounded-t-3xl h-[85vh] flex flex-col p-0">
           <SheetHeader className="px-6 pt-5 pb-3">
-            <SheetTitle className="text-base">Live Chat — Support</SheetTitle>
+            <SheetTitle className="text-base">{t("liveChatTitle")}</SheetTitle>
           </SheetHeader>
           <div className="flex-1 overflow-hidden">
             {userId ? (
               <SupportChat userId={userId} />
             ) : (
               <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                Please sign in to contact support.
+                {t("signInToContact")}
               </div>
             )}
           </div>
@@ -391,11 +400,11 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
       <Sheet open={showTicketForm} onOpenChange={(open) => { setShowTicketForm(open); if (!open) { setTicketSubject(""); setTicketDesc(""); } }}>
         <SheetContent side="bottom" className="rounded-t-3xl p-0">
           <SheetHeader className="px-6 pt-5 pb-3">
-            <SheetTitle className="text-base">Submit a Support Ticket</SheetTitle>
+            <SheetTitle className="text-base">{t("submitTicketTitle")}</SheetTitle>
           </SheetHeader>
           <div className="px-6 pb-8 space-y-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Subject</label>
+              <label className="text-xs font-semibold text-muted-foreground">{t("ticketSubject")}</label>
               <Input
                 placeholder="e.g. Email change request"
                 value={ticketSubject}
@@ -403,9 +412,9 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Description</label>
+              <label className="text-xs font-semibold text-muted-foreground">{t("ticketDescription")}</label>
               <Textarea
-                placeholder="Describe your issue in detail..."
+                placeholder={t("submitTicketSub")}
                 value={ticketDesc}
                 onChange={(e) => setTicketDesc(e.target.value)}
                 rows={4}
@@ -415,7 +424,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
               className="w-full"
               disabled={!ticketSubject.trim() || ticketLoading}
               onClick={async () => {
-                if (!userId) { toast.error("Please sign in first."); return; }
+                if (!userId) { toast.error(t("signInFirst")); return; }
                 setTicketLoading(true);
                 const { error } = await supabase.from("support_conversations").insert({
                   user_id: userId,
@@ -423,9 +432,8 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
                   status: "open",
                 });
                 if (error) {
-                  toast.error("Failed to submit ticket.");
+                  toast.error(t("ticketFailed"));
                 } else {
-                  // Optionally add the description as the first message
                   if (ticketDesc.trim()) {
                     const { data: convos } = await supabase
                       .from("support_conversations")
@@ -442,7 +450,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
                       });
                     }
                   }
-                  toast.success("Ticket submitted successfully!");
+                  toast.success(t("ticketSubmitted"));
                   setShowTicketForm(false);
                   setTicketSubject("");
                   setTicketDesc("");
@@ -450,7 +458,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
                 setTicketLoading(false);
               }}
             >
-              {ticketLoading ? "Submitting…" : "Submit Ticket"}
+              {ticketLoading ? t("submitting") : t("submitTicketBtn")}
             </Button>
           </div>
         </SheetContent>
