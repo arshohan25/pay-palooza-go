@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { Resend } from "npm:resend@4.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,6 +9,7 @@ const corsHeaders = {
 
 const OTP_EXPIRY_MINUTES = 5;
 const MAX_OTP_PER_HOUR = 5;
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -106,13 +108,34 @@ Deno.serve(async (req) => {
       expires_at: expiresAt,
     });
 
-    console.log(`[DEV] Email OTP for ${email}: ${otpCode}`);
+    // Send email via Resend
+    const { error: emailError } = await resend.emails.send({
+      from: "PayPalooza <onboarding@resend.dev>",
+      to: [email],
+      subject: "Your verification code",
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
+          <h2 style="color: #333; margin-bottom: 8px;">Verification Code</h2>
+          <p style="color: #666; font-size: 14px;">Use the code below to verify your email address. It expires in ${OTP_EXPIRY_MINUTES} minutes.</p>
+          <div style="background: #f4f4f4; border-radius: 8px; padding: 20px; text-align: center; margin: 24px 0;">
+            <span style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #333;">${otpCode}</span>
+          </div>
+          <p style="color: #999; font-size: 12px;">If you didn't request this, you can safely ignore this email.</p>
+        </div>
+      `,
+    });
+
+    if (emailError) {
+      console.error("Resend error:", emailError);
+      // Still return success since OTP is stored — user can retry
+    }
+
+    console.log(`OTP generated for ${email}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         message: "OTP sent to your email.",
-        dev_otp: otpCode, // DEV ONLY - remove in production
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
