@@ -343,6 +343,7 @@ const translations = {
   categoryBreakdown: { en: "Category Breakdown", bn: "শ্রেণী বিশ্লেষণ" },
   thisMonth: { en: "This month", bn: "এই মাস" },
   topMerchants: { en: "Top Merchants", bn: "শীর্ষ মার্চেন্ট" },
+  cashbackEarned: { en: "Cashback Earned", bn: "ক্যাশব্যাক অর্জিত" },
 
   // ─── Limits & Charges Page ───
   limitsTitle: { en: "Limits & Charges", bn: "সীমা ও চার্জ" },
