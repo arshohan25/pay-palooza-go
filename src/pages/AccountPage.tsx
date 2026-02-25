@@ -5,14 +5,11 @@ import {
   Shield, Bell, Fingerprint, BarChart3, CreditCard,
   Gift, Lock, LogOut, BadgeCheck, AlertCircle,
   BellOff, Pencil, PlayCircle, Globe,
-  MessageCircle, Mail, Ticket, ClipboardList,
+  MessageCircle, Mail, ClipboardList,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import ChangePinFlow from "@/components/ChangePinFlow";
 import KycFlow from "@/components/KycFlow";
 import ProfileEditFlow, { getDisplayName, getDisplayPhoto } from "@/components/ProfileEditFlow";
@@ -138,10 +135,6 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const [displayPhoto, setDisplayPhotoState] = useState(getDisplayPhoto);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [showSupport, setShowSupport] = useState(false);
-  const [showTicketForm, setShowTicketForm] = useState(false);
-  const [ticketSubject, setTicketSubject] = useState("");
-  const [ticketDesc, setTicketDesc] = useState("");
-  const [ticketLoading, setTicketLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
   const { roles } = useUserRoles();
@@ -320,13 +313,6 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
             onClick={() => setShowSupport(true)}
           />
           <MenuRow
-            icon={Ticket}
-            iconClass="gradient-send"
-            label={t("submitTicket")}
-            sub={t("submitTicketSub")}
-            onClick={() => setShowTicketForm(true)}
-          />
-          <MenuRow
             icon={Mail}
             iconClass="gradient-accent"
             label={t("emailUs")}
@@ -396,73 +382,6 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
         </SheetContent>
       </Sheet>
 
-      {/* Ticket Form Sheet */}
-      <Sheet open={showTicketForm} onOpenChange={(open) => { setShowTicketForm(open); if (!open) { setTicketSubject(""); setTicketDesc(""); } }}>
-        <SheetContent side="bottom" className="rounded-t-3xl p-0">
-          <SheetHeader className="px-6 pt-5 pb-3">
-            <SheetTitle className="text-base">{t("submitTicketTitle")}</SheetTitle>
-          </SheetHeader>
-          <div className="px-6 pb-8 space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">{t("ticketSubject")}</label>
-              <Input
-                placeholder="e.g. Email change request"
-                value={ticketSubject}
-                onChange={(e) => setTicketSubject(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">{t("ticketDescription")}</label>
-              <Textarea
-                placeholder={t("submitTicketSub")}
-                value={ticketDesc}
-                onChange={(e) => setTicketDesc(e.target.value)}
-                rows={4}
-              />
-            </div>
-            <Button
-              className="w-full"
-              disabled={!ticketSubject.trim() || ticketLoading}
-              onClick={async () => {
-                if (!userId) { toast.error(t("signInFirst")); return; }
-                setTicketLoading(true);
-                const { error } = await supabase.from("support_conversations").insert({
-                  user_id: userId,
-                  subject: ticketSubject.trim(),
-                  status: "open",
-                });
-                if (error) {
-                  toast.error(t("ticketFailed"));
-                } else {
-                  if (ticketDesc.trim()) {
-                    const { data: convos } = await supabase
-                      .from("support_conversations")
-                      .select("id")
-                      .eq("user_id", userId)
-                      .order("created_at", { ascending: false })
-                      .limit(1);
-                    if (convos?.[0]) {
-                      await supabase.from("support_messages").insert({
-                        conversation_id: convos[0].id,
-                        sender_id: userId,
-                        sender_role: "user",
-                        content: ticketDesc.trim(),
-                      });
-                    }
-                  }
-                  toast.success(t("ticketSubmitted"));
-                  setShowTicketForm(false);
-                  setTicketSubject("");
-                  setTicketDesc("");
-                }
-                setTicketLoading(false);
-              }}
-            >
-              {ticketLoading ? t("submitting") : t("submitTicketBtn")}
-            </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
     </>
   );
 };
