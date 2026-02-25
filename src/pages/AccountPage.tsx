@@ -189,18 +189,6 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
                 <p className="text-[17px] font-bold">{displayName}</p>
                 <KycBadge verified />
               </div>
-              {roles.length > 0 && (
-                <div className="flex items-center gap-1.5 flex-wrap mt-1">
-                  {roles.map((role) => {
-                    const s = ROLE_STYLES[role] ?? { label: role, bg: "bg-muted", text: "text-muted-foreground" };
-                    return (
-                      <span key={role} className={`inline-flex items-center text-[9px] font-bold px-2 py-0.5 rounded-full ${s.bg} ${s.text} border border-white/15`}>
-                        {s.label}
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
               <p className="text-[13px] opacity-80 mt-0.5 font-medium">{registeredPhone ? `+880 ${registeredPhone}` : "—"}</p>
               <p className="text-[11px] opacity-55 truncate">{USER_EMAIL}</p>
             </div>
