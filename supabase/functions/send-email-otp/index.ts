@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
 
     // Send email via Resend
     const { error: emailError } = await resend.emails.send({
-      from: "PayPalooza <onboarding@resend.dev>",
+      from: "EasyPay <EasyPay@smartshop.bd>",
       to: [email],
       subject: "Your verification code",
       html: `
