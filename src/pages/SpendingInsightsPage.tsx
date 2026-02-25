@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
-import { ArrowLeft, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Gift } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { TxCashbackIcon } from "@/components/QuickActionIcons";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -83,6 +85,33 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
   const { t } = useI18n();
   const [activeMonth, setActiveMonth] = useState("Jan");
 
+  const [cashbackTotal, setCashbackTotal] = useState(0);
+  const [cashbackCount, setCashbackCount] = useState(0);
+  const [cashbackLoading, setCashbackLoading] = useState(true);
+
+  // Fetch cashback transactions for this month
+  useEffect(() => {
+    const fetchCashback = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const { data } = await supabase
+        .from("transactions")
+        .select("amount")
+        .eq("user_id", session.user.id)
+        .eq("type", "addmoney")
+        .eq("status", "completed")
+        .gte("created_at", monthStart)
+        .like("description", "Drive Cashback:%");
+      const txns = data ?? [];
+      setCashbackTotal(txns.reduce((s, t) => s + Number(t.amount), 0));
+      setCashbackCount(txns.length);
+      setCashbackLoading(false);
+    };
+    fetchCashback();
+  }, []);
+
   const DONUT_DATA = DONUT_RAW.map(d => ({ ...d, name: t(d.key) }));
   const donutTotal = DONUT_DATA.reduce((s, d) => s + d.value, 0);
 
@@ -145,6 +174,34 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
           </div>
         </motion.div>
       </div>
+
+      {/* Cashback Summary Widget */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
+        className="bg-card rounded-3xl border border-border/60 shadow-card p-4 relative overflow-hidden"
+      >
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-2xl gradient-primary flex items-center justify-center shadow-md">
+            <Gift size={18} className="text-primary-foreground" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-foreground">{t("cashbackEarned")}</p>
+            <p className="text-[11px] text-muted-foreground">{t("thisMonth")}</p>
+          </div>
+        </div>
+        {cashbackLoading ? (
+          <div className="h-8 w-24 rounded-lg bg-muted animate-pulse" />
+        ) : (
+          <div className="flex items-end gap-3">
+            <p className="text-[26px] font-extrabold text-primary">
+              ৳{cashbackTotal.toLocaleString("en-BD", { minimumFractionDigits: 2 })}
+            </p>
+            <span className="text-xs text-muted-foreground mb-1.5">
+              {cashbackCount} {cashbackCount === 1 ? "recharge" : "recharges"}
+            </span>
+          </div>
+        )}
+      </motion.div>
 
       {/* Monthly bar chart */}
       <motion.div
