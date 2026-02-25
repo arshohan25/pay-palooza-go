@@ -129,6 +129,7 @@ const translations = {
   open: { en: "Open", bn: "খোলা" },
   closed: { en: "Closed", bn: "বন্ধ" },
   resolved: { en: "Resolved", bn: "সমাধান হয়েছে" },
+  ticketClosedHint: { en: "This ticket has been closed and cannot be reopened. Please submit a new ticket for further assistance.", bn: "এই টিকেটটি বন্ধ হয়ে গেছে এবং পুনরায় খোলা যাবে না। আরও সহায়তার জন্য একটি নতুন টিকেট জমা দিন।" },
   liveChatTitle: { en: "Live Chat — Support", bn: "লাইভ চ্যাট — সাপোর্ট" },
   submitTicketTitle: { en: "Submit a Support Ticket", bn: "সাপোর্ট টিকেট জমা দিন" },
   signInFirst: { en: "Please sign in first.", bn: "অনুগ্রহ করে আগে সাইন ইন করুন।" },

@@ -16,10 +16,11 @@ interface Message {
 
 interface SupportChatProps {
   userId: string;
+  conversationId?: string;
 }
 
-const SupportChat = ({ userId }: SupportChatProps) => {
-  const [conversationId, setConversationId] = useState<string | null>(null);
+const SupportChat = ({ userId, conversationId: externalConvId }: SupportChatProps) => {
+  const [conversationId, setConversationId] = useState<string | null>(externalConvId ?? null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -38,24 +39,29 @@ const SupportChat = ({ userId }: SupportChatProps) => {
     if (!userId) return;
     const init = async () => {
       setLoading(true);
-      const { data: convs } = await supabase
-        .from("support_conversations")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("status", "open")
-        .order("created_at", { ascending: false })
-        .limit(1);
-
       let convId: string;
-      if (convs && convs.length > 0) {
-        convId = convs[0].id;
+
+      if (externalConvId) {
+        convId = externalConvId;
       } else {
-        const { data: newConv } = await supabase
+        const { data: convs } = await supabase
           .from("support_conversations")
-          .insert({ user_id: userId, subject: "Agent Support" })
           .select("id")
-          .single();
-        convId = newConv!.id;
+          .eq("user_id", userId)
+          .eq("status", "open")
+          .order("created_at", { ascending: false })
+          .limit(1);
+
+        if (convs && convs.length > 0) {
+          convId = convs[0].id;
+        } else {
+          const { data: newConv } = await supabase
+            .from("support_conversations")
+            .insert({ user_id: userId, subject: "Agent Support" })
+            .select("id")
+            .single();
+          convId = newConv!.id;
+        }
       }
       setConversationId(convId);
 
