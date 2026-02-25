@@ -380,6 +380,34 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
                 <label className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground px-1 flex items-center gap-1.5">
                   <Mail size={11} /> Email Address
                 </label>
+
+                {/* Warning: email cannot be changed after saving */}
+                {!savedEmail && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2.5"
+                  >
+                    <AlertCircle size={14} className="text-amber-500 mt-0.5 shrink-0" />
+                    <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
+                      <span className="font-bold">Important:</span> Once your email is verified and saved, it cannot be changed or removed without contacting support.
+                    </p>
+                  </motion.div>
+                )}
+
+                {savedEmail && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-start gap-2 bg-muted/60 border border-border rounded-xl px-3 py-2.5"
+                  >
+                    <AlertCircle size={14} className="text-muted-foreground mt-0.5 shrink-0" />
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      Your email is locked. To change it, please contact support.
+                    </p>
+                  </motion.div>
+                )}
+
                 <div className="relative">
                   <input
                     type="email"
@@ -387,8 +415,8 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
                     onChange={(e) => handleEmailChange(e.target.value)}
                     maxLength={255}
                     placeholder="your@email.com"
-                    
-                    className={`w-full h-14 px-4 pr-24 text-base font-semibold bg-card border-2 rounded-2xl focus:outline-none transition-all placeholder:font-normal placeholder:text-muted-foreground/40 ${
+                    disabled={!!savedEmail}
+                    className={`w-full h-14 px-4 pr-24 text-base font-semibold bg-card border-2 rounded-2xl focus:outline-none transition-all placeholder:font-normal placeholder:text-muted-foreground/40 disabled:opacity-60 disabled:cursor-not-allowed ${
                       emailError ? "border-destructive" : emailVerified && email.trim() ? "border-primary/50" : "border-border focus:border-primary focus:shadow-glow"
                     }`}
                   />
