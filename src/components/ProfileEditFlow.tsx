@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, Camera, CheckCircle2, AlertCircle, User, Mail, Pencil, Send, ShieldCheck } from "lucide-react";
+import { ChevronLeft, Camera, CheckCircle2, AlertCircle, User, Mail, Pencil, Send, ShieldCheck, MessageCircle } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import SupportChat from "@/components/SupportChat";
 import { haptics } from "@/lib/haptics";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,6 +76,8 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
   const [saved, setSaved]         = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [saving, setSaving]       = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
+  const [userId, setUserId]       = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load existing email from profile
@@ -81,6 +85,7 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
     const load = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
+      setUserId(session.user.id);
       const { data } = await supabase
         .from("profiles")
         .select("email")
@@ -89,7 +94,7 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
       if (data?.email) {
         setEmail(data.email);
         setSavedEmail(data.email);
-        setEmailVerified(true); // existing email is already verified
+        setEmailVerified(true);
       }
     };
     load();
@@ -402,9 +407,17 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
                     className="flex items-start gap-2 bg-muted/60 border border-border rounded-xl px-3 py-2.5"
                   >
                     <AlertCircle size={14} className="text-muted-foreground mt-0.5 shrink-0" />
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      Your email is locked. To change it, please contact support.
-                    </p>
+                    <div className="flex-1">
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        Your email is locked. To change it, please contact support.
+                      </p>
+                      <button
+                        onClick={() => setShowSupport(true)}
+                        className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] font-bold text-primary hover:underline"
+                      >
+                        <MessageCircle size={12} /> Open Live Chat
+                      </button>
+                    </div>
                   </motion.div>
                 )}
 
@@ -518,6 +531,23 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
           )}
         </AnimatePresence>
       </div>
+      {/* Support Chat Sheet */}
+      <Sheet open={showSupport} onOpenChange={setShowSupport}>
+        <SheetContent side="bottom" className="rounded-t-3xl h-[85vh] flex flex-col p-0">
+          <SheetHeader className="px-6 pt-5 pb-3">
+            <SheetTitle className="text-base">Support — Email Change Request</SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-hidden">
+            {userId ? (
+              <SupportChat userId={userId} />
+            ) : (
+              <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                Please sign in to contact support.
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
