@@ -1,36 +1,25 @@
 
 
-## Plan: Integrate Resend to Deliver Email OTPs
+## Plan: Add Support Section to Account Page
 
-### Problem
-The `send-email-otp` edge function currently only logs OTP codes to the console (`[DEV]`). Users never receive the OTP in their inbox.
+### What's Changing
+A new **"Support & Help"** section will be added to the Account page (between Notifications and Security sections) with three options:
 
-### Solution
-Integrate the Resend email service into the existing `send-email-otp` edge function to actually send OTP codes via email.
+1. **Live Chat** — Opens the existing `SupportChat` component in a bottom sheet (reusing the same pattern from ProfileEditFlow)
+2. **Support Ticket** — Opens a form to submit a support ticket (subject + description) saved to the `support_conversations` table with status "open"
+3. **Email Support** — Opens the user's email client with a pre-filled `mailto:` link to `EasyPay@smartshop.bd`
 
-### Prerequisites (User Action Required)
-1. Sign up at [resend.com](https://resend.com) if not already done
-2. Verify an email domain at [resend.com/domains](https://resend.com/domains) (or use the sandbox `onboarding@resend.dev` for testing)
-3. Create an API key at [resend.com/api-keys](https://resend.com/api-keys)
-4. Provide the `RESEND_API_KEY` so it can be stored securely as a backend secret
+### Technical Details
 
-### Technical Changes
+**File: `src/pages/AccountPage.tsx`**
+- Import `SupportChat`, `Sheet`/`SheetContent`/`SheetHeader`/`SheetTitle`, and new icons (`MessageCircle`, `Mail`, `Ticket`)
+- Add `showSupport` and `userId` state variables
+- Fetch `userId` from the auth session in the existing `useEffect`
+- Add a new `<Section title="Support & Help">` block with three `<MenuRow>` entries:
+  - **Live Chat**: sets `showSupport = true`, opens a bottom `Sheet` with `<SupportChat userId={userId} />`
+  - **Submit a Ticket**: sets `showTicketForm = true`, opens a bottom `Sheet` with a simple form (subject input + description textarea + submit button) that inserts into `support_conversations`
+  - **Email Us**: triggers `window.open("mailto:EasyPay@smartshop.bd?subject=Support Request")` directly
+- Add the two `Sheet` components at the bottom of the JSX alongside the existing modals
 
-**1. Add `RESEND_API_KEY` secret**
-- Use the `add_secret` tool to request the key from the user
-
-**2. Update `supabase/functions/send-email-otp/index.ts`**
-- Import Resend SDK (`npm:resend@4.0.0`)
-- After generating the OTP and storing it in the database, send an email via Resend with:
-  - **From**: A verified sender address (e.g., `noreply@yourdomain.com`)
-  - **To**: The user's email
-  - **Subject**: "Your verification code"
-  - **Body**: A clean HTML email containing the 6-digit OTP code
-- Remove the `dev_otp` field from the JSON response (no longer needed since real emails are sent)
-- Keep the console log as a fallback/audit trail but mark it differently
-
-### No Other Changes Needed
-- The frontend (`ProfileEditFlow.tsx`) already handles the OTP input and verification flow
-- The database schema (`otp_codes` table) remains unchanged
-- The verify action in the same edge function remains unchanged
+**No database or edge function changes needed** — reuses existing `support_conversations` and `support_messages` tables and the `SupportChat` component.
 
