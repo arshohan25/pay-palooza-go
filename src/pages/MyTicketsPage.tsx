@@ -58,6 +58,20 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
     load();
   }, []);
 
+  // Real-time subscription for ticket status changes
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel("my-tickets-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "support_conversations", filter: `user_id=eq.${userId}` },
+        () => { loadTickets(); }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [userId]);
+
   const getStatusKey = (status: string) => {
     if (status === "open") return "open";
     if (status === "resolved") return "resolved";
@@ -158,8 +172,8 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  onClick={() => setSelectedTicket(ticket)}
-                  className="w-full bg-card rounded-2xl border border-border/60 p-4 text-left hover:bg-muted/40 active:bg-muted/60 transition-colors shadow-card"
+                  onClick={() => { if (statusKey !== "closed" && statusKey !== "resolved") setSelectedTicket(ticket); }}
+                  className={`w-full bg-card rounded-2xl border border-border/60 p-4 text-left transition-colors shadow-card ${statusKey === "closed" || statusKey === "resolved" ? "opacity-60 cursor-not-allowed" : "hover:bg-muted/40 active:bg-muted/60"}`}
                 >
                   <div className="flex items-start gap-3">
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${cfg.class}`}>
