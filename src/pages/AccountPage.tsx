@@ -4,7 +4,7 @@ import {
   Copy, CheckCheck, ChevronRight,
   Shield, Bell, Fingerprint, BarChart3, CreditCard,
   Gift, Lock, LogOut, BadgeCheck, AlertCircle,
-  BellOff, Pencil, PlayCircle, Globe, Mail, Plus, Check, X,
+  BellOff, Pencil, PlayCircle, Globe,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -130,9 +130,6 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const [displayName, setDisplayNameState]   = useState(getDisplayName);
   const [displayPhoto, setDisplayPhotoState] = useState(getDisplayPhoto);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [showEmailInput, setShowEmailInput] = useState(false);
-  const [emailDraft, setEmailDraft] = useState("");
-  const [savingEmail, setSavingEmail] = useState(false);
 
   const { roles } = useUserRoles();
   const registeredPhone = getRegisteredPhone();
@@ -152,30 +149,6 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
     };
     fetchEmail();
   }, []);
-
-  const handleSaveEmail = async () => {
-    const trimmed = emailDraft.trim();
-    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
-    setSavingEmail(true);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) { setSavingEmail(false); return; }
-    const { error } = await supabase
-      .from("profiles")
-      .update({ email: trimmed } as any)
-      .eq("user_id", session.user.id);
-    setSavingEmail(false);
-    if (error) {
-      toast.error("Failed to save email");
-    } else {
-      setUserEmail(trimmed);
-      setShowEmailInput(false);
-      setEmailDraft("");
-      toast.success("Email saved successfully");
-    }
-  };
   if (subPage === "limits")   return <LimitsPage           onBack={() => setSubPage(null)} />;
   if (subPage === "insights") return <SpendingInsightsPage onBack={() => setSubPage(null)} />;
   if (subPage === "refer")    return <ReferPage            onBack={() => setSubPage(null)} />;
@@ -193,9 +166,19 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
     toast.success(t("walletIdCopied"));
   };
 
-  const handleProfileSaved = () => {
+  const handleProfileSaved = async () => {
     setDisplayNameState(getDisplayName());
     setDisplayPhotoState(getDisplayPhoto());
+    // Refresh email from DB
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("user_id", session.user.id)
+        .single();
+      setUserEmail(data?.email ?? null);
+    }
   };
 
   return (
@@ -234,33 +217,8 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
                 <KycBadge verified />
               </div>
               <p className="text-[13px] opacity-80 mt-0.5 font-medium">{registeredPhone ? `+880 ${registeredPhone}` : "—"}</p>
-              {userEmail ? (
+              {userEmail && (
                 <p className="text-[11px] opacity-55 truncate">{userEmail}</p>
-              ) : showEmailInput ? (
-                <div className="flex items-center gap-1.5 mt-1">
-                  <input
-                    type="email"
-                    value={emailDraft}
-                    onChange={(e) => setEmailDraft(e.target.value)}
-                    placeholder="your@email.com"
-                    className="text-[12px] bg-white/15 border border-white/20 rounded-lg px-2 py-1 text-primary-foreground placeholder:text-white/40 outline-none focus:border-white/40 w-40"
-                    autoFocus
-                    onKeyDown={(e) => e.key === "Enter" && handleSaveEmail()}
-                  />
-                  <button onClick={handleSaveEmail} disabled={savingEmail} className="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors">
-                    <Check size={12} />
-                  </button>
-                  <button onClick={() => { setShowEmailInput(false); setEmailDraft(""); }} className="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-                    <X size={12} />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowEmailInput(true)}
-                  className="flex items-center gap-1 mt-1 text-[11px] opacity-60 hover:opacity-90 transition-opacity"
-                >
-                  <Plus size={10} /> Add email
-                </button>
               )}
             </div>
           </div>

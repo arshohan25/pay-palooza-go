@@ -1,8 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Camera, CheckCircle2, AlertCircle, User, Mail, Pencil } from "lucide-react";
 import { haptics } from "@/lib/haptics";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
 const NAME_KEY   = "mfs_display_name";
@@ -19,6 +20,13 @@ const validateName = (n: string) => {
   if (n.trim().length < 2) return "Name must be at least 2 characters.";
   if (n.trim().length > 40) return "Name must be under 40 characters.";
   if (!/^[\p{L}\s'-]+$/u.test(n.trim())) return "Name can only contain letters, spaces, hyphens and apostrophes.";
+  return "";
+};
+
+const validateEmail = (e: string) => {
+  if (!e.trim()) return ""; // optional
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim())) return "Please enter a valid email address.";
+  if (e.trim().length > 255) return "Email must be under 255 characters.";
   return "";
 };
 
@@ -53,9 +61,33 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
   const [name, setName]           = useState(getDisplayName());
   const [photo, setPhoto]         = useState(getDisplayPhoto());
   const [nameError, setNameError] = useState("");
+  const [email, setEmail]         = useState("");
+  const [confirmEmail, setConfirmEmail] = useState("");
+  const [emailError, setEmailError]     = useState("");
+  const [savedEmail, setSavedEmail]     = useState<string | null>(null);
   const [saved, setSaved]         = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [saving, setSaving]       = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load existing email from profile
+  useEffect(() => {
+    const load = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("user_id", session.user.id)
+        .single();
+      if (data?.email) {
+        setEmail(data.email);
+        setConfirmEmail(data.email);
+        setSavedEmail(data.email);
+      }
+    };
+    load();
+  }, []);
 
   const handlePhotoFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -86,11 +118,43 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
     if (nameError) setNameError(validateName(v));
   };
 
-  const handleSave = () => {
-    const err = validateName(name);
-    if (err) { setNameError(err); haptics.error(); return; }
+  const handleSave = async () => {
+    const nameErr = validateName(name);
+    if (nameErr) { setNameError(nameErr); haptics.error(); return; }
+
+    // Validate email
+    const trimmedEmail = email.trim();
+    if (trimmedEmail) {
+      const emailErr = validateEmail(trimmedEmail);
+      if (emailErr) { setEmailError(emailErr); haptics.error(); return; }
+      if (trimmedEmail !== confirmEmail.trim()) {
+        setEmailError("Email addresses do not match.");
+        haptics.error();
+        return;
+      }
+    }
+
+    setSaving(true);
     setDisplayName(name.trim());
     setDisplayPhoto(photo);
+
+    // Save email to database if changed
+    if (trimmedEmail !== (savedEmail ?? "")) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { error } = await supabase
+          .from("profiles")
+          .update({ email: trimmedEmail || null } as any)
+          .eq("user_id", session.user.id);
+        if (error) {
+          toast.error("Failed to save email");
+          setSaving(false);
+          return;
+        }
+      }
+    }
+
+    setSaving(false);
     haptics.success();
     setSaved(true);
     setTimeout(() => {
@@ -99,7 +163,8 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
     }, 1200);
   };
 
-  const hasChanges = name !== getDisplayName() || photo !== getDisplayPhoto();
+  const emailChanged = email.trim() !== (savedEmail ?? "");
+  const hasChanges = name !== getDisplayName() || photo !== getDisplayPhoto() || emailChanged;
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
@@ -233,24 +298,50 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
                 </AnimatePresence>
               </div>
 
-              {/* Email (read-only) */}
+              {/* Email Address */}
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground px-1 flex items-center gap-1.5">
                   <Mail size={11} /> Email Address
                 </label>
-                <div className="relative">
-                  <input
-                    type="email"
-                    value="tanvir@example.com"
-                    readOnly
-                    className="w-full h-14 px-4 text-base font-semibold bg-muted/50 border-2 border-border rounded-2xl text-muted-foreground cursor-not-allowed"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-wide text-muted-foreground/60 bg-muted px-2 py-0.5 rounded-full">
-                    Locked
-                  </span>
-                </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError(""); }}
+                  maxLength={255}
+                  placeholder="your@email.com"
+                  className={`w-full h-14 px-4 text-base font-semibold bg-card border-2 rounded-2xl focus:outline-none transition-all placeholder:font-normal placeholder:text-muted-foreground/40 ${
+                    emailError ? "border-destructive" : "border-border focus:border-primary focus:shadow-glow"
+                  }`}
+                />
+                {email.trim() && (
+                  <div className="pt-1">
+                    <label className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground px-1 flex items-center gap-1.5 mb-2">
+                      <Mail size={11} /> Confirm Email
+                    </label>
+                    <input
+                      type="email"
+                      value={confirmEmail}
+                      onChange={(e) => { setConfirmEmail(e.target.value); if (emailError) setEmailError(""); }}
+                      maxLength={255}
+                      placeholder="Re-enter your email"
+                      className={`w-full h-14 px-4 text-base font-semibold bg-card border-2 rounded-2xl focus:outline-none transition-all placeholder:font-normal placeholder:text-muted-foreground/40 ${
+                        emailError ? "border-destructive" : "border-border focus:border-primary focus:shadow-glow"
+                      }`}
+                    />
+                  </div>
+                )}
+                <AnimatePresence>
+                  {emailError && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                      className="text-xs text-destructive flex items-center gap-1.5 px-1"
+                    >
+                      <AlertCircle size={12} /> {emailError}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
                 <p className="text-[11px] text-muted-foreground px-1">
-                  Email address cannot be changed. Contact support if needed.
+                  Enter your email twice to confirm. This prevents typos.
                 </p>
               </div>
 
@@ -258,7 +349,7 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
               <motion.button
                 whileTap={{ scale: 0.98 }}
                 onClick={handleSave}
-                disabled={!hasChanges}
+                disabled={!hasChanges || saving}
                 className="w-full h-14 gradient-primary text-primary-foreground font-bold text-[15px] rounded-2xl shadow-glow flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
               >
                 <CheckCircle2 size={17} />
