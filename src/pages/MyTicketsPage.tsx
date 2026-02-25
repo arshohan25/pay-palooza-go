@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Ticket, MessageCircle, Clock, CheckCircle2, Loader2, Plus } from "lucide-react";
+import { ArrowLeft, Ticket, MessageCircle, Clock, CheckCircle2, Loader2, Plus, Lock, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import { format } from "date-fns";
@@ -166,35 +166,51 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
               const statusKey = getStatusKey(ticket.status);
               const cfg = statusConfig[statusKey] || statusConfig.open;
               const StatusIcon = cfg.icon;
+              const isClosed = statusKey === "closed" || statusKey === "resolved";
               return (
-                <motion.button
+                <motion.div
                   key={ticket.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  onClick={() => { if (statusKey !== "closed" && statusKey !== "resolved") setSelectedTicket(ticket); }}
-                  className={`w-full bg-card rounded-2xl border border-border/60 p-4 text-left transition-colors shadow-card ${statusKey === "closed" || statusKey === "resolved" ? "opacity-60 cursor-not-allowed" : "hover:bg-muted/40 active:bg-muted/60"}`}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${cfg.class}`}>
-                      <StatusIcon size={16} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13.5px] font-semibold text-foreground truncate">
-                        {ticket.subject || "General Support"}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${cfg.class}`}>
-                          {t(statusKey as any)}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground">
-                          {format(new Date(ticket.created_at), "MMM d, yyyy")}
-                        </span>
+                  <button
+                    onClick={() => { if (isClosed) return; setSelectedTicket(ticket); }}
+                    className={`w-full bg-card rounded-2xl border border-border/60 p-4 text-left transition-colors shadow-card ${isClosed ? "opacity-60 cursor-not-allowed" : "hover:bg-muted/40 active:bg-muted/60"}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${cfg.class}`}>
+                        <StatusIcon size={16} />
                       </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13.5px] font-semibold text-foreground truncate">
+                          {ticket.subject || "General Support"}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${cfg.class}`}>
+                            {t(statusKey as any)}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">
+                            {format(new Date(ticket.created_at), "MMM d, yyyy")}
+                          </span>
+                        </div>
+                      </div>
+                      {isClosed ? (
+                        <Lock size={14} className="text-muted-foreground/50 mt-1 shrink-0" />
+                      ) : (
+                        <MessageCircle size={14} className="text-muted-foreground/50 mt-1 shrink-0" />
+                      )}
                     </div>
-                    <MessageCircle size={14} className="text-muted-foreground/50 mt-1 shrink-0" />
-                  </div>
-                </motion.button>
+                  </button>
+                  {isClosed && (
+                    <div className="flex items-start gap-1.5 mt-1.5 px-2">
+                      <Info size={12} className="text-muted-foreground/60 shrink-0 mt-0.5" />
+                      <p className="text-[10px] text-muted-foreground/70 leading-snug">
+                        {t("ticketClosedHint")}
+                      </p>
+                    </div>
+                  )}
+                </motion.div>
               );
             })}
           </AnimatePresence>
@@ -211,7 +227,7 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
           </SheetHeader>
           <div className="flex-1 overflow-hidden">
             {userId ? (
-              <SupportChat userId={userId} />
+              <SupportChat userId={userId} conversationId={selectedTicket?.id} />
             ) : (
               <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
                 {t("signInToContact")}
