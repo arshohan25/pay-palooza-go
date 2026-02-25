@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Ticket, MessageCircle, Clock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, Ticket, MessageCircle, Clock, CheckCircle2, Loader2, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import { format } from "date-fns";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import SupportChat from "@/components/SupportChat";
 
 interface Conversation {
@@ -27,18 +31,28 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<Conversation | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [showTicketForm, setShowTicketForm] = useState(false);
+  const [ticketSubject, setTicketSubject] = useState("");
+  const [ticketDesc, setTicketDesc] = useState("");
+  const [ticketLoading, setTicketLoading] = useState(false);
+
+  const loadTickets = async (uid?: string) => {
+    const id = uid ?? userId;
+    if (!id) return;
+    const { data } = await supabase
+      .from("support_conversations")
+      .select("*")
+      .eq("user_id", id)
+      .order("created_at", { ascending: false });
+    setTickets(data ?? []);
+  };
 
   useEffect(() => {
     const load = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) { setLoading(false); return; }
       setUserId(session.user.id);
-      const { data } = await supabase
-        .from("support_conversations")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .order("created_at", { ascending: false });
-      setTickets(data ?? []);
+      await loadTickets(session.user.id);
       setLoading(false);
     };
     load();
@@ -48,6 +62,42 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
     if (status === "open") return "open";
     if (status === "resolved") return "resolved";
     return "closed";
+  };
+
+  const handleSubmitTicket = async () => {
+    if (!userId) { toast.error(t("signInFirst")); return; }
+    setTicketLoading(true);
+    const { error } = await supabase.from("support_conversations").insert({
+      user_id: userId,
+      subject: ticketSubject.trim(),
+      status: "open",
+    });
+    if (error) {
+      toast.error(t("ticketFailed"));
+    } else {
+      if (ticketDesc.trim()) {
+        const { data: convos } = await supabase
+          .from("support_conversations")
+          .select("id")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (convos?.[0]) {
+          await supabase.from("support_messages").insert({
+            conversation_id: convos[0].id,
+            sender_id: userId,
+            sender_role: "user",
+            content: ticketDesc.trim(),
+          });
+        }
+      }
+      toast.success(t("ticketSubmitted"));
+      setShowTicketForm(false);
+      setTicketSubject("");
+      setTicketDesc("");
+      await loadTickets();
+    }
+    setTicketLoading(false);
   };
 
   return (
@@ -65,10 +115,18 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
         >
           <ArrowLeft size={16} />
         </button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-lg font-bold text-foreground">{t("myTickets")}</h1>
           <p className="text-xs text-muted-foreground">{t("myTicketsSub")}</p>
         </div>
+        <Button
+          size="sm"
+          className="rounded-xl gap-1.5"
+          onClick={() => setShowTicketForm(true)}
+        >
+          <Plus size={14} />
+          {t("submitTicketBtn")}
+        </Button>
       </div>
 
       {loading ? (
@@ -82,6 +140,10 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
           </div>
           <p className="font-semibold text-foreground">{t("noTicketsYet")}</p>
           <p className="text-sm text-muted-foreground mt-1">{t("noTicketsDesc")}</p>
+          <Button className="mt-4 rounded-xl gap-1.5" onClick={() => setShowTicketForm(true)}>
+            <Plus size={14} />
+            {t("submitTicketBtn")}
+          </Button>
         </div>
       ) : (
         <div className="space-y-3">
@@ -141,6 +203,41 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
                 {t("signInToContact")}
               </div>
             )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Ticket Form Sheet */}
+      <Sheet open={showTicketForm} onOpenChange={(open) => { setShowTicketForm(open); if (!open) { setTicketSubject(""); setTicketDesc(""); } }}>
+        <SheetContent side="bottom" className="rounded-t-3xl p-0">
+          <SheetHeader className="px-6 pt-5 pb-3">
+            <SheetTitle className="text-base">{t("submitTicketTitle")}</SheetTitle>
+          </SheetHeader>
+          <div className="px-6 pb-8 space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">{t("ticketSubject")}</label>
+              <Input
+                placeholder="e.g. Email change request"
+                value={ticketSubject}
+                onChange={(e) => setTicketSubject(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">{t("ticketDescription")}</label>
+              <Textarea
+                placeholder={t("submitTicketSub")}
+                value={ticketDesc}
+                onChange={(e) => setTicketDesc(e.target.value)}
+                rows={4}
+              />
+            </div>
+            <Button
+              className="w-full"
+              disabled={!ticketSubject.trim() || ticketLoading}
+              onClick={handleSubmitTicket}
+            >
+              {ticketLoading ? t("submitting") : t("submitTicketBtn")}
+            </Button>
           </div>
         </SheetContent>
       </Sheet>
