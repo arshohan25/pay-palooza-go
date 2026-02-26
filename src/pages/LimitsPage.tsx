@@ -25,12 +25,15 @@ const LimitRow = ({ label, used, limit, maxTxn, usedTxn, period, fee }: LimitRow
 
   if (isNoLimit) {
     return (
-      <div className="px-4 py-4 border-b border-border/50 last:border-0">
+      <div className="px-4 py-4 border-b border-border/50 last:border-0 space-y-1.5">
         <div className="flex items-center justify-between">
           <span className="text-[13px] font-semibold text-foreground">{periodLabel}</span>
           <span className="text-[11.5px] font-bold text-primary">No Limit</span>
         </div>
-        <p className="text-[11.5px] text-muted-foreground font-medium mt-1">No transaction or amount limit · {fee}</p>
+        <div className="flex justify-between text-[11.5px] text-muted-foreground font-medium">
+          <span>{t("used")} ৳{used.toLocaleString()} ({usedTxn} txn)</span>
+          <span>{fee}</span>
+        </div>
       </div>
     );
   }
@@ -134,7 +137,8 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
       iconClass: "gradient-payment",
       title: t("payment"),
       limits: [
-        { label: t("payment"), used: daily.payment.usedAmount, limit: 0, maxTxn: 0, usedTxn: 0, period: "Daily", fee: t("free") },
+        { label: t("payment"), used: daily.payment.usedAmount, limit: 0, maxTxn: 0, usedTxn: daily.payment.usedCount, period: "Daily", fee: t("free") },
+        { label: t("payment"), used: monthly.payment.usedAmount, limit: 0, maxTxn: 0, usedTxn: monthly.payment.usedCount, period: "Monthly", fee: t("free") },
       ],
     },
     {
@@ -151,7 +155,8 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
       iconClass: "gradient-payment",
       title: "Pay Bill",
       limits: [
-        { label: "Pay Bill", used: daily.paybill.usedAmount, limit: 0, maxTxn: 0, usedTxn: 0, period: "Daily", fee: t("free") },
+        { label: "Pay Bill", used: daily.paybill.usedAmount, limit: 0, maxTxn: 0, usedTxn: daily.paybill.usedCount, period: "Daily", fee: t("free") },
+        { label: "Pay Bill", used: monthly.paybill.usedAmount, limit: 0, maxTxn: 0, usedTxn: monthly.paybill.usedCount, period: "Monthly", fee: t("free") },
       ],
     },
     {
