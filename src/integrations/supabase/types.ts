@@ -384,6 +384,69 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_verifications: {
+        Row: {
+          created_at: string
+          date_of_birth: string | null
+          face_match_result: string | null
+          face_match_score: number | null
+          full_name: string | null
+          id: string
+          nid_back_url: string | null
+          nid_front_url: string | null
+          nid_number: string | null
+          nid_photo_url: string | null
+          ocr_raw_data: Json | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          reviewer_notes: string | null
+          selfie_url: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_of_birth?: string | null
+          face_match_result?: string | null
+          face_match_score?: number | null
+          full_name?: string | null
+          id?: string
+          nid_back_url?: string | null
+          nid_front_url?: string | null
+          nid_number?: string | null
+          nid_photo_url?: string | null
+          ocr_raw_data?: Json | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          reviewer_notes?: string | null
+          selfie_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_of_birth?: string | null
+          face_match_result?: string | null
+          face_match_score?: number | null
+          full_name?: string | null
+          id?: string
+          nid_back_url?: string | null
+          nid_front_url?: string | null
+          nid_number?: string | null
+          nid_photo_url?: string | null
+          ocr_raw_data?: Json | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          reviewer_notes?: string | null
+          selfie_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       merchants: {
         Row: {
           bank_account_number: string | null
