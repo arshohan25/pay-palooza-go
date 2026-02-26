@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
-import { ArrowLeft, ArrowUpRight, Banknote, CreditCard, TrendingDown, Info, Smartphone, FileText, Building2, ArrowDownLeft } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Banknote, CreditCard, TrendingDown, Info, Smartphone, FileText, Building2, ArrowDownLeft, Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Progress } from "@/components/ui/progress";
+import { useUsageStats } from "@/hooks/use-usage-stats";
 
 interface LimitRowProps {
   label: string;
@@ -83,16 +84,22 @@ const ServiceCard = ({ icon: Icon, iconClass, title, limits }: ServiceCardProps)
   </motion.div>
 );
 
-const useServices = (): ServiceCardProps[] => {
+interface LimitsPageProps {
+  onBack: () => void;
+}
+
+const LimitsPage = ({ onBack }: LimitsPageProps) => {
   const { t } = useI18n();
-  return [
+  const { daily, monthly, loading } = useUsageStats();
+
+  const SERVICES: ServiceCardProps[] = [
     {
       icon: ArrowUpRight,
       iconClass: "gradient-send",
       title: t("sendMoney"),
       limits: [
-        { label: t("sendMoney"), used: 18500, limit: 50000, maxTxn: 40, usedTxn: 12, period: "Daily", fee: "Free ≤৳100, ৳3 ≤৳50k, ৳5" },
-        { label: t("sendMoney"), used: 74000, limit: 400000, maxTxn: 100, usedTxn: 32, period: "Monthly", fee: "Free ≤৳100, ৳3 ≤৳50k, ৳5" },
+        { label: t("sendMoney"), used: daily.send.usedAmount, limit: 50000, maxTxn: 40, usedTxn: daily.send.usedCount, period: "Daily", fee: "Free ≤৳100, ৳3 ≤৳50k, ৳5" },
+        { label: t("sendMoney"), used: monthly.send.usedAmount, limit: 400000, maxTxn: 100, usedTxn: monthly.send.usedCount, period: "Monthly", fee: "Free ≤৳100, ৳3 ≤৳50k, ৳5" },
       ],
     },
     {
@@ -100,8 +107,8 @@ const useServices = (): ServiceCardProps[] => {
       iconClass: "gradient-addmoney",
       title: "Cash In",
       limits: [
-        { label: "Cash In", used: 5000, limit: 50000, maxTxn: 20, usedTxn: 3, period: "Daily", fee: t("free") },
-        { label: "Cash In", used: 22000, limit: 300000, maxTxn: 100, usedTxn: 15, period: "Monthly", fee: t("free") },
+        { label: "Cash In", used: daily.cashin.usedAmount, limit: 50000, maxTxn: 20, usedTxn: daily.cashin.usedCount, period: "Daily", fee: t("free") },
+        { label: "Cash In", used: monthly.cashin.usedAmount, limit: 300000, maxTxn: 100, usedTxn: monthly.cashin.usedCount, period: "Monthly", fee: t("free") },
       ],
     },
     {
@@ -109,8 +116,8 @@ const useServices = (): ServiceCardProps[] => {
       iconClass: "gradient-cashout",
       title: t("cashOut"),
       limits: [
-        { label: t("cashOut"), used: 8000, limit: 35000, maxTxn: 15, usedTxn: 4, period: "Daily", fee: "1.19%" },
-        { label: t("cashOut"), used: 35000, limit: 300000, maxTxn: 100, usedTxn: 20, period: "Monthly", fee: "1.19%" },
+        { label: t("cashOut"), used: daily.cashout.usedAmount, limit: 35000, maxTxn: 15, usedTxn: daily.cashout.usedCount, period: "Daily", fee: "1.19%" },
+        { label: t("cashOut"), used: monthly.cashout.usedAmount, limit: 300000, maxTxn: 100, usedTxn: monthly.cashout.usedCount, period: "Monthly", fee: "1.19%" },
       ],
     },
     {
@@ -118,8 +125,8 @@ const useServices = (): ServiceCardProps[] => {
       iconClass: "gradient-addmoney",
       title: t("addMoney"),
       limits: [
-        { label: t("addMoney"), used: 5000, limit: 50000, maxTxn: 20, usedTxn: 5, period: "Daily", fee: t("free") },
-        { label: t("addMoney"), used: 22000, limit: 300000, maxTxn: 50, usedTxn: 18, period: "Monthly", fee: t("free") },
+        { label: t("addMoney"), used: daily.addmoney.usedAmount, limit: 50000, maxTxn: 20, usedTxn: daily.addmoney.usedCount, period: "Daily", fee: t("free") },
+        { label: t("addMoney"), used: monthly.addmoney.usedAmount, limit: 300000, maxTxn: 50, usedTxn: monthly.addmoney.usedCount, period: "Monthly", fee: t("free") },
       ],
     },
     {
@@ -127,7 +134,7 @@ const useServices = (): ServiceCardProps[] => {
       iconClass: "gradient-payment",
       title: t("payment"),
       limits: [
-        { label: t("payment"), used: 2200, limit: 0, maxTxn: 0, usedTxn: 0, period: "Daily", fee: t("free") },
+        { label: t("payment"), used: daily.payment.usedAmount, limit: 0, maxTxn: 0, usedTxn: 0, period: "Daily", fee: t("free") },
       ],
     },
     {
@@ -135,8 +142,8 @@ const useServices = (): ServiceCardProps[] => {
       iconClass: "gradient-send",
       title: "Mobile Recharge",
       limits: [
-        { label: "Mobile Recharge", used: 1200, limit: 50000, maxTxn: 200, usedTxn: 8, period: "Daily", fee: t("free") },
-        { label: "Mobile Recharge", used: 8000, limit: 300000, maxTxn: 2000, usedTxn: 45, period: "Monthly", fee: t("free") },
+        { label: "Mobile Recharge", used: daily.recharge.usedAmount, limit: 50000, maxTxn: 200, usedTxn: daily.recharge.usedCount, period: "Daily", fee: t("free") },
+        { label: "Mobile Recharge", used: monthly.recharge.usedAmount, limit: 300000, maxTxn: 2000, usedTxn: monthly.recharge.usedCount, period: "Monthly", fee: t("free") },
       ],
     },
     {
@@ -144,7 +151,7 @@ const useServices = (): ServiceCardProps[] => {
       iconClass: "gradient-payment",
       title: "Pay Bill",
       limits: [
-        { label: "Pay Bill", used: 0, limit: 0, maxTxn: 0, usedTxn: 0, period: "Daily", fee: t("free") },
+        { label: "Pay Bill", used: daily.paybill.usedAmount, limit: 0, maxTxn: 0, usedTxn: 0, period: "Daily", fee: t("free") },
       ],
     },
     {
@@ -152,20 +159,11 @@ const useServices = (): ServiceCardProps[] => {
       iconClass: "gradient-cashout",
       title: "Bank Transfer",
       limits: [
-        { label: "Bank Transfer", used: 3000, limit: 50000, maxTxn: 40, usedTxn: 2, period: "Daily", fee: "1%" },
-        { label: "Bank Transfer", used: 15000, limit: 400000, maxTxn: 100, usedTxn: 8, period: "Monthly", fee: "1%" },
+        { label: "Bank Transfer", used: daily.banktransfer.usedAmount, limit: 50000, maxTxn: 40, usedTxn: daily.banktransfer.usedCount, period: "Daily", fee: "1%" },
+        { label: "Bank Transfer", used: monthly.banktransfer.usedAmount, limit: 400000, maxTxn: 100, usedTxn: monthly.banktransfer.usedCount, period: "Monthly", fee: "1%" },
       ],
     },
   ];
-};
-
-interface LimitsPageProps {
-  onBack: () => void;
-}
-
-const LimitsPage = ({ onBack }: LimitsPageProps) => {
-  const { t } = useI18n();
-  const SERVICES = useServices();
 
   return (
   <motion.div
@@ -194,19 +192,26 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
     <div className="flex gap-3 items-start bg-primary/8 border border-primary/20 rounded-2xl px-4 py-3.5">
       <Info size={15} className="text-primary mt-0.5 shrink-0" />
       <p className="text-[12px] text-primary leading-relaxed font-medium">
-          {t("limitsInfoBanner")}
-        </p>
+        {t("limitsInfoBanner")}
+      </p>
     </div>
 
-    {/* Service cards */}
-    {SERVICES.map((s) => (
-      <ServiceCard key={s.title} {...s} />
-    ))}
+    {/* Loading state */}
+    {loading ? (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    ) : (
+      /* Service cards */
+      SERVICES.map((s) => (
+        <ServiceCard key={s.title} {...s} />
+      ))
+    )}
 
     {/* Tariff note */}
     <div className="bg-card rounded-3xl border border-border/60 p-4 space-y-2.5 shadow-card">
       <p className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-          {t("tariffNote")}
+        {t("tariffNote")}
       </p>
       <ul className="space-y-2 text-[12px] text-muted-foreground font-medium">
         <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Cash Out (Agent): 1.19% fee</li>
