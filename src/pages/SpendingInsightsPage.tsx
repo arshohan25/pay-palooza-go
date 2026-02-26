@@ -197,7 +197,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
               ৳{cashbackTotal.toLocaleString("en-BD", { minimumFractionDigits: 2 })}
             </p>
             <span className="text-xs text-muted-foreground mb-1.5">
-              {cashbackCount} {cashbackCount === 1 ? "recharge" : "recharges"}
+              {cashbackCount} {cashbackCount === 1 ? t("rechargeCount") : t("rechargesCount")}
             </span>
           </div>
         )}

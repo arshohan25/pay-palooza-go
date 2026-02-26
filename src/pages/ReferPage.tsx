@@ -23,11 +23,11 @@ const FRIENDS = [
 const completedCount = FRIENDS.filter((f) => f.status === "completed").length;
 const totalEarned    = FRIENDS.reduce((s, f) => s + f.earned, 0);
 
-const StatusBadge = ({ status }: { status: "completed" | "pending" | "failed" }) => {
+const StatusBadge = ({ status, t }: { status: "completed" | "pending" | "failed"; t: (key: string) => string }) => {
   const map = {
-    completed: { icon: CheckCircle2, label: "Completed", cls: "text-primary bg-primary/10" },
-    pending:   { icon: Clock,        label: "Pending",   cls: "text-accent bg-accent/10"   },
-    failed:    { icon: XCircle,      label: "Failed",    cls: "text-destructive bg-destructive/10" },
+    completed: { icon: CheckCircle2, label: t("completed"), cls: "text-primary bg-primary/10" },
+    pending:   { icon: Clock,        label: t("pending"),   cls: "text-accent bg-accent/10"   },
+    failed:    { icon: XCircle,      label: t("failed"),    cls: "text-destructive bg-destructive/10" },
   };
   const { icon: Icon, label, cls } = map[status];
   return (
@@ -140,26 +140,26 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
 
         {/* Share buttons */}
         <div className="grid grid-cols-3 gap-2 mt-3">
-          <button
+           <button
             onClick={handleWhatsApp}
             className="bg-white/15 hover:bg-white/25 transition-colors rounded-xl py-2.5 text-xs font-semibold flex flex-col items-center gap-1"
           >
             <span className="text-base">💬</span>
-            WhatsApp
+            {t("whatsapp")}
           </button>
           <button
             onClick={handleSMS}
             className="bg-white/15 hover:bg-white/25 transition-colors rounded-xl py-2.5 text-xs font-semibold flex flex-col items-center gap-1"
           >
             <span className="text-base">📱</span>
-            SMS
+            {t("sms")}
           </button>
           <button
             onClick={handleNativeShare}
             className="bg-white/15 hover:bg-white/25 transition-colors rounded-xl py-2.5 text-xs font-semibold flex flex-col items-center gap-1"
           >
             <Share2 size={16} />
-            More
+            {t("more")}
           </button>
         </div>
       </motion.div>
@@ -199,17 +199,17 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
 
         <Progress value={progressPct} className="h-2.5" />
 
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>{progressPct}% complete</span>
+          <div className="flex justify-between text-xs text-muted-foreground">
+          <span>{progressPct}% {t("pctComplete")}</span>
           <span>{TARGET_FRIENDS - completedCount} {t("moreForMilestone")}</span>
         </div>
 
         {/* Milestone markers */}
         <div className="grid grid-cols-3 gap-2 pt-1">
           {[
-            { at: 3,  reward: "৳150",  label: "Starter"  },
-            { at: 5,  reward: "৳100", label: "Bonus"    },
-            { at: 10, reward: "৳200", label: "Champion" },
+            { at: 3,  reward: "৳150",  label: t("starter")  },
+            { at: 5,  reward: "৳100", label: t("bonus")    },
+            { at: 10, reward: "৳200", label: t("champion") },
           ].map((m) => {
             const unlocked = completedCount >= m.at;
             return (
@@ -223,7 +223,7 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
                   {m.reward}
                 </p>
                 <p className="text-[10px] text-muted-foreground">{m.label}</p>
-                <p className="text-[10px] text-muted-foreground">{m.at} friends</p>
+                <p className="text-[10px] text-muted-foreground">{m.at} {t("friends")}</p>
               </div>
             );
           })}
@@ -246,7 +246,7 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
               <p className="text-xs text-muted-foreground">{f.phone} · {f.joined}</p>
             </div>
             <div className="flex flex-col items-end gap-1 shrink-0">
-              <StatusBadge status={f.status} />
+              <StatusBadge status={f.status} t={t as any} />
               {f.earned > 0 && (
                 <span className="text-[11px] font-semibold text-primary">+৳{f.earned}</span>
               )}

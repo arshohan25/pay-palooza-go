@@ -6,6 +6,7 @@ import SupportChat from "@/components/SupportChat";
 import { haptics } from "@/lib/haptics";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/lib/i18n";
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
 const NAME_KEY   = "mfs_display_name";
@@ -60,6 +61,7 @@ interface ProfileEditFlowProps {
 }
 
 const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
+  const { t } = useI18n();
   const [name, setName]           = useState(getDisplayName());
   const [photo, setPhoto]         = useState(getDisplayPhoto());
   const [nameError, setNameError] = useState("");
@@ -153,7 +155,6 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
       setOtpSent(true);
       setOtpCooldown(60);
       haptics.light();
-      // DEV: show OTP in toast for testing
       if (data?.dev_otp) {
         toast.info(`Dev OTP: ${data.dev_otp}`, { duration: 15000 });
       }
@@ -190,14 +191,13 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
   const handleEmailChange = (v: string) => {
     setEmail(v);
     if (emailError) setEmailError("");
-    // If email changed from saved, reset verification
     if (v.trim() !== (savedEmail ?? "")) {
       setEmailVerified(false);
       setOtpSent(false);
       setOtp("");
       setOtpError("");
     } else {
-      setEmailVerified(true); // back to saved email = already verified
+      setEmailVerified(true);
     }
   };
 
@@ -209,7 +209,6 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
     if (trimmedEmail) {
       const emailErr = validateEmail(trimmedEmail);
       if (emailErr) { setEmailError(emailErr); haptics.error(); return; }
-      // Must verify if email changed
       if (trimmedEmail !== (savedEmail ?? "") && !emailVerified) {
         setEmailError("Please verify your email with OTP first.");
         haptics.error();
@@ -266,8 +265,8 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
             <ChevronLeft size={20} />
           </button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-extrabold tracking-tight">Edit Profile</h1>
-            <p className="text-xs text-white/70 mt-0.5">Update your display name & photo</p>
+            <h1 className="text-xl font-extrabold tracking-tight">{t("editProfileTitle")}</h1>
+            <p className="text-xs text-white/70 mt-0.5">{t("updateNamePhotoSub")}</p>
           </div>
         </div>
       </motion.div>
@@ -291,8 +290,8 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
                 <CheckCircle2 size={40} strokeWidth={1.5} />
               </motion.div>
               <div>
-                <h2 className="text-xl font-bold text-foreground">Profile Updated!</h2>
-                <p className="text-sm text-muted-foreground mt-1">Your changes have been saved.</p>
+                <h2 className="text-xl font-bold text-foreground">{t("profileUpdated")}</h2>
+                <p className="text-sm text-muted-foreground mt-1">{t("changesSaved")}</p>
               </div>
             </motion.div>
           ) : (
@@ -310,19 +309,17 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
                   <div className={`rounded-3xl overflow-hidden shadow-elevated transition-all duration-200 ring-2 ${isDragging ? "ring-primary ring-offset-2" : "ring-border/40"}`}>
                     <AvatarDisplay photo={photo} name={name} size={96} />
                   </div>
-                  {/* Overlay */}
                   <div className="absolute inset-0 rounded-3xl bg-black/40 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity flex items-center justify-center">
                     <Camera size={22} className="text-white" />
                   </div>
-                  {/* Camera badge */}
                   <div className="absolute -bottom-1.5 -right-1.5 w-8 h-8 gradient-primary rounded-full flex items-center justify-center border-2 border-background shadow-card">
                     <Pencil size={13} className="text-primary-foreground" />
                   </div>
                 </div>
 
                 <div className="text-center">
-                  <p className="text-sm font-semibold text-foreground">Profile Photo</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Tap to upload · JPEG / PNG · max 5 MB</p>
+                  <p className="text-sm font-semibold text-foreground">{t("profilePhoto")}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t("tapToUpload")}</p>
                 </div>
 
                 {photo && (
@@ -332,7 +329,7 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
                     onClick={() => setPhoto("")}
                     className="text-xs text-destructive font-semibold py-1 px-3 rounded-full border border-destructive/30 hover:bg-destructive/8 transition-colors"
                   >
-                    Remove photo
+                    {t("removePhoto")}
                   </motion.button>
                 )}
 
@@ -345,13 +342,12 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
                 />
               </div>
 
-              {/* Divider */}
               <div className="border-t border-border/50" />
 
               {/* Name field */}
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground px-1 flex items-center gap-1.5">
-                  <User size={11} /> Display Name
+                  <User size={11} /> {t("displayName")}
                 </label>
                 <div className="relative">
                   <input
@@ -359,7 +355,7 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
                     value={name}
                     onChange={(e) => handleNameChange(e.target.value)}
                     maxLength={40}
-                    placeholder="Your full name"
+                    placeholder={t("yourFullName")}
                     className={`w-full h-14 px-4 pr-14 text-base font-semibold bg-card border-2 rounded-2xl focus:outline-none transition-all placeholder:font-normal placeholder:text-muted-foreground/40 ${
                       nameError ? "border-destructive" : "border-border focus:border-primary focus:shadow-glow"
                     }`}
@@ -383,10 +379,9 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
               {/* Email Address */}
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground px-1 flex items-center gap-1.5">
-                  <Mail size={11} /> Email Address
+                  <Mail size={11} /> {t("emailAddress")}
                 </label>
 
-                {/* Warning: email cannot be changed after saving */}
                 {!savedEmail && (
                   <motion.div
                     initial={{ opacity: 0, y: -4 }}
@@ -395,7 +390,7 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
                   >
                     <AlertCircle size={14} className="text-amber-500 mt-0.5 shrink-0" />
                     <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
-                      <span className="font-bold">Important:</span> Once your email is verified and saved, it cannot be changed or removed without contacting support.
+                      <span className="font-bold">{t("important")}</span> {t("emailImportantNote")}
                     </p>
                   </motion.div>
                 )}
@@ -409,13 +404,13 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
                     <AlertCircle size={14} className="text-muted-foreground mt-0.5 shrink-0" />
                     <div className="flex-1">
                       <p className="text-[11px] text-muted-foreground leading-relaxed">
-                        Your email is locked. To change it, please contact support.
+                        {t("emailLockedNote")}
                       </p>
                       <button
                         onClick={() => setShowSupport(true)}
                         className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] font-bold text-primary hover:underline"
                       >
-                        <MessageCircle size={12} /> Open Live Chat
+                        <MessageCircle size={12} /> {t("openLiveChat")}
                       </button>
                     </div>
                   </motion.div>
@@ -435,7 +430,7 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
                   />
                   {email.trim() && emailVerified && (
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                      <ShieldCheck size={11} /> Verified
+                      <ShieldCheck size={11} /> {t("verified")}
                     </span>
                   )}
                   {email.trim() && !emailVerified && !otpSent && (
@@ -444,7 +439,7 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
                       disabled={sendingOtp}
                       className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[11px] font-bold text-primary-foreground gradient-primary px-3 py-1.5 rounded-xl disabled:opacity-50 transition-opacity"
                     >
-                      <Send size={11} /> {sendingOtp ? "Sending…" : "Send OTP"}
+                      <Send size={11} /> {sendingOtp ? t("sendingDots") : t("sendOtp")}
                     </button>
                   )}
                 </div>
@@ -459,7 +454,7 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
                       className="space-y-2 pt-1"
                     >
                       <label className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground px-1 flex items-center gap-1.5">
-                        <ShieldCheck size={11} /> Enter OTP
+                        <ShieldCheck size={11} /> {t("enterOtp")}
                       </label>
                       <div className="flex gap-2">
                         <input
@@ -480,7 +475,7 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
                           className="h-14 px-5 gradient-primary text-primary-foreground font-bold text-sm rounded-2xl shadow-glow disabled:opacity-40 disabled:cursor-not-allowed transition-opacity flex items-center gap-1.5"
                         >
                           <CheckCircle2 size={15} />
-                          {verifyingOtp ? "…" : "Verify"}
+                          {verifyingOtp ? "…" : t("verify")}
                         </motion.button>
                       </div>
                       {otpError && (
@@ -490,14 +485,14 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
                       )}
                       <div className="flex items-center justify-between px-1">
                         <p className="text-[11px] text-muted-foreground">
-                          Check your email for the verification code
+                          {t("checkEmailOtp")}
                         </p>
                         <button
                           onClick={handleSendOtp}
                           disabled={otpCooldown > 0 || sendingOtp}
                           className="text-[11px] font-semibold text-primary disabled:text-muted-foreground transition-colors"
                         >
-                          {otpCooldown > 0 ? `Resend in ${otpCooldown}s` : "Resend OTP"}
+                          {otpCooldown > 0 ? `${t("resendIn")} ${otpCooldown}s` : t("resendOtp")}
                         </button>
                       </div>
                     </motion.div>
@@ -524,7 +519,7 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
                 className="w-full h-14 gradient-primary text-primary-foreground font-bold text-[15px] rounded-2xl shadow-glow flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
               >
                 <CheckCircle2 size={17} />
-                Save Changes
+                {t("saveChanges")}
               </motion.button>
 
             </motion.div>
@@ -542,7 +537,7 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
               <SupportChat userId={userId} />
             ) : (
               <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                Please sign in to contact support.
+                {t("signInToContact")}
               </div>
             )}
           </div>

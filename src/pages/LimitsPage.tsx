@@ -29,7 +29,7 @@ const LimitRow = ({ label, used, limit, maxTxn, usedTxn, period, fee }: LimitRow
       <div className="px-4 py-4 border-b border-border/50 last:border-0 space-y-1.5">
         <div className="flex items-center justify-between">
           <span className="text-[13px] font-semibold text-foreground">{periodLabel}</span>
-          <span className="text-[11.5px] font-bold text-primary">No Limit</span>
+          <span className="text-[11.5px] font-bold text-primary">{t("noLimit")}</span>
         </div>
         <div className="flex justify-between text-[11.5px] text-muted-foreground font-medium">
           <span>{t("used")} ৳{used.toLocaleString()} ({usedTxn} txn)</span>
@@ -119,10 +119,10 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
     {
       icon: ArrowDownLeft,
       iconClass: "gradient-addmoney",
-      title: "Cash In",
+      title: t("cashIn"),
       limits: [
-        { label: "Cash In", used: daily.cashin.usedAmount, limit: 50000, maxTxn: 20, usedTxn: daily.cashin.usedCount, period: "Daily", fee: cashinFee },
-        { label: "Cash In", used: monthly.cashin.usedAmount, limit: 300000, maxTxn: 100, usedTxn: monthly.cashin.usedCount, period: "Monthly", fee: cashinFee },
+        { label: t("cashIn"), used: daily.cashin.usedAmount, limit: 50000, maxTxn: 20, usedTxn: daily.cashin.usedCount, period: "Daily", fee: cashinFee },
+        { label: t("cashIn"), used: monthly.cashin.usedAmount, limit: 300000, maxTxn: 100, usedTxn: monthly.cashin.usedCount, period: "Monthly", fee: cashinFee },
       ],
     },
     {
@@ -155,28 +155,28 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
     {
       icon: Smartphone,
       iconClass: "gradient-send",
-      title: "Mobile Recharge",
+      title: t("mobileRecharge"),
       limits: [
-        { label: "Mobile Recharge", used: daily.recharge.usedAmount, limit: 50000, maxTxn: 200, usedTxn: daily.recharge.usedCount, period: "Daily", fee: rechargeFee },
-        { label: "Mobile Recharge", used: monthly.recharge.usedAmount, limit: 300000, maxTxn: 2000, usedTxn: monthly.recharge.usedCount, period: "Monthly", fee: rechargeFee },
+        { label: t("mobileRecharge"), used: daily.recharge.usedAmount, limit: 50000, maxTxn: 200, usedTxn: daily.recharge.usedCount, period: "Daily", fee: rechargeFee },
+        { label: t("mobileRecharge"), used: monthly.recharge.usedAmount, limit: 300000, maxTxn: 2000, usedTxn: monthly.recharge.usedCount, period: "Monthly", fee: rechargeFee },
       ],
     },
     {
       icon: FileText,
       iconClass: "gradient-payment",
-      title: "Pay Bill",
+      title: t("payBill"),
       limits: [
-        { label: "Pay Bill", used: daily.paybill.usedAmount, limit: 0, maxTxn: 0, usedTxn: daily.paybill.usedCount, period: "Daily", fee: paybillFee },
-        { label: "Pay Bill", used: monthly.paybill.usedAmount, limit: 0, maxTxn: 0, usedTxn: monthly.paybill.usedCount, period: "Monthly", fee: paybillFee },
+        { label: t("payBill"), used: daily.paybill.usedAmount, limit: 0, maxTxn: 0, usedTxn: daily.paybill.usedCount, period: "Daily", fee: paybillFee },
+        { label: t("payBill"), used: monthly.paybill.usedAmount, limit: 0, maxTxn: 0, usedTxn: monthly.paybill.usedCount, period: "Monthly", fee: paybillFee },
       ],
     },
     {
       icon: Building2,
       iconClass: "gradient-cashout",
-      title: "Bank Transfer",
+      title: t("bankTransfer"),
       limits: [
-        { label: "Bank Transfer", used: daily.banktransfer.usedAmount, limit: 50000, maxTxn: 40, usedTxn: daily.banktransfer.usedCount, period: "Daily", fee: banktransferFee },
-        { label: "Bank Transfer", used: monthly.banktransfer.usedAmount, limit: 400000, maxTxn: 100, usedTxn: monthly.banktransfer.usedCount, period: "Monthly", fee: banktransferFee },
+        { label: t("bankTransfer"), used: daily.banktransfer.usedAmount, limit: 50000, maxTxn: 40, usedTxn: daily.banktransfer.usedCount, period: "Daily", fee: banktransferFee },
+        { label: t("bankTransfer"), used: monthly.banktransfer.usedAmount, limit: 400000, maxTxn: 100, usedTxn: monthly.banktransfer.usedCount, period: "Monthly", fee: banktransferFee },
       ],
     },
   ];
@@ -230,12 +230,12 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
         {t("tariffNote")}
       </p>
       <ul className="space-y-2 text-[12px] text-muted-foreground font-medium">
-        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Cash Out (Agent): 1.19% fee</li>
-        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />ATM Cash Out: Not available</li>
-        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Send Money: ৳3 after ৳100 up to ৳50,000, Then ৳5/txn</li>
-        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Bank Transfer: 1% fee</li>
-        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Add Money: Free</li>
-        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Payment & Pay Bill: No limit, Free</li>
+        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />{t("tariffCashOutAgentNew")}</li>
+        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />{t("tariffATM")}</li>
+        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />{t("tariffSendMoneyNew")}</li>
+        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />{t("tariffBankTransferNew")}</li>
+        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />{t("tariffAddMoneyFree")}</li>
+        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />{t("tariffPaymentPayBill")}</li>
       </ul>
     </div>
   </motion.div>
