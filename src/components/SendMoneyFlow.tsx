@@ -485,7 +485,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                       <DailyLimitBadge txnType="send" />
                     </div>
                   </div>
-                  <div className="relative flex items-center">
+                  <div className="relative flex items-center justify-center">
                     <span className="absolute left-4 text-2xl font-bold text-muted-foreground">৳</span>
                     <input
                       type="number"
@@ -493,7 +493,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                       placeholder="0"
                       value={amount}
                       onChange={(e) => { setAmount(e.target.value); setError(""); }}
-                      className="w-full pl-10 pr-4 h-16 text-3xl font-bold text-foreground bg-card border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/40"
+                      className="w-full pl-10 pr-4 h-16 text-3xl font-bold text-foreground bg-card border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/40 text-center"
                     />
                   </div>
                   {error && (
@@ -502,7 +502,10 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground font-medium">{t("quickSelect")}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground font-medium">{t("quickSelect")}</p>
+                    <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">Free/৳3/৳5</span>
+                  </div>
                   <div className="grid grid-cols-3 gap-2">
                     {QUICK_AMOUNTS.map((q) => (
                       <button
