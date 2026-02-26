@@ -221,7 +221,7 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
       <ul className="space-y-2 text-[12px] text-muted-foreground font-medium">
         <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Cash Out (Agent): 1.19% fee</li>
         <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />ATM Cash Out: Not available</li>
-        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Send Money: Free up to ৳100, then ৳3 up to ৳50,000, then ৳5/txn</li>
+        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Send Money: Free up to ৳100, ৳3 for ৳101–৳50,000, ৳5 above ৳50,000</li>
         <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Bank Transfer: 1% fee</li>
         <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Add Money: Free</li>
         <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Payment & Pay Bill: No limit, Free</li>
