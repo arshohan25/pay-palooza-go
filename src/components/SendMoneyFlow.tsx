@@ -69,7 +69,7 @@ const detectRecipientType = (val: string): RecipientType | null => {
 };
 
 // ─── Fee logic ────────────────────────────────────────────────────────────────
-const calcSendFee = (amt: number) => (amt > 100 ? 3 : 0);
+const calcSendFee = (amt: number) => (amt <= 100 ? 0 : amt <= 50000 ? 3 : 5);
 
 // ─── Step config ──────────────────────────────────────────────────────────────
 const STEPS: Step[] = ["recipient", "amount", "confirm", "pin"];

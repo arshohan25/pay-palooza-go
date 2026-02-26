@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowLeft, ArrowUpRight, Banknote, CreditCard, TrendingDown, Info } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Banknote, CreditCard, TrendingDown, Info, Smartphone, FileText, Building2, ArrowDownLeft } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Progress } from "@/components/ui/progress";
 
@@ -7,13 +7,15 @@ interface LimitRowProps {
   label: string;
   used: number;
   limit: number;
+  maxTxn: number;
+  usedTxn: number;
   period: "Daily" | "Monthly";
   fee?: string;
 }
 
-const LimitRow = ({ label, used, limit, period, fee }: LimitRowProps) => {
+const LimitRow = ({ label, used, limit, maxTxn, usedTxn, period, fee }: LimitRowProps) => {
   const { t } = useI18n();
-  const pct = Math.round((used / limit) * 100);
+  const pct = limit > 0 ? Math.round((used / limit) * 100) : 0;
   const remaining = limit - used;
   const isWarning = pct >= 75;
   const isDanger = pct >= 90;
@@ -36,7 +38,7 @@ const LimitRow = ({ label, used, limit, period, fee }: LimitRowProps) => {
       </div>
       <Progress value={pct} className={`h-2 rounded-full ${isDanger ? "[&>div]:bg-destructive" : isWarning ? "[&>div]:bg-accent" : ""}`} />
       <div className="flex justify-between text-[11.5px] text-muted-foreground font-medium">
-        <span>{t("used")} ৳{used.toLocaleString()}</span>
+        <span>{t("used")} ৳{used.toLocaleString()} ({usedTxn}/{maxTxn} txn)</span>
         <span>৳{remaining.toLocaleString()} {t("left")} ৳{limit.toLocaleString()}</span>
       </div>
     </div>
@@ -76,8 +78,17 @@ const useServices = (): ServiceCardProps[] => {
       iconClass: "gradient-send",
       title: t("sendMoney"),
       limits: [
-        { label: t("sendMoney"), used: 18500, limit: 25000, period: "Daily",   fee: t("free") },
-        { label: t("sendMoney"), used: 74000, limit: 200000, period: "Monthly", fee: t("free") },
+        { label: t("sendMoney"), used: 18500, limit: 50000, maxTxn: 40, usedTxn: 12, period: "Daily", fee: "Free ≤৳100, ৳3 ≤৳50k, ৳5" },
+        { label: t("sendMoney"), used: 74000, limit: 400000, maxTxn: 100, usedTxn: 32, period: "Monthly", fee: "Free ≤৳100, ৳3 ≤৳50k, ৳5" },
+      ],
+    },
+    {
+      icon: ArrowDownLeft,
+      iconClass: "gradient-addmoney",
+      title: "Cash In",
+      limits: [
+        { label: "Cash In", used: 5000, limit: 50000, maxTxn: 20, usedTxn: 3, period: "Daily", fee: t("free") },
+        { label: "Cash In", used: 22000, limit: 300000, maxTxn: 100, usedTxn: 15, period: "Monthly", fee: t("free") },
       ],
     },
     {
@@ -85,8 +96,8 @@ const useServices = (): ServiceCardProps[] => {
       iconClass: "gradient-cashout",
       title: t("cashOut"),
       limits: [
-        { label: t("cashOut"), used: 8000,  limit: 20000,  period: "Daily",   fee: "1.85%" },
-        { label: t("cashOut"), used: 35000, limit: 100000, period: "Monthly", fee: "1.85%" },
+        { label: t("cashOut"), used: 8000, limit: 35000, maxTxn: 15, usedTxn: 4, period: "Daily", fee: "1.19%" },
+        { label: t("cashOut"), used: 35000, limit: 300000, maxTxn: 100, usedTxn: 20, period: "Monthly", fee: "1.19%" },
       ],
     },
     {
@@ -94,8 +105,8 @@ const useServices = (): ServiceCardProps[] => {
       iconClass: "gradient-addmoney",
       title: t("addMoney"),
       limits: [
-        { label: t("addMoney"), used: 5000,  limit: 30000,  period: "Daily",   fee: t("free") },
-        { label: t("addMoney"), used: 22000, limit: 200000, period: "Monthly", fee: t("free") },
+        { label: t("addMoney"), used: 5000, limit: 50000, maxTxn: 20, usedTxn: 5, period: "Daily", fee: t("free") },
+        { label: t("addMoney"), used: 22000, limit: 300000, maxTxn: 50, usedTxn: 18, period: "Monthly", fee: t("free") },
       ],
     },
     {
@@ -103,12 +114,56 @@ const useServices = (): ServiceCardProps[] => {
       iconClass: "gradient-payment",
       title: t("payment"),
       limits: [
-        { label: t("payment"), used: 2200,  limit: 10000,  period: "Daily",   fee: t("free") },
-        { label: t("payment"), used: 11000, limit: 50000,  period: "Monthly", fee: t("free") },
+        { label: t("payment"), used: 2200, limit: 0, maxTxn: 0, usedTxn: 0, period: "Daily", fee: t("free") },
+      ],
+    },
+    {
+      icon: Smartphone,
+      iconClass: "gradient-send",
+      title: "Mobile Recharge",
+      limits: [
+        { label: "Mobile Recharge", used: 1200, limit: 50000, maxTxn: 200, usedTxn: 8, period: "Daily", fee: t("free") },
+        { label: "Mobile Recharge", used: 8000, limit: 300000, maxTxn: 2000, usedTxn: 45, period: "Monthly", fee: t("free") },
+      ],
+    },
+    {
+      icon: FileText,
+      iconClass: "gradient-payment",
+      title: "Pay Bill",
+      limits: [
+        { label: "Pay Bill", used: 0, limit: 0, maxTxn: 0, usedTxn: 0, period: "Daily", fee: t("free") },
+      ],
+    },
+    {
+      icon: Building2,
+      iconClass: "gradient-cashout",
+      title: "Bank Transfer",
+      limits: [
+        { label: "Bank Transfer", used: 3000, limit: 50000, maxTxn: 40, usedTxn: 2, period: "Daily", fee: "1%" },
+        { label: "Bank Transfer", used: 15000, limit: 400000, maxTxn: 100, usedTxn: 8, period: "Monthly", fee: "1%" },
       ],
     },
   ];
 };
+
+// Handle "no limit" display
+const NoLimitCard = ({ icon: Icon, iconClass, title }: { icon: React.ElementType; iconClass: string; title: string }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 12 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden"
+  >
+    <div className={`${iconClass} px-4 py-3.5 flex items-center gap-3`}>
+      <div className="w-8 h-8 rounded-xl glass-hero flex items-center justify-center">
+        <Icon size={15} className="text-primary-foreground" strokeWidth={2.2} />
+      </div>
+      <span className="text-[13.5px] font-bold text-primary-foreground">{title}</span>
+    </div>
+    <div className="px-4 py-4">
+      <span className="text-[12px] text-muted-foreground font-medium">No transaction or amount limit</span>
+    </div>
+  </motion.div>
+);
 
 interface LimitsPageProps {
   onBack: () => void;
@@ -117,6 +172,12 @@ interface LimitsPageProps {
 const LimitsPage = ({ onBack }: LimitsPageProps) => {
   const { t } = useI18n();
   const SERVICES = useServices();
+
+  // Separate "no limit" services
+  const noLimitKeys = [t("payment"), "Pay Bill"];
+  const limitedServices = SERVICES.filter(s => !noLimitKeys.includes(s.title));
+  const unlimitedServices = SERVICES.filter(s => noLimitKeys.includes(s.title));
+
   return (
   <motion.div
     initial={{ opacity: 0, x: 32 }}
@@ -148,9 +209,14 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
         </p>
     </div>
 
-    {/* Service cards */}
-    {SERVICES.map((s) => (
+    {/* Service cards with limits */}
+    {limitedServices.map((s) => (
       <ServiceCard key={s.title} {...s} />
+    ))}
+
+    {/* No-limit services */}
+    {unlimitedServices.map((s) => (
+      <NoLimitCard key={s.title} icon={s.icon} iconClass={s.iconClass} title={s.title} />
     ))}
 
     {/* Tariff note */}
@@ -159,11 +225,12 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
           {t("tariffNote")}
       </p>
       <ul className="space-y-2 text-[12px] text-muted-foreground font-medium">
-        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />{t("tariffCashOutAgent")}</li>
-        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />{t("tariffCashOutATM")}</li>
-        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />{t("tariffSendMoney")}</li>
-        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />{t("tariffAddMoney")}</li>
-        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />{t("tariffPayment")}</li>
+        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Cash Out (Agent): 1.19% fee</li>
+        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />ATM Cash Out: Not available</li>
+        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Send Money: Free up to ৳100, then ৳3 up to ৳50,000, then ৳5/txn</li>
+        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Bank Transfer: 1% fee</li>
+        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Add Money: Free</li>
+        <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />Payment & Pay Bill: No limit, Free</li>
       </ul>
     </div>
   </motion.div>
