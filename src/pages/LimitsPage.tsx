@@ -112,8 +112,8 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
       iconClass: "gradient-send",
       title: t("sendMoney"),
       limits: [
-        { label: t("sendMoney"), used: daily.send.usedAmount, limit: 50000, maxTxn: 40, usedTxn: daily.send.usedCount, period: "Daily", fee: sendFee },
-        { label: t("sendMoney"), used: monthly.send.usedAmount, limit: 400000, maxTxn: 100, usedTxn: monthly.send.usedCount, period: "Monthly", fee: sendFee },
+        { label: t("sendMoney"), used: daily.send.usedAmount, limit: 50000, maxTxn: 40, usedTxn: daily.send.usedCount, period: "Daily", fee: "Free/৳3/৳5" },
+        { label: t("sendMoney"), used: monthly.send.usedAmount, limit: 400000, maxTxn: 100, usedTxn: monthly.send.usedCount, period: "Monthly", fee: "Free/৳3/৳5" },
       ],
     },
     {
