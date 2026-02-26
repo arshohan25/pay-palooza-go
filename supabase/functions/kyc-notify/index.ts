@@ -31,15 +31,14 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } }
     );
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claims, error: claimsErr } = await supabaseUser.auth.getClaims(token);
-    if (claimsErr || !claims?.claims?.sub) {
+    const { data: { user }, error: userErr } = await supabaseUser.auth.getUser();
+    if (userErr || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const adminId = claims.claims.sub as string;
+    const adminId = user.id;
 
     // Check admin role
     const { data: roleData } = await supabaseAdmin
