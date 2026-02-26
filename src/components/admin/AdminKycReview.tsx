@@ -1,0 +1,360 @@
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  CheckCircle2, XCircle, Eye, RefreshCw, User, CreditCard, Calendar,
+  ShieldCheck, AlertTriangle, Clock,
+} from "lucide-react";
+import { toast } from "sonner";
+import { format } from "date-fns";
+
+interface KycRecord {
+  id: string;
+  user_id: string;
+  full_name: string | null;
+  nid_number: string | null;
+  date_of_birth: string | null;
+  nid_front_url: string | null;
+  nid_back_url: string | null;
+  nid_photo_url: string | null;
+  selfie_url: string | null;
+  face_match_score: number | null;
+  face_match_result: string | null;
+  ocr_raw_data: any;
+  status: string;
+  reviewer_notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+const STATUS_CONFIG: Record<string, { color: string; icon: React.ElementType }> = {
+  pending: { color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300", icon: Clock },
+  verified: { color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300", icon: CheckCircle2 },
+  rejected: { color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300", icon: XCircle },
+};
+
+export default function AdminKycReview() {
+  const [records, setRecords] = useState<KycRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<"all" | "pending" | "verified" | "rejected">("pending");
+  const [selected, setSelected] = useState<KycRecord | null>(null);
+  const [reviewNotes, setReviewNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+  const loadRecords = useCallback(async () => {
+    setLoading(true);
+    let query = supabase
+      .from("kyc_verifications")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (filter !== "all") {
+      query = query.eq("status", filter);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      toast.error("Failed to load KYC records");
+    } else {
+      setRecords((data as KycRecord[]) ?? []);
+    }
+    setLoading(false);
+  }, [filter]);
+
+  useEffect(() => {
+    loadRecords();
+  }, [loadRecords]);
+
+  // Real-time updates
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-kyc-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "kyc_verifications" }, () => {
+        loadRecords();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [loadRecords]);
+
+  const getSignedUrl = async (path: string | null): Promise<string | null> => {
+    if (!path) return null;
+    const { data } = await supabase.storage
+      .from("kyc-documents")
+      .createSignedUrl(path, 300);
+    return data?.signedUrl ?? null;
+  };
+
+  const openDetail = async (record: KycRecord) => {
+    setSelected(record);
+    setReviewNotes(record.reviewer_notes ?? "");
+  };
+
+  const previewPhoto = async (path: string | null) => {
+    if (!path) return;
+    const url = await getSignedUrl(path);
+    if (url) setPhotoPreview(url);
+    else toast.error("Failed to load photo");
+  };
+
+  const handleDecision = async (decision: "verified" | "rejected") => {
+    if (!selected) return;
+    setSubmitting(true);
+    const { error } = await supabase
+      .from("kyc_verifications")
+      .update({
+        status: decision,
+        reviewer_notes: reviewNotes || null,
+        reviewer_id: (await supabase.auth.getUser()).data.user?.id ?? null,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", selected.id);
+
+    if (error) {
+      toast.error("Failed to update KYC status");
+    } else {
+      toast.success(`KYC ${decision === "verified" ? "approved" : "rejected"} successfully`);
+      setSelected(null);
+      loadRecords();
+    }
+    setSubmitting(false);
+  };
+
+  const matchScoreColor = (score: number | null) => {
+    if (score === null) return "text-muted-foreground";
+    if (score >= 80) return "text-emerald-600 dark:text-emerald-400";
+    if (score >= 60) return "text-amber-600 dark:text-amber-400";
+    return "text-red-600 dark:text-red-400";
+  };
+
+  const pendingCount = records.filter(r => r.status === "pending").length;
+
+  return (
+    <div className="space-y-4">
+      {/* Filter bar */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {(["pending", "all", "verified", "rejected"] as const).map(f => (
+          <Button
+            key={f}
+            variant={filter === f ? "default" : "outline"}
+            size="sm"
+            onClick={() => setFilter(f)}
+          >
+            {f === "pending" ? `Pending (${pendingCount})` : f.charAt(0).toUpperCase() + f.slice(1)}
+          </Button>
+        ))}
+        <Button variant="outline" size="icon" onClick={loadRecords} disabled={loading} className="ml-auto">
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+        </Button>
+      </div>
+
+      {/* Records list */}
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : records.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            No KYC records found for this filter.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-3">
+          {records.map(record => {
+            const cfg = STATUS_CONFIG[record.status] ?? STATUS_CONFIG.pending;
+            const StatusIcon = cfg.icon;
+            return (
+              <Card key={record.id} className="border shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => openDetail(record)}>
+                <CardContent className="p-4 flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    <User className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm text-foreground truncate">
+                      {record.full_name || "Unknown"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      NID: {record.nid_number || "—"} • {format(new Date(record.created_at), "dd MMM yyyy HH:mm")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {record.face_match_score !== null && (
+                      <span className={`text-xs font-bold ${matchScoreColor(record.face_match_score)}`}>
+                        {record.face_match_score}%
+                      </span>
+                    )}
+                    <Badge className={`${cfg.color} border-0 gap-1`}>
+                      <StatusIcon className="w-3 h-3" />
+                      {record.status}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Detail dialog */}
+      <Dialog open={!!selected} onOpenChange={(o) => { if (!o) setSelected(null); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-primary" />
+              KYC Review
+            </DialogTitle>
+          </DialogHeader>
+
+          {selected && (
+            <div className="space-y-4">
+              {/* Personal info */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground">Full Name</label>
+                  <p className="font-medium text-sm">{selected.full_name || "—"}</p>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">NID Number</label>
+                  <p className="font-medium text-sm font-mono">{selected.nid_number || "—"}</p>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Date of Birth</label>
+                  <p className="font-medium text-sm">{selected.date_of_birth || "—"}</p>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Submitted</label>
+                  <p className="font-medium text-sm">{format(new Date(selected.created_at), "dd MMM yyyy HH:mm")}</p>
+                </div>
+              </div>
+
+              {/* Face match */}
+              <Card className="border">
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Face Match Score</span>
+                    <span className={`text-lg font-bold ${matchScoreColor(selected.face_match_score)}`}>
+                      {selected.face_match_score !== null ? `${selected.face_match_score}%` : "N/A"}
+                    </span>
+                  </div>
+                  {selected.face_match_result && (
+                    <p className="text-xs text-muted-foreground mt-1">{selected.face_match_result}</p>
+                  )}
+                  {selected.face_match_score !== null && selected.face_match_score < 70 && (
+                    <div className="flex items-center gap-1.5 mt-2 text-amber-600 dark:text-amber-400">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      <span className="text-xs font-medium">Low confidence — review photos carefully</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Photos */}
+              <div>
+                <label className="text-xs text-muted-foreground mb-2 block">Documents & Photos</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { label: "NID Front", path: selected.nid_front_url, icon: CreditCard },
+                    { label: "NID Back", path: selected.nid_back_url, icon: CreditCard },
+                    { label: "NID Photo", path: selected.nid_photo_url, icon: User },
+                    { label: "Live Selfie", path: selected.selfie_url, icon: User },
+                  ].map(item => (
+                    <Button
+                      key={item.label}
+                      variant="outline"
+                      size="sm"
+                      className="h-auto py-3 flex flex-col items-center gap-1.5"
+                      onClick={(e) => { e.stopPropagation(); previewPhoto(item.path); }}
+                      disabled={!item.path}
+                    >
+                      <item.icon className="w-4 h-4" />
+                      <span className="text-xs">{item.label}</span>
+                      {item.path ? (
+                        <Eye className="w-3 h-3 text-primary" />
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">N/A</span>
+                      )}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* OCR raw data */}
+              {selected.ocr_raw_data && Object.keys(selected.ocr_raw_data).length > 0 && (
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">OCR Extracted Data</label>
+                  <pre className="text-xs bg-muted p-2 rounded-lg overflow-x-auto max-h-32">
+                    {JSON.stringify(selected.ocr_raw_data, null, 2)}
+                  </pre>
+                </div>
+              )}
+
+              {/* Admin notes */}
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Review Notes</label>
+                <Textarea
+                  placeholder="Add notes about this verification..."
+                  value={reviewNotes}
+                  onChange={(e) => setReviewNotes(e.target.value)}
+                  rows={3}
+                  disabled={selected.status !== "pending"}
+                />
+              </div>
+
+              {/* Previous reviewer info */}
+              {selected.status !== "pending" && selected.reviewer_notes && (
+                <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                  <span className="font-medium">Previous decision notes:</span> {selected.reviewer_notes}
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            {selected?.status === "pending" && (
+              <>
+                <Button
+                  variant="destructive"
+                  onClick={() => handleDecision("rejected")}
+                  disabled={submitting}
+                  className="gap-1.5"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Reject
+                </Button>
+                <Button
+                  onClick={() => handleDecision("verified")}
+                  disabled={submitting}
+                  className="gap-1.5"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Approve
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Photo preview dialog */}
+      <Dialog open={!!photoPreview} onOpenChange={(o) => { if (!o) setPhotoPreview(null); }}>
+        <DialogContent className="max-w-md p-2">
+          {photoPreview && (
+            <img
+              src={photoPreview}
+              alt="KYC Document"
+              className="w-full rounded-lg object-contain max-h-[70vh]"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

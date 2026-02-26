@@ -6,7 +6,7 @@ import {
   TrendingUp, Activity, Search, RefreshCw, LogOut,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
-  Menu,
+  Menu, ScanFace,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ import AdminRechargeAnalytics from "@/components/admin/AdminRechargeAnalytics";
 import AdminRechargeImportExport from "@/components/admin/AdminRechargeImportExport";
 import AdminRechargeApiConnect from "@/components/admin/AdminRechargeApiConnect";
 import AdminRechargeLog from "@/components/admin/AdminRechargeLog";
+import AdminKycReview from "@/components/admin/AdminKycReview";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 
 interface Stats {
@@ -136,6 +137,7 @@ const NAV_ITEMS = [
   { id: "gateways", label: "Gateways", icon: CreditCard },
   { id: "toggles", label: "Toggles", icon: ToggleRight },
   { id: "recharge", label: "Recharge", icon: Smartphone },
+  { id: "kyc", label: "KYC", icon: ScanFace },
   { id: "reporting", label: "Reports", icon: BarChart3 },
 ];
 
@@ -660,6 +662,9 @@ export default function AdminDashboard() {
 
         {/* ═══ RECHARGE PACK MANAGER ═══ */}
         {activeTab === "recharge" && <RechargeSection />}
+
+        {/* ═══ KYC REVIEW ═══ */}
+        {activeTab === "kyc" && <AdminKycReview />}
 
         {/* ═══ REPORTING DASHBOARD ═══ */}
         {activeTab === "reporting" && <AdminReporting />}
