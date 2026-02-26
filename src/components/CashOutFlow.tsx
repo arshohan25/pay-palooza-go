@@ -271,8 +271,8 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
 
     haptics.success();
     txnTime.current = new Date();
-    const feeVal = amtVal * 0.0119;
-    const commissionVal = amtVal * 0.0049;
+    const feeVal = isBank ? amtVal * 0.01 : amtVal * 0.0119;
+    const commissionVal = isBank ? 0 : amtVal * 0.0049;
     try {
       if (isBank) {
         await recordTransaction({
@@ -310,9 +310,9 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     setStep("success");
   };
 
-  // Fee: 1.19%
-  const FEE_RATE = 0.0119;
-  const FEE_LABEL = "1.19%";
+  // Fee: 1.19% for agent, 1% for bank
+  const FEE_RATE = isBank ? 0.01 : 0.0119;
+  const FEE_LABEL = isBank ? "1%" : "1.19%";
   const BALANCE = getBalance();
   const calcCashOutFee = (amt: number) => amt * FEE_RATE;
   const feeNum = parseFloat(amount) > 0 ? calcCashOutFee(parseFloat(amount)) : 0;
@@ -407,7 +407,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                     <div className="flex-1">
                       <p className="text-base font-bold text-foreground">{t("agentCashOut")}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{t("withdrawFromAgentDesc")}</p>
-                      <p className="text-xs text-primary font-semibold mt-1">Fee: 1.19%</p>
+                      <p className="text-xs text-primary font-semibold mt-1">{t("fee")}: 1.19%</p>
                     </div>
                     <ChevronLeft size={18} className="text-muted-foreground rotate-180 shrink-0" />
                   </button>
@@ -422,7 +422,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                     <div className="flex-1">
                       <p className="text-base font-bold text-foreground">{t("flowBankTransfer")}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{t("transferToBankDesc")}</p>
-                      <p className="text-xs text-primary font-semibold mt-1">Fee: 1.19%</p>
+                      <p className="text-xs text-primary font-semibold mt-1">{t("fee")}: 1%</p>
                     </div>
                     <ChevronLeft size={18} className="text-muted-foreground rotate-180 shrink-0" />
                   </button>

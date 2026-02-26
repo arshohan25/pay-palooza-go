@@ -4,12 +4,11 @@ import { AlertTriangle, TrendingUp } from "lucide-react";
 
 const DAILY_LIMITS: Record<string, { limit: number; label: string }> = {
   send:         { limit: 50000,  label: "Send" },
-  cashout:      { limit: 50000,  label: "Cash Out" },
+  cashout:      { limit: 35000,  label: "Cash Out" },
   banktransfer: { limit: 50000,  label: "Bank Transfer" },
-  payment:      { limit: 100000, label: "Payment" },
-  recharge:     { limit: 10000,  label: "Recharge" },
-  paybill:      { limit: 50000,  label: "Bill Pay" },
-  addmoney:     { limit: 100000, label: "Add Money" },
+  recharge:     { limit: 50000,  label: "Recharge" },
+  addmoney:     { limit: 50000,  label: "Add Money" },
+  cashin:       { limit: 50000,  label: "Cash In" },
 };
 
 interface DailyLimitBadgeProps {
