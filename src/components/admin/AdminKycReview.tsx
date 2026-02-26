@@ -121,6 +121,21 @@ export default function AdminKycReview() {
       toast.error("Failed to update KYC status");
     } else {
       toast.success(`KYC ${decision === "verified" ? "approved" : "rejected"} successfully`);
+
+      // Send notifications (in-app + email + SMS)
+      try {
+        await supabase.functions.invoke("kyc-notify", {
+          body: {
+            user_id: selected.user_id,
+            decision,
+            reviewer_notes: reviewNotes || null,
+          },
+        });
+      } catch (notifErr) {
+        console.error("Notification send error:", notifErr);
+        // Non-blocking — KYC decision already saved
+      }
+
       setSelected(null);
       loadRecords();
     }

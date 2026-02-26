@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.kyc-face-match]
 verify_jwt = false
+
+[functions.kyc-notify]
+verify_jwt = false
