@@ -1,16 +1,18 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ChevronLeft, CheckCircle2, Upload, Camera, Eye,
-  AlertCircle, ShieldCheck, CreditCard, RotateCcw,
-  FileCheck, Clock, ScanFace, Pencil, Check, X
+  ChevronLeft, CheckCircle2, Camera, Eye,
+  AlertCircle, ShieldCheck, CreditCard,
+  FileCheck, Clock, ScanFace, Pencil, Check, X,
+  Loader2, RefreshCw, Sparkles,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = "nid_front" | "nid_back" | "nid_details" | "selfie" | "review" | "submitted";
-type LivenessState = "idle" | "scanning" | "passed" | "failed";
 
 const STEPS: Step[] = ["nid_front", "nid_back", "nid_details", "selfie", "review"];
 
@@ -21,62 +23,172 @@ const slideVariants = {
   exit:   (dir: number) => ({ x: dir < 0 ? "100%" : "-100%", opacity: 0 }),
 };
 
-// ─── Upload Box ───────────────────────────────────────────────────────────────
-interface UploadBoxProps {
+// ─── Camera Component ─────────────────────────────────────────────────────────
+interface CameraBoxProps {
   label: string;
   preview: string | null;
-  onFile: (dataUrl: string) => void;
+  onCapture: (dataUrl: string) => void;
   icon: React.ElementType;
   gradient: string;
-  accept?: string;
+  guideText: string;
   retakeLabel: string;
-  tapLabel: string;
-  chooseLabel: string;
+  isNidCard?: boolean;
 }
 
-const UploadBox = ({ label, preview, onFile, icon: Icon, gradient, accept = "image/*", retakeLabel, tapLabel, chooseLabel }: UploadBoxProps) => {
-  const inputRef = useRef<HTMLInputElement>(null);
+const CameraBox = ({ label, preview, onCapture, icon: Icon, gradient, guideText, retakeLabel, isNidCard = false }: CameraBoxProps) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const { t } = useI18n();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => onFile(reader.result as string);
-    reader.readAsDataURL(file);
+  const startCamera = useCallback(async () => {
+    setCameraError(null);
+    try {
+      const constraints: MediaStreamConstraints = {
+        video: {
+          facingMode: isNidCard ? "environment" : "user",
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      setCameraActive(true);
+    } catch (err: any) {
+      console.error("Camera error:", err);
+      setCameraError(err.name === "NotAllowedError" 
+        ? t("cameraPermissionDenied") 
+        : t("cameraNotAvailable"));
+    }
+  }, [isNidCard, t]);
+
+  const stopCamera = useCallback(() => {
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+    setCameraActive(false);
+  }, []);
+
+  useEffect(() => {
+    if (!preview) startCamera();
+    return () => stopCamera();
+  }, [preview, startCamera, stopCamera]);
+
+  const capture = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d")!;
+    if (!isNidCard) {
+      // Mirror for selfie
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+    }
+    ctx.drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    stopCamera();
+    onCapture(dataUrl);
+    haptics.medium();
   };
+
+  const retake = () => {
+    onCapture("");
+    startCamera();
+  };
+
+  if (preview) {
+    return (
+      <div className="space-y-2">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">{label}</p>
+        <div className="relative rounded-2xl overflow-hidden border-2 border-primary/30 shadow-glow">
+          <img src={preview} alt={label} className="w-full object-cover" />
+          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-3 flex justify-center">
+            <button
+              onClick={retake}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 backdrop-blur-sm text-white text-sm font-semibold hover:bg-white/30 transition-colors"
+            >
+              <RefreshCw size={14} /> {retakeLabel}
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-primary font-medium px-1">
+          <CheckCircle2 size={13} /> {t("photoCaptured")}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">{label}</p>
-      <button
-        onClick={() => inputRef.current?.click()}
-        className="w-full rounded-2xl border-2 border-dashed border-border bg-muted/30 hover:bg-muted/50 transition-colors overflow-hidden group"
-        style={{ aspectRatio: preview ? "auto" : "16/9" }}
-      >
-        {preview ? (
-          <div className="relative">
-            <img src={preview} alt={label} className="w-full object-cover rounded-2xl" />
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-center justify-center gap-2 text-white text-sm font-semibold">
-              <RotateCcw size={16} /> {retakeLabel}
+      <div className="relative rounded-2xl overflow-hidden border-2 border-dashed border-border bg-black" style={{ aspectRatio: isNidCard ? "16/10" : "3/4" }}>
+        {cameraError ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
+            <div className={`w-14 h-14 ${gradient} rounded-2xl flex items-center justify-center text-primary-foreground shadow-glow`}>
+              <AlertCircle size={26} />
             </div>
+            <p className="text-sm font-semibold text-white">{cameraError}</p>
+            <button onClick={startCamera} className="text-xs text-primary font-semibold underline">
+              {t("tryAgain")}
+            </button>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center gap-3 py-8 px-4">
-            <div className={`w-14 h-14 ${gradient} rounded-2xl flex items-center justify-center text-primary-foreground shadow-glow`}>
-              <Icon size={26} />
+          <>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className={`absolute inset-0 w-full h-full object-cover ${!isNidCard ? "scale-x-[-1]" : ""}`}
+            />
+            {/* Guide overlay */}
+            {isNidCard && (
+              <div className="absolute inset-4 border-2 border-white/40 rounded-xl pointer-events-none">
+                <div className="absolute top-0 left-0 w-5 h-5 border-t-2 border-l-2 border-white rounded-tl-lg" />
+                <div className="absolute top-0 right-0 w-5 h-5 border-t-2 border-r-2 border-white rounded-tr-lg" />
+                <div className="absolute bottom-0 left-0 w-5 h-5 border-b-2 border-l-2 border-white rounded-bl-lg" />
+                <div className="absolute bottom-0 right-0 w-5 h-5 border-b-2 border-r-2 border-white rounded-br-lg" />
+              </div>
+            )}
+            {!isNidCard && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-48 h-60 border-2 border-white/40 rounded-[40%] relative">
+                  <div className="absolute -top-1 -left-1 w-6 h-6 border-t-2 border-l-2 border-white rounded-tl-2xl" />
+                  <div className="absolute -top-1 -right-1 w-6 h-6 border-t-2 border-r-2 border-white rounded-tr-2xl" />
+                  <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-2 border-l-2 border-white rounded-bl-2xl" />
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-2 border-r-2 border-white rounded-br-2xl" />
+                </div>
+              </div>
+            )}
+            {/* Guide text */}
+            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent pt-8 pb-3 px-4 text-center">
+              <p className="text-xs text-white/80 font-medium">{guideText}</p>
             </div>
-            <div className="text-center space-y-1">
-              <p className="text-sm font-semibold text-foreground">{tapLabel}</p>
-              <p className="text-xs text-muted-foreground">JPG, PNG · Max 5MB</p>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-card border border-border shadow-card">
-              <Upload size={14} className="text-primary" />
-              <span className="text-xs font-semibold text-primary">{chooseLabel}</span>
-            </div>
-          </div>
+            {/* Capture button */}
+            {cameraActive && (
+              <div className="absolute bottom-14 inset-x-0 flex justify-center">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={capture}
+                  className="w-16 h-16 rounded-full bg-white shadow-lg flex items-center justify-center border-4 border-white/50 active:bg-white/90 transition-colors"
+                >
+                  <div className="w-12 h-12 rounded-full border-2 border-primary flex items-center justify-center">
+                    <Camera size={20} className="text-primary" />
+                  </div>
+                </motion.button>
+              </div>
+            )}
+          </>
         )}
-      </button>
-      <input ref={inputRef} type="file" accept={accept} className="hidden" onChange={handleChange} />
+        <canvas ref={canvasRef} className="hidden" />
+      </div>
     </div>
   );
 };
@@ -91,8 +203,8 @@ const TipChip = ({ text }: { text: string }) => (
 
 // ─── Editable field ───────────────────────────────────────────────────────────
 const EditableField = ({
-  label, value, onChange, placeholder
-}: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) => {
+  label, value, onChange, placeholder, notExtractedLabel = "Not extracted"
+}: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; notExtractedLabel?: string }) => {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -109,6 +221,8 @@ const EditableField = ({
   useEffect(() => {
     if (editing) inputRef.current?.focus();
   }, [editing]);
+
+  useEffect(() => { setDraft(value); }, [value]);
 
   return (
     <div className="flex flex-col gap-1">
@@ -132,7 +246,7 @@ const EditableField = ({
         </div>
       ) : (
         <div className="flex items-center justify-between gap-2 h-9 px-3 rounded-xl border border-border bg-muted/30">
-          <span className="text-sm text-foreground flex-1 truncate">{value || <span className="text-muted-foreground italic">Not extracted</span>}</span>
+          <span className="text-sm text-foreground flex-1 truncate">{value || <span className="text-muted-foreground italic">{notExtractedLabel}</span>}</span>
           <button
             onClick={() => { setDraft(value); setEditing(true); }}
             className="shrink-0 text-muted-foreground hover:text-primary transition-colors"
@@ -175,127 +289,6 @@ const ReviewDoc = ({
   </div>
 );
 
-// ─── Liveness Check ───────────────────────────────────────────────────────────
-const LivenessCheck = ({ onPassed, startLabel }: { onPassed: () => void; startLabel: string }) => {
-  const [state, setState] = useState<LivenessState>("idle");
-  const [progress, setProgress] = useState(0);
-  const [instruction, setInstruction] = useState("Press Start to begin liveness check");
-  const { t } = useI18n();
-
-  const instructions = [
-    "Look straight at the camera…",
-    "Slowly turn your head left…",
-    "Now turn your head right…",
-    "Blink twice…",
-    "Smile for the camera…",
-    "Hold still — almost done…",
-  ];
-
-  const startScan = () => {
-    setState("scanning");
-    setProgress(0);
-    let step = 0;
-    setInstruction(instructions[0]);
-
-    const interval = setInterval(() => {
-      step++;
-      setProgress(Math.round((step / instructions.length) * 100));
-      if (step < instructions.length) {
-        setInstruction(instructions[step]);
-      } else {
-        clearInterval(interval);
-        setState("passed");
-        setInstruction("Liveness verified ✓");
-        onPassed();
-      }
-    }, 900);
-  };
-
-  const scanColor = state === "passed" ? "text-primary" : state === "failed" ? "text-destructive" : "text-accent";
-
-  return (
-    <div className="flex flex-col items-center gap-6">
-      <div className="relative w-56 h-56 flex items-center justify-center">
-        {state === "scanning" && (
-          <motion.div
-            className="absolute inset-0 rounded-full border-4 border-accent/50"
-            animate={{ rotate: 360 }}
-            transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-          />
-        )}
-        <div className={`absolute inset-4 rounded-full border-2 border-dashed transition-colors ${
-          state === "passed" ? "border-primary" : state === "scanning" ? "border-accent" : "border-border"
-        }`} />
-        <motion.div
-          animate={state === "scanning" ? { scale: [1, 1.06, 1] } : {}}
-          transition={{ repeat: Infinity, duration: 1 }}
-          className={`w-20 h-20 rounded-full flex items-center justify-center ${
-            state === "passed" ? "gradient-primary" : state === "scanning" ? "bg-accent/10" : "bg-muted"
-          }`}
-        >
-          {state === "passed" ? (
-            <CheckCircle2 size={40} className="text-primary-foreground" />
-          ) : (
-            <ScanFace size={40} className={scanColor} />
-          )}
-        </motion.div>
-
-        {["top-2 left-2", "top-2 right-2", "bottom-2 left-2", "bottom-2 right-2"].map((pos, i) => (
-          <div key={i} className={`absolute ${pos} w-5 h-5 border-2 rounded-sm transition-colors ${
-            state === "passed" ? "border-primary" : state === "scanning" ? "border-accent" : "border-muted-foreground/40"
-          } ${pos.includes("right") ? "border-l-0" : "border-r-0"} ${pos.includes("bottom") ? "border-t-0" : "border-b-0"}`} />
-        ))}
-      </div>
-
-      {state === "scanning" && (
-        <div className="w-full space-y-2">
-          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-            <motion.div
-              className="h-full gradient-accent rounded-full"
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.5 }}
-            />
-          </div>
-          <p className="text-xs text-center text-muted-foreground">{progress}% {t("pctComplete")}</p>
-        </div>
-      )}
-
-      <AnimatePresence mode="wait">
-        <motion.p
-          key={instruction}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.25 }}
-          className={`text-sm font-semibold text-center ${
-            state === "passed" ? "text-primary" : "text-foreground"
-          }`}
-        >
-          {instruction}
-        </motion.p>
-      </AnimatePresence>
-
-      {state === "idle" && (
-        <div className="flex items-start gap-2 rounded-xl bg-destructive/8 border border-destructive/20 px-4 py-3 w-full">
-          <AlertCircle size={14} className="text-destructive mt-0.5 shrink-0" />
-          <p className="text-xs text-destructive font-medium">
-            {t("noPhotoUpload")}
-          </p>
-        </div>
-      )}
-
-      {state === "idle" && (
-        <button
-          onClick={startScan}
-          className="w-full h-12 gradient-accent text-primary-foreground font-semibold rounded-2xl shadow-glow active:scale-[0.98] transition-transform"
-        >
-          {startLabel}
-        </button>
-      )}
-    </div>
-  );
-};
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 interface KycFlowProps { onClose: () => void; }
 
@@ -305,21 +298,20 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
   const [direction, setDir]     = useState(1);
   const [nidFront, setNidFront] = useState<string | null>(null);
   const [nidBack, setNidBack]   = useState<string | null>(null);
-  const [livenessPassed, setLivenessPassed] = useState(false);
+  const [selfiePhoto, setSelfiePhoto] = useState<string | null>(null);
 
   const [nidName, setNidName]     = useState("");
+  const [nidNameBn, setNidNameBn] = useState("");
   const [nidNumber, setNidNumber] = useState("");
   const [nidDob, setNidDob]       = useState("");
+  const [fatherName, setFatherName] = useState("");
+  const [motherName, setMotherName] = useState("");
 
-  const prevNidFront = useRef<string | null>(null);
-  useEffect(() => {
-    if (nidFront && nidFront !== prevNidFront.current) {
-      prevNidFront.current = nidFront;
-      setNidName("Tanvir Hasan");
-      setNidNumber("19901234567890");
-      setNidDob("01 Jan 1990");
-    }
-  }, [nidFront]);
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrDone, setOcrDone]     = useState(false);
+  const [faceMatchLoading, setFaceMatchLoading] = useState(false);
+  const [faceMatchResult, setFaceMatchResult] = useState<{ match: boolean; confidence: number; result: string; reason: string } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const stepIndex = STEPS.indexOf(step);
 
@@ -338,10 +330,140 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
     if (step === "review")      { goTo("selfie", -1); return; }
   };
 
+  // Run OCR when NID front is captured
+  const runOcr = useCallback(async (imageData: string) => {
+    if (!imageData) return;
+    setOcrLoading(true);
+    setOcrDone(false);
+    try {
+      const { data, error } = await supabase.functions.invoke("kyc-ocr", {
+        body: { image_base64: imageData },
+      });
+      if (error) throw error;
+      if (data?.data) {
+        const d = data.data;
+        if (d.full_name) setNidName(d.full_name);
+        if (d.full_name_bn) setNidNameBn(d.full_name_bn);
+        if (d.nid_number) setNidNumber(d.nid_number);
+        if (d.date_of_birth) setNidDob(d.date_of_birth);
+        if (d.father_name) setFatherName(d.father_name);
+        if (d.mother_name) setMotherName(d.mother_name);
+        setOcrDone(true);
+        toast.success(t("ocrExtracted"));
+      }
+    } catch (err: any) {
+      console.error("OCR error:", err);
+      toast.error(t("ocrFailed"));
+    } finally {
+      setOcrLoading(false);
+    }
+  }, [t]);
+
+  // Run face match when selfie is captured
+  const runFaceMatch = useCallback(async (selfieData: string) => {
+    if (!selfieData || !nidFront) return;
+    setFaceMatchLoading(true);
+    setFaceMatchResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("kyc-face-match", {
+        body: { nid_image_base64: nidFront, selfie_base64: selfieData },
+      });
+      if (error) throw error;
+      if (data?.data) {
+        setFaceMatchResult(data.data);
+        if (data.data.result === "match") {
+          haptics.success();
+          toast.success(t("faceMatchSuccess"));
+        } else if (data.data.result === "no_match") {
+          toast.error(t("faceMatchFailed"));
+        } else {
+          toast(t("faceMatchInconclusive"));
+        }
+      }
+    } catch (err: any) {
+      console.error("Face match error:", err);
+      toast.error(t("faceMatchError"));
+    } finally {
+      setFaceMatchLoading(false);
+    }
+  }, [nidFront, t]);
+
+  const handleNidFrontCapture = (dataUrl: string) => {
+    if (!dataUrl) { setNidFront(null); return; }
+    setNidFront(dataUrl);
+    runOcr(dataUrl);
+  };
+
+  const handleSelfieCapture = (dataUrl: string) => {
+    if (!dataUrl) { setSelfiePhoto(null); setFaceMatchResult(null); return; }
+    setSelfiePhoto(dataUrl);
+    runFaceMatch(dataUrl);
+  };
+
+  // Upload to storage and save to DB
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) { toast.error(t("notAuthenticated")); return; }
+      const userId = session.user.id;
+
+      // Upload photos to storage
+      const uploadPhoto = async (base64: string, filename: string) => {
+        const base64Data = base64.replace(/^data:image\/[a-z]+;base64,/, "");
+        const bytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+        const blob = new Blob([bytes], { type: "image/jpeg" });
+        const path = `${userId}/${filename}`;
+        const { error } = await supabase.storage.from("kyc-documents").upload(path, blob, { upsert: true });
+        if (error) throw error;
+        return path;
+      };
+
+      const [frontPath, backPath, selfiePath] = await Promise.all([
+        nidFront ? uploadPhoto(nidFront, `nid-front-${Date.now()}.jpg`) : Promise.resolve(null),
+        nidBack ? uploadPhoto(nidBack, `nid-back-${Date.now()}.jpg`) : Promise.resolve(null),
+        selfiePhoto ? uploadPhoto(selfiePhoto, `selfie-${Date.now()}.jpg`) : Promise.resolve(null),
+      ]);
+
+      // Save to kyc_verifications - use raw query since table is new
+      const { error: insertError } = await supabase.from("kyc_verifications" as any).insert({
+        user_id: userId,
+        status: "under_review",
+        nid_number: nidNumber,
+        full_name: nidName,
+        date_of_birth: nidDob,
+        nid_front_url: frontPath,
+        nid_back_url: backPath,
+        selfie_url: selfiePath,
+        face_match_score: faceMatchResult?.confidence ?? null,
+        face_match_result: faceMatchResult?.result ?? null,
+        ocr_raw_data: {
+          full_name: nidName,
+          full_name_bn: nidNameBn,
+          nid_number: nidNumber,
+          date_of_birth: nidDob,
+          father_name: fatherName,
+          mother_name: motherName,
+        },
+      } as any);
+
+      if (insertError) throw insertError;
+
+      haptics.success();
+      goTo("submitted");
+    } catch (err: any) {
+      console.error("Submit error:", err);
+      toast.error(err.message || t("submitFailed"));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const canAdvanceNidFront   = !!nidFront;
   const canAdvanceNidBack    = !!nidBack;
   const canAdvanceNidDetails = !!nidName.trim() && !!nidNumber.trim() && !!nidDob.trim();
-  const canSubmit            = !!nidFront && !!nidBack && livenessPassed;
+  const canAdvanceSelfie     = !!selfiePhoto && !!faceMatchResult;
+  const canSubmit            = !!nidFront && !!nidBack && !!selfiePhoto && !!faceMatchResult && canAdvanceNidDetails;
 
   const headerGradient = (() => {
     if (step === "nid_front")   return "gradient-payment";
@@ -400,23 +522,37 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
             {step === "nid_front" && (
               <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
                 <div className="text-center space-y-1">
-                  <h2 className="text-xl font-bold text-foreground">{t("uploadNidFront")}</h2>
-                  <p className="text-sm text-muted-foreground">{t("uploadNidFrontSub")}</p>
+                  <h2 className="text-xl font-bold text-foreground">{t("captureNidFront")}</h2>
+                  <p className="text-sm text-muted-foreground">{t("captureNidFrontSub")}</p>
                 </div>
 
-                <UploadBox
+                <CameraBox
                   label={t("nidCardFront")}
                   preview={nidFront}
-                  onFile={setNidFront}
+                  onCapture={handleNidFrontCapture}
                   icon={CreditCard}
                   gradient="gradient-payment"
+                  guideText={t("alignNidGuide")}
                   retakeLabel={t("retake")}
-                  tapLabel={t("tapToUploadDoc")}
-                  chooseLabel={t("chooseFile")}
+                  isNidCard
                 />
 
+                {ocrLoading && (
+                  <div className="flex items-center gap-2 rounded-xl bg-accent/10 border border-accent/20 px-4 py-3">
+                    <Loader2 size={14} className="text-accent animate-spin" />
+                    <p className="text-xs text-accent font-medium">{t("extractingNidData")}</p>
+                  </div>
+                )}
+
+                {ocrDone && (
+                  <div className="flex items-center gap-2 rounded-xl bg-primary/10 border border-primary/20 px-4 py-3">
+                    <Sparkles size={14} className="text-primary" />
+                    <p className="text-xs text-primary font-medium">{t("nidDataExtracted")}</p>
+                  </div>
+                )}
+
                 <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2">
-                  <p className="text-xs font-bold text-foreground">📋 {t("photoTips")}</p>
+                  <p className="text-xs font-bold text-foreground">📸 {t("cameraTips")}</p>
                   <TipChip text={t("tipCorners")} />
                   <TipChip text={t("tipGlare")} />
                   <TipChip text={t("tipSurface")} />
@@ -424,14 +560,18 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
 
                 <button
                   onClick={() => canAdvanceNidFront && goTo("nid_back")}
-                  disabled={!canAdvanceNidFront}
+                  disabled={!canAdvanceNidFront || ocrLoading}
                   className={`w-full h-12 rounded-2xl font-semibold text-sm transition-all active:scale-[0.98] ${
-                    canAdvanceNidFront
+                    canAdvanceNidFront && !ocrLoading
                       ? "gradient-payment text-primary-foreground shadow-glow"
                       : "bg-muted text-muted-foreground cursor-not-allowed"
                   }`}
                 >
-                  {canAdvanceNidFront ? t("continueArrow") : t("uploadNidFrontToContinue")}
+                  {ocrLoading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader2 size={16} className="animate-spin" /> {t("processingKyc")}
+                    </span>
+                  ) : canAdvanceNidFront ? t("continueArrow") : t("captureNidToContinue")}
                 </button>
               </div>
             )}
@@ -440,23 +580,23 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
             {step === "nid_back" && (
               <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
                 <div className="text-center space-y-1">
-                  <h2 className="text-xl font-bold text-foreground">{t("uploadNidBack")}</h2>
-                  <p className="text-sm text-muted-foreground">{t("uploadNidBackSub")}</p>
+                  <h2 className="text-xl font-bold text-foreground">{t("captureNidBack")}</h2>
+                  <p className="text-sm text-muted-foreground">{t("captureNidBackSub")}</p>
                 </div>
 
-                <UploadBox
+                <CameraBox
                   label={t("nidCardBack")}
                   preview={nidBack}
-                  onFile={setNidBack}
+                  onCapture={(d) => { if (d) setNidBack(d); else setNidBack(null); }}
                   icon={CreditCard}
                   gradient="gradient-send"
+                  guideText={t("alignNidBackGuide")}
                   retakeLabel={t("retake")}
-                  tapLabel={t("tapToUploadDoc")}
-                  chooseLabel={t("chooseFile")}
+                  isNidCard
                 />
 
                 <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2">
-                  <p className="text-xs font-bold text-foreground">📋 {t("photoTips")}</p>
+                  <p className="text-xs font-bold text-foreground">📸 {t("cameraTips")}</p>
                   <TipChip text={t("tipBarcode")} />
                   <TipChip text={t("tipNoDamage")} />
                   <TipChip text={t("tipLighting")} />
@@ -471,7 +611,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                       : "bg-muted text-muted-foreground cursor-not-allowed"
                   }`}
                 >
-                  {canAdvanceNidBack ? t("continueArrow") : t("uploadNidBackToContinue")}
+                  {canAdvanceNidBack ? t("continueArrow") : t("captureNidBackToContinue")}
                 </button>
               </div>
             )}
@@ -485,8 +625,8 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                 </div>
 
                 <div className="flex items-center gap-2 rounded-xl bg-primary/8 border border-primary/15 px-4 py-2.5">
-                  <CheckCircle2 size={14} className="text-primary shrink-0" />
-                  <p className="text-xs text-primary font-medium">{t("ocrBadge")} <Pencil size={10} className="inline" /> {t("ocrBadgeSuffix")}</p>
+                  <Sparkles size={14} className="text-primary shrink-0" />
+                  <p className="text-xs text-primary font-medium">{t("aiExtractedBadge")}</p>
                 </div>
 
                 {nidFront && (
@@ -495,8 +635,17 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
 
                 <div className="rounded-2xl bg-card border border-border shadow-card p-4 space-y-4">
                   <EditableField label={t("fullNameNid")} value={nidName} onChange={setNidName} placeholder="e.g. Tanvir Hasan" />
+                  {nidNameBn && (
+                    <EditableField label={t("fullNameBn")} value={nidNameBn} onChange={setNidNameBn} placeholder="বাংলা নাম" />
+                  )}
                   <EditableField label={t("nidNumber")} value={nidNumber} onChange={setNidNumber} placeholder="e.g. 19901234567890" />
-                  <EditableField label={t("dateOfBirth")} value={nidDob} onChange={setNidDob} placeholder="e.g. 01 Jan 1990" />
+                  <EditableField label={t("dateOfBirth")} value={nidDob} onChange={setNidDob} placeholder="e.g. 01/01/1990" />
+                  {fatherName && (
+                    <EditableField label={t("fatherName")} value={fatherName} onChange={setFatherName} />
+                  )}
+                  {motherName && (
+                    <EditableField label={t("motherName")} value={motherName} onChange={setMotherName} />
+                  )}
                 </div>
 
                 <button
@@ -513,17 +662,76 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
               </div>
             )}
 
-            {/* ── Selfie / Liveness ── */}
+            {/* ── Selfie / Face Match ── */}
             {step === "selfie" && (
               <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
                 <div className="text-center space-y-1">
-                  <h2 className="text-xl font-bold text-foreground">{t("livenessCheck")}</h2>
-                  <p className="text-sm text-muted-foreground">{t("livenessCheckSub")}</p>
+                  <h2 className="text-xl font-bold text-foreground">{t("liveFaceVerification")}</h2>
+                  <p className="text-sm text-muted-foreground">{t("liveFaceVerificationSub")}</p>
                 </div>
 
-                <LivenessCheck onPassed={() => setLivenessPassed(true)} startLabel={t("startLivenessCheck")} />
+                <CameraBox
+                  label={t("selfieCapture")}
+                  preview={selfiePhoto}
+                  onCapture={handleSelfieCapture}
+                  icon={ScanFace}
+                  gradient="gradient-accent"
+                  guideText={t("alignFaceGuide")}
+                  retakeLabel={t("retake")}
+                  isNidCard={false}
+                />
 
-                {livenessPassed && (
+                {faceMatchLoading && (
+                  <div className="flex items-center gap-3 rounded-xl bg-accent/10 border border-accent/20 px-4 py-3">
+                    <Loader2 size={16} className="text-accent animate-spin" />
+                    <div>
+                      <p className="text-xs text-accent font-semibold">{t("comparingFaces")}</p>
+                      <p className="text-[10px] text-accent/70">{t("aiAnalyzing")}</p>
+                    </div>
+                  </div>
+                )}
+
+                {faceMatchResult && (
+                  <div className={`flex items-center gap-3 rounded-xl px-4 py-3 border ${
+                    faceMatchResult.result === "match"
+                      ? "bg-primary/10 border-primary/20"
+                      : faceMatchResult.result === "no_match"
+                      ? "bg-destructive/10 border-destructive/20"
+                      : "bg-accent/10 border-accent/20"
+                  }`}>
+                    {faceMatchResult.result === "match" ? (
+                      <CheckCircle2 size={16} className="text-primary shrink-0" />
+                    ) : (
+                      <AlertCircle size={16} className={faceMatchResult.result === "no_match" ? "text-destructive" : "text-accent"} />
+                    )}
+                    <div className="flex-1">
+                      <p className={`text-xs font-semibold ${
+                        faceMatchResult.result === "match" ? "text-primary" : faceMatchResult.result === "no_match" ? "text-destructive" : "text-accent"
+                      }`}>
+                        {faceMatchResult.result === "match" ? t("faceMatchedNid") : faceMatchResult.result === "no_match" ? t("faceNotMatched") : t("faceInconclusive")}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {t("confidence")}: {faceMatchResult.confidence}% — {faceMatchResult.reason}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2">
+                  <p className="text-xs font-bold text-foreground">🤳 {t("selfieTips")}</p>
+                  <TipChip text={t("tipEvenLighting")} />
+                  <TipChip text={t("tipRemoveGlasses")} />
+                  <TipChip text={t("tipLookStraight")} />
+                </div>
+
+                {faceMatchResult?.result === "no_match" && (
+                  <div className="flex items-start gap-2 rounded-xl bg-destructive/8 border border-destructive/20 px-4 py-3">
+                    <AlertCircle size={14} className="text-destructive mt-0.5 shrink-0" />
+                    <p className="text-xs text-destructive font-medium">{t("faceNotMatchedRetry")}</p>
+                  </div>
+                )}
+
+                {canAdvanceSelfie && (
                   <motion.button
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -533,13 +741,6 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                     {t("reviewDocuments")}
                   </motion.button>
                 )}
-
-                <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2">
-                  <p className="text-xs font-bold text-foreground">🤳 {t("livenessTips")}</p>
-                  <TipChip text={t("tipEvenLighting")} />
-                  <TipChip text={t("tipRemoveGlasses")} />
-                  <TipChip text={t("tipFollowInstructions")} />
-                </div>
               </div>
             )}
 
@@ -560,8 +761,8 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                     gradient="gradient-payment"
                     icon={CreditCard}
                     retakeLabel={t("retake")}
-                    uploadedLabel={t("uploaded")}
-                    notUploadedLabel={t("notUploaded")}
+                    uploadedLabel={t("captured")}
+                    notUploadedLabel={t("notCaptured")}
                   />
                   <ReviewDoc
                     label={t("nidBackLabel")}
@@ -570,27 +771,33 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                     gradient="gradient-send"
                     icon={CreditCard}
                     retakeLabel={t("retake")}
-                    uploadedLabel={t("uploaded")}
-                    notUploadedLabel={t("notUploaded")}
+                    uploadedLabel={t("captured")}
+                    notUploadedLabel={t("notCaptured")}
                   />
                   <div className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border shadow-card">
-                    <div className="w-16 h-10 gradient-accent rounded-lg flex items-center justify-center text-primary-foreground shrink-0">
-                      <ScanFace size={18} />
-                    </div>
+                    {selfiePhoto ? (
+                      <img src={selfiePhoto} alt="Selfie" className="w-16 h-10 rounded-lg object-cover shrink-0 border border-border" />
+                    ) : (
+                      <div className="w-16 h-10 gradient-accent rounded-lg flex items-center justify-center text-primary-foreground shrink-0">
+                        <ScanFace size={18} />
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground">{t("livenessCheck")}</p>
-                      <p className={`text-xs font-medium ${livenessPassed ? "text-primary" : "text-destructive"}`}>
-                        {livenessPassed ? t("livenessVerified") : t("notCompleted")}
+                      <p className="text-sm font-semibold text-foreground">{t("faceVerification")}</p>
+                      <p className={`text-xs font-medium ${
+                        faceMatchResult?.result === "match" ? "text-primary" : "text-destructive"
+                      }`}>
+                        {faceMatchResult?.result === "match"
+                          ? `${t("matched")} (${faceMatchResult.confidence}%)`
+                          : t("notCompleted")}
                       </p>
                     </div>
-                    {!livenessPassed && (
-                      <button
-                        onClick={() => goTo("selfie", -1)}
-                        className="text-xs font-semibold text-primary border border-primary/30 rounded-lg px-3 py-1.5 hover:bg-primary/5 transition-colors"
-                      >
-                        {t("redo")}
-                      </button>
-                    )}
+                    <button
+                      onClick={() => goTo("selfie", -1)}
+                      className="text-xs font-semibold text-primary border border-primary/30 rounded-lg px-3 py-1.5 hover:bg-primary/5 transition-colors"
+                    >
+                      {t("redo")}
+                    </button>
                   </div>
                 </div>
 
@@ -609,6 +816,8 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                       { label: t("fullNameLabel"), value: nidName },
                       { label: t("nidNumber"), value: nidNumber },
                       { label: t("dateOfBirth"), value: nidDob },
+                      ...(fatherName ? [{ label: t("fatherName"), value: fatherName }] : []),
+                      ...(motherName ? [{ label: t("motherName"), value: motherName }] : []),
                     ].map(({ label, value }) => (
                       <div key={label} className="flex items-center justify-between gap-4">
                         <p className="text-xs text-muted-foreground">{label}</p>
@@ -617,19 +826,6 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                     ))}
                   </div>
                 </div>
-
-                {!canSubmit && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-start gap-2 rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3"
-                  >
-                    <AlertCircle size={15} className="text-destructive mt-0.5 shrink-0" />
-                    <p className="text-xs text-destructive font-medium">
-                      {t("completeAllSteps")}
-                    </p>
-                  </motion.div>
-                )}
 
                 {canSubmit && (
                   <div className="rounded-xl bg-primary/5 border border-primary/15 px-4 py-3 text-xs text-muted-foreground leading-relaxed">
@@ -649,15 +845,19 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                 </div>
 
                 <button
-                  onClick={() => { if (canSubmit) { haptics.success(); goTo("submitted"); } }}
-                  disabled={!canSubmit}
+                  onClick={() => canSubmit && handleSubmit()}
+                  disabled={!canSubmit || submitting}
                   className={`w-full h-12 rounded-2xl font-semibold text-sm transition-all active:scale-[0.98] ${
-                    canSubmit
+                    canSubmit && !submitting
                       ? "gradient-primary text-primary-foreground shadow-glow"
                       : "bg-muted text-muted-foreground cursor-not-allowed"
                   }`}
                 >
-                  {canSubmit ? t("submitForVerification") : t("completeAllFirst")}
+                  {submitting ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader2 size={16} className="animate-spin" /> {t("submittingKyc")}
+                    </span>
+                  ) : canSubmit ? t("submitForVerification") : t("completeAllFirst")}
                 </button>
               </div>
             )}
@@ -700,7 +900,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                     </div>
                     <div className="flex-1 text-left">
                       <p className="text-sm font-semibold text-foreground">{t("nidDocuments")}</p>
-                      <p className="text-xs text-muted-foreground">{t("frontBackUploaded")}</p>
+                      <p className="text-xs text-muted-foreground">{t("frontBackCaptured")}</p>
                     </div>
                     <CheckCircle2 size={16} className="text-primary" />
                   </div>
@@ -710,8 +910,12 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                       <ScanFace size={15} />
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="text-sm font-semibold text-foreground">{t("livenessCheck")}</p>
-                      <p className="text-xs text-muted-foreground">{t("faceVerified")}</p>
+                      <p className="text-sm font-semibold text-foreground">{t("faceVerification")}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {faceMatchResult?.result === "match"
+                          ? `${t("matched")} (${faceMatchResult.confidence}%)`
+                          : t("submitted")}
+                      </p>
                     </div>
                     <CheckCircle2 size={16} className="text-primary" />
                   </div>

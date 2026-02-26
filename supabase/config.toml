@@ -17,3 +17,9 @@ verify_jwt = false
 
 [functions.process-recharge]
 verify_jwt = false
+
+[functions.kyc-ocr]
+verify_jwt = false
+
+[functions.kyc-face-match]
+verify_jwt = false
