@@ -15,11 +15,24 @@ interface LimitRowProps {
 
 const LimitRow = ({ label, used, limit, maxTxn, usedTxn, period, fee }: LimitRowProps) => {
   const { t } = useI18n();
+  const isNoLimit = limit <= 0 && maxTxn <= 0;
   const pct = limit > 0 ? Math.round((used / limit) * 100) : 0;
   const remaining = limit - used;
   const isWarning = pct >= 75;
   const isDanger = pct >= 90;
   const periodLabel = period === "Daily" ? t("daily") : t("monthly");
+
+  if (isNoLimit) {
+    return (
+      <div className="px-4 py-4 border-b border-border/50 last:border-0">
+        <div className="flex items-center justify-between">
+          <span className="text-[13px] font-semibold text-foreground">{periodLabel}</span>
+          <span className="text-[11.5px] font-bold text-primary">No Limit</span>
+        </div>
+        <p className="text-[11.5px] text-muted-foreground font-medium mt-1">No transaction or amount limit · {fee}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 py-4 border-b border-border/50 last:border-0 space-y-2.5">
@@ -146,25 +159,6 @@ const useServices = (): ServiceCardProps[] => {
   ];
 };
 
-// Handle "no limit" display
-const NoLimitCard = ({ icon: Icon, iconClass, title }: { icon: React.ElementType; iconClass: string; title: string }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 12 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden"
-  >
-    <div className={`${iconClass} px-4 py-3.5 flex items-center gap-3`}>
-      <div className="w-8 h-8 rounded-xl glass-hero flex items-center justify-center">
-        <Icon size={15} className="text-primary-foreground" strokeWidth={2.2} />
-      </div>
-      <span className="text-[13.5px] font-bold text-primary-foreground">{title}</span>
-    </div>
-    <div className="px-4 py-4">
-      <span className="text-[12px] text-muted-foreground font-medium">No transaction or amount limit</span>
-    </div>
-  </motion.div>
-);
-
 interface LimitsPageProps {
   onBack: () => void;
 }
@@ -172,11 +166,6 @@ interface LimitsPageProps {
 const LimitsPage = ({ onBack }: LimitsPageProps) => {
   const { t } = useI18n();
   const SERVICES = useServices();
-
-  // Separate "no limit" services
-  const noLimitKeys = [t("payment"), "Pay Bill"];
-  const limitedServices = SERVICES.filter(s => !noLimitKeys.includes(s.title));
-  const unlimitedServices = SERVICES.filter(s => noLimitKeys.includes(s.title));
 
   return (
   <motion.div
@@ -209,14 +198,9 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
         </p>
     </div>
 
-    {/* Service cards with limits */}
-    {limitedServices.map((s) => (
+    {/* Service cards */}
+    {SERVICES.map((s) => (
       <ServiceCard key={s.title} {...s} />
-    ))}
-
-    {/* No-limit services */}
-    {unlimitedServices.map((s) => (
-      <NoLimitCard key={s.title} icon={s.icon} iconClass={s.iconClass} title={s.title} />
     ))}
 
     {/* Tariff note */}
