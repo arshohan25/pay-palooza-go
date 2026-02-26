@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
+import { useFeeConfig } from "@/hooks/use-fee-config";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { transferMoney, getBalance, recordTransaction } from "@/lib/balanceStore";
@@ -145,6 +146,7 @@ interface CashOutFlowProps {
 const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const { t } = useI18n();
   const { isLocked } = useFeatureLocks();
+  const { calcCashOutFee, calcBankTransferFee, getFeeLabel, getAgentCommission, loading: feeLoading } = useFeeConfig();
   const cashOutLock = isLocked("cash_out");
   const [step, setStep] = useState<Step>("method");
   const [direction, setDirection] = useState(1);
@@ -271,8 +273,8 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
 
     haptics.success();
     txnTime.current = new Date();
-    const feeVal = isBank ? amtVal * 0.01 : amtVal * 0.0119;
-    const commissionVal = isBank ? 0 : amtVal * 0.0049;
+    const feeVal = isBank ? calcBankTransferFee(amtVal) : calcCashOutFee(amtVal);
+    const commissionVal = isBank ? 0 : getAgentCommission("cashout", amtVal);
     try {
       if (isBank) {
         await recordTransaction({
@@ -310,12 +312,11 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     setStep("success");
   };
 
-  // Fee: 1.19% for agent, 1% for bank
-  const FEE_RATE = isBank ? 0.01 : 0.0119;
-  const FEE_LABEL = isBank ? "1%" : "1.19%";
+  // Fee from DB
+  const FEE_LABEL = isBank ? getFeeLabel("banktransfer") : getFeeLabel("cashout");
   const BALANCE = getBalance();
-  const calcCashOutFee = (amt: number) => amt * FEE_RATE;
-  const feeNum = parseFloat(amount) > 0 ? calcCashOutFee(parseFloat(amount)) : 0;
+  const calcFeeForMethod = (amt: number) => isBank ? calcBankTransferFee(amt) : calcCashOutFee(amt);
+  const feeNum = parseFloat(amount) > 0 ? calcFeeForMethod(parseFloat(amount)) : 0;
   const fee = feeNum.toFixed(2);
   // Fee source logic
   const feeFromBalance = Math.min(feeNum, BALANCE);

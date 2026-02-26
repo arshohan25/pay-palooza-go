@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
+import { useFeeConfig } from "@/hooks/use-fee-config";
 import { transferMoney, getBalance } from "@/lib/balanceStore";
 import { verifyPin } from "@/lib/verifyPin";
 import { checkDailyLimit } from "@/lib/dailyLimits";
@@ -22,6 +23,7 @@ import {
   AlertCircle,
   QrCode,
   Hash,
+  Banknote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,8 +70,7 @@ const detectRecipientType = (val: string): RecipientType | null => {
   return null;
 };
 
-// ─── Fee logic ────────────────────────────────────────────────────────────────
-const calcSendFee = (amt: number) => (amt <= 100 ? 0 : amt <= 50000 ? 3 : 5);
+// Fee logic now driven by useFeeConfig hook
 
 // ─── Step config ──────────────────────────────────────────────────────────────
 const STEPS: Step[] = ["recipient", "amount", "confirm", "pin"];
@@ -135,6 +136,7 @@ interface SendMoneyFlowProps { onClose: () => void; prefilledPhone?: string; onS
 const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProps) => {
   const { t } = useI18n();
   const { isLocked } = useFeatureLocks();
+  const { calcFee, calcCashOutFee, loading: feeLoading } = useFeeConfig();
   const sendLock = isLocked("send_money");
   const [step, setStep]           = useState<Step>("recipient");
   const [direction, setDirection] = useState(1);
@@ -147,6 +149,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   const [pin, setPin]             = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [addCashOutCharge, setAddCashOutCharge] = useState(false);
   const txnTime = useRef(new Date());
   const genId = () => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; };
   const txnId   = useRef(genId());
@@ -280,29 +283,33 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
     haptics.success();
     txnTime.current = new Date();
-    const feeVal = calcSendFee(amtVal);
+    const cashOutExtra = addCashOutCharge ? calcCashOutFee(amtVal) : 0;
+    const actualSendAmount = parseFloat((amtVal + cashOutExtra).toFixed(2));
+    const feeVal = calcFee("send", actualSendAmount);
     await transferMoney({
       recipientPhone: recipient?.phone ?? "",
-      amount: amtVal,
+      amount: actualSendAmount,
       fee: feeVal,
       type: "send",
       recipientName: recipient?.name,
       reference: txnId.current,
-      description: note || undefined,
+      description: (addCashOutCharge ? "[+Cash Out Charge] " : "") + (note || ""),
     });
-    onSuccess?.(amtVal);
-    showTxnToast({ type: "Send Money", amount: `৳${amtVal.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-send" });
+    onSuccess?.(actualSendAmount);
+    showTxnToast({ type: "Send Money", amount: `৳${actualSendAmount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-send" });
     setDirection(1);
     setStep("success");
   };
 
   const BALANCE = getBalance();
   const amtNum = parseFloat(amount) || 0;
-  const fee    = calcSendFee(amtNum);
+  const cashOutExtra = addCashOutCharge ? calcCashOutFee(amtNum) : 0;
+  const sendAmount = parseFloat((amtNum + cashOutExtra).toFixed(2));
+  const fee    = calcFee("send", sendAmount);
   const feeFromBalance = Math.min(fee, BALANCE);
   const feeFromAmount  = parseFloat((fee - feeFromBalance).toFixed(2));
-  const totalFromBalance = amtNum + feeFromBalance;
-  const recipientReceives = parseFloat((amtNum - feeFromAmount).toFixed(2));
+  const totalFromBalance = sendAmount + feeFromBalance;
+  const recipientReceives = parseFloat((sendAmount - feeFromAmount).toFixed(2));
 
   const PROGRESS_STEPS: Step[] = ["recipient", "amount", "confirm", "pin"];
 
@@ -523,12 +530,47 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   />
                 </div>
 
+                {/* Cash Out Charge Toggle */}
+                <button
+                  onClick={() => { setAddCashOutCharge(!addCashOutCharge); haptics.light(); }}
+                  className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all active:scale-[0.98] ${
+                    addCashOutCharge
+                      ? "border-primary bg-primary/10 shadow-card"
+                      : "border-border bg-card hover:border-primary/40"
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                    addCashOutCharge ? "gradient-cashout text-white" : "bg-muted text-muted-foreground"
+                  }`}>
+                    <Banknote size={18} />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className="text-sm font-semibold text-foreground">Add Cash Out Charge</p>
+                    <p className="text-[11px] text-muted-foreground">Add 1.19% so recipient gets full amount after cash out</p>
+                  </div>
+                  <div className={`w-11 h-6 rounded-full transition-colors relative ${addCashOutCharge ? "bg-primary" : "bg-muted"}`}>
+                    <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${addCashOutCharge ? "translate-x-5" : "translate-x-0.5"}`} />
+                  </div>
+                </button>
+
                 {amtNum > 0 && (
                   <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2 text-sm">
                     <div className="flex justify-between text-muted-foreground">
                       <span>{t("amount")}</span>
                       <span className="text-foreground font-medium">৳{amtNum.toLocaleString()}</span>
                     </div>
+                    {addCashOutCharge && cashOutExtra > 0 && (
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Cash Out Charge (1.19%)</span>
+                        <span className="text-foreground font-medium">+ ৳{cashOutExtra.toLocaleString()}</span>
+                      </div>
+                    )}
+                    {addCashOutCharge && cashOutExtra > 0 && (
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Total Send</span>
+                        <span className="text-foreground font-medium">৳{sendAmount.toLocaleString()}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-muted-foreground">
                       <span>{t("serviceFee")}</span>
                       <span className="text-foreground font-medium">
