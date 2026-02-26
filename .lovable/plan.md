@@ -1,25 +1,14 @@
+## Plan: Update Send Money Fee Labels and Tariff Note
 
+### What Changes
 
-## Plan: Add Support Section to Account Page
+Two text updates in `src/pages/LimitsPage.tsx`:
 
-### What's Changing
-A new **"Support & Help"** section will be added to the Account page (between Notifications and Security sections) with three options:
-
-1. **Live Chat** — Opens the existing `SupportChat` component in a bottom sheet (reusing the same pattern from ProfileEditFlow)
-2. **Support Ticket** — Opens a form to submit a support ticket (subject + description) saved to the `support_conversations` table with status "open"
-3. **Email Support** — Opens the user's email client with a pre-filled `mailto:` link to `EasyPay@smartshop.bd`
+1. **Send Money service card fee label** (lines 104-105): Change `"Free ≤৳100, ৳3 ≤৳50k, ৳5"` to `"Free ≤৳100, ৳3 >৳100–৳50k, ৳5/txn"` — this clarifies that the ৳3 fee applies *after* ৳100 up to ৳50k, matching the tariff note format.
+2. **Tariff note Send Money line** (line 224): Change `"Send Money: Free up to ৳100, then ৳3 up to ৳50,000, then ৳5/txn"` to `"Send Money: ৳3 after ৳100 up to ৳50,000, Then ৳5/txn"` — adds the "after ৳100" clarification per your request.
 
 ### Technical Details
 
-**File: `src/pages/AccountPage.tsx`**
-- Import `SupportChat`, `Sheet`/`SheetContent`/`SheetHeader`/`SheetTitle`, and new icons (`MessageCircle`, `Mail`, `Ticket`)
-- Add `showSupport` and `userId` state variables
-- Fetch `userId` from the auth session in the existing `useEffect`
-- Add a new `<Section title="Support & Help">` block with three `<MenuRow>` entries:
-  - **Live Chat**: sets `showSupport = true`, opens a bottom `Sheet` with `<SupportChat userId={userId} />`
-  - **Submit a Ticket**: sets `showTicketForm = true`, opens a bottom `Sheet` with a simple form (subject input + description textarea + submit button) that inserts into `support_conversations`
-  - **Email Us**: triggers `window.open("mailto:EasyPay@smartshop.bd?subject=Support Request")` directly
-- Add the two `Sheet` components at the bottom of the JSX alongside the existing modals
-
-**No database or edge function changes needed** — reuses existing `support_conversations` and `support_messages` tables and the `SupportChat` component.
-
+- Single file edit: `src/pages/LimitsPage.tsx`
+- Lines 104-105: Update both daily and monthly fee strings for Send Money
+- Line 224: Update tariff note bullet text
