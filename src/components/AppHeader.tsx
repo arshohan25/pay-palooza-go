@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import NotificationCenter from "@/components/NotificationCenter";
-import { INITIAL_NOTIFICATIONS } from "@/components/NotificationCenter";
+import { useNotifications } from "@/hooks/use-notifications";
 import { useI18n } from "@/lib/i18n";
 
 interface AppHeaderProps {
@@ -13,11 +13,9 @@ interface AppHeaderProps {
 const AppHeader = ({ onSignOut }: AppHeaderProps) => {
   const { resolvedTheme, setTheme } = useTheme();
   const { t } = useI18n();
-  const [mounted, setMounted]       = useState(false);
-  const [showNotif, setShowNotif]   = useState(false);
-  const [unreadCount, setUnreadCount] = useState(
-    () => INITIAL_NOTIFICATIONS.filter((n) => !n.read).length,
-  );
+  const [mounted, setMounted] = useState(false);
+  const [showNotif, setShowNotif] = useState(false);
+  const { unreadCount } = useNotifications();
 
   useEffect(() => setMounted(true), []);
 
@@ -32,7 +30,7 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
         transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
         className="flex items-center justify-between py-1"
       >
-        {/* Left — Logout button with icon + text */}
+        {/* Left — Logout */}
         <motion.button
           whileTap={{ scale: 0.88 }}
           onClick={onSignOut}
@@ -57,8 +55,8 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
                 <motion.span
                   key={isDark ? "moon" : "sun"}
                   initial={{ opacity: 0, rotate: -30, scale: 0.6 }}
-                  animate={{ opacity: 1, rotate: 0,   scale: 1   }}
-                  exit={{   opacity: 0, rotate:  30,  scale: 0.6 }}
+                  animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                  exit={{ opacity: 0, rotate: 30, scale: 0.6 }}
                   transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
                   className="flex items-center justify-center"
                 >
@@ -80,7 +78,7 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
           {/* Bell + badge */}
           <motion.button
             whileTap={{ scale: 0.90 }}
-            onClick={() => { setShowNotif(true); setUnreadCount(0); }}
+            onClick={() => setShowNotif(true)}
             className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-card border border-border/60 shadow-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:shadow-elevated transition-all duration-150 tap-target"
             aria-label="Notifications"
           >
@@ -100,11 +98,9 @@ const AppHeader = ({ onSignOut }: AppHeaderProps) => {
               )}
             </AnimatePresence>
           </motion.button>
-
         </div>
       </motion.header>
 
-      {/* Notification Center */}
       <NotificationCenter open={showNotif} onClose={() => setShowNotif(false)} />
     </>
   );
