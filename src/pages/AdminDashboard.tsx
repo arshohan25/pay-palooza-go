@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAdmin, fetchAdminStats, fetchRecentTransactions, fetchAllUsers, fetchFraudAlerts, fetchAllAgents, fetchAllMerchants, toggleUserStatus, toggleAgentStatus, toggleMerchantStatus } from "@/hooks/use-admin";
 import { toast } from "sonner";
 import { signOut } from "@/lib/auth";
@@ -295,82 +296,56 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Horizontal nav menubar */}
-        <div className="flex items-center gap-1 px-4 md:px-6 pb-2">
-          {/* Hamburger menu for full nav list */}
-          <div className="relative shrink-0">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-7 w-7 rounded-lg"
-              onClick={() => setShowNavMenu(!showNavMenu)}
-            >
-              <Menu className="w-3.5 h-3.5" />
-            </Button>
-            {showNavMenu && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowNavMenu(false)} />
-                <div className="absolute left-0 top-full mt-1 z-50 bg-card border border-border rounded-xl shadow-lg p-2 w-52 max-h-[70vh] overflow-y-auto">
-                  {NAV_ITEMS.map(item => (
-                    <button
-                      key={item.id}
-                      onClick={() => { setActiveTab(item.id); setShowNavMenu(false); }}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        activeTab === item.id
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      }`}
-                    >
-                      <item.icon className="w-4 h-4 shrink-0" />
-                      {item.label}
-                      {item.id === "alerts" && stats.openAlerts > 0 && (
-                        <span className="ml-auto min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
-                          {stats.openAlerts}
-                        </span>
-                      )}
-                      {item.id === "support" && supportUnread > 0 && (
-                        <span className="ml-auto min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
-                          {supportUnread}
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Scrollable tabs */}
-          <div className="flex-1 overflow-x-auto scrollbar-hide">
-            <nav className="flex items-center gap-0.5 w-max">
-              {NAV_ITEMS.map(item => (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                    activeTab === item.id
-                      ? "bg-primary/10 text-primary border border-primary/20"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"
-                  }`}
-                >
-                  <item.icon className="w-3.5 h-3.5" />
-                  {item.label}
-                  {item.id === "alerts" && stats.openAlerts > 0 && (
-                    <span className="min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
-                      {stats.openAlerts}
-                    </span>
-                  )}
-                  {item.id === "support" && supportUnread > 0 && (
-                    <span className="min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
-                      {supportUnread}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </nav>
-          </div>
+        {/* Active section label + hamburger */}
+        <div className="flex items-center gap-2 px-4 md:px-6 pb-2">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 rounded-lg shrink-0"
+            onClick={() => setShowNavMenu(true)}
+          >
+            <Menu className="w-4 h-4" />
+          </Button>
+          <span className="text-sm font-semibold text-foreground">
+            {NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview"}
+          </span>
         </div>
       </header>
+
+      {/* Slide-out navigation drawer */}
+      <Sheet open={showNavMenu} onOpenChange={setShowNavMenu}>
+        <SheetContent side="left" className="w-64 p-0">
+          <SheetHeader className="px-4 pt-4 pb-2">
+            <SheetTitle className="text-sm font-bold">Navigation</SheetTitle>
+          </SheetHeader>
+          <nav className="flex flex-col gap-0.5 px-2 pb-4">
+            {NAV_ITEMS.map(item => (
+              <button
+                key={item.id}
+                onClick={() => { setActiveTab(item.id); setShowNavMenu(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === item.id
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <item.icon className="w-4 h-4 shrink-0" />
+                {item.label}
+                {item.id === "alerts" && stats.openAlerts > 0 && (
+                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {stats.openAlerts}
+                  </span>
+                )}
+                {item.id === "support" && supportUnread > 0 && (
+                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {supportUnread}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+        </SheetContent>
+      </Sheet>
 
       {/* Main content */}
       <main className="flex-1 p-4 md:p-8 overflow-auto">
