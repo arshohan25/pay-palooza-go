@@ -2,12 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, CheckCircle2, AlertCircle, Lock, ShieldCheck } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 import { signIn, changePin as changePinAuth } from "@/lib/auth";
 import { isWeakPin } from "@/lib/pinValidation";
 
-// PIN is now stored server-side via Supabase Auth
-// We validate the current PIN by attempting a sign-in
 const getPhone = () => localStorage.getItem("mfs_device_phone") ?? "";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -18,33 +17,6 @@ const slideVariants = {
   enter:  (dir: number) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0 }),
   center: { x: 0, opacity: 1 },
   exit:   (dir: number) => ({ x: dir < 0 ? "100%" : "-100%", opacity: 0 }),
-};
-
-// ─── Step config ──────────────────────────────────────────────────────────────
-const STEPS: Step[] = ["current", "new", "confirm"];
-const STEP_META: Record<Step, { label: string; heading: string; sub: string; gradient: string; iconGradient: string }> = {
-  current: {
-    label: "Verify",
-    heading: "Enter Current PIN",
-    sub: "Confirm your existing 4-digit PIN to continue",
-    gradient: "gradient-send",
-    iconGradient: "gradient-send",
-  },
-  new: {
-    label: "New PIN",
-    heading: "Set New PIN",
-    sub: "Choose a strong 4-digit PIN you haven't used before",
-    gradient: "gradient-primary",
-    iconGradient: "gradient-primary",
-  },
-  confirm: {
-    label: "Confirm",
-    heading: "Confirm New PIN",
-    sub: "Re-enter your new PIN to make sure it matches",
-    gradient: "gradient-addmoney",
-    iconGradient: "gradient-addmoney",
-  },
-  success: { label: "Done", heading: "", sub: "", gradient: "", iconGradient: "" },
 };
 
 // ─── PIN dots + native input ──────────────────────────────────────────────────
@@ -59,7 +31,6 @@ interface PinFieldProps {
 const PinField = ({ value, onChange, gradient, error, autoFocus }: PinFieldProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Focus when step mounts
   useEffect(() => {
     if (autoFocus) {
       const t = setTimeout(() => inputRef.current?.focus(), 120);
@@ -69,7 +40,6 @@ const PinField = ({ value, onChange, gradient, error, autoFocus }: PinFieldProps
 
   return (
     <div className="space-y-5">
-      {/* Animated dots */}
       <div className="flex justify-center gap-5 py-2">
         {[0, 1, 2, 3].map((i) => (
           <motion.div
@@ -79,7 +49,7 @@ const PinField = ({ value, onChange, gradient, error, autoFocus }: PinFieldProps
               backgroundColor: error
                 ? "hsl(var(--destructive))"
                 : value.length > i
-                ? undefined // controlled by className
+                ? undefined
                 : "transparent",
             }}
             transition={{ type: "spring", stiffness: 500, damping: 25 }}
@@ -94,7 +64,6 @@ const PinField = ({ value, onChange, gradient, error, autoFocus }: PinFieldProps
         ))}
       </div>
 
-      {/* Error */}
       <AnimatePresence>
         {error && (
           <motion.p
@@ -109,7 +78,6 @@ const PinField = ({ value, onChange, gradient, error, autoFocus }: PinFieldProps
         )}
       </AnimatePresence>
 
-      {/* Native system keyboard input */}
       <div className="px-6">
         <input
           ref={inputRef}
@@ -133,6 +101,7 @@ const PinField = ({ value, onChange, gradient, error, autoFocus }: PinFieldProps
 interface ChangePinFlowProps { onClose: () => void; }
 
 const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
+  const { t } = useI18n();
   const [step, setStep]         = useState<Step>("current");
   const [direction, setDir]     = useState(1);
   const [currentPin, setCurrentPin] = useState("");
@@ -140,7 +109,15 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
   const [confirmPin, setConfirmPin] = useState("");
   const [error, setError]       = useState("");
 
+  const STEPS: Step[] = ["current", "new", "confirm"];
   const stepIndex = STEPS.indexOf(step);
+
+  const stepMeta = {
+    current: { heading: t("enterCurrentPin"), sub: t("confirmCurrentPinSub"), gradient: "gradient-send", iconGradient: "gradient-send" },
+    new:     { heading: t("setNewPin"), sub: t("chooseStrongPin"), gradient: "gradient-primary", iconGradient: "gradient-primary" },
+    confirm: { heading: t("confirmNewPin"), sub: t("reenterNewPin"), gradient: "gradient-addmoney", iconGradient: "gradient-addmoney" },
+    success: { heading: "", sub: "", gradient: "", iconGradient: "" },
+  };
 
   const goTo = (next: Step, dir = 1) => {
     haptics.medium();
@@ -156,7 +133,6 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
     if (step === "confirm") { setNewPin(""); goTo("new", -1); return; }
   };
 
-  // ── Auto-advance when 4 digits entered ────────────────────────────────────
   const handleCurrentPin = (p: string) => {
     if (p.length > currentPin.length) haptics.light();
     setCurrentPin(p);
@@ -164,13 +140,12 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
     if (p.length === 4) {
       setTimeout(async () => {
         try {
-          // Validate current PIN by attempting sign-in
           await signIn(getPhone(), p);
           goTo("new");
           setCurrentPin("");
         } catch {
           haptics.error();
-          setError("Incorrect PIN. Please try again.");
+          setError(t("incorrectPin"));
           setTimeout(() => setCurrentPin(""), 600);
         }
       }, 280);
@@ -185,11 +160,11 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
       setTimeout(() => {
         if (isWeakPin(p)) {
           haptics.error();
-          setError("PIN is too simple. Avoid sequential or repeated digits.");
+          setError(t("pinTooSimple"));
           setTimeout(() => setNewPin(""), 600);
         } else {
           goTo("confirm");
-          setNewPin(p); // keep value for comparison in confirm step
+          setNewPin(p);
         }
       }, 280);
     }
@@ -203,10 +178,9 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
       setTimeout(() => {
         if (p !== newPin) {
           haptics.error();
-          setError("PINs don't match. Please try again.");
+          setError(t("pinsDontMatch"));
           setTimeout(() => setConfirmPin(""), 600);
         } else {
-          // Update PIN server-side
           haptics.success();
           changePinAuth(newPin).catch(() => {});
           setDir(1);
@@ -216,12 +190,11 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
     }
   };
 
-  const activeMeta = STEP_META[step];
+  const activeMeta = stepMeta[step];
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
 
-      {/* ── Header ── */}
       {step !== "success" && (
         <motion.div
           className={`${activeMeta.gradient} px-4 pt-3 pb-3 text-primary-foreground`}
@@ -237,8 +210,8 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
               <ChevronLeft size={20} />
             </button>
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-extrabold tracking-tight">Change PIN</h1>
-              <p className="text-xs text-white/70 mt-0.5">Keep Your Account Secure</p>
+              <h1 className="text-xl font-extrabold tracking-tight">{t("changePinTitle")}</h1>
+              <p className="text-xs text-white/70 mt-0.5">{t("keepAccountSecure")}</p>
             </div>
           </div>
           <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
@@ -251,7 +224,6 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
         </motion.div>
       )}
 
-      {/* ── Animated content ── */}
       <div className="flex-1 overflow-hidden relative">
         <AnimatePresence custom={direction} mode="popLayout">
           <motion.div
@@ -265,15 +237,14 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
             className="absolute inset-0 overflow-y-auto scrollbar-none flex flex-col"
           >
 
-            {/* ─── Current PIN ─── */}
             {step === "current" && (
               <div className="flex flex-col gap-7 pt-10 pb-8">
                 <div className="text-center space-y-2 px-4">
                   <div className="w-14 h-14 gradient-send rounded-2xl flex items-center justify-center text-primary-foreground mx-auto shadow-glow">
                     <Lock size={26} />
                   </div>
-                  <h2 className="text-xl font-bold text-foreground">{STEP_META.current.heading}</h2>
-                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">{STEP_META.current.sub}</p>
+                  <h2 className="text-xl font-bold text-foreground">{stepMeta.current.heading}</h2>
+                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">{stepMeta.current.sub}</p>
                 </div>
 
                 <PinField
@@ -285,20 +256,19 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                 />
 
                 <p className="text-center text-xs text-muted-foreground px-4">
-                  Demo PIN: <span className="font-mono font-bold text-foreground">1234</span>
+                  {t("demoPin")} <span className="font-mono font-bold text-foreground">1234</span>
                 </p>
               </div>
             )}
 
-            {/* ─── New PIN ─── */}
             {step === "new" && (
               <div className="flex flex-col gap-7 pt-10 pb-8">
                 <div className="text-center space-y-2 px-4">
                   <div className="w-14 h-14 gradient-primary rounded-2xl flex items-center justify-center text-primary-foreground mx-auto shadow-glow">
                     <Lock size={26} />
                   </div>
-                  <h2 className="text-xl font-bold text-foreground">{STEP_META.new.heading}</h2>
-                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">{STEP_META.new.sub}</p>
+                  <h2 className="text-xl font-bold text-foreground">{stepMeta.new.heading}</h2>
+                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">{stepMeta.new.sub}</p>
                 </div>
 
                 <PinField
@@ -309,27 +279,25 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                   autoFocus
                 />
 
-                {/* PIN strength hints */}
                 <div className="mx-6 rounded-2xl bg-muted/60 border border-border px-4 py-3 space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground">PIN tips:</p>
+                  <p className="text-xs font-semibold text-muted-foreground">{t("pinTips")}</p>
                   <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
-                    <li>Avoid repeated digits (e.g. 1111)</li>
-                    <li>Avoid sequential digits (e.g. 1234)</li>
-                    <li>Don't share your PIN with anyone</li>
+                    <li>{t("avoidRepeated")}</li>
+                    <li>{t("avoidSequential")}</li>
+                    <li>{t("dontSharePin")}</li>
                   </ul>
                 </div>
               </div>
             )}
 
-            {/* ─── Confirm PIN ─── */}
             {step === "confirm" && (
               <div className="flex flex-col gap-7 pt-10 pb-8">
                 <div className="text-center space-y-2 px-4">
                   <div className="w-14 h-14 gradient-addmoney rounded-2xl flex items-center justify-center text-primary-foreground mx-auto shadow-glow">
                     <ShieldCheck size={26} />
                   </div>
-                  <h2 className="text-xl font-bold text-foreground">{STEP_META.confirm.heading}</h2>
-                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">{STEP_META.confirm.sub}</p>
+                  <h2 className="text-xl font-bold text-foreground">{stepMeta.confirm.heading}</h2>
+                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">{stepMeta.confirm.sub}</p>
                 </div>
 
                 <PinField
@@ -342,7 +310,6 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
               </div>
             )}
 
-            {/* ─── Success ─── */}
             {step === "success" && (
               <div className="flex-1 flex flex-col items-center justify-center gap-6 px-8 text-center py-16">
                 <motion.div
@@ -360,9 +327,9 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                   transition={{ delay: 0.2 }}
                   className="space-y-2"
                 >
-                  <h2 className="text-2xl font-bold text-foreground">PIN Changed!</h2>
+                  <h2 className="text-2xl font-bold text-foreground">{t("pinChanged")}</h2>
                   <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
-                    Your transaction PIN has been updated successfully. Use your new PIN for all future transactions.
+                    {t("pinChangedSub")}
                   </p>
                 </motion.div>
 
@@ -376,7 +343,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
                     onClick={onClose}
                     className="w-full h-12 gradient-addmoney text-primary-foreground font-semibold rounded-2xl shadow-glow active:scale-[0.98] transition-transform"
                   >
-                    Back to Account
+                    {t("backToAccount")}
                   </button>
                 </motion.div>
               </div>

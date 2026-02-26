@@ -6,41 +6,13 @@ import {
   AlertCircle, ShieldCheck, CreditCard, RotateCcw,
   FileCheck, Clock, ScanFace, Pencil, Check, X
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = "nid_front" | "nid_back" | "nid_details" | "selfie" | "review" | "submitted";
 type LivenessState = "idle" | "scanning" | "passed" | "failed";
 
 const STEPS: Step[] = ["nid_front", "nid_back", "nid_details", "selfie", "review"];
-
-const STEP_META: Record<Step, { label: string; heading: string; sub: string }> = {
-  nid_front: {
-    label: "NID Front",
-    heading: "Upload NID Front",
-    sub: "Take a clear photo of the front of your National ID Card",
-  },
-  nid_back: {
-    label: "NID Back",
-    heading: "Upload NID Back",
-    sub: "Now capture the back side of your National ID Card",
-  },
-  nid_details: {
-    label: "NID Details",
-    heading: "Confirm NID Details",
-    sub: "We extracted the following info — please verify and correct if needed",
-  },
-  selfie: {
-    label: "Liveness",
-    heading: "Liveness Check",
-    sub: "We'll verify you're a real person — no photo upload allowed",
-  },
-  review: {
-    label: "Review",
-    heading: "Review & Submit",
-    sub: "Check your documents before submitting for verification",
-  },
-  submitted: { label: "Done", heading: "", sub: "" },
-};
 
 // ─── Slide variants ───────────────────────────────────────────────────────────
 const slideVariants = {
@@ -57,9 +29,12 @@ interface UploadBoxProps {
   icon: React.ElementType;
   gradient: string;
   accept?: string;
+  retakeLabel: string;
+  tapLabel: string;
+  chooseLabel: string;
 }
 
-const UploadBox = ({ label, preview, onFile, icon: Icon, gradient, accept = "image/*" }: UploadBoxProps) => {
+const UploadBox = ({ label, preview, onFile, icon: Icon, gradient, accept = "image/*", retakeLabel, tapLabel, chooseLabel }: UploadBoxProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,7 +57,7 @@ const UploadBox = ({ label, preview, onFile, icon: Icon, gradient, accept = "ima
           <div className="relative">
             <img src={preview} alt={label} className="w-full object-cover rounded-2xl" />
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-center justify-center gap-2 text-white text-sm font-semibold">
-              <RotateCcw size={16} /> Retake
+              <RotateCcw size={16} /> {retakeLabel}
             </div>
           </div>
         ) : (
@@ -91,12 +66,12 @@ const UploadBox = ({ label, preview, onFile, icon: Icon, gradient, accept = "ima
               <Icon size={26} />
             </div>
             <div className="text-center space-y-1">
-              <p className="text-sm font-semibold text-foreground">Tap to upload</p>
+              <p className="text-sm font-semibold text-foreground">{tapLabel}</p>
               <p className="text-xs text-muted-foreground">JPG, PNG · Max 5MB</p>
             </div>
             <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-card border border-border shadow-card">
               <Upload size={14} className="text-primary" />
-              <span className="text-xs font-semibold text-primary">Choose File</span>
+              <span className="text-xs font-semibold text-primary">{chooseLabel}</span>
             </div>
           </div>
         )}
@@ -172,9 +147,10 @@ const EditableField = ({
 
 // ─── Review row ───────────────────────────────────────────────────────────────
 const ReviewDoc = ({
-  label, preview, onRetake, gradient, icon: Icon
+  label, preview, onRetake, gradient, icon: Icon, retakeLabel, uploadedLabel, notUploadedLabel
 }: {
   label: string; preview: string | null; onRetake: () => void; gradient: string; icon: React.ElementType;
+  retakeLabel: string; uploadedLabel: string; notUploadedLabel: string;
 }) => (
   <div className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border shadow-card">
     {preview ? (
@@ -187,23 +163,24 @@ const ReviewDoc = ({
     <div className="flex-1 min-w-0">
       <p className="text-sm font-semibold text-foreground truncate">{label}</p>
       <p className={`text-xs font-medium ${preview ? "text-primary" : "text-destructive"}`}>
-        {preview ? "✓ Uploaded" : "Not uploaded"}
+        {preview ? uploadedLabel : notUploadedLabel}
       </p>
     </div>
     <button
       onClick={onRetake}
       className="text-xs font-semibold text-primary border border-primary/30 rounded-lg px-3 py-1.5 hover:bg-primary/5 transition-colors"
     >
-      Retake
+      {retakeLabel}
     </button>
   </div>
 );
 
 // ─── Liveness Check ───────────────────────────────────────────────────────────
-const LivenessCheck = ({ onPassed }: { onPassed: () => void }) => {
+const LivenessCheck = ({ onPassed, startLabel }: { onPassed: () => void; startLabel: string }) => {
   const [state, setState] = useState<LivenessState>("idle");
   const [progress, setProgress] = useState(0);
   const [instruction, setInstruction] = useState("Press Start to begin liveness check");
+  const { t } = useI18n();
 
   const instructions = [
     "Look straight at the camera…",
@@ -238,9 +215,7 @@ const LivenessCheck = ({ onPassed }: { onPassed: () => void }) => {
 
   return (
     <div className="flex flex-col items-center gap-6">
-      {/* Face frame */}
       <div className="relative w-56 h-56 flex items-center justify-center">
-        {/* Animated ring */}
         {state === "scanning" && (
           <motion.div
             className="absolute inset-0 rounded-full border-4 border-accent/50"
@@ -248,11 +223,9 @@ const LivenessCheck = ({ onPassed }: { onPassed: () => void }) => {
             transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
           />
         )}
-        {/* Dashed oval */}
         <div className={`absolute inset-4 rounded-full border-2 border-dashed transition-colors ${
           state === "passed" ? "border-primary" : state === "scanning" ? "border-accent" : "border-border"
         }`} />
-        {/* Center icon */}
         <motion.div
           animate={state === "scanning" ? { scale: [1, 1.06, 1] } : {}}
           transition={{ repeat: Infinity, duration: 1 }}
@@ -267,7 +240,6 @@ const LivenessCheck = ({ onPassed }: { onPassed: () => void }) => {
           )}
         </motion.div>
 
-        {/* Corner markers */}
         {["top-2 left-2", "top-2 right-2", "bottom-2 left-2", "bottom-2 right-2"].map((pos, i) => (
           <div key={i} className={`absolute ${pos} w-5 h-5 border-2 rounded-sm transition-colors ${
             state === "passed" ? "border-primary" : state === "scanning" ? "border-accent" : "border-muted-foreground/40"
@@ -275,7 +247,6 @@ const LivenessCheck = ({ onPassed }: { onPassed: () => void }) => {
         ))}
       </div>
 
-      {/* Progress bar */}
       {state === "scanning" && (
         <div className="w-full space-y-2">
           <div className="h-1.5 rounded-full bg-muted overflow-hidden">
@@ -285,11 +256,10 @@ const LivenessCheck = ({ onPassed }: { onPassed: () => void }) => {
               transition={{ duration: 0.5 }}
             />
           </div>
-          <p className="text-xs text-center text-muted-foreground">{progress}% complete</p>
+          <p className="text-xs text-center text-muted-foreground">{progress}% {t("pctComplete")}</p>
         </div>
       )}
 
-      {/* Instruction text */}
       <AnimatePresence mode="wait">
         <motion.p
           key={instruction}
@@ -305,12 +275,11 @@ const LivenessCheck = ({ onPassed }: { onPassed: () => void }) => {
         </motion.p>
       </AnimatePresence>
 
-      {/* No upload notice */}
       {state === "idle" && (
         <div className="flex items-start gap-2 rounded-xl bg-destructive/8 border border-destructive/20 px-4 py-3 w-full">
           <AlertCircle size={14} className="text-destructive mt-0.5 shrink-0" />
           <p className="text-xs text-destructive font-medium">
-            Direct photo upload is not allowed. You must complete the live face scan.
+            {t("noPhotoUpload")}
           </p>
         </div>
       )}
@@ -320,7 +289,7 @@ const LivenessCheck = ({ onPassed }: { onPassed: () => void }) => {
           onClick={startScan}
           className="w-full h-12 gradient-accent text-primary-foreground font-semibold rounded-2xl shadow-glow active:scale-[0.98] transition-transform"
         >
-          Start Liveness Check
+          {startLabel}
         </button>
       )}
     </div>
@@ -331,23 +300,21 @@ const LivenessCheck = ({ onPassed }: { onPassed: () => void }) => {
 interface KycFlowProps { onClose: () => void; }
 
 const KycFlow = ({ onClose }: KycFlowProps) => {
+  const { t } = useI18n();
   const [step, setStep]         = useState<Step>("nid_front");
   const [direction, setDir]     = useState(1);
   const [nidFront, setNidFront] = useState<string | null>(null);
   const [nidBack, setNidBack]   = useState<string | null>(null);
   const [livenessPassed, setLivenessPassed] = useState(false);
 
-  // Editable NID details (auto-"extracted" when NID front is uploaded)
   const [nidName, setNidName]     = useState("");
   const [nidNumber, setNidNumber] = useState("");
   const [nidDob, setNidDob]       = useState("");
 
-  // Simulate OCR extraction when nidFront is set
   const prevNidFront = useRef<string | null>(null);
   useEffect(() => {
     if (nidFront && nidFront !== prevNidFront.current) {
       prevNidFront.current = nidFront;
-      // Simulate extracted data
       setNidName("Tanvir Hasan");
       setNidNumber("19901234567890");
       setNidDob("01 Jan 1990");
@@ -387,7 +354,6 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
 
-      {/* ── Header ── */}
       {step !== "submitted" && (
         <motion.div
           className={`${headerGradient} px-4 pt-3 pb-3 text-primary-foreground`}
@@ -403,8 +369,8 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
               <ChevronLeft size={20} />
             </button>
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-extrabold tracking-tight">KYC Verification</h1>
-              <p className="text-xs text-white/70 mt-0.5">Secure Identity Check</p>
+              <h1 className="text-xl font-extrabold tracking-tight">{t("kycTitle")}</h1>
+              <p className="text-xs text-white/70 mt-0.5">{t("secureIdCheck")}</p>
             </div>
           </div>
           <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
@@ -417,7 +383,6 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
         </motion.div>
       )}
 
-      {/* ── Animated content ── */}
       <div className="flex-1 overflow-hidden relative">
         <AnimatePresence custom={direction} mode="popLayout">
           <motion.div
@@ -435,23 +400,26 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
             {step === "nid_front" && (
               <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
                 <div className="text-center space-y-1">
-                  <h2 className="text-xl font-bold text-foreground">{STEP_META.nid_front.heading}</h2>
-                  <p className="text-sm text-muted-foreground">{STEP_META.nid_front.sub}</p>
+                  <h2 className="text-xl font-bold text-foreground">{t("uploadNidFront")}</h2>
+                  <p className="text-sm text-muted-foreground">{t("uploadNidFrontSub")}</p>
                 </div>
 
                 <UploadBox
-                  label="NID Card — Front Side"
+                  label={t("nidCardFront")}
                   preview={nidFront}
                   onFile={setNidFront}
                   icon={CreditCard}
                   gradient="gradient-payment"
+                  retakeLabel={t("retake")}
+                  tapLabel={t("tapToUploadDoc")}
+                  chooseLabel={t("chooseFile")}
                 />
 
                 <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2">
-                  <p className="text-xs font-bold text-foreground">📋 Photo Tips</p>
-                  <TipChip text="Ensure all 4 corners of the card are visible" />
-                  <TipChip text="Avoid glare, shadows, or blurry images" />
-                  <TipChip text="Place card on a dark, flat surface" />
+                  <p className="text-xs font-bold text-foreground">📋 {t("photoTips")}</p>
+                  <TipChip text={t("tipCorners")} />
+                  <TipChip text={t("tipGlare")} />
+                  <TipChip text={t("tipSurface")} />
                 </div>
 
                 <button
@@ -463,7 +431,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                       : "bg-muted text-muted-foreground cursor-not-allowed"
                   }`}
                 >
-                  {canAdvanceNidFront ? "Continue →" : "Upload NID Front to Continue"}
+                  {canAdvanceNidFront ? t("continueArrow") : t("uploadNidFrontToContinue")}
                 </button>
               </div>
             )}
@@ -472,23 +440,26 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
             {step === "nid_back" && (
               <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
                 <div className="text-center space-y-1">
-                  <h2 className="text-xl font-bold text-foreground">{STEP_META.nid_back.heading}</h2>
-                  <p className="text-sm text-muted-foreground">{STEP_META.nid_back.sub}</p>
+                  <h2 className="text-xl font-bold text-foreground">{t("uploadNidBack")}</h2>
+                  <p className="text-sm text-muted-foreground">{t("uploadNidBackSub")}</p>
                 </div>
 
                 <UploadBox
-                  label="NID Card — Back Side"
+                  label={t("nidCardBack")}
                   preview={nidBack}
                   onFile={setNidBack}
                   icon={CreditCard}
                   gradient="gradient-send"
+                  retakeLabel={t("retake")}
+                  tapLabel={t("tapToUploadDoc")}
+                  chooseLabel={t("chooseFile")}
                 />
 
                 <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2">
-                  <p className="text-xs font-bold text-foreground">📋 Photo Tips</p>
-                  <TipChip text="Capture the barcode and signature area clearly" />
-                  <TipChip text="Make sure the card is not damaged or folded" />
-                  <TipChip text="Use natural lighting for best results" />
+                  <p className="text-xs font-bold text-foreground">📋 {t("photoTips")}</p>
+                  <TipChip text={t("tipBarcode")} />
+                  <TipChip text={t("tipNoDamage")} />
+                  <TipChip text={t("tipLighting")} />
                 </div>
 
                 <button
@@ -500,7 +471,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                       : "bg-muted text-muted-foreground cursor-not-allowed"
                   }`}
                 >
-                  {canAdvanceNidBack ? "Continue →" : "Upload NID Back to Continue"}
+                  {canAdvanceNidBack ? t("continueArrow") : t("uploadNidBackToContinue")}
                 </button>
               </div>
             )}
@@ -509,41 +480,23 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
             {step === "nid_details" && (
               <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
                 <div className="text-center space-y-1">
-                  <h2 className="text-xl font-bold text-foreground">{STEP_META.nid_details.heading}</h2>
-                  <p className="text-sm text-muted-foreground">{STEP_META.nid_details.sub}</p>
+                  <h2 className="text-xl font-bold text-foreground">{t("confirmNidDetails")}</h2>
+                  <p className="text-sm text-muted-foreground">{t("confirmNidDetailsSub")}</p>
                 </div>
 
-                {/* OCR badge */}
                 <div className="flex items-center gap-2 rounded-xl bg-primary/8 border border-primary/15 px-4 py-2.5">
                   <CheckCircle2 size={14} className="text-primary shrink-0" />
-                  <p className="text-xs text-primary font-medium">Details auto-extracted from your NID photo. Tap <Pencil size={10} className="inline" /> to correct any errors.</p>
+                  <p className="text-xs text-primary font-medium">{t("ocrBadge")} <Pencil size={10} className="inline" /> {t("ocrBadgeSuffix")}</p>
                 </div>
 
-                {/* NID front thumbnail */}
                 {nidFront && (
                   <img src={nidFront} alt="NID Front" className="w-full h-28 object-cover rounded-2xl border border-border" />
                 )}
 
-                {/* Editable fields */}
                 <div className="rounded-2xl bg-card border border-border shadow-card p-4 space-y-4">
-                  <EditableField
-                    label="Full Name (as on NID)"
-                    value={nidName}
-                    onChange={setNidName}
-                    placeholder="e.g. Tanvir Hasan"
-                  />
-                  <EditableField
-                    label="NID Number"
-                    value={nidNumber}
-                    onChange={setNidNumber}
-                    placeholder="e.g. 19901234567890"
-                  />
-                  <EditableField
-                    label="Date of Birth"
-                    value={nidDob}
-                    onChange={setNidDob}
-                    placeholder="e.g. 01 Jan 1990"
-                  />
+                  <EditableField label={t("fullNameNid")} value={nidName} onChange={setNidName} placeholder="e.g. Tanvir Hasan" />
+                  <EditableField label={t("nidNumber")} value={nidNumber} onChange={setNidNumber} placeholder="e.g. 19901234567890" />
+                  <EditableField label={t("dateOfBirth")} value={nidDob} onChange={setNidDob} placeholder="e.g. 01 Jan 1990" />
                 </div>
 
                 <button
@@ -555,7 +508,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                       : "bg-muted text-muted-foreground cursor-not-allowed"
                   }`}
                 >
-                  {canAdvanceNidDetails ? "Confirm Details →" : "Fill in all fields to continue"}
+                  {canAdvanceNidDetails ? t("confirmDetailsArrow") : t("fillAllFields")}
                 </button>
               </div>
             )}
@@ -564,11 +517,11 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
             {step === "selfie" && (
               <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
                 <div className="text-center space-y-1">
-                  <h2 className="text-xl font-bold text-foreground">{STEP_META.selfie.heading}</h2>
-                  <p className="text-sm text-muted-foreground">{STEP_META.selfie.sub}</p>
+                  <h2 className="text-xl font-bold text-foreground">{t("livenessCheck")}</h2>
+                  <p className="text-sm text-muted-foreground">{t("livenessCheckSub")}</p>
                 </div>
 
-                <LivenessCheck onPassed={() => setLivenessPassed(true)} />
+                <LivenessCheck onPassed={() => setLivenessPassed(true)} startLabel={t("startLivenessCheck")} />
 
                 {livenessPassed && (
                   <motion.button
@@ -577,15 +530,15 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                     onClick={() => goTo("review")}
                     className="w-full h-12 gradient-primary text-primary-foreground font-semibold rounded-2xl shadow-glow active:scale-[0.98] transition-transform"
                   >
-                    Review Documents →
+                    {t("reviewDocuments")}
                   </motion.button>
                 )}
 
                 <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2">
-                  <p className="text-xs font-bold text-foreground">🤳 Liveness Tips</p>
-                  <TipChip text="Ensure you're in good, even lighting" />
-                  <TipChip text="Remove glasses, hat, or face coverings" />
-                  <TipChip text="Follow on-screen instructions carefully" />
+                  <p className="text-xs font-bold text-foreground">🤳 {t("livenessTips")}</p>
+                  <TipChip text={t("tipEvenLighting")} />
+                  <TipChip text={t("tipRemoveGlasses")} />
+                  <TipChip text={t("tipFollowInstructions")} />
                 </div>
               </div>
             )}
@@ -594,36 +547,40 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
             {step === "review" && (
               <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
                 <div className="text-center space-y-1">
-                  <h2 className="text-xl font-bold text-foreground">{STEP_META.review.heading}</h2>
-                  <p className="text-sm text-muted-foreground">{STEP_META.review.sub}</p>
+                  <h2 className="text-xl font-bold text-foreground">{t("reviewSubmit")}</h2>
+                  <p className="text-sm text-muted-foreground">{t("reviewSubmitSub")}</p>
                 </div>
 
-                {/* Documents summary */}
                 <div className="space-y-3">
-                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Documents</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">{t("documents")}</p>
                   <ReviewDoc
-                    label="NID Front"
+                    label={t("nidFrontLabel")}
                     preview={nidFront}
                     onRetake={() => goTo("nid_front", -1)}
                     gradient="gradient-payment"
                     icon={CreditCard}
+                    retakeLabel={t("retake")}
+                    uploadedLabel={t("uploaded")}
+                    notUploadedLabel={t("notUploaded")}
                   />
                   <ReviewDoc
-                    label="NID Back"
+                    label={t("nidBackLabel")}
                     preview={nidBack}
                     onRetake={() => goTo("nid_back", -1)}
                     gradient="gradient-send"
                     icon={CreditCard}
+                    retakeLabel={t("retake")}
+                    uploadedLabel={t("uploaded")}
+                    notUploadedLabel={t("notUploaded")}
                   />
-                  {/* Liveness row */}
                   <div className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border shadow-card">
                     <div className="w-16 h-10 gradient-accent rounded-lg flex items-center justify-center text-primary-foreground shrink-0">
                       <ScanFace size={18} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground">Liveness Check</p>
+                      <p className="text-sm font-semibold text-foreground">{t("livenessCheck")}</p>
                       <p className={`text-xs font-medium ${livenessPassed ? "text-primary" : "text-destructive"}`}>
-                        {livenessPassed ? "✓ Verified" : "Not completed"}
+                        {livenessPassed ? t("livenessVerified") : t("notCompleted")}
                       </p>
                     </div>
                     {!livenessPassed && (
@@ -631,28 +588,27 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                         onClick={() => goTo("selfie", -1)}
                         className="text-xs font-semibold text-primary border border-primary/30 rounded-lg px-3 py-1.5 hover:bg-primary/5 transition-colors"
                       >
-                        Redo
+                        {t("redo")}
                       </button>
                     )}
                   </div>
                 </div>
 
-                {/* Extracted NID details (read-only summary) */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between px-1">
-                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">NID Details</p>
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t("nidDetails")}</p>
                     <button
                       onClick={() => goTo("nid_details", -1)}
                       className="flex items-center gap-1 text-xs text-primary font-semibold"
                     >
-                      <Pencil size={11} /> Edit
+                      <Pencil size={11} /> {t("edit")}
                     </button>
                   </div>
                   <div className="rounded-2xl bg-card border border-border shadow-card p-4 space-y-3">
                     {[
-                      { label: "Full Name", value: nidName },
-                      { label: "NID Number", value: nidNumber },
-                      { label: "Date of Birth", value: nidDob },
+                      { label: t("fullNameLabel"), value: nidName },
+                      { label: t("nidNumber"), value: nidNumber },
+                      { label: t("dateOfBirth"), value: nidDob },
                     ].map(({ label, value }) => (
                       <div key={label} className="flex items-center justify-between gap-4">
                         <p className="text-xs text-muted-foreground">{label}</p>
@@ -662,7 +618,6 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                   </div>
                 </div>
 
-                {/* Missing warning */}
                 {!canSubmit && (
                   <motion.div
                     initial={{ opacity: 0, y: -4 }}
@@ -671,27 +626,25 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                   >
                     <AlertCircle size={15} className="text-destructive mt-0.5 shrink-0" />
                     <p className="text-xs text-destructive font-medium">
-                      Please complete all steps before submitting.
+                      {t("completeAllSteps")}
                     </p>
                   </motion.div>
                 )}
 
-                {/* Terms note */}
                 {canSubmit && (
                   <div className="rounded-xl bg-primary/5 border border-primary/15 px-4 py-3 text-xs text-muted-foreground leading-relaxed">
-                    By submitting, you confirm that the documents belong to you and the information is accurate. Your data is encrypted and processed securely.
+                    {t("termsNote")}
                   </div>
                 )}
 
-                {/* Privacy badges */}
                 <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <ShieldCheck size={13} className="text-primary" />
-                    <span>256-bit Encrypted</span>
+                    <span>{t("encrypted256")}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Eye size={13} className="text-primary" />
-                    <span>Private & Secure</span>
+                    <span>{t("privateSecure")}</span>
                   </div>
                 </div>
 
@@ -704,7 +657,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                       : "bg-muted text-muted-foreground cursor-not-allowed"
                   }`}
                 >
-                  {canSubmit ? "Submit for Verification" : "Complete All Steps First"}
+                  {canSubmit ? t("submitForVerification") : t("completeAllFirst")}
                 </button>
               </div>
             )}
@@ -712,7 +665,6 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
             {/* ── Submitted ── */}
             {step === "submitted" && (
               <div className="flex-1 flex flex-col items-center justify-center gap-6 px-8 py-12 text-center">
-                {/* Success icon */}
                 <motion.div
                   initial={{ scale: 0, rotate: -20 }}
                   animate={{ scale: 1, rotate: 0 }}
@@ -728,28 +680,27 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                   transition={{ delay: 0.2 }}
                   className="space-y-2"
                 >
-                  <h2 className="text-2xl font-bold text-foreground">Submitted!</h2>
+                  <h2 className="text-2xl font-bold text-foreground">{t("submittedTitle")}</h2>
                   <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
-                    Your KYC documents have been submitted successfully. We'll review them within 24–48 hours.
+                    {t("kycSubmittedSub")}
                   </p>
                 </motion.div>
 
-                {/* Status card */}
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
                   className="w-full rounded-2xl bg-card border border-border shadow-card p-4 space-y-3"
                 >
-                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Verification Status</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t("verificationStatus")}</p>
 
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-xl gradient-payment flex items-center justify-center text-primary-foreground shrink-0">
                       <CreditCard size={15} />
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="text-sm font-semibold text-foreground">NID Documents</p>
-                      <p className="text-xs text-muted-foreground">Front & back uploaded</p>
+                      <p className="text-sm font-semibold text-foreground">{t("nidDocuments")}</p>
+                      <p className="text-xs text-muted-foreground">{t("frontBackUploaded")}</p>
                     </div>
                     <CheckCircle2 size={16} className="text-primary" />
                   </div>
@@ -759,8 +710,8 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                       <ScanFace size={15} />
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="text-sm font-semibold text-foreground">Liveness Check</p>
-                      <p className="text-xs text-muted-foreground">Face verified successfully</p>
+                      <p className="text-sm font-semibold text-foreground">{t("livenessCheck")}</p>
+                      <p className="text-xs text-muted-foreground">{t("faceVerified")}</p>
                     </div>
                     <CheckCircle2 size={16} className="text-primary" />
                   </div>
@@ -770,16 +721,15 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                       <Clock size={15} className="text-muted-foreground" />
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="text-sm font-semibold text-foreground">Review</p>
-                      <p className="text-xs text-muted-foreground">Under review · 24–48 hrs</p>
+                      <p className="text-sm font-semibold text-foreground">{t("reviewText")}</p>
+                      <p className="text-xs text-muted-foreground">{t("underReview")}</p>
                     </div>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent/15 text-accent">
-                      PENDING
+                      {t("pendingUpper")}
                     </span>
                   </div>
                 </motion.div>
 
-                {/* Privacy badges */}
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -788,11 +738,11 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                 >
                   <div className="flex items-center gap-1">
                     <ShieldCheck size={13} className="text-primary" />
-                    <span>256-bit Encrypted</span>
+                    <span>{t("encrypted256")}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Eye size={13} className="text-primary" />
-                    <span>Data Protected</span>
+                    <span>{t("dataProtected")}</span>
                   </div>
                 </motion.div>
 
@@ -803,7 +753,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                   onClick={onClose}
                   className="w-full h-12 gradient-primary text-primary-foreground font-semibold rounded-2xl shadow-glow active:scale-[0.98] transition-transform"
                 >
-                  Back to Account
+                  {t("backToAccount")}
                 </motion.button>
               </div>
             )}
