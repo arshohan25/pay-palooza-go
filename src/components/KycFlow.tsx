@@ -5,16 +5,64 @@ import {
   ChevronLeft, CheckCircle2, Camera, Eye,
   AlertCircle, ShieldCheck, CreditCard,
   FileCheck, Clock, ScanFace, Pencil, Check, X,
-  Loader2, RefreshCw, Sparkles,
+  Loader2, RefreshCw, Sparkles, UserCog,
+  Briefcase, Heart, Wallet, MapPin, Users,
 } from "lucide-react";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Step = "nid_front" | "nid_back" | "nid_details" | "selfie" | "review" | "submitted";
+type Step = "nid_front" | "nid_back" | "nid_details" | "selfie" | "additional_info" | "review" | "submitted";
 
-const STEPS: Step[] = ["nid_front", "nid_back", "nid_details", "selfie", "review"];
+const STEPS: Step[] = ["nid_front", "nid_back", "nid_details", "selfie", "additional_info", "review"];
+
+// ─── Select Field Options ─────────────────────────────────────────────────────
+const GENDER_OPTIONS = ["Male", "Female", "Other"];
+const OCCUPATION_OPTIONS = ["Student", "Business", "Government Job", "Private Job", "Freelancer", "Homemaker", "Retired", "Other"];
+const INCOME_OPTIONS = ["Below ৳10,000", "৳10,001–৳25,000", "৳25,001–৳50,000", "৳50,001–৳1,00,000", "Above ৳1,00,000"];
+const MARITAL_OPTIONS = ["Single", "Married", "Divorced", "Widowed"];
+
+// ─── Glassmorphic SelectField ─────────────────────────────────────────────────
+interface SelectFieldProps {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  placeholder: string;
+  icon: React.ElementType;
+  gradient: string;
+  delay?: number;
+}
+
+const SelectField = ({ label, value, onChange, options, placeholder, icon: Icon, gradient, delay = 0 }: SelectFieldProps) => (
+  <motion.div
+    initial={{ opacity: 0, y: 12 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay, type: "spring", stiffness: 300, damping: 28 }}
+    className="space-y-1.5"
+  >
+    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-1">{label}</p>
+    <div className="flex items-center gap-3 p-1 rounded-2xl border border-border bg-card/80 backdrop-blur-sm shadow-sm">
+      <div className={`w-10 h-10 ${gradient} rounded-xl flex items-center justify-center text-primary-foreground shrink-0 shadow-sm`}>
+        <Icon size={18} />
+      </div>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="flex-1 border-0 bg-transparent shadow-none focus:ring-0 focus:ring-offset-0 h-10 text-sm font-medium">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map(opt => (
+            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  </motion.div>
+);
 
 // ─── Slide variants ───────────────────────────────────────────────────────────
 const slideVariants = {
@@ -307,6 +355,13 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
   const [fatherName, setFatherName] = useState("");
   const [motherName, setMotherName] = useState("");
 
+  // Additional info state
+  const [occupation, setOccupation] = useState("");
+  const [gender, setGender] = useState("");
+  const [monthlyIncome, setMonthlyIncome] = useState("");
+  const [maritalStatus, setMaritalStatus] = useState("");
+  const [address, setAddress] = useState("");
+
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrDone, setOcrDone]     = useState(false);
   const [faceMatchLoading, setFaceMatchLoading] = useState(false);
@@ -323,11 +378,12 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
 
   const goBack = () => {
     haptics.medium();
-    if (step === "nid_front")   { onClose(); return; }
-    if (step === "nid_back")    { goTo("nid_front", -1); return; }
-    if (step === "nid_details") { goTo("nid_back", -1); return; }
-    if (step === "selfie")      { goTo("nid_details", -1); return; }
-    if (step === "review")      { goTo("selfie", -1); return; }
+    if (step === "nid_front")      { onClose(); return; }
+    if (step === "nid_back")       { goTo("nid_front", -1); return; }
+    if (step === "nid_details")    { goTo("nid_back", -1); return; }
+    if (step === "selfie")         { goTo("nid_details", -1); return; }
+    if (step === "additional_info"){ goTo("selfie", -1); return; }
+    if (step === "review")         { goTo("additional_info", -1); return; }
   };
 
   // Run OCR when NID front is captured
@@ -444,6 +500,11 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
           date_of_birth: nidDob,
           father_name: fatherName,
           mother_name: motherName,
+          occupation,
+          gender,
+          monthly_income: monthlyIncome,
+          marital_status: maritalStatus,
+          address,
         },
       } as any);
 
@@ -463,13 +524,15 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
   const canAdvanceNidBack    = !!nidBack;
   const canAdvanceNidDetails = !!nidName.trim() && !!nidNumber.trim() && !!nidDob.trim();
   const canAdvanceSelfie     = !!selfiePhoto && !!faceMatchResult;
-  const canSubmit            = !!nidFront && !!nidBack && !!selfiePhoto && !!faceMatchResult && canAdvanceNidDetails;
+  const canAdvanceAdditional = !!gender && !!occupation && !!monthlyIncome && !!maritalStatus;
+  const canSubmit            = !!nidFront && !!nidBack && !!selfiePhoto && !!faceMatchResult && canAdvanceNidDetails && canAdvanceAdditional;
 
   const headerGradient = (() => {
-    if (step === "nid_front")   return "gradient-payment";
-    if (step === "nid_back")    return "gradient-send";
-    if (step === "nid_details") return "gradient-cashout";
-    if (step === "selfie")      return "gradient-accent";
+    if (step === "nid_front")      return "gradient-payment";
+    if (step === "nid_back")       return "gradient-send";
+    if (step === "nid_details")    return "gradient-cashout";
+    if (step === "selfie")         return "gradient-accent";
+    if (step === "additional_info") return "gradient-primary";
     return "gradient-primary";
   })();
 
@@ -735,12 +798,108 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                   <motion.button
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    onClick={() => goTo("review")}
+                    onClick={() => goTo("additional_info")}
                     className="w-full h-12 gradient-primary text-primary-foreground font-semibold rounded-2xl shadow-glow active:scale-[0.98] transition-transform"
                   >
-                    {t("reviewDocuments")}
+                    {t("continueArrow")}
                   </motion.button>
                 )}
+              </div>
+            )}
+
+            {/* ── Additional Information ── */}
+            {step === "additional_info" && (
+              <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
+                <div className="text-center space-y-2">
+                  <motion.div
+                    initial={{ scale: 0, rotate: -20 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                    className="w-16 h-16 gradient-primary rounded-2xl flex items-center justify-center text-primary-foreground shadow-glow mx-auto"
+                  >
+                    <UserCog size={30} />
+                  </motion.div>
+                  <h2 className="text-xl font-bold text-foreground">Additional Information</h2>
+                  <p className="text-sm text-muted-foreground">Help us know you better for a seamless experience</p>
+                </div>
+
+                <div className="rounded-2xl bg-card/60 backdrop-blur-sm border border-border shadow-card p-4 space-y-4">
+                  <SelectField
+                    label="Gender"
+                    value={gender}
+                    onChange={setGender}
+                    options={GENDER_OPTIONS}
+                    placeholder="Select gender"
+                    icon={Users}
+                    gradient="gradient-accent"
+                    delay={0.05}
+                  />
+                  <SelectField
+                    label="Occupation"
+                    value={occupation}
+                    onChange={setOccupation}
+                    options={OCCUPATION_OPTIONS}
+                    placeholder="Select occupation"
+                    icon={Briefcase}
+                    gradient="gradient-payment"
+                    delay={0.1}
+                  />
+                  <SelectField
+                    label="Monthly Income"
+                    value={monthlyIncome}
+                    onChange={setMonthlyIncome}
+                    options={INCOME_OPTIONS}
+                    placeholder="Select income range"
+                    icon={Wallet}
+                    gradient="gradient-send"
+                    delay={0.15}
+                  />
+                  <SelectField
+                    label="Marital Status"
+                    value={maritalStatus}
+                    onChange={setMaritalStatus}
+                    options={MARITAL_OPTIONS}
+                    placeholder="Select status"
+                    icon={Heart}
+                    gradient="gradient-cashout"
+                    delay={0.2}
+                  />
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.25, type: "spring", stiffness: 300, damping: 28 }}
+                    className="space-y-1.5"
+                  >
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-1">Address (Optional)</p>
+                    <div className="flex items-center gap-3 p-1 rounded-2xl border border-border bg-card/80 backdrop-blur-sm shadow-sm">
+                      <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center text-primary-foreground shrink-0 shadow-sm">
+                        <MapPin size={18} />
+                      </div>
+                      <input
+                        value={address}
+                        onChange={e => setAddress(e.target.value)}
+                        placeholder="Enter your address"
+                        className="flex-1 h-10 bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none px-1"
+                      />
+                    </div>
+                  </motion.div>
+                </div>
+
+                <motion.button
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  onClick={() => canAdvanceAdditional && goTo("review")}
+                  disabled={!canAdvanceAdditional}
+                  className={`w-full h-12 rounded-2xl font-semibold text-sm transition-all active:scale-[0.98] ${
+                    canAdvanceAdditional
+                      ? "gradient-primary text-primary-foreground shadow-glow"
+                      : "bg-muted text-muted-foreground cursor-not-allowed"
+                  }`}
+                >
+                  {canAdvanceAdditional ? t("reviewDocuments") : "Fill all required fields"}
+                </motion.button>
               </div>
             )}
 
@@ -818,6 +977,32 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                       { label: t("dateOfBirth"), value: nidDob },
                       ...(fatherName ? [{ label: t("fatherName"), value: fatherName }] : []),
                       ...(motherName ? [{ label: t("motherName"), value: motherName }] : []),
+                    ].map(({ label, value }) => (
+                      <div key={label} className="flex items-center justify-between gap-4">
+                        <p className="text-xs text-muted-foreground">{label}</p>
+                        <p className="text-sm font-semibold text-foreground text-right">{value || "—"}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between px-1">
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Additional Info</p>
+                    <button
+                      onClick={() => goTo("additional_info", -1)}
+                      className="flex items-center gap-1 text-xs text-primary font-semibold"
+                    >
+                      <Pencil size={11} /> {t("edit")}
+                    </button>
+                  </div>
+                  <div className="rounded-2xl bg-card border border-border shadow-card p-4 space-y-3">
+                    {[
+                      { label: "Gender", value: gender },
+                      { label: "Occupation", value: occupation },
+                      { label: "Monthly Income", value: monthlyIncome },
+                      { label: "Marital Status", value: maritalStatus },
+                      ...(address ? [{ label: "Address", value: address }] : []),
                     ].map(({ label, value }) => (
                       <div key={label} className="flex items-center justify-between gap-4">
                         <p className="text-xs text-muted-foreground">{label}</p>
