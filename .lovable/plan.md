@@ -1,41 +1,23 @@
 
 
-## Plan: Add KYC Welcome/Intro Screen
+## Fix: "৩টি সহজ ধাপে" Banner Styling
 
-### What
-Add a new `intro` step as the **first screen** when entering KYC. This screen shows users a visual overview of the entire KYC process before they begin, inspired by the bKash reference screenshots.
+### Problem
+The text "৩টি সহজ ধাপে আপনার তথ্য সাবমিট করুন" is currently a small muted `<p>` inside the white card. In the reference screenshot, it's a prominent **gradient pink banner/pill** that sits between the header section and the steps card — overlapping the boundary like a floating label.
 
 ### Changes (single file: `src/components/KycFlow.tsx`)
 
-**1. Add `intro` step**
-- Update `Step` type: add `"intro"` as the first option
-- Update `STEPS` array: `["intro", "nid_capture", "nid_details", "additional_info", "selfie", "review"]`
-- Set initial step to `"intro"` instead of `"nid_capture"`
-- Update `goBack`: `intro` → `onClose()`; `nid_capture` → `intro`
+**Move the banner text out of the card and make it a standalone gradient pill:**
 
-**2. Build the intro screen UI**
-- Gradient header with KYC title (matching bKash style — pink/magenta theme)
-- Large centered icon (ShieldCheck or similar inside a phone-shaped illustration)
-- Heading in Bengali: "অনুগ্রহ করে আপনার তথ্য হালনাগাদ করুন" (Please update your information)
-- Subtitle explaining the purpose
-- "৩টি সহজ ধাপে আপনার তথ্য সাবমিট করুন" (Submit your info in 3 easy steps) section
-- Three visual step indicators with icons:
-  1. 📋 আপনার NID এর ছবি তুলুন (Capture your NID photo)
-  2. 📝 প্রয়োজনীয় তথ্য প্রদান করুন (Provide required info)
-  3. 🤳 নিজের চেহারার ছবি তুলুন (Take a selfie)
-- Large step number watermark in background (decorative)
-- Bottom sticky "শুরু করুন →" (Start) gradient button
+1. Remove the `<p>` with "৩টি সহজ ধাপে..." from inside the card (line ~875-877)
+2. Add a new floating gradient banner between the gradient header `</div>` and the steps card
+   - Positioned with negative margin to overlap the header/card boundary
+   - Pink/magenta gradient background (`from-[hsl(330,80%,55%)] to-[hsl(350,80%,45%)]`)
+   - White bold text, rounded-full pill shape, centered horizontally
+   - `mx-auto` with `max-w-fit`, `px-6 py-2.5`, `shadow-lg`
+   - `z-10` to float above both sections
+3. Adjust the card's top padding since the banner text is removed from inside it
 
-**3. Progress bar**
-- Intro step shows as step 0 (or excluded from progress calculation so progress starts at nid_capture)
-- Header hidden on intro step (full-page layout like the reference)
-
-**4. Styling**
-- Pink/magenta gradient card for the step indicators section
-- Glassmorphic card with rounded corners for the explanation text
-- Icons with gradient backgrounds matching each step's theme
-- Vertical timeline/connector between the 3 step indicators
-- Smooth entrance animations with framer-motion
-
-### No database changes needed.
+### Result
+The banner will look like a floating gradient pill sitting on the boundary between the pink header and the white card — matching the bKash reference exactly.
 
