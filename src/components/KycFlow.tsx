@@ -970,14 +970,14 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                 </div>
 
                 {/* Bottom sticky button */}
-                <div className="sticky bottom-0 z-20 p-5 pt-3 bg-gradient-to-t from-background via-background to-transparent">
+                <div className="sticky bottom-0 p-5 pt-3 bg-gradient-to-t from-background via-background to-transparent">
                   <motion.button
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
                     whileTap={{ scale: 0.97 }}
-                    onClick={(e) => { e.stopPropagation(); goTo("terms"); }}
-                    className="w-full h-14 rounded-2xl bg-gradient-to-r from-[hsl(330,80%,55%)] to-[hsl(350,80%,45%)] text-white font-bold text-base shadow-lg shadow-[hsl(340,85%,50%)/25] flex items-center justify-center gap-2 active:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => goTo("terms")}
+                    className="w-full h-14 rounded-2xl bg-gradient-to-r from-[hsl(330,80%,55%)] to-[hsl(350,80%,45%)] text-white font-bold text-base shadow-lg shadow-[hsl(340,85%,50%)/25] flex items-center justify-center gap-2 active:shadow-md transition-shadow"
                   >
                     শুরু করুন
                     <ChevronLeft size={18} className="rotate-180" />
