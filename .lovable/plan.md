@@ -1,46 +1,41 @@
-## Plan: Redesign KYC UI — Combined NID Capture + Image Cropping
+
+
+## Plan: Add KYC Welcome/Intro Screen
+
+### What
+Add a new `intro` step as the **first screen** when entering KYC. This screen shows users a visual overview of the entire KYC process before they begin, inspired by the bKash reference screenshots.
 
 ### Changes (single file: `src/components/KycFlow.tsx`)
 
-### New Flow
+**1. Add `intro` step**
+- Update `Step` type: add `"intro"` as the first option
+- Update `STEPS` array: `["intro", "nid_capture", "nid_details", "additional_info", "selfie", "review"]`
+- Set initial step to `"intro"` instead of `"nid_capture"`
+- Update `goBack`: `intro` → `onClose()`; `nid_capture` → `intro`
 
-`nid_capture` (front+back on one page) → `nid_details` → `additional_info`→ `selfie`  → `review` → `submitted`
+**2. Build the intro screen UI**
+- Gradient header with KYC title (matching bKash style — pink/magenta theme)
+- Large centered icon (ShieldCheck or similar inside a phone-shaped illustration)
+- Heading in Bengali: "অনুগ্রহ করে আপনার তথ্য হালনাগাদ করুন" (Please update your information)
+- Subtitle explaining the purpose
+- "৩টি সহজ ধাপে আপনার তথ্য সাবমিট করুন" (Submit your info in 3 easy steps) section
+- Three visual step indicators with icons:
+  1. 📋 আপনার NID এর ছবি তুলুন (Capture your NID photo)
+  2. 📝 প্রয়োজনীয় তথ্য প্রদান করুন (Provide required info)
+  3. 🤳 নিজের চেহারার ছবি তুলুন (Take a selfie)
+- Large step number watermark in background (decorative)
+- Bottom sticky "শুরু করুন →" (Start) gradient button
 
-### 1. Merge NID Front & Back into a single `nid_capture` step
+**3. Progress bar**
+- Intro step shows as step 0 (or excluded from progress calculation so progress starts at nid_capture)
+- Header hidden on intro step (full-page layout like the reference)
 
-- Remove separate `nid_front` and `nid_back` steps
-- New step `nid_capture` shows both camera boxes stacked vertically on one page
-- User captures front first, then back appears below
-- Continue button enables only when both are captured
-- OCR runs automatically after front capture (same as now)
+**4. Styling**
+- Pink/magenta gradient card for the step indicators section
+- Glassmorphic card with rounded corners for the explanation text
+- Icons with gradient backgrounds matching each step's theme
+- Vertical timeline/connector between the 3 step indicators
+- Smooth entrance animations with framer-motion
 
-### 2. Add image cropping after each capture
+### No database changes needed.
 
-- After capturing NID front or back, show a crop overlay instead of just the preview
-- Implement a simple crop UI: draggable crop rectangle over the captured image
-- User adjusts crop area, then taps "Crop & Save" to finalize
-- Uses canvas to crop the selected region from the full capture
-- Crop state managed per-image (`croppingFront`, `croppingBack`)
-
-### 3. Update step type, STEPS array, and navigation
-
-- `Step` type: `"nid_capture" | "nid_details" | "selfie" | "additional_info" | "review" | "submitted"`
-- `STEPS`: `["nid_capture", "nid_details","additional_info", "selfie",  "review"]`
-- `goBack` updated: `nid_capture` → close, `nid_details` → `nid_capture`, etc.
-- Progress bar recalculated for 5 steps instead of 6
-
-### 4. Crop Component (`ImageCropper`)
-
-- Displays captured image full-width
-- Overlay with draggable/resizable crop box (touch-friendly handles at corners)
-- "Crop & Confirm" gradient button below
-- "Retake" secondary button
-- On confirm: crops via canvas, returns cropped dataUrl
-
-### 5. UI remains elegant
-
-- Same glassmorphic cards, gradient buttons, animated transitions
-- Crop UI uses semi-transparent dark overlay with white crop border + corner handles
-- Smooth spring animations on crop box appearance
-
-### **Change database as per new update**
