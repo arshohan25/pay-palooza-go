@@ -6,7 +6,7 @@ import {
   AlertCircle, ShieldCheck, CreditCard,
   FileCheck, Clock, ScanFace, Pencil, Check, X,
   Loader2, RefreshCw, Sparkles, UserCog,
-  Briefcase, Heart, Wallet, MapPin, Users,
+  Briefcase, Heart, Wallet, MapPin, Users, Crop,
 } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -16,9 +16,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Step = "nid_front" | "nid_back" | "nid_details" | "selfie" | "additional_info" | "review" | "submitted";
+type Step = "nid_capture" | "nid_details" | "additional_info" | "selfie" | "review" | "submitted";
 
-const STEPS: Step[] = ["nid_front", "nid_back", "nid_details", "selfie", "additional_info", "review"];
+const STEPS: Step[] = ["nid_capture", "nid_details", "additional_info", "selfie", "review"];
 
 // ─── Select Field Options ─────────────────────────────────────────────────────
 const GENDER_OPTIONS = ["Male", "Female", "Other"];
@@ -69,6 +69,204 @@ const slideVariants = {
   enter:  (dir: number) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0 }),
   center: { x: 0, opacity: 1 },
   exit:   (dir: number) => ({ x: dir < 0 ? "100%" : "-100%", opacity: 0 }),
+};
+
+// ─── Image Cropper Component ──────────────────────────────────────────────────
+interface ImageCropperProps {
+  image: string;
+  onCrop: (croppedDataUrl: string) => void;
+  onRetake: () => void;
+}
+
+const ImageCropper = ({ image, onCrop, onRetake }: ImageCropperProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [cropBox, setCropBox] = useState({ x: 0, y: 0, w: 0, h: 0 });
+  const [dragging, setDragging] = useState<null | "move" | "tl" | "tr" | "bl" | "br">(null);
+  const dragStart = useRef({ mx: 0, my: 0, box: { x: 0, y: 0, w: 0, h: 0 } });
+  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
+
+  useEffect(() => {
+    if (imgLoaded && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const cw = rect.width;
+      const ch = rect.height;
+      setContainerSize({ w: cw, h: ch });
+      const pad = 24;
+      setCropBox({ x: pad, y: pad, w: cw - pad * 2, h: ch - pad * 2 });
+    }
+  }, [imgLoaded]);
+
+  const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
+  const MIN_SIZE = 60;
+
+  const handlePointerDown = (e: React.PointerEvent, type: "move" | "tl" | "tr" | "bl" | "br") => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(type);
+    dragStart.current = { mx: e.clientX, my: e.clientY, box: { ...cropBox } };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!dragging) return;
+    const dx = e.clientX - dragStart.current.mx;
+    const dy = e.clientY - dragStart.current.my;
+    const { x, y, w, h } = dragStart.current.box;
+    const { w: cw, h: ch } = containerSize;
+
+    if (dragging === "move") {
+      setCropBox({
+        x: clamp(x + dx, 0, cw - w),
+        y: clamp(y + dy, 0, ch - h),
+        w, h,
+      });
+    } else if (dragging === "br") {
+      setCropBox({
+        x, y,
+        w: clamp(w + dx, MIN_SIZE, cw - x),
+        h: clamp(h + dy, MIN_SIZE, ch - y),
+      });
+    } else if (dragging === "bl") {
+      const newW = clamp(w - dx, MIN_SIZE, x + w);
+      setCropBox({
+        x: x + w - newW, y,
+        w: newW,
+        h: clamp(h + dy, MIN_SIZE, ch - y),
+      });
+    } else if (dragging === "tr") {
+      setCropBox({
+        x, y: y,
+        w: clamp(w + dx, MIN_SIZE, cw - x),
+        h: clamp(h - dy, MIN_SIZE, y + h),
+      });
+      setCropBox(prev => ({
+        ...prev,
+        y: clamp(y + dy, 0, y + h - MIN_SIZE),
+        h: clamp(h - dy, MIN_SIZE, y + h),
+      }));
+    } else if (dragging === "tl") {
+      const newW = clamp(w - dx, MIN_SIZE, x + w);
+      const newH = clamp(h - dy, MIN_SIZE, y + h);
+      setCropBox({
+        x: x + w - newW,
+        y: y + h - newH,
+        w: newW,
+        h: newH,
+      });
+    }
+  };
+
+  const handlePointerUp = () => setDragging(null);
+
+  const performCrop = () => {
+    if (!imgRef.current) return;
+    const img = imgRef.current;
+    const { w: cw, h: ch } = containerSize;
+    const scaleX = img.naturalWidth / cw;
+    const scaleY = img.naturalHeight / ch;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = cropBox.w * scaleX;
+    canvas.height = cropBox.h * scaleY;
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(
+      img,
+      cropBox.x * scaleX, cropBox.y * scaleY,
+      cropBox.w * scaleX, cropBox.h * scaleY,
+      0, 0, canvas.width, canvas.height,
+    );
+    const croppedUrl = canvas.toDataURL("image/jpeg", 0.9);
+    haptics.medium();
+    onCrop(croppedUrl);
+  };
+
+  const handleStyle = "w-6 h-6 bg-white border-2 border-primary rounded-full absolute shadow-lg z-10 touch-none";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="space-y-3"
+    >
+      <div
+        ref={containerRef}
+        className="relative rounded-2xl overflow-hidden border-2 border-primary/30 shadow-glow bg-black"
+        style={{ aspectRatio: "16/10" }}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+      >
+        <img
+          ref={imgRef}
+          src={image}
+          alt="Crop preview"
+          className="w-full h-full object-cover"
+          onLoad={() => setImgLoaded(true)}
+          draggable={false}
+        />
+        {imgLoaded && (
+          <>
+            {/* Dark overlay outside crop */}
+            <div className="absolute inset-0 pointer-events-none" style={{
+              background: `linear-gradient(to right, rgba(0,0,0,0.6) ${cropBox.x}px, transparent ${cropBox.x}px, transparent ${cropBox.x + cropBox.w}px, rgba(0,0,0,0.6) ${cropBox.x + cropBox.w}px)`,
+            }} />
+            <div className="absolute pointer-events-none" style={{
+              left: cropBox.x, top: 0, width: cropBox.w, height: cropBox.y,
+              background: "rgba(0,0,0,0.6)",
+            }} />
+            <div className="absolute pointer-events-none" style={{
+              left: cropBox.x, top: cropBox.y + cropBox.h, width: cropBox.w, bottom: 0,
+              background: "rgba(0,0,0,0.6)",
+            }} />
+
+            {/* Crop border */}
+            <div
+              className="absolute border-2 border-white/90 rounded-lg cursor-move touch-none"
+              style={{ left: cropBox.x, top: cropBox.y, width: cropBox.w, height: cropBox.h }}
+              onPointerDown={(e) => handlePointerDown(e, "move")}
+            >
+              {/* Corner lines */}
+              <div className="absolute top-0 left-0 w-6 h-6 border-t-3 border-l-3 border-white rounded-tl-md" />
+              <div className="absolute top-0 right-0 w-6 h-6 border-t-3 border-r-3 border-white rounded-tr-md" />
+              <div className="absolute bottom-0 left-0 w-6 h-6 border-b-3 border-l-3 border-white rounded-bl-md" />
+              <div className="absolute bottom-0 right-0 w-6 h-6 border-b-3 border-r-3 border-white rounded-br-md" />
+
+              {/* Grid lines */}
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute left-1/3 top-0 bottom-0 w-px bg-white/30" />
+                <div className="absolute left-2/3 top-0 bottom-0 w-px bg-white/30" />
+                <div className="absolute top-1/3 left-0 right-0 h-px bg-white/30" />
+                <div className="absolute top-2/3 left-0 right-0 h-px bg-white/30" />
+              </div>
+            </div>
+
+            {/* Drag handles */}
+            <div className={handleStyle} style={{ left: cropBox.x - 12, top: cropBox.y - 12 }} onPointerDown={(e) => handlePointerDown(e, "tl")} />
+            <div className={handleStyle} style={{ left: cropBox.x + cropBox.w - 12, top: cropBox.y - 12 }} onPointerDown={(e) => handlePointerDown(e, "tr")} />
+            <div className={handleStyle} style={{ left: cropBox.x - 12, top: cropBox.y + cropBox.h - 12 }} onPointerDown={(e) => handlePointerDown(e, "bl")} />
+            <div className={handleStyle} style={{ left: cropBox.x + cropBox.w - 12, top: cropBox.y + cropBox.h - 12 }} onPointerDown={(e) => handlePointerDown(e, "br")} />
+          </>
+        )}
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          onClick={onRetake}
+          className="flex-1 h-11 rounded-2xl border border-border bg-card text-foreground text-sm font-semibold flex items-center justify-center gap-2 active:scale-[0.97] transition-transform"
+        >
+          <RefreshCw size={14} /> Retake
+        </button>
+        <button
+          onClick={performCrop}
+          className="flex-1 h-11 rounded-2xl gradient-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 shadow-glow active:scale-[0.97] transition-transform"
+        >
+          <Crop size={14} /> Crop & Save
+        </button>
+      </div>
+    </motion.div>
+  );
 };
 
 // ─── Camera Component ─────────────────────────────────────────────────────────
@@ -135,7 +333,6 @@ const CameraBox = ({ label, preview, onCapture, icon: Icon, gradient, guideText,
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext("2d")!;
     if (!isNidCard) {
-      // Mirror for selfie
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
     }
@@ -196,7 +393,6 @@ const CameraBox = ({ label, preview, onCapture, icon: Icon, gradient, guideText,
               muted
               className={`absolute inset-0 w-full h-full object-cover ${!isNidCard ? "scale-x-[-1]" : ""}`}
             />
-            {/* Guide overlay */}
             {isNidCard && (
               <div className="absolute inset-4 border-2 border-white/40 rounded-xl pointer-events-none">
                 <div className="absolute top-0 left-0 w-5 h-5 border-t-2 border-l-2 border-white rounded-tl-lg" />
@@ -215,11 +411,9 @@ const CameraBox = ({ label, preview, onCapture, icon: Icon, gradient, guideText,
                 </div>
               </div>
             )}
-            {/* Guide text */}
             <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent pt-8 pb-3 px-4 text-center">
               <p className="text-xs text-white/80 font-medium">{guideText}</p>
             </div>
-            {/* Capture button */}
             {cameraActive && (
               <div className="absolute bottom-14 inset-x-0 flex justify-center">
                 <motion.button
@@ -342,10 +536,18 @@ interface KycFlowProps { onClose: () => void; }
 
 const KycFlow = ({ onClose }: KycFlowProps) => {
   const { t } = useI18n();
-  const [step, setStep]         = useState<Step>("nid_front");
+  const [step, setStep]         = useState<Step>("nid_capture");
   const [direction, setDir]     = useState(1);
+  
+  // NID capture states: raw = just captured (pre-crop), final = cropped
+  const [nidFrontRaw, setNidFrontRaw] = useState<string | null>(null);
   const [nidFront, setNidFront] = useState<string | null>(null);
+  const [croppingFront, setCroppingFront] = useState(false);
+  
+  const [nidBackRaw, setNidBackRaw] = useState<string | null>(null);
   const [nidBack, setNidBack]   = useState<string | null>(null);
+  const [croppingBack, setCroppingBack] = useState(false);
+  
   const [selfiePhoto, setSelfiePhoto] = useState<string | null>(null);
 
   const [nidName, setNidName]     = useState("");
@@ -378,12 +580,11 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
 
   const goBack = () => {
     haptics.medium();
-    if (step === "nid_front")      { onClose(); return; }
-    if (step === "nid_back")       { goTo("nid_front", -1); return; }
-    if (step === "nid_details")    { goTo("nid_back", -1); return; }
-    if (step === "selfie")         { goTo("nid_details", -1); return; }
-    if (step === "additional_info"){ goTo("selfie", -1); return; }
-    if (step === "review")         { goTo("additional_info", -1); return; }
+    if (step === "nid_capture")     { onClose(); return; }
+    if (step === "nid_details")     { goTo("nid_capture", -1); return; }
+    if (step === "additional_info") { goTo("nid_details", -1); return; }
+    if (step === "selfie")          { goTo("additional_info", -1); return; }
+    if (step === "review")          { goTo("selfie", -1); return; }
   };
 
   // Run OCR when NID front is captured
@@ -444,10 +645,31 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
     }
   }, [nidFront, t]);
 
+  // NID front capture → show cropper
   const handleNidFrontCapture = (dataUrl: string) => {
-    if (!dataUrl) { setNidFront(null); return; }
-    setNidFront(dataUrl);
-    runOcr(dataUrl);
+    if (!dataUrl) { setNidFrontRaw(null); setNidFront(null); setCroppingFront(false); return; }
+    setNidFrontRaw(dataUrl);
+    setCroppingFront(true);
+  };
+
+  // NID front crop confirmed
+  const handleFrontCropped = (croppedUrl: string) => {
+    setNidFront(croppedUrl);
+    setCroppingFront(false);
+    runOcr(croppedUrl);
+  };
+
+  // NID back capture → show cropper
+  const handleNidBackCapture = (dataUrl: string) => {
+    if (!dataUrl) { setNidBackRaw(null); setNidBack(null); setCroppingBack(false); return; }
+    setNidBackRaw(dataUrl);
+    setCroppingBack(true);
+  };
+
+  // NID back crop confirmed
+  const handleBackCropped = (croppedUrl: string) => {
+    setNidBack(croppedUrl);
+    setCroppingBack(false);
   };
 
   const handleSelfieCapture = (dataUrl: string) => {
@@ -464,7 +686,6 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
       if (!session?.user) { toast.error(t("notAuthenticated")); return; }
       const userId = session.user.id;
 
-      // Upload photos to storage
       const uploadPhoto = async (base64: string, filename: string) => {
         const base64Data = base64.replace(/^data:image\/[a-z]+;base64,/, "");
         const bytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
@@ -481,7 +702,6 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
         selfiePhoto ? uploadPhoto(selfiePhoto, `selfie-${Date.now()}.jpg`) : Promise.resolve(null),
       ]);
 
-      // Save to kyc_verifications - use raw query since table is new
       const { error: insertError } = await supabase.from("kyc_verifications" as any).insert({
         user_id: userId,
         status: "under_review",
@@ -520,19 +740,17 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
     }
   };
 
-  const canAdvanceNidFront   = !!nidFront;
-  const canAdvanceNidBack    = !!nidBack;
+  const canAdvanceCapture    = !!nidFront && !!nidBack && !croppingFront && !croppingBack;
   const canAdvanceNidDetails = !!nidName.trim() && !!nidNumber.trim() && !!nidDob.trim();
-  const canAdvanceSelfie     = !!selfiePhoto && !!faceMatchResult;
   const canAdvanceAdditional = !!gender && !!occupation && !!monthlyIncome && !!maritalStatus;
+  const canAdvanceSelfie     = !!selfiePhoto && !!faceMatchResult;
   const canSubmit            = !!nidFront && !!nidBack && !!selfiePhoto && !!faceMatchResult && canAdvanceNidDetails && canAdvanceAdditional;
 
   const headerGradient = (() => {
-    if (step === "nid_front")      return "gradient-payment";
-    if (step === "nid_back")       return "gradient-send";
-    if (step === "nid_details")    return "gradient-cashout";
-    if (step === "selfie")         return "gradient-accent";
+    if (step === "nid_capture")     return "gradient-payment";
+    if (step === "nid_details")     return "gradient-cashout";
     if (step === "additional_info") return "gradient-primary";
+    if (step === "selfie")          return "gradient-accent";
     return "gradient-primary";
   })();
 
@@ -581,24 +799,54 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
             className="absolute inset-0 overflow-y-auto scrollbar-none flex flex-col"
           >
 
-            {/* ── NID Front ── */}
-            {step === "nid_front" && (
+            {/* ── NID Capture (Front + Back on one page) ── */}
+            {step === "nid_capture" && (
               <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
                 <div className="text-center space-y-1">
                   <h2 className="text-xl font-bold text-foreground">{t("captureNidFront")}</h2>
-                  <p className="text-sm text-muted-foreground">{t("captureNidFrontSub")}</p>
+                  <p className="text-sm text-muted-foreground">Capture both sides of your NID card</p>
                 </div>
 
-                <CameraBox
-                  label={t("nidCardFront")}
-                  preview={nidFront}
-                  onCapture={handleNidFrontCapture}
-                  icon={CreditCard}
-                  gradient="gradient-payment"
-                  guideText={t("alignNidGuide")}
-                  retakeLabel={t("retake")}
-                  isNidCard
-                />
+                {/* NID Front */}
+                {croppingFront && nidFrontRaw ? (
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Crop NID Front</p>
+                    <ImageCropper
+                      image={nidFrontRaw}
+                      onCrop={handleFrontCropped}
+                      onRetake={() => { setNidFrontRaw(null); setCroppingFront(false); }}
+                    />
+                  </div>
+                ) : nidFront ? (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">{t("nidCardFront")}</p>
+                    <div className="relative rounded-2xl overflow-hidden border-2 border-primary/30 shadow-glow">
+                      <img src={nidFront} alt="NID Front" className="w-full object-cover" />
+                      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-3 flex justify-center">
+                        <button
+                          onClick={() => { setNidFront(null); setNidFrontRaw(null); setOcrDone(false); }}
+                          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 backdrop-blur-sm text-white text-sm font-semibold hover:bg-white/30 transition-colors"
+                        >
+                          <RefreshCw size={14} /> {t("retake")}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-primary font-medium px-1">
+                      <CheckCircle2 size={13} /> Cropped & Saved
+                    </div>
+                  </div>
+                ) : (
+                  <CameraBox
+                    label={t("nidCardFront")}
+                    preview={null}
+                    onCapture={handleNidFrontCapture}
+                    icon={CreditCard}
+                    gradient="gradient-payment"
+                    guideText={t("alignNidGuide")}
+                    retakeLabel={t("retake")}
+                    isNidCard
+                  />
+                )}
 
                 {ocrLoading && (
                   <div className="flex items-center gap-2 rounded-xl bg-accent/10 border border-accent/20 px-4 py-3">
@@ -614,6 +862,52 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                   </div>
                 )}
 
+                {/* NID Back — only show after front is done */}
+                {nidFront && !croppingFront && (
+                  <>
+                    <div className="h-px bg-border" />
+                    {croppingBack && nidBackRaw ? (
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Crop NID Back</p>
+                        <ImageCropper
+                          image={nidBackRaw}
+                          onCrop={handleBackCropped}
+                          onRetake={() => { setNidBackRaw(null); setCroppingBack(false); }}
+                        />
+                      </div>
+                    ) : nidBack ? (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">{t("nidCardBack")}</p>
+                        <div className="relative rounded-2xl overflow-hidden border-2 border-primary/30 shadow-glow">
+                          <img src={nidBack} alt="NID Back" className="w-full object-cover" />
+                          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-3 flex justify-center">
+                            <button
+                              onClick={() => { setNidBack(null); setNidBackRaw(null); }}
+                              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 backdrop-blur-sm text-white text-sm font-semibold hover:bg-white/30 transition-colors"
+                            >
+                              <RefreshCw size={14} /> {t("retake")}
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-primary font-medium px-1">
+                          <CheckCircle2 size={13} /> Cropped & Saved
+                        </div>
+                      </div>
+                    ) : (
+                      <CameraBox
+                        label={t("nidCardBack")}
+                        preview={null}
+                        onCapture={handleNidBackCapture}
+                        icon={CreditCard}
+                        gradient="gradient-send"
+                        guideText={t("alignNidBackGuide")}
+                        retakeLabel={t("retake")}
+                        isNidCard
+                      />
+                    )}
+                  </>
+                )}
+
                 <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2">
                   <p className="text-xs font-bold text-foreground">📸 {t("cameraTips")}</p>
                   <TipChip text={t("tipCorners")} />
@@ -622,10 +916,10 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                 </div>
 
                 <button
-                  onClick={() => canAdvanceNidFront && goTo("nid_back")}
-                  disabled={!canAdvanceNidFront || ocrLoading}
+                  onClick={() => canAdvanceCapture && goTo("nid_details")}
+                  disabled={!canAdvanceCapture || ocrLoading}
                   className={`w-full h-12 rounded-2xl font-semibold text-sm transition-all active:scale-[0.98] ${
-                    canAdvanceNidFront && !ocrLoading
+                    canAdvanceCapture && !ocrLoading
                       ? "gradient-payment text-primary-foreground shadow-glow"
                       : "bg-muted text-muted-foreground cursor-not-allowed"
                   }`}
@@ -634,47 +928,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                     <span className="flex items-center justify-center gap-2">
                       <Loader2 size={16} className="animate-spin" /> {t("processingKyc")}
                     </span>
-                  ) : canAdvanceNidFront ? t("continueArrow") : t("captureNidToContinue")}
-                </button>
-              </div>
-            )}
-
-            {/* ── NID Back ── */}
-            {step === "nid_back" && (
-              <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
-                <div className="text-center space-y-1">
-                  <h2 className="text-xl font-bold text-foreground">{t("captureNidBack")}</h2>
-                  <p className="text-sm text-muted-foreground">{t("captureNidBackSub")}</p>
-                </div>
-
-                <CameraBox
-                  label={t("nidCardBack")}
-                  preview={nidBack}
-                  onCapture={(d) => { if (d) setNidBack(d); else setNidBack(null); }}
-                  icon={CreditCard}
-                  gradient="gradient-send"
-                  guideText={t("alignNidBackGuide")}
-                  retakeLabel={t("retake")}
-                  isNidCard
-                />
-
-                <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2">
-                  <p className="text-xs font-bold text-foreground">📸 {t("cameraTips")}</p>
-                  <TipChip text={t("tipBarcode")} />
-                  <TipChip text={t("tipNoDamage")} />
-                  <TipChip text={t("tipLighting")} />
-                </div>
-
-                <button
-                  onClick={() => canAdvanceNidBack && goTo("nid_details")}
-                  disabled={!canAdvanceNidBack}
-                  className={`w-full h-12 rounded-2xl font-semibold text-sm transition-all active:scale-[0.98] ${
-                    canAdvanceNidBack
-                      ? "gradient-send text-primary-foreground shadow-glow"
-                      : "bg-muted text-muted-foreground cursor-not-allowed"
-                  }`}
-                >
-                  {canAdvanceNidBack ? t("continueArrow") : t("captureNidBackToContinue")}
+                  ) : canAdvanceCapture ? t("continueArrow") : "Capture both sides to continue"}
                 </button>
               </div>
             )}
@@ -712,7 +966,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                 </div>
 
                 <button
-                  onClick={() => canAdvanceNidDetails && goTo("selfie")}
+                  onClick={() => canAdvanceNidDetails && goTo("additional_info")}
                   disabled={!canAdvanceNidDetails}
                   className={`w-full h-12 rounded-2xl font-semibold text-sm transition-all active:scale-[0.98] ${
                     canAdvanceNidDetails
@@ -722,88 +976,6 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                 >
                   {canAdvanceNidDetails ? t("confirmDetailsArrow") : t("fillAllFields")}
                 </button>
-              </div>
-            )}
-
-            {/* ── Selfie / Face Match ── */}
-            {step === "selfie" && (
-              <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
-                <div className="text-center space-y-1">
-                  <h2 className="text-xl font-bold text-foreground">{t("liveFaceVerification")}</h2>
-                  <p className="text-sm text-muted-foreground">{t("liveFaceVerificationSub")}</p>
-                </div>
-
-                <CameraBox
-                  label={t("selfieCapture")}
-                  preview={selfiePhoto}
-                  onCapture={handleSelfieCapture}
-                  icon={ScanFace}
-                  gradient="gradient-accent"
-                  guideText={t("alignFaceGuide")}
-                  retakeLabel={t("retake")}
-                  isNidCard={false}
-                />
-
-                {faceMatchLoading && (
-                  <div className="flex items-center gap-3 rounded-xl bg-accent/10 border border-accent/20 px-4 py-3">
-                    <Loader2 size={16} className="text-accent animate-spin" />
-                    <div>
-                      <p className="text-xs text-accent font-semibold">{t("comparingFaces")}</p>
-                      <p className="text-[10px] text-accent/70">{t("aiAnalyzing")}</p>
-                    </div>
-                  </div>
-                )}
-
-                {faceMatchResult && (
-                  <div className={`flex items-center gap-3 rounded-xl px-4 py-3 border ${
-                    faceMatchResult.result === "match"
-                      ? "bg-primary/10 border-primary/20"
-                      : faceMatchResult.result === "no_match"
-                      ? "bg-destructive/10 border-destructive/20"
-                      : "bg-accent/10 border-accent/20"
-                  }`}>
-                    {faceMatchResult.result === "match" ? (
-                      <CheckCircle2 size={16} className="text-primary shrink-0" />
-                    ) : (
-                      <AlertCircle size={16} className={faceMatchResult.result === "no_match" ? "text-destructive" : "text-accent"} />
-                    )}
-                    <div className="flex-1">
-                      <p className={`text-xs font-semibold ${
-                        faceMatchResult.result === "match" ? "text-primary" : faceMatchResult.result === "no_match" ? "text-destructive" : "text-accent"
-                      }`}>
-                        {faceMatchResult.result === "match" ? t("faceMatchedNid") : faceMatchResult.result === "no_match" ? t("faceNotMatched") : t("faceInconclusive")}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
-                        {t("confidence")}: {faceMatchResult.confidence}% — {faceMatchResult.reason}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2">
-                  <p className="text-xs font-bold text-foreground">🤳 {t("selfieTips")}</p>
-                  <TipChip text={t("tipEvenLighting")} />
-                  <TipChip text={t("tipRemoveGlasses")} />
-                  <TipChip text={t("tipLookStraight")} />
-                </div>
-
-                {faceMatchResult?.result === "no_match" && (
-                  <div className="flex items-start gap-2 rounded-xl bg-destructive/8 border border-destructive/20 px-4 py-3">
-                    <AlertCircle size={14} className="text-destructive mt-0.5 shrink-0" />
-                    <p className="text-xs text-destructive font-medium">{t("faceNotMatchedRetry")}</p>
-                  </div>
-                )}
-
-                {canAdvanceSelfie && (
-                  <motion.button
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    onClick={() => goTo("additional_info")}
-                    className="w-full h-12 gradient-primary text-primary-foreground font-semibold rounded-2xl shadow-glow active:scale-[0.98] transition-transform"
-                  >
-                    {t("continueArrow")}
-                  </motion.button>
-                )}
               </div>
             )}
 
@@ -890,7 +1062,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  onClick={() => canAdvanceAdditional && goTo("review")}
+                  onClick={() => canAdvanceAdditional && goTo("selfie")}
                   disabled={!canAdvanceAdditional}
                   className={`w-full h-12 rounded-2xl font-semibold text-sm transition-all active:scale-[0.98] ${
                     canAdvanceAdditional
@@ -898,8 +1070,90 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                       : "bg-muted text-muted-foreground cursor-not-allowed"
                   }`}
                 >
-                  {canAdvanceAdditional ? t("reviewDocuments") : "Fill all required fields"}
+                  {canAdvanceAdditional ? t("continueArrow") : "Fill all required fields"}
                 </motion.button>
+              </div>
+            )}
+
+            {/* ── Selfie / Face Match ── */}
+            {step === "selfie" && (
+              <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
+                <div className="text-center space-y-1">
+                  <h2 className="text-xl font-bold text-foreground">{t("liveFaceVerification")}</h2>
+                  <p className="text-sm text-muted-foreground">{t("liveFaceVerificationSub")}</p>
+                </div>
+
+                <CameraBox
+                  label={t("selfieCapture")}
+                  preview={selfiePhoto}
+                  onCapture={handleSelfieCapture}
+                  icon={ScanFace}
+                  gradient="gradient-accent"
+                  guideText={t("alignFaceGuide")}
+                  retakeLabel={t("retake")}
+                  isNidCard={false}
+                />
+
+                {faceMatchLoading && (
+                  <div className="flex items-center gap-3 rounded-xl bg-accent/10 border border-accent/20 px-4 py-3">
+                    <Loader2 size={16} className="text-accent animate-spin" />
+                    <div>
+                      <p className="text-xs text-accent font-semibold">{t("comparingFaces")}</p>
+                      <p className="text-[10px] text-accent/70">{t("aiAnalyzing")}</p>
+                    </div>
+                  </div>
+                )}
+
+                {faceMatchResult && (
+                  <div className={`flex items-center gap-3 rounded-xl px-4 py-3 border ${
+                    faceMatchResult.result === "match"
+                      ? "bg-primary/10 border-primary/20"
+                      : faceMatchResult.result === "no_match"
+                      ? "bg-destructive/10 border-destructive/20"
+                      : "bg-accent/10 border-accent/20"
+                  }`}>
+                    {faceMatchResult.result === "match" ? (
+                      <CheckCircle2 size={16} className="text-primary shrink-0" />
+                    ) : (
+                      <AlertCircle size={16} className={faceMatchResult.result === "no_match" ? "text-destructive" : "text-accent"} />
+                    )}
+                    <div className="flex-1">
+                      <p className={`text-xs font-semibold ${
+                        faceMatchResult.result === "match" ? "text-primary" : faceMatchResult.result === "no_match" ? "text-destructive" : "text-accent"
+                      }`}>
+                        {faceMatchResult.result === "match" ? t("faceMatchedNid") : faceMatchResult.result === "no_match" ? t("faceNotMatched") : t("faceInconclusive")}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {t("confidence")}: {faceMatchResult.confidence}% — {faceMatchResult.reason}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2">
+                  <p className="text-xs font-bold text-foreground">🤳 {t("selfieTips")}</p>
+                  <TipChip text={t("tipEvenLighting")} />
+                  <TipChip text={t("tipRemoveGlasses")} />
+                  <TipChip text={t("tipLookStraight")} />
+                </div>
+
+                {faceMatchResult?.result === "no_match" && (
+                  <div className="flex items-start gap-2 rounded-xl bg-destructive/8 border border-destructive/20 px-4 py-3">
+                    <AlertCircle size={14} className="text-destructive mt-0.5 shrink-0" />
+                    <p className="text-xs text-destructive font-medium">{t("faceNotMatchedRetry")}</p>
+                  </div>
+                )}
+
+                {canAdvanceSelfie && (
+                  <motion.button
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    onClick={() => goTo("review")}
+                    className="w-full h-12 gradient-primary text-primary-foreground font-semibold rounded-2xl shadow-glow active:scale-[0.98] transition-transform"
+                  >
+                    {t("reviewDocuments")}
+                  </motion.button>
+                )}
               </div>
             )}
 
@@ -916,7 +1170,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                   <ReviewDoc
                     label={t("nidFrontLabel")}
                     preview={nidFront}
-                    onRetake={() => goTo("nid_front", -1)}
+                    onRetake={() => goTo("nid_capture", -1)}
                     gradient="gradient-payment"
                     icon={CreditCard}
                     retakeLabel={t("retake")}
@@ -926,7 +1180,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                   <ReviewDoc
                     label={t("nidBackLabel")}
                     preview={nidBack}
-                    onRetake={() => goTo("nid_back", -1)}
+                    onRetake={() => goTo("nid_capture", -1)}
                     gradient="gradient-send"
                     icon={CreditCard}
                     retakeLabel={t("retake")}
@@ -1140,9 +1394,9 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
                   onClick={onClose}
-                  className="w-full h-12 gradient-primary text-primary-foreground font-semibold rounded-2xl shadow-glow active:scale-[0.98] transition-transform"
+                  className="w-full h-12 gradient-primary text-primary-foreground font-bold rounded-2xl shadow-glow active:scale-[0.98] transition-transform"
                 >
-                  {t("backToAccount")}
+                  {t("backToHome")}
                 </motion.button>
               </div>
             )}
