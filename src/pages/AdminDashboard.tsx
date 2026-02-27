@@ -158,7 +158,7 @@ export default function AdminDashboard() {
   const [userSubTab, setUserSubTab] = useState<"users" | "agents" | "merchants">("users");
   const [lockTarget, setLockTarget] = useState<{ userId: string; label: string } | null>(null);
   const [chargebackTarget, setChargebackTarget] = useState<any>(null);
-  const [showNavMenu, setShowNavMenu] = useState(true);
+  const [showNavMenu, setShowNavMenu] = useState(false);
 
   const loadData = useCallback(async () => {
     setRefreshing(true);
@@ -265,99 +265,128 @@ export default function AdminDashboard() {
     !searchQuery || t.id?.includes(searchQuery) || t.recipient_phone?.includes(searchQuery) || t.type?.includes(searchQuery)
   );
 
+  const navContent = (
+    <nav className="flex flex-col gap-0.5 px-2 pb-4">
+      {NAV_ITEMS.map(item => (
+        <button
+          key={item.id}
+          onClick={() => { setActiveTab(item.id); setShowNavMenu(false); }}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            activeTab === item.id
+              ? "bg-primary/10 text-primary"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          }`}
+        >
+          <item.icon className="w-4 h-4 shrink-0" />
+          {item.label}
+          {item.id === "alerts" && stats.openAlerts > 0 && (
+            <span className="ml-auto min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+              {stats.openAlerts}
+            </span>
+          )}
+          {item.id === "support" && supportUnread > 0 && (
+            <span className="ml-auto min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+              {supportUnread}
+            </span>
+          )}
+          {item.id === "kyc" && stats.pendingKyc > 0 && (
+            <span className="ml-auto min-w-[16px] h-4 px-1 bg-orange-500 text-white text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+              {stats.pendingKyc}
+            </span>
+          )}
+        </button>
+      ))}
+    </nav>
+  );
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Top header */}
-      <header className="sticky top-0 z-30 bg-card border-b border-border">
-        <div className="flex items-center justify-between px-4 md:px-6 py-3">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="shrink-0">
-              <ChevronLeft className="w-5 h-5" />
-            </Button>
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <ShieldAlert className="w-4 h-4 text-primary-foreground" />
-              </div>
-              <h1 className="font-bold text-foreground text-base">Admin</h1>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="relative hidden md:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search users, transactions…"
-                className="pl-10 w-64"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <Button variant="outline" size="icon" onClick={loadData} disabled={refreshing}>
-              <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-            </Button>
-            <Button variant="ghost" size="icon" className="hidden md:inline-flex" onClick={() => signOut()}>
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Active section label + hamburger */}
-        <div className="flex items-center gap-2 px-4 md:px-6 pb-2">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 rounded-lg shrink-0"
-            onClick={() => setShowNavMenu(true)}
-          >
-            <Menu className="w-4 h-4" />
+    <div className="min-h-screen bg-background flex">
+      {/* ═══ Persistent sidebar – desktop only ═══ */}
+      <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-56 bg-card border-r border-border z-40">
+        <div className="px-4 py-4 flex items-center gap-2.5 border-b border-border">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="shrink-0 h-8 w-8">
+            <ChevronLeft className="w-4 h-4" />
           </Button>
-          <span className="text-sm font-semibold text-foreground">
-            {NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview"}
-          </span>
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
+            <ShieldAlert className="w-3.5 h-3.5 text-primary-foreground" />
+          </div>
+          <h1 className="font-bold text-foreground text-sm">Admin</h1>
         </div>
-      </header>
+        <div className="flex-1 overflow-y-auto pt-2">
+          {navContent}
+        </div>
+        <div className="px-3 pb-3">
+          <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground" onClick={() => signOut()}>
+            <LogOut className="w-4 h-4" /> Sign out
+          </Button>
+        </div>
+      </aside>
 
-      {/* Slide-out navigation drawer */}
-      <Sheet open={showNavMenu} onOpenChange={setShowNavMenu}>
-        <SheetContent side="left" className="w-64 p-0">
-          <SheetHeader className="px-4 pt-4 pb-2">
-            <SheetTitle className="text-sm font-bold">Navigation</SheetTitle>
-          </SheetHeader>
-          <nav className="flex flex-col gap-0.5 px-2 pb-4">
-            {NAV_ITEMS.map(item => (
-              <button
-                key={item.id}
-                onClick={() => { setActiveTab(item.id); setShowNavMenu(false); }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === item.id
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                <item.icon className="w-4 h-4 shrink-0" />
-                {item.label}
-                {item.id === "alerts" && stats.openAlerts > 0 && (
-                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
-                    {stats.openAlerts}
-                  </span>
-                )}
-                {item.id === "support" && supportUnread > 0 && (
-                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
-                    {supportUnread}
-                  </span>
-                )}
-                {item.id === "kyc" && stats.pendingKyc > 0 && (
-                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-orange-500 text-white text-[9px] font-bold rounded-full inline-flex items-center justify-center">
-                    {stats.pendingKyc}
-                  </span>
-                )}
-              </button>
-            ))}
-          </nav>
-        </SheetContent>
-      </Sheet>
+      {/* ═══ Main column ═══ */}
+      <div className="flex-1 flex flex-col md:ml-56">
+        {/* Top header */}
+        <header className="sticky top-0 z-30 bg-card border-b border-border">
+          <div className="flex items-center justify-between px-4 md:px-6 py-3">
+            <div className="flex items-center gap-2">
+              {/* Mobile only: back + hamburger */}
+              <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="shrink-0 md:hidden">
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+              <div className="flex items-center gap-2.5 md:hidden">
+                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                  <ShieldAlert className="w-4 h-4 text-primary-foreground" />
+                </div>
+                <h1 className="font-bold text-foreground text-base">Admin</h1>
+              </div>
+              {/* Desktop: section label */}
+              <span className="hidden md:block text-base font-bold text-foreground">
+                {NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="relative hidden md:block">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search users, transactions…"
+                  className="pl-10 w-64"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <Button variant="outline" size="icon" onClick={loadData} disabled={refreshing}>
+                <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
+          </div>
 
-      {/* Main content */}
-      <main className="flex-1 p-4 md:p-8 overflow-auto">
+          {/* Mobile: Active section label + hamburger */}
+          <div className="flex md:hidden items-center gap-2 px-4 pb-2">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-lg shrink-0"
+              onClick={() => setShowNavMenu(true)}
+            >
+              <Menu className="w-4 h-4" />
+            </Button>
+            <span className="text-sm font-semibold text-foreground">
+              {NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview"}
+            </span>
+          </div>
+        </header>
+
+        {/* Mobile slide-out navigation drawer */}
+        <Sheet open={showNavMenu} onOpenChange={setShowNavMenu}>
+          <SheetContent side="left" className="w-64 p-0">
+            <SheetHeader className="px-4 pt-4 pb-2">
+              <SheetTitle className="text-sm font-bold">Navigation</SheetTitle>
+            </SheetHeader>
+            {navContent}
+          </SheetContent>
+        </Sheet>
+
+        {/* Main content */}
+        <main className="flex-1 p-4 md:p-8 overflow-auto">
 
         {/* ═══ OVERVIEW ═══ */}
         {activeTab === "overview" && (
@@ -694,6 +723,7 @@ export default function AdminDashboard() {
         onOpenChange={(v) => { if (!v) setChargebackTarget(null); }}
         onSuccess={loadData}
       />
+      </div>
     </div>
   );
 }
