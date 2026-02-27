@@ -970,7 +970,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                 </div>
 
                 {/* Bottom sticky button */}
-                <div className="sticky bottom-0 p-5 pt-3 bg-gradient-to-t from-background via-background to-transparent">
+                <div className="sticky bottom-0 p-5 pt-3 pb-20 bg-gradient-to-t from-background via-background to-transparent">
                   <motion.button
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -1167,7 +1167,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                 </Sheet>
 
                 {/* Bottom button */}
-                <div className="sticky bottom-0 p-5 pt-3 bg-gradient-to-t from-background via-background to-transparent">
+                <div className="sticky bottom-0 p-5 pt-3 pb-20 bg-gradient-to-t from-background via-background to-transparent">
                   <motion.button
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
