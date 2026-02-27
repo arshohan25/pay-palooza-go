@@ -158,7 +158,7 @@ export default function AdminDashboard() {
   const [userSubTab, setUserSubTab] = useState<"users" | "agents" | "merchants">("users");
   const [lockTarget, setLockTarget] = useState<{ userId: string; label: string } | null>(null);
   const [chargebackTarget, setChargebackTarget] = useState<any>(null);
-  const [showNavMenu, setShowNavMenu] = useState(false);
+  const [showNavMenu, setShowNavMenu] = useState(true);
 
   const loadData = useCallback(async () => {
     setRefreshing(true);
