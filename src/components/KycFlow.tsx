@@ -12,6 +12,10 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -571,6 +575,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
   const [faceMatchResult, setFaceMatchResult] = useState<{ match: boolean; confidence: number; result: string; reason: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsSheetOpen, setTermsSheetOpen] = useState(false);
 
   const stepIndex = STEPS.indexOf(step);
 
@@ -1050,6 +1055,17 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                         <p>আমি জানি যে, KYC যাচাই প্রক্রিয়া সম্পন্ন হতে কিছু সময় লাগতে পারে এবং আমাকে ধৈর্য ধরতে হবে।</p>
                       </motion.div>
                     </div>
+
+                    {/* Read More link */}
+                    <motion.button
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.8 }}
+                      onClick={() => setTermsSheetOpen(true)}
+                      className="text-xs font-bold text-primary underline underline-offset-2 mx-auto block mt-2"
+                    >
+                      📖 বিস্তারিত পড়ুন (Read More)
+                    </motion.button>
                   </motion.div>
 
                   {/* Accept checkbox */}
@@ -1076,6 +1092,70 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                     </button>
                   </motion.div>
                 </div>
+
+                {/* Full Terms Sheet */}
+                <Sheet open={termsSheetOpen} onOpenChange={setTermsSheetOpen}>
+                  <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl p-0">
+                    <SheetHeader className="px-5 pt-5 pb-3 border-b border-border">
+                      <SheetTitle className="text-base font-extrabold text-foreground">📜 সম্পূর্ণ শর্তাবলী</SheetTitle>
+                    </SheetHeader>
+                    <ScrollArea className="h-[calc(85vh-80px)] px-5 py-4">
+                      <div className="space-y-5 text-[13px] text-foreground leading-relaxed pb-8">
+                        <section>
+                          <h3 className="text-sm font-bold text-foreground mb-2">১. তথ্যের সঠিকতা</h3>
+                          <p>আমি নিশ্চিত করছি যে, আমার প্রদানকৃত সকল তথ্য সঠিক এবং সত্য। ভুল বা মিথ্যা তথ্য প্রদান করলে আমার অ্যাকাউন্ট স্থগিত বা বন্ধ করা হতে পারে। EasyPay যেকোনো সময় প্রদানকৃত তথ্য যাচাই করার অধিকার রাখে এবং অসঙ্গতি পাওয়া গেলে যথাযথ ব্যবস্থা নিতে পারে।</p>
+                        </section>
+
+                        <section>
+                          <h3 className="text-sm font-bold text-foreground mb-2">২. গোপনীয়তা ও তথ্য সুরক্ষা</h3>
+                          <p>আমি সম্মত যে, আমার জাতীয় পরিচয়পত্র (NID), সেলফি এবং ব্যক্তিগত তথ্য শুধুমাত্র পরিচয় যাচাইয়ের জন্য ব্যবহৃত হবে এবং নিরাপদে সংরক্ষণ করা হবে। EasyPay আপনার ব্যক্তিগত তথ্য এনক্রিপ্ট করে সংরক্ষণ করে এবং তৃতীয় পক্ষের কাছে বিক্রি বা অননুমোদিতভাবে শেয়ার করে না। আপনার তথ্য শুধুমাত্র আইনি বাধ্যবাধকতা বা আপনার সম্মতি অনুযায়ী শেয়ার করা হতে পারে।</p>
+                        </section>
+
+                        <section>
+                          <h3 className="text-sm font-bold text-foreground mb-2">৩. সেবার সীমাবদ্ধতা</h3>
+                          <p>আমি বুঝতে পারছি যে, KYC যাচাই সম্পন্ন না হলে কিছু সেবা সীমিত থাকতে পারে। এর মধ্যে রয়েছে:</p>
+                          <ul className="list-disc list-inside mt-2 space-y-1 text-muted-foreground">
+                            <li>দৈনিক লেনদেনের সর্বোচ্চ সীমা কম থাকবে</li>
+                            <li>মাসিক লেনদেনের সীমা সীমিত থাকবে</li>
+                            <li>ব্যাংক ট্রান্সফার এবং বড় অঙ্কের লেনদেন অক্ষম থাকতে পারে</li>
+                            <li>কিছু প্রিমিয়াম ফিচার অ্যাক্সেস করা যাবে না</li>
+                          </ul>
+                        </section>
+
+                        <section>
+                          <h3 className="text-sm font-bold text-foreground mb-2">৪. আইনি সম্মতি ও নিয়ন্ত্রক সংস্থা</h3>
+                          <p>আমি সম্মতি দিচ্ছি যে, প্রযোজ্য আইন অনুযায়ী আমার তথ্য সরকারি বা নিয়ন্ত্রক সংস্থার সাথে শেয়ার করা হতে পারে। বাংলাদেশ ব্যাংক, BTRC এবং অন্যান্য নিয়ন্ত্রক সংস্থার নির্দেশনা অনুযায়ী EasyPay KYC প্রক্রিয়া পরিচালনা করে। মানি লন্ডারিং প্রতিরোধ আইন (AMLA) এবং সন্ত্রাস অর্থায়ন প্রতিরোধ আইন অনুযায়ী তথ্য সংরক্ষণ ও যাচাই করা হয়।</p>
+                        </section>
+
+                        <section>
+                          <h3 className="text-sm font-bold text-foreground mb-2">৫. প্রক্রিয়াকরণ সময়</h3>
+                          <p>আমি জানি যে, KYC যাচাই প্রক্রিয়া সম্পন্ন হতে কিছু সময় লাগতে পারে এবং আমাকে ধৈর্য ধরতে হবে। সাধারণত যাচাই প্রক্রিয়া ২৪-৭২ ঘণ্টার মধ্যে সম্পন্ন হয়। তবে অতিরিক্ত যাচাইয়ের প্রয়োজন হলে আরও সময় লাগতে পারে। যাচাই সম্পন্ন হলে আপনাকে নোটিফিকেশনের মাধ্যমে জানানো হবে।</p>
+                        </section>
+
+                        <section>
+                          <h3 className="text-sm font-bold text-foreground mb-2">৬. অ্যাকাউন্ট স্থগিত ও বন্ধকরণ</h3>
+                          <p>EasyPay নিম্নলিখিত ক্ষেত্রে আপনার অ্যাকাউন্ট স্থগিত বা বন্ধ করার অধিকার রাখে:</p>
+                          <ul className="list-disc list-inside mt-2 space-y-1 text-muted-foreground">
+                            <li>ভুল বা জাল পরিচয়পত্র প্রদান করলে</li>
+                            <li>অন্য কারো পরিচয়পত্র ব্যবহার করলে</li>
+                            <li>সন্দেহজনক কার্যকলাপ শনাক্ত হলে</li>
+                            <li>নিয়ন্ত্রক সংস্থার নির্দেশনা অনুযায়ী</li>
+                          </ul>
+                        </section>
+
+                        <section>
+                          <h3 className="text-sm font-bold text-foreground mb-2">৭. তথ্য আপডেট</h3>
+                          <p>আপনার ব্যক্তিগত তথ্যে কোনো পরিবর্তন হলে (যেমন: ঠিকানা, ফোন নম্বর, বা NID তথ্য) আপনাকে যত দ্রুত সম্ভব EasyPay-তে তথ্য আপডেট করতে হবে। পুরানো বা ভুল তথ্যের কারণে সেবা ব্যাহত হলে EasyPay দায়ী থাকবে না।</p>
+                        </section>
+
+                        <section>
+                          <h3 className="text-sm font-bold text-foreground mb-2">৮. যোগাযোগ</h3>
+                          <p>KYC সংক্রান্ত যেকোনো প্রশ্ন বা সমস্যার জন্য EasyPay সাপোর্ট টিমের সাথে যোগাযোগ করুন। আমরা আপনাকে সাহায্য করতে সর্বদা প্রস্তুত।</p>
+                        </section>
+                      </div>
+                    </ScrollArea>
+                  </SheetContent>
+                </Sheet>
 
                 {/* Bottom button */}
                 <div className="sticky bottom-0 p-5 pt-3 bg-gradient-to-t from-background via-background to-transparent">
