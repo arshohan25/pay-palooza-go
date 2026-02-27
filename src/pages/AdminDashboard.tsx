@@ -45,6 +45,7 @@ interface Stats {
   totalAgents: number;
   totalMerchants: number;
   openAlerts: number;
+  pendingKyc: number;
 }
 
 const RechargeSection = () => {
@@ -146,7 +147,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const { unreadCount: supportUnread } = useSupportNotifications(activeTab);
-  const [stats, setStats] = useState<Stats>({ totalUsers: 0, totalTransactions: 0, totalAgents: 0, totalMerchants: 0, openAlerts: 0 });
+  const [stats, setStats] = useState<Stats>({ totalUsers: 0, totalTransactions: 0, totalAgents: 0, totalMerchants: 0, openAlerts: 0, pendingKyc: 0 });
   const [transactions, setTransactions] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [agents, setAgents] = useState<any[]>([]);
@@ -161,15 +162,16 @@ export default function AdminDashboard() {
 
   const loadData = useCallback(async () => {
     setRefreshing(true);
-    const [s, t, u, a, ag, m] = await Promise.all([
+    const [s, t, u, a, ag, m, kycRes] = await Promise.all([
       fetchAdminStats(),
       fetchRecentTransactions(50),
       fetchAllUsers(100),
       fetchFraudAlerts(50),
       fetchAllAgents(100),
       fetchAllMerchants(100),
+      supabase.from("kyc_verifications").select("id", { count: "exact", head: true }).eq("status", "pending"),
     ]);
-    setStats(s);
+    setStats({ ...s, pendingKyc: kycRes.count ?? 0 });
     setTransactions(t);
     setUsers(u);
     setAlerts(a);
@@ -206,7 +208,7 @@ export default function AdminDashboard() {
       })
       // Fraud alert status changes
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "fraud_alerts" }, () => {
-        fetchAdminStats().then(s => setStats(s));
+        fetchAdminStats().then(s => setStats(prev => ({ ...s, pendingKyc: prev.pendingKyc })));
       })
       // New transactions → refresh overview stats + transaction list
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "transactions" }, () => {
@@ -215,11 +217,11 @@ export default function AdminDashboard() {
       // Profile changes (status, balance) → refresh user list + stats
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles" }, () => {
         fetchAllUsers(100).then(u => setUsers(u));
-        fetchAdminStats().then(s => setStats(s));
+        fetchAdminStats().then(s => setStats(prev => ({ ...s, pendingKyc: prev.pendingKyc })));
       })
       // New profiles → refresh stats
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "profiles" }, () => {
-        fetchAdminStats().then(s => setStats(s));
+        fetchAdminStats().then(s => setStats(prev => ({ ...s, pendingKyc: prev.pendingKyc })));
         fetchAllUsers(100).then(u => setUsers(u));
       })
       // Feature lock changes
@@ -233,12 +235,12 @@ export default function AdminDashboard() {
       // Agent changes → refresh agents list + stats
       .on("postgres_changes", { event: "*", schema: "public", table: "agents" }, () => {
         fetchAllAgents(100).then(ag => setAgents(ag));
-        fetchAdminStats().then(s => setStats(s));
+        fetchAdminStats().then(s => setStats(prev => ({ ...s, pendingKyc: prev.pendingKyc })));
       })
       // Merchant changes → refresh merchants list + stats
       .on("postgres_changes", { event: "*", schema: "public", table: "merchants" }, () => {
         fetchAllMerchants(100).then(m => setMerchants(m));
-        fetchAdminStats().then(s => setStats(s));
+        fetchAdminStats().then(s => setStats(prev => ({ ...s, pendingKyc: prev.pendingKyc })));
       })
       .subscribe();
 
@@ -343,6 +345,11 @@ export default function AdminDashboard() {
                     {supportUnread}
                   </span>
                 )}
+                {item.id === "kyc" && stats.pendingKyc > 0 && (
+                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-orange-500 text-white text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {stats.pendingKyc}
+                  </span>
+                )}
               </button>
             ))}
           </nav>
@@ -355,12 +362,13 @@ export default function AdminDashboard() {
         {/* ═══ OVERVIEW ═══ */}
         {activeTab === "overview" && (
           <div className="space-y-6">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               <StatCard icon={Users} label="Total Users" value={stats.totalUsers} color="bg-primary" />
               <StatCard icon={ArrowLeftRight} label="Transactions" value={stats.totalTransactions} color="bg-blue-500" />
               <StatCard icon={UserCheck} label="Agents" value={stats.totalAgents} color="bg-emerald-500" />
               <StatCard icon={Store} label="Merchants" value={stats.totalMerchants} color="bg-purple-500" />
               <StatCard icon={ShieldAlert} label="Open Alerts" value={stats.openAlerts} color="bg-destructive" />
+              <StatCard icon={ScanFace} label="Pending KYC" value={stats.pendingKyc} color="bg-orange-500" />
             </div>
 
             <Card className="border-0 shadow-[var(--shadow-card)]">
