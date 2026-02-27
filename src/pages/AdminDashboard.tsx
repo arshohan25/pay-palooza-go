@@ -377,11 +377,13 @@ export default function AdminDashboard() {
 
         {/* Mobile slide-out navigation drawer */}
         <Sheet open={showNavMenu} onOpenChange={setShowNavMenu}>
-          <SheetContent side="left" className="w-64 p-0">
-            <SheetHeader className="px-4 pt-4 pb-2">
+          <SheetContent side="left" className="w-64 p-0 flex flex-col">
+            <SheetHeader className="px-4 pt-4 pb-2 shrink-0">
               <SheetTitle className="text-sm font-bold">Navigation</SheetTitle>
             </SheetHeader>
-            {navContent}
+            <div className="flex-1 overflow-y-auto">
+              {navContent}
+            </div>
           </SheetContent>
         </Sheet>
 
