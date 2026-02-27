@@ -7,6 +7,7 @@ import {
   FileCheck, Clock, ScanFace, Pencil, Check, X,
   Loader2, RefreshCw, Sparkles, UserCog,
   Briefcase, Heart, Wallet, MapPin, Users, Crop,
+  ScrollText, CircleCheck,
 } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -16,9 +17,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Step = "intro" | "nid_capture" | "nid_details" | "additional_info" | "selfie" | "review" | "submitted";
+type Step = "intro" | "terms" | "nid_capture" | "nid_details" | "additional_info" | "selfie" | "review" | "submitted";
 
-const STEPS: Step[] = ["intro", "nid_capture", "nid_details", "additional_info", "selfie", "review"];
+const STEPS: Step[] = ["intro", "terms", "nid_capture", "nid_details", "additional_info", "selfie", "review"];
 
 // ─── Select Field Options ─────────────────────────────────────────────────────
 const GENDER_OPTIONS = ["Male", "Female", "Other"];
@@ -569,6 +570,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
   const [faceMatchLoading, setFaceMatchLoading] = useState(false);
   const [faceMatchResult, setFaceMatchResult] = useState<{ match: boolean; confidence: number; result: string; reason: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const stepIndex = STEPS.indexOf(step);
 
@@ -581,7 +583,8 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
   const goBack = () => {
     haptics.medium();
     if (step === "intro")           { onClose(); return; }
-    if (step === "nid_capture")     { goTo("intro", -1); return; }
+    if (step === "terms")           { goTo("intro", -1); return; }
+    if (step === "nid_capture")     { goTo("terms", -1); return; }
     if (step === "nid_details")     { goTo("nid_capture", -1); return; }
     if (step === "additional_info") { goTo("nid_details", -1); return; }
     if (step === "selfie")          { goTo("additional_info", -1); return; }
@@ -748,7 +751,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
   const canSubmit            = !!nidFront && !!nidBack && !!selfiePhoto && !!faceMatchResult && canAdvanceNidDetails && canAdvanceAdditional;
 
   const headerGradient = (() => {
-    if (step === "intro")           return "gradient-hero";
+    if (step === "intro" || step === "terms") return "gradient-hero";
     if (step === "nid_capture")     return "gradient-payment";
     if (step === "nid_details")     return "gradient-cashout";
     if (step === "additional_info") return "gradient-primary";
@@ -759,7 +762,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
 
-      {step !== "submitted" && step !== "intro" && (
+      {step !== "submitted" && step !== "intro" && step !== "terms" && (
         <motion.div
           className={`${headerGradient} px-4 pt-3 pb-3 text-primary-foreground`}
           initial={{ y: -60, opacity: 0 }}
@@ -959,7 +962,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
                     whileTap={{ scale: 0.97 }}
-                    onClick={() => goTo("nid_capture")}
+                    onClick={() => goTo("terms")}
                     className="w-full h-14 rounded-2xl bg-gradient-to-r from-[hsl(330,80%,55%)] to-[hsl(350,80%,45%)] text-white font-bold text-base shadow-lg shadow-[hsl(340,85%,50%)/25] flex items-center justify-center gap-2 active:shadow-md transition-shadow"
                   >
                     শুরু করুন
@@ -969,7 +972,139 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
               </div>
             )}
 
-            {/* ── NID Capture (Front + Back on one page) ── */}
+            {/* ── Terms & Conditions ── */}
+            {step === "terms" && (
+              <div className="flex flex-col min-h-full">
+                {/* Gradient Header */}
+                <div className="relative overflow-hidden bg-gradient-to-br from-[hsl(330,80%,55%)] via-[hsl(340,85%,50%)] to-[hsl(350,80%,45%)] px-5 pt-4 pb-8 text-white">
+                  <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-white/8 pointer-events-none" />
+                  <div className="absolute -bottom-16 -left-8 w-48 h-48 rounded-full bg-white/5 pointer-events-none" />
+                  
+                  <div className="relative flex items-center gap-3 mb-5">
+                    <button
+                      onClick={goBack}
+                      className="w-10 h-10 rounded-full bg-white/20 ring-1 ring-white/30 backdrop-blur-sm flex items-center justify-center active:scale-95 transition-transform shrink-0"
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+                    <h1 className="text-lg font-extrabold tracking-tight">শর্তসমূহ</h1>
+                  </div>
+
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.1 }}
+                    className="flex justify-center"
+                  >
+                    <div className="w-20 h-20 rounded-3xl bg-white/15 backdrop-blur-sm border border-white/25 flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
+                      <ScrollText size={38} strokeWidth={1.8} className="text-white" />
+                    </div>
+                  </motion.div>
+                </div>
+
+                {/* Terms Content */}
+                <div className="flex-1 px-5 -mt-4 pb-4">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                    className="bg-card rounded-3xl border border-border shadow-lg p-5 space-y-4"
+                  >
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-center">
+                      KYC যাচাইয়ের শর্তাবলী
+                    </p>
+
+                    <div className="space-y-3 text-[13px] text-foreground leading-relaxed max-h-[340px] overflow-y-auto pr-1 scrollbar-none">
+                      <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[hsl(330,80%,55%)] to-[hsl(350,80%,45%)] flex items-center justify-center text-white shrink-0 mt-0.5 shadow-sm">
+                          <span className="text-xs font-bold">১</span>
+                        </div>
+                        <p>আমি নিশ্চিত করছি যে, আমার প্রদানকৃত সকল তথ্য সঠিক এবং সত্য। ভুল বা মিথ্যা তথ্য প্রদান করলে আমার অ্যাকাউন্ট স্থগিত বা বন্ধ করা হতে পারে।</p>
+                      </motion.div>
+
+                      <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }} className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[hsl(217,80%,50%)] to-[hsl(230,75%,45%)] flex items-center justify-center text-white shrink-0 mt-0.5 shadow-sm">
+                          <span className="text-xs font-bold">২</span>
+                        </div>
+                        <p>আমি সম্মত যে, আমার জাতীয় পরিচয়পত্র (NID), সেলফি এবং ব্যক্তিগত তথ্য শুধুমাত্র পরিচয় যাচাইয়ের জন্য ব্যবহৃত হবে এবং নিরাপদে সংরক্ষণ করা হবে।</p>
+                      </motion.div>
+
+                      <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }} className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[hsl(160,60%,45%)] to-[hsl(170,55%,40%)] flex items-center justify-center text-white shrink-0 mt-0.5 shadow-sm">
+                          <span className="text-xs font-bold">৩</span>
+                        </div>
+                        <p>আমি বুঝতে পারছি যে, KYC যাচাই সম্পন্ন না হলে কিছু সেবা সীমিত থাকতে পারে, যেমন: উচ্চ লেনদেনের সীমা এবং নির্দিষ্ট ফিচার অ্যাক্সেস।</p>
+                      </motion.div>
+
+                      <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }} className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[hsl(40,90%,55%)] to-[hsl(30,85%,50%)] flex items-center justify-center text-white shrink-0 mt-0.5 shadow-sm">
+                          <span className="text-xs font-bold">৪</span>
+                        </div>
+                        <p>আমি সম্মতি দিচ্ছি যে, প্রযোজ্য আইন অনুযায়ী আমার তথ্য সরকারি বা নিয়ন্ত্রক সংস্থার সাথে শেয়ার করা হতে পারে।</p>
+                      </motion.div>
+
+                      <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 }} className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[hsl(270,60%,55%)] to-[hsl(280,55%,50%)] flex items-center justify-center text-white shrink-0 mt-0.5 shadow-sm">
+                          <span className="text-xs font-bold">৫</span>
+                        </div>
+                        <p>আমি জানি যে, KYC যাচাই প্রক্রিয়া সম্পন্ন হতে কিছু সময় লাগতে পারে এবং আমাকে ধৈর্য ধরতে হবে।</p>
+                      </motion.div>
+                    </div>
+                  </motion.div>
+
+                  {/* Accept checkbox */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
+                    className="mt-4"
+                  >
+                    <button
+                      onClick={() => { setTermsAccepted(!termsAccepted); haptics.light(); }}
+                      className="flex items-start gap-3 w-full text-left px-1"
+                    >
+                      <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${
+                        termsAccepted 
+                          ? "bg-gradient-to-br from-[hsl(330,80%,55%)] to-[hsl(350,80%,45%)] border-transparent shadow-md" 
+                          : "border-border bg-card"
+                      }`}>
+                        {termsAccepted && <Check size={14} className="text-white" />}
+                      </div>
+                      <p className="text-sm text-foreground leading-relaxed">
+                        আমি উপরের সকল <span className="font-bold text-primary">শর্তাবলী</span> পড়েছি এবং সম্মত আছি
+                      </p>
+                    </button>
+                  </motion.div>
+                </div>
+
+                {/* Bottom button */}
+                <div className="sticky bottom-0 p-5 pt-3 bg-gradient-to-t from-background via-background to-transparent">
+                  <motion.button
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
+                    whileTap={{ scale: termsAccepted ? 0.97 : 1 }}
+                    onClick={() => termsAccepted && goTo("nid_capture")}
+                    disabled={!termsAccepted}
+                    className={`w-full h-14 rounded-2xl font-bold text-base flex items-center justify-center gap-2 transition-all ${
+                      termsAccepted
+                        ? "bg-gradient-to-r from-[hsl(330,80%,55%)] to-[hsl(350,80%,45%)] text-white shadow-lg shadow-[hsl(340,85%,50%)/25] active:shadow-md"
+                        : "bg-muted text-muted-foreground cursor-not-allowed"
+                    }`}
+                  >
+                    {termsAccepted ? (
+                      <>
+                        <CircleCheck size={18} />
+                        সম্মত হয়ে এগিয়ে যান
+                      </>
+                    ) : (
+                      "শর্তাবলীতে সম্মতি দিন"
+                    )}
+                  </motion.button>
+                </div>
+              </div>
+            )}
+
             {step === "nid_capture" && (
               <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
                 <div className="text-center space-y-1">
