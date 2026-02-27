@@ -1,18 +1,20 @@
 
 
-## Fix: "শুরু করুন" Button Hidden Behind Bottom Nav
+## Fix: KYC Intro Icon Area Styling
 
 ### Problem
-The KYC intro screen and the BottomNav both use `z-50 fixed`. The sticky "Start" button sits at `bottom-0`, directly behind the BottomNav, making it unclickable.
+The icon area in the gradient header doesn't match the bKash reference. Currently it's a translucent white box with a `ShieldCheck` icon. The reference shows a more prominent, slightly opaque rounded square with better contrast against the pink gradient.
 
-### Fix (single file: `src/components/KycFlow.tsx`)
+### Changes (single file: `src/components/KycFlow.tsx`)
 
-**Line 973** — Add `pb-20` (bottom padding ~80px) to the sticky button container so it clears the BottomNav:
+**Lines 837-849** — Update the icon container and badge styling:
 
-```
-- <div className="sticky bottom-0 p-5 pt-3 bg-gradient-to-t from-background via-background to-transparent">
-+ <div className="sticky bottom-0 p-5 pt-3 pb-20 bg-gradient-to-t from-background via-background to-transparent">
-```
+1. Change the icon container background from `bg-white/15` to a softer, more visible style — use `bg-white/20` with larger size and softer border
+2. Replace `ShieldCheck` with `CheckCircle` (or keep `ShieldCheck` but make it bolder) to better match the reference's checkmark-in-a-box look
+3. Make the small badge use the pink gradient background instead of plain white, with a white icon inside — matching the reference's pink badge with a verification symbol
 
-This adds enough bottom padding so the button sits above the BottomNav overlay. Same fix should be applied to the Terms page "Proceed" button if it has the same issue.
+Specifically:
+- Icon box: `w-24 h-24` → `w-20 h-20`, increase opacity to `bg-white/25`, keep rounded corners
+- Badge: Change from white bg + pink icon to `bg-white` with the sparkle/shield icon in pink — this already matches, but increase size slightly to `w-9 h-9` for better visibility
+- Ensure the badge overlaps the corner properly with adjusted positioning
 
