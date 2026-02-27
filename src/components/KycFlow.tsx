@@ -864,17 +864,26 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                   </motion.div>
                 </div>
 
+                {/* Floating gradient banner */}
+                <div className="relative z-10 flex justify-center -mt-4 mb-[-14px]">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.25, type: "spring", stiffness: 300 }}
+                    className="bg-gradient-to-r from-[hsl(330,80%,55%)] to-[hsl(350,80%,45%)] text-white font-bold text-xs px-6 py-2.5 rounded-full shadow-lg"
+                  >
+                    ৩টি সহজ ধাপে আপনার তথ্য সাবমিট করুন
+                  </motion.div>
+                </div>
+
                 {/* Steps overview */}
-                <div className="flex-1 px-5 -mt-5">
+                <div className="flex-1 px-5">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-                    className="bg-card rounded-3xl border border-border shadow-lg p-5"
+                    className="bg-card rounded-3xl border border-border shadow-lg p-5 pt-7"
                   >
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-5 text-center">
-                      ৩টি সহজ ধাপে আপনার তথ্য সাবমিট করুন
-                    </p>
 
                     <div className="space-y-0">
                       {/* Step 1 */}
