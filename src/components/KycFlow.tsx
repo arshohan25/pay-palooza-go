@@ -16,9 +16,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Step = "nid_capture" | "nid_details" | "additional_info" | "selfie" | "review" | "submitted";
+type Step = "intro" | "nid_capture" | "nid_details" | "additional_info" | "selfie" | "review" | "submitted";
 
-const STEPS: Step[] = ["nid_capture", "nid_details", "additional_info", "selfie", "review"];
+const STEPS: Step[] = ["intro", "nid_capture", "nid_details", "additional_info", "selfie", "review"];
 
 // ─── Select Field Options ─────────────────────────────────────────────────────
 const GENDER_OPTIONS = ["Male", "Female", "Other"];
@@ -536,7 +536,7 @@ interface KycFlowProps { onClose: () => void; }
 
 const KycFlow = ({ onClose }: KycFlowProps) => {
   const { t } = useI18n();
-  const [step, setStep]         = useState<Step>("nid_capture");
+  const [step, setStep]         = useState<Step>("intro");
   const [direction, setDir]     = useState(1);
   
   // NID capture states: raw = just captured (pre-crop), final = cropped
@@ -580,7 +580,8 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
 
   const goBack = () => {
     haptics.medium();
-    if (step === "nid_capture")     { onClose(); return; }
+    if (step === "intro")           { onClose(); return; }
+    if (step === "nid_capture")     { goTo("intro", -1); return; }
     if (step === "nid_details")     { goTo("nid_capture", -1); return; }
     if (step === "additional_info") { goTo("nid_details", -1); return; }
     if (step === "selfie")          { goTo("additional_info", -1); return; }
@@ -747,6 +748,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
   const canSubmit            = !!nidFront && !!nidBack && !!selfiePhoto && !!faceMatchResult && canAdvanceNidDetails && canAdvanceAdditional;
 
   const headerGradient = (() => {
+    if (step === "intro")           return "gradient-hero";
     if (step === "nid_capture")     return "gradient-payment";
     if (step === "nid_details")     return "gradient-cashout";
     if (step === "additional_info") return "gradient-primary";
@@ -757,7 +759,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
 
-      {step !== "submitted" && (
+      {step !== "submitted" && step !== "intro" && (
         <motion.div
           className={`${headerGradient} px-4 pt-3 pb-3 text-primary-foreground`}
           initial={{ y: -60, opacity: 0 }}
@@ -779,7 +781,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
           <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
             <motion.div
               className="h-full bg-white rounded-full shadow-[0_0_8px_2px_rgba(255,255,255,0.55)]"
-              animate={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }}
+              animate={{ width: `${(Math.max(0, stepIndex) / (STEPS.length - 1)) * 100}%` }}
               transition={{ type: "spring", stiffness: 200, damping: 28 }}
             />
           </div>
@@ -798,6 +800,174 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
             transition={{ type: "spring", stiffness: 340, damping: 34 }}
             className="absolute inset-0 overflow-y-auto scrollbar-none flex flex-col"
           >
+
+            {/* ── Intro / Welcome Screen ── */}
+            {step === "intro" && (
+              <div className="flex flex-col min-h-full">
+                {/* Gradient Header */}
+                <div className="relative overflow-hidden bg-gradient-to-br from-[hsl(330,80%,55%)] via-[hsl(340,85%,50%)] to-[hsl(350,80%,45%)] px-5 pt-4 pb-10 text-white">
+                  <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-white/8 pointer-events-none" />
+                  <div className="absolute -bottom-16 -left-8 w-48 h-48 rounded-full bg-white/5 pointer-events-none" />
+                  
+                  <div className="relative flex items-center gap-3 mb-6">
+                    <button
+                      onClick={onClose}
+                      className="w-10 h-10 rounded-full bg-white/20 ring-1 ring-white/30 backdrop-blur-sm flex items-center justify-center active:scale-95 transition-transform shrink-0"
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+                    <h1 className="text-lg font-extrabold tracking-tight">{t("kycTitle")}</h1>
+                  </div>
+
+                  {/* Centered icon */}
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.15 }}
+                    className="flex justify-center mb-5"
+                  >
+                    <div className="relative">
+                      <div className="w-24 h-24 rounded-3xl bg-white/15 backdrop-blur-sm border border-white/25 flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
+                        <ShieldCheck size={44} strokeWidth={1.8} className="text-white" />
+                      </div>
+                      <motion.div
+                        className="absolute -top-1 -right-1 w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-lg"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
+                      >
+                        <Sparkles size={16} className="text-[hsl(340,85%,50%)]" />
+                      </motion.div>
+                    </div>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="text-center"
+                  >
+                    <h2 className="text-lg font-bold leading-snug">
+                      অনুগ্রহ করে আপনার তথ্য<br />হালনাগাদ করুন
+                    </h2>
+                    <p className="text-xs text-white/70 mt-2 leading-relaxed max-w-[260px] mx-auto">
+                      আপনার অ্যাকাউন্টের নিরাপত্তা ও সম্পূর্ণ সেবা পেতে KYC যাচাই সম্পন্ন করুন
+                    </p>
+                  </motion.div>
+                </div>
+
+                {/* Steps overview */}
+                <div className="flex-1 px-5 -mt-5">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+                    className="bg-card rounded-3xl border border-border shadow-lg p-5"
+                  >
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-5 text-center">
+                      ৩টি সহজ ধাপে আপনার তথ্য সাবমিট করুন
+                    </p>
+
+                    <div className="space-y-0">
+                      {/* Step 1 */}
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.4 }}
+                        className="flex items-start gap-4"
+                      >
+                        <div className="flex flex-col items-center">
+                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[hsl(330,80%,55%)] to-[hsl(350,80%,45%)] flex items-center justify-center text-white shadow-md">
+                            <CreditCard size={22} />
+                          </div>
+                          <div className="w-0.5 h-8 bg-gradient-to-b from-[hsl(330,80%,55%)/40] to-transparent mt-1" />
+                        </div>
+                        <div className="flex-1 pt-1">
+                          <p className="text-sm font-bold text-foreground">আপনার NID এর ছবি তুলুন</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                            জাতীয় পরিচয়পত্রের সামনে ও পিছনের ছবি ক্যামেরা দিয়ে তুলুন
+                          </p>
+                        </div>
+                        <span className="text-4xl font-black text-muted/10 select-none leading-none mt-1">1</span>
+                      </motion.div>
+
+                      {/* Step 2 */}
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.55 }}
+                        className="flex items-start gap-4"
+                      >
+                        <div className="flex flex-col items-center">
+                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[hsl(217,80%,50%)] to-[hsl(230,75%,45%)] flex items-center justify-center text-white shadow-md">
+                            <FileCheck size={22} />
+                          </div>
+                          <div className="w-0.5 h-8 bg-gradient-to-b from-[hsl(217,80%,50%)/40] to-transparent mt-1" />
+                        </div>
+                        <div className="flex-1 pt-1">
+                          <p className="text-sm font-bold text-foreground">প্রয়োজনীয় তথ্য প্রদান করুন</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                            নাম, জন্মতারিখ, পেশা ও অন্যান্য তথ্য যাচাই করুন
+                          </p>
+                        </div>
+                        <span className="text-4xl font-black text-muted/10 select-none leading-none mt-1">2</span>
+                      </motion.div>
+
+                      {/* Step 3 */}
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.7 }}
+                        className="flex items-start gap-4"
+                      >
+                        <div className="flex flex-col items-center">
+                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[hsl(160,60%,45%)] to-[hsl(170,55%,40%)] flex items-center justify-center text-white shadow-md">
+                            <ScanFace size={22} />
+                          </div>
+                        </div>
+                        <div className="flex-1 pt-1">
+                          <p className="text-sm font-bold text-foreground">নিজের চেহারার ছবি তুলুন</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                            NID ফটোর সাথে মিলিয়ে দেখতে একটি সেলফি তুলুন
+                          </p>
+                        </div>
+                        <span className="text-4xl font-black text-muted/10 select-none leading-none mt-1">3</span>
+                      </motion.div>
+                    </div>
+                  </motion.div>
+
+                  {/* Info note */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.8 }}
+                    className="flex items-start gap-3 mt-4 px-1"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                      <ShieldCheck size={15} className="text-primary" />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      আপনার সকল তথ্য সম্পূর্ণ নিরাপদ ও এনক্রিপ্টেড। শুধুমাত্র যাচাইয়ের উদ্দেশ্যে ব্যবহৃত হবে।
+                    </p>
+                  </motion.div>
+                </div>
+
+                {/* Bottom sticky button */}
+                <div className="sticky bottom-0 p-5 pt-3 bg-gradient-to-t from-background via-background to-transparent">
+                  <motion.button
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => goTo("nid_capture")}
+                    className="w-full h-14 rounded-2xl bg-gradient-to-r from-[hsl(330,80%,55%)] to-[hsl(350,80%,45%)] text-white font-bold text-base shadow-lg shadow-[hsl(340,85%,50%)/25] flex items-center justify-center gap-2 active:shadow-md transition-shadow"
+                  >
+                    শুরু করুন
+                    <ChevronLeft size={18} className="rotate-180" />
+                  </motion.button>
+                </div>
+              </div>
+            )}
 
             {/* ── NID Capture (Front + Back on one page) ── */}
             {step === "nid_capture" && (
