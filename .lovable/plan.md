@@ -1,45 +1,46 @@
-
-
-## Plan: Redesign KYC Flow with Additional Information Step
-
-### Current Flow
-`nid_front` → `nid_back` → `nid_details` → `selfie` → `review` → `submitted`
-
-### New Flow
-`nid_front` → `nid_back` → `nid_details` → `selfie` → **`additional_info`** → `review` → `submitted`
+## Plan: Redesign KYC UI — Combined NID Capture + Image Cropping
 
 ### Changes (single file: `src/components/KycFlow.tsx`)
 
-**1. Add new step type and state**
-- Add `"additional_info"` to the `Step` type and `STEPS` array
-- Add state for: `occupation`, `gender`, `monthlyIncome`, `address`, `maritalStatus`
+### New Flow
 
-**2. Create a styled dropdown component (`SelectField`)**
-- Glassmorphic card-style select with gradient accent icons
-- Options for each field:
-  - **Gender**: Male, Female, Other
-  - **Occupation**: Student, Business, Government Job, Private Job, Freelancer, Homemaker, Retired, Other
-  - **Monthly Income**: Below ৳10,000 / ৳10,001–৳25,000 / ৳25,001–৳50,000 / ৳50,001–৳1,00,000 / Above ৳1,00,000
-  - **Marital Status**: Single, Married, Divorced, Widowed
+`nid_capture` (front+back on one page) → `nid_details` → `additional_info`→ `selfie`  → `review` → `submitted`
 
-**3. Build the `additional_info` step UI**
-- Animated gradient header icon (Sparkles/UserCog)
-- Section title: "Additional Information"
-- Glassmorphic card containing all dropdown fields with icons
-- Each field uses the `SelectField` component with animated entrance
-- Continue button with gradient styling
+### 1. Merge NID Front & Back into a single `nid_capture` step
 
-**4. Update navigation logic**
-- `selfie` → advances to `additional_info` instead of `review`
-- `additional_info` → advances to `review`
-- Back navigation updated accordingly
+- Remove separate `nid_front` and `nid_back` steps
+- New step `nid_capture` shows both camera boxes stacked vertically on one page
+- User captures front first, then back appears below
+- Continue button enables only when both are captured
+- OCR runs automatically after front capture (same as now)
 
-**5. Include additional data in submission**
-- Add `occupation`, `gender`, `monthly_income`, `marital_status`, `address` to the `ocr_raw_data` JSON object saved to `kyc_verifications`
+### 2. Add image cropping after each capture
 
-**6. Show additional info in the review step**
-- New card section displaying the extra fields before the submit button
+- After capturing NID front or back, show a crop overlay instead of just the preview
+- Implement a simple crop UI: draggable crop rectangle over the captured image
+- User adjusts crop area, then taps "Crop & Save" to finalize
+- Uses canvas to crop the selected region from the full capture
+- Crop state managed per-image (`croppingFront`, `croppingBack`)
 
-### Database
-No schema changes needed — additional fields stored in the existing `ocr_raw_data` JSONB column.
+### 3. Update step type, STEPS array, and navigation
 
+- `Step` type: `"nid_capture" | "nid_details" | "selfie" | "additional_info" | "review" | "submitted"`
+- `STEPS`: `["nid_capture", "nid_details","additional_info", "selfie",  "review"]`
+- `goBack` updated: `nid_capture` → close, `nid_details` → `nid_capture`, etc.
+- Progress bar recalculated for 5 steps instead of 6
+
+### 4. Crop Component (`ImageCropper`)
+
+- Displays captured image full-width
+- Overlay with draggable/resizable crop box (touch-friendly handles at corners)
+- "Crop & Confirm" gradient button below
+- "Retake" secondary button
+- On confirm: crops via canvas, returns cropped dataUrl
+
+### 5. UI remains elegant
+
+- Same glassmorphic cards, gradient buttons, animated transitions
+- Crop UI uses semi-transparent dark overlay with white crop border + corner handles
+- Smooth spring animations on crop box appearance
+
+### **Change database as per new update**
