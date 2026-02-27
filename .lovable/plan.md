@@ -1,20 +1,20 @@
 
 
-## Analysis: Admin KYC Review Dashboard Status
+## Plan: Add Pending KYC Count Badge to Admin Nav
 
-The Admin KYC Review dashboard is **already fully integrated** into the Admin Dashboard:
+**What**: Add a real-time pending KYC count badge next to the "KYC" nav item in the admin dashboard sidebar, matching the existing fraud alerts and support badges.
 
-1. **Navigation**: KYC tab with `ScanFace` icon exists in `NAV_ITEMS` (line 140 of AdminDashboard.tsx)
-2. **Import**: `AdminKycReview` is imported (line 39)
-3. **Rendering**: Component renders when KYC tab is active (line 667: `{activeTab === "kyc" && <AdminKycReview />}`)
-4. **Component**: `AdminKycReview.tsx` is a complete 375-line component with:
-   - Filter bar (Pending/All/Verified/Rejected)
-   - Record list with face match scores and status badges
-   - Detail dialog with personal info, face match score, document photo previews (signed URLs), OCR data, and review notes
-   - Approve/Reject actions that update `kyc_verifications` table and trigger `kyc-notify` edge function for notifications
-   - Real-time Supabase subscription for live updates
+**Implementation** (single file: `src/pages/AdminDashboard.tsx`):
 
-**No changes needed.** To access it: open the Admin Dashboard → tap the hamburger menu → select "KYC".
-
-If something specific isn't working when you navigate to the KYC tab, please describe the issue (e.g., blank screen, error message, records not loading) so I can investigate further.
+1. **Fetch pending KYC count** alongside existing stats in `loadData` — add a query: `supabase.from("kyc_verifications").select("id", { count: "exact", head: true }).eq("status", "pending")`
+2. **Add `pendingKyc` to the `Stats` interface** and state default
+3. **Add badge markup** after the support badge block (~line 345), matching the same pattern:
+   ```tsx
+   {item.id === "kyc" && stats.pendingKyc > 0 && (
+     <span className="ml-auto min-w-[16px] h-4 px-1 bg-orange-500 text-white text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+       {stats.pendingKyc}
+     </span>
+   )}
+   ```
+4. **Add a KYC stat card** to the overview grid showing pending KYC count
 
