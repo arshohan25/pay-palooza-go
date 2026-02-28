@@ -292,6 +292,7 @@ const CameraBox = ({ label, preview, onCapture, icon: Icon, gradient, guideText,
   const streamRef = useRef<MediaStream | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [flashEffect, setFlashEffect] = useState(false);
   const { t } = useI18n();
 
   const startCamera = useCallback(async () => {
@@ -300,8 +301,8 @@ const CameraBox = ({ label, preview, onCapture, icon: Icon, gradient, guideText,
       const constraints: MediaStreamConstraints = {
         video: {
           facingMode: isNidCard ? "environment" : "user",
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
         },
       };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -313,8 +314,8 @@ const CameraBox = ({ label, preview, onCapture, icon: Icon, gradient, guideText,
       setCameraActive(true);
     } catch (err: any) {
       console.error("Camera error:", err);
-      setCameraError(err.name === "NotAllowedError" 
-        ? t("cameraPermissionDenied") 
+      setCameraError(err.name === "NotAllowedError"
+        ? t("cameraPermissionDenied")
         : t("cameraNotAvailable"));
     }
   }, [isNidCard, t]);
@@ -332,6 +333,8 @@ const CameraBox = ({ label, preview, onCapture, icon: Icon, gradient, guideText,
 
   const capture = () => {
     if (!videoRef.current || !canvasRef.current) return;
+    setFlashEffect(true);
+    setTimeout(() => setFlashEffect(false), 300);
     const video = videoRef.current;
     const canvas = canvasRef.current;
     canvas.width = video.videoWidth;
@@ -375,18 +378,28 @@ const CameraBox = ({ label, preview, onCapture, icon: Icon, gradient, guideText,
     );
   }
 
+  // ── FULLSCREEN IMMERSIVE CAMERA ──
   return (
-    <div className="space-y-2">
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">{label}</p>
-      <div className="relative rounded-2xl overflow-hidden border-2 border-dashed border-border bg-black" style={{ aspectRatio: isNidCard ? "16/10" : "3/4" }}>
+    <div className="fixed inset-0 z-[100] bg-black flex flex-col">
+      {/* Camera feed — fills entire screen */}
+      <div className="relative flex-1 overflow-hidden">
         {cameraError ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
-            <div className={`w-14 h-14 ${gradient} rounded-2xl flex items-center justify-center text-primary-foreground shadow-glow`}>
-              <AlertCircle size={26} />
-            </div>
-            <p className="text-sm font-semibold text-white">{cameraError}</p>
-            <button onClick={startCamera} className="text-xs text-primary font-semibold underline">
-              {t("tryAgain")}
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-8 text-center bg-gradient-to-b from-black via-[hsl(260,30%,8%)] to-black">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 260, damping: 20 }}
+              className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[hsl(340,80%,55%)] to-[hsl(280,70%,50%)] flex items-center justify-center shadow-[0_0_40px_rgba(220,50,100,0.4)]"
+            >
+              <AlertCircle size={36} className="text-white" />
+            </motion.div>
+            <p className="text-base font-bold text-white">{cameraError}</p>
+            <p className="text-xs text-white/50">ক্যামেরা পারমিশন দিন বা আবার চেষ্টা করুন</p>
+            <button
+              onClick={startCamera}
+              className="mt-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-[hsl(340,80%,55%)] to-[hsl(280,70%,50%)] text-white font-bold text-sm shadow-lg active:scale-95 transition-transform"
+            >
+              আবার চেষ্টা করুন
             </button>
           </div>
         ) : (
@@ -398,44 +411,138 @@ const CameraBox = ({ label, preview, onCapture, icon: Icon, gradient, guideText,
               muted
               className={`absolute inset-0 w-full h-full object-cover ${!isNidCard ? "scale-x-[-1]" : ""}`}
             />
-            {isNidCard && (
-              <div className="absolute inset-4 border-2 border-white/40 rounded-xl pointer-events-none">
-                <div className="absolute top-0 left-0 w-5 h-5 border-t-2 border-l-2 border-white rounded-tl-lg" />
-                <div className="absolute top-0 right-0 w-5 h-5 border-t-2 border-r-2 border-white rounded-tr-lg" />
-                <div className="absolute bottom-0 left-0 w-5 h-5 border-b-2 border-l-2 border-white rounded-bl-lg" />
-                <div className="absolute bottom-0 right-0 w-5 h-5 border-b-2 border-r-2 border-white rounded-br-lg" />
-              </div>
-            )}
-            {!isNidCard && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-48 h-60 border-2 border-white/40 rounded-[40%] relative">
-                  <div className="absolute -top-1 -left-1 w-6 h-6 border-t-2 border-l-2 border-white rounded-tl-2xl" />
-                  <div className="absolute -top-1 -right-1 w-6 h-6 border-t-2 border-r-2 border-white rounded-tr-2xl" />
-                  <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-2 border-l-2 border-white rounded-bl-2xl" />
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-2 border-r-2 border-white rounded-br-2xl" />
+
+            {/* Flash effect */}
+            <AnimatePresence>
+              {flashEffect && (
+                <motion.div
+                  initial={{ opacity: 1 }}
+                  animate={{ opacity: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="absolute inset-0 bg-white z-50"
+                />
+              )}
+            </AnimatePresence>
+
+            {/* Dark vignette overlay */}
+            <div className="absolute inset-0 pointer-events-none" style={{
+              background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.7) 100%)"
+            }} />
+
+            {/* Top floating bar */}
+            <motion.div
+              initial={{ y: -40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+              className="absolute top-0 inset-x-0 z-20 flex items-center justify-between px-4 pt-[env(safe-area-inset-top,12px)] pb-3"
+              style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 100%)" }}
+            >
+              <button
+                onClick={() => { stopCamera(); onCapture(""); }}
+                className="w-10 h-10 rounded-full bg-white/15 backdrop-blur-md ring-1 ring-white/20 flex items-center justify-center active:scale-90 transition-transform"
+              >
+                <X size={20} className="text-white" />
+              </button>
+              <div className="flex items-center gap-2">
+                <div className="px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-md ring-1 ring-white/10">
+                  <p className="text-[11px] font-bold text-white tracking-wide">{label}</p>
                 </div>
               </div>
-            )}
-            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent pt-8 pb-3 px-4 text-center">
-              <p className="text-xs text-white/80 font-medium">{guideText}</p>
-            </div>
-            {cameraActive && (
-              <div className="absolute bottom-14 inset-x-0 flex justify-center">
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={capture}
-                  className="w-16 h-16 rounded-full bg-white shadow-lg flex items-center justify-center border-4 border-white/50 active:bg-white/90 transition-colors"
+              <div className="w-10" /> {/* spacer */}
+            </motion.div>
+
+            {/* NID card frame overlay */}
+            {isNidCard && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.5, type: "spring" }}
+                  className="relative"
+                  style={{ width: "88%", aspectRatio: "86/54" }}
                 >
-                  <div className="w-12 h-12 rounded-full border-2 border-primary flex items-center justify-center">
-                    <Camera size={20} className="text-primary" />
-                  </div>
-                </motion.button>
+                  {/* Animated scanning border */}
+                  <div className="absolute inset-0 rounded-2xl border-2 border-white/50" />
+                  
+                  {/* Bright corner brackets */}
+                  <div className="absolute -top-[1px] -left-[1px] w-8 h-8 border-t-[3px] border-l-[3px] border-white rounded-tl-2xl" />
+                  <div className="absolute -top-[1px] -right-[1px] w-8 h-8 border-t-[3px] border-r-[3px] border-white rounded-tr-2xl" />
+                  <div className="absolute -bottom-[1px] -left-[1px] w-8 h-8 border-b-[3px] border-l-[3px] border-white rounded-bl-2xl" />
+                  <div className="absolute -bottom-[1px] -right-[1px] w-8 h-8 border-b-[3px] border-r-[3px] border-white rounded-br-2xl" />
+                  
+                  {/* Scanning line */}
+                  <motion.div
+                    animate={{ top: ["5%", "95%", "5%"] }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute left-2 right-2 h-[2px] rounded-full"
+                    style={{
+                      background: "linear-gradient(90deg, transparent, hsl(340,80%,55%), hsl(280,70%,60%), transparent)",
+                      boxShadow: "0 0 12px 3px hsla(340,80%,55%,0.5)"
+                    }}
+                  />
+                </motion.div>
               </div>
             )}
+
+            {/* Selfie face frame */}
+            {!isNidCard && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.5, type: "spring" }}
+                  className="w-52 h-64 border-2 border-white/50 rounded-[40%] relative"
+                >
+                  <div className="absolute -top-1 -left-1 w-7 h-7 border-t-[3px] border-l-[3px] border-white rounded-tl-3xl" />
+                  <div className="absolute -top-1 -right-1 w-7 h-7 border-t-[3px] border-r-[3px] border-white rounded-tr-3xl" />
+                  <div className="absolute -bottom-1 -left-1 w-7 h-7 border-b-[3px] border-l-[3px] border-white rounded-bl-3xl" />
+                  <div className="absolute -bottom-1 -right-1 w-7 h-7 border-b-[3px] border-r-[3px] border-white rounded-br-3xl" />
+                </motion.div>
+              </div>
+            )}
+
+            {/* Bottom controls area */}
+            <motion.div
+              initial={{ y: 60, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
+              className="absolute bottom-0 inset-x-0 z-20 pb-[env(safe-area-inset-bottom,16px)]"
+              style={{ background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)" }}
+            >
+              <div className="flex flex-col items-center gap-4 pt-10 pb-6">
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                  className="text-xs font-medium text-white/80 tracking-wide"
+                >
+                  {guideText}
+                </motion.p>
+
+                {cameraActive && (
+                  <motion.button
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.5, type: "spring", stiffness: 300, damping: 20 }}
+                    whileTap={{ scale: 0.85 }}
+                    onClick={capture}
+                    className="relative w-[76px] h-[76px] rounded-full flex items-center justify-center"
+                  >
+                    <div className="absolute inset-0 rounded-full border-[3px] border-white/80" />
+                    <motion.div
+                      animate={{ boxShadow: ["0 0 0 0 rgba(255,255,255,0.3)", "0 0 0 8px rgba(255,255,255,0)", "0 0 0 0 rgba(255,255,255,0.3)"] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="w-[62px] h-[62px] rounded-full bg-white"
+                    />
+                  </motion.button>
+                )}
+              </div>
+            </motion.div>
           </>
         )}
-        <canvas ref={canvasRef} className="hidden" />
       </div>
+      <canvas ref={canvasRef} className="hidden" />
     </div>
   );
 };
