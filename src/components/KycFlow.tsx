@@ -83,6 +83,131 @@ interface ImageCropperProps {
   onRetake: () => void;
 }
 
+// ─── Pinch-to-Zoom Image Viewer ───────────────────────────────────────────────
+const ZoomableImage = ({ src, alt }: { src: string; alt: string }) => {
+  const [zoomed, setZoomed] = useState(false);
+  const [scale, setScale] = useState(1);
+  const [translate, setTranslate] = useState({ x: 0, y: 0 });
+  const lastDist = useRef(0);
+  const lastCenter = useRef({ x: 0, y: 0 });
+  const isDragging = useRef(false);
+  const lastTouch = useRef({ x: 0, y: 0 });
+
+  const resetView = () => { setScale(1); setTranslate({ x: 0, y: 0 }); };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[1].clientX - e.touches[0].clientX;
+      const dy = e.touches[1].clientY - e.touches[0].clientY;
+      lastDist.current = Math.hypot(dx, dy);
+      lastCenter.current = {
+        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+        y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+      };
+    } else if (e.touches.length === 1 && scale > 1) {
+      isDragging.current = true;
+      lastTouch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const dx = e.touches[1].clientX - e.touches[0].clientX;
+      const dy = e.touches[1].clientY - e.touches[0].clientY;
+      const dist = Math.hypot(dx, dy);
+      if (lastDist.current > 0) {
+        const newScale = Math.min(5, Math.max(1, scale * (dist / lastDist.current)));
+        setScale(newScale);
+        if (newScale <= 1) resetView();
+      }
+      lastDist.current = dist;
+    } else if (e.touches.length === 1 && isDragging.current && scale > 1) {
+      const dx = e.touches[0].clientX - lastTouch.current.x;
+      const dy = e.touches[0].clientY - lastTouch.current.y;
+      setTranslate(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+      lastTouch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+  };
+
+  const handleTouchEnd = () => {
+    lastDist.current = 0;
+    isDragging.current = false;
+    if (scale <= 1.05) resetView();
+  };
+
+  return (
+    <>
+      {/* Inline preview - tap to open fullscreen */}
+      <div
+        className="relative rounded-2xl overflow-hidden border-2 border-primary/30 shadow-glow bg-muted/30 cursor-zoom-in"
+        style={{ aspectRatio: "16/10" }}
+        onClick={() => { setZoomed(true); resetView(); }}
+      >
+        <img src={src} alt={alt} className="w-full h-full object-contain" />
+        <div className="absolute top-2 right-2 px-2 py-1 rounded-lg bg-black/40 backdrop-blur-sm flex items-center gap-1">
+          <Eye size={12} className="text-white" />
+          <span className="text-[9px] text-white font-bold">TAP TO ZOOM</span>
+        </div>
+      </div>
+
+      {/* Fullscreen zoom modal */}
+      <AnimatePresence>
+        {zoomed && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-black flex flex-col"
+          >
+            {/* Close bar */}
+            <div className="flex items-center justify-between px-4 pt-[env(safe-area-inset-top,12px)] pb-2">
+              <button
+                onClick={() => { setZoomed(false); resetView(); }}
+                className="w-10 h-10 rounded-full bg-white/15 backdrop-blur-md flex items-center justify-center active:scale-90 transition-transform"
+              >
+                <X size={20} className="text-white" />
+              </button>
+              <p className="text-white/70 text-xs font-medium">{alt}</p>
+              <button
+                onClick={resetView}
+                className="px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-md text-white text-[11px] font-bold active:scale-95 transition-transform"
+              >
+                Reset
+              </button>
+            </div>
+
+            {/* Zoomable area */}
+            <div
+              className="flex-1 flex items-center justify-center overflow-hidden touch-none"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              <img
+                src={src}
+                alt={alt}
+                className="max-w-full max-h-full object-contain transition-transform duration-75"
+                style={{
+                  transform: `scale(${scale}) translate(${translate.x / scale}px, ${translate.y / scale}px)`,
+                }}
+                draggable={false}
+              />
+            </div>
+
+            {/* Zoom indicator */}
+            {scale > 1 && (
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-md">
+                <p className="text-white text-xs font-bold">{scale.toFixed(1)}×</p>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+};
+
 const ImageCropper = ({ image, onCrop, onRetake }: ImageCropperProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -872,7 +997,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
   })();
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
+    <div className="fixed inset-0 z-[60] bg-background flex flex-col max-w-md mx-auto">
 
       {step !== "submitted" && step !== "intro" && step !== "terms" && (
         <motion.div
@@ -1320,19 +1445,17 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                 ) : nidFront ? (
                   <div className="space-y-2">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">{t("nidCardFront")}</p>
-                    <div className="relative rounded-2xl overflow-hidden border-2 border-primary/30 shadow-glow bg-muted/30" style={{ aspectRatio: "16/10" }}>
-                      <img src={nidFront} alt="NID Front" className="w-full h-full object-contain" />
-                      <div className="absolute bottom-0 inset-x-0 p-3 flex justify-center">
-                        <button
-                          onClick={() => { setNidFront(null); setNidFrontRaw(null); setOcrDone(false); }}
-                          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-black/50 backdrop-blur-sm text-white text-sm font-semibold hover:bg-black/60 transition-colors"
-                        >
-                          <RefreshCw size={14} /> {t("retake")}
-                        </button>
+                    <ZoomableImage src={nidFront} alt="NID Front" />
+                    <div className="flex items-center justify-between px-1">
+                      <div className="flex items-center gap-2 text-xs text-primary font-medium">
+                        <CheckCircle2 size={13} /> Cropped & Saved
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-primary font-medium px-1">
-                      <CheckCircle2 size={13} /> Cropped & Saved
+                      <button
+                        onClick={() => { setNidFront(null); setNidFrontRaw(null); setOcrDone(false); }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-muted text-foreground text-xs font-semibold hover:bg-muted/80 transition-colors"
+                      >
+                        <RefreshCw size={12} /> {t("retake")}
+                      </button>
                     </div>
                   </div>
                 ) : (
@@ -1378,19 +1501,17 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                     ) : nidBack ? (
                       <div className="space-y-2">
                         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">{t("nidCardBack")}</p>
-                        <div className="relative rounded-2xl overflow-hidden border-2 border-primary/30 shadow-glow bg-muted/30" style={{ aspectRatio: "16/10" }}>
-                          <img src={nidBack} alt="NID Back" className="w-full h-full object-contain" />
-                          <div className="absolute bottom-0 inset-x-0 p-3 flex justify-center">
-                            <button
-                              onClick={() => { setNidBack(null); setNidBackRaw(null); }}
-                              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-black/50 backdrop-blur-sm text-white text-sm font-semibold hover:bg-black/60 transition-colors"
-                            >
-                              <RefreshCw size={14} /> {t("retake")}
-                            </button>
+                        <ZoomableImage src={nidBack} alt="NID Back" />
+                        <div className="flex items-center justify-between px-1">
+                          <div className="flex items-center gap-2 text-xs text-primary font-medium">
+                            <CheckCircle2 size={13} /> Cropped & Saved
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-primary font-medium px-1">
-                          <CheckCircle2 size={13} /> Cropped & Saved
+                          <button
+                            onClick={() => { setNidBack(null); setNidBackRaw(null); }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-muted text-foreground text-xs font-semibold hover:bg-muted/80 transition-colors"
+                          >
+                            <RefreshCw size={12} /> {t("retake")}
+                          </button>
                         </div>
                       </div>
                     ) : (
