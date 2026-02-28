@@ -991,12 +991,12 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
             {/* ── Terms & Conditions ── */}
             {step === "terms" && (
               <div className="flex flex-col min-h-full">
-                {/* Gradient Header */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-[hsl(330,80%,55%)] via-[hsl(340,85%,50%)] to-[hsl(350,80%,45%)] px-5 pt-4 pb-8 text-white">
+                {/* Gradient Header — compact with no icon clipping */}
+                <div className="relative overflow-visible bg-gradient-to-br from-[hsl(330,80%,55%)] via-[hsl(340,85%,50%)] to-[hsl(350,80%,45%)] px-5 pt-4 pb-6 text-white">
                   <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-white/8 pointer-events-none" />
                   <div className="absolute -bottom-16 -left-8 w-48 h-48 rounded-full bg-white/5 pointer-events-none" />
                   
-                  <div className="relative flex items-center gap-3 mb-5">
+                  <div className="relative flex items-center gap-3">
                     <button
                       onClick={goBack}
                       className="w-10 h-10 rounded-full bg-white/20 ring-1 ring-white/30 backdrop-blur-sm flex items-center justify-center active:scale-95 transition-transform shrink-0"
@@ -1005,65 +1005,62 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                     </button>
                     <h1 className="text-lg font-extrabold tracking-tight">শর্তসমূহ</h1>
                   </div>
+                </div>
 
+                {/* Floating subtitle banner */}
+                <div className="relative z-10 flex justify-center -mt-4 mb-2">
                   <motion.div
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.1 }}
-                    className="flex justify-center"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.15, type: "spring", stiffness: 300 }}
+                    className="bg-gradient-to-r from-[hsl(330,80%,55%)] to-[hsl(350,80%,45%)] text-white font-bold text-[13px] px-6 py-2.5 rounded-full shadow-[0_4px_20px_rgba(220,40,80,0.35)] tracking-wide"
                   >
-                    <div className="w-20 h-20 rounded-3xl bg-white/15 backdrop-blur-sm border border-white/25 flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
-                      <ScrollText size={38} strokeWidth={1.8} className="text-white" />
-                    </div>
+                    KYC যাচাইয়ের শর্তাবলী
                   </motion.div>
                 </div>
 
                 {/* Terms Content */}
-                <div className="flex-1 px-5 -mt-4 pb-4">
+                <div className="flex-1 px-4 pb-4">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                    className="bg-card rounded-3xl border border-border shadow-lg p-5 space-y-4"
+                    className="bg-card rounded-2xl border border-border shadow-lg p-4 space-y-3"
                   >
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-center">
-                      KYC যাচাইয়ের শর্তাবলী
-                    </p>
-
-                    <div className="space-y-3 text-[13px] text-foreground leading-relaxed max-h-[340px] overflow-y-auto pr-1 scrollbar-none">
-                      <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[hsl(330,80%,55%)] to-[hsl(350,80%,45%)] flex items-center justify-center text-white shrink-0 mt-0.5 shadow-sm">
+                    <div className="space-y-3 text-[13px] text-foreground leading-relaxed max-h-[380px] overflow-y-auto pr-1 scrollbar-none">
+                      <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} className="flex items-start gap-3 p-3 rounded-xl bg-muted/40">
+                        <div className="w-9 h-9 min-w-[36px] rounded-full bg-gradient-to-br from-[hsl(330,80%,55%)] to-[hsl(350,80%,45%)] flex items-center justify-center text-white shrink-0 shadow-sm">
                           <span className="text-xs font-bold">১</span>
                         </div>
-                        <p>আমি নিশ্চিত করছি যে, আমার প্রদানকৃত সকল তথ্য সঠিক এবং সত্য। ভুল বা মিথ্যা তথ্য প্রদান করলে আমার অ্যাকাউন্ট স্থগিত বা বন্ধ করা হতে পারে।</p>
+                        <p className="pt-1.5">আমি নিশ্চিত করছি যে, আমার প্রদানকৃত সকল তথ্য সঠিক এবং সত্য। ভুল বা মিথ্যা তথ্য প্রদান করলে আমার অ্যাকাউন্ট স্থগিত বা বন্ধ করা হতে পারে।</p>
                       </motion.div>
 
-                      <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }} className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[hsl(217,80%,50%)] to-[hsl(230,75%,45%)] flex items-center justify-center text-white shrink-0 mt-0.5 shadow-sm">
+                      <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }} className="flex items-start gap-3 p-3 rounded-xl bg-muted/40">
+                        <div className="w-9 h-9 min-w-[36px] rounded-full bg-gradient-to-br from-[hsl(217,80%,50%)] to-[hsl(230,75%,45%)] flex items-center justify-center text-white shrink-0 shadow-sm">
                           <span className="text-xs font-bold">২</span>
                         </div>
-                        <p>আমি সম্মত যে, আমার জাতীয় পরিচয়পত্র (NID), সেলফি এবং ব্যক্তিগত তথ্য শুধুমাত্র পরিচয় যাচাইয়ের জন্য ব্যবহৃত হবে এবং নিরাপদে সংরক্ষণ করা হবে।</p>
+                        <p className="pt-1.5">আমি সম্মত যে, আমার জাতীয় পরিচয়পত্র (NID), সেলফি এবং ব্যক্তিগত তথ্য শুধুমাত্র পরিচয় যাচাইয়ের জন্য ব্যবহৃত হবে এবং নিরাপদে সংরক্ষণ করা হবে।</p>
                       </motion.div>
 
-                      <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }} className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[hsl(160,60%,45%)] to-[hsl(170,55%,40%)] flex items-center justify-center text-white shrink-0 mt-0.5 shadow-sm">
+                      <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }} className="flex items-start gap-3 p-3 rounded-xl bg-muted/40">
+                        <div className="w-9 h-9 min-w-[36px] rounded-full bg-gradient-to-br from-[hsl(160,60%,45%)] to-[hsl(170,55%,40%)] flex items-center justify-center text-white shrink-0 shadow-sm">
                           <span className="text-xs font-bold">৩</span>
                         </div>
-                        <p>আমি বুঝতে পারছি যে, KYC যাচাই সম্পন্ন না হলে কিছু সেবা সীমিত থাকতে পারে, যেমন: উচ্চ লেনদেনের সীমা এবং নির্দিষ্ট ফিচার অ্যাক্সেস।</p>
+                        <p className="pt-1.5">আমি বুঝতে পারছি যে, KYC যাচাই সম্পন্ন না হলে কিছু সেবা সীমিত থাকতে পারে, যেমন: উচ্চ লেনদেনের সীমা এবং নির্দিষ্ট ফিচার অ্যাক্সেস।</p>
                       </motion.div>
 
-                      <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }} className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[hsl(40,90%,55%)] to-[hsl(30,85%,50%)] flex items-center justify-center text-white shrink-0 mt-0.5 shadow-sm">
+                      <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }} className="flex items-start gap-3 p-3 rounded-xl bg-muted/40">
+                        <div className="w-9 h-9 min-w-[36px] rounded-full bg-gradient-to-br from-[hsl(40,90%,55%)] to-[hsl(30,85%,50%)] flex items-center justify-center text-white shrink-0 shadow-sm">
                           <span className="text-xs font-bold">৪</span>
                         </div>
-                        <p>আমি সম্মতি দিচ্ছি যে, প্রযোজ্য আইন অনুযায়ী আমার তথ্য সরকারি বা নিয়ন্ত্রক সংস্থার সাথে শেয়ার করা হতে পারে।</p>
+                        <p className="pt-1.5">আমি সম্মতি দিচ্ছি যে, প্রযোজ্য আইন অনুযায়ী আমার তথ্য সরকারি বা নিয়ন্ত্রক সংস্থার সাথে শেয়ার করা হতে পারে।</p>
                       </motion.div>
 
-                      <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 }} className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[hsl(270,60%,55%)] to-[hsl(280,55%,50%)] flex items-center justify-center text-white shrink-0 mt-0.5 shadow-sm">
+                      <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 }} className="flex items-start gap-3 p-3 rounded-xl bg-muted/40">
+                        <div className="w-9 h-9 min-w-[36px] rounded-full bg-gradient-to-br from-[hsl(270,60%,55%)] to-[hsl(280,55%,50%)] flex items-center justify-center text-white shrink-0 shadow-sm">
                           <span className="text-xs font-bold">৫</span>
                         </div>
-                        <p>আমি জানি যে, KYC যাচাই প্রক্রিয়া সম্পন্ন হতে কিছু সময় লাগতে পারে এবং আমাকে ধৈর্য ধরতে হবে।</p>
+                        <p className="pt-1.5">আমি জানি যে, KYC যাচাই প্রক্রিয়া সম্পন্ন হতে কিছু সময় লাগতে পারে এবং আমাকে ধৈর্য ধরতে হবে।</p>
                       </motion.div>
                     </div>
 
