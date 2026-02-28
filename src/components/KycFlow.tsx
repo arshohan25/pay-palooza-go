@@ -813,7 +813,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
             {step === "intro" && (
               <div className="flex flex-col min-h-full">
                 {/* Gradient Header */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-[hsl(330,80%,55%)] via-[hsl(340,85%,50%)] to-[hsl(350,80%,45%)] px-5 pt-4 pb-10 text-white">
+                <div className="relative overflow-visible bg-gradient-to-br from-[hsl(330,80%,55%)] via-[hsl(340,85%,50%)] to-[hsl(350,80%,45%)] px-5 pt-4 pb-12 text-white">
                   <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-white/8 pointer-events-none" />
                   <div className="absolute -bottom-16 -left-8 w-48 h-48 rounded-full bg-white/5 pointer-events-none" />
                   
@@ -832,7 +832,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.15 }}
-                    className="flex justify-center mb-5"
+                    className="flex justify-center mb-6"
                   >
                     <div className="relative">
                       {/* Main icon box — soft teal/green rounded square */}
@@ -867,12 +867,12 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                 </div>
 
                 {/* Floating gradient banner */}
-                <div className="relative z-10 flex justify-center -mt-4 mb-[-14px]">
+                <div className="relative z-10 flex justify-center -mt-6 mb-[-14px]">
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.25, type: "spring", stiffness: 300 }}
-                    className="bg-gradient-to-r from-[hsl(330,80%,55%)] to-[hsl(350,80%,45%)] text-white font-bold text-xs px-6 py-2.5 rounded-full shadow-lg"
+                    className="bg-gradient-to-r from-[hsl(330,80%,55%)] to-[hsl(350,80%,45%)] text-white font-bold text-[13px] px-7 py-3 rounded-full shadow-[0_4px_20px_rgba(220,40,80,0.4)] tracking-wide"
                   >
                     ৩টি সহজ ধাপে আপনার তথ্য সাবমিট করুন
                   </motion.div>
