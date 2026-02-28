@@ -941,6 +941,24 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
     }
   }, [t]);
 
+  // Run OCR on NID back and extract address only
+  const runBackOcr = useCallback(async (imageData: string) => {
+    if (!imageData) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("kyc-ocr", {
+        body: { image_base64: imageData },
+      });
+      if (error) throw error;
+      const extractedAddress = data?.data?.address?.trim?.();
+      if (extractedAddress) {
+        setAddress(extractedAddress);
+        toast.success("Address extracted from NID back side");
+      }
+    } catch (err) {
+      console.error("Back OCR error:", err);
+    }
+  }, []);
+
   // Run face match when selfie is captured
   const runFaceMatch = useCallback(async (selfieData: string) => {
     if (!selfieData || !nidFront) return;
@@ -995,6 +1013,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
   const handleBackCropped = (croppedUrl: string) => {
     setNidBack(croppedUrl);
     setCroppingBack(false);
+    runBackOcr(croppedUrl);
   };
 
   const handleSelfieCapture = (dataUrl: string) => {
@@ -1651,9 +1670,6 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                   <p className="text-xs text-primary font-medium">{t("aiExtractedBadge")}</p>
                 </div>
 
-                {nidFront && (
-                  <img src={nidFront} alt="NID Front" className="w-full h-28 object-cover rounded-2xl border border-border" />
-                )}
 
                 <div className="rounded-2xl bg-card border border-border shadow-card p-4 space-y-4">
                   <EditableField label={t("fullNameNid")} value={nidName} onChange={setNidName} placeholder="e.g. Tanvir Hasan" />
