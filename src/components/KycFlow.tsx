@@ -884,9 +884,10 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
   const [monthlyIncome, setMonthlyIncome] = useState("");
   const [maritalStatus, setMaritalStatus] = useState("");
   const [address, setAddress] = useState("");
-  const [addressFromBack, setAddressFromBack] = useState(false);
+   const [addressFromBack, setAddressFromBack] = useState(false);
+   const [backOcrLoading, setBackOcrLoading] = useState(false);
 
-  const [ocrLoading, setOcrLoading] = useState(false);
+   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrDone, setOcrDone]     = useState(false);
   const [faceMatchLoading, setFaceMatchLoading] = useState(false);
   const [faceMatchResult, setFaceMatchResult] = useState<{ match: boolean; confidence: number; result: string; reason: string } | null>(null);
@@ -944,6 +945,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
   // Run OCR on NID back and extract address only
   const runBackOcr = useCallback(async (imageData: string) => {
     if (!imageData) return;
+    setBackOcrLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("kyc-ocr", {
         body: { image_base64: imageData },
@@ -956,6 +958,8 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
       }
     } catch (err) {
       console.error("Back OCR error:", err);
+    } finally {
+      setBackOcrLoading(false);
     }
   }, []);
 
@@ -1778,14 +1782,35 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                       </div>
                       <div className="flex items-center gap-3 p-1 rounded-2xl border border-border bg-card/80 backdrop-blur-sm shadow-sm">
                         <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center text-primary-foreground shrink-0 shadow-sm">
-                          <MapPin size={18} />
+                          {backOcrLoading ? (
+                            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+                              <Loader2 size={18} className="text-primary-foreground" />
+                            </motion.div>
+                          ) : (
+                            <MapPin size={18} />
+                          )}
                         </div>
-                        <input
-                          value={address}
-                          onChange={e => { setAddress(e.target.value); if (addressFromBack) setAddressFromBack(false); }}
-                          placeholder="Enter your address"
-                          className="flex-1 h-10 bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none px-1"
-                        />
+                        {backOcrLoading ? (
+                          <div className="flex-1 flex flex-col gap-1.5 py-2 px-1">
+                            <motion.div
+                              className="h-3 w-3/4 rounded-md bg-muted"
+                              animate={{ opacity: [0.4, 0.8, 0.4] }}
+                              transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+                            />
+                            <motion.div
+                              className="h-2.5 w-1/2 rounded-md bg-muted"
+                              animate={{ opacity: [0.3, 0.7, 0.3] }}
+                              transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
+                            />
+                          </div>
+                        ) : (
+                          <input
+                            value={address}
+                            onChange={e => { setAddress(e.target.value); if (addressFromBack) setAddressFromBack(false); }}
+                            placeholder="Enter your address"
+                            className="flex-1 h-10 bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none px-1"
+                          />
+                        )}
                       </div>
                     </motion.div>
                   </div>
