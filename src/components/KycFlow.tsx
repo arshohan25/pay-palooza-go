@@ -1094,7 +1094,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
 
       const { error: insertError } = await supabase.from("kyc_verifications" as any).insert({
         user_id: userId,
-        status: "under_review",
+        status: "pending",
         nid_number: nidNumber,
         full_name: nidName,
         date_of_birth: nidDob,
