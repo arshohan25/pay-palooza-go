@@ -301,15 +301,42 @@ export default function AdminKycReview() {
                 </div>
               </div>
 
-              {/* OCR raw data */}
-              {selected.ocr_raw_data && Object.keys(selected.ocr_raw_data).length > 0 && (
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">OCR Extracted Data</label>
-                  <pre className="text-xs bg-muted p-2 rounded-lg overflow-x-auto max-h-32">
-                    {JSON.stringify(selected.ocr_raw_data, null, 2)}
-                  </pre>
-                </div>
-              )}
+              {/* OCR extracted summary */}
+              {selected.ocr_raw_data && Object.keys(selected.ocr_raw_data).length > 0 && (() => {
+                const d = selected.ocr_raw_data as Record<string, any>;
+                const pick = (...keys: string[]) => {
+                  for (const k of keys) if (d[k]) return String(d[k]);
+                  return null;
+                };
+                const summary = [
+                  { label: "Father's Name", value: pick("father_name", "father_name_bn", "fathers_name", "পিতার নাম") },
+                  { label: "Mother's Name", value: pick("mother_name", "mother_name_bn", "mothers_name", "মাতার নাম") },
+                  { label: "Address", value: pick("address", "address_bn", "permanent_address", "ঠিকানা", "স্থায়ী ঠিকানা") },
+                  { label: "Spouse", value: pick("spouse_name", "spouse", "স্বামী/স্ত্রীর নাম") },
+                  { label: "Blood Group", value: pick("blood_group", "রক্তের গ্রুপ") },
+                ].filter(i => i.value);
+                return (
+                  <div className="space-y-2">
+                    <label className="text-xs text-muted-foreground mb-1 block">OCR Extracted Summary</label>
+                    {summary.length > 0 && (
+                      <div className="grid grid-cols-1 gap-2">
+                        {summary.map(item => (
+                          <div key={item.label} className="bg-muted rounded-lg p-2">
+                            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{item.label}</span>
+                            <p className="text-sm font-medium">{item.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <details className="text-xs">
+                      <summary className="cursor-pointer text-muted-foreground hover:text-foreground">Raw OCR JSON</summary>
+                      <pre className="bg-muted p-2 rounded-lg overflow-x-auto max-h-32 mt-1">
+                        {JSON.stringify(selected.ocr_raw_data, null, 2)}
+                      </pre>
+                    </details>
+                  </div>
+                );
+              })()}
 
               {/* Admin notes */}
               <div>
