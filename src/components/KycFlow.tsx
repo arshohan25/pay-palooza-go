@@ -947,17 +947,25 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
     if (!imageData) return;
     setBackOcrLoading(true);
     try {
+      const base64 = imageData.replace(/^data:image\/[a-z]+;base64,/, "");
       const { data, error } = await supabase.functions.invoke("kyc-ocr", {
-        body: { image_base64: imageData },
+        body: { image_base64: base64, side: "back" },
       });
       if (error) throw error;
-      const extractedAddress = data?.data?.address?.trim?.();
+      console.log("Back OCR response:", data);
+      const extracted = data?.data || {};
+      const extractedAddress = (extracted.address || extracted.permanent_address || extracted.present_address || "").trim();
       if (extractedAddress) {
         setAddress(extractedAddress);
         setAddressFromBack(true);
+        toast.success("ঠিকানা NID থেকে নেওয়া হয়েছে");
+      } else {
+        console.warn("No address found in back OCR:", extracted);
+        toast.error("ঠিকানা খুঁজে পাওয়া যায়নি, ম্যানুয়ালি লিখুন");
       }
     } catch (err) {
       console.error("Back OCR error:", err);
+      toast.error("Back OCR ব্যর্থ হয়েছে");
     } finally {
       setBackOcrLoading(false);
     }
@@ -1136,7 +1144,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
       )}
 
       <div className="flex-1 overflow-hidden relative">
-        <AnimatePresence custom={direction} mode="popLayout">
+        <AnimatePresence custom={direction} mode="wait">
           <motion.div
             key={step}
             custom={direction}
