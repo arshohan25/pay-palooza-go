@@ -378,14 +378,14 @@ const CameraBox = ({ label, preview, onCapture, icon: Icon, gradient, guideText,
   return (
     <div className="space-y-2">
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">{label}</p>
-      <div className="relative rounded-2xl overflow-hidden border border-border/60 bg-[hsl(220,15%,8%)] shadow-[0_4px_24px_rgba(0,0,0,0.3)]" style={{ aspectRatio: isNidCard ? "16/10" : "3/4" }}>
+      <div className="relative rounded-2xl overflow-hidden border-2 border-dashed border-border bg-black" style={{ aspectRatio: isNidCard ? "16/10" : "3/4" }}>
         {cameraError ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center bg-[hsl(220,15%,10%)]">
-            <div className="w-14 h-14 rounded-full bg-[hsl(280,50%,55%)]/20 flex items-center justify-center">
-              <AlertCircle size={28} className="text-[hsl(280,50%,65%)]" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
+            <div className={`w-14 h-14 ${gradient} rounded-2xl flex items-center justify-center text-primary-foreground shadow-glow`}>
+              <AlertCircle size={26} />
             </div>
-            <p className="text-sm font-semibold text-white/90">{cameraError}</p>
-            <button onClick={startCamera} className="text-xs font-bold text-[hsl(280,50%,65%)] underline underline-offset-2">
+            <p className="text-sm font-semibold text-white">{cameraError}</p>
+            <button onClick={startCamera} className="text-xs text-primary font-semibold underline">
               {t("tryAgain")}
             </button>
           </div>
@@ -399,11 +399,11 @@ const CameraBox = ({ label, preview, onCapture, icon: Icon, gradient, guideText,
               className={`absolute inset-0 w-full h-full object-cover ${!isNidCard ? "scale-x-[-1]" : ""}`}
             />
             {isNidCard && (
-              <div className="absolute inset-3 border-2 border-white/30 rounded-xl pointer-events-none">
-                <div className="absolute -top-px -left-px w-6 h-6 border-t-[3px] border-l-[3px] border-white rounded-tl-xl" />
-                <div className="absolute -top-px -right-px w-6 h-6 border-t-[3px] border-r-[3px] border-white rounded-tr-xl" />
-                <div className="absolute -bottom-px -left-px w-6 h-6 border-b-[3px] border-l-[3px] border-white rounded-bl-xl" />
-                <div className="absolute -bottom-px -right-px w-6 h-6 border-b-[3px] border-r-[3px] border-white rounded-br-xl" />
+              <div className="absolute inset-4 border-2 border-white/40 rounded-xl pointer-events-none">
+                <div className="absolute top-0 left-0 w-5 h-5 border-t-2 border-l-2 border-white rounded-tl-lg" />
+                <div className="absolute top-0 right-0 w-5 h-5 border-t-2 border-r-2 border-white rounded-tr-lg" />
+                <div className="absolute bottom-0 left-0 w-5 h-5 border-b-2 border-l-2 border-white rounded-bl-lg" />
+                <div className="absolute bottom-0 right-0 w-5 h-5 border-b-2 border-r-2 border-white rounded-br-lg" />
               </div>
             )}
             {!isNidCard && (
@@ -416,18 +416,18 @@ const CameraBox = ({ label, preview, onCapture, icon: Icon, gradient, guideText,
                 </div>
               </div>
             )}
-            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-10 pb-3 px-4 text-center">
-              <p className="text-[11px] text-white/70 font-medium tracking-wide">{guideText}</p>
+            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent pt-8 pb-3 px-4 text-center">
+              <p className="text-xs text-white/80 font-medium">{guideText}</p>
             </div>
             {cameraActive && (
-              <div className="absolute bottom-12 inset-x-0 flex justify-center">
+              <div className="absolute bottom-14 inset-x-0 flex justify-center">
                 <motion.button
-                  whileTap={{ scale: 0.88 }}
+                  whileTap={{ scale: 0.9 }}
                   onClick={capture}
-                  className="w-[60px] h-[60px] rounded-full bg-white shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center justify-center ring-[3px] ring-white/40 ring-offset-2 ring-offset-black/50 active:bg-white/90 transition-colors"
+                  className="w-16 h-16 rounded-full bg-white shadow-lg flex items-center justify-center border-4 border-white/50 active:bg-white/90 transition-colors"
                 >
-                  <div className="w-11 h-11 rounded-full border-[2.5px] border-primary/80 flex items-center justify-center">
-                    <Camera size={18} className="text-primary" />
+                  <div className="w-12 h-12 rounded-full border-2 border-primary flex items-center justify-center">
+                    <Camera size={20} className="text-primary" />
                   </div>
                 </motion.button>
               </div>
@@ -1194,197 +1194,135 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
             )}
 
             {step === "nid_capture" && (
-              <div className="flex flex-col min-h-full">
-                {/* Gradient Header */}
-                <div className="relative overflow-visible bg-gradient-to-br from-[hsl(270,55%,50%)] via-[hsl(280,60%,45%)] to-[hsl(290,50%,40%)] px-5 pt-4 pb-10 text-white">
-                  <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-white/8 pointer-events-none" />
-                  <div className="absolute -bottom-16 -left-8 w-48 h-48 rounded-full bg-white/5 pointer-events-none" />
-                  
-                  <div className="relative flex items-center gap-3 mb-3">
-                    <button
-                      onClick={goBack}
-                      className="w-10 h-10 rounded-full bg-white/20 ring-1 ring-white/30 backdrop-blur-sm flex items-center justify-center active:scale-95 transition-transform shrink-0"
-                    >
-                      <ChevronLeft size={20} />
-                    </button>
-                    <div>
-                      <h1 className="text-lg font-extrabold tracking-tight">কেওয়াইসি যাচাই</h1>
-                      <p className="text-[11px] text-white/70 font-medium">নিরাপদ পরিচয় যাচাই</p>
+              <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
+                <div className="text-center space-y-1">
+                  <h2 className="text-xl font-bold text-foreground">{t("captureNidFront")}</h2>
+                  <p className="text-sm text-muted-foreground">Capture both sides of your NID card</p>
+                </div>
+
+                {/* NID Front */}
+                {croppingFront && nidFrontRaw ? (
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Crop NID Front</p>
+                    <ImageCropper
+                      image={nidFrontRaw}
+                      onCrop={handleFrontCropped}
+                      onRetake={() => { setNidFrontRaw(null); setCroppingFront(false); }}
+                    />
+                  </div>
+                ) : nidFront ? (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">{t("nidCardFront")}</p>
+                    <div className="relative rounded-2xl overflow-hidden border-2 border-primary/30 shadow-glow">
+                      <img src={nidFront} alt="NID Front" className="w-full object-cover" />
+                      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-3 flex justify-center">
+                        <button
+                          onClick={() => { setNidFront(null); setNidFrontRaw(null); setOcrDone(false); }}
+                          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 backdrop-blur-sm text-white text-sm font-semibold hover:bg-white/30 transition-colors"
+                        >
+                          <RefreshCw size={14} /> {t("retake")}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-primary font-medium px-1">
+                      <CheckCircle2 size={13} /> Cropped & Saved
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <CameraBox
+                    label={t("nidCardFront")}
+                    preview={null}
+                    onCapture={handleNidFrontCapture}
+                    icon={CreditCard}
+                    gradient="gradient-payment"
+                    guideText={t("alignNidGuide")}
+                    retakeLabel={t("retake")}
+                    isNidCard
+                  />
+                )}
 
-                {/* Floating subtitle */}
-                <div className="relative z-10 flex justify-center -mt-5 mb-3">
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.1, type: "spring", stiffness: 300 }}
-                    className="bg-gradient-to-r from-[hsl(270,55%,50%)] to-[hsl(290,50%,40%)] text-white font-bold text-[13px] px-6 py-2.5 rounded-full shadow-[0_4px_20px_rgba(140,40,200,0.35)] tracking-wide"
-                  >
-                    {t("captureNidFront")}
-                  </motion.div>
-                </div>
+                {ocrLoading && (
+                  <div className="flex items-center gap-2 rounded-xl bg-accent/10 border border-accent/20 px-4 py-3">
+                    <Loader2 size={14} className="text-accent animate-spin" />
+                    <p className="text-xs text-accent font-medium">{t("extractingNidData")}</p>
+                  </div>
+                )}
 
-                <div className="flex-1 px-4 pb-20 space-y-4">
-                  <p className="text-sm text-muted-foreground text-center">Capture both sides of your NID card</p>
+                {ocrDone && (
+                  <div className="flex items-center gap-2 rounded-xl bg-primary/10 border border-primary/20 px-4 py-3">
+                    <Sparkles size={14} className="text-primary" />
+                    <p className="text-xs text-primary font-medium">{t("nidDataExtracted")}</p>
+                  </div>
+                )}
 
-                  {/* NID Front */}
-                  {croppingFront && nidFrontRaw ? (
-                    <div className="space-y-1">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Crop NID Front</p>
-                      <ImageCropper
-                        image={nidFrontRaw}
-                        onCrop={handleFrontCropped}
-                        onRetake={() => { setNidFrontRaw(null); setCroppingFront(false); }}
-                      />
-                    </div>
-                  ) : nidFront ? (
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">{t("nidCardFront")}</p>
-                      <div className="relative rounded-2xl overflow-hidden border border-primary/30 shadow-lg">
-                        <img src={nidFront} alt="NID Front" className="w-full object-cover" />
-                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-3 flex justify-center">
-                          <button
-                            onClick={() => { setNidFront(null); setNidFrontRaw(null); setOcrDone(false); }}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 backdrop-blur-sm text-white text-sm font-semibold hover:bg-white/30 transition-colors"
-                          >
-                            <RefreshCw size={14} /> {t("retake")}
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-primary font-medium px-1">
-                        <CheckCircle2 size={13} /> Cropped & Saved
-                      </div>
-                    </motion.div>
-                  ) : (
-                    <CameraBox
-                      label={t("nidCardFront")}
-                      preview={null}
-                      onCapture={handleNidFrontCapture}
-                      icon={CreditCard}
-                      gradient="gradient-payment"
-                      guideText={t("alignNidGuide")}
-                      retakeLabel={t("retake")}
-                      isNidCard
-                    />
-                  )}
-
-                  {ocrLoading && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 rounded-2xl bg-accent/10 border border-accent/20 px-4 py-3">
-                      <Loader2 size={16} className="text-accent animate-spin" />
-                      <p className="text-xs text-accent font-semibold">{t("extractingNidData")}</p>
-                    </motion.div>
-                  )}
-
-                  {ocrDone && (
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center gap-3 rounded-2xl bg-primary/10 border border-primary/20 px-4 py-3">
-                      <Sparkles size={16} className="text-primary" />
-                      <p className="text-xs text-primary font-semibold">{t("nidDataExtracted")}</p>
-                    </motion.div>
-                  )}
-
-                  {/* NID Back — only show after front is done */}
-                  {nidFront && !croppingFront && (
-                    <>
-                      <div className="h-px bg-border/60" />
-                      {croppingBack && nidBackRaw ? (
-                        <div className="space-y-1">
-                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Crop NID Back</p>
-                          <ImageCropper
-                            image={nidBackRaw}
-                            onCrop={handleBackCropped}
-                            onRetake={() => { setNidBackRaw(null); setCroppingBack(false); }}
-                          />
-                        </div>
-                      ) : nidBack ? (
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
-                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">{t("nidCardBack")}</p>
-                          <div className="relative rounded-2xl overflow-hidden border border-primary/30 shadow-lg">
-                            <img src={nidBack} alt="NID Back" className="w-full object-cover" />
-                            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-3 flex justify-center">
-                              <button
-                                onClick={() => { setNidBack(null); setNidBackRaw(null); }}
-                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 backdrop-blur-sm text-white text-sm font-semibold hover:bg-white/30 transition-colors"
-                              >
-                                <RefreshCw size={14} /> {t("retake")}
-                              </button>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-primary font-medium px-1">
-                            <CheckCircle2 size={13} /> Cropped & Saved
-                          </div>
-                        </motion.div>
-                      ) : (
-                        <CameraBox
-                          label={t("nidCardBack")}
-                          preview={null}
-                          onCapture={handleNidBackCapture}
-                          icon={CreditCard}
-                          gradient="gradient-send"
-                          guideText={t("alignNidBackGuide")}
-                          retakeLabel={t("retake")}
-                          isNidCard
+                {/* NID Back — only show after front is done */}
+                {nidFront && !croppingFront && (
+                  <>
+                    <div className="h-px bg-border" />
+                    {croppingBack && nidBackRaw ? (
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Crop NID Back</p>
+                        <ImageCropper
+                          image={nidBackRaw}
+                          onCrop={handleBackCropped}
+                          onRetake={() => { setNidBackRaw(null); setCroppingBack(false); }}
                         />
-                      )}
-                    </>
-                  )}
+                      </div>
+                    ) : nidBack ? (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">{t("nidCardBack")}</p>
+                        <div className="relative rounded-2xl overflow-hidden border-2 border-primary/30 shadow-glow">
+                          <img src={nidBack} alt="NID Back" className="w-full object-cover" />
+                          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-3 flex justify-center">
+                            <button
+                              onClick={() => { setNidBack(null); setNidBackRaw(null); }}
+                              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 backdrop-blur-sm text-white text-sm font-semibold hover:bg-white/30 transition-colors"
+                            >
+                              <RefreshCw size={14} /> {t("retake")}
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-primary font-medium px-1">
+                          <CheckCircle2 size={13} /> Cropped & Saved
+                        </div>
+                      </div>
+                    ) : (
+                      <CameraBox
+                        label={t("nidCardBack")}
+                        preview={null}
+                        onCapture={handleNidBackCapture}
+                        icon={CreditCard}
+                        gradient="gradient-send"
+                        guideText={t("alignNidBackGuide")}
+                        retakeLabel={t("retake")}
+                        isNidCard
+                      />
+                    )}
+                  </>
+                )}
 
-                  {/* Camera Tips — card style */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="rounded-2xl bg-card border border-border shadow-sm p-4 space-y-2.5"
-                  >
-                    <p className="text-xs font-bold text-foreground flex items-center gap-1.5">📸 {t("cameraTips")}</p>
-                    <div className="space-y-2">
-                      <div className="flex items-start gap-2.5 text-[12px] text-muted-foreground">
-                        <div className="w-5 h-5 min-w-[20px] rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
-                          <CheckCircle2 size={11} className="text-primary" />
-                        </div>
-                        <span>{t("tipCorners")}</span>
-                      </div>
-                      <div className="flex items-start gap-2.5 text-[12px] text-muted-foreground">
-                        <div className="w-5 h-5 min-w-[20px] rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
-                          <CheckCircle2 size={11} className="text-primary" />
-                        </div>
-                        <span>{t("tipGlare")}</span>
-                      </div>
-                      <div className="flex items-start gap-2.5 text-[12px] text-muted-foreground">
-                        <div className="w-5 h-5 min-w-[20px] rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
-                          <CheckCircle2 size={11} className="text-primary" />
-                        </div>
-                        <span>{t("tipSurface")}</span>
-                      </div>
-                    </div>
-                  </motion.div>
+                <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2">
+                  <p className="text-xs font-bold text-foreground">📸 {t("cameraTips")}</p>
+                  <TipChip text={t("tipCorners")} />
+                  <TipChip text={t("tipGlare")} />
+                  <TipChip text={t("tipSurface")} />
                 </div>
 
-                {/* Sticky bottom button */}
-                <div className="sticky bottom-0 p-4 pb-20 bg-gradient-to-t from-background via-background to-transparent">
-                  <motion.button
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => canAdvanceCapture && goTo("nid_details")}
-                    disabled={!canAdvanceCapture || ocrLoading}
-                    className={`w-full h-14 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
-                      canAdvanceCapture && !ocrLoading
-                        ? "bg-gradient-to-r from-[hsl(270,55%,50%)] to-[hsl(290,50%,40%)] text-white shadow-lg shadow-[hsl(280,50%,45%)/25]"
-                        : "bg-muted text-muted-foreground cursor-not-allowed"
-                    }`}
-                  >
-                    {ocrLoading ? (
-                      <span className="flex items-center gap-2">
-                        <Loader2 size={16} className="animate-spin" /> {t("processingKyc")}
-                      </span>
-                    ) : canAdvanceCapture ? (
-                      <span className="flex items-center gap-2">{t("continueArrow")}</span>
-                    ) : "Capture both sides to continue"}
-                  </motion.button>
-                </div>
+                <button
+                  onClick={() => canAdvanceCapture && goTo("nid_details")}
+                  disabled={!canAdvanceCapture || ocrLoading}
+                  className={`w-full h-12 rounded-2xl font-semibold text-sm transition-all active:scale-[0.98] ${
+                    canAdvanceCapture && !ocrLoading
+                      ? "gradient-payment text-primary-foreground shadow-glow"
+                      : "bg-muted text-muted-foreground cursor-not-allowed"
+                  }`}
+                >
+                  {ocrLoading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader2 size={16} className="animate-spin" /> {t("processingKyc")}
+                    </span>
+                  ) : canAdvanceCapture ? t("continueArrow") : "Capture both sides to continue"}
+                </button>
               </div>
             )}
 
