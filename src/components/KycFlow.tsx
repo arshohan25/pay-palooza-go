@@ -1311,7 +1311,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                 </div>
 
                 {/* Bottom sticky button */}
-                <div className="sticky bottom-0 p-5 pt-3 pb-20 bg-gradient-to-t from-background via-background to-transparent">
+                <div className="sticky bottom-0 p-5 pt-3 pb-6 bg-gradient-to-t from-background via-background to-transparent">
                   <motion.button
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -1505,7 +1505,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                 </Sheet>
 
                 {/* Bottom button */}
-                <div className="sticky bottom-0 p-5 pt-3 pb-20 bg-gradient-to-t from-background via-background to-transparent">
+                <div className="sticky bottom-0 p-5 pt-3 pb-6 bg-gradient-to-t from-background via-background to-transparent">
                   <motion.button
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -1533,7 +1533,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
             )}
 
             {step === "nid_capture" && (
-              <div className="flex flex-col gap-5 px-4 pt-6 pb-24">
+              <div className="flex flex-col gap-5 px-4 pt-6 pb-6">
                 <div className="text-center space-y-1">
                   <h2 className="text-xl font-bold text-foreground">{t("captureNidFront")}</h2>
                   <p className="text-sm text-muted-foreground">Capture both sides of your NID card</p>
@@ -1837,7 +1837,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
 
             {/* ── Selfie / Face Match ── */}
             {step === "selfie" && (
-              <div className="flex flex-col gap-5 px-4 pt-6 pb-24">
+              <div className="flex flex-col gap-5 px-4 pt-6 pb-6">
                 <div className="text-center space-y-1">
                   <h2 className="text-xl font-bold text-foreground">{t("liveFaceVerification")}</h2>
                   <p className="text-sm text-muted-foreground">{t("liveFaceVerificationSub")}</p>
@@ -1919,7 +1919,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
 
             {/* ── Review ── */}
             {step === "review" && (
-              <div className="flex flex-col gap-5 px-4 pt-6 pb-24">
+              <div className="flex flex-col gap-5 px-4 pt-6 pb-6">
                 <div className="text-center space-y-1">
                   <h2 className="text-xl font-bold text-foreground">{t("reviewSubmit")}</h2>
                   <p className="text-sm text-muted-foreground">{t("reviewSubmitSub")}</p>
