@@ -835,16 +835,18 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                     className="flex justify-center mb-5"
                   >
                     <div className="relative">
-                      <div className="w-24 h-24 rounded-3xl bg-white/15 backdrop-blur-sm border border-white/25 flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
-                        <ShieldCheck size={44} strokeWidth={1.8} className="text-white" />
+                      {/* Main icon box — soft teal/green rounded square */}
+                      <div className="w-[72px] h-[72px] rounded-2xl bg-gradient-to-br from-[hsl(170,55%,92%)] to-[hsl(160,45%,84%)] flex items-center justify-center shadow-[0_6px_24px_rgba(0,0,0,0.12)]">
+                        <ShieldCheck size={38} strokeWidth={2} className="text-[hsl(162,72%,38%)]" />
                       </div>
+                      {/* Pink badge */}
                       <motion.div
-                        className="absolute -top-1 -right-1 w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-lg"
+                        className="absolute -top-2 -right-2 w-9 h-9 rounded-full bg-gradient-to-br from-[hsl(340,80%,58%)] to-[hsl(330,75%,48%)] flex items-center justify-center shadow-[0_3px_12px_rgba(220,40,80,0.35)] ring-2 ring-white"
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
                       >
-                        <Sparkles size={16} className="text-[hsl(340,85%,50%)]" />
+                        <Sparkles size={16} className="text-white" />
                       </motion.div>
                     </div>
                   </motion.div>
