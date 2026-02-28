@@ -305,19 +305,43 @@ const ImageCropper = ({ image, onCrop, onRetake }: ImageCropperProps) => {
     if (!imgRef.current) return;
     const img = imgRef.current;
     const { w: cw, h: ch } = containerSize;
-    const scaleX = img.naturalWidth / cw;
-    const scaleY = img.naturalHeight / ch;
+    const nw = img.naturalWidth;
+    const nh = img.naturalHeight;
+
+    // Calculate object-cover mapping: the image is scaled to fill the container
+    const containerAspect = cw / ch;
+    const imageAspect = nw / nh;
+    let sx: number, sy: number, sw: number, sh: number;
+
+    if (imageAspect > containerAspect) {
+      // Image is wider — height fills, width is cropped
+      const visibleW = nh * containerAspect;
+      sx = (nw - visibleW) / 2;
+      sy = 0;
+      sw = visibleW;
+      sh = nh;
+    } else {
+      // Image is taller — width fills, height is cropped
+      const visibleH = nw / containerAspect;
+      sx = 0;
+      sy = (nh - visibleH) / 2;
+      sw = nw;
+      sh = visibleH;
+    }
+
+    // Map crop box from container coords to the visible portion of the image
+    const scaleX = sw / cw;
+    const scaleY = sh / ch;
+    const srcX = sx + cropBox.x * scaleX;
+    const srcY = sy + cropBox.y * scaleY;
+    const srcW = cropBox.w * scaleX;
+    const srcH = cropBox.h * scaleY;
 
     const canvas = document.createElement("canvas");
-    canvas.width = cropBox.w * scaleX;
-    canvas.height = cropBox.h * scaleY;
+    canvas.width = Math.round(srcW);
+    canvas.height = Math.round(srcH);
     const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(
-      img,
-      cropBox.x * scaleX, cropBox.y * scaleY,
-      cropBox.w * scaleX, cropBox.h * scaleY,
-      0, 0, canvas.width, canvas.height,
-    );
+    ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, canvas.width, canvas.height);
     const croppedUrl = canvas.toDataURL("image/jpeg", 0.9);
     haptics.medium();
     onCrop(croppedUrl);
