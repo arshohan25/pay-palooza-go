@@ -88,6 +88,7 @@ const ZoomableImage = ({ src, alt }: { src: string; alt: string }) => {
   const [zoomed, setZoomed] = useState(false);
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
+  const [previewAspect, setPreviewAspect] = useState<number | null>(null);
   const lastDist = useRef(0);
   const lastCenter = useRef({ x: 0, y: 0 });
   const isDragging = useRef(false);
@@ -141,10 +142,20 @@ const ZoomableImage = ({ src, alt }: { src: string; alt: string }) => {
       {/* Inline preview - tap to open fullscreen */}
       <div
         className="relative rounded-2xl overflow-hidden border-2 border-primary/30 shadow-glow bg-muted/30 cursor-zoom-in"
-        style={{ aspectRatio: "16/10" }}
+        style={{ aspectRatio: previewAspect ? `${previewAspect}` : "16/10" }}
         onClick={() => { setZoomed(true); resetView(); }}
       >
-        <img src={src} alt={alt} className="w-full h-full object-contain" />
+        <img
+          src={src}
+          alt={alt}
+          className="w-full h-full object-cover"
+          onLoad={(e) => {
+            const { naturalWidth, naturalHeight } = e.currentTarget;
+            if (naturalWidth > 0 && naturalHeight > 0) {
+              setPreviewAspect(naturalWidth / naturalHeight);
+            }
+          }}
+        />
         <div className="absolute top-2 right-2 px-2 py-1 rounded-lg bg-black/40 backdrop-blur-sm flex items-center gap-1">
           <Eye size={12} className="text-white" />
           <span className="text-[9px] text-white font-bold">TAP TO ZOOM</span>
@@ -455,6 +466,22 @@ const CameraBox = ({ label, preview, onCapture, icon: Icon, gradient, guideText,
     if (!preview) startCamera();
     return () => stopCamera();
   }, [preview, startCamera, stopCamera]);
+
+  useEffect(() => {
+    if (preview) return;
+    const navEls = Array.from(document.querySelectorAll<HTMLElement>('[data-global-nav="true"]'));
+    navEls.forEach((el) => {
+      el.dataset.prevDisplay = el.style.display;
+      el.style.display = "none";
+    });
+
+    return () => {
+      navEls.forEach((el) => {
+        el.style.display = el.dataset.prevDisplay ?? "";
+        delete el.dataset.prevDisplay;
+      });
+    };
+  }, [preview]);
 
   const capture = () => {
     if (!videoRef.current || !canvasRef.current) return;

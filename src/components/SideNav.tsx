@@ -31,7 +31,7 @@ const SideNav = ({ activeTab = "home", onTabChange }: SideNavProps) => {
     return () => { unsub1(); unsub2(); };
   }, []);
   return (
-    <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-64 bg-card border-r border-border/60 shadow-card z-40">
+    <aside data-global-nav="true" className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-64 bg-card border-r border-border/60 shadow-card z-40">
       {/* Brand */}
       <div className="px-5 py-6 flex items-center gap-3 border-b border-border/60">
         <div className="w-10 h-10 gradient-primary rounded-2xl flex items-center justify-center text-primary-foreground font-bold text-lg shadow-glow shrink-0">
