@@ -884,6 +884,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
   const [monthlyIncome, setMonthlyIncome] = useState("");
   const [maritalStatus, setMaritalStatus] = useState("");
   const [address, setAddress] = useState("");
+  const [addressFromBack, setAddressFromBack] = useState(false);
 
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrDone, setOcrDone]     = useState(false);
@@ -931,7 +932,6 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
         if (d.father_name) setFatherName(d.father_name);
         if (d.mother_name) setMotherName(d.mother_name);
         setOcrDone(true);
-        toast.success(t("ocrExtracted"));
       }
     } catch (err: any) {
       console.error("OCR error:", err);
@@ -952,7 +952,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
       const extractedAddress = data?.data?.address?.trim?.();
       if (extractedAddress) {
         setAddress(extractedAddress);
-        toast.success("Address extracted from NID back side");
+        setAddressFromBack(true);
       }
     } catch (err) {
       console.error("Back OCR error:", err);
@@ -1659,146 +1659,160 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
 
             {/* ── NID Details (editable) ── */}
             {step === "nid_details" && (
-              <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
-                <div className="text-center space-y-1">
-                  <h2 className="text-xl font-bold text-foreground">{t("confirmNidDetails")}</h2>
-                  <p className="text-sm text-muted-foreground">{t("confirmNidDetailsSub")}</p>
+              <div className="flex flex-col min-h-full">
+                <div className="flex-1 px-4 pt-6 pb-6 space-y-5">
+                  <div className="text-center space-y-1">
+                    <h2 className="text-xl font-bold text-foreground">{t("confirmNidDetails")}</h2>
+                    <p className="text-sm text-muted-foreground">{t("confirmNidDetailsSub")}</p>
+                  </div>
+
+                  <div className="flex items-center gap-2 rounded-xl bg-primary/8 border border-primary/15 px-4 py-2.5">
+                    <Sparkles size={14} className="text-primary shrink-0" />
+                    <p className="text-xs text-primary font-medium">{t("aiExtractedBadge")}</p>
+                  </div>
+
+                  <div className="rounded-2xl bg-card border border-border shadow-card p-4 space-y-4">
+                    <EditableField label={t("fullNameNid")} value={nidName} onChange={setNidName} placeholder="e.g. Tanvir Hasan" />
+                    {nidNameBn && (
+                      <EditableField label={t("fullNameBn")} value={nidNameBn} onChange={setNidNameBn} placeholder="বাংলা নাম" />
+                    )}
+                    <EditableField label={t("nidNumber")} value={nidNumber} onChange={setNidNumber} placeholder="e.g. 19901234567890" />
+                    <EditableField label={t("dateOfBirth")} value={nidDob} onChange={setNidDob} placeholder="e.g. 01/01/1990" />
+                    {fatherName && (
+                      <EditableField label={t("fatherName")} value={fatherName} onChange={setFatherName} />
+                    )}
+                    {motherName && (
+                      <EditableField label={t("motherName")} value={motherName} onChange={setMotherName} />
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2 rounded-xl bg-primary/8 border border-primary/15 px-4 py-2.5">
-                  <Sparkles size={14} className="text-primary shrink-0" />
-                  <p className="text-xs text-primary font-medium">{t("aiExtractedBadge")}</p>
+                <div className="sticky bottom-0 px-4 pb-6 pt-3 bg-gradient-to-t from-background via-background to-transparent">
+                  <button
+                    onClick={() => canAdvanceNidDetails && goTo("additional_info")}
+                    disabled={!canAdvanceNidDetails}
+                    className={`w-full h-12 rounded-2xl font-semibold text-sm transition-all active:scale-[0.98] ${
+                      canAdvanceNidDetails
+                        ? "gradient-cashout text-primary-foreground shadow-glow"
+                        : "bg-muted text-muted-foreground cursor-not-allowed"
+                    }`}
+                  >
+                    {canAdvanceNidDetails ? t("confirmDetailsArrow") : t("fillAllFields")}
+                  </button>
                 </div>
-
-
-                <div className="rounded-2xl bg-card border border-border shadow-card p-4 space-y-4">
-                  <EditableField label={t("fullNameNid")} value={nidName} onChange={setNidName} placeholder="e.g. Tanvir Hasan" />
-                  {nidNameBn && (
-                    <EditableField label={t("fullNameBn")} value={nidNameBn} onChange={setNidNameBn} placeholder="বাংলা নাম" />
-                  )}
-                  <EditableField label={t("nidNumber")} value={nidNumber} onChange={setNidNumber} placeholder="e.g. 19901234567890" />
-                  <EditableField label={t("dateOfBirth")} value={nidDob} onChange={setNidDob} placeholder="e.g. 01/01/1990" />
-                  {fatherName && (
-                    <EditableField label={t("fatherName")} value={fatherName} onChange={setFatherName} />
-                  )}
-                  {motherName && (
-                    <EditableField label={t("motherName")} value={motherName} onChange={setMotherName} />
-                  )}
-                </div>
-
-                <button
-                  onClick={() => canAdvanceNidDetails && goTo("additional_info")}
-                  disabled={!canAdvanceNidDetails}
-                  className={`w-full h-12 rounded-2xl font-semibold text-sm transition-all active:scale-[0.98] ${
-                    canAdvanceNidDetails
-                      ? "gradient-cashout text-primary-foreground shadow-glow"
-                      : "bg-muted text-muted-foreground cursor-not-allowed"
-                  }`}
-                >
-                  {canAdvanceNidDetails ? t("confirmDetailsArrow") : t("fillAllFields")}
-                </button>
               </div>
             )}
 
             {/* ── Additional Information ── */}
             {step === "additional_info" && (
-              <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
-                <div className="text-center space-y-2">
-                  <motion.div
-                    initial={{ scale: 0, rotate: -20 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                    className="w-16 h-16 gradient-primary rounded-2xl flex items-center justify-center text-primary-foreground shadow-glow mx-auto"
-                  >
-                    <UserCog size={30} />
-                  </motion.div>
-                  <h2 className="text-xl font-bold text-foreground">Additional Information</h2>
-                  <p className="text-sm text-muted-foreground">Help us know you better for a seamless experience</p>
-                </div>
+              <div className="flex flex-col min-h-full">
+                <div className="flex-1 px-4 pt-6 pb-6 space-y-5">
+                  <div className="text-center space-y-2">
+                    <motion.div
+                      initial={{ scale: 0, rotate: -20 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                      className="w-16 h-16 gradient-primary rounded-2xl flex items-center justify-center text-primary-foreground shadow-glow mx-auto"
+                    >
+                      <UserCog size={30} />
+                    </motion.div>
+                    <h2 className="text-xl font-bold text-foreground">Additional Information</h2>
+                    <p className="text-sm text-muted-foreground">Help us know you better for a seamless experience</p>
+                  </div>
 
-                <div className="rounded-2xl bg-card/60 backdrop-blur-sm border border-border shadow-card p-4 space-y-4">
-                  <SelectField
-                    label="Gender"
-                    value={gender}
-                    onChange={setGender}
-                    options={GENDER_OPTIONS}
-                    placeholder="Select gender"
-                    icon={Users}
-                    gradient="gradient-accent"
-                    delay={0.05}
-                  />
-                  <SelectField
-                    label="Occupation"
-                    value={occupation}
-                    onChange={setOccupation}
-                    options={OCCUPATION_OPTIONS}
-                    placeholder="Select occupation"
-                    icon={Briefcase}
-                    gradient="gradient-payment"
-                    delay={0.1}
-                  />
-                  <SelectField
-                    label="Monthly Income"
-                    value={monthlyIncome}
-                    onChange={setMonthlyIncome}
-                    options={INCOME_OPTIONS}
-                    placeholder="Select income range"
-                    icon={Wallet}
-                    gradient="gradient-send"
-                    delay={0.15}
-                  />
-                  <SelectField
-                    label="Marital Status"
-                    value={maritalStatus}
-                    onChange={setMaritalStatus}
-                    options={MARITAL_OPTIONS}
-                    placeholder="Select status"
-                    icon={Heart}
-                    gradient="gradient-cashout"
-                    delay={0.2}
-                  />
+                  <div className="rounded-2xl bg-card/60 backdrop-blur-sm border border-border shadow-card p-4 space-y-4">
+                    <SelectField
+                      label="Gender"
+                      value={gender}
+                      onChange={setGender}
+                      options={GENDER_OPTIONS}
+                      placeholder="Select gender"
+                      icon={Users}
+                      gradient="gradient-accent"
+                      delay={0.05}
+                    />
+                    <SelectField
+                      label="Occupation"
+                      value={occupation}
+                      onChange={setOccupation}
+                      options={OCCUPATION_OPTIONS}
+                      placeholder="Select occupation"
+                      icon={Briefcase}
+                      gradient="gradient-payment"
+                      delay={0.1}
+                    />
+                    <SelectField
+                      label="Monthly Income"
+                      value={monthlyIncome}
+                      onChange={setMonthlyIncome}
+                      options={INCOME_OPTIONS}
+                      placeholder="Select income range"
+                      icon={Wallet}
+                      gradient="gradient-send"
+                      delay={0.15}
+                    />
+                    <SelectField
+                      label="Marital Status"
+                      value={maritalStatus}
+                      onChange={setMaritalStatus}
+                      options={MARITAL_OPTIONS}
+                      placeholder="Select status"
+                      icon={Heart}
+                      gradient="gradient-cashout"
+                      delay={0.2}
+                    />
 
-                  <motion.div
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.25, type: "spring", stiffness: 300, damping: 28 }}
-                    className="space-y-1.5"
-                  >
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-1">Address (Optional)</p>
-                    <div className="flex items-center gap-3 p-1 rounded-2xl border border-border bg-card/80 backdrop-blur-sm shadow-sm">
-                      <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center text-primary-foreground shrink-0 shadow-sm">
-                        <MapPin size={18} />
+                    <motion.div
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.25, type: "spring", stiffness: 300, damping: 28 }}
+                      className="space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between px-1">
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Address (Optional)</p>
+                        {addressFromBack && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[9px] font-bold text-primary">
+                            <Sparkles size={9} /> NID Back থেকে
+                          </span>
+                        )}
                       </div>
-                      <input
-                        value={address}
-                        onChange={e => setAddress(e.target.value)}
-                        placeholder="Enter your address"
-                        className="flex-1 h-10 bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none px-1"
-                      />
-                    </div>
-                  </motion.div>
+                      <div className="flex items-center gap-3 p-1 rounded-2xl border border-border bg-card/80 backdrop-blur-sm shadow-sm">
+                        <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center text-primary-foreground shrink-0 shadow-sm">
+                          <MapPin size={18} />
+                        </div>
+                        <input
+                          value={address}
+                          onChange={e => { setAddress(e.target.value); if (addressFromBack) setAddressFromBack(false); }}
+                          placeholder="Enter your address"
+                          className="flex-1 h-10 bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none px-1"
+                        />
+                      </div>
+                    </motion.div>
+                  </div>
                 </div>
 
-                <motion.button
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  onClick={() => canAdvanceAdditional && goTo("selfie")}
-                  disabled={!canAdvanceAdditional}
-                  className={`w-full h-12 rounded-2xl font-semibold text-sm transition-all active:scale-[0.98] ${
-                    canAdvanceAdditional
-                      ? "gradient-primary text-primary-foreground shadow-glow"
-                      : "bg-muted text-muted-foreground cursor-not-allowed"
-                  }`}
-                >
-                  {canAdvanceAdditional ? t("continueArrow") : "Fill all required fields"}
-                </motion.button>
+                <div className="sticky bottom-0 px-4 pb-6 pt-3 bg-gradient-to-t from-background via-background to-transparent">
+                  <motion.button
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    onClick={() => canAdvanceAdditional && goTo("selfie")}
+                    disabled={!canAdvanceAdditional}
+                    className={`w-full h-12 rounded-2xl font-semibold text-sm transition-all active:scale-[0.98] ${
+                      canAdvanceAdditional
+                        ? "gradient-primary text-primary-foreground shadow-glow"
+                        : "bg-muted text-muted-foreground cursor-not-allowed"
+                    }`}
+                  >
+                    {canAdvanceAdditional ? t("continueArrow") : "Fill all required fields"}
+                  </motion.button>
+                </div>
               </div>
             )}
 
             {/* ── Selfie / Face Match ── */}
             {step === "selfie" && (
-              <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
+              <div className="flex flex-col gap-5 px-4 pt-6 pb-24">
                 <div className="text-center space-y-1">
                   <h2 className="text-xl font-bold text-foreground">{t("liveFaceVerification")}</h2>
                   <p className="text-sm text-muted-foreground">{t("liveFaceVerificationSub")}</p>
@@ -1880,7 +1894,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
 
             {/* ── Review ── */}
             {step === "review" && (
-              <div className="flex flex-col gap-5 px-4 pt-6 pb-8">
+              <div className="flex flex-col gap-5 px-4 pt-6 pb-24">
                 <div className="text-center space-y-1">
                   <h2 className="text-xl font-bold text-foreground">{t("reviewSubmit")}</h2>
                   <p className="text-sm text-muted-foreground">{t("reviewSubmitSub")}</p>
