@@ -30,7 +30,7 @@ const BottomNav = ({ activeTab = "home", onTabChange }: BottomNavProps) => {
   }, []);
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 px-3 pb-3 pt-0">
+    <nav data-global-nav="true" className="md:hidden fixed bottom-0 left-0 right-0 z-50 px-3 pb-3 pt-0">
       <div className="glass rounded-2xl border border-border/60 shadow-float max-w-md mx-auto">
         <div className="flex items-center justify-around px-1 py-1">
           {navDefs.map((item) => {
