@@ -6,7 +6,7 @@ import {
   AlertCircle, ShieldCheck, CreditCard,
   FileCheck, Clock, ScanFace, Pencil, Check, X,
   Loader2, RefreshCw, Sparkles, UserCog,
-  Briefcase, Heart, Wallet, MapPin, Users, Crop,
+  Briefcase, Heart, Wallet, MapPin, Users, Crop, Lock, Unlock,
   ScrollText, CircleCheck,
 } from "lucide-react";
 import {
@@ -224,9 +224,12 @@ const ImageCropper = ({ image, onCrop, onRetake }: ImageCropperProps) => {
   const imgRef = useRef<HTMLImageElement>(null);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [cropBox, setCropBox] = useState({ x: 0, y: 0, w: 0, h: 0 });
+  const [locked, setLocked] = useState(true); // 16:10 aspect lock ON by default
   const [dragging, setDragging] = useState<null | "move" | "tl" | "tr" | "bl" | "br">(null);
   const dragStart = useRef({ mx: 0, my: 0, box: { x: 0, y: 0, w: 0, h: 0 } });
   const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
+
+  const ASPECT = 16 / 10;
 
   useEffect(() => {
     if (imgLoaded && containerRef.current) {
@@ -234,8 +237,15 @@ const ImageCropper = ({ image, onCrop, onRetake }: ImageCropperProps) => {
       const cw = rect.width;
       const ch = rect.height;
       setContainerSize({ w: cw, h: ch });
-      const pad = 24;
-      setCropBox({ x: pad, y: pad, w: cw - pad * 2, h: ch - pad * 2 });
+      // Initialize with 16:10 locked crop centered
+      const pad = 16;
+      let bw = cw - pad * 2;
+      let bh = bw / ASPECT;
+      if (bh > ch - pad * 2) {
+        bh = ch - pad * 2;
+        bw = bh * ASPECT;
+      }
+      setCropBox({ x: (cw - bw) / 2, y: (ch - bh) / 2, w: bw, h: bh });
     }
   }, [imgLoaded]);
 
@@ -263,39 +273,49 @@ const ImageCropper = ({ image, onCrop, onRetake }: ImageCropperProps) => {
         y: clamp(y + dy, 0, ch - h),
         w, h,
       });
-    } else if (dragging === "br") {
-      setCropBox({
-        x, y,
-        w: clamp(w + dx, MIN_SIZE, cw - x),
-        h: clamp(h + dy, MIN_SIZE, ch - y),
-      });
-    } else if (dragging === "bl") {
-      const newW = clamp(w - dx, MIN_SIZE, x + w);
-      setCropBox({
-        x: x + w - newW, y,
-        w: newW,
-        h: clamp(h + dy, MIN_SIZE, ch - y),
-      });
-    } else if (dragging === "tr") {
-      setCropBox({
-        x, y: y,
-        w: clamp(w + dx, MIN_SIZE, cw - x),
-        h: clamp(h - dy, MIN_SIZE, y + h),
-      });
-      setCropBox(prev => ({
-        ...prev,
-        y: clamp(y + dy, 0, y + h - MIN_SIZE),
-        h: clamp(h - dy, MIN_SIZE, y + h),
-      }));
-    } else if (dragging === "tl") {
-      const newW = clamp(w - dx, MIN_SIZE, x + w);
-      const newH = clamp(h - dy, MIN_SIZE, y + h);
-      setCropBox({
-        x: x + w - newW,
-        y: y + h - newH,
-        w: newW,
-        h: newH,
-      });
+    } else if (locked) {
+      // Aspect-locked resize: use the dominant axis
+      let newW: number, newH: number, newX: number, newY: number;
+      if (dragging === "br") {
+        newW = clamp(w + dx, MIN_SIZE, cw - x);
+        newH = newW / ASPECT;
+        if (y + newH > ch) { newH = ch - y; newW = newH * ASPECT; }
+        setCropBox({ x, y, w: newW, h: newH });
+      } else if (dragging === "bl") {
+        newW = clamp(w - dx, MIN_SIZE, x + w);
+        newH = newW / ASPECT;
+        newX = x + w - newW;
+        if (y + newH > ch) { newH = ch - y; newW = newH * ASPECT; newX = x + w - newW; }
+        setCropBox({ x: newX, y, w: newW, h: newH });
+      } else if (dragging === "tr") {
+        newW = clamp(w + dx, MIN_SIZE, cw - x);
+        newH = newW / ASPECT;
+        newY = y + h - newH;
+        if (newY < 0) { newY = 0; newH = h + y - newY; newW = newH * ASPECT; }
+        setCropBox({ x, y: newY, w: newW, h: newH });
+      } else if (dragging === "tl") {
+        newW = clamp(w - dx, MIN_SIZE, x + w);
+        newH = newW / ASPECT;
+        newX = x + w - newW;
+        newY = y + h - newH;
+        if (newY < 0) { newY = 0; newH = h + y; newW = newH * ASPECT; newX = x + w - newW; }
+        setCropBox({ x: newX, y: newY, w: newW, h: newH });
+      }
+    } else {
+      // Free resize (unlocked)
+      if (dragging === "br") {
+        setCropBox({ x, y, w: clamp(w + dx, MIN_SIZE, cw - x), h: clamp(h + dy, MIN_SIZE, ch - y) });
+      } else if (dragging === "bl") {
+        const newW = clamp(w - dx, MIN_SIZE, x + w);
+        setCropBox({ x: x + w - newW, y, w: newW, h: clamp(h + dy, MIN_SIZE, ch - y) });
+      } else if (dragging === "tr") {
+        const newH = clamp(h - dy, MIN_SIZE, y + h);
+        setCropBox({ x, y: y + h - newH, w: clamp(w + dx, MIN_SIZE, cw - x), h: newH });
+      } else if (dragging === "tl") {
+        const newW = clamp(w - dx, MIN_SIZE, x + w);
+        const newH = clamp(h - dy, MIN_SIZE, y + h);
+        setCropBox({ x: x + w - newW, y: y + h - newH, w: newW, h: newH });
+      }
     }
   };
 
@@ -416,7 +436,20 @@ const ImageCropper = ({ image, onCrop, onRetake }: ImageCropperProps) => {
         )}
       </div>
 
-      <div className="flex gap-2">
+      {/* Lock toggle + action buttons */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setLocked(!locked)}
+          className={`h-11 px-3 rounded-2xl border text-sm font-semibold flex items-center justify-center gap-1.5 active:scale-[0.97] transition-all ${
+            locked
+              ? "border-primary/40 bg-primary/10 text-primary"
+              : "border-border bg-card text-muted-foreground"
+          }`}
+          title={locked ? "Unlock aspect ratio" : "Lock to 16:10"}
+        >
+          {locked ? <Lock size={14} /> : <Unlock size={14} />}
+          <span className="text-[11px]">{locked ? "16:10" : "Free"}</span>
+        </button>
         <button
           onClick={onRetake}
           className="flex-1 h-11 rounded-2xl border border-border bg-card text-foreground text-sm font-semibold flex items-center justify-center gap-2 active:scale-[0.97] transition-transform"
@@ -427,7 +460,7 @@ const ImageCropper = ({ image, onCrop, onRetake }: ImageCropperProps) => {
           onClick={performCrop}
           className="flex-1 h-11 rounded-2xl gradient-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 shadow-glow active:scale-[0.97] transition-transform"
         >
-          <Crop size={14} /> Crop & Save
+          <Crop size={14} /> Crop
         </button>
       </div>
     </motion.div>
