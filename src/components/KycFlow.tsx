@@ -31,6 +31,16 @@ const OCCUPATION_OPTIONS = ["Student", "Business", "Government Job", "Private Jo
 const INCOME_OPTIONS = ["Below ৳10,000", "৳10,001–৳25,000", "৳25,001–৳50,000", "৳50,001–৳1,00,000", "Above ৳1,00,000"];
 const MARITAL_OPTIONS = ["Single", "Married", "Divorced", "Widowed"];
 
+// ─── Utility helpers ──────────────────────────────────────────────────────────
+const pickFirstString = (...values: unknown[]) => {
+  for (const value of values) {
+    if (typeof value !== "string") continue;
+    const trimmed = value.trim();
+    if (trimmed) return trimmed;
+  }
+  return "";
+};
+
 // ─── Glassmorphic SelectField ─────────────────────────────────────────────────
 interface SelectFieldProps {
   label: string;
@@ -59,7 +69,7 @@ const SelectField = ({ label, value, onChange, options, placeholder, icon: Icon,
         <SelectTrigger className="flex-1 border-0 bg-transparent shadow-none focus:ring-0 focus:ring-offset-0 h-10 text-sm font-medium">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="z-[120]">
           {options.map(opt => (
             <SelectItem key={opt} value={opt}>{opt}</SelectItem>
           ))}
@@ -920,19 +930,32 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
     setOcrLoading(true);
     setOcrDone(false);
     try {
+      const base64 = imageData.replace(/^data:image\/[a-z]+;base64,/, "");
       const { data, error } = await supabase.functions.invoke("kyc-ocr", {
-        body: { image_base64: imageData },
+        body: { image_base64: base64, side: "front" },
       });
       if (error) throw error;
-      if (data?.data) {
-        const d = data.data;
-        if (d.full_name) setNidName(d.full_name);
-        if (d.full_name_bn) setNidNameBn(d.full_name_bn);
-        if (d.nid_number) setNidNumber(d.nid_number);
-        if (d.date_of_birth) setNidDob(d.date_of_birth);
-        if (d.father_name) setFatherName(d.father_name);
-        if (d.mother_name) setMotherName(d.mother_name);
+
+      const extracted = data?.data ?? {};
+      const fullName = pickFirstString(extracted.full_name, extracted.full_name_en, extracted.name, extracted.fullName, extracted.english_name);
+      const fullNameBn = pickFirstString(extracted.full_name_bn, extracted.name_bn, extracted.bangla_name);
+      const nidNumberValue = pickFirstString(extracted.nid_number, extracted.nid_no, extracted.nid, extracted.id_number, extracted.national_id).replace(/\D/g, "");
+      const dateOfBirth = pickFirstString(extracted.date_of_birth, extracted.dob, extracted.birth_date, extracted.birthDate);
+      const fatherNameValue = pickFirstString(extracted.father_name, extracted.father, extracted.fatherName);
+      const motherNameValue = pickFirstString(extracted.mother_name, extracted.mother, extracted.motherName);
+
+      if (fullName) setNidName(fullName);
+      if (fullNameBn) setNidNameBn(fullNameBn);
+      if (nidNumberValue) setNidNumber(nidNumberValue);
+      if (dateOfBirth) setNidDob(dateOfBirth);
+      if (fatherNameValue) setFatherName(fatherNameValue);
+      if (motherNameValue) setMotherName(motherNameValue);
+
+      const hasFrontData = [fullName, nidNumberValue, dateOfBirth, fatherNameValue, motherNameValue].some(Boolean);
+      if (hasFrontData) {
         setOcrDone(true);
+      } else {
+        toast.error("NID তথ্য পড়া যায়নি, আবার পরিষ্কার ছবি তুলুন");
       }
     } catch (err: any) {
       console.error("OCR error:", err);
@@ -952,9 +975,20 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
         body: { image_base64: base64, side: "back" },
       });
       if (error) throw error;
+
       console.log("Back OCR response:", data);
       const extracted = data?.data || {};
-      const extractedAddress = (extracted.address || extracted.permanent_address || extracted.present_address || "").trim();
+      const extractedAddress = pickFirstString(
+        extracted.address,
+        extracted.permanent_address,
+        extracted.present_address,
+        extracted.current_address,
+        extracted.full_address,
+        extracted.address_bn,
+        extracted.permanent_address_bn,
+        extracted.present_address_bn,
+      );
+
       if (extractedAddress) {
         setAddress(extractedAddress);
         setAddressFromBack(true);
