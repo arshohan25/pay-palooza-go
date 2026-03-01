@@ -60,22 +60,7 @@ export default function SplashScreen({ onDone }: SplashScreenProps) {
               transition={{ type: "spring", stiffness: 260, damping: 18, delay: 0.1 }}
               className="relative w-24 h-24 rounded-[26px] bg-white/20 backdrop-blur-md border-2 border-white/30 flex items-center justify-center shadow-2xl"
             >
-              {/* Stylized E logo mark */}
-              <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" className="select-none drop-shadow-lg">
-                <defs>
-                  <linearGradient id="eGrad" x1="0" y1="0" x2="52" y2="52" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="white" />
-                    <stop offset="100%" stopColor="white" stopOpacity="0.75" />
-                  </linearGradient>
-                </defs>
-                {/* Stylized E with a dynamic cut */}
-                <path
-                  d="M14 8h24a2 2 0 0 1 0 4H18v12h16a2 2 0 0 1 0 4H18v12h20a2 2 0 0 1 0 4H14a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2Z"
-                  fill="url(#eGrad)"
-                />
-                {/* Accent notch — gives the E a modern fintech feel */}
-                <rect x="34" y="22" width="8" height="8" rx="2" fill="hsl(var(--accent))" opacity="0.9" />
-              </svg>
+              <span className="text-5xl font-black text-white select-none">৳</span>
               {/* Shine */}
               <motion.div
                 initial={{ x: -60, opacity: 0 }}
