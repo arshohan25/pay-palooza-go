@@ -6,7 +6,7 @@ import {
   TrendingUp, Activity, Search, RefreshCw, LogOut,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
-  Menu, ScanFace, Gift,
+  Menu, ScanFace, Gift, Award,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,8 @@ interface Stats {
   totalMerchants: number;
   openAlerts: number;
   pendingKyc: number;
+  totalReferrals: number;
+  totalRewardsPaid: number;
 }
 
 const RechargeSection = () => {
@@ -81,7 +83,7 @@ const RechargeSection = () => {
 };
 
 
-const StatCard = ({ icon: Icon, label, value, color }: { icon: any; label: string; value: number; color: string }) => (
+const StatCard = ({ icon: Icon, label, value, color }: { icon: any; label: string; value: number | string; color: string }) => (
   <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
     <Card className="border-0 shadow-[var(--shadow-card)]">
       <CardContent className="p-4 flex items-center gap-4">
@@ -90,7 +92,7 @@ const StatCard = ({ icon: Icon, label, value, color }: { icon: any; label: strin
         </div>
         <div>
           <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="text-2xl font-bold text-foreground">{value.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-foreground">{typeof value === "number" ? value.toLocaleString() : value}</p>
         </div>
       </CardContent>
     </Card>
@@ -149,7 +151,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const { unreadCount: supportUnread } = useSupportNotifications(activeTab);
-  const [stats, setStats] = useState<Stats>({ totalUsers: 0, totalTransactions: 0, totalAgents: 0, totalMerchants: 0, openAlerts: 0, pendingKyc: 0 });
+  const [stats, setStats] = useState<Stats>({ totalUsers: 0, totalTransactions: 0, totalAgents: 0, totalMerchants: 0, openAlerts: 0, pendingKyc: 0, totalReferrals: 0, totalRewardsPaid: 0 });
   const [transactions, setTransactions] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [agents, setAgents] = useState<any[]>([]);
@@ -395,13 +397,15 @@ export default function AdminDashboard() {
         {/* ═══ OVERVIEW ═══ */}
         {activeTab === "overview" && (
           <div className="space-y-6">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               <StatCard icon={Users} label="Total Users" value={stats.totalUsers} color="bg-primary" />
               <StatCard icon={ArrowLeftRight} label="Transactions" value={stats.totalTransactions} color="bg-blue-500" />
               <StatCard icon={UserCheck} label="Agents" value={stats.totalAgents} color="bg-emerald-500" />
               <StatCard icon={Store} label="Merchants" value={stats.totalMerchants} color="bg-purple-500" />
               <StatCard icon={ShieldAlert} label="Open Alerts" value={stats.openAlerts} color="bg-destructive" />
               <StatCard icon={ScanFace} label="Pending KYC" value={stats.pendingKyc} color="bg-orange-500" />
+              <StatCard icon={Gift} label="Referrals" value={stats.totalReferrals} color="bg-teal-500" />
+              <StatCard icon={Award} label="Rewards Paid" value={`৳${stats.totalRewardsPaid.toLocaleString()}`} color="bg-amber-500" />
             </div>
 
             <Card className="border-0 shadow-[var(--shadow-card)]">
