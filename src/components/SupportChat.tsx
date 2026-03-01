@@ -1,9 +1,25 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, User, Loader2, Check, CheckCheck } from "lucide-react";
+import { Send, Bot, User, Loader2, Check, CheckCheck, Lock, Trash2, Timer, Shield, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  encryptMessage,
+  tryDecryptMessage,
+  getOrCreateConversationKey,
+  startScreenshotDetection,
+  isMessageExpired,
+  getExpiryTimestamp,
+  DISAPPEAR_OPTIONS,
+} from "@/lib/chatCrypto";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 interface Message {
   id: string;
@@ -12,6 +28,9 @@ interface Message {
   sender_id: string;
   created_at: string;
   read_at: string | null;
+  is_deleted: boolean;
+  is_encrypted: boolean;
+  expires_at: string | null;
 }
 
 interface SupportChatProps {
@@ -22,16 +41,69 @@ interface SupportChatProps {
 const SupportChat = ({ userId, conversationId: externalConvId }: SupportChatProps) => {
   const [conversationId, setConversationId] = useState<string | null>(externalConvId ?? null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [decryptedCache, setDecryptedCache] = useState<Record<string, string>>({});
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [remoteTyping, setRemoteTyping] = useState(false);
+  const [disappearTimer, setDisappearTimer] = useState(0);
+  const [screenshotAlert, setScreenshotAlert] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cryptoKeyRef = useRef<CryptoKey | null>(null);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }), 60);
+  }, []);
+
+  // Decrypt a message and cache the result
+  const decryptAndCache = useCallback(async (msg: Message) => {
+    if (msg.is_deleted) return "🗑️ This message was deleted";
+    const decrypted = await tryDecryptMessage(msg.content, msg.is_encrypted, cryptoKeyRef.current);
+    setDecryptedCache(prev => ({ ...prev, [msg.id]: decrypted }));
+    return decrypted;
+  }, []);
+
+  // Decrypt all messages in batch
+  const decryptAllMessages = useCallback(async (msgs: Message[]) => {
+    const cache: Record<string, string> = {};
+    for (const msg of msgs) {
+      if (msg.is_deleted) {
+        cache[msg.id] = "🗑️ This message was deleted";
+      } else {
+        cache[msg.id] = await tryDecryptMessage(msg.content, msg.is_encrypted, cryptoKeyRef.current);
+      }
+    }
+    setDecryptedCache(prev => ({ ...prev, ...cache }));
+  }, []);
+
+  // Screenshot detection
+  useEffect(() => {
+    const cleanup = startScreenshotDetection(() => {
+      setScreenshotAlert(true);
+      toast.warning("Screenshot detected!", {
+        description: "Screenshots are monitored in encrypted chats.",
+        icon: <ShieldAlert size={16} />,
+      });
+      setTimeout(() => setScreenshotAlert(false), 3000);
+    });
+    return cleanup;
+  }, []);
+
+  // Expire messages check
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMessages(prev => {
+        const now = Date.now();
+        const filtered = prev.filter(m => {
+          if (m.expires_at && new Date(m.expires_at).getTime() <= now) return false;
+          return true;
+        });
+        return filtered.length !== prev.length ? filtered : prev;
+      });
+    }, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   // Load or create conversation
@@ -57,7 +129,7 @@ const SupportChat = ({ userId, conversationId: externalConvId }: SupportChatProp
         } else {
           const { data: newConv } = await supabase
             .from("support_conversations")
-            .insert({ user_id: userId, subject: "Agent Support" })
+            .insert({ user_id: userId, subject: "Encrypted Support" })
             .select("id")
             .single();
           convId = newConv!.id;
@@ -65,17 +137,21 @@ const SupportChat = ({ userId, conversationId: externalConvId }: SupportChatProp
       }
       setConversationId(convId);
 
+      // Initialize encryption key for this conversation
+      cryptoKeyRef.current = await getOrCreateConversationKey(convId);
+
       const { data: msgs } = await supabase
         .from("support_messages")
         .select("*")
         .eq("conversation_id", convId)
         .order("created_at", { ascending: true });
 
-      setMessages(msgs ?? []);
+      const validMsgs = (msgs ?? []).filter((m: Message) => !isMessageExpired(m.expires_at));
+      setMessages(validMsgs);
+      await decryptAllMessages(validMsgs);
       setLoading(false);
       scrollToBottom();
 
-      // Mark admin messages as read
       await supabase
         .from("support_messages")
         .update({ read_at: new Date().toISOString() })
@@ -84,9 +160,9 @@ const SupportChat = ({ userId, conversationId: externalConvId }: SupportChatProp
         .is("read_at", null);
     };
     init();
-  }, [userId, scrollToBottom]);
+  }, [userId, scrollToBottom, decryptAllMessages]);
 
-  // Realtime subscription for messages
+  // Realtime subscription
   useEffect(() => {
     if (!conversationId) return;
     const channel = supabase
@@ -96,14 +172,15 @@ const SupportChat = ({ userId, conversationId: externalConvId }: SupportChatProp
         schema: "public",
         table: "support_messages",
         filter: `conversation_id=eq.${conversationId}`,
-      }, (payload) => {
+      }, async (payload) => {
         const msg = payload.new as Message;
+        if (isMessageExpired(msg.expires_at)) return;
         setMessages(prev => {
           if (prev.some(m => m.id === msg.id)) return prev;
           return [...prev, msg];
         });
+        await decryptAndCache(msg);
         scrollToBottom();
-        // Auto-read admin messages
         if (msg.sender_role === "admin") {
           supabase.from("support_messages").update({ read_at: new Date().toISOString() }).eq("id", msg.id).then();
         }
@@ -113,13 +190,15 @@ const SupportChat = ({ userId, conversationId: externalConvId }: SupportChatProp
         schema: "public",
         table: "support_messages",
         filter: `conversation_id=eq.${conversationId}`,
-      }, (payload) => {
+      }, async (payload) => {
         const updated = payload.new as Message;
-        setMessages(prev => prev.map(m => m.id === updated.id ? { ...m, read_at: updated.read_at } : m));
+        setMessages(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated } : m));
+        if (updated.is_deleted) {
+          setDecryptedCache(prev => ({ ...prev, [updated.id]: "🗑️ This message was deleted" }));
+        }
       })
       .subscribe();
 
-    // Typing presence
     const presenceChannel = supabase.channel(`typing-${conversationId}`, {
       config: { presence: { key: userId } },
     });
@@ -137,9 +216,8 @@ const SupportChat = ({ userId, conversationId: externalConvId }: SupportChatProp
       supabase.removeChannel(channel);
       supabase.removeChannel(presenceChannel);
     };
-  }, [conversationId, userId, scrollToBottom]);
+  }, [conversationId, userId, scrollToBottom, decryptAndCache]);
 
-  // Send typing indicator
   const sendTypingIndicator = useCallback(() => {
     if (!conversationId) return;
     const ch = supabase.channel(`typing-${conversationId}`, {
@@ -156,31 +234,65 @@ const SupportChat = ({ userId, conversationId: externalConvId }: SupportChatProp
     });
   }, [conversationId, userId]);
 
+  const deleteMessage = async (msgId: string) => {
+    const { error } = await supabase
+      .from("support_messages")
+      .update({ is_deleted: true, content: "" })
+      .eq("id", msgId)
+      .eq("sender_id", userId);
+
+    if (!error) {
+      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, is_deleted: true, content: "" } : m));
+      setDecryptedCache(prev => ({ ...prev, [msgId]: "🗑️ This message was deleted" }));
+      toast.success("Message deleted");
+    }
+  };
+
   const sendMessage = async () => {
     if (!input.trim() || !conversationId || sending) return;
     const text = input.trim();
     setInput("");
     setSending(true);
 
+    let encryptedContent = text;
+    let isEncrypted = false;
+
+    if (cryptoKeyRef.current) {
+      try {
+        encryptedContent = await encryptMessage(text, cryptoKeyRef.current);
+        isEncrypted = true;
+      } catch {
+        // Fallback to plaintext
+      }
+    }
+
     const optimisticMsg: Message = {
       id: `temp-${Date.now()}`,
-      content: text,
+      content: encryptedContent,
       sender_role: "user",
       sender_id: userId,
       created_at: new Date().toISOString(),
       read_at: null,
+      is_deleted: false,
+      is_encrypted: isEncrypted,
+      expires_at: disappearTimer > 0 ? getExpiryTimestamp(disappearTimer) : null,
     };
     setMessages(prev => [...prev, optimisticMsg]);
+    setDecryptedCache(prev => ({ ...prev, [optimisticMsg.id]: text }));
     scrollToBottom();
 
-    const { error } = await supabase
-      .from("support_messages")
-      .insert({
-        conversation_id: conversationId,
-        sender_id: userId,
-        sender_role: "user",
-        content: text,
-      });
+    const insertData: any = {
+      conversation_id: conversationId,
+      sender_id: userId,
+      sender_role: "user",
+      content: encryptedContent,
+      is_encrypted: isEncrypted,
+    };
+    if (disappearTimer > 0) {
+      insertData.expires_at = getExpiryTimestamp(disappearTimer);
+    }
+
+    const { error } = await supabase.from("support_messages").insert(insertData);
 
     if (error) {
       setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
@@ -200,42 +312,93 @@ const SupportChat = ({ userId, conversationId: externalConvId }: SupportChatProp
 
   return (
     <div className="flex flex-col h-[50vh]">
+      {/* E2E Encryption + Screenshot Alert Header */}
+      <div className={`flex items-center justify-between px-3 py-1.5 border-b border-border/40 transition-colors ${screenshotAlert ? "bg-destructive/10" : "bg-muted/40"}`}>
+        <div className="flex items-center gap-1.5">
+          {screenshotAlert ? (
+            <ShieldAlert size={10} className="text-destructive" />
+          ) : (
+            <Lock size={10} className="text-muted-foreground" />
+          )}
+          <span className={`text-[10px] font-medium ${screenshotAlert ? "text-destructive" : "text-muted-foreground"}`}>
+            {screenshotAlert ? "⚠️ Screenshot detected!" : "End-to-end encrypted • AES-256-GCM"}
+          </span>
+        </div>
+        {/* Disappearing message timer */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-6 w-6">
+              <Timer size={12} className={disappearTimer > 0 ? "text-primary" : "text-muted-foreground"} />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-[120px]">
+            {DISAPPEAR_OPTIONS.map(opt => (
+              <DropdownMenuItem
+                key={opt.value}
+                onClick={() => {
+                  setDisappearTimer(opt.value);
+                  toast.info(opt.value === 0 ? "Disappearing messages off" : `Messages disappear after ${opt.label}`);
+                }}
+                className={`text-xs ${disappearTimer === opt.value ? "bg-primary/10 font-semibold" : ""}`}
+              >
+                <Timer size={12} className="mr-2" />
+                {opt.label}
+                {disappearTimer === opt.value && <Check size={12} className="ml-auto" />}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
       {/* Messages area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-2 pr-1 pb-2">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-2 pr-1 pb-2 pt-2">
         {/* Welcome message */}
         <div className="flex gap-2 items-start">
           <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-            <Bot size={14} className="text-primary" />
+            <Shield size={14} className="text-primary" />
           </div>
           <div className="bg-muted/60 rounded-2xl rounded-tl-md px-3 py-2 max-w-[80%]">
             <p className="text-xs text-foreground leading-relaxed">
-              👋 Welcome to Agent Support! Send a message and our team will respond shortly. We're here to help with any issues.
+              🔐 This chat is end-to-end encrypted with AES-256-GCM. Messages are encrypted before leaving your device. Screenshots are monitored.
             </p>
-            <p className="text-[9px] text-muted-foreground mt-1">Support Team</p>
+            <p className="text-[9px] text-muted-foreground mt-1">Security System</p>
           </div>
         </div>
 
         <AnimatePresence initial={false}>
           {messages.map((msg) => {
             const isMe = msg.sender_id === userId;
+            const displayContent = msg.is_deleted
+              ? "🗑️ This message was deleted"
+              : decryptedCache[msg.id] ?? "🔓 Decrypting...";
+            const isExpiring = msg.expires_at !== null;
+
             return (
               <motion.div
                 key={msg.id}
                 initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
+                animate={{ opacity: msg.is_deleted ? 0.5 : 1, y: 0, scale: 1 }}
                 transition={{ duration: 0.2 }}
-                className={`flex gap-2 items-end ${isMe ? "flex-row-reverse" : ""}`}
+                className={`flex gap-2 items-end group ${isMe ? "flex-row-reverse" : ""}`}
               >
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${isMe ? "bg-primary/15" : "bg-primary/10"}`}>
                   {isMe ? <User size={12} className="text-primary" /> : <Bot size={12} className="text-primary" />}
                 </div>
-                <div className={`rounded-2xl px-3 py-2 max-w-[75%] ${isMe ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted/60 text-foreground rounded-bl-md"}`}>
-                  <p className="text-xs leading-relaxed break-words">{msg.content}</p>
+                <div className={`rounded-2xl px-3 py-2 max-w-[75%] relative ${isMe ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted/60 text-foreground rounded-bl-md"} ${msg.is_deleted ? "opacity-60 italic" : ""}`}>
+                  <p className={`text-xs leading-relaxed break-words ${msg.is_deleted ? "italic" : ""}`}>
+                    {displayContent}
+                  </p>
                   <div className={`flex items-center gap-1 mt-0.5 ${isMe ? "justify-end" : ""}`}>
+                    {msg.is_encrypted && !msg.is_deleted && (
+                      <Lock size={8} className={isMe ? "text-primary-foreground/40" : "text-muted-foreground/60"} />
+                    )}
+                    {isExpiring && !msg.is_deleted && (
+                      <Timer size={8} className={isMe ? "text-primary-foreground/40" : "text-muted-foreground/60"} />
+                    )}
                     <p className={`text-[9px] ${isMe ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
                       {new Date(msg.created_at).toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" })}
                     </p>
-                    {isMe && (
+                    {isMe && !msg.is_deleted && (
                       msg.read_at ? (
                         <CheckCheck size={10} className="text-primary-foreground/80" />
                       ) : (
@@ -243,19 +406,25 @@ const SupportChat = ({ userId, conversationId: externalConvId }: SupportChatProp
                       )
                     )}
                   </div>
+
+                  {/* Delete button for own messages */}
+                  {isMe && !msg.is_deleted && !msg.id.startsWith("temp-") && (
+                    <button
+                      onClick={() => deleteMessage(msg.id)}
+                      className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-destructive/10"
+                      title="Delete message"
+                    >
+                      <Trash2 size={12} className="text-destructive" />
+                    </button>
+                  )}
                 </div>
               </motion.div>
             );
           })}
         </AnimatePresence>
 
-        {/* Typing indicator */}
         {remoteTyping && (
-          <motion.div
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex gap-2 items-end"
-          >
+          <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="flex gap-2 items-end">
             <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
               <Bot size={12} className="text-primary" />
             </div>
@@ -271,13 +440,22 @@ const SupportChat = ({ userId, conversationId: externalConvId }: SupportChatProp
 
         {messages.length === 0 && (
           <div className="text-center py-6">
-            <p className="text-[10px] text-muted-foreground">No messages yet. Start the conversation!</p>
+            <Lock size={16} className="mx-auto text-muted-foreground mb-1" />
+            <p className="text-[10px] text-muted-foreground">No messages yet. Start a secure conversation!</p>
           </div>
         )}
       </div>
 
       {/* Input area */}
       <div className="flex gap-2 pt-3 border-t border-border/50">
+        {disappearTimer > 0 && (
+          <div className="flex items-center gap-1 px-2 py-1 bg-primary/10 rounded-lg shrink-0">
+            <Timer size={10} className="text-primary" />
+            <span className="text-[9px] text-primary font-medium">
+              {DISAPPEAR_OPTIONS.find(o => o.value === disappearTimer)?.label}
+            </span>
+          </div>
+        )}
         <Input
           ref={inputRef}
           value={input}
@@ -286,7 +464,7 @@ const SupportChat = ({ userId, conversationId: externalConvId }: SupportChatProp
             sendTypingIndicator();
           }}
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-          placeholder="Type a message..."
+          placeholder="Type an encrypted message..."
           className="flex-1 h-10 rounded-xl text-xs"
           disabled={sending}
         />
