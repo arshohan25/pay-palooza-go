@@ -15,4 +15,4 @@ const hashBlock = (seed: string): string => {
 };
 
 export const generateWalletId = (seed: string): string =>
-  `MFS-${hashBlock(seed)}-${hashBlock(seed + "salt")}`;
+  `EZP-${hashBlock(seed)}-${hashBlock(seed + "salt")}`;
