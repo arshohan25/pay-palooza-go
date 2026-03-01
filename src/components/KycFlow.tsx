@@ -81,9 +81,9 @@ const SelectField = ({ label, value, onChange, options, placeholder, icon: Icon,
 
 // ─── Slide variants ───────────────────────────────────────────────────────────
 const slideVariants = {
-  enter:  (dir: number) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0 }),
-  center: { x: 0, opacity: 1 },
-  exit:   (dir: number) => ({ x: dir < 0 ? "100%" : "-100%", opacity: 0 }),
+  enter:  (dir: number) => ({ x: dir > 0 ? "30%" : "-30%", opacity: 0, scale: 0.96 }),
+  center: { x: 0, opacity: 1, scale: 1 },
+  exit:   (dir: number) => ({ x: dir < 0 ? "30%" : "-30%", opacity: 0, scale: 0.96 }),
 };
 
 // ─── Image Cropper Component ──────────────────────────────────────────────────
@@ -482,6 +482,7 @@ interface CameraBoxProps {
   label: string;
   preview: string | null;
   onCapture: (dataUrl: string) => void;
+  onClose?: () => void;
   icon: React.ElementType;
   gradient: string;
   guideText: string;
@@ -489,7 +490,7 @@ interface CameraBoxProps {
   isNidCard?: boolean;
 }
 
-const CameraBox = ({ label, preview, onCapture, icon: Icon, gradient, guideText, retakeLabel, isNidCard = false }: CameraBoxProps) => {
+const CameraBox = ({ label, preview, onCapture, onClose, icon: Icon, gradient, guideText, retakeLabel, isNidCard = false }: CameraBoxProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -658,7 +659,7 @@ const CameraBox = ({ label, preview, onCapture, icon: Icon, gradient, guideText,
               style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 100%)" }}
             >
               <button
-                onClick={() => { stopCamera(); onCapture(""); }}
+                onClick={() => { stopCamera(); onClose ? onClose() : onCapture(""); }}
                 className="w-10 h-10 rounded-full bg-white/15 backdrop-blur-md ring-1 ring-white/20 flex items-center justify-center active:scale-90 transition-transform"
               >
                 <X size={20} className="text-white" />
@@ -1275,8 +1276,8 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
             initial="enter"
             animate="center"
             exit="exit"
-            transition={{ type: "spring", stiffness: 340, damping: 34 }}
-            className="absolute inset-0 overflow-y-auto scrollbar-none flex flex-col"
+            transition={{ type: "spring", stiffness: 280, damping: 30 }}
+            className="absolute inset-0 overflow-y-auto scrollbar-none flex flex-col will-change-transform"
           >
 
             {/* ── Intro / Welcome Screen ── */}
@@ -1701,6 +1702,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                     label={t("nidCardFront")}
                     preview={null}
                     onCapture={handleNidFrontCapture}
+                    onClose={() => goTo("terms", -1)}
                     icon={CreditCard}
                     gradient="gradient-payment"
                     guideText={t("alignNidGuide")}
@@ -1757,6 +1759,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                         label={t("nidCardBack")}
                         preview={null}
                         onCapture={handleNidBackCapture}
+                        onClose={() => {}}
                         icon={CreditCard}
                         gradient="gradient-send"
                         guideText={t("alignNidBackGuide")}
@@ -1978,6 +1981,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                   label={t("selfieCapture")}
                   preview={selfiePhoto}
                   onCapture={handleSelfieCapture}
+                  onClose={() => goTo("additional_info", -1)}
                   icon={ScanFace}
                   gradient="gradient-accent"
                   guideText={t("alignFaceGuide")}
