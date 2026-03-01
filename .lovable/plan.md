@@ -1,37 +1,30 @@
 
 
-## Admin Referral & Device Management Panel
+## Admin Milestone Manual Control
 
-Add a new "Referrals" nav item to the admin dashboard with three sub-tabs: Referrals, Rewards, and Devices.
-
-### New File: `src/components/admin/AdminReferralManagement.tsx`
-
-A component with 3 sub-tabs:
-
-**Referrals Tab**
-- Fetch all rows from `referrals` table (admin RLS already allows full access)
-- Show table: Referrer (join profiles for name/phone), Referee (join profiles), Code, Milestone progress (3 checkmarks), Total Rewarded, Status, Created date
-- Filter by status (all/pending/active/completed)
-- Search by referral code or phone
-
-**Rewards Tab**  
-- Fetch all from `referral_rewards` (admin has full access)
-- Table: Referrer name/phone, Milestone type, Amount, Date
-- Summary stats at top: total rewards paid, count by milestone type
-
-**Devices Tab**
-- Fetch all from `device_registrations` (currently RLS blocks all access — need migration to add admin SELECT policy)
-- Table: Device fingerprint (truncated), User (join profiles for name/phone), Registered date
-- Search by phone or fingerprint
+Add clickable milestone toggles and a full reset button to each referral row in `AdminReferralManagement.tsx`, backed by a new secure database RPC.
 
 ### Database Migration
-- Add admin SELECT policy on `device_registrations`: `has_role(auth.uid(), 'admin'::app_role)`
 
-### Changes to `src/pages/AdminDashboard.tsx`
-- Add `{ id: "referrals", label: "Referrals", icon: Gift }` to `NAV_ITEMS` (import `Gift` from lucide)
-- Import and render `AdminReferralManagement` for the `referrals` tab
-- Add referral stats to real-time channel (listen to `referrals` and `referral_rewards` table changes)
+Create an `admin_toggle_referral_milestone` RPC (SECURITY DEFINER) that:
+- Validates caller has admin role
+- Accepts `p_referral_id`, `p_milestone` (1/2/3), `p_action` ('pay'/'reset')
+- **Pay**: Sets the milestone flag to true, credits the referrer's balance (10/20/20), inserts a `referral_rewards` audit row, updates `total_rewarded` and status
+- **Reset**: Sets the milestone flag to false, deducts from referrer balance (capped at available), deletes the corresponding `referral_rewards` row, decrements `total_rewarded`, recalculates status
+- Uses `FOR UPDATE` row locking on both `referrals` and `profiles`
 
-### Changes to `src/hooks/use-admin.ts`
-- Add `fetchAllReferrals()` and `fetchAllDeviceRegistrations()` helper functions
+Also create an `admin_reset_all_milestones` RPC that resets all 3 milestones for a referral at once (deducting `total_rewarded` from referrer balance, deleting all reward rows, resetting flags to false and status to 'pending').
+
+Both RPCs log to `audit_logs`.
+
+### UI Changes (`AdminReferralManagement.tsx`)
+
+1. Replace the static `MilestoneIcon` checkmarks with clickable buttons — green check (paid) or grey X (unpaid). Clicking toggles the milestone via the RPC.
+2. Add a "Actions" column with a dropdown or button group containing "Reset All Milestones".
+3. Add loading state per-row to prevent double-clicks.
+4. Show toast on success/error via `sonner`.
+
+### Files to Change
+- **New**: Migration SQL with 2 RPCs (`admin_toggle_referral_milestone`, `admin_reset_all_milestones`)
+- **Modify**: `src/components/admin/AdminReferralManagement.tsx` — clickable milestone cells + reset action
 
