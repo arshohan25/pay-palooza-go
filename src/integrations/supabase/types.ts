@@ -1024,7 +1024,10 @@ export type Database = {
           content: string
           conversation_id: string
           created_at: string
+          expires_at: string | null
           id: string
+          is_deleted: boolean
+          is_encrypted: boolean
           read_at: string | null
           sender_id: string
           sender_role: string
@@ -1033,7 +1036,10 @@ export type Database = {
           content: string
           conversation_id: string
           created_at?: string
+          expires_at?: string | null
           id?: string
+          is_deleted?: boolean
+          is_encrypted?: boolean
           read_at?: string | null
           sender_id: string
           sender_role?: string
@@ -1042,7 +1048,10 @@ export type Database = {
           content?: string
           conversation_id?: string
           created_at?: string
+          expires_at?: string | null
           id?: string
+          is_deleted?: boolean
+          is_encrypted?: boolean
           read_at?: string | null
           sender_id?: string
           sender_role?: string
