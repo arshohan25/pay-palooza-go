@@ -218,9 +218,15 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
 
           {/* Bottom row: Wallet ID left | Share right (green circle area) */}
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[9px] uppercase tracking-[0.14em] opacity-45 mb-0.5">{t("walletId")}</p>
-              <p className="text-[12px] font-mono font-semibold tracking-widest opacity-90">{userId}</p>
+            <div className="flex items-center gap-2">
+              {/* EZP brand badge */}
+              <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0 border border-white/15">
+                <span className="text-[10px] font-black tracking-tight leading-none text-white">EZP</span>
+              </div>
+              <div>
+                <p className="text-[9px] uppercase tracking-[0.14em] opacity-45 mb-0.5">{t("walletId")}</p>
+                <p className="text-[12px] font-mono font-semibold tracking-widest opacity-90">{userId}</p>
+              </div>
             </div>
 
             {/* Share button */}
