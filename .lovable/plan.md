@@ -1,66 +1,26 @@
 
 
-## Brand Color Overhaul: Emerald + Warm Gold
+## Plan: KYC Stats Card + Verified Status Check
 
-Transform EasyPay's color identity from teal/cyan to a luxurious **deep emerald green + warm gold** palette across the entire application.
+### 1. Add KYC Statistics Summary Card to AdminKycReview
 
-### Color Palette
+At the top of `src/components/admin/AdminKycReview.tsx`, above the filter bar:
+- Compute counts from loaded records (or fetch separate counts for all statuses)
+- Render 3 stat cards in a row: **Pending** (amber), **Verified** (green), **Rejected** (red) with counts and icons
+- Use the existing `records` state plus a separate count query to get totals across all statuses (since `records` is filtered)
 
-```text
-Primary (Emerald):    hsl(152 60% 28%)  → deep emerald
-Primary Light:        hsl(152 55% 42%)  → medium emerald  
-Accent (Warm Gold):   hsl(42 85% 52%)   → rich warm gold
-Accent Light:         hsl(40 80% 65%)   → soft gold
+**Implementation**: Add a `useEffect` that fetches counts for each status via 3 parallel `select("id", { count: "exact", head: true })` queries with `.eq("status", ...)`. Display in a 3-column grid of small stat cards.
 
-Gradients:
-  Hero:     deep emerald → dark forest green
-  Primary:  emerald → teal-emerald  
-  Accent:   warm gold → amber
-  Glow:     emerald glow shadows
-```
+### 2. Show "KYC Verified" Status in KycFlow
 
-### Files to Change
+In `src/components/KycFlow.tsx`:
+- Add a `useEffect` on mount that checks if the current user already has a `kyc_verifications` record with `status = 'verified'`
+- If verified, show a success screen (green shield icon, "Your KYC is verified" message, close button) instead of the intro step
+- Add a new state like `kycStatus` (`null | "pending" | "verified" | "rejected"`) and a loading state
+- When `kycStatus === "verified"`, render a fullscreen verified badge instead of the normal flow
+- When `kycStatus === "pending"`, optionally show "Your KYC is under review" with a close button
 
-**1. `src/index.css` — Core CSS variables (light + dark)**
-- Update `--primary` from `162 72% 38%` to `152 60% 28%` (deeper emerald)
-- Update `--accent` from `36 95% 55%` to `42 85% 52%` (warmer gold)
-- Update `--ring` to match new primary
-- Update all gradient variables (`--gradient-primary`, `--gradient-hero`, `--gradient-accent`, etc.)
-- Update all glow shadow variables to use new emerald hue
-- Update dark mode variants accordingly
-
-**2. `src/components/SplashScreen.tsx` — Splash gradient**
-- Update background gradient to emerald tones
-- Update accent references in the gradient blend
-
-**3. `src/components/BalanceCard.tsx` — Hero card**
-- Already uses `gradient-hero` class — will inherit from CSS changes
-
-**4. `src/components/OnboardingSlides.tsx` — Slide gradients**
-- No change needed — slides use distinct per-topic colors (pink, blue, gold)
-
-**5. `src/lib/confetti.ts` — Success confetti colors**
-- Change green tones from `#10b981`/`#34d399` to deeper emerald `#166534`/`#22c55e`
-- Add warm gold particles `#d4a017`
-
-**6. `src/pages/AuthPage.tsx` — Auth flow accents**
-- Uses `hsl(var(--primary))` throughout — will inherit from CSS changes
-
-**7. `src/components/BottomNav.tsx` — Navigation**
-- Uses `gradient-primary` class — will inherit
-
-**8. `src/pages/MerchantDashboard.tsx` — Inline gradient style**
-- Update the hardcoded `hsl(162 72% 38%)` inline styles to new emerald values
-
-**9. `src/pages/AgentB2B.tsx` — Inline gradient references**
-- Uses class-based gradients — will inherit
-
-### What stays the same
-- Per-feature gradient colors (send=pink, cashout=green, payment=purple, addmoney=blue) remain distinct
-- Quick action icon tints remain as-is (they're feature-specific, not brand)
-- Onboarding slide backgrounds remain per-topic
-
-### Estimated scope
-- 3-4 files need direct edits (CSS vars, confetti, splash, merchant inline styles)
-- ~30 files auto-inherit through CSS variable cascade
+### Files to modify:
+- `src/components/admin/AdminKycReview.tsx` — add stats summary card
+- `src/components/KycFlow.tsx` — add existing KYC status check on mount
 
