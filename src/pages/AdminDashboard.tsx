@@ -6,7 +6,7 @@ import {
   TrendingUp, Activity, Search, RefreshCw, LogOut,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
-  Menu, ScanFace,
+  Menu, ScanFace, Gift,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ import AdminRechargeImportExport from "@/components/admin/AdminRechargeImportExp
 import AdminRechargeApiConnect from "@/components/admin/AdminRechargeApiConnect";
 import AdminRechargeLog from "@/components/admin/AdminRechargeLog";
 import AdminKycReview from "@/components/admin/AdminKycReview";
+import AdminReferralManagement from "@/components/admin/AdminReferralManagement";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 
 interface Stats {
@@ -139,6 +140,7 @@ const NAV_ITEMS = [
   { id: "toggles", label: "Toggles", icon: ToggleRight },
   { id: "recharge", label: "Recharge", icon: Smartphone },
   { id: "kyc", label: "KYC", icon: ScanFace },
+  { id: "referrals", label: "Referrals", icon: Gift },
   { id: "reporting", label: "Reports", icon: BarChart3 },
 ];
 
@@ -704,6 +706,9 @@ export default function AdminDashboard() {
 
         {/* ═══ KYC REVIEW ═══ */}
         {activeTab === "kyc" && <AdminKycReview />}
+
+        {/* ═══ REFERRAL MANAGEMENT ═══ */}
+        {activeTab === "referrals" && <AdminReferralManagement />}
 
         {/* ═══ REPORTING DASHBOARD ═══ */}
         {activeTab === "reporting" && <AdminReporting />}
