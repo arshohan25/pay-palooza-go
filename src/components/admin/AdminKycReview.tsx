@@ -230,7 +230,7 @@ export default function AdminKycReview() {
 
       {/* Detail dialog */}
       <Dialog open={!!selected} onOpenChange={(o) => { if (!o) setSelected(null); }}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-primary" />
@@ -238,6 +238,7 @@ export default function AdminKycReview() {
             </DialogTitle>
           </DialogHeader>
 
+          <div className="flex-1 overflow-y-auto">
           {selected && (
             <div className="space-y-4">
               {/* User identity card */}
@@ -392,8 +393,9 @@ export default function AdminKycReview() {
               )}
             </div>
           )}
+          </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-2 sm:gap-0 pt-4 border-t shrink-0">
             {selected?.status === "pending" && (
               <>
                 <Button
