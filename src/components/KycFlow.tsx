@@ -1290,7 +1290,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                   <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-white/8 pointer-events-none translate-x-12 -translate-y-12" />
                   <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-white/5 pointer-events-none -translate-x-8 translate-y-16" />
                   
-                  <div className="relative flex items-center gap-3 mb-6">
+                  <div className="relative flex items-center gap-3 mb-3">
                     <button
                       onClick={onClose}
                       className="w-10 h-10 rounded-full bg-white/20 ring-1 ring-white/30 backdrop-blur-sm flex items-center justify-center active:scale-95 transition-transform shrink-0"
@@ -1298,6 +1298,21 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                       <ChevronLeft size={20} />
                     </button>
                     <h1 className="text-lg font-extrabold tracking-tight">{t("kycTitle")}</h1>
+                    <span className="ml-auto text-[11px] font-bold bg-white/20 backdrop-blur-sm px-2.5 py-1 rounded-full">1/7</span>
+                  </div>
+
+                  {/* Step progress bar */}
+                  <div className="relative flex gap-1.5 mb-4 px-1">
+                    {STEPS.map((s, i) => (
+                      <motion.div
+                        key={s}
+                        className="h-[3px] flex-1 rounded-full"
+                        initial={{ scaleX: 0 }}
+                        animate={{ scaleX: 1 }}
+                        transition={{ delay: i * 0.05, duration: 0.3 }}
+                        style={{ originX: 0, backgroundColor: i === 0 ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.25)" }}
+                      />
+                    ))}
                   </div>
 
                   {/* Centered icon */}
@@ -1469,7 +1484,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                   <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-white/8 pointer-events-none translate-x-12 -translate-y-12" />
                   <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-white/5 pointer-events-none -translate-x-8 translate-y-16" />
                   
-                  <div className="relative flex items-center gap-3">
+                  <div className="relative flex items-center gap-3 mb-3">
                     <button
                       onClick={goBack}
                       className="w-10 h-10 rounded-full bg-white/20 ring-1 ring-white/30 backdrop-blur-sm flex items-center justify-center active:scale-95 transition-transform shrink-0"
@@ -1477,6 +1492,21 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                       <ChevronLeft size={20} />
                     </button>
                     <h1 className="text-lg font-extrabold tracking-tight">শর্তসমূহ</h1>
+                    <span className="ml-auto text-[11px] font-bold bg-white/20 backdrop-blur-sm px-2.5 py-1 rounded-full">2/7</span>
+                  </div>
+
+                  {/* Step progress bar */}
+                  <div className="relative flex gap-1.5 mb-2 px-1">
+                    {STEPS.map((s, i) => (
+                      <motion.div
+                        key={s}
+                        className="h-[3px] flex-1 rounded-full"
+                        initial={{ scaleX: 0 }}
+                        animate={{ scaleX: 1 }}
+                        transition={{ delay: i * 0.05, duration: 0.3 }}
+                        style={{ originX: 0, backgroundColor: i <= 1 ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.25)" }}
+                      />
+                    ))}
                   </div>
                 </div>
 
