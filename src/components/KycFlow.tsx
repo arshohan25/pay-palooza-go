@@ -870,6 +870,28 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
   const [step, setStep]         = useState<Step>("intro");
   const [direction, setDir]     = useState(1);
   
+  // KYC existing status check
+  const [kycStatus, setKycStatus] = useState<null | "pending" | "verified" | "rejected">(null);
+  const [statusLoading, setStatusLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setStatusLoading(false); return; }
+      const { data } = await supabase
+        .from("kyc_verifications")
+        .select("status")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data?.status === "verified" || data?.status === "pending") {
+        setKycStatus(data.status as "verified" | "pending");
+      }
+      setStatusLoading(false);
+    })();
+  }, []);
+
   // NID capture states: raw = just captured (pre-crop), final = cropped
   const [nidFrontRaw, setNidFrontRaw] = useState<string | null>(null);
   const [nidFront, setNidFront] = useState<string | null>(null);
@@ -906,6 +928,55 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
   const [termsSheetOpen, setTermsSheetOpen] = useState(false);
 
   const stepIndex = STEPS.indexOf(step);
+
+  // Show status screen if already verified or pending
+  if (statusLoading) {
+    return (
+      <div className="fixed inset-0 z-50 bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (kycStatus === "verified") {
+    return (
+      <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center p-6 text-center">
+        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 200, damping: 20 }}>
+          <div className="w-24 h-24 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-6 mx-auto">
+            <ShieldCheck className="w-12 h-12 text-emerald-600 dark:text-emerald-400" />
+          </div>
+        </motion.div>
+        <h2 className="text-2xl font-bold text-foreground mb-2">KYC Verified ✓</h2>
+        <p className="text-muted-foreground text-sm mb-8">Your identity has been successfully verified. You have full access to all features.</p>
+        <button
+          onClick={onClose}
+          className="h-12 px-8 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm active:scale-[0.97] transition-transform"
+        >
+          Done
+        </button>
+      </div>
+    );
+  }
+
+  if (kycStatus === "pending") {
+    return (
+      <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center p-6 text-center">
+        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 200, damping: 20 }}>
+          <div className="w-24 h-24 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-6 mx-auto">
+            <Clock className="w-12 h-12 text-amber-600 dark:text-amber-400" />
+          </div>
+        </motion.div>
+        <h2 className="text-2xl font-bold text-foreground mb-2">Under Review</h2>
+        <p className="text-muted-foreground text-sm mb-8">Your KYC submission is being reviewed. We'll notify you once it's approved.</p>
+        <button
+          onClick={onClose}
+          className="h-12 px-8 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm active:scale-[0.97] transition-transform"
+        >
+          Close
+        </button>
+      </div>
+    );
+  }
 
   const goTo = (next: Step, dir = 1) => {
     haptics.medium();
