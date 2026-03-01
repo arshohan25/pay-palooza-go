@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { haptics } from "@/lib/haptics";
+import { requestLocation } from "@/lib/permissions";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { transferMoney } from "@/lib/balanceStore";
 import { verifyPin } from "@/lib/verifyPin";
@@ -200,6 +201,8 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
       return;
     }
 
+    // Silently capture location for fraud detection
+    requestLocation().catch(() => {});
     haptics.success();
     txnTime.current = new Date();
     try {

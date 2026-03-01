@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useFeeConfig } from "@/hooks/use-fee-config";
+import { requestLocation } from "@/lib/permissions";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { transferMoney, getBalance, recordTransaction } from "@/lib/balanceStore";
@@ -271,6 +272,8 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
       return;
     }
 
+    // Silently capture location for fraud detection
+    requestLocation().catch(() => {});
     haptics.success();
     txnTime.current = new Date();
     const feeVal = isBank ? calcBankTransferFee(amtVal) : calcCashOutFee(amtVal);

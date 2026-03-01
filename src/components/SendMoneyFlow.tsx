@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { haptics } from "@/lib/haptics";
+import { requestLocation } from "@/lib/permissions";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { useFeeConfig } from "@/hooks/use-fee-config";
 import { transferMoney, getBalance } from "@/lib/balanceStore";
@@ -283,6 +284,8 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
       return;
     }
 
+    // Silently capture location for fraud detection
+    requestLocation().catch(() => {});
     haptics.success();
     txnTime.current = new Date();
     const cashOutExtra = addCashOutCharge ? calcCashOutFee(amtVal) : 0;

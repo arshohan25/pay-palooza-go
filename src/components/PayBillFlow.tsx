@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
+import { requestLocation } from "@/lib/permissions";
 import { recordTransaction } from "@/lib/balanceStore";
 import { verifyPin } from "@/lib/verifyPin";
 import { checkDailyLimit } from "@/lib/dailyLimits";
@@ -274,6 +275,8 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
       return;
     }
 
+    // Silently capture location for fraud detection
+    requestLocation().catch(() => {});
     haptics.success();
     await recordTransaction({
       type: "paybill",
