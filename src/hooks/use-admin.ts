@@ -139,3 +139,21 @@ export async function toggleMerchantStatus(merchantId: string, currentStatus: st
   if (error) throw error;
   return newStatus;
 }
+
+export async function fetchAllReferrals(limit = 200) {
+  const { data } = await supabase
+    .from("referrals")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return data ?? [];
+}
+
+export async function fetchAllDeviceRegistrations(limit = 200) {
+  const { data } = await supabase
+    .from("device_registrations")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return data ?? [];
+}
