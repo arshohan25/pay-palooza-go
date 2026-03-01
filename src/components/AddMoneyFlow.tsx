@@ -208,8 +208,6 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
 
     haptics.success();
 
-    // addAmt already declared above for limit check
-
     // For bKash and Nagad, attempt real gateway integration
     if (source === "mfs" && (mfsProvider?.id === "bkash" || mfsProvider?.id === "nagad")) {
       setDir(1);
@@ -246,13 +244,28 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
           }
         );
 
-        const createData = await createRes.json();
+        const contentType = createRes.headers.get("content-type");
+        if (!contentType?.includes("application/json")) {
+          const textResponse = await createRes.text();
+          console.error("Gateway returned non-JSON:", textResponse.substring(0, 200));
+          throw new Error("Payment gateway returned an invalid response. Please try again later.");
+        }
+
+        let createData;
+        try {
+          createData = await createRes.json();
+        } catch (parseError) {
+          console.error("Failed to parse gateway response:", parseError);
+          throw new Error("Payment gateway returned a malformed response.");
+        }
 
         if (!createRes.ok || !createData.success) {
-          // If credentials not configured, fall back to simulation
-          if (createData.error?.includes("not configured")) {
-            console.warn(`${mfsProvider.name} credentials not configured, using simulation mode`);
-            await simulateAndRecord(addAmt);
+          // If credentials not configured, block — do NOT simulate
+          if (createData.error?.includes("not configured") || createData.simulated) {
+            setError(`${mfsProvider.name} payment gateway is not configured. Add Money is currently unavailable via ${mfsProvider.name}. Please contact support.`);
+            setStep("pin");
+            setPin("");
+            setProcessing(false);
             return;
           }
           throw new Error(createData.error || "Payment creation failed");
@@ -262,19 +275,17 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
         const redirectUrl = mfsProvider.id === "bkash" ? createData.bkashURL : createData.nagadURL;
 
         if (redirectUrl) {
-          // Store session ID for when user returns
           localStorage.setItem("pending_payment_session", JSON.stringify({
             sessionId: createData.sessionId,
             provider: mfsProvider.id,
             amount: addAmt,
             functionName,
           }));
-          // Redirect to provider
           window.location.href = redirectUrl;
           return;
         }
 
-        // If no redirect URL (sandbox may not have one), fall back to execute
+        // If no redirect URL (sandbox may not have one), try execute for bKash
         if (mfsProvider.id === "bkash" && createData.paymentID) {
           const execRes = await fetch(
             `https://${projectId}.supabase.co/functions/v1/${functionName}?action=execute`,
@@ -302,60 +313,24 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
           }
         }
 
-        // Fallback to simulation if gateway didn't complete
-        await simulateAndRecord(addAmt);
-      } catch (err) {
+        // Gateway didn't complete — block, don't simulate
+        setError("Payment could not be completed. The payment gateway did not finalize the transaction. Please try again.");
+        setStep("pin");
+        setPin("");
+      } catch (err: any) {
         console.error("Payment gateway error:", err);
-        // Fall back to simulation on any error
-        await simulateAndRecord(addAmt);
+        setError(err.message || "Payment gateway is unavailable. Please try again later.");
+        setStep("pin");
+        setPin("");
       } finally {
         setProcessing(false);
       }
       return;
     }
 
-    // For other MFS providers or non-MFS, use simulation
-    if (source === "mfs") {
-      setDir(1);
-      setStep("processing");
-      await new Promise(r => setTimeout(r, 3000));
-    }
-
-    txnTime.current = new Date();
-    txnId.current = generateTxnId();
-    const sourceLabel = source === "bank"
-      ? `Bank Transfer via ${bank?.name}`
-      : source === "mfs"
-        ? `${mfsProvider?.name} (${mfsAccount})`
-        : "Card Payment";
-    await recordTransaction({
-      type: "addmoney",
-      amount: addAmt,
-      fee: 0,
-      description: sourceLabel,
-      reference: txnId.current,
-    });
-    showTxnToast({ type: "Add Money", amount: `৳${addAmt.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-addmoney" });
-    setDir(1);
-    setStep("success");
-  };
-
-  /** Fallback: simulate gateway processing and record transaction */
-  const simulateAndRecord = async (addAmt: number) => {
-    await new Promise(r => setTimeout(r, 3000));
-    txnTime.current = new Date();
-    txnId.current = generateTxnId();
-    const sourceLabel = `${mfsProvider?.name} (${mfsAccount})`;
-    await recordTransaction({
-      type: "addmoney",
-      amount: addAmt,
-      fee: 0,
-      description: sourceLabel,
-      reference: txnId.current,
-    });
-    showTxnToast({ type: "Add Money", amount: `৳${addAmt.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-addmoney" });
-    setDir(1);
-    setStep("success");
+    // For ALL other sources (bank, card, other MFS) — no real gateway connected, block the transaction
+    setError("Add Money is currently unavailable. No payment gateway is configured for this method. Please contact support or try a different source.");
+    setProcessing(false);
   };
 
   // ── Card number formatter ───────────────────────────────────────────────────
