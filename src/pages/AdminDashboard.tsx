@@ -83,9 +83,12 @@ const RechargeSection = () => {
 };
 
 
-const StatCard = ({ icon: Icon, label, value, color }: { icon: any; label: string; value: number | string; color: string }) => (
+const StatCard = ({ icon: Icon, label, value, color, onClick }: { icon: any; label: string; value: number | string; color: string; onClick?: () => void }) => (
   <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-    <Card className="border-0 shadow-[var(--shadow-card)]">
+    <Card
+      className={`border-0 shadow-[var(--shadow-card)] transition-colors ${onClick ? "cursor-pointer hover:bg-muted/40" : ""}`}
+      onClick={onClick}
+    >
       <CardContent className="p-4 flex items-center gap-4">
         <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
           <Icon className="w-6 h-6 text-primary-foreground" />
@@ -398,14 +401,14 @@ export default function AdminDashboard() {
         {activeTab === "overview" && (
           <div className="space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              <StatCard icon={Users} label="Total Users" value={stats.totalUsers} color="bg-primary" />
-              <StatCard icon={ArrowLeftRight} label="Transactions" value={stats.totalTransactions} color="bg-blue-500" />
-              <StatCard icon={UserCheck} label="Agents" value={stats.totalAgents} color="bg-emerald-500" />
-              <StatCard icon={Store} label="Merchants" value={stats.totalMerchants} color="bg-purple-500" />
-              <StatCard icon={ShieldAlert} label="Open Alerts" value={stats.openAlerts} color="bg-destructive" />
-              <StatCard icon={ScanFace} label="Pending KYC" value={stats.pendingKyc} color="bg-orange-500" />
-              <StatCard icon={Gift} label="Referrals" value={stats.totalReferrals} color="bg-teal-500" />
-              <StatCard icon={Award} label="Rewards Paid" value={`৳${stats.totalRewardsPaid.toLocaleString()}`} color="bg-amber-500" />
+              <StatCard icon={Users} label="Total Users" value={stats.totalUsers} color="bg-primary" onClick={() => setActiveTab("users")} />
+              <StatCard icon={ArrowLeftRight} label="Transactions" value={stats.totalTransactions} color="bg-blue-500" onClick={() => setActiveTab("transactions")} />
+              <StatCard icon={UserCheck} label="Agents" value={stats.totalAgents} color="bg-emerald-500" onClick={() => setActiveTab("users")} />
+              <StatCard icon={Store} label="Merchants" value={stats.totalMerchants} color="bg-purple-500" onClick={() => setActiveTab("users")} />
+              <StatCard icon={ShieldAlert} label="Open Alerts" value={stats.openAlerts} color="bg-destructive" onClick={() => setActiveTab("alerts")} />
+              <StatCard icon={ScanFace} label="Pending KYC" value={stats.pendingKyc} color="bg-orange-500" onClick={() => setActiveTab("kyc")} />
+              <StatCard icon={Gift} label="Referrals" value={stats.totalReferrals} color="bg-teal-500" onClick={() => setActiveTab("referrals")} />
+              <StatCard icon={Award} label="Rewards Paid" value={`৳${stats.totalRewardsPaid.toLocaleString()}`} color="bg-amber-500" onClick={() => setActiveTab("referrals")} />
             </div>
 
             <Card className="border-0 shadow-[var(--shadow-card)]">
