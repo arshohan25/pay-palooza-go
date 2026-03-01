@@ -1189,15 +1189,15 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
     return (
       <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center p-6 text-center">
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 200, damping: 20 }}>
-          <div className="w-24 h-24 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-6 mx-auto">
-            <ShieldCheck className="w-12 h-12 text-emerald-600 dark:text-emerald-400" />
+          <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4 mx-auto">
+            <ShieldCheck className="w-10 h-10 text-emerald-600 dark:text-emerald-400" />
           </div>
         </motion.div>
-        <h2 className="text-2xl font-bold text-foreground mb-2">KYC Verified ✓</h2>
-        <p className="text-muted-foreground text-sm mb-8">Your identity has been successfully verified. You have full access to all features.</p>
+        <h2 className="text-xl font-bold text-foreground mb-1.5">KYC Verified ✓</h2>
+        <p className="text-muted-foreground text-sm mb-6">Your identity has been successfully verified. You have full access to all features.</p>
         <button
           onClick={onClose}
-          className="h-12 px-8 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm active:scale-[0.97] transition-transform"
+          className="h-11 px-8 rounded-2xl gradient-primary text-primary-foreground font-semibold text-sm shadow-glow active:scale-[0.97] transition-transform"
         >
           Done
         </button>
@@ -1209,15 +1209,15 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
     return (
       <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center p-6 text-center">
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 200, damping: 20 }}>
-          <div className="w-24 h-24 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-6 mx-auto">
-            <Clock className="w-12 h-12 text-amber-600 dark:text-amber-400" />
+          <div className="w-20 h-20 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-4 mx-auto">
+            <Clock className="w-10 h-10 text-amber-600 dark:text-amber-400" />
           </div>
         </motion.div>
-        <h2 className="text-2xl font-bold text-foreground mb-2">Under Review</h2>
-        <p className="text-muted-foreground text-sm mb-8">Your KYC submission is being reviewed. We'll notify you once it's approved.</p>
+        <h2 className="text-xl font-bold text-foreground mb-1.5">Under Review</h2>
+        <p className="text-muted-foreground text-sm mb-6">Your KYC submission is being reviewed. We'll notify you once it's approved.</p>
         <button
           onClick={onClose}
-          className="h-12 px-8 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm active:scale-[0.97] transition-transform"
+          className="h-11 px-8 rounded-2xl gradient-primary text-primary-foreground font-semibold text-sm shadow-glow active:scale-[0.97] transition-transform"
         >
           Close
         </button>
@@ -1283,7 +1283,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
             {step === "intro" && (
               <div className="flex flex-col min-h-full">
                 {/* Gradient Header */}
-                <div className="relative overflow-visible bg-gradient-to-br from-[hsl(330,80%,55%)] via-[hsl(340,85%,50%)] to-[hsl(350,80%,45%)] px-5 pt-4 pb-12 text-white">
+                <div className="relative overflow-visible bg-gradient-to-br from-[hsl(330,80%,55%)] via-[hsl(340,85%,50%)] to-[hsl(350,80%,45%)] px-5 pt-4 pb-8 text-white">
                   <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-white/8 pointer-events-none" />
                   <div className="absolute -bottom-16 -left-8 w-48 h-48 rounded-full bg-white/5 pointer-events-none" />
                   
@@ -1442,7 +1442,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                 </div>
 
                 {/* Bottom sticky button */}
-                <div className="sticky bottom-0 p-5 pt-3 pb-6 bg-gradient-to-t from-background via-background to-transparent">
+                <div className="sticky bottom-0 p-5 pt-3 pb-5 bg-gradient-to-t from-background via-background to-transparent">
                   <motion.button
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -1664,10 +1664,10 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
             )}
 
             {step === "nid_capture" && (
-              <div className="flex flex-col gap-5 px-4 pt-6 pb-6">
-                <div className="text-center space-y-1">
-                  <h2 className="text-xl font-bold text-foreground">{t("captureNidFront")}</h2>
-                  <p className="text-sm text-muted-foreground">Capture both sides of your NID card</p>
+               <div className="flex flex-col gap-4 px-4 pt-4 pb-5">
+                <div className="text-center space-y-0.5">
+                  <h2 className="text-lg font-bold text-foreground">{t("captureNidFront")}</h2>
+                  <p className="text-xs text-muted-foreground">Capture both sides of your NID card</p>
                 </div>
 
                 {/* NID Front */}
@@ -1795,10 +1795,10 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
             {/* ── NID Details (editable) ── */}
             {step === "nid_details" && (
               <div className="flex flex-col min-h-full">
-                <div className="flex-1 px-4 pt-6 pb-6 space-y-5">
-                  <div className="text-center space-y-1">
-                    <h2 className="text-xl font-bold text-foreground">{t("confirmNidDetails")}</h2>
-                    <p className="text-sm text-muted-foreground">{t("confirmNidDetailsSub")}</p>
+                <div className="flex-1 px-4 pt-4 pb-4 space-y-4">
+                  <div className="text-center space-y-0.5">
+                    <h2 className="text-lg font-bold text-foreground">{t("confirmNidDetails")}</h2>
+                    <p className="text-xs text-muted-foreground">{t("confirmNidDetailsSub")}</p>
                   </div>
 
                   <div className="flex items-center gap-2 rounded-xl bg-primary/8 border border-primary/15 px-4 py-2.5">
@@ -1822,7 +1822,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                   </div>
                 </div>
 
-                <div className="sticky bottom-0 px-4 pb-6 pt-3 bg-gradient-to-t from-background via-background to-transparent">
+                <div className="sticky bottom-0 px-4 pb-5 pt-3 bg-gradient-to-t from-background via-background to-transparent">
                   <button
                     onClick={() => canAdvanceNidDetails && goTo("additional_info")}
                     disabled={!canAdvanceNidDetails}
@@ -1841,18 +1841,18 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
             {/* ── Additional Information ── */}
             {step === "additional_info" && (
               <div className="flex flex-col min-h-full">
-                <div className="flex-1 px-4 pt-6 pb-6 space-y-5">
-                  <div className="text-center space-y-2">
+                <div className="flex-1 px-4 pt-4 pb-4 space-y-4">
+                  <div className="text-center space-y-1.5">
                     <motion.div
                       initial={{ scale: 0, rotate: -20 }}
                       animate={{ scale: 1, rotate: 0 }}
                       transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                      className="w-16 h-16 gradient-primary rounded-2xl flex items-center justify-center text-primary-foreground shadow-glow mx-auto"
+                      className="w-12 h-12 gradient-primary rounded-xl flex items-center justify-center text-primary-foreground shadow-glow mx-auto"
                     >
-                      <UserCog size={30} />
+                      <UserCog size={22} />
                     </motion.div>
-                    <h2 className="text-xl font-bold text-foreground">Additional Information</h2>
-                    <p className="text-sm text-muted-foreground">Help us know you better for a seamless experience</p>
+                    <h2 className="text-lg font-bold text-foreground">Additional Information</h2>
+                    <p className="text-xs text-muted-foreground">Help us know you better for a seamless experience</p>
                   </div>
 
                   <div className="rounded-2xl bg-card/60 backdrop-blur-sm border border-border shadow-card p-4 space-y-4">
@@ -1947,7 +1947,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
                   </div>
                 </div>
 
-                <div className="sticky bottom-0 px-4 pb-6 pt-3 bg-gradient-to-t from-background via-background to-transparent">
+                <div className="sticky bottom-0 px-4 pb-5 pt-3 bg-gradient-to-t from-background via-background to-transparent">
                   <motion.button
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -1968,10 +1968,10 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
 
             {/* ── Selfie / Face Match ── */}
             {step === "selfie" && (
-              <div className="flex flex-col gap-5 px-4 pt-6 pb-6">
-                <div className="text-center space-y-1">
-                  <h2 className="text-xl font-bold text-foreground">{t("liveFaceVerification")}</h2>
-                  <p className="text-sm text-muted-foreground">{t("liveFaceVerificationSub")}</p>
+              <div className="flex flex-col gap-4 px-4 pt-4 pb-5">
+                <div className="text-center space-y-0.5">
+                  <h2 className="text-lg font-bold text-foreground">{t("liveFaceVerification")}</h2>
+                  <p className="text-xs text-muted-foreground">{t("liveFaceVerificationSub")}</p>
                 </div>
 
                 <CameraBox
@@ -2050,10 +2050,10 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
 
             {/* ── Review ── */}
             {step === "review" && (
-              <div className="flex flex-col gap-5 px-4 pt-6 pb-6">
-                <div className="text-center space-y-1">
-                  <h2 className="text-xl font-bold text-foreground">{t("reviewSubmit")}</h2>
-                  <p className="text-sm text-muted-foreground">{t("reviewSubmitSub")}</p>
+              <div className="flex flex-col gap-4 px-4 pt-4 pb-5">
+                <div className="text-center space-y-0.5">
+                  <h2 className="text-lg font-bold text-foreground">{t("reviewSubmit")}</h2>
+                  <p className="text-xs text-muted-foreground">{t("reviewSubmitSub")}</p>
                 </div>
 
                 <div className="space-y-3">
@@ -2194,7 +2194,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
 
             {/* ── Submitted ── */}
             {step === "submitted" && (
-              <div className="flex-1 flex flex-col items-center justify-center gap-6 px-8 py-12 text-center">
+              <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6 py-8 text-center">
                 <motion.div
                   initial={{ scale: 0, rotate: -20 }}
                   animate={{ scale: 1, rotate: 0 }}
