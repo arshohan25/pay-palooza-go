@@ -4,12 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
   CheckCircle2, XCircle, Eye, RefreshCw, User, CreditCard, Calendar,
-  ShieldCheck, AlertTriangle, Clock,
+  ShieldCheck, AlertTriangle, Clock, Phone,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -47,6 +48,7 @@ export default function AdminKycReview() {
   const [reviewNotes, setReviewNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<{ phone: string; name: string | null; avatar_url: string | null } | null>(null);
 
   const loadRecords = useCallback(async () => {
     setLoading(true);
@@ -95,6 +97,14 @@ export default function AdminKycReview() {
   const openDetail = async (record: KycRecord) => {
     setSelected(record);
     setReviewNotes(record.reviewer_notes ?? "");
+    setUserProfile(null);
+    // Fetch user profile for phone & avatar
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("phone, name, avatar_url")
+      .eq("user_id", record.user_id)
+      .maybeSingle();
+    if (profile) setUserProfile(profile);
   };
 
   const previewPhoto = async (path: string | null) => {
@@ -230,6 +240,30 @@ export default function AdminKycReview() {
 
           {selected && (
             <div className="space-y-4">
+              {/* User identity card */}
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
+                <Avatar className="h-12 w-12">
+                  {userProfile?.avatar_url ? (
+                    <AvatarImage src={userProfile.avatar_url} alt="User" />
+                  ) : null}
+                  <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                    {(selected.full_name || "?").charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm truncate">{selected.full_name || "Unknown"}</p>
+                  {userProfile?.phone && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                      <Phone className="w-3 h-3" />
+                      <span className="font-mono">{userProfile.phone}</span>
+                    </div>
+                  )}
+                </div>
+                <Badge className={`${(STATUS_CONFIG[selected.status] ?? STATUS_CONFIG.pending).color} border-0`}>
+                  {selected.status}
+                </Badge>
+              </div>
+
               {/* Personal info */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
