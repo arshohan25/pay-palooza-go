@@ -38,6 +38,7 @@ import AdminRechargeApiConnect from "@/components/admin/AdminRechargeApiConnect"
 import AdminRechargeLog from "@/components/admin/AdminRechargeLog";
 import AdminKycReview from "@/components/admin/AdminKycReview";
 import AdminReferralManagement from "@/components/admin/AdminReferralManagement";
+import AdminPermissions from "@/components/admin/AdminPermissions";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 
 interface Stats {
@@ -146,6 +147,7 @@ const NAV_ITEMS = [
   { id: "recharge", label: "Recharge", icon: Smartphone },
   { id: "kyc", label: "KYC", icon: ScanFace },
   { id: "referrals", label: "Referrals", icon: Gift },
+  { id: "permissions", label: "Permissions", icon: ShieldAlert },
   { id: "reporting", label: "Reports", icon: BarChart3 },
 ];
 
@@ -716,6 +718,9 @@ export default function AdminDashboard() {
 
         {/* ═══ REFERRAL MANAGEMENT ═══ */}
         {activeTab === "referrals" && <AdminReferralManagement />}
+
+        {/* ═══ PERMISSIONS DASHBOARD ═══ */}
+        {activeTab === "permissions" && <AdminPermissions />}
 
         {/* ═══ REPORTING DASHBOARD ═══ */}
         {activeTab === "reporting" && <AdminReporting />}

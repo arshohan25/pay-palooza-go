@@ -32,6 +32,8 @@ import { useI18n } from "@/lib/i18n";
 import { useFeatureLocks } from "@/hooks/use-feature-locks";
 import FeatureGuard from "@/components/FeatureGuard";
 import FeatureLockedOverlay from "@/components/FeatureLockedOverlay";
+import PermissionGate from "@/components/PermissionGate";
+import { Contact2 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = "recipient" | "amount" | "confirm" | "pin" | "success";
@@ -414,6 +416,36 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   {error && (
                     <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {error}</p>
                   )}
+                  {/* Pick from Contacts */}
+                  <PermissionGate
+                    permission="contacts"
+                    onGranted={(contacts) => {
+                      if (contacts?.[0]) {
+                        const tel = contacts[0].tel?.[0]?.replace(/\D/g, "") || "";
+                        const name = contacts[0].name?.[0] || "";
+                        if (tel) {
+                          setInputVal(tel);
+                          setInputType(detectRecipientType(tel));
+                          setRecipient({
+                            id: "contact",
+                            name: name || tel,
+                            phone: tel,
+                            initials: (name || tel).slice(0, 2).toUpperCase(),
+                            gradient: "gradient-send",
+                          });
+                        }
+                      }
+                    }}
+                  >
+                    <button
+                      type="button"
+                      className="w-full h-11 border-2 border-dashed border-border rounded-xl flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/50 hover:bg-primary/5 active:scale-[0.98] transition-all"
+                    >
+                      <Contact2 size={16} />
+                      Pick from Contacts
+                    </button>
+                  </PermissionGate>
+
                   {/* Upload QR from Gallery */}
                   <button
                     type="button"
