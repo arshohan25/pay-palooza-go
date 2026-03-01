@@ -31,6 +31,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n";
 import FeatureGuard from "@/components/FeatureGuard";
+import PermissionGate from "@/components/PermissionGate";
+import { Contact2 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Step = "number" | "packs" | "amount" | "pin" | "success";
@@ -541,6 +543,28 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       <AlertCircle size={12} /> {error}
                     </p>
                   )}
+
+                  {/* Pick from Contacts */}
+                  <PermissionGate
+                    permission="contacts"
+                    onGranted={(contacts) => {
+                      if (contacts?.[0]) {
+                        const tel = contacts[0].tel?.[0]?.replace(/\D/g, "").slice(-11) || "";
+                        if (tel.length === 11) {
+                          setPhone(tel);
+                          setError("");
+                        }
+                      }
+                    }}
+                  >
+                    <button
+                      type="button"
+                      className="w-full h-11 border-2 border-dashed border-border rounded-xl flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/50 hover:bg-primary/5 active:scale-[0.98] transition-all"
+                    >
+                      <Contact2 size={16} />
+                      Pick from Contacts
+                    </button>
+                  </PermissionGate>
 
                   {/* Primary Continue CTA */}
                   <motion.button
