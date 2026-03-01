@@ -9,6 +9,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getBalance, recordTransaction, addBalance, onBalanceChange, transferMoney } from "@/lib/balanceStore";
+import { verifyPin } from "@/lib/verifyPin";
+import { haptics } from "@/lib/haptics";
+import SlideToConfirm from "@/components/SlideToConfirm";
 import { useI18n } from "@/lib/i18n";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { supabase } from "@/integrations/supabase/client";
@@ -576,6 +579,11 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
   const [payMethod, setPayMethod]     = useState<PaymentMethod>("wallet");
   const [savedCard]                   = useState({ last4: "4242", brand: "Visa" });
 
+  // PIN verification for checkout
+  const [checkoutPin, setCheckoutPin] = useState("");
+  const [checkoutPinError, setCheckoutPinError] = useState("");
+  const [checkoutProcessing, setCheckoutProcessing] = useState(false);
+
   // Promo code
   const [appliedPromo, setAppliedPromo] = useState<{ code: string; discount: number } | null>(null);
   const [promoInput, setPromoInput]   = useState("");
@@ -722,15 +730,16 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "cancelled" as const, timeline: [] } : o));
+    
+    // Update order status in database
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await supabase.from("orders").update({ status: "cancelled" }).eq("order_num", order.orderNum).eq("user_id", session.user.id);
+    }
+
+    // Refunds are processed server-side by admin. No client-side balance crediting.
     if (order.paymentMethod === "wallet") {
-      await recordTransaction({
-        type: "addmoney",
-        amount: order.total,
-        fee: 0,
-        description: `Refund for cancelled order ${order.orderNum}`,
-        reference: `REF-${order.orderNum}`,
-      });
-      toast.success(`Order cancelled · ৳${order.total.toLocaleString()} refunded to wallet`);
+      toast.success(`Order cancelled · Refund of ৳${order.total.toLocaleString()} will be processed within 24 hours`);
     } else {
       toast.success("Order cancelled · Refund will be processed to your card");
     }
@@ -738,6 +747,20 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
 
   // ── Checkout ────────────────────────────────────────────────────────────────
   const handleCheckout = async () => {
+    if (checkoutPin.length < 4) { setCheckoutPinError("Enter your 4-digit PIN."); return; }
+    if (checkoutProcessing) return;
+    setCheckoutProcessing(true);
+    setCheckoutPinError("");
+
+    // Verify PIN before processing payment
+    const pinValid = await verifyPin(checkoutPin);
+    if (!pinValid) {
+      setCheckoutPinError("Incorrect PIN. Please try again.");
+      setCheckoutPin("");
+      setCheckoutProcessing(false);
+      return;
+    }
+    haptics.success();
     if (payMethod === "wallet") {
       if (cartTotal > walletBalance) { toast.error("Insufficient wallet balance"); return; }
       try {
@@ -752,6 +775,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
         });
       } catch (e: any) {
         toast.error(e.message ?? "Payment failed");
+        setCheckoutProcessing(false);
         return;
       }
     }
@@ -791,6 +815,9 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
     setCart([]);
     setAppliedPromo(null);
     setPromoInput("");
+    setCheckoutPin("");
+    setCheckoutPinError("");
+    setCheckoutProcessing(false);
     setScreen("success");
   };
 
@@ -1429,14 +1456,51 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                 </div>
               </div>
 
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                onClick={handleCheckout}
-                disabled={payMethod === "wallet" && cartTotal > walletBalance}
-                className="w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ background: SHOP_GRADIENT }}>
-                {t("placeOrder")} · ৳{cartTotal.toLocaleString()}
-              </motion.button>
+              {/* PIN verification */}
+              <div className="bg-card rounded-3xl border border-border/60 p-4 space-y-3">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Confirm PIN</p>
+                <p className="text-[12px] text-muted-foreground">Enter your 4-digit PIN to authorize this purchase</p>
+                <div className="flex justify-center gap-5 py-2">
+                  {[0, 1, 2, 3].map((i) => (
+                    <motion.div
+                      key={i}
+                      animate={{ scale: checkoutPin.length > i ? 1.2 : 1 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                      className={`w-4 h-4 rounded-full border-2 transition-all ${checkoutPin.length > i ? "border-transparent shadow-md" : "border-muted-foreground/30 bg-transparent"}`}
+                      style={checkoutPin.length > i ? { background: "#FF7043" } : {}}
+                    />
+                  ))}
+                </div>
+                {checkoutPinError && (
+                  <p className="text-xs text-destructive flex items-center justify-center gap-1">
+                    <AlertCircle size={12} /> {checkoutPinError}
+                  </p>
+                )}
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={4}
+                  value={checkoutPin}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                    if (v.length > checkoutPin.length) haptics.light();
+                    setCheckoutPin(v);
+                    setCheckoutPinError("");
+                  }}
+                  className="w-full h-14 text-center text-3xl font-bold tracking-[1rem] bg-card border-2 border-border rounded-2xl focus:outline-none transition-colors placeholder:text-muted-foreground/30"
+                  placeholder="••••"
+                />
+              </div>
+
+              <SlideToConfirm
+                onConfirm={handleCheckout}
+                label={`Place Order · ৳${cartTotal.toLocaleString()}`}
+                gradient="bg-gradient-to-r from-orange-500 to-orange-700"
+                disabled={checkoutPin.length < 4 || (payMethod === "wallet" && cartTotal > walletBalance) || checkoutProcessing}
+                pinComplete={checkoutPin.length === 4}
+                icon={ShoppingCart}
+              />
             </motion.div>
           )}
 
