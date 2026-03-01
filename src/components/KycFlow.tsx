@@ -1147,6 +1147,24 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
       if (!session?.user) { toast.error(t("notAuthenticated")); return; }
       const userId = session.user.id;
 
+      // Check if this NID is already verified by another account
+      if (nidNumber.trim()) {
+        const { data: existingKyc } = await supabase
+          .from("kyc_verifications")
+          .select("id, user_id, status")
+          .eq("nid_number", nidNumber.trim())
+          .eq("status", "verified")
+          .neq("user_id", userId)
+          .limit(1);
+
+        if (existingKyc && existingKyc.length > 0) {
+          // Auto-reject: another account already verified with this NID
+          toast.error("এই NID দিয়ে অন্য একটি অ্যাকাউন্ট ইতোমধ্যে যাচাই করা হয়েছে। একটি NID দিয়ে শুধুমাত্র একটি অ্যাকাউন্ট যাচাই করা যায়।");
+          setSubmitting(false);
+          return;
+        }
+      }
+
       const uploadPhoto = async (base64: string, filename: string) => {
         const base64Data = base64.replace(/^data:image\/[a-z]+;base64,/, "");
         const bytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
