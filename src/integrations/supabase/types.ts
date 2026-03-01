@@ -1164,8 +1164,16 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_reset_all_milestones: {
+        Args: { p_referral_id: string }
+        Returns: Json
+      }
       admin_reverse_chargeback: {
         Args: { p_chargeback_txn_id: string; p_reason: string }
+        Returns: Json
+      }
+      admin_toggle_referral_milestone: {
+        Args: { p_action: string; p_milestone: number; p_referral_id: string }
         Returns: Json
       }
       check_referral_milestones: {

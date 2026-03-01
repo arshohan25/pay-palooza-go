@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Gift, Award, Smartphone, Check, X, RefreshCw } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Search, Gift, Award, Smartphone, Check, X, RefreshCw, MoreHorizontal, RotateCcw, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 interface ReferralRow {
   id: string;
@@ -66,32 +68,17 @@ export default function AdminReferralManagement() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [busyRows, setBusyRows] = useState<Set<string>>(new Set());
 
   const fetchData = useCallback(async () => {
     setLoading(true);
 
-    // Fetch referrals
-    const { data: refs } = await supabase
-      .from("referrals")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(200);
+    const [{ data: refs }, { data: rews }, { data: devs }] = await Promise.all([
+      supabase.from("referrals").select("*").order("created_at", { ascending: false }).limit(200),
+      supabase.from("referral_rewards").select("*").order("created_at", { ascending: false }).limit(200),
+      supabase.from("device_registrations").select("*").order("created_at", { ascending: false }).limit(200),
+    ]);
 
-    // Fetch rewards
-    const { data: rews } = await supabase
-      .from("referral_rewards")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(200);
-
-    // Fetch devices
-    const { data: devs } = await supabase
-      .from("device_registrations")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(200);
-
-    // Collect all user IDs for profile lookup
     const userIds = new Set<string>();
     refs?.forEach((r: any) => { userIds.add(r.referrer_id); userIds.add(r.referee_id); });
     rews?.forEach((r: any) => { userIds.add(r.referrer_id); });
@@ -135,15 +122,51 @@ export default function AdminReferralManagement() {
 
   useEffect(() => {
     fetchData();
-
     const channel = supabase
       .channel("admin-referral-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "referrals" }, () => fetchData())
       .on("postgres_changes", { event: "*", schema: "public", table: "referral_rewards" }, () => fetchData())
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [fetchData]);
+
+  // --- Milestone toggle ---
+  const handleToggleMilestone = async (referralId: string, milestone: number, isPaid: boolean) => {
+    if (busyRows.has(referralId)) return;
+    setBusyRows(prev => new Set(prev).add(referralId));
+    try {
+      const action = isPaid ? "reset" : "pay";
+      const { error } = await supabase.rpc("admin_toggle_referral_milestone", {
+        p_referral_id: referralId,
+        p_milestone: milestone,
+        p_action: action,
+      });
+      if (error) throw error;
+      toast.success(`Milestone ${milestone} ${action === "pay" ? "paid" : "reset"} successfully`);
+      await fetchData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to toggle milestone");
+    } finally {
+      setBusyRows(prev => { const n = new Set(prev); n.delete(referralId); return n; });
+    }
+  };
+
+  const handleResetAll = async (referralId: string) => {
+    if (busyRows.has(referralId)) return;
+    setBusyRows(prev => new Set(prev).add(referralId));
+    try {
+      const { error } = await supabase.rpc("admin_reset_all_milestones", {
+        p_referral_id: referralId,
+      });
+      if (error) throw error;
+      toast.success("All milestones reset successfully");
+      await fetchData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to reset milestones");
+    } finally {
+      setBusyRows(prev => { const n = new Set(prev); n.delete(referralId); return n; });
+    }
+  };
 
   // Stats
   const totalRewardsPaid = rewards.reduce((s, r) => s + r.amount, 0);
@@ -176,10 +199,19 @@ export default function AdminReferralManagement() {
     );
   });
 
-  const MilestoneIcon = ({ paid }: { paid: boolean }) => (
-    paid
-      ? <Check className="w-4 h-4 text-emerald-500" />
-      : <X className="w-4 h-4 text-muted-foreground/40" />
+  const MilestoneButton = ({ paid, onClick, disabled }: { paid: boolean; onClick: () => void; disabled: boolean }) => (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`inline-flex items-center justify-center w-7 h-7 rounded-full transition-colors ${
+        paid
+          ? "bg-emerald-100 text-emerald-600 hover:bg-red-100 hover:text-red-500 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-red-900/30 dark:hover:text-red-400"
+          : "bg-muted text-muted-foreground/40 hover:bg-emerald-100 hover:text-emerald-600 dark:hover:bg-emerald-900/30 dark:hover:text-emerald-400"
+      } disabled:opacity-50 disabled:cursor-not-allowed`}
+      title={paid ? "Click to reset" : "Click to pay"}
+    >
+      {paid ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+    </button>
   );
 
   if (loading) {
@@ -195,44 +227,23 @@ export default function AdminReferralManagement() {
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search code, phone, name…"
-            className="pl-10"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+          <Input placeholder="Search code, phone, name…" className="pl-10" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <Button variant="outline" size="icon" onClick={fetchData}>
-          <RefreshCw className="w-4 h-4" />
-        </Button>
+        <Button variant="outline" size="icon" onClick={fetchData}><RefreshCw className="w-4 h-4" /></Button>
       </div>
 
       <Tabs defaultValue="referrals" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="referrals" className="gap-1.5">
-            <Gift className="w-4 h-4" /> Referrals ({referrals.length})
-          </TabsTrigger>
-          <TabsTrigger value="rewards" className="gap-1.5">
-            <Award className="w-4 h-4" /> Rewards ({rewards.length})
-          </TabsTrigger>
-          <TabsTrigger value="devices" className="gap-1.5">
-            <Smartphone className="w-4 h-4" /> Devices ({devices.length})
-          </TabsTrigger>
+          <TabsTrigger value="referrals" className="gap-1.5"><Gift className="w-4 h-4" /> Referrals ({referrals.length})</TabsTrigger>
+          <TabsTrigger value="rewards" className="gap-1.5"><Award className="w-4 h-4" /> Rewards ({rewards.length})</TabsTrigger>
+          <TabsTrigger value="devices" className="gap-1.5"><Smartphone className="w-4 h-4" /> Devices ({devices.length})</TabsTrigger>
         </TabsList>
 
         {/* ═══ REFERRALS TAB ═══ */}
         <TabsContent value="referrals">
           <div className="flex gap-2 mb-4 flex-wrap">
             {["all", "pending", "active", "completed"].map(s => (
-              <Button
-                key={s}
-                variant={statusFilter === s ? "default" : "outline"}
-                size="sm"
-                onClick={() => setStatusFilter(s)}
-                className="capitalize"
-              >
-                {s}
-              </Button>
+              <Button key={s} variant={statusFilter === s ? "default" : "outline"} size="sm" onClick={() => setStatusFilter(s)} className="capitalize">{s}</Button>
             ))}
           </div>
 
@@ -251,34 +262,61 @@ export default function AdminReferralManagement() {
                       <TableHead>Rewarded</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Date</TableHead>
+                      <TableHead className="text-center">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredReferrals.map(r => (
-                      <TableRow key={r.id}>
-                        <TableCell>
-                          <div className="text-sm font-medium text-foreground">{r.referrer_name || "—"}</div>
-                          <div className="text-xs text-muted-foreground">{r.referrer_phone}</div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm font-medium text-foreground">{r.referee_name || "—"}</div>
-                          <div className="text-xs text-muted-foreground">{r.referee_phone}</div>
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">{r.referral_code}</TableCell>
-                        <TableCell className="text-center"><MilestoneIcon paid={r.milestone_1_paid} /></TableCell>
-                        <TableCell className="text-center"><MilestoneIcon paid={r.milestone_2_paid} /></TableCell>
-                        <TableCell className="text-center"><MilestoneIcon paid={r.milestone_3_paid} /></TableCell>
-                        <TableCell className="font-semibold">৳{r.total_rewarded}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className={`text-xs ${STATUS_COLORS[r.status] ?? ""}`}>
-                            {r.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {format(new Date(r.created_at), "MMM d, yyyy")}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {filteredReferrals.map(r => {
+                      const isBusy = busyRows.has(r.id);
+                      return (
+                        <TableRow key={r.id} className={isBusy ? "opacity-60" : ""}>
+                          <TableCell>
+                            <div className="text-sm font-medium text-foreground">{r.referrer_name || "—"}</div>
+                            <div className="text-xs text-muted-foreground">{r.referrer_phone}</div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm font-medium text-foreground">{r.referee_name || "—"}</div>
+                            <div className="text-xs text-muted-foreground">{r.referee_phone}</div>
+                          </TableCell>
+                          <TableCell className="font-mono text-xs">{r.referral_code}</TableCell>
+                          <TableCell className="text-center">
+                            {isBusy ? <Loader2 className="w-4 h-4 animate-spin mx-auto text-muted-foreground" /> :
+                              <MilestoneButton paid={r.milestone_1_paid} disabled={isBusy} onClick={() => handleToggleMilestone(r.id, 1, r.milestone_1_paid)} />}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {isBusy ? <Loader2 className="w-4 h-4 animate-spin mx-auto text-muted-foreground" /> :
+                              <MilestoneButton paid={r.milestone_2_paid} disabled={isBusy} onClick={() => handleToggleMilestone(r.id, 2, r.milestone_2_paid)} />}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {isBusy ? <Loader2 className="w-4 h-4 animate-spin mx-auto text-muted-foreground" /> :
+                              <MilestoneButton paid={r.milestone_3_paid} disabled={isBusy} onClick={() => handleToggleMilestone(r.id, 3, r.milestone_3_paid)} />}
+                          </TableCell>
+                          <TableCell className="font-semibold">৳{r.total_rewarded}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className={`text-xs ${STATUS_COLORS[r.status] ?? ""}`}>{r.status}</Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{format(new Date(r.created_at), "MMM d, yyyy")}</TableCell>
+                          <TableCell className="text-center">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isBusy}>
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => handleResetAll(r.id)}
+                                  className="text-destructive focus:text-destructive"
+                                  disabled={!r.milestone_1_paid && !r.milestone_2_paid && !r.milestone_3_paid}
+                                >
+                                  <RotateCcw className="w-4 h-4 mr-2" /> Reset All Milestones
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -292,30 +330,19 @@ export default function AdminReferralManagement() {
         {/* ═══ REWARDS TAB ═══ */}
         <TabsContent value="rewards">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <Card className="border-0 shadow-[var(--shadow-card)]">
-              <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-foreground">৳{totalRewardsPaid}</p>
-                <p className="text-xs text-muted-foreground">Total Paid</p>
-              </CardContent>
-            </Card>
-            <Card className="border-0 shadow-[var(--shadow-card)]">
-              <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-foreground">{kycCount}</p>
-                <p className="text-xs text-muted-foreground">KYC Rewards</p>
-              </CardContent>
-            </Card>
-            <Card className="border-0 shadow-[var(--shadow-card)]">
-              <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-foreground">{firstTxnCount}</p>
-                <p className="text-xs text-muted-foreground">1st Txn Rewards</p>
-              </CardContent>
-            </Card>
-            <Card className="border-0 shadow-[var(--shadow-card)]">
-              <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-foreground">{fiveTxnCount}</p>
-                <p className="text-xs text-muted-foreground">5-Txn Rewards</p>
-              </CardContent>
-            </Card>
+            {[
+              { label: "Total Paid", value: `৳${totalRewardsPaid}` },
+              { label: "KYC Rewards", value: kycCount },
+              { label: "1st Txn Rewards", value: firstTxnCount },
+              { label: "5-Txn Rewards", value: fiveTxnCount },
+            ].map(s => (
+              <Card key={s.label} className="border-0 shadow-[var(--shadow-card)]">
+                <CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold text-foreground">{s.value}</p>
+                  <p className="text-xs text-muted-foreground">{s.label}</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
 
           <Card className="border-0 shadow-[var(--shadow-card)]">
@@ -338,14 +365,10 @@ export default function AdminReferralManagement() {
                           <div className="text-xs text-muted-foreground">{r.referrer_phone}</div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="text-xs">
-                            {MILESTONE_LABELS[r.milestone] ?? r.milestone}
-                          </Badge>
+                          <Badge variant="outline" className="text-xs">{MILESTONE_LABELS[r.milestone] ?? r.milestone}</Badge>
                         </TableCell>
                         <TableCell className="font-semibold">৳{r.amount}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {format(new Date(r.created_at), "MMM d, yyyy HH:mm")}
-                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{format(new Date(r.created_at), "MMM d, yyyy HH:mm")}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -374,16 +397,12 @@ export default function AdminReferralManagement() {
                   <TableBody>
                     {filteredDevices.map(d => (
                       <TableRow key={d.id}>
-                        <TableCell className="font-mono text-xs">
-                          {d.device_fingerprint.slice(0, 16)}…
-                        </TableCell>
+                        <TableCell className="font-mono text-xs">{d.device_fingerprint.slice(0, 16)}…</TableCell>
                         <TableCell>
                           <div className="text-sm font-medium text-foreground">{d.user_name || "—"}</div>
                           <div className="text-xs text-muted-foreground">{d.user_phone}</div>
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {format(new Date(d.created_at), "MMM d, yyyy HH:mm")}
-                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{format(new Date(d.created_at), "MMM d, yyyy HH:mm")}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
