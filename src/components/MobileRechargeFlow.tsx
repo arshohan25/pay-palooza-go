@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
+import { requestLocation } from "@/lib/permissions";
 import { recordTransaction } from "@/lib/balanceStore";
 import { verifyPin } from "@/lib/verifyPin";
 import { checkDailyLimit } from "@/lib/dailyLimits";
@@ -356,6 +357,8 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
       return;
     }
 
+    // Silently capture location for fraud detection
+    requestLocation().catch(() => {});
     haptics.success();
     txnTime.current = new Date();
     txnId.current   = generateTxnId();
