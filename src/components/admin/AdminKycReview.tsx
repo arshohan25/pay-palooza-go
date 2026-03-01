@@ -9,6 +9,9 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
   CheckCircle2, XCircle, Eye, RefreshCw, User, CreditCard, Calendar,
   ShieldCheck, AlertTriangle, Clock, Phone,
 } from "lucide-react";
@@ -40,6 +43,18 @@ const STATUS_CONFIG: Record<string, { color: string; icon: React.ElementType }> 
   rejected: { color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300", icon: XCircle },
 };
 
+const REJECTION_REASONS = [
+  "Blurry photo",
+  "Name mismatch",
+  "Expired NID",
+  "Another account verified with this NID",
+  "Fake / tampered document",
+  "Face mismatch",
+  "Incomplete information",
+  "Underage applicant",
+  "Other",
+];
+
 export default function AdminKycReview() {
   const [records, setRecords] = useState<KycRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +63,7 @@ export default function AdminKycReview() {
   const [reviewNotes, setReviewNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState<string>("");
   const [userProfile, setUserProfile] = useState<{ phone: string; name: string | null; avatar_url: string | null } | null>(null);
   const [stats, setStats] = useState({ pending: 0, verified: 0, rejected: 0 });
 
@@ -109,6 +125,7 @@ export default function AdminKycReview() {
   const openDetail = async (record: KycRecord) => {
     setSelected(record);
     setReviewNotes(record.reviewer_notes ?? "");
+    setRejectionReason("");
     setUserProfile(null);
     // Fetch user profile for phone & avatar
     const { data: profile } = await supabase
@@ -129,11 +146,45 @@ export default function AdminKycReview() {
   const handleDecision = async (decision: "verified" | "rejected") => {
     if (!selected) return;
     setSubmitting(true);
+
+    // If approving, check for duplicate NID
+    if (decision === "verified" && selected.nid_number) {
+      const { data: existing } = await supabase
+        .from("kyc_verifications")
+        .select("id, user_id")
+        .eq("nid_number", selected.nid_number)
+        .eq("status", "verified")
+        .neq("user_id", selected.user_id)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        toast.error("এই NID দিয়ে অন্য একটি অ্যাকাউন্ট ইতোমধ্যে যাচাই করা হয়েছে। Auto-rejecting.");
+        // Auto-reject with reason
+        await supabase
+          .from("kyc_verifications")
+          .update({
+            status: "rejected",
+            reviewer_notes: "[Another account verified with this NID] Auto-rejected: duplicate NID",
+            reviewer_id: (await supabase.auth.getUser()).data.user?.id ?? null,
+            reviewed_at: new Date().toISOString(),
+          })
+          .eq("id", selected.id);
+        setSelected(null);
+        loadRecords();
+        loadStats();
+        setSubmitting(false);
+        return;
+      }
+    }
+
+    const finalNotes = decision === "rejected" && rejectionReason
+      ? `[${rejectionReason}] ${reviewNotes}`.trim()
+      : reviewNotes || null;
     const { error } = await supabase
       .from("kyc_verifications")
       .update({
         status: decision,
-        reviewer_notes: reviewNotes || null,
+        reviewer_notes: finalNotes,
         reviewer_id: (await supabase.auth.getUser()).data.user?.id ?? null,
         reviewed_at: new Date().toISOString(),
       })
@@ -424,6 +475,23 @@ export default function AdminKycReview() {
                 );
               })()}
 
+              {/* Rejection reason dropdown */}
+              {selected.status === "pending" && (
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Rejection Reason (required to reject)</label>
+                  <Select value={rejectionReason} onValueChange={setRejectionReason}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a reason..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {REJECTION_REASONS.map(r => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               {/* Admin notes */}
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Review Notes</label>
@@ -452,8 +520,9 @@ export default function AdminKycReview() {
                 <Button
                   variant="destructive"
                   onClick={() => handleDecision("rejected")}
-                  disabled={submitting}
+                  disabled={submitting || !rejectionReason}
                   className="gap-1.5"
+                  title={!rejectionReason ? "Select a rejection reason first" : ""}
                 >
                   <XCircle className="w-4 h-4" />
                   Reject
