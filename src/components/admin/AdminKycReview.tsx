@@ -49,6 +49,7 @@ export default function AdminKycReview() {
   const [submitting, setSubmitting] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<{ phone: string; name: string | null; avatar_url: string | null } | null>(null);
+  const [stats, setStats] = useState({ pending: 0, verified: 0, rejected: 0 });
 
   const loadRecords = useCallback(async () => {
     setLoading(true);
@@ -71,9 +72,19 @@ export default function AdminKycReview() {
     setLoading(false);
   }, [filter]);
 
+  const loadStats = useCallback(async () => {
+    const [p, v, r] = await Promise.all([
+      supabase.from("kyc_verifications").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      supabase.from("kyc_verifications").select("id", { count: "exact", head: true }).eq("status", "verified"),
+      supabase.from("kyc_verifications").select("id", { count: "exact", head: true }).eq("status", "rejected"),
+    ]);
+    setStats({ pending: p.count ?? 0, verified: v.count ?? 0, rejected: r.count ?? 0 });
+  }, []);
+
   useEffect(() => {
     loadRecords();
-  }, [loadRecords]);
+    loadStats();
+  }, [loadRecords, loadStats]);
 
   // Real-time updates
   useEffect(() => {
@@ -81,10 +92,11 @@ export default function AdminKycReview() {
       .channel("admin-kyc-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "kyc_verifications" }, () => {
         loadRecords();
+        loadStats();
       })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [loadRecords]);
+  return () => { supabase.removeChannel(channel); };
+  }, [loadRecords, loadStats]);
 
   const getSignedUrl = async (path: string | null): Promise<string | null> => {
     if (!path) return null;
@@ -182,10 +194,26 @@ export default function AdminKycReview() {
     return "text-red-600 dark:text-red-400";
   };
 
-  const pendingCount = records.filter(r => r.status === "pending").length;
-
   return (
     <div className="space-y-4">
+      {/* KYC Stats Summary */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: "Pending", count: stats.pending, icon: Clock, bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-300", iconColor: "text-amber-600 dark:text-amber-400" },
+          { label: "Verified", count: stats.verified, icon: CheckCircle2, bg: "bg-emerald-100 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-300", iconColor: "text-emerald-600 dark:text-emerald-400" },
+          { label: "Rejected", count: stats.rejected, icon: XCircle, bg: "bg-red-100 dark:bg-red-900/30", text: "text-red-700 dark:text-red-300", iconColor: "text-red-600 dark:text-red-400" },
+        ].map(s => (
+          <Card key={s.label} className={`${s.bg} border-0 shadow-sm`}>
+            <CardContent className="p-3 flex items-center gap-3">
+              <s.icon className={`w-5 h-5 ${s.iconColor} shrink-0`} />
+              <div>
+                <p className={`text-xl font-bold ${s.text}`}>{s.count}</p>
+                <p className={`text-[11px] font-medium ${s.text} opacity-80`}>{s.label}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
       {/* Filter bar */}
       <div className="flex items-center gap-2 flex-wrap">
         {(["pending", "all", "verified", "rejected"] as const).map(f => (
@@ -195,7 +223,7 @@ export default function AdminKycReview() {
             size="sm"
             onClick={() => setFilter(f)}
           >
-            {f === "pending" ? `Pending (${pendingCount})` : f.charAt(0).toUpperCase() + f.slice(1)}
+            {f === "pending" ? `Pending (${stats.pending})` : f.charAt(0).toUpperCase() + f.slice(1)}
           </Button>
         ))}
         <Button variant="outline" size="icon" onClick={loadRecords} disabled={loading} className="ml-auto">
