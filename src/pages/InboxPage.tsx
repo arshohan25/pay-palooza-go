@@ -3,14 +3,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, Send, Phone, Video, MoreVertical, Plus,
   Smile, CheckCheck, Check, Wallet, CheckCircle2, Package,
-  Mic, Play, Pause, X, UserPlus, QrCode, ImagePlus,
+  Mic, Play, Pause, X, UserPlus, ImagePlus,
   Download, PhoneOff, VideoIcon, MicOff, Volume2,
   Clock, UserCheck, Hourglass, Users, ArrowLeft,
-  Shield, UserMinus, Edit3, Info, ScanLine,
+  Shield, UserMinus, Edit3, Info, Lock,
 } from "lucide-react";
 import { addInboxMsg, clearInboxCount } from "@/lib/inboxStore";
 import { toast } from "@/components/ui/sonner";
-import QrScannerModal from "@/components/QrScannerModal";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface Reaction {
@@ -26,7 +25,7 @@ interface Message {
   sent: boolean;
   status: "sent" | "delivered" | "read";
   seenAt?: string;
-  type?: "text" | "money" | "order" | "voice" | "image" | "qr";
+  type?: "text" | "money" | "order" | "voice" | "image";
   amount?: number;
   txnId?: string;
   orderId?: string;
@@ -34,8 +33,6 @@ interface Message {
   itemCount?: number;
   voiceDuration?: number;
   imageUrl?: string;
-  qrUserId?: string;   // for QR card
-  qrUserName?: string; // for QR card
   reactions?: Reaction[];
 }
 
@@ -441,17 +438,15 @@ interface BubbleProps {
   contactName: string;
   onReact: (msgId: string, emoji: string) => void;
   isGroup?: boolean;
-  onPayQr?: (userId: string, userName: string) => void;
 }
 
-const MessageBubble = ({ msg, contactName, onReact, isGroup, onPayQr }: BubbleProps) => {
+const MessageBubble = ({ msg, contactName, onReact, isGroup }: BubbleProps) => {
   const [showPicker, setShowPicker] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMoney = msg.type === "money";
   const isOrder = msg.type === "order";
   const isVoice = msg.type === "voice";
   const isImage = msg.type === "image";
-  const isQr = msg.type === "qr";
 
   const startLongPress = () => { longPressTimer.current = setTimeout(() => setShowPicker(true), 480); };
   const cancelLongPress = () => { if (longPressTimer.current) clearTimeout(longPressTimer.current); };
@@ -538,40 +533,8 @@ const MessageBubble = ({ msg, contactName, onReact, isGroup, onPayQr }: BubblePr
           </div>
         )}
 
-        {/* QR Pay card */}
-        {isQr && (
-          <div {...pressHandlers} className={`rounded-2xl border border-border bg-card shadow-card overflow-hidden min-w-[200px] select-none ${msg.sent ? "rounded-br-md" : "rounded-bl-md"}`}>
-            <div className="gradient-primary px-4 py-2.5 flex items-center gap-2">
-              <ScanLine size={15} className="text-primary-foreground/90" />
-              <span className="text-[12px] font-bold text-primary-foreground">Payment QR</span>
-            </div>
-            <div className="px-4 py-3 flex items-center gap-3">
-              {/* Mini QR visual */}
-              <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center border border-border shrink-0">
-                <div className="grid grid-cols-4 gap-[2px] p-1">
-                  {Array.from({ length: 16 }, (_, i) => {
-                    const seed = (msg.qrUserId ?? "x").charCodeAt(i % (msg.qrUserId?.length ?? 1));
-                    const dark = (seed * (i + 3)) % 5 > 1;
-                    return <div key={i} className={`w-2 h-2 rounded-[1px] ${dark ? "bg-foreground" : "bg-transparent"}`} />;
-                  })}
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-bold text-foreground truncate">{msg.qrUserName ?? "Unknown"}</p>
-                <p className="text-[11px] text-muted-foreground">Scan to pay me</p>
-                {!msg.sent && (
-                  <motion.button whileTap={{ scale: 0.95 }} onClick={() => onPayQr?.(msg.qrUserId ?? "", msg.qrUserName ?? "")}
-                    className="mt-2 px-3 py-1 rounded-xl gradient-primary text-primary-foreground text-[11px] font-bold shadow-glow">
-                    Pay Now →
-                  </motion.button>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Text bubble */}
-        {!isMoney && !isOrder && !isVoice && !isImage && !isQr && (
+        {!isMoney && !isOrder && !isVoice && !isImage && (
           <div {...pressHandlers}
             className={`px-4 py-2.5 rounded-2xl text-[13.5px] leading-snug font-medium select-none ${
               msg.sent
@@ -955,16 +918,13 @@ interface ChatViewProps {
   onSendVoice: (duration: number) => void;
   onSendImage: (url: string) => void;
   onSendMoney: (phone: string) => void;
-  onSendQr: () => void;
   onReact: (msgId: string, emoji: string) => void;
   onGroupInfo: () => void;
-  onPayQr: (userId: string, userName: string) => void;
 }
 
-const ChatView = ({ contact, allContacts, messages, onBack, onSend, onSendVoice, onSendImage, onSendMoney, onSendQr, onReact, onGroupInfo, onPayQr }: ChatViewProps) => {
+const ChatView = ({ contact, allContacts, messages, onBack, onSend, onSendVoice, onSendImage, onSendMoney, onReact, onGroupInfo }: ChatViewProps) => {
   const [text, setText] = useState("");
   const [showQuick, setShowQuick] = useState(false);
-  const [showQr, setShowQr] = useState(false);
   const [callMode, setCallMode] = useState<"audio" | "video" | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1017,10 +977,6 @@ const ChatView = ({ contact, allContacts, messages, onBack, onSend, onSendVoice,
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
   };
 
-  const handleQrScan = (result: string) => {
-    onSend(`📷 Scanned: ${result}`);
-    setShowQr(false);
-  };
 
   // Simulate group member names for sent messages
   const GROUP_MEMBER_NAMES = ["Rahim", "Nusrat", "Mitu", "Arif"];
@@ -1081,6 +1037,12 @@ const ChatView = ({ contact, allContacts, messages, onBack, onSend, onSendVoice,
         </div>
       </motion.div>
 
+      {/* E2E encryption banner */}
+      <div className="flex items-center justify-center gap-1.5 py-1.5 bg-muted/40 border-b border-border/40">
+        <Lock size={10} className="text-muted-foreground" />
+        <span className="text-[10px] text-muted-foreground font-medium">Messages are end-to-end encrypted</span>
+      </div>
+
       {/* Group participants strip */}
       {contact.isGroup && (
         <GroupParticipants contact={contact} allContacts={allContacts} />
@@ -1103,7 +1065,6 @@ const ChatView = ({ contact, allContacts, messages, onBack, onSend, onSendVoice,
                 contactName={contact.isGroup && !msg.sent ? getGroupSenderName(idx) : contact.name}
                 onReact={(msgId, emoji) => onReact(msgId, emoji)}
                 isGroup={contact.isGroup}
-                onPayQr={onPayQr}
               />
             </motion.div>
           </div>
@@ -1155,18 +1116,6 @@ const ChatView = ({ contact, allContacts, messages, onBack, onSend, onSendVoice,
             disabled={recording}
             className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-w-0 disabled:opacity-50"
           />
-          {/* Share my QR */}
-          <motion.button whileTap={{ scale: 0.88 }} onClick={onSendQr}
-            className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors shrink-0"
-            title="Share my payment QR">
-            <ScanLine size={15} />
-          </motion.button>
-          {/* QR scanner */}
-          <motion.button whileTap={{ scale: 0.88 }} onClick={() => setShowQr(true)}
-            className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
-            title="Scan QR code">
-            <QrCode size={15} />
-          </motion.button>
           {/* Image upload */}
           <motion.button whileTap={{ scale: 0.88 }} onClick={() => fileInputRef.current?.click()}
             className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
@@ -1203,8 +1152,8 @@ const ChatView = ({ contact, allContacts, messages, onBack, onSend, onSendVoice,
       {/* Hidden file input */}
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
-      {/* QR Scanner modal */}
-      <QrScannerModal open={showQr} onClose={() => setShowQr(false)} onScan={handleQrScan} title="Scan Recipient QR" />
+
+      {/* Calling overlay */}
 
       {/* Calling overlay */}
       <AnimatePresence>
@@ -1669,19 +1618,6 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
     setActiveChat(contact);
   };
 
-  const handleSendQr = (contactId: string) => {
-    const timeStr = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
-    const qrMsg: Message = {
-      id: newMsgId(), text: "", time: timeStr, sent: true, status: "sent",
-      type: "qr", qrUserId: "01XX-XXXXXX", qrUserName: "Me",
-    };
-    updateContact(contactId, (c) => ({ ...c, messages: [...c.messages, qrMsg], lastMsg: "📲 Shared QR code", lastTime: "now", lastTimestamp: Date.now(), unread: 0 }));
-    const contact = contacts.find((c) => c.id === contactId);
-    if (contact) {
-      markAsRead(contactId);
-      triggerAutoReply(contactId, contact, ["Got your QR! 👍", "Scanning now…", "Will pay you soon! 💚"], 1800);
-    }
-  };
 
   const handleUpdateGroup = (groupId: string, updates: Partial<Pick<Contact, "name" | "groupIcon" | "members">>) => {
     updateContact(groupId, (c) => ({
@@ -1866,12 +1802,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
               onSendVoice={(dur) => handleSendVoice(activeChat.id, dur)}
               onSendImage={(url) => handleSendImage(activeChat.id, url)}
               onReact={(msgId, emoji) => handleReact(activeChat.id, msgId, emoji)}
-              onSendQr={() => handleSendQr(activeChat.id)}
               onGroupInfo={() => setShowGroupInfo(true)}
-              onPayQr={(userId, userName) => {
-                // Open send money flow pre-filling phone/id
-                onSendMoney?.(userId, undefined);
-              }}
               onSendMoney={(phone) => {
                 const chatId = activeChat.id;
                 const chatContact = activeChat;
