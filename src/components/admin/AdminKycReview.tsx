@@ -152,6 +152,29 @@ export default function AdminKycReview() {
     setSubmitting(false);
   };
 
+  const handleReopen = async () => {
+    if (!selected) return;
+    setSubmitting(true);
+    const { error } = await supabase
+      .from("kyc_verifications")
+      .update({
+        status: "pending",
+        reviewer_notes: reviewNotes ? `Re-opened: ${reviewNotes}` : "Re-opened for review",
+        reviewer_id: (await supabase.auth.getUser()).data.user?.id ?? null,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", selected.id);
+
+    if (error) {
+      toast.error("Failed to re-open KYC record");
+    } else {
+      toast.success("KYC record re-opened for review");
+      setSelected(null);
+      loadRecords();
+    }
+    setSubmitting(false);
+  };
+
   const matchScoreColor = (score: number | null) => {
     if (score === null) return "text-muted-foreground";
     if (score >= 80) return "text-emerald-600 dark:text-emerald-400";
@@ -396,7 +419,7 @@ export default function AdminKycReview() {
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0 pt-4 border-t shrink-0">
-            {selected?.status === "pending" && (
+            {selected?.status === "pending" ? (
               <>
                 <Button
                   variant="destructive"
@@ -416,6 +439,16 @@ export default function AdminKycReview() {
                   Approve
                 </Button>
               </>
+            ) : selected && (
+              <Button
+                variant="outline"
+                onClick={() => handleReopen()}
+                disabled={submitting}
+                className="gap-1.5"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Re-open for Review
+              </Button>
             )}
           </DialogFooter>
         </DialogContent>
