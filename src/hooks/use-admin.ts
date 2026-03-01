@@ -39,13 +39,17 @@ export function useAdmin() {
 
 /** Admin-only data fetching helpers */
 export async function fetchAdminStats() {
-  const [profilesRes, txnRes, agentsRes, merchantsRes, alertsRes] = await Promise.all([
+  const [profilesRes, txnRes, agentsRes, merchantsRes, alertsRes, referralsRes, rewardsRes] = await Promise.all([
     supabase.from("profiles").select("id", { count: "exact", head: true }),
     supabase.from("transactions").select("id", { count: "exact", head: true }),
     supabase.from("agents").select("id", { count: "exact", head: true }),
     supabase.from("merchants").select("id", { count: "exact", head: true }),
     supabase.from("fraud_alerts").select("id", { count: "exact", head: true }).eq("status", "open"),
+    supabase.from("referrals").select("id", { count: "exact", head: true }),
+    supabase.from("referral_rewards").select("amount"),
   ]);
+
+  const totalRewardsPaid = (rewardsRes.data ?? []).reduce((sum, r) => sum + Number(r.amount), 0);
 
   return {
     totalUsers: profilesRes.count ?? 0,
@@ -53,6 +57,8 @@ export async function fetchAdminStats() {
     totalAgents: agentsRes.count ?? 0,
     totalMerchants: merchantsRes.count ?? 0,
     openAlerts: alertsRes.count ?? 0,
+    totalReferrals: referralsRes.count ?? 0,
+    totalRewardsPaid,
   };
 }
 
