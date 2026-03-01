@@ -8,7 +8,7 @@ import { useI18n } from "@/lib/i18n";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 
-const REFERRAL_CODE = "TAN-REF-4821";
+const REFERRAL_CODE = "EZP-REF-4821";
 const REWARD_PER_FRIEND = 50;
 const TARGET_FRIENDS = 10;
 
