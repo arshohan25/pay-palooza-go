@@ -374,6 +374,21 @@ export default function AdminKycReview() {
                 </Badge>
               </div>
 
+              {/* Face match warning banner */}
+              {(selected.face_match_score === null || selected.face_match_score < 70) && (
+                <div className="flex items-start gap-3 p-3 rounded-lg border border-destructive/50 bg-destructive/10">
+                  <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-destructive">Cannot Approve — Face Match Too Low</p>
+                    <p className="text-xs text-destructive/80 mt-0.5">
+                      {selected.face_match_score !== null
+                        ? `Face match score is ${selected.face_match_score}% (minimum 70% required). This record cannot be approved at the database level.`
+                        : "Face match score is not available. This record cannot be approved until a valid score is recorded."}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Personal info */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
