@@ -1283,7 +1283,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
             {step === "intro" && (
               <div className="flex flex-col min-h-full">
                 {/* Gradient Header */}
-                <div className="relative overflow-visible bg-gradient-to-br from-[hsl(330,80%,55%)] via-[hsl(340,85%,50%)] to-[hsl(350,80%,45%)] px-5 pt-4 pb-8 text-white">
+                <div className="relative overflow-hidden bg-gradient-to-br from-[hsl(330,80%,55%)] via-[hsl(340,85%,50%)] to-[hsl(350,80%,45%)] px-5 pt-4 pb-8 text-white">
                   <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-white/8 pointer-events-none" />
                   <div className="absolute -bottom-16 -left-8 w-48 h-48 rounded-full bg-white/5 pointer-events-none" />
                   
@@ -1462,7 +1462,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
             {step === "terms" && (
               <div className="flex flex-col min-h-full">
                 {/* Gradient Header — compact with no icon clipping */}
-                <div className="relative overflow-visible bg-gradient-to-br from-[hsl(330,80%,55%)] via-[hsl(340,85%,50%)] to-[hsl(350,80%,45%)] px-5 pt-4 pb-6 text-white">
+                <div className="relative overflow-hidden bg-gradient-to-br from-[hsl(330,80%,55%)] via-[hsl(340,85%,50%)] to-[hsl(350,80%,45%)] px-5 pt-4 pb-6 text-white">
                   <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-white/8 pointer-events-none" />
                   <div className="absolute -bottom-16 -left-8 w-48 h-48 rounded-full bg-white/5 pointer-events-none" />
                   
