@@ -23,7 +23,7 @@ export const phoneToEmail = (phone: string) => {
 export const pinToPassword = (pin: string) => `${pin}EP`;
 
 /** Sign up a new user with phone + PIN */
-export async function signUp(phone: string, pin: string, name?: string) {
+export async function signUp(phone: string, pin: string, name?: string, referralCode?: string) {
   const email = phoneToEmail(phone);
   const password = pinToPassword(pin);
 
@@ -46,6 +46,23 @@ export async function signUp(phone: string, pin: string, name?: string) {
       name: name || null,
       phone,
     }).eq("user_id", data.user.id);
+
+    // If a referral code was used, create the referral link
+    if (referralCode) {
+      const { data: referrerProfile } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("referral_code", referralCode)
+        .maybeSingle();
+
+      if (referrerProfile && referrerProfile.user_id !== data.user.id) {
+        await supabase.from("referrals" as any).insert({
+          referrer_id: referrerProfile.user_id,
+          referee_id: data.user.id,
+          referral_code: referralCode,
+        });
+      }
+    }
   }
 
   return data;

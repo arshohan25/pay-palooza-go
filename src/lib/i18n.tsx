@@ -549,6 +549,15 @@ const translations = {
   champion: { en: "Champion", bn: "চ্যাম্পিয়ন" },
   whatsapp: { en: "WhatsApp", bn: "হোয়াটসঅ্যাপ" },
   sms: { en: "SMS", bn: "এসএমএস" },
+  referralCodeInput: { en: "Referral Code (optional)", bn: "রেফারেল কোড (ঐচ্ছিক)" },
+  referralCodePlaceholder: { en: "e.g. EZP-ABCD-1234", bn: "যেমন: EZP-ABCD-1234" },
+  deviceAlreadyRegistered: { en: "This device already has an account. Only one account per device is allowed.", bn: "এই ডিভাইসে ইতিমধ্যে একটি একাউন্ট আছে। প্রতি ডিভাইসে একটি একাউন্ট অনুমোদিত।" },
+  kycVerifiedMilestone: { en: "KYC Verified", bn: "কেওয়াইসি যাচাই" },
+  firstTxnMilestone: { en: "1st Transaction (≥৳101)", bn: "১ম লেনদেন (≥৳১০১)" },
+  fiveTxnsMilestone: { en: "5 Txns (≥৳500)", bn: "৫ লেনদেন (≥৳৫০০)" },
+  milestoneReward: { en: "Reward", bn: "পুরস্কার" },
+  noReferralsYet: { en: "No referrals yet. Share your code to start earning!", bn: "এখনো কোনো রেফারেল নেই। আয় শুরু করতে আপনার কোড শেয়ার করুন!" },
+  active: { en: "Active", bn: "সক্রিয়" },
 
   // ─── Profile Edit Flow ───
   editProfileTitle: { en: "Edit Profile", bn: "প্রোফাইল সম্পাদনা" },

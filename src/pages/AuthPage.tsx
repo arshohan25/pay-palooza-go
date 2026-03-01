@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { haptics } from "@/lib/haptics";
 import { signUp, signIn, phoneToEmail } from "@/lib/auth";
+import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
 import { isWeakPin } from "@/lib/pinValidation";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -340,6 +341,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const [showPin, setShowPin]       = useState(false);
   const [error, setError]           = useState("");
   const [userName, setUserName]     = useState("");
+  const [referralCodeInput, setReferralCodeInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [forgotOtpCode, setForgotOtpCode] = useState("");
   const [forgotOtpSending, setForgotOtpSending] = useState(false);
@@ -386,7 +388,32 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     setIsSubmitting(true);
     setError("");
     try {
-      await signUp(phone, pin, trimmed || undefined);
+      // Device fingerprint validation
+      const fp = await getDeviceFingerprint();
+      
+      // First create the account
+      const result = await signUp(phone, pin, trimmed || undefined, referralCodeInput.trim() || undefined);
+      
+      if (result.user) {
+        // Validate device (non-blocking for signup but records the fingerprint)
+        try {
+          const res = await supabase.functions.invoke("validate-device", {
+            body: { device_fingerprint: fp, user_id: result.user.id },
+          });
+          if (res.data && !res.data.allowed) {
+            // Device already has an account — sign out and show error
+            await supabase.auth.signOut();
+            setError(res.data.error || "This device already has an account.");
+            haptics.error();
+            setIsSubmitting(false);
+            return;
+          }
+        } catch {
+          // Device validation failed but don't block signup
+          console.warn("Device validation failed, continuing...");
+        }
+      }
+
       // Store phone locally for returning-user UX
       localStorage.setItem(DEVICE_KEY, phone);
       if (trimmed) localStorage.setItem("mfs_user_name", trimmed);
@@ -978,6 +1005,20 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                         </div>
                         <NameInput value={userName} onChange={setUserName} />
                         <p className="text-[11px] text-muted-foreground px-1">{t.nameOptional}</p>
+                        
+                        {/* Referral Code Input */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-muted-foreground px-1">Referral Code (optional)</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. EZP-ABCD-1234"
+                            value={referralCodeInput}
+                            onChange={(e) => setReferralCodeInput(e.target.value.toUpperCase())}
+                            maxLength={13}
+                            className="w-full h-14 px-5 text-base font-bold tracking-wider bg-card border-2 border-border rounded-2xl focus:outline-none focus:border-accent focus:shadow-[0_0_16px_hsl(var(--accent)/0.2)] transition-all placeholder:font-normal placeholder:text-muted-foreground/30 placeholder:tracking-normal shadow-card font-mono"
+                          />
+                        </div>
+
                         {error && (
                           <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
                             className="text-xs text-destructive flex items-center gap-1.5 px-1">

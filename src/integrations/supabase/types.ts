@@ -125,6 +125,27 @@ export type Database = {
         }
         Relationships: []
       }
+      device_registrations: {
+        Row: {
+          created_at: string
+          device_fingerprint: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_fingerprint: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_fingerprint?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       disputes: {
         Row: {
           assigned_to: string | null
@@ -726,6 +747,7 @@ export type Database = {
           id: string
           name: string | null
           phone: string
+          referral_code: string | null
           status: string
           updated_at: string
           user_id: string
@@ -738,6 +760,7 @@ export type Database = {
           id?: string
           name?: string | null
           phone: string
+          referral_code?: string | null
           status?: string
           updated_at?: string
           user_id: string
@@ -750,6 +773,7 @@ export type Database = {
           id?: string
           name?: string | null
           phone?: string
+          referral_code?: string | null
           status?: string
           updated_at?: string
           user_id?: string
@@ -849,6 +873,83 @@ export type Database = {
           type?: string
           updated_at?: string
           validity?: string
+        }
+        Relationships: []
+      }
+      referral_rewards: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          milestone: string
+          referral_id: string
+          referrer_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          milestone: string
+          referral_id: string
+          referrer_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          milestone?: string
+          referral_id?: string
+          referrer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_rewards_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          milestone_1_paid: boolean
+          milestone_2_paid: boolean
+          milestone_3_paid: boolean
+          referee_id: string
+          referral_code: string
+          referrer_id: string
+          status: string
+          total_rewarded: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          milestone_1_paid?: boolean
+          milestone_2_paid?: boolean
+          milestone_3_paid?: boolean
+          referee_id: string
+          referral_code: string
+          referrer_id: string
+          status?: string
+          total_rewarded?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          milestone_1_paid?: boolean
+          milestone_2_paid?: boolean
+          milestone_3_paid?: boolean
+          referee_id?: string
+          referral_code?: string
+          referrer_id?: string
+          status?: string
+          total_rewarded?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1067,6 +1168,11 @@ export type Database = {
         Args: { p_chargeback_txn_id: string; p_reason: string }
         Returns: Json
       }
+      check_referral_milestones: {
+        Args: { p_referee_id: string }
+        Returns: undefined
+      }
+      generate_referral_code: { Args: never; Returns: string }
       generate_short_id: { Args: never; Returns: string }
       has_role: {
         Args: {

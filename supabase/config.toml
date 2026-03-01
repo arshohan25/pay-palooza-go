@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.kyc-notify]
 verify_jwt = false
+
+[functions.validate-device]
+verify_jwt = false
