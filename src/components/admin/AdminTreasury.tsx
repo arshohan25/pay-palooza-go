@@ -159,6 +159,13 @@ export default function AdminTreasury() {
     if (error) {
       toast.error(error.message);
     } else {
+      const result = data as unknown as { success: boolean; new_treasury_balance: number; target_new_balance: number; target_name: string };
+      
+      // Optimistic UI update using RPC response data
+      if (result && treasury) {
+        setTreasury(prev => prev ? { ...prev, balance: result.new_treasury_balance, total_disbursed: prev.total_disbursed + amount } : prev);
+      }
+
       toast.success(`৳${amount.toLocaleString()} sent to ${foundUser.name || foundUser.phone}`);
       setSearchPhone("");
       setFoundUser(null);
@@ -166,7 +173,9 @@ export default function AdminTreasury() {
       setSendDescription("");
       setPinInput("");
       setShowPinStep(false);
-      loadTreasury();
+      
+      // Delayed full refetch for ledger + consistency
+      setTimeout(() => loadTreasury(), 500);
     }
     setSending(false);
   };
