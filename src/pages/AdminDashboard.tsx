@@ -40,6 +40,7 @@ import AdminKycReview from "@/components/admin/AdminKycReview";
 import AdminReferralManagement from "@/components/admin/AdminReferralManagement";
 import AdminPermissions from "@/components/admin/AdminPermissions";
 import AdminTreasury from "@/components/admin/AdminTreasury";
+import AdminWebhookLog from "@/components/admin/AdminWebhookLog";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 
 interface Stats {
@@ -149,6 +150,7 @@ const NAV_ITEMS = [
   { id: "kyc", label: "KYC", icon: ScanFace },
   { id: "referrals", label: "Referrals", icon: Gift },
   { id: "treasury", label: "Treasury", icon: Wallet },
+  { id: "webhooks", label: "Webhooks", icon: Activity },
   { id: "permissions", label: "Permissions", icon: ShieldAlert },
   { id: "reporting", label: "Reports", icon: BarChart3 },
 ];
@@ -726,6 +728,9 @@ export default function AdminDashboard() {
 
         {/* ═══ TREASURY DASHBOARD ═══ */}
         {activeTab === "treasury" && <AdminTreasury />}
+
+        {/* ═══ WEBHOOK LOG ═══ */}
+        {activeTab === "webhooks" && <AdminWebhookLog />}
 
         {/* ═══ REPORTING DASHBOARD ═══ */}
         {activeTab === "reporting" && <AdminReporting />}
