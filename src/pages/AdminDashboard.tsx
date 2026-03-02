@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import {
-  Users, ArrowLeftRight, ShieldAlert, Store, UserCheck,
+  Users, ArrowLeftRight, ShieldAlert, Store, UserCheck, Trash2,
   TrendingUp, Activity, Search, RefreshCw, LogOut,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
@@ -172,7 +173,8 @@ export default function AdminDashboard() {
   const [lockTarget, setLockTarget] = useState<{ userId: string; label: string } | null>(null);
   const [chargebackTarget, setChargebackTarget] = useState<any>(null);
   const [showNavMenu, setShowNavMenu] = useState(false);
-
+  const [deleteTarget, setDeleteTarget] = useState<{ userId: string; name: string; phone: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const loadData = useCallback(async () => {
     setRefreshing(true);
     const [s, t, u, a, ag, m, kycRes] = await Promise.all([
@@ -277,6 +279,32 @@ export default function AdminDashboard() {
   const filteredTxns = transactions.filter(t =>
     !searchQuery || t.id?.includes(searchQuery) || t.recipient_phone?.includes(searchQuery) || t.type?.includes(searchQuery)
   );
+
+  const handleDeleteUser = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ target_user_id: deleteTarget.userId }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Failed to delete user");
+      toast.success(`User ${deleteTarget.name || deleteTarget.phone} permanently deleted`);
+      setUsers(prev => prev.filter(u => u.user_id !== deleteTarget.userId));
+      setDeleteTarget(null);
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete user");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const navContent = (
     <nav className="flex flex-col gap-0.5 px-2 pb-4">
@@ -559,6 +587,18 @@ export default function AdminDashboard() {
                               >
                                 <RotateCcw className="w-3 h-3" /> Chargeback
                               </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="text-xs h-7 gap-1"
+                                onClick={() => setDeleteTarget({
+                                  userId: user.user_id,
+                                  name: user.name || "",
+                                  phone: user.phone,
+                                })}
+                              >
+                                <Trash2 className="w-3 h-3" /> Delete
+                              </Button>
                             </td>
                           </tr>
                         ))}
@@ -761,6 +801,28 @@ export default function AdminDashboard() {
         onOpenChange={(v) => { if (!v) setChargebackTarget(null); }}
         onSuccess={loadData}
       />
+
+      {/* Delete User Confirmation Dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Permanently Delete User?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove <strong>{deleteTarget?.name || deleteTarget?.phone}</strong> ({deleteTarget?.phone}) and all their data including transactions, KYC, orders, and authentication. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Deleting…" : "Delete Permanently"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       </div>
     </div>
   );
