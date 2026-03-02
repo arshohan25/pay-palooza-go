@@ -69,6 +69,65 @@ const Index = () => {
     return () => clearTimeout(t);
   }, []);
 
+  // ── AsthaPay return redirect handler ──
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const isAsthapay = params.get("asthapay");
+    const sessionId = params.get("sessionId");
+    const status = params.get("status");
+
+    if (!isAsthapay || !sessionId) return;
+
+    // Clean URL
+    window.history.replaceState({}, "", window.location.pathname);
+
+    if (status === "cancel") {
+      toast.error("Payment was cancelled.");
+      return;
+    }
+
+    // Verify with edge function
+    const verifyPayment = async () => {
+      try {
+        const { data: { session: authSession } } = await supabase.auth.getSession();
+        const token = authSession?.access_token;
+        if (!token) return;
+
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const transactionId = params.get("transactionId") || params.get("transaction_id");
+
+        const res = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/asthapay-payment?action=verify`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: JSON.stringify({ sessionId, transaction_id: transactionId }),
+          }
+        );
+
+        const data = await res.json();
+        if (data.success) {
+          toast.success("Money added successfully via AsthaPay!");
+          fetchBalance();
+          setRefreshKey((k) => k + 1);
+        } else {
+          toast.error(data.error || "Payment verification failed.");
+        }
+      } catch (err) {
+        console.error("AsthaPay verify error:", err);
+        toast.error("Could not verify payment. Please contact support.");
+      }
+    };
+
+    verifyPayment();
+    // Also clean up localStorage
+    localStorage.removeItem("pending_payment_session");
+  }, []);
+
   // Realtime account lock listener — sign out if account gets locked
   useEffect(() => {
     if (!user || !isAuthenticated) return;
