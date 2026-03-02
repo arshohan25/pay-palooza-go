@@ -1,43 +1,25 @@
 
 
-## Plan: Add Disbursement Success Receipt Card
+## Plan: Add PDF Receipt Download & Confetti to Disbursement Receipt
 
-### What it does
-After a successful treasury disbursement, instead of just showing a toast, display an animated receipt card summarizing the transaction with old/new balances for both the treasury and recipient.
+### 1. Add confetti on receipt appearance
+- Import `fireSuccessConfetti` from `@/lib/confetti`
+- Add a `useEffect` that fires confetti when `receipt` state becomes non-null
 
-### Changes to `src/components/admin/AdminTreasury.tsx`
+### 2. Add "Print Receipt" PDF button
+- Import `jsPDF` and `jspdf-autotable` (already installed)
+- Add a `handlePrintReceipt` function that generates a PDF with:
+  - EasyPay header with green banner
+  - "Disbursement Receipt" title
+  - Table rows: Recipient, Phone, Amount, Old/New Treasury Balance, Old/New Recipient Balance, Reference, Timestamp
+  - Footer with "Powered by EasyPay"
+  - Auto-downloads as `receipt-DISB-xxx.pdf`
+- Add a `FileText` (or `Printer`) icon button next to the existing "Dismiss" button in the receipt card
 
-**1. Add receipt state:**
-```typescript
-interface DisbursementReceipt {
-  recipientName: string;
-  recipientPhone: string;
-  amount: number;
-  oldTreasuryBalance: number;
-  newTreasuryBalance: number;
-  oldRecipientBalance: number;
-  newRecipientBalance: number;
-  reference: string;
-  timestamp: Date;
-}
-```
-- New state: `const [receipt, setReceipt] = useState<DisbursementReceipt | null>(null)`
-
-**2. Update `handleSendFunds` success handler:**
-- Before clearing form state, capture old balances from current `treasury.balance` and `foundUser.balance`
-- Build a `DisbursementReceipt` object using RPC response data (`new_treasury_balance`, `target_new_balance`)
-- Set the receipt state so the card renders
-
-**3. Add receipt card UI** between the Send Funds section and the Treasury Ledger:
-- Animated card (Framer Motion slide-in) with green success header
-- Two-column layout showing:
-  - Left: Treasury — old balance → new balance
-  - Right: Recipient — old balance → new balance
-- Amount sent prominently displayed
-- Reference ID and timestamp
-- "Dismiss" button to clear the receipt
-
-**4. Add `CheckCircle` icon** to the lucide-react import for the success indicator.
-
-### No database changes needed.
+### Files changed
+- **`src/components/admin/AdminTreasury.tsx`** only
+  - Import `fireSuccessConfetti`, `jsPDF`, `autoTable`, `FileText` icon
+  - Add `useEffect` for confetti trigger
+  - Add `handlePrintReceipt` function
+  - Replace single "Dismiss" button with a two-button row: "Print Receipt" + "Dismiss"
 
