@@ -7,11 +7,13 @@ const corsHeaders = {
 };
 
 const ASTHAPAY_BASE = "https://pay.asthapay.com/api/payment";
+const BD_PHONE_REGEX = /^01[3-9]\d{8}$/;
 
 interface AsthapayCredentials {
   apiKey: string;
   secretKey: string;
   brandKey: string;
+  receivingNumber: string | null;
 }
 
 async function getCredentials(
@@ -26,10 +28,17 @@ async function getCredentials(
   if (data?.is_enabled && data.config) {
     const c = data.config as Record<string, string>;
     if (c.api_key && c.secret_key && c.brand_key) {
+      // Validate receiving_number if present
+      const recvNum = c.receiving_number?.trim() || null;
+      if (recvNum && !BD_PHONE_REGEX.test(recvNum)) {
+        console.error(`AsthaPay: invalid receiving_number in config: ${recvNum}`);
+        return null;
+      }
       return {
         apiKey: c.api_key,
         secretKey: c.secret_key,
         brandKey: c.brand_key,
+        receivingNumber: recvNum,
       };
     }
   }
@@ -254,6 +263,14 @@ Deno.serve(async (req) => {
 
       if (!sessionId) {
         return new Response(JSON.stringify({ error: "Missing sessionId" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Validate transaction_id format (alphanumeric, max 64 chars)
+      if (transaction_id && (typeof transaction_id !== "string" || transaction_id.length > 64 || !/^[a-zA-Z0-9_\-]+$/.test(transaction_id))) {
+        return new Response(JSON.stringify({ error: "Invalid transaction ID format" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
