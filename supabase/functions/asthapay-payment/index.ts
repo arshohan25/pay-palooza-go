@@ -194,6 +194,7 @@ Deno.serve(async (req) => {
           invoice_number: invoiceNumber,
           success_url: successUrl,
           cancel_url: cancelUrl,
+          ipn_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/payment-webhook?provider=asthapay`,
         }),
       });
 

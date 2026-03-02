@@ -89,6 +89,10 @@ Deno.serve(async (req) => {
       return await handleNagadCallback(req, url, supabaseAdmin);
     }
 
+    if (provider === "asthapay") {
+      return await handleAsthapayIPN(req, supabaseAdmin);
+    }
+
     return new Response(JSON.stringify({ error: "Unknown provider" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -293,5 +297,224 @@ async function handleNagadCallback(
   return new Response(null, {
     status: 302,
     headers: { ...corsHeaders, Location: redirectUrl },
+  });
+}
+
+// ─── AsthaPay helpers ───
+
+const ASTHAPAY_BASE = "https://pay.asthapay.com/api/payment";
+
+interface AsthapayCredentials {
+  apiKey: string;
+  secretKey: string;
+  brandKey: string;
+}
+
+async function getAsthapayCredentials(
+  supabaseAdmin: ReturnType<typeof createClient>
+): Promise<AsthapayCredentials | null> {
+  const { data } = await supabaseAdmin
+    .from("payment_gateways")
+    .select("config, is_enabled")
+    .eq("provider", "asthapay")
+    .maybeSingle();
+
+  if (data?.is_enabled && data.config) {
+    const c = data.config as Record<string, string>;
+    if (c.api_key && c.secret_key && c.brand_key) {
+      return { apiKey: c.api_key, secretKey: c.secret_key, brandKey: c.brand_key };
+    }
+  }
+  return null;
+}
+
+async function handleAsthapayIPN(
+  req: Request,
+  supabaseAdmin: ReturnType<typeof createClient>
+) {
+  // AsthaPay sends IPN as POST with JSON body
+  let ipnData: Record<string, unknown> = {};
+  try {
+    ipnData = await req.json();
+  } catch {
+    return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  console.log("AsthaPay IPN received:", JSON.stringify(ipnData));
+
+  const transactionId = ipnData.transaction_id as string | undefined;
+  const invoiceNumber = ipnData.invoice_number as string | undefined;
+  const ipnStatus = ipnData.status as string | undefined;
+
+  if (!transactionId && !invoiceNumber) {
+    return new Response(JSON.stringify({ error: "Missing transaction_id or invoice_number" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Find payment session
+  let session: Record<string, unknown> | null = null;
+
+  if (transactionId) {
+    const { data } = await supabaseAdmin
+      .from("payment_sessions")
+      .select("*")
+      .eq("provider", "asthapay")
+      .eq("provider_payment_id", transactionId)
+      .single();
+    session = data;
+  }
+
+  if (!session && invoiceNumber) {
+    // Fallback: search by invoice_number in metadata
+    const { data: sessions } = await supabaseAdmin
+      .from("payment_sessions")
+      .select("*")
+      .eq("provider", "asthapay")
+      .eq("status", "pending");
+
+    if (sessions) {
+      session = sessions.find((s: Record<string, unknown>) => {
+        const meta = s.metadata as Record<string, unknown> | null;
+        return meta?.invoice_number === invoiceNumber;
+      }) || null;
+    }
+  }
+
+  if (!session) {
+    console.error("AsthaPay IPN: session not found", ipnData);
+    return new Response(JSON.stringify({ error: "Session not found" }), {
+      status: 404,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Already completed — idempotent
+  if (session.status === "completed") {
+    return new Response(JSON.stringify({ success: true, alreadyProcessed: true }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Verify with AsthaPay API (server-to-server validation)
+  const creds = await getAsthapayCredentials(supabaseAdmin);
+  if (!creds) {
+    console.error("AsthaPay IPN: credentials not configured, cannot verify");
+    return new Response(JSON.stringify({ error: "AsthaPay credentials not configured" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const txnId = transactionId || (session.provider_payment_id as string);
+  const verifyRes = await fetch(`${ASTHAPAY_BASE}/verify`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "API-KEY": creds.apiKey,
+      "SECRET-KEY": creds.secretKey,
+      "BRAND-KEY": creds.brandKey,
+    },
+    body: JSON.stringify({ transaction_id: txnId }),
+  });
+
+  const verifyData = await verifyRes.json();
+
+  const isSuccess = verifyData.status === "COMPLETED" || verifyData.status === "completed" || verifyData.status === "Success";
+
+  if (!isSuccess) {
+    console.log("AsthaPay IPN: verification failed", verifyData);
+    await supabaseAdmin
+      .from("payment_sessions")
+      .update({
+        status: "failed",
+        metadata: {
+          ...((session.metadata as Record<string, unknown>) || {}),
+          ipn_data: ipnData,
+          verify_result: verifyData,
+        },
+      })
+      .eq("id", session.id);
+
+    return new Response(JSON.stringify({ success: false, status: verifyData.status }), {
+      status: 200, // Return 200 to AsthaPay so it doesn't retry
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Idempotency gate: only update if still pending
+  const { data: updatedSession } = await supabaseAdmin
+    .from("payment_sessions")
+    .update({
+      status: "completed",
+      provider_trx_id: verifyData.transaction_id || txnId,
+      completed_at: new Date().toISOString(),
+      metadata: {
+        ...((session.metadata as Record<string, unknown>) || {}),
+        ipn_data: ipnData,
+        verify_result: verifyData,
+      },
+    })
+    .eq("id", session.id)
+    .eq("status", "pending")
+    .select("id")
+    .maybeSingle();
+
+  if (!updatedSession) {
+    console.log(`AsthaPay IPN: session ${session.id} already processed, skipping credit`);
+    return new Response(JSON.stringify({ success: true, alreadyProcessed: true }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Credit user balance
+  const creditResult = await creditUserBalance(
+    supabaseAdmin,
+    session.user_id as string,
+    parseFloat(String(session.amount)),
+    `AsthaPay Payment (TxnID: ${txnId})`,
+    session.id as string
+  );
+
+  // Treasury debit
+  if (!creditResult.alreadyCredited && creditResult.success) {
+    try {
+      await supabaseAdmin.rpc("treasury_debit_for_addmoney", {
+        p_user_id: session.user_id as string,
+        p_amount: parseFloat(String(session.amount)),
+      });
+    } catch (treasuryErr) {
+      console.error("Treasury debit failed (non-blocking):", treasuryErr);
+    }
+  }
+
+  // Audit log
+  try {
+    await supabaseAdmin.from("audit_logs").insert({
+      actor_id: session.user_id as string,
+      action: "payment_credit_ipn",
+      entity_type: "payment_session",
+      entity_id: session.id as string,
+      details: {
+        provider: "asthapay",
+        amount: session.amount,
+        trx_id: txnId,
+        ipn_data: ipnData,
+        already_credited: creditResult.alreadyCredited || false,
+      },
+    });
+  } catch (auditErr) {
+    console.error("Audit log insert failed:", auditErr);
+  }
+
+  return new Response(JSON.stringify({ success: true }), {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }
