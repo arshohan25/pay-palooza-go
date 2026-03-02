@@ -12,10 +12,13 @@ import { format } from "date-fns";
 import {
   Wallet, TrendingUp, HandCoins, Search, Send, RefreshCw,
   ArrowDownCircle, ArrowUpCircle, Coins, Landmark, Filter,
-  CalendarIcon, Download, CheckCircle2,
+  CalendarIcon, Download, CheckCircle2, FileText,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { fireSuccessConfetti } from "@/lib/confetti";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Treasury {
   id: string;
@@ -103,6 +106,11 @@ export default function AdminTreasury() {
   }, []);
 
   useEffect(() => { loadTreasury(); }, [loadTreasury]);
+
+  // Fire confetti when receipt appears
+  useEffect(() => {
+    if (receipt) fireSuccessConfetti();
+  }, [receipt]);
 
   // Real-time updates
   useEffect(() => {
@@ -243,6 +251,45 @@ export default function AdminTreasury() {
     a.download = `treasury-ledger-${format(new Date(), "yyyy-MM-dd")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+
+  const handlePrintReceipt = () => {
+    if (!receipt) return;
+    const doc = new jsPDF();
+    doc.setFillColor(16, 185, 129);
+    doc.rect(0, 0, 210, 35, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("EasyPay", 105, 16, { align: "center" });
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text("Disbursement Receipt", 105, 28, { align: "center" });
+    doc.setTextColor(0, 0, 0);
+    autoTable(doc, {
+      startY: 45,
+      head: [["Field", "Details"]],
+      body: [
+        ["Recipient", receipt.recipientName],
+        ["Phone", receipt.recipientPhone],
+        ["Amount", `BDT ${receipt.amount.toLocaleString()}`],
+        ["Old Treasury Balance", `BDT ${receipt.oldTreasuryBalance.toLocaleString()}`],
+        ["New Treasury Balance", `BDT ${receipt.newTreasuryBalance.toLocaleString()}`],
+        ["Old Recipient Balance", `BDT ${receipt.oldRecipientBalance.toLocaleString()}`],
+        ["New Recipient Balance", `BDT ${receipt.newRecipientBalance.toLocaleString()}`],
+        ["Reference", receipt.reference],
+        ["Timestamp", format(receipt.timestamp, "MMM d, yyyy · HH:mm:ss")],
+      ],
+      theme: "striped",
+      headStyles: { fillColor: [16, 185, 129] },
+      styles: { fontSize: 10 },
+    });
+    const pageHeight = doc.internal.pageSize.getHeight();
+    doc.setFontSize(9);
+    doc.setTextColor(150, 150, 150);
+    doc.text("Powered by EasyPay", 105, pageHeight - 10, { align: "center" });
+    doc.save(`receipt-${receipt.reference}.pdf`);
   };
 
   if (loading) {
@@ -447,9 +494,14 @@ export default function AdminTreasury() {
                 <span>{format(receipt.timestamp, "MMM d, yyyy · HH:mm:ss")}</span>
               </div>
 
-              <Button variant="outline" size="sm" className="w-full" onClick={() => setReceipt(null)}>
-                Dismiss
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="flex-1" onClick={handlePrintReceipt}>
+                  <FileText className="w-4 h-4 mr-1.5" /> Print Receipt
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1" onClick={() => setReceipt(null)}>
+                  Dismiss
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
