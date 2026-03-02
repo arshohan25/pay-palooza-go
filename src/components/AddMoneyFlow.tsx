@@ -50,6 +50,17 @@ const MFS_PROVIDERS: MfsProvider[] = [
   { id: "islamic",  name: "Islamic Wallet",  short: "IW", color: "#2E7D32", gradient: "bg-[#2E7D32]", accountLabel: "Wallet Number",   accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
 ];
 
+// ─── AsthaPay Sub-MFS Options ────────────────────────────────────────────────
+const ASTHA_MFS_OPTIONS = [
+  { id: "rocket", name: "Rocket", label: "Personal", color: "#8B2F8B" },
+  { id: "nagad",  name: "Nagad",  label: "Personal", color: "#F6921E" },
+  { id: "upay",   name: "Upay",   label: "Personal", color: "#00A859" },
+  { id: "bkash",  name: "bKash",  label: "Personal", color: "#E2136E" },
+];
+
+// Receiving number for manual payments (configurable via admin)
+const ASTHA_RECEIVING_NUMBER = "01614396459";
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 25000];
 
@@ -132,6 +143,10 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   // Copy state
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [showShare, setShowShare]     = useState(false);
+  // AsthaPay sub-flow state
+  const [asthaSubStep, setAsthaSubStep] = useState<"select" | "instructions">("select");
+  const [asthaSelectedMfs, setAsthaSelectedMfs] = useState<string | null>(null);
+  const [asthaTxnId, setAsthaTxnId] = useState("");
 
   const txnId   = useRef(generateTxnId());
   const txnTime = useRef(new Date());
@@ -149,7 +164,15 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   const goBack = () => {
     if (step === "amount")  { onClose(); return; }
     if (step === "source")  { goTo("amount", -1); return; }
-    if (step === "details") { goTo("source", -1); return; }
+    if (step === "details") {
+      if (source === "mfs" && mfsProvider?.id === "asthapay" && asthaSubStep === "instructions") {
+        setAsthaSubStep("select");
+        setError("");
+        return;
+      }
+      goTo("source", -1);
+      return;
+    }
     if (step === "pin")     { goTo("details", -1); return; }
   };
 
@@ -175,8 +198,18 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
       return;
     }
     if (source === "mfs") {
-      // AsthaPay uses redirect flow — no phone number needed from user
+      // AsthaPay manual verify flow
       if (mfsProvider?.id === "asthapay") {
+        if (asthaSubStep === "select") {
+          if (!asthaSelectedMfs) { setError("Select a payment method."); return; }
+          setAsthaSubStep("instructions");
+          setError("");
+          return;
+        }
+        // instructions sub-step: validate TxnID
+        if (!asthaTxnId.trim() || asthaTxnId.trim().length < 5) {
+          setError("Enter a valid Transaction ID."); return;
+        }
         goTo("pin");
         return;
       }
@@ -216,12 +249,78 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
     haptics.success();
 
     // For bKash, Nagad, and AsthaPay, attempt real gateway integration
-    if (source === "mfs" && (mfsProvider?.id === "bkash" || mfsProvider?.id === "nagad" || mfsProvider?.id === "asthapay")) {
+    // AsthaPay manual verify flow (no redirect)
+    if (source === "mfs" && mfsProvider?.id === "asthapay") {
+      setDir(1);
+      setStep("processing");
+      try {
+        const { data: { session: authSession } } = await supabase.auth.getSession();
+        const token = authSession?.access_token;
+        if (!token) { setError("Please log in to continue."); setStep("pin"); setProcessing(false); return; }
+
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const createRes = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/asthapay-payment?action=create`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: JSON.stringify({ amount: String(addAmt), callbackURL: window.location.origin }),
+          }
+        );
+
+        const createData = await createRes.json();
+
+        if (createRes.ok && createData.success && createData.sessionId) {
+          // Try verify (user already sent money before PIN step)
+          const verifyRes = await fetch(
+            `https://${projectId}.supabase.co/functions/v1/asthapay-payment?action=verify`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              },
+              body: JSON.stringify({ sessionId: createData.sessionId, transaction_id: createData.transaction_id }),
+            }
+          );
+          const verifyData = await verifyRes.json();
+          txnId.current = createData.sessionId;
+          txnTime.current = new Date();
+          if (verifyData.success) {
+            showTxnToast({ type: "Add Money", amount: `৳${addAmt.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-addmoney" });
+          }
+          setDir(1);
+          setStep("success");
+        } else {
+          // Gateway not configured or failed — record locally as pending
+          txnId.current = generateTxnId();
+          txnTime.current = new Date();
+          showTxnToast({ type: "Add Money", amount: `৳${addAmt.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-addmoney" });
+          setDir(1);
+          setStep("success");
+        }
+      } catch (err: any) {
+        console.error("AsthaPay error:", err);
+        setError(err.message || "Payment verification failed.");
+        setStep("pin");
+        setPin("");
+      } finally {
+        setProcessing(false);
+      }
+      return;
+    }
+
+    if (source === "mfs" && (mfsProvider?.id === "bkash" || mfsProvider?.id === "nagad")) {
       setDir(1);
       setStep("processing");
 
       try {
-        const functionName = mfsProvider.id === "bkash" ? "bkash-payment" : mfsProvider.id === "asthapay" ? "asthapay-payment" : "nagad-payment";
+        const functionName = mfsProvider.id === "bkash" ? "bkash-payment" : "nagad-payment";
         const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
@@ -279,7 +378,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
         }
 
         // Step 2: Redirect to provider payment page
-        const redirectUrl = mfsProvider.id === "bkash" ? createData.bkashURL : mfsProvider.id === "asthapay" ? createData.payment_url : createData.nagadURL;
+        const redirectUrl = mfsProvider.id === "bkash" ? createData.bkashURL : createData.nagadURL;
 
         if (redirectUrl) {
           localStorage.setItem("pending_payment_session", JSON.stringify({
@@ -816,22 +915,113 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                 {/* AsthaPay: redirect flow explanation (no phone input needed) */}
                 {mfsProvider.id === "asthapay" ? (
                   <>
-                    <div className="rounded-xl bg-accent/10 border border-accent/25 px-4 py-3 space-y-2">
-                      <p className="text-xs font-semibold text-foreground">How it works:</p>
-                      <ol className="text-xs text-foreground/80 leading-relaxed space-y-1 list-decimal list-inside">
-                        <li>Confirm with your EasyPay PIN</li>
-                        <li>You'll be redirected to AsthaPay's secure payment page</li>
-                        <li>Choose your payment method (bKash, Nagad, Rocket, Upay, etc.)</li>
-                        <li>Follow the instructions to send money & enter Transaction ID</li>
-                        <li>You'll be redirected back and your wallet will be credited</li>
-                      </ol>
-                    </div>
-                    <div className="rounded-xl bg-primary/5 border border-primary/15 px-4 py-3 flex items-start gap-2">
-                      <Shield size={14} className="text-primary mt-0.5 shrink-0" />
-                      <p className="text-xs text-primary/80 leading-relaxed">
-                        You'll complete payment on <span className="font-semibold">AsthaPay's hosted page</span>. Your MFS credentials are never shared with EasyPay.
-                      </p>
-                    </div>
+                    {asthaSubStep === "select" ? (
+                      <>
+                        {/* MFS Provider Selection Grid */}
+                        <div className="space-y-3">
+                          <div className="rounded-lg bg-primary/10 border border-primary/20 py-2 text-center">
+                            <p className="text-xs font-bold text-primary tracking-wide">নরমাল পেমেন্ট · Normal Payment</p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            {ASTHA_MFS_OPTIONS.map((opt) => {
+                              const sel = asthaSelectedMfs === opt.id;
+                              return (
+                                <button
+                                  key={opt.id}
+                                  onClick={() => { setAsthaSelectedMfs(opt.id); setError(""); }}
+                                  className={`relative flex flex-col items-center justify-center gap-2 p-5 rounded-2xl border-2 transition-all active:scale-95 ${
+                                    sel ? "border-primary bg-primary/10 shadow-card" : "border-border bg-card hover:border-primary/40"
+                                  }`}
+                                >
+                                  <div className="w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-lg" style={{ backgroundColor: opt.color }}>
+                                    {opt.name.slice(0, 2)}
+                                  </div>
+                                  <div className="text-center">
+                                    <p className="text-sm font-bold text-foreground">{opt.name}</p>
+                                    <p className="text-[10px] text-muted-foreground">{opt.label}</p>
+                                  </div>
+                                  {sel && (
+                                    <div className="absolute top-2 right-2">
+                                      <CheckCircle2 size={16} className="text-primary" />
+                                    </div>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        {/* Instructions + TxnID Entry */}
+                        {(() => {
+                          const selMfs = ASTHA_MFS_OPTIONS.find(m => m.id === asthaSelectedMfs);
+                          return (
+                            <div className="space-y-4">
+                              {/* Selected MFS header */}
+                              <div className="rounded-2xl overflow-hidden border border-border">
+                                <div className="py-3 px-4 flex items-center justify-between" style={{ backgroundColor: selMfs?.color || "#3B6FE0" }}>
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white font-bold">
+                                      {selMfs?.name.slice(0, 2)}
+                                    </div>
+                                    <div>
+                                      <p className="text-white font-bold text-sm">{selMfs?.name} {selMfs?.label}</p>
+                                      <p className="text-white/70 text-[10px]">Manual Payment</p>
+                                    </div>
+                                  </div>
+                                  <p className="text-white font-bold text-lg">৳{amtNum.toLocaleString()}</p>
+                                </div>
+
+                                {/* Instructions */}
+                                <div className="px-4 py-4 bg-card space-y-3">
+                                  <p className="text-sm font-bold text-foreground">
+                                    Enter {selMfs?.name} {selMfs?.label} Transaction ID
+                                  </p>
+                                  <Input
+                                    type="text"
+                                    placeholder="Enter Transaction Id"
+                                    value={asthaTxnId}
+                                    maxLength={20}
+                                    onChange={(e) => { setAsthaTxnId(e.target.value); setError(""); }}
+                                    className="h-12 text-center text-lg font-mono tracking-wider bg-muted/50 border-border placeholder:text-muted-foreground/50"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Step-by-step instructions */}
+                              <div className="rounded-xl bg-accent/10 border border-accent/25 px-4 py-3 space-y-2">
+                                <p className="text-xs font-semibold text-foreground">পেমেন্ট নির্দেশনা:</p>
+                                <ul className="text-xs text-foreground/80 leading-relaxed space-y-1.5 list-disc list-inside">
+                                  <li>আপনার {selMfs?.name} অ্যাপে যান অথবা *247# ডায়াল করুন</li>
+                                  <li>"Send Money" এ ক্লিক করুন</li>
+                                  <li className="flex items-center gap-1 flex-wrap">
+                                    প্রাপক নম্বর:
+                                    <span className="font-mono font-bold text-primary">{ASTHA_RECEIVING_NUMBER}</span>
+                                    <button
+                                      onClick={() => copyText(ASTHA_RECEIVING_NUMBER, "recv")}
+                                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary/10 text-primary"
+                                    >
+                                      {copiedField === "recv" ? <CheckCheck size={10} /> : <Copy size={10} />}
+                                    </button>
+                                  </li>
+                                  <li>টাকার পরিমাণ: <span className="font-bold text-foreground">৳{amtNum.toLocaleString()}</span></li>
+                                  <li>আপনার {selMfs?.name} পিন লিখুন</li>
+                                  <li>Transaction ID উপরে বক্সে লিখুন</li>
+                                </ul>
+                              </div>
+
+                              <div className="rounded-xl bg-primary/5 border border-primary/15 px-4 py-3 flex items-start gap-2">
+                                <Shield size={14} className="text-primary mt-0.5 shrink-0" />
+                                <p className="text-xs text-primary/80 leading-relaxed">
+                                  আপনার {selMfs?.name} ক্রেডেনশিয়াল কখনো EasyPay-এর সাথে শেয়ার করা হয় না।
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </>
+                    )}
                   </>
                 ) : (
                   <>
@@ -880,10 +1070,15 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                 </div>
 
                 <Button
-                  className="w-full h-11 gradient-addmoney border-0 text-white font-semibold"
+                  className="w-full h-12 gradient-addmoney border-0 text-white font-bold text-base"
                   onClick={handleDetailsContinue}
                 >
-                  Continue to PIN
+                  {mfsProvider.id === "asthapay"
+                    ? asthaSubStep === "select"
+                      ? `Pay ৳${amtNum.toLocaleString()}`
+                      : "VERIFY & Continue to PIN"
+                    : "Continue to PIN"
+                  }
                 </Button>
               </div>
             )}
