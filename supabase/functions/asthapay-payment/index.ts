@@ -159,9 +159,17 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Create payment session in DB
-      const invoiceNumber = `ASTHA-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+      // Fetch user profile for required cus_name and cus_email
+      const { data: userProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("name, email, phone")
+        .eq("user_id", userId)
+        .single();
 
+      const cusName = userProfile?.name || userProfile?.phone || "EasyPay User";
+      const cusEmail = userProfile?.email || `${userProfile?.phone || userId}@easypay.local`;
+
+      // Create payment session in DB
       const { data: session, error: sessionError } = await supabaseAdmin
         .from("payment_sessions")
         .insert({
@@ -170,7 +178,7 @@ Deno.serve(async (req) => {
           amount: parsedAmount,
           callback_url: callbackURL || null,
           status: "pending",
-          metadata: { invoice_number: invoiceNumber },
+          metadata: { cus_name: cusName, cus_email: cusEmail },
         })
         .select("id")
         .single();
@@ -180,7 +188,7 @@ Deno.serve(async (req) => {
       const successUrl = `${callbackURL || Deno.env.get("SUPABASE_URL")}?asthapay=1&sessionId=${session.id}&status=success`;
       const cancelUrl = `${callbackURL || Deno.env.get("SUPABASE_URL")}?asthapay=1&sessionId=${session.id}&status=cancel`;
 
-      // Call AsthaPay create API
+      // Call AsthaPay create API (per official docs: cus_name, cus_email, amount, success_url, cancel_url, meta_data)
       const createRes = await fetch(`${ASTHAPAY_BASE}/create`, {
         method: "POST",
         headers: {
@@ -190,11 +198,16 @@ Deno.serve(async (req) => {
           "BRAND-KEY": creds.brandKey,
         },
         body: JSON.stringify({
+          cus_name: cusName,
+          cus_email: cusEmail,
           amount: String(parsedAmount),
-          invoice_number: invoiceNumber,
           success_url: successUrl,
           cancel_url: cancelUrl,
           ipn_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/payment-webhook?provider=asthapay`,
+          meta_data: {
+            sessionId: session.id,
+            userId: userId,
+          },
         }),
       });
 
@@ -215,9 +228,10 @@ Deno.serve(async (req) => {
       await supabaseAdmin
         .from("payment_sessions")
         .update({
-          provider_payment_id: createData.transaction_id || invoiceNumber,
+          provider_payment_id: createData.transaction_id || null,
           metadata: {
-            invoice_number: invoiceNumber,
+            cus_name: cusName,
+            cus_email: cusEmail,
             asthapay_response: createData,
           },
         })
