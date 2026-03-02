@@ -366,6 +366,15 @@ export default function AdminDashboard() {
                   onChange={e => setSearchQuery(e.target.value)}
                 />
               </div>
+              <div className="relative md:hidden flex-1 max-w-[160px]">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Search…"
+                  className="pl-8 h-8 text-xs"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                />
+              </div>
               <Button variant="outline" size="icon" onClick={loadData} disabled={refreshing}>
                 <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
               </Button>
@@ -401,7 +410,7 @@ export default function AdminDashboard() {
         </Sheet>
 
         {/* Main content */}
-        <main className="flex-1 p-4 md:p-8 overflow-auto">
+        <main className="flex-1 p-4 md:p-8 overflow-auto min-h-0 pb-8">
 
         {/* ═══ OVERVIEW ═══ */}
         {activeTab === "overview" && (

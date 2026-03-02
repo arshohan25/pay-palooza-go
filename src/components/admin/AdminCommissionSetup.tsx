@@ -100,7 +100,7 @@ export default function AdminCommissionSetup() {
                   <th className="text-left px-4 py-3 font-medium">Txn Type</th>
                   <th className="text-left px-4 py-3 font-medium">Agent %</th>
                   <th className="text-left px-4 py-3 font-medium">Distributor %</th>
-                  <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Platform %</th>
+                  <th className="text-left px-4 py-3 font-medium">Platform %</th>
                   <th className="text-left px-4 py-3 font-medium">Status</th>
                   <th className="text-left px-4 py-3 font-medium">Edit</th>
                 </tr>
@@ -113,7 +113,7 @@ export default function AdminCommissionSetup() {
                     </td>
                     <td className="px-4 py-3 font-semibold text-emerald-600">{r.agent_commission ?? 0}%</td>
                     <td className="px-4 py-3 font-semibold text-blue-600">{r.distributor_commission ?? 0}%</td>
-                    <td className="px-4 py-3 font-semibold text-purple-600 hidden md:table-cell">{r.platform_share ?? 0}%</td>
+                    <td className="px-4 py-3 font-semibold text-purple-600">{r.platform_share ?? 0}%</td>
                     <td className="px-4 py-3">
                       <Badge variant={r.is_active ? "default" : "secondary"} className="text-xs">
                         {r.is_active ? "Active" : "Inactive"}

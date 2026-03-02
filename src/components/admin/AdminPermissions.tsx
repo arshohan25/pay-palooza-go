@@ -132,9 +132,9 @@ export default function AdminPermissions() {
                   <th className="text-left px-4 py-3 font-medium">Name</th>
                   <th className="text-left px-4 py-3 font-medium">Phone</th>
                   {PERM_TYPES.map(p => (
-                    <th key={p} className="text-left px-4 py-3 font-medium capitalize">{p.replace("_", " ")}</th>
+                    <th key={p} className={`text-left px-4 py-3 font-medium capitalize ${p === "sms_read" ? "hidden md:table-cell" : ""}`}>{p.replace("_", " ")}</th>
                   ))}
-                  <th className="text-left px-4 py-3 font-medium">Last Updated</th>
+                  <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Last Updated</th>
                 </tr>
               </thead>
               <tbody>
@@ -146,7 +146,7 @@ export default function AdminPermissions() {
                       const s = u.permissions[p];
                       const badge = STATUS_BADGE[s] || STATUS_BADGE.prompt;
                       return (
-                        <td key={p} className="px-4 py-3">
+                        <td key={p} className={`px-4 py-3 ${p === "sms_read" ? "hidden md:table-cell" : ""}`}>
                           {s === "--" ? (
                             <span className="text-xs text-muted-foreground">—</span>
                           ) : (
@@ -155,7 +155,7 @@ export default function AdminPermissions() {
                         </td>
                       );
                     })}
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                    <td className="px-4 py-3 text-xs text-muted-foreground hidden md:table-cell">
                       {u.updated_at ? new Date(u.updated_at).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
                     </td>
                   </tr>
