@@ -239,6 +239,18 @@ async function handleNagadCallback(
           session.id as string
         );
 
+        // Debit treasury for this add-money
+        if (!creditResult.alreadyCredited && creditResult.success) {
+          try {
+            await supabaseAdmin.rpc("treasury_debit_for_addmoney", {
+              p_user_id: session.user_id as string,
+              p_amount: parseFloat(String(session.amount)),
+            });
+          } catch (treasuryErr) {
+            console.error("Treasury debit failed (non-blocking):", treasuryErr);
+          }
+        }
+
         // Audit log
         try {
           await supabaseAdmin.from("audit_logs").insert({

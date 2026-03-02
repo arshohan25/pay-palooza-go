@@ -1,0 +1,401 @@
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { verifyPin } from "@/lib/verifyPin";
+import {
+  Wallet, TrendingUp, HandCoins, Search, Send, RefreshCw,
+  ArrowDownCircle, ArrowUpCircle, Coins, Landmark, Filter,
+} from "lucide-react";
+import { motion } from "framer-motion";
+
+interface Treasury {
+  id: string;
+  balance: number;
+  total_earnings: number;
+  total_commissions_paid: number;
+  total_disbursed: number;
+}
+
+interface LedgerEntry {
+  id: string;
+  type: string;
+  amount: number;
+  balance_after: number;
+  counterparty_user_id: string | null;
+  counterparty_role: string | null;
+  description: string | null;
+  reference: string | null;
+  actor_id: string | null;
+  created_at: string;
+}
+
+interface FoundUser {
+  user_id: string;
+  name: string | null;
+  phone: string;
+  balance: number;
+  roles: string[];
+}
+
+const LEDGER_TYPE_CONFIG: Record<string, { label: string; color: string; icon: typeof Wallet }> = {
+  initial_deposit: { label: "Initial Deposit", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300", icon: Landmark },
+  disburse: { label: "Disbursement", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300", icon: Send },
+  earning: { label: "Earning", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300", icon: TrendingUp },
+  commission_paid: { label: "Commission", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300", icon: HandCoins },
+  user_addmoney: { label: "Add Money Debit", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300", icon: ArrowDownCircle },
+};
+
+function formatBDT(amount: number) {
+  if (amount >= 1e7) return `৳${(amount / 1e7).toFixed(2)} Cr`;
+  if (amount >= 1e5) return `৳${(amount / 1e5).toFixed(2)} L`;
+  return `৳${amount.toLocaleString("en-BD")}`;
+}
+
+export default function AdminTreasury() {
+  const [treasury, setTreasury] = useState<Treasury | null>(null);
+  const [ledger, setLedger] = useState<LedgerEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterType, setFilterType] = useState<string>("all");
+
+  // Send funds state
+  const [searchPhone, setSearchPhone] = useState("");
+  const [foundUser, setFoundUser] = useState<FoundUser | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [sendAmount, setSendAmount] = useState("");
+  const [sendDescription, setSendDescription] = useState("");
+  const [pinInput, setPinInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const [showPinStep, setShowPinStep] = useState(false);
+
+  const loadTreasury = useCallback(async () => {
+    setLoading(true);
+    const [{ data: t }, { data: l }] = await Promise.all([
+      supabase.from("platform_treasury").select("*").limit(1).single(),
+      supabase.from("treasury_ledger").select("*").order("created_at", { ascending: false }).limit(100),
+    ]);
+    if (t) setTreasury(t as unknown as Treasury);
+    if (l) setLedger(l as unknown as LedgerEntry[]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { loadTreasury(); }, [loadTreasury]);
+
+  // Real-time updates
+  useEffect(() => {
+    const channel = supabase
+      .channel("treasury-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "platform_treasury" }, () => loadTreasury())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "treasury_ledger" }, () => loadTreasury())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [loadTreasury]);
+
+  const searchUser = async () => {
+    if (!searchPhone || searchPhone.length < 3) return;
+    setSearching(true);
+    setFoundUser(null);
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("user_id, name, phone, balance")
+      .eq("phone", searchPhone)
+      .single();
+
+    if (!profile) {
+      toast.error("User not found");
+      setSearching(false);
+      return;
+    }
+
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", profile.user_id);
+
+    setFoundUser({
+      ...profile,
+      roles: roles?.map(r => r.role) || ["customer"],
+    });
+    setSearching(false);
+  };
+
+  const handleSendFunds = async () => {
+    if (!foundUser || !sendAmount || !pinInput) return;
+    const amount = parseFloat(sendAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error("Invalid amount");
+      return;
+    }
+    if (treasury && amount > treasury.balance) {
+      toast.error("Amount exceeds treasury balance");
+      return;
+    }
+
+    setSending(true);
+    const pinValid = await verifyPin(pinInput);
+    if (!pinValid) {
+      toast.error("Invalid PIN");
+      setSending(false);
+      return;
+    }
+
+    const { data, error } = await supabase.rpc("admin_disburse_funds", {
+      p_target_phone: foundUser.phone,
+      p_amount: amount,
+      p_description: sendDescription || `Admin disbursement to ${foundUser.name || foundUser.phone}`,
+    });
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(`৳${amount.toLocaleString()} sent to ${foundUser.name || foundUser.phone}`);
+      setSearchPhone("");
+      setFoundUser(null);
+      setSendAmount("");
+      setSendDescription("");
+      setPinInput("");
+      setShowPinStep(false);
+      loadTreasury();
+    }
+    setSending(false);
+  };
+
+  const filteredLedger = filterType === "all" ? ledger : ledger.filter(e => e.type === filterType);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* ═══ Overview Cards ═══ */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="border-0 shadow-[var(--shadow-card)] bg-gradient-to-br from-primary/10 to-primary/5">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                  <Wallet className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">Platform Balance</span>
+              </div>
+              <p className="text-2xl font-bold text-foreground">{formatBDT(treasury?.balance ?? 0)}</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+          <Card className="border-0 shadow-[var(--shadow-card)]">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">Total Earnings</span>
+              </div>
+              <p className="text-2xl font-bold text-foreground">{formatBDT(treasury?.total_earnings ?? 0)}</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <Card className="border-0 shadow-[var(--shadow-card)]">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center">
+                  <HandCoins className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">Commissions Paid</span>
+              </div>
+              <p className="text-2xl font-bold text-foreground">{formatBDT(treasury?.total_commissions_paid ?? 0)}</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+          <Card className="border-0 shadow-[var(--shadow-card)]">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center">
+                  <ArrowUpCircle className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">Total Disbursed</span>
+              </div>
+              <p className="text-2xl font-bold text-foreground">{formatBDT(treasury?.total_disbursed ?? 0)}</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+
+      {/* ═══ Send Funds Section ═══ */}
+      <Card className="border-0 shadow-[var(--shadow-card)]">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Send className="w-4 h-4 text-primary" /> Send Treasury Funds
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Search */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Enter phone number…"
+                className="pl-10"
+                value={searchPhone}
+                onChange={e => setSearchPhone(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && searchUser()}
+              />
+            </div>
+            <Button onClick={searchUser} disabled={searching} variant="outline">
+              {searching ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Search"}
+            </Button>
+          </div>
+
+          {/* Found user */}
+          {foundUser && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-4">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
+                  {(foundUser.name?.[0] || "?").toUpperCase()}
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-foreground">{foundUser.name || "Unknown"}</p>
+                  <p className="text-sm text-muted-foreground">{foundUser.phone} · Balance: ৳{foundUser.balance.toLocaleString()}</p>
+                </div>
+                <div className="flex gap-1 flex-wrap">
+                  {foundUser.roles.map(r => (
+                    <Badge key={r} variant="secondary" className="text-xs capitalize">{r}</Badge>
+                  ))}
+                </div>
+              </div>
+
+              {!showPinStep ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Input
+                    type="number"
+                    placeholder="Amount (৳)"
+                    value={sendAmount}
+                    onChange={e => setSendAmount(e.target.value)}
+                  />
+                  <Input
+                    placeholder="Description (optional)"
+                    value={sendDescription}
+                    onChange={e => setSendDescription(e.target.value)}
+                  />
+                  <Button
+                    className="sm:col-span-2"
+                    disabled={!sendAmount || parseFloat(sendAmount) <= 0}
+                    onClick={() => setShowPinStep(true)}
+                  >
+                    <Send className="w-4 h-4 mr-2" /> Continue to PIN
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Sending <strong>৳{parseFloat(sendAmount).toLocaleString()}</strong> to <strong>{foundUser.name || foundUser.phone}</strong>
+                  </p>
+                  <Input
+                    type="password"
+                    maxLength={4}
+                    placeholder="Enter your 4-digit PIN"
+                    value={pinInput}
+                    onChange={e => setPinInput(e.target.value.replace(/\D/g, ""))}
+                    className="max-w-48"
+                  />
+                  <div className="flex gap-2">
+                    <Button onClick={handleSendFunds} disabled={pinInput.length !== 4 || sending}>
+                      {sending ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                      Confirm & Send
+                    </Button>
+                    <Button variant="outline" onClick={() => { setShowPinStep(false); setPinInput(""); }}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ═══ Treasury Ledger ═══ */}
+      <Card className="border-0 shadow-[var(--shadow-card)]">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Coins className="w-4 h-4 text-primary" /> Treasury Ledger
+            </CardTitle>
+            <div className="flex gap-1 flex-wrap">
+              {["all", "earning", "disburse", "user_addmoney", "commission_paid", "initial_deposit"].map(f => (
+                <Button
+                  key={f}
+                  variant={filterType === f ? "default" : "outline"}
+                  size="sm"
+                  className="text-xs h-7"
+                  onClick={() => setFilterType(f)}
+                >
+                  {f === "all" ? "All" : LEDGER_TYPE_CONFIG[f]?.label || f}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-muted-foreground">
+                  <th className="text-left px-4 py-3 font-medium">Type</th>
+                  <th className="text-left px-4 py-3 font-medium">Amount</th>
+                  <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Balance After</th>
+                  <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">Description</th>
+                  <th className="text-left px-4 py-3 font-medium">Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredLedger.map(entry => {
+                  const config = LEDGER_TYPE_CONFIG[entry.type] || { label: entry.type, color: "bg-muted text-muted-foreground", icon: Coins };
+                  const isDebit = ["disburse", "user_addmoney", "commission_paid"].includes(entry.type);
+                  return (
+                    <tr key={entry.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3">
+                        <Badge variant="secondary" className={`text-xs ${config.color}`}>
+                          {config.label}
+                        </Badge>
+                      </td>
+                      <td className={`px-4 py-3 font-semibold ${isDebit ? "text-destructive" : "text-emerald-600 dark:text-emerald-400"}`}>
+                        {isDebit ? "-" : "+"}৳{entry.amount.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">
+                        {formatBDT(entry.balance_after)}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground text-xs hidden lg:table-cell max-w-xs truncate">
+                        {entry.description || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground text-xs">
+                        {new Date(entry.created_at).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {filteredLedger.length === 0 && (
+            <p className="text-center text-muted-foreground py-8 text-sm">No ledger entries</p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
