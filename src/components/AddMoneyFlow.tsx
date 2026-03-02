@@ -58,8 +58,8 @@ const ASTHA_MFS_OPTIONS = [
   { id: "bkash",  name: "bKash",  label: "Personal", color: "#E2136E" },
 ];
 
-// Receiving number for manual payments (configurable via admin)
-const ASTHA_RECEIVING_NUMBER = "01614396459";
+// Default fallback receiving number
+const ASTHA_RECEIVING_NUMBER_DEFAULT = "01614396459";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 25000];
@@ -147,6 +147,22 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   const [asthaSubStep, setAsthaSubStep] = useState<"select" | "instructions">("select");
   const [asthaSelectedMfs, setAsthaSelectedMfs] = useState<string | null>(null);
   const [asthaTxnId, setAsthaTxnId] = useState("");
+  const [asthaReceivingNumber, setAsthaReceivingNumber] = useState(ASTHA_RECEIVING_NUMBER_DEFAULT);
+
+  // Fetch AsthaPay receiving number from gateway config
+  useEffect(() => {
+    const fetchReceivingNumber = async () => {
+      const { data } = await supabase
+        .from("payment_gateways")
+        .select("config")
+        .eq("provider", "asthapay")
+        .maybeSingle();
+      if (data?.config && typeof data.config === "object" && (data.config as any).receiving_number) {
+        setAsthaReceivingNumber((data.config as any).receiving_number);
+      }
+    };
+    fetchReceivingNumber();
+  }, []);
 
   const txnId   = useRef(generateTxnId());
   const txnTime = useRef(new Date());
@@ -997,9 +1013,9 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                                   <li>"Send Money" এ ক্লিক করুন</li>
                                   <li className="flex items-center gap-1 flex-wrap">
                                     প্রাপক নম্বর:
-                                    <span className="font-mono font-bold text-primary">{ASTHA_RECEIVING_NUMBER}</span>
+                                    <span className="font-mono font-bold text-primary">{asthaReceivingNumber}</span>
                                     <button
-                                      onClick={() => copyText(ASTHA_RECEIVING_NUMBER, "recv")}
+                                      onClick={() => copyText(asthaReceivingNumber, "recv")}
                                       className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary/10 text-primary"
                                     >
                                       {copiedField === "recv" ? <CheckCheck size={10} /> : <Copy size={10} />}
