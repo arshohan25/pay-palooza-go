@@ -36,6 +36,7 @@ const DEFAULT_FIELDS: Record<string, string[]> = {
   upay: ["UPAY_MERCHANT_ID", "UPAY_API_KEY"],
   tap: ["TAP_MERCHANT_ID", "TAP_API_KEY"],
   mcash: ["MCASH_MERCHANT_ID", "MCASH_API_KEY"],
+  asthapay: ["api_key", "secret_key", "brand_key"],
 };
 
 export default function AdminGatewayConfig() {
