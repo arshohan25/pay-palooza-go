@@ -107,8 +107,18 @@ export default function AdminGatewayConfig() {
     setShowSecrets({});
   };
 
+  const BD_PHONE_REGEX = /^01[3-9]\d{8}$/;
+
   const saveGateway = async () => {
     if (!editName.trim()) { toast.error("Name is required"); return; }
+
+    // Validate receiving_number if present
+    const recvNum = editConfig["receiving_number"]?.trim();
+    if (recvNum && !BD_PHONE_REGEX.test(recvNum)) {
+      toast.error("Receiving number must be a valid 11-digit BD phone (e.g. 01XXXXXXXXX)");
+      return;
+    }
+
     setSaving(true);
 
     if (editGw) {
