@@ -1,19 +1,26 @@
 
 
-## Plan: Add AsthaPay default fields to Admin Gateway Config
+## Plan: Redesign AsthaPay in Add Money Flow to Match AsthaPay Brand Identity
 
-### Problem
-The `DEFAULT_FIELDS` map in `AdminGatewayConfig.tsx` has no entry for `asthapay`. When an admin opens the AsthaPay gateway to configure credentials, no fields appear — they'd have to manually add each one. The edge function expects keys `api_key`, `secret_key`, and `brand_key` in the config JSONB.
+### Context
+AsthaPay's official branding uses a **blue** color scheme (#4285F4 / #3B6FE0), not the current purple (#6C3FC5). The flow is functionally correct but needs visual alignment with AsthaPay's actual brand.
 
-### Change
-Add one line to the `DEFAULT_FIELDS` object in `src/components/admin/AdminGatewayConfig.tsx`:
+### Changes
 
-```typescript
-asthapay: ["api_key", "secret_key", "brand_key"],
-```
+#### 1. Update AsthaPay branding in `src/components/AddMoneyFlow.tsx`
+- Change `color` from `#6C3FC5` to `#3B6FE0` (AsthaPay blue)
+- Change `gradient` from `bg-[#6C3FC5]` to `bg-[#3B6FE0]`
+- Update `short` from `"AP"` to include a styled "A" or keep "AP" with the correct blue
 
-This ensures the admin sees three pre-populated credential fields when editing the AsthaPay gateway, and the keys match exactly what the edge function reads.
+#### 2. Add AsthaPay logo to `public/operators/asthapay.png`
+- Use AsthaPay's official logo styling (blue "AP" mark) as a provider icon
+- Display the logo image in the MFS provider grid instead of the text-only badge
+
+#### 3. Update MFS provider rendering to support logo images
+- For providers that have a logo image (like asthapay), render an `<img>` tag instead of the text shortcode badge
+- This matches how operators like GP, Robi, etc. already have images in `public/operators/`
 
 ### Files
-- **Edit**: `src/components/admin/AdminGatewayConfig.tsx` — add `asthapay` entry to `DEFAULT_FIELDS`
+- **Edit**: `src/components/AddMoneyFlow.tsx` — update AsthaPay color + add logo support in MFS grid
+- **New**: `public/operators/asthapay.png` — AsthaPay logo (will need user to provide, or generate a placeholder)
 
