@@ -3,14 +3,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { verifyPin } from "@/lib/verifyPin";
+import { format } from "date-fns";
 import {
   Wallet, TrendingUp, HandCoins, Search, Send, RefreshCw,
   ArrowDownCircle, ArrowUpCircle, Coins, Landmark, Filter,
+  CalendarIcon, Download,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface Treasury {
   id: string;
@@ -60,6 +65,8 @@ export default function AdminTreasury() {
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
 
   // Send funds state
   const [searchPhone, setSearchPhone] = useState("");
@@ -164,7 +171,41 @@ export default function AdminTreasury() {
     setSending(false);
   };
 
-  const filteredLedger = filterType === "all" ? ledger : ledger.filter(e => e.type === filterType);
+  const filteredLedger = ledger.filter(e => {
+    if (filterType !== "all" && e.type !== filterType) return false;
+    if (dateFrom) {
+      const entryDate = new Date(e.created_at);
+      if (entryDate < dateFrom) return false;
+    }
+    if (dateTo) {
+      const end = new Date(dateTo);
+      end.setHours(23, 59, 59, 999);
+      const entryDate = new Date(e.created_at);
+      if (entryDate > end) return false;
+    }
+    return true;
+  });
+
+  const exportCSV = () => {
+    const headers = ["Type", "Amount", "Balance After", "Counterparty Role", "Description", "Reference", "Date"];
+    const rows = filteredLedger.map(e => [
+      LEDGER_TYPE_CONFIG[e.type]?.label || e.type,
+      e.amount,
+      e.balance_after,
+      e.counterparty_role || "",
+      (e.description || "").replace(/,/g, " "),
+      e.reference || "",
+      new Date(e.created_at).toISOString(),
+    ]);
+    const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `treasury-ledger-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (loading) {
     return (
@@ -330,12 +371,44 @@ export default function AdminTreasury() {
 
       {/* ═══ Treasury Ledger ═══ */}
       <Card className="border-0 shadow-[var(--shadow-card)]">
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-3 space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Coins className="w-4 h-4 text-primary" /> Treasury Ledger
             </CardTitle>
-            <div className="flex gap-1 flex-wrap">
+            <Button variant="outline" size="sm" className="text-xs h-7" onClick={exportCSV}>
+              <Download className="w-3.5 h-3.5 mr-1" /> Export CSV
+            </Button>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={cn("text-xs h-7 justify-start", !dateFrom && "text-muted-foreground")}>
+                  <CalendarIcon className="w-3.5 h-3.5 mr-1" />
+                  {dateFrom ? format(dateFrom, "MMM d, yyyy") : "From"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus className={cn("p-3 pointer-events-auto")} />
+              </PopoverContent>
+            </Popover>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={cn("text-xs h-7 justify-start", !dateTo && "text-muted-foreground")}>
+                  <CalendarIcon className="w-3.5 h-3.5 mr-1" />
+                  {dateTo ? format(dateTo, "MMM d, yyyy") : "To"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={dateTo} onSelect={setDateTo} initialFocus className={cn("p-3 pointer-events-auto")} />
+              </PopoverContent>
+            </Popover>
+            {(dateFrom || dateTo) && (
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setDateFrom(undefined); setDateTo(undefined); }}>
+                Clear dates
+              </Button>
+            )}
+            <div className="flex gap-1 flex-wrap ml-auto">
               {["all", "earning", "disburse", "user_addmoney", "commission_paid", "initial_deposit"].map(f => (
                 <Button
                   key={f}
