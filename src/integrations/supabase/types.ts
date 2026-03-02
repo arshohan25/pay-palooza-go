@@ -1222,6 +1222,15 @@ export type Database = {
         Args: { p_referee_id: string }
         Returns: undefined
       }
+      credit_cashback: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_reference?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       generate_referral_code: { Args: never; Returns: string }
       generate_short_id: { Args: never; Returns: string }
       has_role: {
