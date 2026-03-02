@@ -39,13 +39,14 @@ interface MfsProvider {
 }
 
 const MFS_PROVIDERS: MfsProvider[] = [
-  { id: "bkash",   name: "bKash",          short: "bK", color: "#E2136E", gradient: "bg-[#E2136E]", accountLabel: "bKash Number",    accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
-  { id: "nagad",   name: "Nagad",           short: "Ng", color: "#F6921E", gradient: "bg-[#F6921E]", accountLabel: "Nagad Number",    accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
-  { id: "rocket",  name: "Rocket (DBBL)",   short: "Rk", color: "#8B2F8B", gradient: "bg-[#8B2F8B]", accountLabel: "Rocket Number",   accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
-  { id: "upay",    name: "Upay",            short: "Up", color: "#00A859", gradient: "bg-[#00A859]", accountLabel: "Upay Number",     accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
-  { id: "tap",     name: "Tap",             short: "Tp", color: "#1A73E8", gradient: "bg-[#1A73E8]", accountLabel: "Tap Number",      accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
-  { id: "mcash",   name: "mCash",           short: "mC", color: "#FF6600", gradient: "bg-[#FF6600]", accountLabel: "mCash Number",    accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
-  { id: "islamic", name: "Islamic Wallet",  short: "IW", color: "#2E7D32", gradient: "bg-[#2E7D32]", accountLabel: "Wallet Number",   accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
+  { id: "bkash",    name: "bKash",          short: "bK", color: "#E2136E", gradient: "bg-[#E2136E]", accountLabel: "bKash Number",    accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
+  { id: "nagad",    name: "Nagad",           short: "Ng", color: "#F6921E", gradient: "bg-[#F6921E]", accountLabel: "Nagad Number",    accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
+  { id: "asthapay", name: "AsthaPay",        short: "AP", color: "#6C3FC5", gradient: "bg-[#6C3FC5]", accountLabel: "AsthaPay Number", accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
+  { id: "rocket",   name: "Rocket (DBBL)",   short: "Rk", color: "#8B2F8B", gradient: "bg-[#8B2F8B]", accountLabel: "Rocket Number",   accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
+  { id: "upay",     name: "Upay",            short: "Up", color: "#00A859", gradient: "bg-[#00A859]", accountLabel: "Upay Number",     accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
+  { id: "tap",      name: "Tap",             short: "Tp", color: "#1A73E8", gradient: "bg-[#1A73E8]", accountLabel: "Tap Number",      accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
+  { id: "mcash",    name: "mCash",           short: "mC", color: "#FF6600", gradient: "bg-[#FF6600]", accountLabel: "mCash Number",    accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
+  { id: "islamic",  name: "Islamic Wallet",  short: "IW", color: "#2E7D32", gradient: "bg-[#2E7D32]", accountLabel: "Wallet Number",   accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -208,13 +209,13 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
 
     haptics.success();
 
-    // For bKash and Nagad, attempt real gateway integration
-    if (source === "mfs" && (mfsProvider?.id === "bkash" || mfsProvider?.id === "nagad")) {
+    // For bKash, Nagad, and AsthaPay, attempt real gateway integration
+    if (source === "mfs" && (mfsProvider?.id === "bkash" || mfsProvider?.id === "nagad" || mfsProvider?.id === "asthapay")) {
       setDir(1);
       setStep("processing");
 
       try {
-        const functionName = mfsProvider.id === "bkash" ? "bkash-payment" : "nagad-payment";
+        const functionName = mfsProvider.id === "bkash" ? "bkash-payment" : mfsProvider.id === "asthapay" ? "asthapay-payment" : "nagad-payment";
         const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
@@ -272,7 +273,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
         }
 
         // Step 2: Redirect to provider payment page
-        const redirectUrl = mfsProvider.id === "bkash" ? createData.bkashURL : createData.nagadURL;
+        const redirectUrl = mfsProvider.id === "bkash" ? createData.bkashURL : mfsProvider.id === "asthapay" ? createData.payment_url : createData.nagadURL;
 
         if (redirectUrl) {
           localStorage.setItem("pending_payment_session", JSON.stringify({

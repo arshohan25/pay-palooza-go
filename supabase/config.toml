@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.validate-device]
 verify_jwt = false
+
+[functions.asthapay-payment]
+verify_jwt = false
