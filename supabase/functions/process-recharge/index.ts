@@ -28,16 +28,15 @@ Deno.serve(async (req) => {
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { operator, phone, amount, pack_name } = await req.json();
+    const { operator, phone, amount, pack_name, pack_type } = await req.json();
 
     // Validate inputs
     if (!operator || !phone || !amount || amount <= 0) {
@@ -70,81 +69,103 @@ Deno.serve(async (req) => {
       .eq("is_enabled", true)
       .single();
 
-    if (cfgErr || !cfg) {
-      return new Response(JSON.stringify({ error: "Operator API not configured or disabled", api_available: false }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    let apiProcessed = false;
+    let operatorTxnId: string | null = null;
 
-    const apiBaseUrl = (cfg as any).api_base_url;
-    const config = (cfg as any).config as Record<string, string>;
+    if (!cfgErr && cfg) {
+      const apiBaseUrl = (cfg as any).api_base_url;
+      const config = (cfg as any).config as Record<string, string>;
 
-    if (!apiBaseUrl) {
-      return new Response(JSON.stringify({ error: "No API endpoint configured", api_available: false }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+      if (apiBaseUrl) {
+        // Send recharge request to operator API
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 30000);
 
-    // Send recharge request to operator API
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30000);
+          const rechargePayload = {
+            phone,
+            amount,
+            pack_name: pack_name || undefined,
+            merchant_id: config.MERCHANT_ID || undefined,
+            api_key: config.API_KEY || undefined,
+            timestamp: new Date().toISOString(),
+          };
 
-      const rechargePayload = {
-        phone,
-        amount,
-        pack_name: pack_name || undefined,
-        merchant_id: config.MERCHANT_ID || undefined,
-        api_key: config.API_KEY || undefined,
-        timestamp: new Date().toISOString(),
-      };
+          const resp = await fetch(`${apiBaseUrl}/recharge`, {
+            method: "POST",
+            signal: controller.signal,
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": config.API_KEY ? `Bearer ${config.API_KEY}` : "",
+              "X-API-Secret": config.API_SECRET || "",
+              "User-Agent": "EasyPay-Recharge/1.0",
+            },
+            body: JSON.stringify(rechargePayload),
+          });
+          clearTimeout(timeout);
 
-      const resp = await fetch(`${apiBaseUrl}/recharge`, {
-        method: "POST",
-        signal: controller.signal,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": config.API_KEY ? `Bearer ${config.API_KEY}` : "",
-          "X-API-Secret": config.API_SECRET || "",
-          "User-Agent": "EasyPay-Recharge/1.0",
-        },
-        body: JSON.stringify(rechargePayload),
-      });
-      clearTimeout(timeout);
+          const respText = await resp.text();
+          let respData: any = {};
+          try { respData = JSON.parse(respText); } catch { /* non-JSON response */ }
 
-      const respText = await resp.text();
-      let respData: any = {};
-      try { respData = JSON.parse(respText); } catch { /* non-JSON response */ }
-
-      if (resp.ok) {
-        return new Response(
-          JSON.stringify({
-            success: true,
-            api_available: true,
-            operator_txn_id: respData.transaction_id || respData.txn_id || respData.id || null,
-            message: respData.message || "Recharge processed successfully",
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      } else {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            api_available: true,
-            error: respData.message || respData.error || `API returned ${resp.status}`,
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+          if (resp.ok) {
+            apiProcessed = true;
+            operatorTxnId = respData.transaction_id || respData.txn_id || respData.id || null;
+          }
+        } catch {
+          // API call failed — continue without API
+        }
       }
-    } catch (e: any) {
-      const errorMsg = e.name === "AbortError" ? "Request timed out" : (e.message || "API call failed");
-      return new Response(
-        JSON.stringify({ success: false, api_available: true, error: errorMsg }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
     }
+
+    // ── Cashback: flat 2% for recharges over ৳99 on drive packs ──
+    let cashbackAmount = 0;
+    if (pack_type === "drive" && amount > 99) {
+      cashbackAmount = parseFloat((amount * 0.02).toFixed(2));
+    }
+
+    if (cashbackAmount > 0) {
+      // Credit cashback using service role (bypasses client-side addmoney block)
+      // 1. Update user balance
+      const { data: profile } = await adminClient
+        .from("profiles")
+        .select("balance")
+        .eq("user_id", user.id)
+        .single();
+
+      if (profile) {
+        const newBalance = parseFloat(String(profile.balance)) + cashbackAmount;
+        await adminClient
+          .from("profiles")
+          .update({ balance: newBalance })
+          .eq("user_id", user.id);
+
+        // 2. Record cashback transaction
+        await adminClient
+          .from("transactions")
+          .insert({
+            user_id: user.id,
+            type: "addmoney",
+            amount: cashbackAmount,
+            fee: 0,
+            balance_after: newBalance,
+            description: `Drive Cashback: ${pack_name || operator} (2%)`,
+            reference: `CB-${Date.now()}`,
+            status: "completed",
+          });
+      }
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        api_available: apiProcessed,
+        operator_txn_id: operatorTxnId,
+        cashback_amount: cashbackAmount,
+        message: apiProcessed ? "Recharge processed via operator API" : "Recharge recorded locally",
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (e: any) {
     return new Response(JSON.stringify({ error: e.message || "Internal error" }), {
       status: 500,

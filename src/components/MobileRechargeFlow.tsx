@@ -59,8 +59,15 @@ interface Pack {
   highlight?: boolean;
   type: OfferType;
   subCategory?: SubCategory;
-  cashback?: number; // only Drive packs — commission amount in ৳
+  cashback?: number; // legacy field — now calculated as 2% for >৳99
 }
+
+/** Calculate 2% cashback for drive packs over ৳99 */
+const calcCashback = (pack: Pack | null, amount?: number): number => {
+  const price = amount ?? (pack?.price ?? 0);
+  if (!pack || pack.type !== "drive" || price <= 99) return 0;
+  return parseFloat((price * 0.02).toFixed(2));
+};
 
 // ─── Operator definitions ────────────────────────────────────────────────────
 const OPERATORS: OperatorDef[] = [
@@ -374,13 +381,23 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
             phone: phone.replace(/\D/g, ""),
             amount: effectivePrice,
             pack_name: selectedPack?.name,
+            pack_type: selectedPack?.type ?? "regular",
           },
         });
-        if (!fnErr && data?.api_available && data?.success) {
-          apiProcessed = true;
-          setApiStatus("Recharge confirmed by operator");
+        if (!fnErr && data?.success) {
+          apiProcessed = data?.api_available ?? false;
+          if (apiProcessed) {
+            setApiStatus("Recharge confirmed by operator");
+          }
+          // Server credited cashback — show toast from server response
+          if (data?.cashback_amount > 0) {
+            showTxnToast({
+              type: "Drive Cashback",
+              amount: `+৳${data.cashback_amount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
+              gradient: "bg-gradient-to-b from-amber-500 to-yellow-500",
+            });
+          }
         } else if (data?.api_available && !data?.success) {
-          // API available but failed — fall back to local
           setApiStatus("API error, recording locally");
         }
       } catch {
@@ -401,18 +418,6 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
       reference: txnId.current,
       description: packDesc + modeTag,
     });
-
-    // ── Drive cashback: display notification only ──
-    // Cashback crediting is handled server-side by the process-recharge edge function.
-    // Client only shows the toast notification for UX feedback.
-    const cashbackAmt = selectedPack?.cashback ?? 0;
-    if (cashbackAmt > 0 && selectedPack?.type === "drive") {
-      showTxnToast({
-        type: "Drive Cashback",
-        amount: `+৳${cashbackAmt.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
-        gradient: "bg-gradient-to-b from-amber-500 to-yellow-500",
-      });
-    }
 
     showTxnToast({
       type: apiProcessed ? "Live Recharge" : "Mobile Recharge",
@@ -742,11 +747,11 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                                     <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                                       <Clock size={10} /> {pack.validity}
                                     </span>
-                                    {/* Cashback badge — Drive only */}
-                                    {pack.cashback && (
+                                    {/* Cashback badge — Drive only, 2% for >৳99 */}
+                                    {calcCashback(pack) > 0 && (
                                       <span className="flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 rounded-full">
                                         <Coins size={9} />
-                                        Earn ৳{pack.cashback} cashback
+                                        Earn ৳{calcCashback(pack)} cashback
                                       </span>
                                     )}
                                   </div>
@@ -838,9 +843,9 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                     <div className="flex items-center justify-between text-sm px-1 pb-1">
                       <span className="text-muted-foreground font-medium truncate max-w-[65%]">{selectedPack.name}</span>
                       <div className="flex items-center gap-2">
-                        {selectedPack.cashback && (
+                        {calcCashback(selectedPack) > 0 && (
                           <span className="text-[11px] font-bold text-amber-600 flex items-center gap-0.5">
-                            <Coins size={10} />+৳{selectedPack.cashback}
+                            <Coins size={10} />+৳{calcCashback(selectedPack)}
                           </span>
                         )}
                         <span className="font-extrabold text-foreground">৳{selectedPack.price}</span>
@@ -882,9 +887,9 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                         {selectedPack && (
                           <div className="flex items-center gap-3 mt-1 flex-wrap">
                             <span className="text-[11px] text-foreground font-semibold">{selectedPack.name}</span>
-                            {selectedPack.cashback && (
+                            {calcCashback(selectedPack) > 0 && (
                               <span className="text-[11px] font-bold text-amber-600 flex items-center gap-1">
-                                <Coins size={9} /> Earn ৳{selectedPack.cashback}
+                                <Coins size={9} /> Earn ৳{calcCashback(selectedPack)}
                               </span>
                             )}
                           </div>
@@ -982,11 +987,11 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                           <span>Validity</span>
                           <span className="font-semibold text-foreground">{selectedPack.validity}</span>
                         </div>
-                        {selectedPack.cashback && (
+                        {calcCashback(selectedPack, effectivePrice) > 0 && (
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Drive Cashback</span>
+                            <span className="text-muted-foreground">Drive Cashback (2%)</span>
                             <span className="font-bold text-amber-600 flex items-center gap-1">
-                              <Coins size={11} /> +৳{selectedPack.cashback}
+                              <Coins size={11} /> +৳{calcCashback(selectedPack, effectivePrice)}
                             </span>
                           </div>
                         )}
@@ -1044,7 +1049,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                     <p className="text-sm font-semibold text-white/80 mb-1">Recharge Successful!</p>
                     <p className="text-5xl font-extrabold">৳{effectivePrice}</p>
                     <p className="text-white/70 text-sm mt-2">{operator.name} · {formatPhone(phone)}</p>
-                    {selectedPack?.cashback && (
+                    {calcCashback(selectedPack, effectivePrice) > 0 && (
                       <motion.div
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -1052,7 +1057,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                         className="mt-3 inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm rounded-full px-4 py-1.5"
                       >
                         <Coins size={14} className="text-amber-300" />
-                        <span className="text-sm font-bold">৳{selectedPack.cashback} cashback earned!</span>
+                        <span className="text-sm font-bold">৳{calcCashback(selectedPack, effectivePrice)} cashback earned!</span>
                       </motion.div>
                     )}
                   </motion.div>
@@ -1101,10 +1106,10 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                           <span>Validity</span>
                           <span className="font-semibold text-foreground">{selectedPack.validity}</span>
                         </div>
-                        {selectedPack.cashback && (
+                        {calcCashback(selectedPack, effectivePrice) > 0 && (
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Drive Cashback</span>
-                            <span className="font-bold text-amber-600">+৳{selectedPack.cashback}</span>
+                            <span className="text-muted-foreground">Drive Cashback (2%)</span>
+                            <span className="font-bold text-amber-600">+৳{calcCashback(selectedPack, effectivePrice)}</span>
                           </div>
                         )}
                       </>
