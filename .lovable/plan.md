@@ -2,41 +2,39 @@
 
 ## Plan: Integrate AsthaPay Payment Gateway
 
-### Understanding the API
-AsthaPay uses a redirect-based payment flow:
-1. **Create Payment** → POST to `https://pay.asthapay.com/api/payment/create` with headers `API-KEY`, `SECRET-KEY`, `BRAND-KEY`
-2. Returns a `payment_url` → redirect user to complete payment
-3. User redirected back to `success_url` with query params (`transactionId`, `status`, etc.)
-4. **Verify Payment** → POST to `https://pay.asthapay.com/api/payment/verify` with `transaction_id`
+### Overview
+Add AsthaPay as a payment option in the Add Money flow. Credentials will be managed via the existing admin gateway config panel (`payment_gateways` table), matching the bKash/Nagad pattern.
 
-### Credentials Needed
-AsthaPay requires 3 headers: **API-KEY**, **SECRET-KEY**, and **BRAND-KEY**. You provided a "Device key" (`9PbxJ7qYDGCOljYYFmMdyrzkd7fEyLEowZ0EFrpD`) — I'll need to confirm which credential this maps to, and collect the remaining two. All three will be stored as backend secrets.
+### 1. Seed AsthaPay into `payment_gateways` table
+- SQL migration to insert a row: `provider = 'asthapay'`, `display_name = 'AsthaPay'`, `is_enabled = false`, `config = {}` (empty — admin fills in `API-KEY`, `SECRET-KEY`, `BRAND-KEY` later from the dashboard)
 
-### Changes
+### 2. Create edge function `supabase/functions/asthapay-payment/index.ts`
+Following the exact same pattern as `bkash-payment`:
+- Read credentials from `payment_gateways` where `provider = 'asthapay'`
+- **`action=create`**: POST to `https://pay.asthapay.com/api/payment/create` with headers `API-KEY`, `SECRET-KEY`, `BRAND-KEY`. Body: `amount`, `invoice_number`, `success_url`, `cancel_url`. Store session in `payment_sessions`. Return `payment_url` for redirect.
+- **`action=verify`**: POST to `https://pay.asthapay.com/api/payment/verify` with `transaction_id`. If status is `COMPLETED`, credit user balance (idempotent), debit treasury via `treasury_debit_for_addmoney` RPC. Mark session complete.
+- If credentials not configured, return `{ success: true, simulated: true }` (blocked by client).
 
-**1. Store secrets (3 keys)**
-- `ASTHAPAY_API_KEY`
-- `ASTHAPAY_SECRET_KEY`  
-- `ASTHAPAY_BRAND_KEY`
+### 3. Update `src/components/AddMoneyFlow.tsx`
+- Add `asthapay` to `MFS_PROVIDERS` array with branding (purple/blue, "AsthaPay")
+- In `handlePinConfirm`, add an `asthapay` branch alongside the existing bKash/Nagad block:
+  - Call edge function with `action=create`
+  - Block if `simulated` response (not configured)
+  - Store pending session in `localStorage`
+  - Redirect to `payment_url`
 
-**2. Create edge function `supabase/functions/asthapay-payment/index.ts`**
-- `action=create`: Accepts amount + user info, calls AsthaPay create endpoint, stores a `payment_sessions` record, returns the `payment_url`
-- `action=verify`: Accepts `transaction_id`, calls AsthaPay verify endpoint, if `COMPLETED` → credits user balance via `record_transaction` RPC + treasury debit, marks session complete
+### 4. Update `src/pages/Index.tsx` — handle return redirect
+- On mount, check URL query params for AsthaPay callback params (`transactionId`, `status`)
+- Also check `localStorage` for `pending_payment_session` with provider `asthapay`
+- If found, call edge function with `action=verify`
+- On success, show Add Money success state + toast
 
-**3. Update `src/components/AddMoneyFlow.tsx`**
-- Add "AsthaPay" as a new MFS provider entry with its own branding
-- In `handlePinConfirm`, add an `asthapay` branch similar to the existing bKash/Nagad flow:
-  - Call the edge function to create payment
-  - Redirect user to `payment_url`
-  - Store pending session in localStorage
+### 5. Config
+- Add `[functions.asthapay-payment]` with `verify_jwt = false` to `supabase/config.toml`
 
-**4. Add callback handler in `src/pages/Index.tsx`**
-- On mount, check URL query params for `transactionId` + `status` (AsthaPay redirects back with these)
-- If found, call the verify edge function
-- On success, show the Add Money success state with confetti
-
-### Files to create/modify
+### Files
 - **New**: `supabase/functions/asthapay-payment/index.ts`
-- **Edit**: `src/components/AddMoneyFlow.tsx` — add AsthaPay provider + payment branch
-- **Edit**: `src/pages/Index.tsx` — handle return redirect verification
+- **Edit**: `src/components/AddMoneyFlow.tsx`
+- **Edit**: `src/pages/Index.tsx`
+- **Migration**: Insert `asthapay` row into `payment_gateways`
 
