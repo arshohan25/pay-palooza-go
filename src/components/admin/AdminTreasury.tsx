@@ -12,7 +12,7 @@ import { format } from "date-fns";
 import {
   Wallet, TrendingUp, HandCoins, Search, Send, RefreshCw,
   ArrowDownCircle, ArrowUpCircle, Coins, Landmark, Filter,
-  CalendarIcon, Download,
+  CalendarIcon, Download, CheckCircle2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -46,6 +46,18 @@ interface FoundUser {
   roles: string[];
 }
 
+interface DisbursementReceipt {
+  recipientName: string;
+  recipientPhone: string;
+  amount: number;
+  oldTreasuryBalance: number;
+  newTreasuryBalance: number;
+  oldRecipientBalance: number;
+  newRecipientBalance: number;
+  reference: string;
+  timestamp: Date;
+}
+
 const LEDGER_TYPE_CONFIG: Record<string, { label: string; color: string; icon: typeof Wallet }> = {
   initial_deposit: { label: "Initial Deposit", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300", icon: Landmark },
   disburse: { label: "Disbursement", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300", icon: Send },
@@ -77,6 +89,7 @@ export default function AdminTreasury() {
   const [pinInput, setPinInput] = useState("");
   const [sending, setSending] = useState(false);
   const [showPinStep, setShowPinStep] = useState(false);
+  const [receipt, setReceipt] = useState<DisbursementReceipt | null>(null);
 
   const loadTreasury = useCallback(async () => {
     setLoading(true);
@@ -161,10 +174,26 @@ export default function AdminTreasury() {
     } else {
       const result = data as unknown as { success: boolean; new_treasury_balance: number; target_new_balance: number; target_name: string };
       
+      const oldTreasuryBal = treasury?.balance ?? 0;
+      const oldRecipientBal = foundUser.balance;
+
       // Optimistic UI update using RPC response data
       if (result && treasury) {
         setTreasury(prev => prev ? { ...prev, balance: result.new_treasury_balance, total_disbursed: prev.total_disbursed + amount } : prev);
       }
+
+      // Build receipt
+      setReceipt({
+        recipientName: foundUser.name || "Unknown",
+        recipientPhone: foundUser.phone,
+        amount,
+        oldTreasuryBalance: oldTreasuryBal,
+        newTreasuryBalance: result?.new_treasury_balance ?? oldTreasuryBal - amount,
+        oldRecipientBalance: oldRecipientBal,
+        newRecipientBalance: result?.target_new_balance ?? oldRecipientBal + amount,
+        reference: `DISB-${format(new Date(), "yyyyMMdd-HHmmss")}`,
+        timestamp: new Date(),
+      });
 
       toast.success(`৳${amount.toLocaleString()} sent to ${foundUser.name || foundUser.phone}`);
       setSearchPhone("");
@@ -377,6 +406,54 @@ export default function AdminTreasury() {
           )}
         </CardContent>
       </Card>
+
+      {/* ═══ Disbursement Receipt ═══ */}
+      {receipt && (
+        <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", damping: 20 }}>
+          <Card className="border-0 shadow-[var(--shadow-card)] overflow-hidden">
+            <div className="bg-emerald-500 dark:bg-emerald-600 px-5 py-3 flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-white" />
+              <span className="font-semibold text-white text-sm">Disbursement Successful</span>
+            </div>
+            <CardContent className="p-5 space-y-4">
+              <div className="text-center">
+                <p className="text-3xl font-bold text-foreground">৳{receipt.amount.toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  sent to <strong>{receipt.recipientName}</strong> ({receipt.recipientPhone})
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Treasury side */}
+                <div className="rounded-lg bg-muted/50 p-3 space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                    <Wallet className="w-3.5 h-3.5" /> Platform Treasury
+                  </p>
+                  <p className="text-sm text-muted-foreground line-through">{formatBDT(receipt.oldTreasuryBalance)}</p>
+                  <p className="text-base font-bold text-foreground">{formatBDT(receipt.newTreasuryBalance)}</p>
+                </div>
+                {/* Recipient side */}
+                <div className="rounded-lg bg-muted/50 p-3 space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                    <ArrowUpCircle className="w-3.5 h-3.5" /> Recipient Balance
+                  </p>
+                  <p className="text-sm text-muted-foreground line-through">৳{receipt.oldRecipientBalance.toLocaleString()}</p>
+                  <p className="text-base font-bold text-foreground">৳{receipt.newRecipientBalance.toLocaleString()}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border pt-3">
+                <span>Ref: {receipt.reference}</span>
+                <span>{format(receipt.timestamp, "MMM d, yyyy · HH:mm:ss")}</span>
+              </div>
+
+              <Button variant="outline" size="sm" className="w-full" onClick={() => setReceipt(null)}>
+                Dismiss
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* ═══ Treasury Ledger ═══ */}
       <Card className="border-0 shadow-[var(--shadow-card)]">
