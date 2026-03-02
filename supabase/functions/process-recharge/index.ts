@@ -28,13 +28,15 @@ Deno.serve(async (req) => {
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: { user }, error: userError } = await userClient.auth.getUser();
-    if (userError || !user) {
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const userId = claimsData.claims.sub as string;
 
     const { operator, phone, amount, pack_name, pack_type } = await req.json();
 
@@ -125,34 +127,18 @@ Deno.serve(async (req) => {
     }
 
     if (cashbackAmount > 0) {
-      // Credit cashback using service role (bypasses client-side addmoney block)
-      // 1. Update user balance
-      const { data: profile } = await adminClient
-        .from("profiles")
-        .select("balance")
-        .eq("user_id", user.id)
-        .single();
+      // Credit cashback atomically using service role RPC
+      // Use rpc to atomically update balance and record transaction
+      const { error: cbError } = await adminClient.rpc("credit_cashback", {
+        p_user_id: userId,
+        p_amount: cashbackAmount,
+        p_description: `Drive Cashback: ${pack_name || operator} (2%)`,
+        p_reference: `CB-${Date.now()}`,
+      });
 
-      if (profile) {
-        const newBalance = parseFloat(String(profile.balance)) + cashbackAmount;
-        await adminClient
-          .from("profiles")
-          .update({ balance: newBalance })
-          .eq("user_id", user.id);
-
-        // 2. Record cashback transaction
-        await adminClient
-          .from("transactions")
-          .insert({
-            user_id: user.id,
-            type: "addmoney",
-            amount: cashbackAmount,
-            fee: 0,
-            balance_after: newBalance,
-            description: `Drive Cashback: ${pack_name || operator} (2%)`,
-            reference: `CB-${Date.now()}`,
-            status: "completed",
-          });
+      if (cbError) {
+        console.error("Cashback credit failed:", cbError.message);
+        cashbackAmount = 0; // Reset so client knows it failed
       }
     }
 
