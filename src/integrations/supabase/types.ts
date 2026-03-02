@@ -738,6 +738,33 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_treasury: {
+        Row: {
+          balance: number
+          id: string
+          total_commissions_paid: number
+          total_disbursed: number
+          total_earnings: number
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          id?: string
+          total_commissions_paid?: number
+          total_disbursed?: number
+          total_earnings?: number
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          id?: string
+          total_commissions_paid?: number
+          total_disbursed?: number
+          total_earnings?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1138,6 +1165,45 @@ export type Database = {
         }
         Relationships: []
       }
+      treasury_ledger: {
+        Row: {
+          actor_id: string | null
+          amount: number
+          balance_after: number
+          counterparty_role: string | null
+          counterparty_user_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          reference: string | null
+          type: Database["public"]["Enums"]["treasury_ledger_type"]
+        }
+        Insert: {
+          actor_id?: string | null
+          amount: number
+          balance_after: number
+          counterparty_role?: string | null
+          counterparty_user_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference?: string | null
+          type: Database["public"]["Enums"]["treasury_ledger_type"]
+        }
+        Update: {
+          actor_id?: string | null
+          amount?: number
+          balance_after?: number
+          counterparty_role?: string | null
+          counterparty_user_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference?: string | null
+          type?: Database["public"]["Enums"]["treasury_ledger_type"]
+        }
+        Relationships: []
+      }
       user_permissions: {
         Row: {
           created_at: string | null
@@ -1203,6 +1269,14 @@ export type Database = {
           p_reason: string
           p_reference_txn_id?: string
           p_target_user_id: string
+        }
+        Returns: Json
+      }
+      admin_disburse_funds: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_target_phone: string
         }
         Returns: Json
       }
@@ -1292,6 +1366,10 @@ export type Database = {
             }
             Returns: Json
           }
+      treasury_debit_for_addmoney: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       agent_status: "pending" | "active" | "suspended" | "terminated"
@@ -1316,6 +1394,12 @@ export type Database = {
         | "education"
         | "utility"
         | "other"
+      treasury_ledger_type:
+        | "disburse"
+        | "earning"
+        | "commission_paid"
+        | "user_addmoney"
+        | "initial_deposit"
       txn_status: "pending" | "completed" | "failed" | "reversed"
       txn_type:
         | "send"
@@ -1478,6 +1562,13 @@ export const Constants = {
         "education",
         "utility",
         "other",
+      ],
+      treasury_ledger_type: [
+        "disburse",
+        "earning",
+        "commission_paid",
+        "user_addmoney",
+        "initial_deposit",
       ],
       txn_status: ["pending", "completed", "failed", "reversed"],
       txn_type: [

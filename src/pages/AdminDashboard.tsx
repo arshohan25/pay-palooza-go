@@ -6,7 +6,7 @@ import {
   TrendingUp, Activity, Search, RefreshCw, LogOut,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
-  Menu, ScanFace, Gift, Award,
+  Menu, ScanFace, Gift, Award, Wallet,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,7 @@ import AdminRechargeLog from "@/components/admin/AdminRechargeLog";
 import AdminKycReview from "@/components/admin/AdminKycReview";
 import AdminReferralManagement from "@/components/admin/AdminReferralManagement";
 import AdminPermissions from "@/components/admin/AdminPermissions";
+import AdminTreasury from "@/components/admin/AdminTreasury";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 
 interface Stats {
@@ -147,6 +148,7 @@ const NAV_ITEMS = [
   { id: "recharge", label: "Recharge", icon: Smartphone },
   { id: "kyc", label: "KYC", icon: ScanFace },
   { id: "referrals", label: "Referrals", icon: Gift },
+  { id: "treasury", label: "Treasury", icon: Wallet },
   { id: "permissions", label: "Permissions", icon: ShieldAlert },
   { id: "reporting", label: "Reports", icon: BarChart3 },
 ];
@@ -721,6 +723,9 @@ export default function AdminDashboard() {
 
         {/* ═══ PERMISSIONS DASHBOARD ═══ */}
         {activeTab === "permissions" && <AdminPermissions />}
+
+        {/* ═══ TREASURY DASHBOARD ═══ */}
+        {activeTab === "treasury" && <AdminTreasury />}
 
         {/* ═══ REPORTING DASHBOARD ═══ */}
         {activeTab === "reporting" && <AdminReporting />}
