@@ -12,7 +12,7 @@ import {
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
+import { RefreshCw, ChevronDown, ChevronRight, Radio } from "lucide-react";
 import { format } from "date-fns";
 
 interface PaymentSession {
@@ -56,6 +56,7 @@ export default function AdminWebhookLog() {
   const [providerFilter, setProviderFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [isLive, setIsLive] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -76,7 +77,7 @@ export default function AdminWebhookLog() {
     const { data: auditData } = await supabase
       .from("audit_logs")
       .select("*")
-      .in("action", ["payment_credit_webhook", "payment_credit_ipn", "payment_credit_callback"])
+      .in("action", ["payment_credit_webhook", "payment_credit_ipn", "payment_credit_callback", "payment_credit"])
       .order("created_at", { ascending: false })
       .limit(200);
 
@@ -94,6 +95,27 @@ export default function AdminWebhookLog() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Realtime subscription for live updates
+  useEffect(() => {
+    if (!isLive) return;
+
+    const channel = supabase
+      .channel("admin-webhook-log")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "payment_sessions" },
+        () => {
+          // Re-fetch on any change
+          load();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isLive, load]);
+
   const toggleExpand = (id: string) => {
     setExpandedId(prev => prev === id ? null : id);
   };
@@ -102,7 +124,15 @@ export default function AdminWebhookLog() {
     <Card className="border-0 shadow-[var(--shadow-card)]">
       <CardHeader className="pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <CardTitle className="text-base font-bold">Webhook / IPN Event Log</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-base font-bold">Webhook / IPN Event Log</CardTitle>
+            {isLive && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-[10px] font-semibold">
+                <Radio className="w-3 h-3 animate-pulse" />
+                Live
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2 flex-wrap">
             <Select value={providerFilter} onValueChange={setProviderFilter}>
               <SelectTrigger className="w-[130px] h-8 text-xs">
@@ -126,6 +156,15 @@ export default function AdminWebhookLog() {
                 <SelectItem value="failed">Failed</SelectItem>
               </SelectContent>
             </Select>
+            <Button
+              variant={isLive ? "default" : "outline"}
+              size="sm"
+              onClick={() => setIsLive(!isLive)}
+              className="h-8 gap-1.5 text-xs"
+            >
+              <Radio className="w-3.5 h-3.5" />
+              {isLive ? "Live" : "Paused"}
+            </Button>
             <Button variant="outline" size="sm" onClick={load} disabled={loading} className="h-8 gap-1.5">
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
               Refresh

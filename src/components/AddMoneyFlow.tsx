@@ -175,6 +175,11 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
       return;
     }
     if (source === "mfs") {
+      // AsthaPay uses redirect flow — no phone number needed from user
+      if (mfsProvider?.id === "asthapay") {
+        goTo("pin");
+        return;
+      }
       const raw = mfsAccount.replace(/\D/g, "");
       if (raw.length < 11) { setError(`Enter a valid ${mfsProvider?.accountLabel ?? "account number"}.`); return; }
       goTo("pin");
@@ -808,34 +813,58 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                   </div>
                 </div>
 
-                {/* Account number input */}
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-muted-foreground">{mfsProvider.accountLabel}</label>
-                  <Input
-                    type="tel"
-                    inputMode="numeric"
-                    placeholder={mfsProvider.accountPlaceholder}
-                    value={mfsAccount}
-                    maxLength={mfsProvider.accountMaxLength}
-                    onChange={(e) => { setMfsAccount(e.target.value.replace(/\D/g, "")); setError(""); }}
-                    className="h-12 text-lg font-mono tracking-wider bg-card border-border"
-                  />
-                  <p className="text-[11px] text-muted-foreground">
-                    Enter your registered {mfsProvider.name} number to receive the payment request.
-                  </p>
-                </div>
+                {/* AsthaPay: redirect flow explanation (no phone input needed) */}
+                {mfsProvider.id === "asthapay" ? (
+                  <>
+                    <div className="rounded-xl bg-accent/10 border border-accent/25 px-4 py-3 space-y-2">
+                      <p className="text-xs font-semibold text-foreground">How it works:</p>
+                      <ol className="text-xs text-foreground/80 leading-relaxed space-y-1 list-decimal list-inside">
+                        <li>Confirm with your EasyPay PIN</li>
+                        <li>You'll be redirected to AsthaPay's secure payment page</li>
+                        <li>Choose your payment method (bKash, Nagad, Rocket, Upay, etc.)</li>
+                        <li>Follow the instructions to send money & enter Transaction ID</li>
+                        <li>You'll be redirected back and your wallet will be credited</li>
+                      </ol>
+                    </div>
+                    <div className="rounded-xl bg-primary/5 border border-primary/15 px-4 py-3 flex items-start gap-2">
+                      <Shield size={14} className="text-primary mt-0.5 shrink-0" />
+                      <p className="text-xs text-primary/80 leading-relaxed">
+                        You'll complete payment on <span className="font-semibold">AsthaPay's hosted page</span>. Your MFS credentials are never shared with EasyPay.
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Account number input for other MFS providers */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-muted-foreground">{mfsProvider.accountLabel}</label>
+                      <Input
+                        type="tel"
+                        inputMode="numeric"
+                        placeholder={mfsProvider.accountPlaceholder}
+                        value={mfsAccount}
+                        maxLength={mfsProvider.accountMaxLength}
+                        onChange={(e) => { setMfsAccount(e.target.value.replace(/\D/g, "")); setError(""); }}
+                        className="h-12 text-lg font-mono tracking-wider bg-card border-border"
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        Enter your registered {mfsProvider.name} number to receive the payment request.
+                      </p>
+                    </div>
 
-                {/* How it works */}
-                <div className="rounded-xl bg-accent/10 border border-accent/25 px-4 py-3 space-y-2">
-                  <p className="text-xs font-semibold text-foreground">How it works:</p>
-                  <ol className="text-xs text-foreground/80 leading-relaxed space-y-1 list-decimal list-inside">
-                    <li>Enter your {mfsProvider.name} number above</li>
-                    <li>Confirm with your EasyPay PIN</li>
-                    <li>You'll receive a payment request on your {mfsProvider.name} app</li>
-                    <li>Approve the payment in {mfsProvider.name}</li>
-                    <li>Your EasyPay wallet will be credited instantly</li>
-                  </ol>
-                </div>
+                    {/* How it works */}
+                    <div className="rounded-xl bg-accent/10 border border-accent/25 px-4 py-3 space-y-2">
+                      <p className="text-xs font-semibold text-foreground">How it works:</p>
+                      <ol className="text-xs text-foreground/80 leading-relaxed space-y-1 list-decimal list-inside">
+                        <li>Enter your {mfsProvider.name} number above</li>
+                        <li>Confirm with your EasyPay PIN</li>
+                        <li>You'll receive a payment request on your {mfsProvider.name} app</li>
+                        <li>Approve the payment in {mfsProvider.name}</li>
+                        <li>Your EasyPay wallet will be credited instantly</li>
+                      </ol>
+                    </div>
+                  </>
+                )}
 
                 {error && (
                   <p className="text-xs text-destructive flex items-center gap-1">
