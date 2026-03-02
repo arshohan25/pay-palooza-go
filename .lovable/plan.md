@@ -1,77 +1,39 @@
 
 
-## Plan: Fix AsthaPay API to Match Docs + Add Realtime to Webhook Log
+## Admin Dashboard Mobile Visibility Fix
 
-### Three tasks to address:
+### Investigation Summary
 
----
+I tested all 19 admin tabs on a 390x844 mobile viewport via browser automation. All tabs rendered their content. However, I identified several potential issues that could cause content to appear hidden or inaccessible on certain mobile devices or screen sizes:
 
-### 1. Fix AsthaPay Create API to match official documentation
+### Issues Found
 
-The AsthaPay API docs require `cus_name` and `cus_email` as **required** fields, plus `success_url`, `cancel_url`, `amount`, and optional `meta_data`. The current edge function sends `invoice_number` which is **not** in the docs. Also, the docs show the redirect returns query params: `transactionId`, `paymentMethod`, `paymentAmount`, `paymentFee`, `status`.
+1. **Main content scroll constraint**: The `<main>` element uses `overflow-auto` inside a flex layout without explicit height bounds. On some mobile browsers, this can cause the content to not be scrollable or clip at the bottom of the viewport.
 
-**Edit `supabase/functions/asthapay-payment/index.ts`:**
-- In the `create` action, add `cus_name` and `cus_email` to the POST body (fetch from user's profile)
-- Replace `invoice_number` with `meta_data` (JSON containing sessionId, invoice info)
-- Keep `success_url`, `cancel_url`, `ipn_url` as-is (already correct)
-- The success/cancel URL format already includes `?asthapay=1&sessionId=...&status=...` — this matches AsthaPay's redirect behavior where it appends `transactionId` as a query param
+2. **Table columns hidden on mobile**: Many admin tables use `hidden md:table-cell` and `hidden lg:table-cell` to hide columns on smaller screens. While intentional, this means users on mobile see fewer columns (e.g., Receiver, Fee, Commission, Date-Time, Balance After, Platform %, Admin, Reason are all hidden). This could be what the user perceives as "content hiding."
 
-**Edit `src/pages/Index.tsx`:**
-- Also handle the AsthaPay redirect query params from the docs format: `transactionId`, `paymentMethod`, `paymentAmount`, `paymentFee`, `status` — the current code already parses `transactionId` so this is mostly fine, but ensure it also catches the direct AsthaPay redirect format (without `asthapay=1`)
+3. **Support Dashboard fixed height**: `AdminSupportDashboard` uses `h-[calc(100vh-12rem)]` which may miscalculate on mobile with dynamic browser chrome (address bar appearing/disappearing).
 
----
+4. **Permissions table too wide**: The `AdminPermissions` table has 7+ columns with no responsive hiding, causing horizontal scroll that content may appear cut off.
 
-### 2. Redesign AsthaPay details page to match the reference images
+### Plan
 
-The uploaded images show AsthaPay's payment page flow — a branded page with MFS provider logos (Rocket, Nagad, Upay, bKash), then an instruction page telling the user to send money to a specific number and enter the Transaction ID. Since our app redirects to AsthaPay's hosted page (pay.asthapay.com), the user already sees this UI. No changes needed to replicate it — it's AsthaPay's own hosted page.
+1. **Fix main content area scroll** - Change `<main className="flex-1 p-4 md:p-8 overflow-auto">` to use `min-h-0` to properly enable scrolling in the flex layout, and add `pb-8` for bottom padding on mobile.
 
-However, the **MFS details step** (Step 3c in AddMoneyFlow) should be improved to explain that the user will be redirected to AsthaPay's payment page:
+2. **Add mobile search bar** - The global search input is `hidden md:block` in the header, meaning mobile users cannot search. Add a mobile-visible search bar.
 
-**Edit `src/components/AddMoneyFlow.tsx`:**
-- For AsthaPay specifically, update the "How it works" instructions to explain the redirect flow (matching the reference images):
-  1. You'll be redirected to AsthaPay's secure payment page
-  2. Choose your payment method (bKash, Nagad, Rocket, etc.)
-  3. Follow the instructions to complete payment
-  4. You'll be redirected back and your wallet will be credited
-- Remove the phone number input requirement for AsthaPay (AsthaPay handles this on their end)
-- Skip the `mfsAccount` validation for AsthaPay in `handleDetailsContinue`
+3. **Fix Support Dashboard height** - Replace `h-[calc(100vh-12rem)]` with a more robust height calculation using `dvh` (dynamic viewport height) with fallback.
 
----
+4. **Make Permissions table responsive** - Hide the less important columns (sms_read, Last Updated) on mobile.
 
-### 3. Add real-time updates to AdminWebhookLog
+5. **Improve Commissions table** - The Platform % column is hidden on mobile. Add it back or show it in a different way.
 
-**Edit `src/components/admin/AdminWebhookLog.tsx`:**
-- Subscribe to Supabase Realtime `postgres_changes` on `payment_sessions` table (already enabled for realtime)
-- On `INSERT` or `UPDATE` events, either prepend the new/updated row to the list or re-fetch
-- Show a subtle "live" indicator badge next to the title
-- Clean up the subscription on unmount
+6. **Ensure all dialog/modal content scrollable on mobile** - Verify all admin dialogs have `max-h-[90vh] overflow-y-auto` consistently.
 
----
+### Files to Modify
 
-### Technical details
-
-**AsthaPay API create body (per docs):**
-```json
-{
-  "cus_name": "User Name",
-  "cus_email": "user@email.com",
-  "amount": "100",
-  "success_url": "https://app.com/?asthapay=1&sessionId=xxx&status=success",
-  "cancel_url": "https://app.com/?asthapay=1&sessionId=xxx&status=cancel",
-  "meta_data": { "sessionId": "xxx", "userId": "yyy" }
-}
-```
-
-**Realtime subscription pattern:**
-```typescript
-const channel = supabase
-  .channel('webhook-log')
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'payment_sessions' }, () => load())
-  .subscribe();
-```
-
-### Files
-- **Edit**: `supabase/functions/asthapay-payment/index.ts` — fix create payload to match docs
-- **Edit**: `src/components/AddMoneyFlow.tsx` — update AsthaPay details step UX
-- **Edit**: `src/components/admin/AdminWebhookLog.tsx` — add realtime subscription
+- `src/pages/AdminDashboard.tsx` - Fix main area scroll, add mobile search
+- `src/components/admin/AdminSupportDashboard.tsx` - Fix height calculation
+- `src/components/admin/AdminPermissions.tsx` - Make responsive
+- `src/components/admin/AdminCommissionSetup.tsx` - Make Platform % visible on mobile
 
