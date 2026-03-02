@@ -1,25 +1,42 @@
 
 
-## Plan: Add PDF Receipt Download & Confetti to Disbursement Receipt
+## Plan: Integrate AsthaPay Payment Gateway
 
-### 1. Add confetti on receipt appearance
-- Import `fireSuccessConfetti` from `@/lib/confetti`
-- Add a `useEffect` that fires confetti when `receipt` state becomes non-null
+### Understanding the API
+AsthaPay uses a redirect-based payment flow:
+1. **Create Payment** → POST to `https://pay.asthapay.com/api/payment/create` with headers `API-KEY`, `SECRET-KEY`, `BRAND-KEY`
+2. Returns a `payment_url` → redirect user to complete payment
+3. User redirected back to `success_url` with query params (`transactionId`, `status`, etc.)
+4. **Verify Payment** → POST to `https://pay.asthapay.com/api/payment/verify` with `transaction_id`
 
-### 2. Add "Print Receipt" PDF button
-- Import `jsPDF` and `jspdf-autotable` (already installed)
-- Add a `handlePrintReceipt` function that generates a PDF with:
-  - EasyPay header with green banner
-  - "Disbursement Receipt" title
-  - Table rows: Recipient, Phone, Amount, Old/New Treasury Balance, Old/New Recipient Balance, Reference, Timestamp
-  - Footer with "Powered by EasyPay"
-  - Auto-downloads as `receipt-DISB-xxx.pdf`
-- Add a `FileText` (or `Printer`) icon button next to the existing "Dismiss" button in the receipt card
+### Credentials Needed
+AsthaPay requires 3 headers: **API-KEY**, **SECRET-KEY**, and **BRAND-KEY**. You provided a "Device key" (`9PbxJ7qYDGCOljYYFmMdyrzkd7fEyLEowZ0EFrpD`) — I'll need to confirm which credential this maps to, and collect the remaining two. All three will be stored as backend secrets.
 
-### Files changed
-- **`src/components/admin/AdminTreasury.tsx`** only
-  - Import `fireSuccessConfetti`, `jsPDF`, `autoTable`, `FileText` icon
-  - Add `useEffect` for confetti trigger
-  - Add `handlePrintReceipt` function
-  - Replace single "Dismiss" button with a two-button row: "Print Receipt" + "Dismiss"
+### Changes
+
+**1. Store secrets (3 keys)**
+- `ASTHAPAY_API_KEY`
+- `ASTHAPAY_SECRET_KEY`  
+- `ASTHAPAY_BRAND_KEY`
+
+**2. Create edge function `supabase/functions/asthapay-payment/index.ts`**
+- `action=create`: Accepts amount + user info, calls AsthaPay create endpoint, stores a `payment_sessions` record, returns the `payment_url`
+- `action=verify`: Accepts `transaction_id`, calls AsthaPay verify endpoint, if `COMPLETED` → credits user balance via `record_transaction` RPC + treasury debit, marks session complete
+
+**3. Update `src/components/AddMoneyFlow.tsx`**
+- Add "AsthaPay" as a new MFS provider entry with its own branding
+- In `handlePinConfirm`, add an `asthapay` branch similar to the existing bKash/Nagad flow:
+  - Call the edge function to create payment
+  - Redirect user to `payment_url`
+  - Store pending session in localStorage
+
+**4. Add callback handler in `src/pages/Index.tsx`**
+- On mount, check URL query params for `transactionId` + `status` (AsthaPay redirects back with these)
+- If found, call the verify edge function
+- On success, show the Add Money success state with confetti
+
+### Files to create/modify
+- **New**: `supabase/functions/asthapay-payment/index.ts`
+- **Edit**: `src/components/AddMoneyFlow.tsx` — add AsthaPay provider + payment branch
+- **Edit**: `src/pages/Index.tsx` — handle return redirect verification
 
