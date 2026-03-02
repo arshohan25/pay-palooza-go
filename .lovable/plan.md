@@ -1,85 +1,58 @@
 
 
-## Device Permissions System + Admin Permissions Dashboard
+## Plan: Admin Treasury & Liquidity Management System
 
 ### Overview
+Add a platform-level treasury system to the admin panel with a starting balance of ৳1000 crores (10,000,000,000), enabling admin fund distribution to any role, automatic treasury debiting when users add money, and earnings/commission tracking from transaction fees.
 
-Build a centralized permission management system that requests and tracks device permissions (Contacts, SMS/OTP auto-read, Camera, Location) on first use, and add an admin panel tab to monitor per-user permission grant status.
+### Database Changes
 
-### User-Side: Permission Manager
+**1. New `platform_treasury` table** (single-row config table)
+- `id`, `balance` (starts at 10,000,000,000), `total_earnings`, `total_commissions_paid`, `total_disbursed`, `updated_at`
+- RLS: admin-only read/write
 
-**New file: `src/lib/permissions.ts`**
-- Create a unified permissions helper with functions for each permission type:
-  - **Contacts**: Use the Contact Picker API (`navigator.contacts.select()`) to let users pick contacts for Send Money / Recharge flows. Falls back gracefully if unsupported.
-  - **SMS/OTP Auto-Read**: Use the Web OTP API (`navigator.credentials.get({ otp: { transport: ['sms'] } })`) for auto-reading OTP codes during verification. Falls back to manual entry.
-  - **Camera**: Use `navigator.mediaDevices.getUserMedia({ video: true })` for QR scanner (replace mock scanner with real camera feed).
-  - **Location**: Use `navigator.geolocation.getCurrentPosition()` to capture user location for fraud detection and transaction metadata.
-- Each function checks current permission state via `navigator.permissions.query()` where supported, requests if needed, and returns a status object.
-- Store granted permissions in `localStorage` as a cache, and also persist to a new database table.
+**2. New `treasury_ledger` table** (audit trail for all treasury movements)
+- `id`, `type` (enum: `disburse`, `earning`, `commission_paid`, `user_addmoney`, `initial_deposit`), `amount`, `balance_after`, `counterparty_user_id`, `counterparty_role`, `description`, `reference`, `actor_id`, `created_at`
+- RLS: admin-only read, system insert
 
-**New file: `src/components/PermissionGate.tsx`**
-- A reusable component that wraps features requiring permissions. On first access, shows a bottom sheet explaining why the permission is needed with "Allow" / "Not Now" buttons.
-- Permission types: `contacts`, `camera`, `location`, `sms_read`
+**3. New RPCs**
+- `admin_disburse_funds(p_target_phone, p_amount, p_description)` — Admin sends treasury funds to any user. Debits treasury, credits target user balance, records in both `treasury_ledger` and `transactions`.
+- `treasury_debit_for_addmoney(p_user_id, p_amount)` — Called by payment gateway webhooks. Debits treasury when a user successfully adds money.
+- Modify existing fee-collecting RPCs (`record_transaction`, `transfer_money`) to credit fees to treasury `total_earnings`.
 
-**New database table: `user_permissions`**
-- Columns: `id`, `user_id`, `permission` (text: contacts/camera/location/sms_read), `status` (granted/denied/prompt), `device_info` (jsonb), `granted_at`, `updated_at`
-- RLS: Users can insert/update own rows; admins can read all.
+**4. Seed initial treasury balance** of ৳10,000,000,000 (1000 crores)
+
+### Admin Dashboard UI Changes
+
+**New "Treasury" nav item** added to admin sidebar, containing:
+
+1. **Treasury Overview Cards** (3 cards at top):
+   - **Platform Balance** — Current treasury balance (large, prominent)
+   - **Total Earnings** — Accumulated fees from cashout, send money, settlements, etc.
+   - **Commissions Paid** — Total paid out to agents, merchants, distributors
+
+2. **Send Funds Section**:
+   - Search user by phone number
+   - Shows user info (name, phone, role badges)
+   - Amount input with treasury balance validation
+   - Description field
+   - PIN confirmation before executing
+   - Uses `admin_disburse_funds` RPC
+
+3. **Treasury Ledger Table**:
+   - Shows all treasury movements with type badges, amounts, counterparty info
+   - Filterable by type (earnings, disbursements, add-money debits, commissions)
 
 ### Integration Points
 
-1. **Send Money / Recharge flows** — Add a "Pick from Contacts" button that triggers the Contact Picker API via `PermissionGate`
-2. **QR Scanner (`QrScannerModal.tsx`)** — Replace mock scanner with real `getUserMedia` camera access via `PermissionGate`
-3. **OTP verification flows** — Integrate Web OTP API for auto-read during PIN reset and registration
-4. **Transaction flows** — Silently request location and attach coordinates to transaction metadata for fraud detection
-
-### Admin Panel: Permissions Tab
-
-**New file: `src/components/admin/AdminPermissions.tsx`**
-- Table showing all users with columns: Name, Phone, Contacts (granted/denied/--), Camera, Location, SMS Read, Last Updated
-- Color-coded badges: green for granted, red for denied, grey for not-requested
-- Summary stats at top: "X users granted camera", "Y users granted location", etc.
-- Search/filter by user name/phone
-- Export capability
-
-**Admin Dashboard changes (`AdminDashboard.tsx`)**
-- Add `{ id: "permissions", label: "Permissions", icon: Shield }` to `NAV_ITEMS`
-- Add the tab content rendering `<AdminPermissions />`
-
-### Database Migration
-
-```sql
-CREATE TABLE user_permissions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL,
-  permission TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'prompt',
-  device_info JSONB DEFAULT '{}',
-  granted_at TIMESTAMPTZ,
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  created_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(user_id, permission)
-);
-
-ALTER TABLE user_permissions ENABLE ROW LEVEL SECURITY;
--- Users can upsert own permissions
--- Admins can read all
-```
+- **Add Money Flow**: After payment gateway verification succeeds, call `treasury_debit_for_addmoney` to debit the equivalent from treasury (this happens in the payment webhook edge function, not client-side)
+- **Fee Collection**: Modify `record_transaction` and `transfer_money` RPCs to atomically credit fee amounts to `platform_treasury.total_earnings` and insert earning entries in `treasury_ledger`
+- **Cashback/Commission**: When commissions are paid (agent commission, referral rewards), record against `platform_treasury.total_commissions_paid`
 
 ### Files to Create/Modify
-
-- **New**: `src/lib/permissions.ts` — permission request helpers
-- **New**: `src/components/PermissionGate.tsx` — UI wrapper for permission requests
-- **New**: `src/components/admin/AdminPermissions.tsx` — admin permissions dashboard
-- **New**: Migration SQL for `user_permissions` table
-- **Modify**: `src/components/QrScannerModal.tsx` — real camera integration
-- **Modify**: `src/components/SendMoneyFlow.tsx` — contact picker button
-- **Modify**: `src/components/MobileRechargeFlow.tsx` — contact picker button
-- **Modify**: `src/pages/AdminDashboard.tsx` — add Permissions nav item and tab
-
-### Technical Notes
-
-- Contact Picker API and Web OTP API have limited browser support (Chrome Android primarily). All features gracefully degrade with manual fallbacks.
-- Camera permission is well-supported across all modern browsers.
-- Location uses the standard Geolocation API with high accuracy option for fraud detection.
-- Permission status is synced to the database on each grant/deny so admins have visibility.
+- New migration SQL (treasury table, ledger table, RPCs, seed data)
+- New `src/components/admin/AdminTreasury.tsx` (treasury dashboard component)
+- Modified `src/pages/AdminDashboard.tsx` (add Treasury nav item + tab)
+- Modified `supabase/functions/payment-webhook/index.ts` (treasury debit on add-money)
+- Updated `src/integrations/supabase/types.ts` (auto-generated)
 
