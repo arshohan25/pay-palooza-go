@@ -33,6 +33,7 @@ interface MfsProvider {
   short: string;
   color: string;
   gradient: string;
+  logo?: string;
   accountLabel: string;
   accountPlaceholder: string;
   accountMaxLength: number;
@@ -41,7 +42,7 @@ interface MfsProvider {
 const MFS_PROVIDERS: MfsProvider[] = [
   { id: "bkash",    name: "bKash",          short: "bK", color: "#E2136E", gradient: "bg-[#E2136E]", accountLabel: "bKash Number",    accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
   { id: "nagad",    name: "Nagad",           short: "Ng", color: "#F6921E", gradient: "bg-[#F6921E]", accountLabel: "Nagad Number",    accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
-  { id: "asthapay", name: "AsthaPay",        short: "AP", color: "#6C3FC5", gradient: "bg-[#6C3FC5]", accountLabel: "AsthaPay Number", accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
+  { id: "asthapay", name: "AsthaPay",        short: "AP", color: "#3B6FE0", gradient: "bg-[#3B6FE0]", logo: "/operators/asthapay.png", accountLabel: "AsthaPay Number", accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
   { id: "rocket",   name: "Rocket (DBBL)",   short: "Rk", color: "#8B2F8B", gradient: "bg-[#8B2F8B]", accountLabel: "Rocket Number",   accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
   { id: "upay",     name: "Upay",            short: "Up", color: "#00A859", gradient: "bg-[#00A859]", accountLabel: "Upay Number",     accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
   { id: "tap",      name: "Tap",             short: "Tp", color: "#1A73E8", gradient: "bg-[#1A73E8]", accountLabel: "Tap Number",      accountPlaceholder: "01XXXXXXXXX", accountMaxLength: 11 },
@@ -550,9 +551,13 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                           sel ? "border-primary bg-primary/5" : "border-border bg-card hover:border-primary/30"
                         }`}
                       >
-                        <div className={`${p.gradient} w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-xs shrink-0`}>
-                          {p.short}
-                        </div>
+                        {p.logo ? (
+                          <img src={p.logo} alt={p.name} className="w-9 h-9 rounded-lg object-cover shrink-0" />
+                        ) : (
+                          <div className={`${p.gradient} w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-xs shrink-0`}>
+                            {p.short}
+                          </div>
+                        )}
                         <span className="text-xs font-semibold text-foreground leading-tight">{p.name}</span>
                         {sel && <CheckCircle2 size={13} className="text-primary ml-auto shrink-0" />}
                       </button>
@@ -778,9 +783,13 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
             {step === "details" && source === "mfs" && mfsProvider && (
               <div className="px-4 pt-6 pb-32 space-y-5">
                 <div className="flex items-center gap-3">
-                  <div className={`${mfsProvider.gradient} w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0`}>
-                    {mfsProvider.short}
-                  </div>
+                 {mfsProvider.logo ? (
+                    <img src={mfsProvider.logo} alt={mfsProvider.name} className="w-12 h-12 rounded-xl object-cover shrink-0" />
+                  ) : (
+                    <div className={`${mfsProvider.gradient} w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0`}>
+                      {mfsProvider.short}
+                    </div>
+                  )}
                   <div>
                     <p className="text-xs text-muted-foreground">Pay via</p>
                     <p className="text-sm font-bold text-foreground">{mfsProvider.name}</p>
