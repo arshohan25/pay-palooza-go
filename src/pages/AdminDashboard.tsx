@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import {
-  Users, ArrowLeftRight, ShieldAlert, Store, UserCheck, Trash2, Download, UserX, CheckCircle, Clock,
+  Users, ArrowLeftRight, ShieldAlert, Store, UserCheck, Trash2, Download, UserX, CheckCircle, Clock, Eye,
   TrendingUp, Activity, Search, RefreshCw, LogOut,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
@@ -13,8 +13,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useAdmin, fetchAdminStats, fetchRecentTransactions, fetchAllUsers, fetchFraudAlerts, fetchAllAgents, fetchAllMerchants, toggleUserStatus, toggleAgentStatus, toggleMerchantStatus, softDeleteUser, reactivateUser, bulkSuspendUsers, bulkDeleteUsers, bulkSoftDeleteUsers, exportUsersCSV } from "@/hooks/use-admin";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { useAdmin, fetchAdminStats, fetchRecentTransactions, fetchAllUsers, fetchFraudAlerts, fetchAllAgents, fetchAllMerchants, toggleUserStatus, toggleAgentStatus, toggleMerchantStatus, softDeleteUser, reactivateUser, bulkSuspendUsers, bulkDeleteUsers, bulkSoftDeleteUsers, exportUsersCSV, fetchUserDetails } from "@/hooks/use-admin";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { signOut } from "@/lib/auth";
@@ -180,6 +182,23 @@ export default function AdminDashboard() {
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [softDeleteTarget, setSoftDeleteTarget] = useState<{ userId: string; name: string; phone: string } | null>(null);
   const [softDeleting, setSoftDeleting] = useState(false);
+  const [detailUser, setDetailUser] = useState<any>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailData, setDetailData] = useState<{ profile: any; roles: any[]; kyc: any; transactions: any[] } | null>(null);
+
+  const openUserDetail = async (user: any) => {
+    setDetailUser(user);
+    setDetailLoading(true);
+    try {
+      const data = await fetchUserDetails(user.user_id);
+      setDetailData(data);
+    } catch {
+      setDetailData(null);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
   const loadData = useCallback(async () => {
     setRefreshing(true);
     const [s, t, u, a, ag, m, kycRes] = await Promise.all([
@@ -687,6 +706,9 @@ export default function AdminDashboard() {
                               </td>
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-1.5 flex-wrap">
+                                  <Button size="sm" variant="outline" className="text-xs h-7 gap-1" onClick={() => openUserDetail(user)}>
+                                    <Eye className="w-3 h-3" /> View
+                                  </Button>
                                   {isDeactivated ? (
                                     <>
                                       <Button
@@ -1021,6 +1043,155 @@ export default function AdminDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* User Detail Drawer */}
+      <Sheet open={!!detailUser} onOpenChange={(v) => { if (!v) { setDetailUser(null); setDetailData(null); } }}>
+        <SheetContent side="right" className="w-full sm:max-w-lg p-0 flex flex-col">
+          <SheetHeader className="px-6 pt-6 pb-4 shrink-0">
+            <SheetTitle className="text-lg">User Details</SheetTitle>
+            <SheetDescription className="text-sm text-muted-foreground">
+              {detailUser?.name || detailUser?.phone || "Loading..."}
+            </SheetDescription>
+          </SheetHeader>
+          <ScrollArea className="flex-1 px-6 pb-6">
+            {detailLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : detailData ? (
+              <div className="space-y-6">
+                {/* Profile Header */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
+                      {(detailData.profile?.name || "?")[0]?.toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-foreground truncate">{detailData.profile?.name || "—"}</h3>
+                      <p className="text-sm text-muted-foreground">{detailData.profile?.phone}</p>
+                      {detailData.profile?.email && <p className="text-xs text-muted-foreground">{detailData.profile.email}</p>}
+                    </div>
+                    <Badge
+                      variant={detailData.profile?.status === "suspended" ? "destructive" : detailData.profile?.status === "deactivated" ? "outline" : "secondary"}
+                      className={detailData.profile?.status === "deactivated" ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border-orange-300" : ""}
+                    >
+                      {detailData.profile?.status || "active"}
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="bg-muted/50 rounded-lg p-3">
+                      <p className="text-muted-foreground text-xs">Balance</p>
+                      <p className="font-bold text-foreground">৳{parseFloat(detailData.profile?.balance || 0).toLocaleString()}</p>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3">
+                      <p className="text-muted-foreground text-xs">Referral Code</p>
+                      <p className="font-mono text-foreground text-xs">{detailData.profile?.referral_code || "—"}</p>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3">
+                      <p className="text-muted-foreground text-xs">Joined</p>
+                      <p className="text-foreground text-xs">{detailData.profile?.created_at ? new Date(detailData.profile.created_at).toLocaleDateString() : "—"}</p>
+                    </div>
+                    {detailData.profile?.deactivated_at && (
+                      <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3">
+                        <p className="text-muted-foreground text-xs">Deactivated</p>
+                        <p className="text-orange-700 dark:text-orange-300 text-xs">{new Date(detailData.profile.deactivated_at).toLocaleDateString()}</p>
+                        {detailData.profile.scheduled_deletion_at && (
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                            Deletion: {new Date(detailData.profile.scheduled_deletion_at).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Roles */}
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground mb-2">Roles</h4>
+                  {detailData.roles.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {detailData.roles.map((r: any, i: number) => (
+                        <Badge key={i} variant="secondary" className="text-xs capitalize">{r.role}</Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No roles assigned (default customer)</p>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* KYC Status */}
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground mb-2">KYC Status</h4>
+                  {detailData.kyc ? (
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Status</span>
+                        <Badge variant={detailData.kyc.status === "verified" ? "secondary" : detailData.kyc.status === "rejected" ? "destructive" : "outline"} className="text-xs capitalize">
+                          {detailData.kyc.status}
+                        </Badge>
+                      </div>
+                      {detailData.kyc.nid_number && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">NID</span>
+                          <span className="font-mono text-foreground text-xs">{detailData.kyc.nid_number}</span>
+                        </div>
+                      )}
+                      {detailData.kyc.face_match_score !== null && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Face Match</span>
+                          <span className="text-foreground">{detailData.kyc.face_match_score}%</span>
+                        </div>
+                      )}
+                      {detailData.kyc.reviewer_notes && (
+                        <div className="bg-muted/50 rounded-lg p-2 text-xs text-muted-foreground">
+                          <p className="font-medium text-foreground mb-0.5">Reviewer Notes</p>
+                          {detailData.kyc.reviewer_notes}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No KYC submitted</p>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* Recent Transactions */}
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground mb-2">Recent Transactions</h4>
+                  {detailData.transactions.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {detailData.transactions.map((txn: any) => (
+                        <div key={txn.id} className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2 text-xs">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className={`text-[10px] ${TXN_TYPE_COLORS[txn.type] ?? ""}`}>{txn.type}</Badge>
+                            <span className="text-muted-foreground">
+                              {new Date(txn.created_at).toLocaleDateString("en-BD", { month: "short", day: "numeric" })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-foreground">৳{txn.amount?.toLocaleString()}</span>
+                            <Badge variant="outline" className="text-[10px]">{txn.status}</Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No transactions</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">Failed to load details</p>
+            )}
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
+
       </div>
     </div>
   );

@@ -254,3 +254,18 @@ export function exportUsersCSV(users: any[]) {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+export async function fetchUserDetails(userId: string) {
+  const [profileRes, rolesRes, kycRes, txnRes] = await Promise.all([
+    supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
+    supabase.from("user_roles").select("role, created_at").eq("user_id", userId),
+    supabase.from("kyc_verifications").select("*").eq("user_id", userId).maybeSingle(),
+    supabase.from("transactions").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(10),
+  ]);
+  return {
+    profile: profileRes.data,
+    roles: rolesRes.data ?? [],
+    kyc: kycRes.data,
+    transactions: txnRes.data ?? [],
+  };
+}
