@@ -915,7 +915,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                               {mode === "forgot_otp" ? t.resetPin : t.verifyNumber}
                             </h2>
                             <p className="text-sm text-muted-foreground">
-                              {t.codeSent} <span className="font-bold text-foreground">+880 {phone || returningPhone}</span>
+                              {t.codeSent} <span className="font-bold text-foreground">+88 {phone || returningPhone}</span>
                             </p>
                           </div>
                           <OtpBoxes value={otp} error={!!error} />

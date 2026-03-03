@@ -224,7 +224,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
                 <p className="text-[17px] font-bold">{displayName}</p>
                 <KycBadge verified />
               </div>
-              <p className="text-[13px] opacity-80 mt-0.5 font-medium">{registeredPhone ? `+880 ${registeredPhone}` : "—"}</p>
+              <p className="text-[13px] opacity-80 mt-0.5 font-medium">{registeredPhone ? `+88 ${registeredPhone}` : "—"}</p>
               {userEmail && (
                 <p className="text-[11px] opacity-55 truncate">{userEmail}</p>
               )}
@@ -340,7 +340,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
             icon={LogOut}
             iconClass="bg-destructive"
             label={t("signOut")}
-            sub={registeredPhone ? `${t("signedInAs")} +880 ${registeredPhone}` : t("signOutAccount")}
+            sub={registeredPhone ? `${t("signedInAs")} +88 ${registeredPhone}` : t("signOutAccount")}
             danger
             right={<span />}
             onClick={() => {
