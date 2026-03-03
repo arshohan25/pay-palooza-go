@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import QrScannerModal from "@/components/QrScannerModal";
 import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, ShieldCheck, Clock, XCircle } from "lucide-react";
 import { clearTxnNotifs } from "@/lib/txnNotifStore";
 import { fetchBalance } from "@/lib/balanceStore";
 import { useAuth } from "@/hooks/use-auth";
@@ -33,10 +33,13 @@ import InboxPage from "@/pages/InboxPage";
 import SplashScreen from "@/components/SplashScreen";
 import OnboardingSlides, { hasSeenOnboarding, markOnboardingDone } from "@/components/OnboardingSlides";
 import TxnToast from "@/components/TxnToast";
+import KycFlow from "@/components/KycFlow";
+import { useKycStatus } from "@/hooks/use-kyc-status";
 
 const Index = () => {
   const { isAuthenticated, loading: authLoading, signOut, user } = useAuth();
-  
+  const { status: kycStatus } = useKycStatus();
+  const [showKycFlow, setShowKycFlow] = useState(false);
   const [splashDone, setSplashDone]           = useState(false);
   const [onboardingDone, setOnboardingDone]  = useState(() => hasSeenOnboarding());
   const [replayOnboarding, setReplayOnboarding] = useState(false);
@@ -196,6 +199,44 @@ const Index = () => {
           ) : (
             <>
               <BalanceCard onAddMoney={() => setShowAddMoney(true)} />
+
+              {/* KYC prompt banner */}
+              {kycStatus !== "verified" && (
+                <motion.button
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  onClick={() => setShowKycFlow(true)}
+                  className="w-full flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-left transition-colors hover:bg-primary/10"
+                >
+                  {kycStatus === "pending" ? (
+                    <Clock className="h-5 w-5 text-amber-500 shrink-0" />
+                  ) : kycStatus === "rejected" ? (
+                    <XCircle className="h-5 w-5 text-destructive shrink-0" />
+                  ) : (
+                    <ShieldCheck className="h-5 w-5 text-primary shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground">
+                      {kycStatus === "pending"
+                        ? "KYC Under Review"
+                        : kycStatus === "rejected"
+                        ? "KYC Rejected — Resubmit"
+                        : "Complete KYC to unlock all features"}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {kycStatus === "pending"
+                        ? "Your verification is being reviewed"
+                        : kycStatus === "rejected"
+                        ? "Please resubmit your verification documents"
+                        : "Verify your identity to send money, cash out & more"}
+                    </p>
+                  </div>
+                  <span className="text-xs font-medium text-primary shrink-0">
+                    {kycStatus === "pending" ? "View" : kycStatus === "rejected" ? "Retry" : "Start →"}
+                  </span>
+                </motion.button>
+              )}
+
               <QuickActions
                 onSendMoney={() => setShowSendMoney(true)}
                 onCashOut={() => setShowCashOut(true)}
@@ -306,6 +347,7 @@ const Index = () => {
       {showPayBill   && <PayBillFlow   onClose={() => setShowPayBill(false)} />}
       {showAddMoney  && <AddMoneyFlow  onClose={() => setShowAddMoney(false)} />}
       {showShop      && <ShopFlow      onClose={() => setShowShop(false)} />}
+      {showKycFlow   && <KycFlow      onClose={() => setShowKycFlow(false)} />}
 
       {/* Scan & Pay QR flow */}
       <QrScannerModal
