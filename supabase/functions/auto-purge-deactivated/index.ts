@@ -65,6 +65,38 @@ Deno.serve(async (req) => {
 
     for (const user of expiredUsers) {
       try {
+        // Credit remaining balance to treasury before cleanup
+        if (user.balance > 0) {
+          const { data: treasury } = await adminClient
+            .from("platform_treasury")
+            .select("id, balance, total_earnings")
+            .limit(1)
+            .single();
+
+          if (treasury) {
+            const newTreasuryBalance = treasury.balance + user.balance;
+            await adminClient
+              .from("platform_treasury")
+              .update({
+                balance: newTreasuryBalance,
+                total_earnings: treasury.total_earnings + user.balance,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", treasury.id);
+
+            await adminClient.from("treasury_ledger").insert({
+              type: "earning",
+              amount: user.balance,
+              balance_after: newTreasuryBalance,
+              counterparty_user_id: user.user_id,
+              description: "Recovered balance from auto-purged user account",
+              reference: "AUTO-PURGE-" + user.user_id.substring(0, 8),
+            });
+
+            console.log(`Recovered ৳${user.balance} from purged user ${user.user_id}`);
+          }
+        }
+
         // Cascading delete from all public tables
         for (const { table, column } of tablesToClean) {
           await adminClient.from(table).delete().eq(column, user.user_id);
@@ -80,6 +112,7 @@ Deno.serve(async (req) => {
             purged_user_name: user.name,
             purged_user_phone: user.phone,
             purged_user_balance: user.balance,
+            balance_recovered: user.balance > 0 ? user.balance : 0,
             reason: "Grace period expired",
           },
         });
