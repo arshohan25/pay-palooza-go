@@ -94,6 +94,25 @@ Deno.serve(async (req) => {
             });
 
             console.log(`Recovered ৳${user.balance} from purged user ${user.user_id}`);
+
+            // Notify all admins about balance recovery
+            const { data: admins } = await adminClient
+              .from("user_roles")
+              .select("user_id")
+              .eq("role", "admin");
+
+            if (admins?.length) {
+              const userName = user.name || user.phone;
+              await adminClient.from("notifications").insert(
+                admins.map((a: { user_id: string }) => ({
+                  user_id: a.user_id,
+                  title: "Balance Recovered from Purged User",
+                  body: `৳${user.balance} recovered from ${userName} and credited to treasury`,
+                  category: "system",
+                  metadata: { type: "balance_recovery", amount: user.balance, user_name: userName, source: "auto_purge" },
+                }))
+              );
+            }
           }
         }
 
