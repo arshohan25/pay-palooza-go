@@ -275,7 +275,7 @@ function PhoneInput({ value, onChange, error, autoFocus = false }: { value: stri
       <div className={`flex items-center h-16 bg-card border-2 rounded-2xl overflow-hidden transition-all shadow-card ${error ? "border-destructive" : "border-border focus-within:border-primary focus-within:shadow-glow"}`}>
         <div className="flex items-center gap-2 pl-4 pr-3 border-r border-border h-full shrink-0">
           <span className="text-2xl leading-none">🇧🇩</span>
-          <span className="text-sm font-black text-foreground">+880</span>
+          <span className="text-sm font-black text-foreground">+88</span>
         </div>
         <input ref={ref} type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={value}
           onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 11))}
