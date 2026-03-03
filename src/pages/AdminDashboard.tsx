@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import {
-  Users, ArrowLeftRight, ShieldAlert, Store, UserCheck, Trash2,
+  Users, ArrowLeftRight, ShieldAlert, Store, UserCheck, Trash2, Download, UserX, CheckCircle, Clock,
   TrendingUp, Activity, Search, RefreshCw, LogOut,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
@@ -14,7 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useAdmin, fetchAdminStats, fetchRecentTransactions, fetchAllUsers, fetchFraudAlerts, fetchAllAgents, fetchAllMerchants, toggleUserStatus, toggleAgentStatus, toggleMerchantStatus } from "@/hooks/use-admin";
+import { useAdmin, fetchAdminStats, fetchRecentTransactions, fetchAllUsers, fetchFraudAlerts, fetchAllAgents, fetchAllMerchants, toggleUserStatus, toggleAgentStatus, toggleMerchantStatus, softDeleteUser, reactivateUser, bulkSuspendUsers, bulkDeleteUsers, bulkSoftDeleteUsers, exportUsersCSV } from "@/hooks/use-admin";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { signOut } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -175,6 +176,10 @@ export default function AdminDashboard() {
   const [showNavMenu, setShowNavMenu] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ userId: string; name: string; phone: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [softDeleteTarget, setSoftDeleteTarget] = useState<{ userId: string; name: string; phone: string } | null>(null);
+  const [softDeleting, setSoftDeleting] = useState(false);
   const loadData = useCallback(async () => {
     setRefreshing(true);
     const [s, t, u, a, ag, m, kycRes] = await Promise.all([
@@ -280,7 +285,7 @@ export default function AdminDashboard() {
     !searchQuery || t.id?.includes(searchQuery) || t.recipient_phone?.includes(searchQuery) || t.type?.includes(searchQuery)
   );
 
-  const handleDeleteUser = async () => {
+  const handleDeleteUser = async (force = false) => {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
@@ -291,12 +296,13 @@ export default function AdminDashboard() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session?.access_token}`,
         },
-        body: JSON.stringify({ target_user_id: deleteTarget.userId }),
+        body: JSON.stringify({ target_user_id: deleteTarget.userId, force }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Failed to delete user");
       toast.success(`User ${deleteTarget.name || deleteTarget.phone} permanently deleted`);
       setUsers(prev => prev.filter(u => u.user_id !== deleteTarget.userId));
+      setSelectedUserIds(prev => { const n = new Set(prev); n.delete(deleteTarget.userId); return n; });
       setDeleteTarget(null);
       loadData();
     } catch (err: any) {
@@ -304,6 +310,89 @@ export default function AdminDashboard() {
     } finally {
       setDeleting(false);
     }
+  };
+
+  const handleSoftDelete = async () => {
+    if (!softDeleteTarget) return;
+    setSoftDeleting(true);
+    try {
+      await softDeleteUser(softDeleteTarget.userId);
+      toast.success(`User ${softDeleteTarget.name || softDeleteTarget.phone} deactivated (30-day grace period)`);
+      setSoftDeleteTarget(null);
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to deactivate user");
+    } finally {
+      setSoftDeleting(false);
+    }
+  };
+
+  const handleReactivate = async (userId: string, label: string) => {
+    try {
+      await reactivateUser(userId);
+      toast.success(`User ${label} reactivated`);
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to reactivate");
+    }
+  };
+
+  const handleBulkSuspend = async () => {
+    setBulkActionLoading(true);
+    const statuses: Record<string, string> = {};
+    users.forEach(u => { if (selectedUserIds.has(u.user_id)) statuses[u.user_id] = u.status || "active"; });
+    const { succeeded, failed } = await bulkSuspendUsers([...selectedUserIds], statuses);
+    toast.success(`Toggled ${succeeded} users${failed ? `, ${failed} failed` : ""}`);
+    setSelectedUserIds(new Set());
+    setBulkActionLoading(false);
+    loadData();
+  };
+
+  const handleBulkSoftDelete = async () => {
+    setBulkActionLoading(true);
+    const { succeeded, failed } = await bulkSoftDeleteUsers([...selectedUserIds]);
+    toast.success(`Deactivated ${succeeded} users${failed ? `, ${failed} failed` : ""}`);
+    setSelectedUserIds(new Set());
+    setBulkActionLoading(false);
+    loadData();
+  };
+
+  const handleBulkHardDelete = async () => {
+    setBulkActionLoading(true);
+    const { succeeded, failed } = await bulkDeleteUsers([...selectedUserIds], true);
+    toast.success(`Deleted ${succeeded} users${failed ? `, ${failed} failed` : ""}`);
+    setSelectedUserIds(new Set());
+    setBulkActionLoading(false);
+    loadData();
+  };
+
+  const handleExportSelected = () => {
+    const selected = users.filter(u => selectedUserIds.has(u.user_id));
+    if (selected.length === 0) { toast.error("No users selected"); return; }
+    exportUsersCSV(selected);
+    toast.success(`Exported ${selected.length} users to CSV`);
+  };
+
+  const toggleSelectUser = (userId: string) => {
+    setSelectedUserIds(prev => {
+      const n = new Set(prev);
+      if (n.has(userId)) n.delete(userId); else n.add(userId);
+      return n;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedUserIds.size === filteredUsers.length) {
+      setSelectedUserIds(new Set());
+    } else {
+      setSelectedUserIds(new Set(filteredUsers.map(u => u.user_id)));
+    }
+  };
+
+  const getGracePeriodDays = (scheduledAt: string | null) => {
+    if (!scheduledAt) return null;
+    const days = Math.ceil((new Date(scheduledAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    return days > 0 ? days : 0;
   };
 
   const navContent = (
@@ -528,11 +617,37 @@ export default function AdminDashboard() {
                     <Input placeholder="Search…" className="pl-10 w-48" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
                   </div>
                 </CardHeader>
+
+                {/* Bulk actions toolbar */}
+                {selectedUserIds.size > 0 && (
+                  <div className="flex items-center gap-2 px-4 pb-3 flex-wrap">
+                    <span className="text-sm font-medium text-foreground">{selectedUserIds.size} selected</span>
+                    <Button size="sm" variant="outline" className="text-xs h-7" onClick={handleBulkSuspend} disabled={bulkActionLoading}>
+                      Bulk Suspend
+                    </Button>
+                    <Button size="sm" variant="outline" className="text-xs h-7 gap-1" onClick={handleBulkSoftDelete} disabled={bulkActionLoading}>
+                      <UserX className="w-3 h-3" /> Bulk Deactivate
+                    </Button>
+                    <Button size="sm" variant="destructive" className="text-xs h-7 gap-1" onClick={handleBulkHardDelete} disabled={bulkActionLoading}>
+                      <Trash2 className="w-3 h-3" /> Bulk Delete
+                    </Button>
+                    <Button size="sm" variant="outline" className="text-xs h-7 gap-1" onClick={handleExportSelected}>
+                      <Download className="w-3 h-3" /> Export CSV
+                    </Button>
+                  </div>
+                )}
+
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-border text-muted-foreground">
+                          <th className="px-4 py-3 w-8">
+                            <Checkbox
+                              checked={filteredUsers.length > 0 && selectedUserIds.size === filteredUsers.length}
+                              onCheckedChange={toggleSelectAll}
+                            />
+                          </th>
                           <th className="text-left px-4 py-3 font-medium">Name</th>
                           <th className="text-left px-4 py-3 font-medium">Phone</th>
                           <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Balance</th>
@@ -541,67 +656,128 @@ export default function AdminDashboard() {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredUsers.map((user: any) => (
-                          <tr key={user.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                            <td className="px-4 py-3 font-medium text-foreground">{user.name || "—"}</td>
-                            <td className="px-4 py-3 text-muted-foreground">{user.phone}</td>
-                            <td className="px-4 py-3 font-semibold text-foreground hidden md:table-cell">৳{parseFloat(user.balance).toLocaleString()}</td>
-                            <td className="px-4 py-3">
-                              <Badge variant={user.status === "suspended" ? "destructive" : "secondary"} className="text-xs">
-                                {user.status || "active"}
-                              </Badge>
-                            </td>
-                            <td className="px-4 py-3 flex items-center gap-1.5">
-                              <Button
-                                size="sm"
-                                variant={user.status === "suspended" ? "default" : "destructive"}
-                                className="text-xs h-7"
-                                onClick={async () => {
-                                  try {
-                                    const ns = await toggleUserStatus(user.user_id, user.status || "active");
-                                    setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status: ns } : u));
-                                    toast.success(`User ${ns}`);
-                                  } catch { toast.error("Failed to update status"); }
-                                }}
-                              >
-                                {user.status === "suspended" ? "Activate" : "Suspend"}
-                              </Button>
-                               <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs h-7 gap-1"
-                                onClick={() => setLockTarget({ userId: user.user_id, label: `${user.name || "User"} (${user.phone})` })}
-                              >
-                                <Lock className="w-3 h-3" /> Lock
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                className="text-xs h-7 gap-1"
-                                onClick={() => setChargebackTarget({
-                                  userId: user.user_id,
-                                  name: user.name || null,
-                                  phone: user.phone,
-                                  balance: parseFloat(user.balance) || 0,
-                                })}
-                              >
-                                <RotateCcw className="w-3 h-3" /> Chargeback
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                className="text-xs h-7 gap-1"
-                                onClick={() => setDeleteTarget({
-                                  userId: user.user_id,
-                                  name: user.name || "",
-                                  phone: user.phone,
-                                })}
-                              >
-                                <Trash2 className="w-3 h-3" /> Delete
-                              </Button>
-                            </td>
-                          </tr>
-                        ))}
+                        {filteredUsers.map((user: any) => {
+                          const isDeactivated = user.status === "deactivated";
+                          const graceDays = getGracePeriodDays(user.scheduled_deletion_at);
+                          return (
+                            <tr key={user.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                              <td className="px-4 py-3">
+                                <Checkbox
+                                  checked={selectedUserIds.has(user.user_id)}
+                                  onCheckedChange={() => toggleSelectUser(user.user_id)}
+                                />
+                              </td>
+                              <td className="px-4 py-3 font-medium text-foreground">{user.name || "—"}</td>
+                              <td className="px-4 py-3 text-muted-foreground">{user.phone}</td>
+                              <td className="px-4 py-3 font-semibold text-foreground hidden md:table-cell">৳{parseFloat(user.balance).toLocaleString()}</td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-1.5">
+                                  <Badge
+                                    variant={user.status === "suspended" ? "destructive" : isDeactivated ? "outline" : "secondary"}
+                                    className={`text-xs ${isDeactivated ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border-orange-300 dark:border-orange-700" : ""}`}
+                                  >
+                                    {user.status || "active"}
+                                  </Badge>
+                                  {isDeactivated && graceDays !== null && (
+                                    <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                                      <Clock className="w-3 h-3" /> {graceDays}d
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {isDeactivated ? (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="default"
+                                        className="text-xs h-7 gap-1"
+                                        onClick={() => handleReactivate(user.user_id, user.name || user.phone)}
+                                      >
+                                        <CheckCircle className="w-3 h-3" /> Reactivate
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        className="text-xs h-7 gap-1"
+                                        onClick={() => setDeleteTarget({
+                                          userId: user.user_id,
+                                          name: user.name || "",
+                                          phone: user.phone,
+                                        })}
+                                      >
+                                        <Trash2 className="w-3 h-3" /> Delete Now
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant={user.status === "suspended" ? "default" : "destructive"}
+                                        className="text-xs h-7"
+                                        onClick={async () => {
+                                          try {
+                                            const ns = await toggleUserStatus(user.user_id, user.status || "active");
+                                            setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status: ns } : u));
+                                            toast.success(`User ${ns}`);
+                                          } catch { toast.error("Failed to update status"); }
+                                        }}
+                                      >
+                                        {user.status === "suspended" ? "Activate" : "Suspend"}
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-xs h-7 gap-1"
+                                        onClick={() => setSoftDeleteTarget({
+                                          userId: user.user_id,
+                                          name: user.name || "",
+                                          phone: user.phone,
+                                        })}
+                                      >
+                                        <UserX className="w-3 h-3" /> Deactivate
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-xs h-7 gap-1"
+                                        onClick={() => setLockTarget({ userId: user.user_id, label: `${user.name || "User"} (${user.phone})` })}
+                                      >
+                                        <Lock className="w-3 h-3" /> Lock
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        className="text-xs h-7 gap-1"
+                                        onClick={() => setChargebackTarget({
+                                          userId: user.user_id,
+                                          name: user.name || null,
+                                          phone: user.phone,
+                                          balance: parseFloat(user.balance) || 0,
+                                        })}
+                                      >
+                                        <RotateCcw className="w-3 h-3" /> Chargeback
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        className="text-xs h-7 gap-1"
+                                        onClick={() => setDeleteTarget({
+                                          userId: user.user_id,
+                                          name: user.name || "",
+                                          phone: user.phone,
+                                        })}
+                                      >
+                                        <Trash2 className="w-3 h-3" /> Hard Delete
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -814,11 +990,33 @@ export default function AdminDashboard() {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDeleteUser}
+              onClick={() => handleDeleteUser(true)}
               disabled={deleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleting ? "Deleting…" : "Delete Permanently"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Soft-Delete Confirmation Dialog */}
+      <AlertDialog open={!!softDeleteTarget} onOpenChange={(v) => { if (!v) setSoftDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deactivate User?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will deactivate <strong>{softDeleteTarget?.name || softDeleteTarget?.phone}</strong> ({softDeleteTarget?.phone}) with a 30-day grace period before permanent deletion. The user will be blocked from logging in. You can reactivate them during the grace period.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={softDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSoftDelete}
+              disabled={softDeleting}
+              className="bg-orange-500 text-white hover:bg-orange-600"
+            >
+              {softDeleting ? "Deactivating…" : "Deactivate (30-day grace)"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
