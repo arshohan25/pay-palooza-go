@@ -1,40 +1,31 @@
 
 
-## Plan: KYC Rejection Flow with Reason Banner and Resubmission
+## Plan: Browser Push Notification on KYC Rejection
 
-### Problem
-When KYC is rejected, the `KycFlow` component doesn't recognize the "rejected" status — it only checks for "verified" and "pending" (line 889), so rejected users fall through to the fresh KYC intro screen without seeing why they were rejected. The Index.tsx banner already shows "KYC Rejected — Resubmit" but lacks the actual rejection reason.
+### Current State
+- The `kyc-notify` edge function **already** sends in-app notifications (inserts into `notifications` table), email (Resend), and SMS (Twilio) for **both** verified and rejected decisions.
+- The `useNotifications` hook **already** picks up these in-app notifications via Supabase Realtime.
+- The `useKycStatus` hook **already** fires confetti + toast on `pending → verified` transitions.
+- **Missing**: Browser push notification (via the `Notification` API) and a toast alert when KYC is **rejected**, so users are notified even when not actively viewing the home screen.
 
 ### Changes
 
-#### 1. Update KycFlow status check to handle "rejected" (`src/components/KycFlow.tsx`)
+#### 1. Add rejection detection to `useKycStatus` (`src/hooks/use-kyc-status.ts`)
 
-**Line 889**: Also set `kycStatus` when status is `"rejected"`. Fetch `reviewer_notes` alongside `status`:
-```typescript
-.select("status, reviewer_notes")
-```
-Store the reviewer_notes in a new state variable `rejectionReason`.
+Extend the existing `pending → verified` celebration logic to also handle `pending → rejected`:
+- Show a destructive toast with the rejection reason
+- Fire a browser `Notification` (requesting permission if needed) with the rejection reason
+- Trigger error haptic feedback
 
-**Lines 1229–1230**: Add a new rejected status screen between the "pending" block and the main form. This screen will:
-- Show a red/destructive icon (XCircle)
-- Display the rejection reason from `reviewer_notes`
-- Show a "Resubmit KYC" button that resets `kycStatus` to `null` so the user can go through the flow again
+#### 2. Add browser notification permission request (`src/hooks/use-kyc-status.ts`)
 
-#### 2. Show rejection reason in Index.tsx banner (`src/pages/Index.tsx`)
-
-Update `useKycStatus` hook to also return the `reviewer_notes` when status is rejected. Then display the reason in the banner subtitle instead of the generic "Please resubmit your verification documents".
-
-#### 3. Update `useKycStatus` hook to return rejection reason (`src/hooks/use-kyc-status.ts`)
-
-Add `rejectionReason` to the hook's return value by fetching `reviewer_notes` from the query.
+Request `Notification.permission` on mount (same pattern as `useSupportNotifications`), and fire a `new Notification(...)` on status transitions for both verified and rejected — so users see the alert even if the app tab is in the background.
 
 ### Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/hooks/use-kyc-status.ts` | Fetch and return `reviewer_notes` as `rejectionReason` |
-| `src/components/KycFlow.tsx` | Handle rejected status, show reason + resubmit button |
-| `src/pages/Index.tsx` | Show rejection reason in the banner |
+| `src/hooks/use-kyc-status.ts` | Add rejected transition detection with toast, browser Notification, and haptics |
 
-### No database changes needed.
+No database or edge function changes needed — the backend already handles rejection notifications across all channels.
 
