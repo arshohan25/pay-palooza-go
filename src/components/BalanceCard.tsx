@@ -17,18 +17,13 @@ interface BalanceCardProps {
 
 const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
   const { t } = useI18n();
-  const { name: profileName, phone: profilePhone } = useProfile();
+  const { displayName: userName, phone: profilePhone } = useProfile();
   const [showBalance, setShowBalance] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const [showWalletShare, setShowWalletShare] = useState(false);
   const phone   = useMemo(() => profilePhone || localStorage.getItem(REGISTERED_KEY) || "WALLET_USER", [profilePhone]);
   const userId  = useMemo(() => generateWalletId(phone), [phone]);
-  const userName = useMemo(() => {
-    if (profileName) return profileName;
-    if (phone && phone !== "WALLET_USER") return `+880 ${phone.slice(0, 3)}****${phone.slice(-3)}`;
-    return "My Wallet";
-  }, [profileName, phone]);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Animated balance

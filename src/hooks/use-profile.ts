@@ -43,5 +43,11 @@ export function useProfile() {
     return () => { cancelled = true; };
   }, []);
 
-  return { ...profile, loading };
+  const displayName = profile.name
+    ? profile.name
+    : profile.phone && profile.phone !== ""
+      ? `+880 ${profile.phone.slice(0, 3)}****${profile.phone.slice(-3)}`
+      : "My Wallet";
+
+  return { ...profile, displayName, loading };
 }
