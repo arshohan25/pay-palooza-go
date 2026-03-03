@@ -1,22 +1,31 @@
 
 
-## Generate PWA Icons from EasyPay Logo
+## Fix: Logo Not Showing on Auth Page
 
-### What We'll Do
-Copy the uploaded EasyPay logo to serve as the PWA icons (192x192 and 512x512) and favicon, replacing the current generic icons.
+### Analysis
+The auth page (`AuthPage.tsx`) imports the logo from `src/assets/easypay-logo.png`. In my browser test, the logo renders correctly in the preview. However, you may be seeing a broken/cached version.
 
-### Steps
+The fix will add a visible fallback so the logo always displays, even if the image fails to load, and will also add the logo from the `public/icons/` path as a secondary source.
 
-1. **Copy logo to PWA icon locations**: Copy `user-uploads://photo_2026-03-02_15-11-13.png` to:
-   - `public/icons/icon-192.png` (overwrite)
-   - `public/icons/icon-512.png` (overwrite)
+### Changes
 
-2. **No config changes needed**: `vite.config.ts` and `index.html` already reference these paths and `public/icons/easypay-logo.png`.
+**`src/pages/AuthPage.tsx`** (line 675)
+- Add an `onError` handler on the `<img>` tag that falls back to `/icons/easypay-logo.png` (the public copy)
+- This ensures the logo displays even if the bundled asset path has issues
 
-Note: The uploaded image will be used directly. For production, ideally these would be resized to exact 192x192 and 512x512 dimensions, but browsers handle scaling well for PWA icons.
+```tsx
+<img
+  src={logo}
+  alt="EasyPay"
+  className="w-24 h-24 rounded-[28px] object-contain shadow-float"
+  onError={(e) => {
+    e.currentTarget.src = "/icons/easypay-logo.png";
+  }}
+/>
+```
 
-| File | Change |
-|------|--------|
-| `public/icons/icon-192.png` | Replace with EasyPay logo |
-| `public/icons/icon-512.png` | Replace with EasyPay logo |
+**`src/components/SplashScreen.tsx`** (line ~61)
+- Apply the same fallback to the splash screen logo
+
+This is a minimal, safe change — one line added per logo instance.
 
