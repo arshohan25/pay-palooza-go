@@ -40,7 +40,15 @@ export function useProfile() {
     };
 
     fetchProfile();
-    return () => { cancelled = true; };
+
+    // Re-fetch when profile is updated from ProfileEditFlow
+    const handleProfileUpdate = () => { fetchProfile(); };
+    window.addEventListener("profile-updated", handleProfileUpdate);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("profile-updated", handleProfileUpdate);
+    };
   }, []);
 
   const displayName = profile.name

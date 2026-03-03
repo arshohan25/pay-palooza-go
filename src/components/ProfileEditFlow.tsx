@@ -219,21 +219,29 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
     setSaving(true);
     setDisplayName(name.trim());
     setDisplayPhoto(photo);
+    // Sync mfs_user_name so useProfile picks it up immediately
+    localStorage.setItem("mfs_user_name", name.trim());
 
-    if (trimmedEmail !== (savedEmail ?? "")) {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        const { error } = await supabase
-          .from("profiles")
-          .update({ email: trimmedEmail || null } as any)
-          .eq("user_id", session.user.id);
-        if (error) {
-          toast.error("Failed to save email");
-          setSaving(false);
-          return;
-        }
+    // Persist name (and email if changed) to database
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      const updates: Record<string, unknown> = { name: name.trim() };
+      if (trimmedEmail !== (savedEmail ?? "")) {
+        updates.email = trimmedEmail || null;
+      }
+      const { error } = await supabase
+        .from("profiles")
+        .update(updates as any)
+        .eq("user_id", session.user.id);
+      if (error) {
+        toast.error("Failed to save profile");
+        setSaving(false);
+        return;
       }
     }
+
+    // Notify useProfile listeners
+    window.dispatchEvent(new Event("profile-updated"));
 
     setSaving(false);
     haptics.success();
