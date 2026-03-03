@@ -51,6 +51,16 @@ const DEFAULT_CREDENTIAL_FIELDS: Record<string, string[]> = {
   Airtel: ["API_KEY", "API_SECRET", "MERCHANT_ID"],
 };
 
+/** Call the manage-gateway-config edge function for recharge_api_configs */
+async function callRechargeApi(body: Record<string, unknown>) {
+  const { data, error } = await supabase.functions.invoke("manage-gateway-config", {
+    body: { ...body, table: "recharge_api_configs" },
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data;
+}
+
 export default function AdminRechargeApiConnect() {
   const [configs, setConfigs] = useState<ApiConfig[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,12 +73,12 @@ export default function AdminRechargeApiConnect() {
 
   const loadConfigs = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("recharge_api_configs" as any)
-      .select("*")
-      .order("operator");
-    if (error) toast.error("Failed to load API configs");
-    else setConfigs((data as any[]) ?? []);
+    try {
+      const data = await callRechargeApi({ action: "list" });
+      setConfigs(Array.isArray(data) ? data : []);
+    } catch {
+      toast.error("Failed to load API configs");
+    }
     setLoading(false);
   }, []);
 
@@ -84,12 +94,12 @@ export default function AdminRechargeApiConnect() {
   }, [loadConfigs]);
 
   const toggleEnabled = async (cfg: ApiConfig) => {
-    const { error } = await supabase
-      .from("recharge_api_configs" as any)
-      .update({ is_enabled: !cfg.is_enabled } as any)
-      .eq("id", cfg.id);
-    if (error) toast.error("Failed to toggle");
-    else toast.success(`${cfg.display_name} ${!cfg.is_enabled ? "enabled" : "disabled"}`);
+    try {
+      await callRechargeApi({ action: "toggle", id: cfg.id, is_enabled: !cfg.is_enabled });
+      toast.success(`${cfg.display_name} ${!cfg.is_enabled ? "enabled" : "disabled"}`);
+    } catch {
+      toast.error("Failed to toggle");
+    }
   };
 
   const openEdit = (cfg: ApiConfig) => {
@@ -106,12 +116,18 @@ export default function AdminRechargeApiConnect() {
   const saveConfig = async () => {
     if (!editCfg) return;
     setSaving(true);
-    const { error } = await supabase
-      .from("recharge_api_configs" as any)
-      .update({ api_base_url: editBaseUrl || null, config: editConfig } as any)
-      .eq("id", editCfg.id);
-    if (error) toast.error("Failed to save");
-    else { toast.success("Configuration saved"); setEditCfg(null); }
+    try {
+      await callRechargeApi({
+        action: "update_config",
+        id: editCfg.id,
+        api_base_url: editBaseUrl || null,
+        config: editConfig,
+      });
+      toast.success("Configuration saved");
+      setEditCfg(null);
+    } catch {
+      toast.error("Failed to save");
+    }
     setSaving(false);
   };
 
@@ -281,7 +297,7 @@ export default function AdminRechargeApiConnect() {
                     type={showSecrets[key] ? "text" : "password"}
                     value={val}
                     onChange={e => setEditConfig(p => ({ ...p, [key]: e.target.value }))}
-                    placeholder="Enter value…"
+                    placeholder={val?.startsWith("••") ? "Enter new value to replace" : "Enter value…"}
                     className="font-mono text-sm"
                   />
                 </div>
