@@ -1,39 +1,65 @@
 
 
-## Admin Dashboard Mobile Visibility Fix
+## Plan: Soft-Delete, Grace Period & Bulk User Management
 
-### Investigation Summary
+### 1. Database Changes
 
-I tested all 19 admin tabs on a 390x844 mobile viewport via browser automation. All tabs rendered their content. However, I identified several potential issues that could cause content to appear hidden or inaccessible on certain mobile devices or screen sizes:
+**Add soft-delete columns to `profiles` table:**
+- `deactivated_at` (timestamptz, nullable) — when soft-delete was triggered
+- `scheduled_deletion_at` (timestamptz, nullable) — grace period expiry (e.g. 30 days after deactivation)
+- `deactivated_by` (uuid, nullable) — admin who initiated
 
-### Issues Found
+**No new tables needed** — the existing `status` field already supports "suspended"; we add a new status value "deactivated" for soft-deleted users.
 
-1. **Main content scroll constraint**: The `<main>` element uses `overflow-auto` inside a flex layout without explicit height bounds. On some mobile browsers, this can cause the content to not be scrollable or clip at the bottom of the viewport.
+### 2. Edge Function: `soft-delete-user`
 
-2. **Table columns hidden on mobile**: Many admin tables use `hidden md:table-cell` and `hidden lg:table-cell` to hide columns on smaller screens. While intentional, this means users on mobile see fewer columns (e.g., Receiver, Fee, Commission, Date-Time, Balance After, Platform %, Admin, Reason are all hidden). This could be what the user perceives as "content hiding."
+New edge function that:
+- Verifies admin role via JWT
+- Sets profile status to "deactivated", records `deactivated_at = now()`, `scheduled_deletion_at = now() + 30 days`, `deactivated_by = caller.id`
+- Logs action in `audit_logs`
+- Does NOT delete auth user or data
 
-3. **Support Dashboard fixed height**: `AdminSupportDashboard` uses `h-[calc(100vh-12rem)]` which may miscalculate on mobile with dynamic browser chrome (address bar appearing/disappearing).
+### 3. Update `delete-user` Edge Function
 
-4. **Permissions table too wide**: The `AdminPermissions` table has 7+ columns with no responsive hiding, causing horizontal scroll that content may appear cut off.
+- Add a check: if user is not yet past `scheduled_deletion_at`, reject hard-delete (unless admin force-overrides with `force: true` param)
+- Keep existing cascading hard-delete logic
 
-### Plan
+### 4. Scheduled Cleanup (Optional Cron)
 
-1. **Fix main content area scroll** - Change `<main className="flex-1 p-4 md:p-8 overflow-auto">` to use `min-h-0` to properly enable scrolling in the flex layout, and add `pb-8` for bottom padding on mobile.
+- A `pg_cron` job that runs daily, calling a DB function to find profiles where `status = 'deactivated'` AND `scheduled_deletion_at < now()`, then invokes the hard-delete edge function or directly cascades cleanup via a SECURITY DEFINER function
 
-2. **Add mobile search bar** - The global search input is `hidden md:block` in the header, meaning mobile users cannot search. Add a mobile-visible search bar.
+### 5. Admin UI Changes in `AdminDashboard.tsx`
 
-3. **Fix Support Dashboard height** - Replace `h-[calc(100vh-12rem)]` with a more robust height calculation using `dvh` (dynamic viewport height) with fallback.
+**Bulk actions toolbar** (appears when checkboxes are selected):
+- Add a checkbox column to the users table header + each row
+- State: `selectedUserIds: Set<string>`
+- Toolbar shows: "X selected" with buttons for **Bulk Suspend**, **Bulk Deactivate (Soft Delete)**, **Bulk Hard Delete**, **Export Selected (CSV)**
 
-4. **Make Permissions table responsive** - Hide the less important columns (sms_read, Last Updated) on mobile.
+**Per-row changes:**
+- Rename current "Delete" button to "Hard Delete"
+- Add "Deactivate" button (soft-delete) — sets 30-day grace period
+- Show `deactivated` status badge in orange/warning color
+- For deactivated users: show "Reactivate" and "Delete Now" buttons, plus remaining grace period days
 
-5. **Improve Commissions table** - The Platform % column is hidden on mobile. Add it back or show it in a different way.
+**Bulk Export:**
+- Generate CSV from selected users (name, phone, balance, status, created_at)
+- Download via browser `Blob` + `URL.createObjectURL`
 
-6. **Ensure all dialog/modal content scrollable on mobile** - Verify all admin dialogs have `max-h-[90vh] overflow-y-auto` consistently.
+### 6. Files to Create/Modify
 
-### Files to Modify
+| File | Action |
+|------|--------|
+| Migration SQL | Add `deactivated_at`, `scheduled_deletion_at`, `deactivated_by` columns to `profiles` |
+| `supabase/functions/soft-delete-user/index.ts` | New edge function for soft-delete |
+| `supabase/functions/delete-user/index.ts` | Add grace period check |
+| `src/pages/AdminDashboard.tsx` | Checkbox selection, bulk action toolbar, soft-delete button, CSV export, updated status badges |
+| `src/hooks/use-admin.ts` | Add `bulkSuspendUsers`, `softDeleteUser` helpers |
 
-- `src/pages/AdminDashboard.tsx` - Fix main area scroll, add mobile search
-- `src/components/admin/AdminSupportDashboard.tsx` - Fix height calculation
-- `src/components/admin/AdminPermissions.tsx` - Make responsive
-- `src/components/admin/AdminCommissionSetup.tsx` - Make Platform % visible on mobile
+### Technical Notes
+
+- Bulk suspend uses existing `toggleUserStatus` in a loop with `Promise.allSettled` for resilience
+- Bulk hard-delete calls the `delete-user` edge function sequentially (to respect FK ordering)
+- CSV export is client-side only, no server round-trip needed
+- The soft-delete grace period (30 days) will be visible in the UI as "Deletion in X days"
+- Deactivated users should be blocked at login via the existing `status` check in the auth flow
 
