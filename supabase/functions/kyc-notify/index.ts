@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              from: "MFS Bangladesh <noreply@resend.dev>",
+              from: "EasyPay <noreply@resend.dev>",
               to: [profile.email],
               subject: isApproved
                 ? "Your KYC Verification is Approved"
@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
                   <p>${body}</p>
                   ${!isApproved && reviewer_notes ? `<p style="color:#666;font-size:14px;"><strong>Notes:</strong> ${reviewer_notes}</p>` : ""}
                   <hr style="border:none;border-top:1px solid #eee;margin:20px 0;">
-                  <p style="color:#999;font-size:12px;">MFS Bangladesh — Secure Mobile Financial Services</p>
+                  <p style="color:#999;font-size:12px;">EasyPay — Secure Digital Wallet</p>
                 </div>
               `,
             }),
@@ -155,8 +155,8 @@ Deno.serve(async (req) => {
           else if (!phone.startsWith("+")) phone = "+" + phone;
 
           const smsBody = isApproved
-            ? `MFS: Your KYC verification has been approved! You now have full access.`
-            : `MFS: Your KYC verification was not approved. ${reviewer_notes ? "Reason: " + reviewer_notes : "Please try again or contact support."}`;
+            ? `EasyPay: Your KYC verification has been approved! You now have full access.`
+            : `EasyPay: Your KYC verification was not approved. ${reviewer_notes ? "Reason: " + reviewer_notes : "Please try again or contact support."}`;
 
           const formData = new URLSearchParams();
           formData.append("To", phone);
