@@ -1,65 +1,44 @@
 
 
-## Plan: Soft-Delete, Grace Period & Bulk User Management
+## Plan: Auto-Purge Cron Job + User Detail Drawer
 
-### 1. Database Changes
+### 1. Auto-Purge Edge Function + Cron Job
 
-**Add soft-delete columns to `profiles` table:**
-- `deactivated_at` (timestamptz, nullable) — when soft-delete was triggered
-- `scheduled_deletion_at` (timestamptz, nullable) — grace period expiry (e.g. 30 days after deactivation)
-- `deactivated_by` (uuid, nullable) — admin who initiated
+**New file: `supabase/functions/auto-purge-deactivated/index.ts`**
+- Edge function that queries `profiles` where `status = 'deactivated'` AND `scheduled_deletion_at < now()`
+- For each expired user, reuses the same cascading delete logic from `delete-user` (delete from 20+ tables, then `auth.admin.deleteUser`)
+- Logs each purge in `audit_logs` with action `auto_purge_user`
+- Uses service role key (no JWT needed)
+- Returns count of purged users
 
-**No new tables needed** — the existing `status` field already supports "suspended"; we add a new status value "deactivated" for soft-deleted users.
+**Config:** Add `[functions.auto-purge-deactivated]` with `verify_jwt = false` to `supabase/config.toml`
 
-### 2. Edge Function: `soft-delete-user`
+**Cron job:** Enable `pg_cron` + `pg_net` extensions, then schedule a daily cron (runs at midnight UTC) that calls the edge function via `net.http_post`
 
-New edge function that:
-- Verifies admin role via JWT
-- Sets profile status to "deactivated", records `deactivated_at = now()`, `scheduled_deletion_at = now() + 30 days`, `deactivated_by = caller.id`
-- Logs action in `audit_logs`
-- Does NOT delete auth user or data
+### 2. User Detail Drawer
 
-### 3. Update `delete-user` Edge Function
+**Modified: `src/pages/AdminDashboard.tsx`**
+- Add state `detailUser` to track which user's drawer is open
+- Add a clickable row or "View" button on each user row to open the drawer
+- Use a `Sheet` (already imported) as the drawer container
 
-- Add a check: if user is not yet past `scheduled_deletion_at`, reject hard-delete (unless admin force-overrides with `force: true` param)
-- Keep existing cascading hard-delete logic
+**Drawer content sections:**
+1. **Profile header** — avatar, name, phone, email, status badge, balance, referral code, created_at
+2. **Roles** — fetch from `user_roles` table for the user, show as badges
+3. **KYC Status** — fetch from `kyc_verifications`, show status, NID number, face match score, reviewer notes
+4. **Recent Transactions** — fetch last 10 from `transactions` for the user, show type/amount/date/status in a mini table
+5. **Account timeline** — deactivated_at, scheduled_deletion_at if applicable
 
-### 4. Scheduled Cleanup (Optional Cron)
+**New helper in `src/hooks/use-admin.ts`:**
+- `fetchUserDetails(userId)` — parallel fetch of profile, roles, KYC, and recent transactions for a single user
 
-- A `pg_cron` job that runs daily, calling a DB function to find profiles where `status = 'deactivated'` AND `scheduled_deletion_at < now()`, then invokes the hard-delete edge function or directly cascades cleanup via a SECURITY DEFINER function
-
-### 5. Admin UI Changes in `AdminDashboard.tsx`
-
-**Bulk actions toolbar** (appears when checkboxes are selected):
-- Add a checkbox column to the users table header + each row
-- State: `selectedUserIds: Set<string>`
-- Toolbar shows: "X selected" with buttons for **Bulk Suspend**, **Bulk Deactivate (Soft Delete)**, **Bulk Hard Delete**, **Export Selected (CSV)**
-
-**Per-row changes:**
-- Rename current "Delete" button to "Hard Delete"
-- Add "Deactivate" button (soft-delete) — sets 30-day grace period
-- Show `deactivated` status badge in orange/warning color
-- For deactivated users: show "Reactivate" and "Delete Now" buttons, plus remaining grace period days
-
-**Bulk Export:**
-- Generate CSV from selected users (name, phone, balance, status, created_at)
-- Download via browser `Blob` + `URL.createObjectURL`
-
-### 6. Files to Create/Modify
+### Files to Create/Modify
 
 | File | Action |
 |------|--------|
-| Migration SQL | Add `deactivated_at`, `scheduled_deletion_at`, `deactivated_by` columns to `profiles` |
-| `supabase/functions/soft-delete-user/index.ts` | New edge function for soft-delete |
-| `supabase/functions/delete-user/index.ts` | Add grace period check |
-| `src/pages/AdminDashboard.tsx` | Checkbox selection, bulk action toolbar, soft-delete button, CSV export, updated status badges |
-| `src/hooks/use-admin.ts` | Add `bulkSuspendUsers`, `softDeleteUser` helpers |
-
-### Technical Notes
-
-- Bulk suspend uses existing `toggleUserStatus` in a loop with `Promise.allSettled` for resilience
-- Bulk hard-delete calls the `delete-user` edge function sequentially (to respect FK ordering)
-- CSV export is client-side only, no server round-trip needed
-- The soft-delete grace period (30 days) will be visible in the UI as "Deletion in X days"
-- Deactivated users should be blocked at login via the existing `status` check in the auth flow
+| `supabase/functions/auto-purge-deactivated/index.ts` | New edge function |
+| `supabase/config.toml` | Add function config |
+| `src/pages/AdminDashboard.tsx` | Add user detail drawer with View button |
+| `src/hooks/use-admin.ts` | Add `fetchUserDetails` helper |
+| SQL (via insert tool) | Enable pg_cron/pg_net extensions + schedule daily job |
 
