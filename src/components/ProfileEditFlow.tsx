@@ -90,9 +90,12 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
       setUserId(session.user.id);
       const { data } = await supabase
         .from("profiles")
-        .select("email")
+        .select("name, email")
         .eq("user_id", session.user.id)
         .single();
+      if (data?.name) {
+        setName(data.name);
+      }
       if (data?.email) {
         setEmail(data.email);
         setSavedEmail(data.email);
