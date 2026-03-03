@@ -1,43 +1,31 @@
 
 
-## Fix: Profile Name Not Syncing to BalanceCard
+## Fix: Account Page Shows Hardcoded "Tanvir Hasan" Instead of Database Name
 
 ### Root Cause
 
-The `ProfileEditFlow` component saves the edited name only to **localStorage** (key `mfs_display_name`), but the `useProfile` hook reads the name from the **database** (`profiles.name` column) and uses a different localStorage key (`mfs_user_name`). The name is never written back to the database when the user edits their profile.
+`src/components/ProfileEditFlow.tsx` line 15:
+```typescript
+export const getDisplayName = () => localStorage.getItem("mfs_display_name") ?? "Tanvir Hasan";
+```
 
-The database still has `name: "Rafiq Ahmed"` even though the user changed it to "Shohan" in the profile editor.
+The AccountPage uses `getDisplayName()` / `getDisplayPhoto()` from ProfileEditFlow, which reads from `mfs_display_name` localStorage key with a hardcoded fallback of "Tanvir Hasan". This is completely disconnected from the database and from `useProfile()`.
 
 ### Fix
 
-Two changes needed:
+**`src/pages/AccountPage.tsx`**: Replace the `getDisplayName` / `getDisplayPhoto` localStorage-based state with `useProfile()` hook data. The profile card should use `displayName` from `useProfile()` instead of maintaining separate `displayName` / `displayPhoto` state from localStorage.
 
-#### 1. `src/components/ProfileEditFlow.tsx` -- Save name to database
-In `handleSave`, after setting localStorage, also update `profiles.name` in the database (same pattern as the email update that already exists):
+1. Import and use `useProfile()` for the name shown in the profile card
+2. Remove `displayName` and `displayPhoto` local state that reads from `getDisplayName()`
+3. Keep `getDisplayPhoto` for the avatar (since photos are still localStorage-based), but use `useProfile().displayName` for the name
+4. In `handleProfileSaved`, just trigger a re-fetch (the `profile-updated` event already does this)
 
-```typescript
-// After setDisplayName / setDisplayPhoto, update DB
-const { data: { session } } = await supabase.auth.getSession();
-if (session?.user) {
-  await supabase
-    .from("profiles")
-    .update({ name: name.trim() })
-    .eq("user_id", session.user.id);
-}
-```
-
-Also sync the `mfs_user_name` localStorage key so `useProfile`'s initial state is correct:
-```typescript
-localStorage.setItem("mfs_user_name", name.trim());
-```
-
-#### 2. `src/hooks/use-profile.ts` -- Add refetch capability
-Add a way to re-trigger the profile fetch (e.g., listen to a storage event or expose a `refetch` function), so that after the profile edit saves, BalanceCard and SideNav pick up the new name without requiring a page reload. The simplest approach is to use a state counter or subscribe to `window` storage events.
+**`src/components/ProfileEditFlow.tsx`**: Change the hardcoded fallback from `"Tanvir Hasan"` to `"My Wallet"` so if localStorage is empty, it shows a generic name instead of a specific person's name.
 
 ### Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/components/ProfileEditFlow.tsx` | Update `profiles.name` in DB on save, sync `mfs_user_name` localStorage key |
-| `src/hooks/use-profile.ts` | Listen for localStorage changes to auto-refresh, or expose a `refetch` |
+| `src/pages/AccountPage.tsx` | Use `useProfile().displayName` for profile card name instead of `getDisplayName()` |
+| `src/components/ProfileEditFlow.tsx` | Change fallback from `"Tanvir Hasan"` to `"My Wallet"` |
 
