@@ -1,31 +1,30 @@
 
 
-## Fix: Account Page Shows Hardcoded "Tanvir Hasan" Instead of Database Name
+## Fix: Pre-populate ProfileEditFlow Name from Database
 
-### Root Cause
-
-`src/components/ProfileEditFlow.tsx` line 15:
-```typescript
-export const getDisplayName = () => localStorage.getItem("mfs_display_name") ?? "Tanvir Hasan";
-```
-
-The AccountPage uses `getDisplayName()` / `getDisplayPhoto()` from ProfileEditFlow, which reads from `mfs_display_name` localStorage key with a hardcoded fallback of "Tanvir Hasan". This is completely disconnected from the database and from `useProfile()`.
+### Problem
+Line 65 initializes the name field from localStorage (`getDisplayName()`), which may be stale or wrong. The email is already loaded from the database (lines 86-103), but the name is not.
 
 ### Fix
 
-**`src/pages/AccountPage.tsx`**: Replace the `getDisplayName` / `getDisplayPhoto` localStorage-based state with `useProfile()` hook data. The profile card should use `displayName` from `useProfile()` instead of maintaining separate `displayName` / `displayPhoto` state from localStorage.
+**`src/components/ProfileEditFlow.tsx`**:
 
-1. Import and use `useProfile()` for the name shown in the profile card
-2. Remove `displayName` and `displayPhoto` local state that reads from `getDisplayName()`
-3. Keep `getDisplayPhoto` for the avatar (since photos are still localStorage-based), but use `useProfile().displayName` for the name
-4. In `handleProfileSaved`, just trigger a re-fetch (the `profile-updated` event already does this)
+1. Expand the existing `useEffect` (lines 86-103) that fetches `email` to also fetch `name` from `profiles`
+2. When the DB name arrives, update the `name` state with `setName(data.name)`
+3. Keep `getDisplayName()` as initial value (instant render), but override it once the DB responds
 
-**`src/components/ProfileEditFlow.tsx`**: Change the hardcoded fallback from `"Tanvir Hasan"` to `"My Wallet"` so if localStorage is empty, it shows a generic name instead of a specific person's name.
+Change the query from `.select("email")` to `.select("name, email")`, then add:
+```typescript
+if (data?.name) {
+  setName(data.name);
+}
+```
+
+This is a minimal, single-location change inside the existing `useEffect` load function.
 
 ### Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/pages/AccountPage.tsx` | Use `useProfile().displayName` for profile card name instead of `getDisplayName()` |
-| `src/components/ProfileEditFlow.tsx` | Change fallback from `"Tanvir Hasan"` to `"My Wallet"` |
+| `src/components/ProfileEditFlow.tsx` | Fetch `name` alongside `email` in the existing useEffect, update `name` state from DB |
 
