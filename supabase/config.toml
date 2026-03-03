@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.auto-purge-deactivated]
 verify_jwt = false
+
+[functions.manage-gateway-config]
+verify_jwt = false

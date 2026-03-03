@@ -39,6 +39,20 @@ const DEFAULT_FIELDS: Record<string, string[]> = {
   asthapay: ["api_key", "secret_key", "brand_key", "receiving_number"],
 };
 
+/** Call the manage-gateway-config edge function */
+async function callGatewayApi(body: Record<string, unknown>) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error("Not authenticated");
+
+  const { data, error } = await supabase.functions.invoke("manage-gateway-config", {
+    body: { ...body, table: "payment_gateways" },
+  });
+
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data;
+}
+
 export default function AdminGatewayConfig() {
   const [gateways, setGateways] = useState<Gateway[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,21 +67,18 @@ export default function AdminGatewayConfig() {
 
   const loadGateways = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("payment_gateways")
-      .select("*")
-      .order("sort_order");
-    if (error) {
+    try {
+      const data = await callGatewayApi({ action: "list" });
+      setGateways(Array.isArray(data) ? data : []);
+    } catch {
       toast.error("Failed to load gateways");
-    } else {
-      setGateways((data as any[]) ?? []);
     }
     setLoading(false);
   }, []);
 
   useEffect(() => { loadGateways(); }, [loadGateways]);
 
-  // Realtime
+  // Realtime for status changes only (config is masked anyway)
   useEffect(() => {
     const ch = supabase
       .channel("admin-gateways")
@@ -77,12 +88,12 @@ export default function AdminGatewayConfig() {
   }, [loadGateways]);
 
   const toggleEnabled = async (gw: Gateway) => {
-    const { error } = await supabase
-      .from("payment_gateways")
-      .update({ is_enabled: !gw.is_enabled } as any)
-      .eq("id", gw.id);
-    if (error) toast.error("Failed to toggle");
-    else toast.success(`${gw.display_name} ${!gw.is_enabled ? "enabled" : "disabled"}`);
+    try {
+      await callGatewayApi({ action: "toggle", id: gw.id, is_enabled: !gw.is_enabled });
+      toast.success(`${gw.display_name} ${!gw.is_enabled ? "enabled" : "disabled"}`);
+    } catch {
+      toast.error("Failed to toggle");
+    }
   };
 
   const openEdit = (gw: Gateway) => {
@@ -92,7 +103,6 @@ export default function AdminGatewayConfig() {
     const fields = DEFAULT_FIELDS[gw.provider] ?? [];
     const cfg: Record<string, string> = {};
     fields.forEach(f => { cfg[f] = (gw.config as any)?.[f] ?? ""; });
-    // Also include any extra keys already in config
     Object.keys(gw.config || {}).forEach(k => { if (!cfg[k]) cfg[k] = (gw.config as any)[k]; });
     setEditConfig(cfg);
     setShowSecrets({});
@@ -112,7 +122,6 @@ export default function AdminGatewayConfig() {
   const saveGateway = async () => {
     if (!editName.trim()) { toast.error("Name is required"); return; }
 
-    // Validate receiving_number if present
     const recvNum = editConfig["receiving_number"]?.trim();
     if (recvNum && !BD_PHONE_REGEX.test(recvNum)) {
       toast.error("Receiving number must be a valid 11-digit BD phone (e.g. 01XXXXXXXXX)");
@@ -120,34 +129,42 @@ export default function AdminGatewayConfig() {
     }
 
     setSaving(true);
-
-    if (editGw) {
-      // Update existing
-      const { error } = await supabase
-        .from("payment_gateways")
-        .update({ display_name: editName, config: editConfig } as any)
-        .eq("id", editGw.id);
-      if (error) toast.error("Failed to save");
-      else { toast.success("Gateway updated"); setEditGw(null); }
-    } else {
-      // Create new
-      if (!editProvider.trim()) { toast.error("Provider key is required"); setSaving(false); return; }
-      const { error } = await supabase
-        .from("payment_gateways")
-        .insert({ provider: editProvider.toLowerCase().replace(/\s+/g, "_"), display_name: editName, config: editConfig, sort_order: gateways.length + 1 } as any);
-      if (error) {
-        if (error.code === "23505") toast.error("Provider already exists");
-        else toast.error("Failed to create");
-      } else { toast.success("Gateway added"); setAddOpen(false); }
+    try {
+      if (editGw) {
+        await callGatewayApi({
+          action: "update_config",
+          id: editGw.id,
+          display_name: editName,
+          config: editConfig,
+        });
+        toast.success("Gateway updated");
+        setEditGw(null);
+      } else {
+        if (!editProvider.trim()) { toast.error("Provider key is required"); setSaving(false); return; }
+        await callGatewayApi({
+          action: "create",
+          provider: editProvider.toLowerCase().replace(/\s+/g, "_"),
+          display_name: editName,
+          config: editConfig,
+          sort_order: gateways.length + 1,
+        });
+        toast.success("Gateway added");
+        setAddOpen(false);
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save");
     }
     setSaving(false);
   };
 
   const confirmDelete = async () => {
     if (!deleteGw) return;
-    const { error } = await supabase.from("payment_gateways").delete().eq("id", deleteGw.id);
-    if (error) toast.error("Failed to delete");
-    else toast.success(`${deleteGw.display_name} removed`);
+    try {
+      await callGatewayApi({ action: "delete", id: deleteGw.id });
+      toast.success(`${deleteGw.display_name} removed`);
+    } catch {
+      toast.error("Failed to delete");
+    }
     setDeleteGw(null);
   };
 
@@ -277,7 +294,7 @@ export default function AdminGatewayConfig() {
                     type={showSecrets[key] ? "text" : "password"}
                     value={val}
                     onChange={e => setEditConfig(p => ({ ...p, [key]: e.target.value }))}
-                    placeholder="Enter value…"
+                    placeholder={val?.startsWith("••") ? "Enter new value to replace" : "Enter value…"}
                     className="font-mono text-sm"
                   />
                 </div>
