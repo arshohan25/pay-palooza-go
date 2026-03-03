@@ -12,7 +12,8 @@ import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import ChangePinFlow from "@/components/ChangePinFlow";
 import KycFlow from "@/components/KycFlow";
-import ProfileEditFlow, { getDisplayName, getDisplayPhoto } from "@/components/ProfileEditFlow";
+import ProfileEditFlow, { getDisplayPhoto } from "@/components/ProfileEditFlow";
+import { useProfile } from "@/hooks/use-profile";
 import SupportChat from "@/components/SupportChat";
 import LimitsPage from "@/pages/LimitsPage";
 import SpendingInsightsPage from "@/pages/SpendingInsightsPage";
@@ -131,13 +132,13 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const [showKyc, setShowKyc]           = useState(false);
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [subPage, setSubPage]           = useState<SubPage>(null);
-  const [displayName, setDisplayNameState]   = useState(getDisplayName);
   const [displayPhoto, setDisplayPhotoState] = useState(getDisplayPhoto);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [showSupport, setShowSupport] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
   const { roles } = useUserRoles();
+  const { displayName } = useProfile();
   const registeredPhone = getRegisteredPhone();
   const walletId = useMemo(() => generateWalletId(registeredPhone || "WALLET_USER"), [registeredPhone]);
 
@@ -175,7 +176,6 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   };
 
   const handleProfileSaved = async () => {
-    setDisplayNameState(getDisplayName());
     setDisplayPhotoState(getDisplayPhoto());
     // Refresh email from DB
     const { data: { session } } = await supabase.auth.getSession();
