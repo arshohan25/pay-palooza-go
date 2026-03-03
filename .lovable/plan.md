@@ -1,53 +1,71 @@
 
 
-## Plan: Admin Notifications for Balance Recovery from Deleted Users
+## Audit: User App Feature Issues and Fixes
 
-### Changes
+After thorough review of the codebase, here are the issues found and the plan to fix them.
 
-**1. `supabase/functions/delete-user/index.ts`**
-After the treasury credit block (around line 136), insert a notification for all admin users:
-- Query `user_roles` for all users with `role = 'admin'`
-- Insert a notification for each admin into the `notifications` table with:
-  - `title`: "Balance Recovered from Deleted User"
-  - `body`: "৳{amount} recovered from {name/phone} and credited to treasury"
-  - `category`: "system"
-  - `metadata`: `{ type: "balance_recovery", amount, user_name, source: "manual_delete" }`
+---
 
-**2. `supabase/functions/auto-purge-deactivated/index.ts`**
-Same pattern after treasury credit (around line 96):
-- Fetch admin user IDs from `user_roles`
-- Insert notifications for each admin with source `"auto_purge"`
+### Issue 1: `mfs_registered_phone` localStorage key is never set
 
-**3. No database or UI changes needed**
-- The `notifications` table already exists with the right schema
-- The existing Notification Center already displays system notifications with real-time sync
-- Admin notifications will appear automatically in the bell icon notification center
+**Impact**: BalanceCard shows "My Wallet" instead of the user's masked phone number. SideNav shows "—" for phone. AccountPage shows empty phone.
 
-### Implementation Detail
+**Root cause**: AuthPage sets `mfs_device_phone` on signup/login, but BalanceCard, SideNav, and AccountPage read `mfs_registered_phone` which is never written.
 
+**Fix**: In `AuthPage.tsx`, after storing `mfs_device_phone`, also store the same phone under `mfs_registered_phone`:
 ```typescript
-// Notify all admins about balance recovery
-const { data: admins } = await adminClient
-  .from("user_roles")
-  .select("user_id")
-  .eq("role", "admin");
-
-if (admins?.length) {
-  await adminClient.from("notifications").insert(
-    admins.map(a => ({
-      user_id: a.user_id,
-      title: "Balance Recovered",
-      body: `৳${amount} recovered from ${userName} and credited to treasury`,
-      category: "system",
-      metadata: { type: "balance_recovery", amount, source: "manual_delete" }
-    }))
-  );
-}
+localStorage.setItem("mfs_registered_phone", phone);
 ```
 
-### Files to Modify
+---
+
+### Issue 2: SavingsFlow uses deprecated `deductBalance` (no-op)
+
+**Impact**: Saving to a goal appears to succeed (toast, UI updates) but **no balance is actually deducted**. The function is a no-op that only logs a console warning.
+
+**Fix**: SavingsFlow needs to call `recordTransaction()` RPC instead. However, "savings" is not a valid transaction type in the database enum. Two options:
+- Use type `"payment"` with a description like "Savings: Emergency Fund"
+- Or keep savings as a local-only feature (no real deduction) with a clear "Coming Soon" label
+
+Since savings goals are stored purely in component state (not persisted to DB), the most honest fix is to add a "Coming Soon" badge and disable actual deductions until a proper savings table is created.
+
+---
+
+### Issue 3: BalanceCard and SideNav don't show real user data from profile
+
+**Impact**: Display name comes from `localStorage` which may be stale or empty. The profile name stored in the `profiles` table via Supabase is not being used.
+
+**Fix**: Update BalanceCard and SideNav to fetch the user's name and phone from the `profiles` table (or from `useAuth` hook's user metadata) instead of relying solely on localStorage.
+
+---
+
+### Issue 4: Console warning — Badge component ref issue in AdminDashboard
+
+**Impact**: Non-breaking warning, but indicates a `Badge` component is being passed a ref without `forwardRef`.
+
+**Fix**: Wrap the `Badge` component in `React.forwardRef` in `src/components/ui/badge.tsx`.
+
+---
+
+### Issue 5: ShopFlow imports unused `addBalance`
+
+**Impact**: No functional issue (it's not called), but it's dead code.
+
+**Fix**: Remove `addBalance` from the import in `ShopFlow.tsx`.
+
+---
+
+### Summary of Changes
+
 | File | Change |
 |------|--------|
-| `supabase/functions/delete-user/index.ts` | Add admin notification after treasury credit |
-| `supabase/functions/auto-purge-deactivated/index.ts` | Add admin notification after treasury credit |
+| `src/pages/AuthPage.tsx` | Set `mfs_registered_phone` in localStorage on signup/login |
+| `src/components/SavingsFlow.tsx` | Replace deprecated `deductBalance` with `recordTransaction` or mark as "Coming Soon" |
+| `src/components/BalanceCard.tsx` | Fetch display name from profile DB instead of only localStorage |
+| `src/components/SideNav.tsx` | Fetch display name/phone from profile DB |
+| `src/components/ui/badge.tsx` | Add `forwardRef` to fix console warning |
+| `src/components/ShopFlow.tsx` | Remove unused `addBalance` import |
+
+### No database changes needed
+All fixes are frontend-only code changes.
 
