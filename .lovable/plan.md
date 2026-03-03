@@ -1,30 +1,34 @@
 
 
-## Fix: Pre-populate ProfileEditFlow Name from Database
+## Brand the EasyPay Logo Everywhere
 
-### Problem
-Line 65 initializes the name field from localStorage (`getDisplayName()`), which may be stale or wrong. The email is already loaded from the database (lines 86-103), but the name is not.
+### What We'll Do
+Copy the uploaded logo image into the project and replace every instance of the text-based logo (₿ or ৳ characters in boxes) with the actual logo image across the entire app.
 
-### Fix
+### Logo Locations to Update
 
-**`src/components/ProfileEditFlow.tsx`**:
+| Location | File | Current | Change |
+|----------|------|---------|--------|
+| Splash Screen | `src/components/SplashScreen.tsx` | ৳ text in rounded box | Logo `<img>` |
+| Auth Page (Welcome) | `src/pages/AuthPage.tsx` | ৳ text in rounded box | Logo `<img>` |
+| Side Navigation | `src/components/SideNav.tsx` | ₿ text in rounded box | Logo `<img>` |
+| Biometric Auth | `src/components/BiometricAuth.tsx` | ₿ text in rounded box | Logo `<img>` |
+| Favicon / PWA icons | `index.html`, `vite.config.ts` | Generic icon-192/512 | Update with logo |
+| QR Modal | `src/components/UserQrModal.tsx` | N/A (no logo) | No change needed |
 
-1. Expand the existing `useEffect` (lines 86-103) that fetches `email` to also fetch `name` from `profiles`
-2. When the DB name arrives, update the `name` state with `setName(data.name)`
-3. Keep `getDisplayName()` as initial value (instant render), but override it once the DB responds
+### Steps
 
-Change the query from `.select("email")` to `.select("name, email")`, then add:
-```typescript
-if (data?.name) {
-  setName(data.name);
-}
-```
+1. **Copy logo to project**: Save uploaded image as `src/assets/easypay-logo.png`
 
-This is a minimal, single-location change inside the existing `useEffect` load function.
+2. **SplashScreen.tsx**: Replace the `<span className="text-5xl font-black text-white">৳</span>` with `<img src={logo} alt="EasyPay" className="w-16 h-16 object-contain" />`
 
-### Files to Modify
+3. **AuthPage.tsx** (line ~674): Replace the ৳ text div content with the logo image
 
-| File | Change |
-|------|--------|
-| `src/components/ProfileEditFlow.tsx` | Fetch `name` alongside `email` in the existing useEffect, update `name` state from DB |
+4. **SideNav.tsx** (line ~39): Replace ₿ text with a small logo image (~24px)
+
+5. **BiometricAuth.tsx** (line ~135): Replace ₿ text with logo image
+
+6. **Favicon**: Copy logo to `public/icons/` and update references in `index.html`
+
+All replacements will use an ES6 import (`import logo from "@/assets/easypay-logo.png"`) for proper bundling. The logo will have a transparent background as it's being placed on gradient and colored backgrounds.
 
