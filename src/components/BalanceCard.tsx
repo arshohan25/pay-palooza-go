@@ -7,17 +7,9 @@ import { getBalance, onBalanceChange, fetchBalance, setupBalanceRealtime } from 
 import { AddMoneyIcon } from "@/components/QuickActionIcons";
 import { generateWalletId } from "@/lib/walletId";
 import { useI18n } from "@/lib/i18n";
+import { useProfile } from "@/hooks/use-profile";
 
 const REGISTERED_KEY = "mfs_registered_phone";
-const USER_NAME_KEY  = "mfs_user_name";
-
-const getDisplayName = (): string => {
-  const stored = localStorage.getItem(USER_NAME_KEY);
-  if (stored) return stored;
-  const phone = localStorage.getItem(REGISTERED_KEY);
-  if (phone) return `+880 ${phone.slice(0, 3)}****${phone.slice(-3)}`;
-  return "My Wallet";
-};
 
 interface BalanceCardProps {
   onAddMoney?: () => void;
@@ -25,13 +17,18 @@ interface BalanceCardProps {
 
 const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
   const { t } = useI18n();
+  const { name: profileName, phone: profilePhone } = useProfile();
   const [showBalance, setShowBalance] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const [showWalletShare, setShowWalletShare] = useState(false);
-  const phone   = useMemo(() => localStorage.getItem(REGISTERED_KEY) ?? "WALLET_USER", []);
+  const phone   = useMemo(() => profilePhone || localStorage.getItem(REGISTERED_KEY) || "WALLET_USER", [profilePhone]);
   const userId  = useMemo(() => generateWalletId(phone), [phone]);
-  const userName = useMemo(() => getDisplayName(), []);
+  const userName = useMemo(() => {
+    if (profileName) return profileName;
+    if (phone && phone !== "WALLET_USER") return `+880 ${phone.slice(0, 3)}****${phone.slice(-3)}`;
+    return "My Wallet";
+  }, [profileName, phone]);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Animated balance
