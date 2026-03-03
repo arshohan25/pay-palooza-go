@@ -66,6 +66,8 @@ export default function AdminKycReview() {
   const [rejectionReason, setRejectionReason] = useState<string>("");
   const [userProfile, setUserProfile] = useState<{ phone: string; name: string | null; avatar_url: string | null } | null>(null);
   const [stats, setStats] = useState({ pending: 0, verified: 0, rejected: 0 });
+  const [duplicateNidWarning, setDuplicateNidWarning] = useState(false);
+  const [pendingApproveConfirm, setPendingApproveConfirm] = useState(false);
 
   const loadRecords = useCallback(async () => {
     setLoading(true);
@@ -126,6 +128,8 @@ export default function AdminKycReview() {
     setSelected(record);
     setReviewNotes(record.reviewer_notes ?? "");
     setRejectionReason("");
+    setDuplicateNidWarning(false);
+    setPendingApproveConfirm(false);
     setUserProfile(null);
     // Fetch user profile for phone & avatar
     const { data: profile } = await supabase
@@ -147,8 +151,8 @@ export default function AdminKycReview() {
     if (!selected) return;
     setSubmitting(true);
 
-    // If approving, check for duplicate NID
-    if (decision === "verified" && selected.nid_number) {
+    // If approving, check for duplicate NID (non-blocking warning)
+    if (decision === "verified" && selected.nid_number && !pendingApproveConfirm) {
       const { data: existing } = await supabase
         .from("kyc_verifications")
         .select("id, user_id")
@@ -158,22 +162,10 @@ export default function AdminKycReview() {
         .limit(1);
 
       if (existing && existing.length > 0) {
-        toast.error("এই NID দিয়ে অন্য একটি অ্যাকাউন্ট ইতোমধ্যে যাচাই করা হয়েছে। Auto-rejecting.");
-        // Auto-reject with reason
-        await supabase
-          .from("kyc_verifications")
-          .update({
-            status: "rejected",
-            reviewer_notes: "[Another account verified with this NID] Auto-rejected: duplicate NID",
-            reviewer_id: (await supabase.auth.getUser()).data.user?.id ?? null,
-            reviewed_at: new Date().toISOString(),
-          })
-          .eq("id", selected.id);
-        setSelected(null);
-        loadRecords();
-        loadStats();
+        setDuplicateNidWarning(true);
+        setPendingApproveConfirm(true);
         setSubmitting(false);
-        return;
+        return; // Show warning, wait for confirm click
       }
     }
 
@@ -367,16 +359,29 @@ export default function AdminKycReview() {
                 </Badge>
               </div>
 
-              {/* Face match warning banner */}
+              {/* Face match warning banner (informational only) */}
               {(selected.face_match_score === null || selected.face_match_score < 70) && (
-                <div className="flex items-start gap-3 p-3 rounded-lg border border-destructive/50 bg-destructive/10">
-                  <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                <div className="flex items-start gap-3 p-3 rounded-lg border border-amber-500/50 bg-amber-50 dark:bg-amber-900/20">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-semibold text-destructive">Cannot Approve — Face Match Too Low</p>
-                    <p className="text-xs text-destructive/80 mt-0.5">
+                    <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">⚠ Warning: Low Face Match</p>
+                    <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-0.5">
                       {selected.face_match_score !== null
-                        ? `Face match score is ${selected.face_match_score}% (minimum 70% required). This record cannot be approved at the database level.`
-                        : "Face match score is not available. This record cannot be approved until a valid score is recorded."}
+                        ? `Face match score is ${selected.face_match_score}% (below 70%). Please review photos carefully before approving.`
+                        : "Face match score is not available. Please review photos carefully before approving."}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Duplicate NID warning banner (non-blocking) */}
+              {duplicateNidWarning && (
+                <div className="flex items-start gap-3 p-3 rounded-lg border border-amber-500/50 bg-amber-50 dark:bg-amber-900/20">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">⚠ Warning: Duplicate NID</p>
+                    <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-0.5">
+                      Another account is already verified with this NID number. You may still approve if this is intentional.
                     </p>
                   </div>
                 </div>
@@ -545,10 +550,10 @@ export default function AdminKycReview() {
                 <Button
                   onClick={() => handleDecision("verified")}
                   disabled={submitting}
-                  className="gap-1.5"
+                  className={`gap-1.5 ${pendingApproveConfirm ? "bg-amber-600 hover:bg-amber-700" : ""}`}
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  Approve
+                  {pendingApproveConfirm ? "Confirm Approve" : "Approve"}
                 </Button>
               </>
             ) : selected && (
