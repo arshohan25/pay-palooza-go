@@ -102,6 +102,40 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Credit remaining balance to treasury before cleanup
+    let balanceRecovered = 0;
+    if (targetProfile.balance > 0) {
+      const { data: treasury } = await adminClient
+        .from("platform_treasury")
+        .select("id, balance, total_earnings")
+        .limit(1)
+        .single();
+
+      if (treasury) {
+        const newTreasuryBalance = treasury.balance + targetProfile.balance;
+        await adminClient
+          .from("platform_treasury")
+          .update({
+            balance: newTreasuryBalance,
+            total_earnings: treasury.total_earnings + targetProfile.balance,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", treasury.id);
+
+        await adminClient.from("treasury_ledger").insert({
+          type: "earning",
+          amount: targetProfile.balance,
+          balance_after: newTreasuryBalance,
+          counterparty_user_id: target_user_id,
+          description: "Recovered balance from deleted user account",
+          reference: "USER-DELETE-" + target_user_id.substring(0, 8),
+        });
+
+        balanceRecovered = targetProfile.balance;
+        console.log(`Recovered ৳${balanceRecovered} from deleted user ${target_user_id}`);
+      }
+    }
+
     // Delete from all public tables (order matters for FK constraints)
     const tablesToClean = [
       { table: "referral_rewards", column: "referrer_id" },
@@ -141,6 +175,7 @@ Deno.serve(async (req) => {
         deleted_user_name: targetProfile.name,
         deleted_user_phone: targetProfile.phone,
         deleted_user_balance: targetProfile.balance,
+        balance_recovered: balanceRecovered,
       },
     });
 
@@ -160,6 +195,7 @@ Deno.serve(async (req) => {
         name: targetProfile.name,
         phone: targetProfile.phone,
       },
+      balance_recovered: balanceRecovered,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
