@@ -7,12 +7,32 @@ import { toast } from "sonner";
 
 export type KycStatus = "none" | "pending" | "verified" | "rejected";
 
+const fireBrowserNotification = (title: string, body: string) => {
+  if (!("Notification" in window)) return;
+  if (Notification.permission !== "granted") return;
+  try {
+    const n = new Notification(title, {
+      body,
+      icon: "/icons/icon-192.png",
+      tag: "kyc-status-" + Date.now(),
+    });
+    n.onclick = () => { window.focus(); n.close(); };
+  } catch { /* not available */ }
+};
+
 export function useKycStatus() {
   const { user } = useAuth();
   const [status, setStatus] = useState<KycStatus>("none");
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const prevStatusRef = useRef<KycStatus | null>(null);
+
+  // Request browser notification permission on mount
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission().catch(() => {});
+    }
+  }, []);
 
   const fetchStatus = useCallback(async () => {
     if (!user) {
@@ -49,17 +69,24 @@ export function useKycStatus() {
     setLoading(false);
   }, [user]);
 
-  // Detect pending → verified transition for celebration
+  // Detect pending → verified / rejected transitions
   useEffect(() => {
     if (prevStatusRef.current === "pending" && status === "verified") {
       fireSuccessConfetti();
       haptics.success();
       toast.success("Your identity has been verified! All features are now unlocked. 🎉");
+      fireBrowserNotification("KYC Approved ✅", "Your identity has been verified! All features are now unlocked.");
+    }
+    if (prevStatusRef.current === "pending" && status === "rejected") {
+      haptics.error();
+      const reason = rejectionReason || "Please resubmit with correct documents.";
+      toast.error("KYC Verification Rejected", { description: reason, duration: 8000 });
+      fireBrowserNotification("KYC Rejected ❌", reason);
     }
     if (status !== "none" || prevStatusRef.current !== null) {
       prevStatusRef.current = status;
     }
-  }, [status]);
+  }, [status, rejectionReason]);
 
   useEffect(() => {
     fetchStatus();
