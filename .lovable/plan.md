@@ -1,35 +1,53 @@
 
 
-## Plan: Credit Deleted User's Balance to Treasury
-
-When a user account is permanently deleted (via admin hard-delete or auto-purge), their remaining balance should be credited to the platform treasury before data cleanup.
+## Plan: Admin Notifications for Balance Recovery from Deleted Users
 
 ### Changes
 
 **1. `supabase/functions/delete-user/index.ts`**
-- After fetching `targetProfile` (which already includes `balance`), before the cascading table deletes:
-  - If `targetProfile.balance > 0`, credit it to `platform_treasury` (update balance, increment total_earnings)
-  - Insert a `treasury_ledger` entry with type `'earning'`, description like `"Recovered balance from deleted user account"`, and the user's ID as `counterparty_user_id`
-- Include `balance_recovered` in the audit log details and response
+After the treasury credit block (around line 136), insert a notification for all admin users:
+- Query `user_roles` for all users with `role = 'admin'`
+- Insert a notification for each admin into the `notifications` table with:
+  - `title`: "Balance Recovered from Deleted User"
+  - `body`: "৳{amount} recovered from {name/phone} and credited to treasury"
+  - `category`: "system"
+  - `metadata`: `{ type: "balance_recovery", amount, user_name, source: "manual_delete" }`
 
 **2. `supabase/functions/auto-purge-deactivated/index.ts`**
-- Same logic: before cascading deletes for each expired user, if `user.balance > 0`:
-  - Credit balance to `platform_treasury`
-  - Insert `treasury_ledger` entry
-- Include recovered balance in the audit log details
+Same pattern after treasury credit (around line 96):
+- Fetch admin user IDs from `user_roles`
+- Insert notifications for each admin with source `"auto_purge"`
 
-### Flow
-```text
-User deletion triggered
-  → Fetch user profile (balance already selected)
-  → If balance > 0:
-      → Lock platform_treasury row (SELECT ... FOR UPDATE via service role)
-      → UPDATE platform_treasury SET balance = balance + user_balance
-      → INSERT treasury_ledger (type: 'earning', amount, description)
-  → Proceed with existing cascading deletes
-  → Delete auth user
+**3. No database or UI changes needed**
+- The `notifications` table already exists with the right schema
+- The existing Notification Center already displays system notifications with real-time sync
+- Admin notifications will appear automatically in the bell icon notification center
+
+### Implementation Detail
+
+```typescript
+// Notify all admins about balance recovery
+const { data: admins } = await adminClient
+  .from("user_roles")
+  .select("user_id")
+  .eq("role", "admin");
+
+if (admins?.length) {
+  await adminClient.from("notifications").insert(
+    admins.map(a => ({
+      user_id: a.user_id,
+      title: "Balance Recovered",
+      body: `৳${amount} recovered from ${userName} and credited to treasury`,
+      category: "system",
+      metadata: { type: "balance_recovery", amount, source: "manual_delete" }
+    }))
+  );
+}
 ```
 
-### No database changes needed
-The `platform_treasury` and `treasury_ledger` tables already exist with the required columns. The edge functions use the service role key which bypasses RLS.
+### Files to Modify
+| File | Change |
+|------|--------|
+| `supabase/functions/delete-user/index.ts` | Add admin notification after treasury credit |
+| `supabase/functions/auto-purge-deactivated/index.ts` | Add admin notification after treasury credit |
 
