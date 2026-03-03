@@ -477,7 +477,7 @@ const translations = {
   change: { en: "Change", bn: "পরিবর্তন" },
   addNewAddress: { en: "Add New Address", bn: "নতুন ঠিকানা যোগ" },
   paymentMethod: { en: "Payment Method", bn: "পেমেন্ট পদ্ধতি" },
-  mfsWallet: { en: "MFS Wallet", bn: "এমএফএস ওয়ালেট" },
+  mfsWallet: { en: "EasyPay Wallet", bn: "ইজিপে ওয়ালেট" },
   balance: { en: "Balance", bn: "ব্যালেন্স" },
   savedCard: { en: "Saved card", bn: "সংরক্ষিত কার্ড" },
   insufficientBalanceNeed: { en: "Insufficient balance — need", bn: "অপর্যাপ্ত ব্যালেন্স — আরো প্রয়োজন" },
