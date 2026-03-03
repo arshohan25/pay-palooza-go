@@ -1,50 +1,26 @@
 
 
-## Plan: KYC-Gated Actions + Account Creation Verification
+## Plan: KYC Verification Celebration + Real-time Banner Removal
 
-### Overview
-Two changes: (1) Create a KYC status hook and use it to block all financial actions until KYC is verified, showing a prompt to complete KYC instead. (2) Test that name/phone appear correctly after signup.
+### Current State
+- `useKycStatus` already subscribes to real-time changes on `kyc_verifications` via Supabase Realtime — so the banner and FeatureGuard will automatically update when admin approves KYC. **No fix needed for real-time sync.**
+- The confetti utility (`fireSuccessConfetti` in `src/lib/confetti.ts`) already exists.
 
----
+### Changes
 
-### 1. Create `src/hooks/use-kyc-status.ts`
+#### 1. Track previous KYC status to detect verification moment (`src/hooks/use-kyc-status.ts`)
+- Add a `useRef` to track the previous status value.
+- When status transitions from `"pending"` → `"verified"`, fire `fireSuccessConfetti()` and show a success toast ("Your identity has been verified! All features are now unlocked.").
+- This ensures confetti only fires on the live transition, not on page load for already-verified users.
 
-A new hook that fetches the current user's KYC status from `kyc_verifications` and caches it:
+#### 2. Add celebratory haptic feedback (`src/hooks/use-kyc-status.ts`)
+- Trigger the double-pulse haptic pattern (`navigator.vibrate([15, 40, 15])`) alongside the confetti, matching the app's existing celebration patterns.
 
-```typescript
-export function useKycStatus() {
-  // Returns { status: "none" | "pending" | "verified" | "rejected", loading: boolean }
-  // Queries kyc_verifications table for current user
-}
-```
-
-### 2. Update `FeatureGuard` to enforce KYC
-
-Modify `src/components/FeatureGuard.tsx` to:
-- Import `useKycStatus`
-- If KYC status is not `"verified"`, block the action with a toast: "Please complete KYC verification first"
-- Auto-close the flow (same pattern as existing lock/disable logic)
-
-This single change gates **all** financial flows (Send Money, Cash Out, Payment, Recharge, Pay Bill, Add Money, Shop) since they all use `FeatureGuard`.
-
-### 3. Add KYC prompt banner on home page
-
-In `src/pages/Index.tsx`, after the user is authenticated and KYC is not verified:
-- Show a persistent banner/card below the balance card prompting the user to complete KYC
-- Tapping the banner opens `KycFlow`
-- Banner text: "Complete KYC to unlock all features" with a shield icon
-
-### 4. No database changes needed
-
-The `kyc_verifications` table already exists with proper status tracking.
-
----
-
-### Files to Create/Modify
+### Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/hooks/use-kyc-status.ts` | New hook — fetch KYC status for current user |
-| `src/components/FeatureGuard.tsx` | Add KYC verification check before allowing actions |
-| `src/pages/Index.tsx` | Add KYC prompt banner when KYC is incomplete |
+| `src/hooks/use-kyc-status.ts` | Add previous-status ref, fire confetti + toast on `pending → verified` transition |
+
+No other files need changes — the banner in `Index.tsx` and the gate in `FeatureGuard.tsx` already react to the `kycStatus` value, which updates in real-time.
 
