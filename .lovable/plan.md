@@ -1,35 +1,43 @@
 
 
-## Fix: Consistent Name Display Across BalanceCard and SideNav
+## Fix: Profile Name Not Syncing to BalanceCard
 
-### Problem
-The BalanceCard and SideNav derive the user's display name differently:
+### Root Cause
 
-- **BalanceCard** (`userName`): If no `profileName`, falls back to a masked phone format like `+880 017****890`
-- **SideNav** (`displayName`): If no `profileName`, falls back to raw localStorage value or `"My Wallet"`
+The `ProfileEditFlow` component saves the edited name only to **localStorage** (key `mfs_display_name`), but the `useProfile` hook reads the name from the **database** (`profiles.name` column) and uses a different localStorage key (`mfs_user_name`). The name is never written back to the database when the user edits their profile.
 
-This causes the two components to show different names when the user hasn't set a profile name.
+The database still has `name: "Rafiq Ahmed"` even though the user changed it to "Shohan" in the profile editor.
 
-### Solution
-Unify both components to use the same name derivation logic from `useProfile`, and apply the same fallback strategy.
+### Fix
 
-### Changes
+Two changes needed:
 
-#### `src/hooks/use-profile.ts`
-- Add a computed `displayName` field to the hook's return value that applies the consistent fallback logic:
-  1. Database `name` (if set)
-  2. Masked phone (`+880 017****890`) if phone is available
-  3. `"My Wallet"` as final fallback
-- This centralizes the logic so all consumers get the same result
+#### 1. `src/components/ProfileEditFlow.tsx` -- Save name to database
+In `handleSave`, after setting localStorage, also update `profiles.name` in the database (same pattern as the email update that already exists):
 
-#### `src/components/BalanceCard.tsx`
-- Replace the local `userName` useMemo with `displayName` from `useProfile()`
-- Remove redundant phone-masking logic
+```typescript
+// After setDisplayName / setDisplayPhoto, update DB
+const { data: { session } } = await supabase.auth.getSession();
+if (session?.user) {
+  await supabase
+    .from("profiles")
+    .update({ name: name.trim() })
+    .eq("user_id", session.user.id);
+}
+```
 
-#### `src/components/SideNav.tsx`
-- Replace the local `displayName` variable with `displayName` from `useProfile()`
-- Remove the localStorage fallback chain
+Also sync the `mfs_user_name` localStorage key so `useProfile`'s initial state is correct:
+```typescript
+localStorage.setItem("mfs_user_name", name.trim());
+```
 
-### Result
-Both components (and any future consumers) will always show the same name, derived from a single source of truth in `useProfile`.
+#### 2. `src/hooks/use-profile.ts` -- Add refetch capability
+Add a way to re-trigger the profile fetch (e.g., listen to a storage event or expose a `refetch` function), so that after the profile edit saves, BalanceCard and SideNav pick up the new name without requiring a page reload. The simplest approach is to use a state counter or subscribe to `window` storage events.
+
+### Files to Modify
+
+| File | Change |
+|------|--------|
+| `src/components/ProfileEditFlow.tsx` | Update `profiles.name` in DB on save, sync `mfs_user_name` localStorage key |
+| `src/hooks/use-profile.ts` | Listen for localStorage changes to auto-refresh, or expose a `refetch` |
 
