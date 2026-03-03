@@ -1,26 +1,40 @@
 
 
-## Plan: KYC Verification Celebration + Real-time Banner Removal
+## Plan: KYC Rejection Flow with Reason Banner and Resubmission
 
-### Current State
-- `useKycStatus` already subscribes to real-time changes on `kyc_verifications` via Supabase Realtime — so the banner and FeatureGuard will automatically update when admin approves KYC. **No fix needed for real-time sync.**
-- The confetti utility (`fireSuccessConfetti` in `src/lib/confetti.ts`) already exists.
+### Problem
+When KYC is rejected, the `KycFlow` component doesn't recognize the "rejected" status — it only checks for "verified" and "pending" (line 889), so rejected users fall through to the fresh KYC intro screen without seeing why they were rejected. The Index.tsx banner already shows "KYC Rejected — Resubmit" but lacks the actual rejection reason.
 
 ### Changes
 
-#### 1. Track previous KYC status to detect verification moment (`src/hooks/use-kyc-status.ts`)
-- Add a `useRef` to track the previous status value.
-- When status transitions from `"pending"` → `"verified"`, fire `fireSuccessConfetti()` and show a success toast ("Your identity has been verified! All features are now unlocked.").
-- This ensures confetti only fires on the live transition, not on page load for already-verified users.
+#### 1. Update KycFlow status check to handle "rejected" (`src/components/KycFlow.tsx`)
 
-#### 2. Add celebratory haptic feedback (`src/hooks/use-kyc-status.ts`)
-- Trigger the double-pulse haptic pattern (`navigator.vibrate([15, 40, 15])`) alongside the confetti, matching the app's existing celebration patterns.
+**Line 889**: Also set `kycStatus` when status is `"rejected"`. Fetch `reviewer_notes` alongside `status`:
+```typescript
+.select("status, reviewer_notes")
+```
+Store the reviewer_notes in a new state variable `rejectionReason`.
+
+**Lines 1229–1230**: Add a new rejected status screen between the "pending" block and the main form. This screen will:
+- Show a red/destructive icon (XCircle)
+- Display the rejection reason from `reviewer_notes`
+- Show a "Resubmit KYC" button that resets `kycStatus` to `null` so the user can go through the flow again
+
+#### 2. Show rejection reason in Index.tsx banner (`src/pages/Index.tsx`)
+
+Update `useKycStatus` hook to also return the `reviewer_notes` when status is rejected. Then display the reason in the banner subtitle instead of the generic "Please resubmit your verification documents".
+
+#### 3. Update `useKycStatus` hook to return rejection reason (`src/hooks/use-kyc-status.ts`)
+
+Add `rejectionReason` to the hook's return value by fetching `reviewer_notes` from the query.
 
 ### Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/hooks/use-kyc-status.ts` | Add previous-status ref, fire confetti + toast on `pending → verified` transition |
+| `src/hooks/use-kyc-status.ts` | Fetch and return `reviewer_notes` as `rejectionReason` |
+| `src/components/KycFlow.tsx` | Handle rejected status, show reason + resubmit button |
+| `src/pages/Index.tsx` | Show rejection reason in the banner |
 
-No other files need changes — the banner in `Index.tsx` and the gate in `FeatureGuard.tsx` already react to the `kycStatus` value, which updates in real-time.
+### No database changes needed.
 
