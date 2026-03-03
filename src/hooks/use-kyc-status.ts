@@ -7,6 +7,43 @@ import { toast } from "sonner";
 
 export type KycStatus = "none" | "pending" | "verified" | "rejected";
 
+/** Synthesized chime via Web Audio API — no external files needed */
+const playKycChime = (type: "success" | "error") => {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const gain = ctx.createGain();
+    gain.connect(ctx.destination);
+
+    if (type === "success") {
+      // Ascending 3-note celebratory chime
+      const notes = [660, 880, 1100];
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        osc.connect(gain);
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.13);
+        osc.start(ctx.currentTime + i * 0.13);
+        osc.stop(ctx.currentTime + i * 0.13 + 0.12);
+      });
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+    } else {
+      // Descending 2-note gentle alert
+      const notes = [440, 330];
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        osc.connect(gain);
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.15);
+        osc.start(ctx.currentTime + i * 0.15);
+        osc.stop(ctx.currentTime + i * 0.15 + 0.14);
+      });
+      gain.gain.setValueAtTime(0.13, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    }
+  } catch { /* Web Audio not available */ }
+};
+
 const fireBrowserNotification = (title: string, body: string) => {
   if (!("Notification" in window)) return;
   if (Notification.permission !== "granted") return;
@@ -72,12 +109,14 @@ export function useKycStatus() {
   // Detect pending → verified / rejected transitions
   useEffect(() => {
     if (prevStatusRef.current === "pending" && status === "verified") {
+      playKycChime("success");
       fireSuccessConfetti();
       haptics.success();
       toast.success("Your identity has been verified! All features are now unlocked. 🎉");
       fireBrowserNotification("KYC Approved ✅", "Your identity has been verified! All features are now unlocked.");
     }
     if (prevStatusRef.current === "pending" && status === "rejected") {
+      playKycChime("error");
       haptics.error();
       const reason = rejectionReason || "Please resubmit with correct documents.";
       toast.error("KYC Verification Rejected", { description: reason, duration: 8000 });
