@@ -240,8 +240,8 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
       }
     }
 
-    // Notify useProfile listeners
-    window.dispatchEvent(new Event("profile-updated"));
+    // Notify useProfile listeners with new name for instant UI update
+    window.dispatchEvent(new CustomEvent("profile-updated", { detail: { name: name.trim() } }));
 
     setSaving(false);
     haptics.success();
