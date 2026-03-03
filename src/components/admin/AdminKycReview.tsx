@@ -191,14 +191,7 @@ export default function AdminKycReview() {
       .eq("id", selected.id);
 
     if (error) {
-      const msg = error.message || "";
-      if (msg.includes("face match score")) {
-        toast.error("Cannot approve: Face match score must be at least 70%");
-      } else if (msg.includes("idx_kyc_unique_verified_nid")) {
-        toast.error("Cannot approve: Another account is already verified with this NID");
-      } else {
-        toast.error("Failed to update KYC status");
-      }
+      toast.error("Failed to update KYC status");
     } else {
       toast.success(`KYC ${decision === "verified" ? "approved" : "rejected"} successfully`);
 
