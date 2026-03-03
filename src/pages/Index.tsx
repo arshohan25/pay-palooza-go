@@ -38,7 +38,7 @@ import { useKycStatus } from "@/hooks/use-kyc-status";
 
 const Index = () => {
   const { isAuthenticated, loading: authLoading, signOut, user } = useAuth();
-  const { status: kycStatus } = useKycStatus();
+  const { status: kycStatus, rejectionReason } = useKycStatus();
   const [showKycFlow, setShowKycFlow] = useState(false);
   const [splashDone, setSplashDone]           = useState(false);
   const [onboardingDone, setOnboardingDone]  = useState(() => hasSeenOnboarding());
@@ -227,7 +227,7 @@ const Index = () => {
                       {kycStatus === "pending"
                         ? "Your verification is being reviewed"
                         : kycStatus === "rejected"
-                        ? "Please resubmit your verification documents"
+                        ? (rejectionReason || "Please resubmit your verification documents")
                         : "Verify your identity to send money, cash out & more"}
                     </p>
                   </div>

@@ -10,6 +10,7 @@ export type KycStatus = "none" | "pending" | "verified" | "rejected";
 export function useKycStatus() {
   const { user } = useAuth();
   const [status, setStatus] = useState<KycStatus>("none");
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const prevStatusRef = useRef<KycStatus | null>(null);
 
@@ -22,7 +23,7 @@ export function useKycStatus() {
 
     const { data } = await supabase
       .from("kyc_verifications")
-      .select("status")
+      .select("status, reviewer_notes")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -32,11 +33,18 @@ export function useKycStatus() {
       const s = data.status as string;
       if (s === "verified" || s === "pending" || s === "rejected") {
         setStatus(s);
+        if (s === "rejected") {
+          setRejectionReason(data.reviewer_notes || null);
+        } else {
+          setRejectionReason(null);
+        }
       } else {
         setStatus("pending");
+        setRejectionReason(null);
       }
     } else {
       setStatus("none");
+      setRejectionReason(null);
     }
     setLoading(false);
   }, [user]);
@@ -75,5 +83,5 @@ export function useKycStatus() {
     return () => { supabase.removeChannel(channel); };
   }, [user, fetchStatus]);
 
-  return { status, loading, refetch: fetchStatus };
+  return { status, loading, rejectionReason, refetch: fetchStatus };
 }

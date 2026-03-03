@@ -873,6 +873,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
   
   // KYC existing status check
   const [kycStatus, setKycStatus] = useState<null | "pending" | "verified" | "rejected">(null);
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
 
   useEffect(() => {
@@ -881,13 +882,16 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
       if (!user) { setStatusLoading(false); return; }
       const { data } = await supabase
         .from("kyc_verifications")
-        .select("status")
+        .select("status, reviewer_notes")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (data?.status === "verified" || data?.status === "pending") {
-        setKycStatus(data.status as "verified" | "pending");
+      if (data?.status === "verified" || data?.status === "pending" || data?.status === "rejected") {
+        setKycStatus(data.status as "verified" | "pending" | "rejected");
+        if (data.status === "rejected") {
+          setRejectionReason(data.reviewer_notes || null);
+        }
       }
       setStatusLoading(false);
     })();
@@ -1224,6 +1228,46 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
         >
           Close
         </button>
+      </div>
+    );
+  }
+
+  if (kycStatus === "rejected") {
+    return (
+      <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center p-6 text-center">
+        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 200, damping: 20 }}>
+          <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mb-4 mx-auto">
+            <X className="w-10 h-10 text-destructive" />
+          </div>
+        </motion.div>
+        <h2 className="text-xl font-bold text-foreground mb-1.5">Verification Rejected</h2>
+        {rejectionReason && (
+          <div className="w-full max-w-sm rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 mb-4">
+            <p className="text-sm text-destructive font-medium">Reason</p>
+            <p className="text-sm text-muted-foreground mt-1">{rejectionReason}</p>
+          </div>
+        )}
+        {!rejectionReason && (
+          <p className="text-muted-foreground text-sm mb-4">Your KYC submission was rejected. Please resubmit with correct documents.</p>
+        )}
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="h-11 px-6 rounded-2xl border border-border text-foreground font-semibold text-sm active:scale-[0.97] transition-transform"
+          >
+            Close
+          </button>
+          <button
+            onClick={() => {
+              setKycStatus(null);
+              setRejectionReason(null);
+              setStep("intro");
+            }}
+            className="h-11 px-6 rounded-2xl gradient-primary text-primary-foreground font-semibold text-sm shadow-glow active:scale-[0.97] transition-transform"
+          >
+            Resubmit KYC
+          </button>
+        </div>
       </div>
     );
   }
