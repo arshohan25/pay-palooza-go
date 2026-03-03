@@ -133,6 +133,25 @@ Deno.serve(async (req) => {
 
         balanceRecovered = targetProfile.balance;
         console.log(`Recovered ৳${balanceRecovered} from deleted user ${target_user_id}`);
+
+        // Notify all admins about balance recovery
+        const { data: admins } = await adminClient
+          .from("user_roles")
+          .select("user_id")
+          .eq("role", "admin");
+
+        if (admins?.length) {
+          const userName = targetProfile.name || targetProfile.phone;
+          await adminClient.from("notifications").insert(
+            admins.map((a: { user_id: string }) => ({
+              user_id: a.user_id,
+              title: "Balance Recovered from Deleted User",
+              body: `৳${balanceRecovered} recovered from ${userName} and credited to treasury`,
+              category: "system",
+              metadata: { type: "balance_recovery", amount: balanceRecovered, user_name: userName, source: "manual_delete" },
+            }))
+          );
+        }
       }
     }
 
