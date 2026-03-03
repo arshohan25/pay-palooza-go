@@ -1,15 +1,19 @@
 
 
-## Fix: Bengali Tagline Showing When Language is English
+## Update All +880 References to +88
 
-The marked area shows the Bengali tagline "বাংলাদেশের সবচেয়ে সহজ ডিজিটাল ওয়ালেট" displaying even when the UI language is set to English. This happens because line 683 in `AuthPage.tsx` uses `t.taglineBn` (always Bengali) instead of `t.tagline` (language-aware).
+Four files contain `+880` that need updating to `+88`:
 
-### Change
+1. **`src/pages/AccountPage.tsx`** (lines 227, 343) — profile card phone display and sign-out subtitle
+2. **`src/hooks/use-profile.ts`** (line 61) — masked phone fallback in `displayName`
+3. **`src/pages/AuthPage.tsx`** (line 918) — OTP "code sent to" message
+4. **`src/pages/AgentDashboard.tsx`** (line 581) — support phone number `tel:+8801800000000` — this is an actual phone number URI, not a display prefix, so it should stay as-is
 
-**`src/pages/AuthPage.tsx`** (line 683)
-- Replace `{t.taglineBn}` with `{t.tagline}` so the tagline respects the selected language:
-  - English: "Bangladesh's Simplest Digital Wallet"
-  - Bengali: "বাংলাদেশের সবচেয়ে সহজ ডিজিটাল ওয়ালেট"
+### Changes
+- **AccountPage.tsx** line 227: `+880 ${registeredPhone}` → `+88 ${registeredPhone}`
+- **AccountPage.tsx** line 343: `+880 ${registeredPhone}` → `+88 ${registeredPhone}`
+- **use-profile.ts** line 61: `+880 ${profile.phone...}` → `+88 ${profile.phone...}`
+- **AuthPage.tsx** line 918: `+880 {phone || returningPhone}` → `+88 {phone || returningPhone}`
 
-Single-line fix.
+Four simple string replacements across 3 files.
 
