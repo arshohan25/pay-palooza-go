@@ -1,25 +1,26 @@
-## Remove Admin Limitations on KYC Approval Not users
 
-The screenshot shows an error "Cannot approve: Another account is already verified with this NID" — caused by two database-level constraints that block admin KYC approvals:
 
-1. **Unique NID index** (`idx_kyc_unique_verified_nid`): Prevents approving a KYC if another account already has a verified record with the same NID number.
-2. **Face match trigger** (`trg_validate_kyc_face_match`): Blocks approval if face match score is below 70%.
+## Admin KYC Warning Banners + EasyPay Email Branding
 
-These constraints prevent admins from exercising override authority when legitimate scenarios require it (e.g., re-verification, correcting mistakes, family members sharing documents in edge cases).
+Two changes:
 
-### Plan
+### 1. Non-blocking warning banners in KYC approval flow
 
-**Database Migration** — Remove both constraints:
+**`src/components/admin/AdminKycReview.tsx`**
 
-```sql
--- Drop the unique NID restriction
-DROP INDEX IF EXISTS idx_kyc_unique_verified_nid;
+- **Remove the auto-reject logic** (lines 150-178): Currently when approving a duplicate NID, the code auto-rejects. Replace this with a non-blocking check that sets warning state instead.
+- **Add state for warnings**: `duplicateNidWarning` (boolean) and track it alongside the existing flow.
+- **Update the face match banner** (lines 370-383): Change from "Cannot Approve" blocking language to a warning-only banner — "⚠ Warning: Low Face Match" with advisory text. Remove the word "Cannot".
+- **Add duplicate NID warning banner**: When admin clicks Approve and a duplicate NID is found, show an amber warning banner in the dialog (similar style to face match warning) saying "Another account is already verified with this NID" but allow the admin to proceed with a confirmation click.
+- **Flow**: First click "Approve" → check for duplicate NID → if found, show warning banner + change button to "Confirm Approve" → second click proceeds. If no duplicate, approve immediately. Face match warning is always visible (informational only, never blocks).
 
--- Drop the face match validation trigger
-DROP TRIGGER IF EXISTS trg_validate_kyc_face_match ON public.kyc_verifications;
-DROP FUNCTION IF EXISTS public.validate_kyc_face_match();
-```
+### 2. Rebrand all email/SMS sender names to EasyPay
 
-**Frontend Update** — Clean up the now-unnecessary error handling in `src/components/admin/AdminKycReview.tsx` (lines 193-201): simplify the error block since those specific constraint errors will no longer occur. Keep a generic error toast as fallback.
+**`supabase/functions/kyc-notify/index.ts`**
+- Line 113: `"MFS Bangladesh <noreply@resend.dev>"` → `"EasyPay <noreply@resend.dev>"`
+- Line 127: `"MFS Bangladesh — Secure Mobile Financial Services"` → `"EasyPay — Secure Digital Wallet"`
+- Line 158: `"MFS: Your KYC..."` → `"EasyPay: Your KYC..."`
+- Line 159: `"MFS: Your KYC..."` → `"EasyPay: Your KYC..."`
 
-This gives admins full authority to approve or reject any KYC submission regardless of NID duplication or face match score.
+The `send-email-otp` function already uses EasyPay branding, so no change needed there.
+
