@@ -32,3 +32,9 @@ verify_jwt = false
 
 [functions.asthapay-payment]
 verify_jwt = false
+
+[functions.soft-delete-user]
+verify_jwt = false
+
+[functions.delete-user]
+verify_jwt = false

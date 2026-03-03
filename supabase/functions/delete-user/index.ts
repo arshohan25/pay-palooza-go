@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { target_user_id } = await req.json();
+    const { target_user_id, force } = await req.json();
     if (!target_user_id) {
       return new Response(JSON.stringify({ error: "target_user_id required" }), {
         status: 400,
@@ -71,13 +71,33 @@ Deno.serve(async (req) => {
     // Get target profile info for audit
     const { data: targetProfile } = await adminClient
       .from("profiles")
-      .select("name, phone, balance")
+      .select("name, phone, balance, status, scheduled_deletion_at")
       .eq("user_id", target_user_id)
       .maybeSingle();
 
     if (!targetProfile) {
       return new Response(JSON.stringify({ error: "User not found" }), {
         status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Grace period check: if deactivated and not yet past scheduled deletion, require force flag
+    if (
+      targetProfile.status === "deactivated" &&
+      targetProfile.scheduled_deletion_at &&
+      new Date(targetProfile.scheduled_deletion_at) > new Date() &&
+      !force
+    ) {
+      const daysLeft = Math.ceil(
+        (new Date(targetProfile.scheduled_deletion_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+      );
+      return new Response(JSON.stringify({
+        error: `User is in grace period. ${daysLeft} days remaining. Pass force: true to override.`,
+        grace_period: true,
+        days_remaining: daysLeft,
+      }), {
+        status: 409,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

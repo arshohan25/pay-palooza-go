@@ -770,11 +770,14 @@ export type Database = {
           avatar_url: string | null
           balance: number
           created_at: string
+          deactivated_at: string | null
+          deactivated_by: string | null
           email: string | null
           id: string
           name: string | null
           phone: string
           referral_code: string | null
+          scheduled_deletion_at: string | null
           status: string
           updated_at: string
           user_id: string
@@ -783,11 +786,14 @@ export type Database = {
           avatar_url?: string | null
           balance?: number
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
           email?: string | null
           id?: string
           name?: string | null
           phone: string
           referral_code?: string | null
+          scheduled_deletion_at?: string | null
           status?: string
           updated_at?: string
           user_id: string
@@ -796,11 +802,14 @@ export type Database = {
           avatar_url?: string | null
           balance?: number
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
           email?: string | null
           id?: string
           name?: string | null
           phone?: string
           referral_code?: string | null
+          scheduled_deletion_at?: string | null
           status?: string
           updated_at?: string
           user_id?: string

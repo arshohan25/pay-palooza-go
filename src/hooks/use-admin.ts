@@ -163,3 +163,94 @@ export async function fetchAllDeviceRegistrations(limit = 200) {
     .limit(limit);
   return data ?? [];
 }
+
+export async function softDeleteUser(targetUserId: string) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/soft-delete-user`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session?.access_token}`,
+    },
+    body: JSON.stringify({ target_user_id: targetUserId }),
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.error || "Failed to deactivate user");
+  return result;
+}
+
+export async function reactivateUser(targetUserId: string) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/soft-delete-user`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session?.access_token}`,
+    },
+    body: JSON.stringify({ target_user_id: targetUserId, action: "reactivate" }),
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.error || "Failed to reactivate user");
+  return result;
+}
+
+export async function bulkSuspendUsers(userIds: string[], currentStatuses: Record<string, string>) {
+  const results = await Promise.allSettled(
+    userIds.map(id => toggleUserStatus(id, currentStatuses[id] || "active"))
+  );
+  const succeeded = results.filter(r => r.status === "fulfilled").length;
+  const failed = results.filter(r => r.status === "rejected").length;
+  return { succeeded, failed };
+}
+
+export async function bulkDeleteUsers(userIds: string[], force = false) {
+  const { data: { session } } = await supabase.auth.getSession();
+  let succeeded = 0;
+  let failed = 0;
+  for (const userId of userIds) {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ target_user_id: userId, force }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      succeeded++;
+    } catch {
+      failed++;
+    }
+  }
+  return { succeeded, failed };
+}
+
+export async function bulkSoftDeleteUsers(userIds: string[]) {
+  const results = await Promise.allSettled(
+    userIds.map(id => softDeleteUser(id))
+  );
+  const succeeded = results.filter(r => r.status === "fulfilled").length;
+  const failed = results.filter(r => r.status === "rejected").length;
+  return { succeeded, failed };
+}
+
+export function exportUsersCSV(users: any[]) {
+  const headers = ["Name", "Phone", "Balance", "Status", "Created At"];
+  const rows = users.map(u => [
+    u.name || "",
+    u.phone || "",
+    u.balance?.toString() || "0",
+    u.status || "active",
+    u.created_at || "",
+  ]);
+  const csv = [headers.join(","), ...rows.map(r => r.map(v => `"${v}"`).join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `users-export-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
