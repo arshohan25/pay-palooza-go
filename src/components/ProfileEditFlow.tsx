@@ -12,7 +12,7 @@ import { useI18n } from "@/lib/i18n";
 const NAME_KEY   = "mfs_display_name";
 const PHOTO_KEY  = "mfs_display_photo";  // base64
 
-export const getDisplayName  = () => localStorage.getItem(NAME_KEY) ?? "Tanvir Hasan";
+export const getDisplayName  = () => localStorage.getItem(NAME_KEY) ?? "My Wallet";
 export const getDisplayPhoto = () => localStorage.getItem(PHOTO_KEY) ?? "";
 export const setDisplayName  = (v: string) => localStorage.setItem(NAME_KEY, v);
 export const setDisplayPhoto = (v: string) => localStorage.setItem(PHOTO_KEY, v);
