@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Plus, TrendingUp, CheckCircle2, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
-import { getBalance, deductBalance, onBalanceChange } from "@/lib/balanceStore";
+import { getBalance, onBalanceChange } from "@/lib/balanceStore";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { useI18n } from "@/lib/i18n";
 
@@ -44,7 +44,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     if (amt > balance)    { setError(t("insufficientBalance")); return; }
     if (!selectedGoal)    { setError(t("selectSavingsGoal")); return; }
 
-    deductBalance(amt);
+    // Savings is local-only (Coming Soon for real deductions)
     let goalCompleted = false;
     setGoals(prev =>
       prev.map(g => {
@@ -63,6 +63,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     } else {
       toast.success(`৳${amt.toLocaleString()} ${t("savedToGoal")} "${goalName(selectedGoal)}"`);
     }
+    toast.info("Savings feature coming soon — no balance deducted", { duration: 4000 });
     setStep("home");
     setAmount("");
     setSelectedGoal(null);

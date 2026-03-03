@@ -416,6 +416,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
 
       // Store phone locally for returning-user UX
       localStorage.setItem(DEVICE_KEY, phone);
+      localStorage.setItem("mfs_registered_phone", phone);
       if (trimmed) localStorage.setItem("mfs_user_name", trimmed);
       haptics.success();
       goTo("success");
@@ -501,6 +502,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
       localStorage.removeItem(attKey);
       localStorage.removeItem(lockKey);
       localStorage.setItem(DEVICE_KEY, loginPhone);
+      localStorage.setItem("mfs_registered_phone", loginPhone);
       haptics.success();
       goTo("success");
       setTimeout(onAuthenticated, 1500);
@@ -586,6 +588,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
           try {
             await signIn(phone || returningPhone, currentPin);
             localStorage.setItem(DEVICE_KEY, phone || returningPhone);
+            localStorage.setItem("mfs_registered_phone", phone || returningPhone);
             goTo("success");
             setTimeout(onAuthenticated, 1500);
           } catch {

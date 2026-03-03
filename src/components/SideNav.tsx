@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getTxnNotifCount, onTxnNotifChange } from "@/lib/txnNotifStore";
 import { getInboxCount, onInboxChange } from "@/lib/inboxStore";
 import { useI18n } from "@/lib/i18n";
+import { useProfile } from "@/hooks/use-profile";
 
 const navDefs = [
   { icon: LayoutDashboard, labelKey: "home" as const, id: "home" },
@@ -20,10 +21,11 @@ interface SideNavProps {
 
 const SideNav = ({ activeTab = "home", onTabChange }: SideNavProps) => {
   const { t } = useI18n();
+  const { name: profileName, phone: profilePhone } = useProfile();
   const [txnCount, setTxnCount]     = useState(getTxnNotifCount);
   const [inboxCount, setInboxCount] = useState(getInboxCount);
-  const displayName = localStorage.getItem("mfs_user_name") || "My Wallet";
-  const phone       = localStorage.getItem("mfs_registered_phone") || "—";
+  const displayName = profileName || localStorage.getItem("mfs_user_name") || "My Wallet";
+  const phone       = profilePhone || localStorage.getItem("mfs_registered_phone") || "—";
   const initials    = displayName.replace(/[^a-zA-Z\s]/g, "").trim().split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "U";
   useEffect(() => {
     const unsub1 = onTxnNotifChange(setTxnCount);
