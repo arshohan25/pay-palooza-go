@@ -1,4 +1,5 @@
 import { LayoutDashboard, ArrowLeftRight, ScanLine, MessageCircle, CircleUserRound } from "lucide-react";
+import logo from "@/assets/easypay-logo.png";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { getTxnNotifCount, onTxnNotifChange } from "@/lib/txnNotifStore";
@@ -35,9 +36,7 @@ const SideNav = ({ activeTab = "home", onTabChange }: SideNavProps) => {
     <aside data-global-nav="true" className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-64 bg-card border-r border-border/60 shadow-card z-40">
       {/* Brand */}
       <div className="px-5 py-6 flex items-center gap-3 border-b border-border/60">
-        <div className="w-10 h-10 gradient-primary rounded-2xl flex items-center justify-center text-primary-foreground font-bold text-lg shadow-glow shrink-0">
-          ₿
-        </div>
+        <img src={logo} alt="EasyPay" className="w-10 h-10 rounded-2xl object-contain shadow-glow shrink-0" />
         <div>
           <p className="text-[14px] font-bold text-foreground">EasyPay</p>
           <p className="text-[10px] text-muted-foreground font-medium">{t("mobileFinancialService")}</p>
