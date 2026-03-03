@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import logo from "@/assets/easypay-logo.png";
 
 interface SplashScreenProps {
   onDone: () => void;
@@ -60,7 +61,7 @@ export default function SplashScreen({ onDone }: SplashScreenProps) {
               transition={{ type: "spring", stiffness: 260, damping: 18, delay: 0.1 }}
               className="relative w-24 h-24 rounded-[26px] bg-white/20 backdrop-blur-md border-2 border-white/30 flex items-center justify-center shadow-2xl"
             >
-              <span className="text-5xl font-black text-white select-none">৳</span>
+              <img src={logo} alt="EasyPay" className="w-16 h-16 object-contain" />
               {/* Shine */}
               <motion.div
                 initial={{ x: -60, opacity: 0 }}

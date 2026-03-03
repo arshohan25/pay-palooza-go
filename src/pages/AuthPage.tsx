@@ -10,6 +10,7 @@ import { signUp, signIn, phoneToEmail } from "@/lib/auth";
 import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
 import { isWeakPin } from "@/lib/pinValidation";
 import { supabase } from "@/integrations/supabase/client";
+import logo from "@/assets/easypay-logo.png";
 
 // ─── Storage keys (only for UX preferences, NOT auth) ─────────────────────────
 const LANG_KEY       = "mfs_ui_lang";
@@ -671,7 +672,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
               </motion.button>
               <div className="relative flex flex-col items-center gap-6 text-white">
                 <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200, damping: 16, delay: 0.1 }} className="relative">
-                  <div className="w-24 h-24 rounded-[28px] bg-white/15 backdrop-blur-sm border border-white/25 flex items-center justify-center text-5xl font-black shadow-float">৳</div>
+                  <img src={logo} alt="EasyPay" className="w-24 h-24 rounded-[28px] object-contain shadow-float" />
                   {[1.3, 1.6, 1.9].map((s, i) => (
                     <motion.div key={i} className="absolute inset-0 rounded-[28px] border border-white/20"
                       animate={{ scale: [1, s], opacity: [0.5, 0] }} transition={{ duration: 2.5, repeat: Infinity, delay: i * 0.4, ease: "easeOut" }} />

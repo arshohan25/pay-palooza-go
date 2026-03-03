@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Fingerprint, KeyRound, AlertCircle, CheckCircle2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signIn } from "@/lib/auth";
+import logoImg from "@/assets/easypay-logo.png";
 
 const SESSION_KEY = "mfs_authenticated";
 const getPhone = () => localStorage.getItem("mfs_device_phone") ?? "";
@@ -131,9 +132,7 @@ export default function BiometricAuth({ onAuthenticated }: BiometricAuthProps) {
           transition={{ delay: 0.1 }}
           className="flex flex-col items-center mb-10"
         >
-          <div className="w-16 h-16 gradient-primary rounded-3xl flex items-center justify-center text-primary-foreground text-3xl font-bold shadow-glow mb-4">
-            ₿
-          </div>
+          <img src={logoImg} alt="EasyPay" className="w-16 h-16 rounded-3xl object-contain shadow-glow mb-4" />
            <h1 className="text-2xl font-extrabold text-foreground">EasyPay</h1>
           <p className="text-sm text-muted-foreground mt-1">Secure your account to continue</p>
         </motion.div>
