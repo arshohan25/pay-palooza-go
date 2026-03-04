@@ -1417,6 +1417,10 @@ export type Database = {
         Args: { p_referee_id: string }
         Returns: undefined
       }
+      create_direct_chat_request: {
+        Args: { p_other_user_id: string }
+        Returns: string
+      }
       credit_cashback: {
         Args: {
           p_amount: number
@@ -1426,6 +1430,7 @@ export type Database = {
         }
         Returns: Json
       }
+      find_chat_user_by_phone: { Args: { p_phone: string }; Returns: Json }
       generate_referral_code: { Args: never; Returns: string }
       generate_short_id: { Args: never; Returns: string }
       has_role: {
