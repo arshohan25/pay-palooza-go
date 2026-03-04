@@ -530,82 +530,18 @@ export function useChat() {
     async (otherUserId: string) => {
       if (!user) return null;
 
-      // Check if direct conversation already exists where BOTH users are still participants
-      const { data: myConvIds } = await supabase
-        .from("chat_participants")
-        .select("conversation_id")
-        .eq("user_id", user.id);
+      const { data, error } = await supabase.rpc(
+        "create_direct_chat_request" as any,
+        { p_other_user_id: otherUserId }
+      );
 
-      if (myConvIds && myConvIds.length > 0) {
-        const ids = myConvIds.map((r) => r.conversation_id);
-        const { data: otherConvIds } = await supabase
-          .from("chat_participants")
-          .select("conversation_id")
-          .eq("user_id", otherUserId)
-          .in("conversation_id", ids);
-
-        if (otherConvIds && otherConvIds.length > 0) {
-          // Check if any is a direct conversation where both users are participants
-          for (const row of otherConvIds) {
-            const { data: conv } = await supabase
-              .from("chat_conversations")
-              .select("*")
-              .eq("id", row.conversation_id)
-              .eq("type", "direct")
-              .single();
-            if (!conv) continue;
-
-            // Verify both participants still exist in this conversation
-            const { count } = await supabase
-              .from("chat_participants")
-              .select("*", { count: "exact", head: true })
-              .eq("conversation_id", conv.id)
-              .in("user_id", [user.id, otherUserId]);
-            
-            if (count === 2) return conv.id;
-          }
-        }
+      if (error || !data) {
+        console.error("Failed to create direct chat request:", error);
+        return null;
       }
-
-      // Create new conversation
-      const { data: conv, error: convError } = await supabase
-        .from("chat_conversations")
-        .insert({ type: "direct", status: "pending", admin_id: user.id })
-        .select()
-        .single();
-
-      if (convError || !conv) return null;
-
-      // Add both participants
-      await supabase.from("chat_participants").insert([
-        { conversation_id: conv.id, user_id: user.id },
-        { conversation_id: conv.id, user_id: otherUserId },
-      ]);
 
       await loadConversations();
-
-      // Send a notification to the other user
-      try {
-        const senderProfile = await supabase
-          .from("profiles")
-          .select("name, phone")
-          .eq("user_id", user.id)
-          .single();
-
-        const senderName = senderProfile.data?.name || senderProfile.data?.phone || "Someone";
-
-        await supabase.from("notifications").insert({
-          user_id: otherUserId,
-          title: "New Message Request",
-          body: `${senderName} wants to chat with you`,
-          category: "chat",
-          metadata: { conversation_id: conv.id, sender_id: user.id } as unknown as Json,
-        });
-      } catch (e) {
-        console.warn("Failed to send chat notification:", e);
-      }
-
-      return conv.id;
+      return data as string;
     },
     [user, loadConversations]
   );
@@ -643,26 +579,30 @@ export function useChat() {
 
   // ── Find user by phone ──────────────────────────────────────────────
   const findUserByPhone = useCallback(async (phone: string) => {
-    // Normalize: strip spaces, dashes
-    const normalized = phone.replace(/[\s\-]/g, "");
+    // Normalize to match backend lookup behavior
+    let normalized = phone.replace(/\D/g, "");
+    if (normalized.startsWith("88") && normalized.length > 11) {
+      normalized = normalized.slice(2);
+    }
 
-    // Try exact match first
-    const { data } = await supabase
-      .from("profiles")
-      .select("user_id, name, phone, avatar_url")
-      .eq("phone", normalized)
-      .maybeSingle();
+    const { data, error } = await supabase.rpc(
+      "find_chat_user_by_phone" as any,
+      { p_phone: normalized }
+    );
 
-    if (data) return data;
+    if (error) {
+      console.error("Failed to find user by phone:", error);
+      return null;
+    }
 
-    // Fallback: try with @easypay.local suffix (legacy data)
-    const { data: fallback } = await supabase
-      .from("profiles")
-      .select("user_id, name, phone, avatar_url")
-      .eq("phone", `${normalized}@easypay.local`)
-      .maybeSingle();
+    if (!data || typeof data !== "object") return null;
 
-    return fallback;
+    return data as {
+      user_id: string;
+      name: string | null;
+      phone: string;
+      avatar_url: string | null;
+    };
   }, []);
 
   // ── Update group ────────────────────────────────────────────────────
