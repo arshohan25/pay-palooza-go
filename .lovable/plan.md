@@ -1,27 +1,101 @@
 
 
-## Add Filtering to Activity Feed
+## Real-Time Chat with DB Persistence, E2E Encryption, and WebRTC Calling
 
-### Changes to `src/components/admin/AdminActivityFeed.tsx`
+This is a large-scale feature that transforms the current mock-data Inbox into a fully database-backed real-time messaging system with peer-to-peer audio/video calls.
 
-Add two filter states and a compact filter bar between the header and the scroll area:
+---
 
-**1. Table filter** — A row of small toggle chips (one per table from `TABLE_META`), each showing the table's icon and label. Clicking toggles that table on/off. All active by default.
+### Phase 1: Database Schema
 
-**2. Event type filter** — Three small toggle chips: "New" (INSERT), "Updated" (UPDATE), "Removed" (DELETE). All active by default.
+Create three new tables:
 
-**3. Filtered display** — Apply both filters to `events` before rendering via `useMemo`. The empty state message updates to differentiate "no events yet" from "no events match filters".
+**`chat_conversations`** — Stores conversation metadata (1-on-1 or group)
+- `id`, `type` (enum: `direct`, `group`), `name` (nullable, for groups), `group_icon`, `admin_id`, `created_at`, `updated_at`
 
-**4. Layout** — The filter bar sits in a collapsible section toggled by a `Filter` icon button in the header (next to Clear). When expanded, it shows two rows of chips in a compact `px-3 py-2` area. This keeps the feed clean when filters aren't needed.
+**`chat_participants`** — Maps users to conversations
+- `id`, `conversation_id`, `user_id`, `joined_at`, `last_read_at`
+- Unique constraint on `(conversation_id, user_id)`
 
-### Implementation Details
+**`chat_messages`** — Stores encrypted messages
+- `id`, `conversation_id`, `sender_id`, `content` (encrypted text), `is_encrypted`, `is_deleted`, `expires_at`, `message_type` (text, money, voice, image, order), `metadata` (jsonb for amount/txnId/imageUrl/voiceDuration/etc.), `created_at`
 
-- Add `activeTablesFilter: Set<string>` and `activeEventTypes: Set<string>` state
-- Filter chips use the existing `Button` component with `variant="outline"` / `variant="default"` toggle pattern, sized at `h-5 text-[10px]`
-- Add a `Filter` icon import from lucide-react
-- `filteredEvents = useMemo(() => events.filter(e => activeTables.has(e.table) && activeEventTypes.has(e.eventType)), [events, activeTables, activeEventTypes])`
-- Count badge in header shows filtered count vs total when filters are active
+RLS policies: participants can read/write messages in their conversations; users can only see conversations they belong to. Enable realtime on `chat_messages` and `chat_participants`.
+
+### Phase 2: Core Chat Logic
+
+**New hook: `src/hooks/use-chat.ts`**
+- Loads user's conversations + participants from DB
+- Subscribes to realtime INSERT on `chat_messages` for all user's conversations
+- Provides `sendMessage()`, `createConversation()`, `createGroup()` functions
+- Integrates existing `chatCrypto.ts` for E2E encryption per conversation
+- Handles contact discovery via `profiles` table phone lookup
+
+**Refactor `src/pages/InboxPage.tsx`**
+- Replace `INITIAL_CONTACTS` mock data with DB-backed conversations from `use-chat`
+- Contact list derived from `chat_participants` joined with `profiles`
+- Messages loaded from `chat_messages` and decrypted client-side
+- New contact creation → creates `chat_conversations` + `chat_participants` rows
+- Group creation → same with `type = 'group'`
+- All send operations write encrypted content to `chat_messages`
+- Realtime subscription delivers incoming messages instantly
+- Typing indicators via Supabase Presence (already partially implemented in SupportChat)
+- Read receipts via `last_read_at` updates on `chat_participants`
+
+### Phase 3: WebRTC Audio/Video Calling
+
+**Signaling via Supabase Realtime Broadcast**
+- Use Supabase Realtime broadcast channels (not DB) for call signaling
+- Signal types: `call-offer`, `call-answer`, `ice-candidate`, `call-end`, `call-reject`
+- No DB persistence needed for call signaling — ephemeral by nature
+
+**New module: `src/lib/webrtc.ts`**
+- `WebRTCManager` class handling:
+  - `RTCPeerConnection` lifecycle with Google's free STUN servers (`stun:stun.l.google.com:19302`)
+  - `getUserMedia()` for microphone and camera access
+  - ICE candidate exchange via Supabase broadcast
+  - SDP offer/answer negotiation
+  - Media stream management (local + remote)
+  - Mute/unmute, camera toggle, speaker toggle
+
+**Update `CallingOverlay` component**
+- Replace simulated 3-second auto-answer with real signaling
+- Show actual remote audio/video stream
+- Incoming call notification UI (ring + accept/reject buttons)
+- Call duration timer from actual connection time
+
+**New component: `src/components/IncomingCallOverlay.tsx`**
+- Full-screen overlay when receiving a call
+- Accept / Reject buttons
+- Caller info display
+
+**STUN/TURN considerations:**
+- Google's free STUN server works for most cases (users on same network or simple NATs)
+- For production reliability behind symmetric NATs, a TURN server would be needed (e.g., Twilio TURN — already have Twilio credentials)
+- Initial implementation uses STUN only; can upgrade to TURN later
+
+### Phase 4: Integration Points
+
+- **BottomNav badge** — unread count from `chat_messages` where `created_at > last_read_at`
+- **Notification** — incoming message triggers toast when not in chat view
+- **Send Money integration** — existing `onSendMoney` callback writes a money-type message to DB after transfer
+- **Contact Picker** — uses existing PermissionGate for contacts access
 
 ### Files
-- **Edit**: `src/components/admin/AdminActivityFeed.tsx` — all changes contained in this single file
+
+| Action | File |
+|--------|------|
+| **DB Migration** | New tables: `chat_conversations`, `chat_participants`, `chat_messages` + RLS + realtime |
+| **New** | `src/hooks/use-chat.ts` — core chat data hook |
+| **New** | `src/lib/webrtc.ts` — WebRTC manager |
+| **New** | `src/components/IncomingCallOverlay.tsx` — incoming call UI |
+| **Major Edit** | `src/pages/InboxPage.tsx` — replace mock data with DB + realtime |
+| **Edit** | `src/components/BottomNav.tsx` — unread badge from DB |
+
+### Limitations & Notes
+
+- WebRTC media streaming is peer-to-peer and works best on modern browsers. Safari has some quirks.
+- Without a TURN server, calls may fail for users behind strict corporate firewalls or symmetric NATs. STUN handles ~85% of real-world cases.
+- Group calls are significantly more complex (require SFU architecture) — this plan covers 1-on-1 calls only.
+- E2E encryption keys are stored in localStorage per conversation, meaning they don't transfer across devices.
 
