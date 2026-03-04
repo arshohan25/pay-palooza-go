@@ -1433,6 +1433,15 @@ export type Database = {
       find_chat_user_by_phone: { Args: { p_phone: string }; Returns: Json }
       generate_referral_code: { Args: never; Returns: string }
       generate_short_id: { Args: never; Returns: string }
+      get_blocked_user_profiles: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          avatar_url: string
+          name: string
+          phone: string
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
