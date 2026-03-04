@@ -16,6 +16,7 @@ import { WebRTCManager, type CallSignal } from "@/lib/webrtc";
 import IncomingCallOverlay from "@/components/IncomingCallOverlay";
 import { useTypingIndicator } from "@/hooks/use-typing-indicator";
 import { useProfile } from "@/hooks/use-profile";
+import { useOnlinePresence } from "@/hooks/use-online-presence";
 
 // ── Types (for UI rendering) ──────────────────────────────────────────────────
 interface Reaction {
@@ -104,19 +105,21 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 // ── Convert DB conversation to UI contact ─────────────────────────────────────
-function convToUIContact(conv: ChatConversation, userId: string): UIContact {
+function convToUIContact(conv: ChatConversation, userId: string, isOnline?: (uid: string) => boolean): UIContact {
   const otherParticipants = conv.participants.filter((p) => p.user_id !== userId);
   const isGroup = conv.type === "group";
 
   let name = conv.name ?? "Unknown";
   let phone = "";
   let avatarUrl: string | undefined;
+  let otherUserId: string | undefined;
 
   if (!isGroup && otherParticipants.length > 0) {
     const other = otherParticipants[0];
     name = other.profile?.name || other.profile?.phone || "Unknown";
     phone = other.profile?.phone ?? "";
     avatarUrl = other.profile?.avatar_url ?? undefined;
+    otherUserId = other.user_id;
   }
 
   const lastMsg = conv.lastMessage
@@ -138,7 +141,7 @@ function convToUIContact(conv: ChatConversation, userId: string): UIContact {
     lastTime: formatRelativeTime(lastTimestamp),
     lastTimestamp,
     unread: conv.unreadCount,
-    online: false, // Would need presence for real online status
+    online: !isGroup && !!otherUserId && !!isOnline && isOnline(otherUserId),
     avatarUrl,
     isGroup,
     groupIcon: conv.group_icon ?? undefined,
@@ -900,12 +903,18 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage,
                   : contact.initials
               }
             </div>
-            {!contact.isGroup && contact.online && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-primary rounded-full border-2 border-white" />}
+            {!contact.isGroup && (
+              <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${contact.online ? "bg-green-500" : "bg-muted-foreground/40"}`} />
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-bold text-[15px] leading-tight">{contact.name}</p>
             <p className="text-[11px] text-white/70">
-              {contact.isGroup ? `${(contact.members?.length ?? 0) + 1} members` : contact.phone}
+              {contact.isGroup
+                ? `${(contact.members?.length ?? 0) + 1} members`
+                : contact.online
+                  ? "Online"
+                  : contact.phone}
             </p>
           </div>
           <div className="flex items-center gap-1">
@@ -1091,6 +1100,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
   const { user } = useAuth();
   const profileData = useProfile();
   const chat = useChat();
+  const { isOnline } = useOnlinePresence(user?.id ?? null);
   const [search, setSearch] = useState("");
   const [showNewContact, setShowNewContact] = useState(false);
   const [showNewGroup, setShowNewGroup] = useState(false);
@@ -1108,7 +1118,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
 
   // Convert DB conversations to UI contacts
   const uiContacts: UIContact[] = chat.conversations.map((conv) =>
-    convToUIContact(conv, user?.id ?? "")
+    convToUIContact(conv, user?.id ?? "", isOnline)
   );
 
   // Convert DB messages to UI messages
@@ -1329,9 +1339,19 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
                         : contact.initials
                     }
                   </div>
-                  {contact.isGroup && (
+                  {contact.isGroup ? (
                     <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-primary rounded-full border-2 border-background flex items-center justify-center">
                       <Users size={8} className="text-primary-foreground" />
+                    </span>
+                  ) : (
+                    <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-background ${contact.online ? "bg-green-500" : "bg-muted-foreground/40"}`}>
+                      {contact.online && (
+                        <motion.span
+                          className="absolute inset-0 rounded-full bg-green-500"
+                          animate={{ scale: [1, 1.6, 1], opacity: [1, 0, 1] }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        />
+                      )}
                     </span>
                   )}
                 </div>
