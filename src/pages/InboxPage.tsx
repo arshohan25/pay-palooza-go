@@ -858,11 +858,14 @@ interface ChatViewProps {
   isInitiator?: boolean;
   onAccept?: () => void;
   onDecline?: () => void;
+  onBlockReport?: (reason?: string) => void;
 }
 
-const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage, onSendMoney, onReact, onCall, webrtc, callMode, onEndCall, conversationId, userId, userName, isPending, isInitiator, onAccept, onDecline }: ChatViewProps) => {
+const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage, onSendMoney, onReact, onCall, webrtc, callMode, onEndCall, conversationId, userId, userName, isPending, isInitiator, onAccept, onDecline, onBlockReport }: ChatViewProps) => {
   const [text, setText] = useState("");
   const [showQuick, setShowQuick] = useState(false);
+  const [showBlockDialog, setShowBlockDialog] = useState(false);
+  const [blockReason, setBlockReason] = useState("");
   const { typingUsers, setTyping } = useTypingIndicator(conversationId, userId, userName);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1053,17 +1056,37 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage,
       {/* Input bar or Accept/Decline bar */}
       {isPending && !isInitiator ? (
         <div className="px-4 pb-5 pt-3 border-t border-border/60 bg-background shrink-0">
-          <div className="flex items-center gap-2 mb-2 px-1">
+          {/* Message preview from sender */}
+          {messages.length > 0 && (
+            <div className="mb-3 px-3 py-2.5 rounded-xl bg-muted/60 border border-border/50">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Shield size={12} className="text-muted-foreground" />
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Message Preview</span>
+              </div>
+              <p className="text-xs text-foreground/80 line-clamp-3 italic">
+                "{messages[0]?.text || "..."}"
+              </p>
+            </div>
+          )}
+          <div className="flex items-center gap-2 mb-3 px-1">
             <Shield size={14} className="text-muted-foreground" />
             <p className="text-xs text-muted-foreground">
               This is a chat request. Accept to start chatting.
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2">
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowBlockDialog(true)}
+              className="h-12 px-3 rounded-2xl border-2 border-destructive/30 bg-destructive/10 text-destructive font-bold text-[11px] flex items-center justify-center gap-1.5 transition-colors hover:bg-destructive/20"
+            >
+              <Lock size={13} />
+              Block
+            </motion.button>
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={onDecline}
-              className="flex-1 h-12 rounded-2xl border-2 border-destructive/30 bg-destructive/10 text-destructive font-bold text-sm flex items-center justify-center gap-2 transition-colors hover:bg-destructive/20"
+              className="flex-1 h-12 rounded-2xl border-2 border-border bg-card text-foreground font-bold text-sm flex items-center justify-center gap-2 transition-colors hover:bg-muted"
             >
               <X size={16} />
               Decline
@@ -1077,6 +1100,61 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage,
               Accept
             </motion.button>
           </div>
+
+          {/* Block & Report Dialog */}
+          <AnimatePresence>
+            {showBlockDialog && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-6"
+                onClick={() => setShowBlockDialog(false)}
+              >
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-card border border-border rounded-3xl p-5 w-full max-w-sm shadow-xl"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-10 h-10 rounded-2xl bg-destructive/10 flex items-center justify-center">
+                      <Shield size={18} className="text-destructive" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground">Block & Report</h3>
+                      <p className="text-[11px] text-muted-foreground">This user will be reported to admins</p>
+                    </div>
+                  </div>
+                  <textarea
+                    value={blockReason}
+                    onChange={(e) => setBlockReason(e.target.value)}
+                    placeholder="Reason (optional)"
+                    className="w-full h-20 p-3 rounded-xl bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-destructive/30 mb-3"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { setShowBlockDialog(false); setBlockReason(""); }}
+                      className="flex-1 h-11 rounded-xl border border-border bg-card text-foreground font-semibold text-sm hover:bg-muted transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        onBlockReport?.(blockReason || undefined);
+                        setShowBlockDialog(false);
+                        setBlockReason("");
+                      }}
+                      className="flex-1 h-11 rounded-xl bg-destructive text-destructive-foreground font-semibold text-sm hover:bg-destructive/90 transition-colors"
+                    >
+                      Block & Report
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       ) : (
         <div className="px-3 pb-5 pt-2 border-t border-border/60 bg-background shrink-0">
@@ -1484,6 +1562,11 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
                       )}
                     </div>
                   </div>
+                  {contact.pending && contact.lastMsg && contact.lastMsg !== "No messages yet" && (
+                    <p className="text-[11px] text-muted-foreground/70 italic truncate mt-0.5">
+                      "{contact.lastMsg}"
+                    </p>
+                  )}
                 </div>
               </motion.button>
             ))}
@@ -1553,6 +1636,13 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
                   await chat.declineConversation(activeContactId);
                   setActiveContactId(null);
                   toast("Chat request declined");
+                }
+              }}
+              onBlockReport={async (reason) => {
+                if (activeContactId) {
+                  await chat.blockAndReport(activeContactId, reason);
+                  setActiveContactId(null);
+                  toast.success("User blocked & reported");
                 }
               }}
               onSendMoney={(phone) => {

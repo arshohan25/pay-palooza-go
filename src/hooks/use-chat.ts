@@ -714,6 +714,51 @@ export function useChat() {
     [user]
   );
 
+  // ── Block & Report ──────────────────────────────────────────────────
+  const blockAndReport = useCallback(
+    async (conversationId: string, reason?: string) => {
+      if (!user) return;
+
+      // Find the other user (the sender/initiator)
+      const conv = conversations.find((c) => c.id === conversationId);
+      const otherUser = conv?.participants.find((p) => p.user_id !== user.id);
+      const reportedUserId = otherUser?.user_id;
+
+      if (reportedUserId) {
+        // Insert fraud alert for admin review
+        try {
+          await supabase.from("fraud_alerts").insert({
+            user_id: reportedUserId,
+            rule_triggered: "user_report_spam",
+            severity: "medium" as const,
+            status: "open" as const,
+            details: {
+              reporter_id: user.id,
+              conversation_id: conversationId,
+              reason: reason || "Spam / unwanted chat request",
+              reported_at: new Date().toISOString(),
+            },
+          });
+        } catch (e) {
+          console.warn("Failed to insert fraud alert:", e);
+        }
+
+        // Store in localStorage block list
+        try {
+          const blocked = JSON.parse(localStorage.getItem("ep_blocked_users") || "[]");
+          if (!blocked.includes(reportedUserId)) {
+            blocked.push(reportedUserId);
+            localStorage.setItem("ep_blocked_users", JSON.stringify(blocked));
+          }
+        } catch {}
+      }
+
+      // Decline the conversation
+      await declineConversation(conversationId);
+    },
+    [user, conversations, declineConversation]
+  );
+
   // Total unread
   const totalUnread = conversations.reduce(
     (sum, c) => sum + c.unreadCount,
@@ -739,6 +784,7 @@ export function useChat() {
     removeGroupMember,
     acceptConversation,
     declineConversation,
+    blockAndReport,
     loadConversations,
   };
 }
