@@ -125,6 +125,115 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_conversations: {
+        Row: {
+          admin_id: string | null
+          created_at: string
+          group_icon: string | null
+          id: string
+          name: string | null
+          type: Database["public"]["Enums"]["chat_type"]
+          updated_at: string
+        }
+        Insert: {
+          admin_id?: string | null
+          created_at?: string
+          group_icon?: string | null
+          id?: string
+          name?: string | null
+          type?: Database["public"]["Enums"]["chat_type"]
+          updated_at?: string
+        }
+        Update: {
+          admin_id?: string | null
+          created_at?: string
+          group_icon?: string | null
+          id?: string
+          name?: string | null
+          type?: Database["public"]["Enums"]["chat_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_deleted: boolean
+          is_encrypted: boolean
+          message_type: Database["public"]["Enums"]["chat_message_type"]
+          metadata: Json | null
+          sender_id: string
+        }
+        Insert: {
+          content?: string
+          conversation_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_deleted?: boolean
+          is_encrypted?: boolean
+          message_type?: Database["public"]["Enums"]["chat_message_type"]
+          metadata?: Json | null
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_deleted?: boolean
+          is_encrypted?: boolean
+          message_type?: Database["public"]["Enums"]["chat_message_type"]
+          metadata?: Json | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_participants: {
+        Row: {
+          conversation_id: string
+          id: string
+          joined_at: string
+          last_read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       device_registrations: {
         Row: {
           created_at: string
@@ -1323,6 +1432,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_chat_participant: {
+        Args: { _conversation_id: string; _user_id: string }
+        Returns: boolean
+      }
       record_transaction: {
         Args: {
           p_amount: number
@@ -1393,6 +1506,8 @@ export type Database = {
         | "admin"
         | "compliance"
         | "finance"
+      chat_message_type: "text" | "money" | "voice" | "image" | "order"
+      chat_type: "direct" | "group"
       dispute_status: "open" | "under_review" | "resolved" | "rejected"
       merchant_category:
         | "retail"
@@ -1561,6 +1676,8 @@ export const Constants = {
         "compliance",
         "finance",
       ],
+      chat_message_type: ["text", "money", "voice", "image", "order"],
+      chat_type: ["direct", "group"],
       dispute_status: ["open", "under_review", "resolved", "rejected"],
       merchant_category: [
         "retail",
