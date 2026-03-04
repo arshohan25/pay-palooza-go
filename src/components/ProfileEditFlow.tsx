@@ -82,7 +82,7 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
   const [userId, setUserId]       = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load existing email from profile
+  // Load existing profile from DB
   useEffect(() => {
     const load = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -90,11 +90,14 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
       setUserId(session.user.id);
       const { data } = await supabase
         .from("profiles")
-        .select("name, email")
+        .select("name, email, avatar_url")
         .eq("user_id", session.user.id)
         .single();
       if (data?.name) {
         setName(data.name);
+      }
+      if (data?.avatar_url) {
+        setPhoto(data.avatar_url);
       }
       if (data?.email) {
         setEmail(data.email);
@@ -225,10 +228,13 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
     // Sync mfs_user_name so useProfile picks it up immediately
     localStorage.setItem("mfs_user_name", name.trim());
 
-    // Persist name (and email if changed) to database
+    // Persist name, avatar_url (and email if changed) to database
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
-      const updates: Record<string, unknown> = { name: name.trim() };
+      const updates: Record<string, unknown> = {
+        name: name.trim(),
+        avatar_url: photo || null,
+      };
       if (trimmedEmail !== (savedEmail ?? "")) {
         updates.email = trimmedEmail || null;
       }

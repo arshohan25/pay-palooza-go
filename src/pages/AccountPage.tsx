@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import ChangePinFlow from "@/components/ChangePinFlow";
 import KycFlow from "@/components/KycFlow";
-import ProfileEditFlow, { getDisplayPhoto } from "@/components/ProfileEditFlow";
+import ProfileEditFlow from "@/components/ProfileEditFlow";
 import { useProfile } from "@/hooks/use-profile";
 import SupportChat from "@/components/SupportChat";
 import LimitsPage from "@/pages/LimitsPage";
@@ -132,13 +132,13 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const [showKyc, setShowKyc]           = useState(false);
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [subPage, setSubPage]           = useState<SubPage>(null);
-  const [displayPhoto, setDisplayPhotoState] = useState(getDisplayPhoto);
+  const [displayPhoto, setDisplayPhotoState] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [showSupport, setShowSupport] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
   const { roles } = useUserRoles();
-  const { displayName } = useProfile();
+  const { displayName, avatar_url } = useProfile();
   const registeredPhone = getRegisteredPhone();
   const walletId = useMemo(() => generateWalletId(registeredPhone || "WALLET_USER"), [registeredPhone]);
 
@@ -176,16 +176,16 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   };
 
   const handleProfileSaved = async () => {
-    setDisplayPhotoState(getDisplayPhoto());
-    // Refresh email from DB
+    // Refresh email and avatar from DB
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       const { data } = await supabase
         .from("profiles")
-        .select("email")
+        .select("email, avatar_url")
         .eq("user_id", session.user.id)
         .single();
       setUserEmail(data?.email ?? null);
+      setDisplayPhotoState(data?.avatar_url ?? null);
     }
   };
 
@@ -207,8 +207,8 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
               onClick={() => setShowProfileEdit(true)}
               className="relative w-16 h-16 rounded-2xl shrink-0 group active:scale-95 transition-transform"
             >
-              {displayPhoto ? (
-                <img src={displayPhoto} alt="Profile" className="w-16 h-16 rounded-2xl object-cover" />
+              {(avatar_url || displayPhoto) ? (
+                <img src={avatar_url || displayPhoto || ""} alt="Profile" className="w-16 h-16 rounded-2xl object-cover" />
               ) : (
                 <div className="w-16 h-16 rounded-2xl glass-hero flex items-center justify-center text-2xl font-bold text-white">
                   {displayName[0]?.toUpperCase() ?? "?"}
