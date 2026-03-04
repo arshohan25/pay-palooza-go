@@ -144,12 +144,11 @@ export async function tryDecryptMessage(
   key: CryptoKey | null
 ): Promise<string> {
   if (!isEncrypted) return content;
-  if (!key) return content;
+  if (!key) return "[Old message]";
   try {
     return await decryptMessage(content, key);
   } catch {
-    // Can't decrypt — return raw content instead of a lock icon
-    return content;
+    return "[Old message]";
   }
 }
 
