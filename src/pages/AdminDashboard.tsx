@@ -7,7 +7,7 @@ import {
   TrendingUp, Activity, Search, RefreshCw, LogOut,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
-  Menu, ScanFace, Gift, Award, Wallet,
+  Menu, ScanFace, Gift, Award, Wallet, Radio,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,9 +45,11 @@ import AdminReferralManagement from "@/components/admin/AdminReferralManagement"
 import AdminPermissions from "@/components/admin/AdminPermissions";
 import AdminTreasury from "@/components/admin/AdminTreasury";
 import AdminWebhookLog from "@/components/admin/AdminWebhookLog";
+import AdminActivityFeed from "@/components/admin/AdminActivityFeed";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Stats {
   totalUsers: number;
@@ -164,6 +166,8 @@ const NAV_ITEMS = [
 export default function AdminDashboard() {
   const { isAdmin, loading: authLoading } = useAdmin();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const [showActivityFeed, setShowActivityFeed] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const { unreadCount: supportUnread } = useSupportNotifications(activeTab);
   const [stats, setStats] = useState<Stats>({ totalUsers: 0, totalTransactions: 0, totalAgents: 0, totalMerchants: 0, openAlerts: 0, pendingKyc: 0, totalReferrals: 0, totalRewardsPaid: 0 });
@@ -514,7 +518,7 @@ export default function AdminDashboard() {
       </aside>
 
       {/* ═══ Main column ═══ */}
-      <div className="flex-1 flex flex-col md:ml-56">
+      <div className={`flex-1 flex flex-col md:ml-56 transition-[margin] duration-300 ${showActivityFeed && !isMobile ? "md:mr-72" : ""}`}>
         {/* Top header */}
         <header className="sticky top-0 z-30 bg-card border-b border-border">
           <div className="flex items-center justify-between px-4 md:px-6 py-3">
@@ -555,6 +559,14 @@ export default function AdminDashboard() {
               </div>
               <Button variant="outline" size="icon" onClick={loadData} disabled={refreshing}>
                 <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+              </Button>
+              <Button
+                variant={showActivityFeed ? "default" : "outline"}
+                size="icon"
+                onClick={() => setShowActivityFeed(v => !v)}
+                title="Activity Feed"
+              >
+                <Radio className="w-4 h-4" />
               </Button>
             </div>
           </div>
@@ -1236,6 +1248,26 @@ export default function AdminDashboard() {
       </Sheet>
 
       </div>
+
+      {/* ═══ Activity Feed – Desktop sidebar ═══ */}
+      {!isMobile && showActivityFeed && (
+        <aside className="hidden md:flex flex-col fixed right-0 top-0 bottom-0 w-72 bg-card border-l border-border z-40 animate-slide-in-right">
+          <AdminActivityFeed />
+        </aside>
+      )}
+
+      {/* ═══ Activity Feed – Mobile sheet ═══ */}
+      {isMobile && (
+        <Sheet open={showActivityFeed} onOpenChange={setShowActivityFeed}>
+          <SheetContent side="right" className="w-[85vw] max-w-sm p-0 flex flex-col">
+            <SheetHeader className="sr-only">
+              <SheetTitle>Activity Feed</SheetTitle>
+              <SheetDescription>Real-time log of admin-relevant database changes</SheetDescription>
+            </SheetHeader>
+            <AdminActivityFeed />
+          </SheetContent>
+        </Sheet>
+      )}
     </div>
   );
 }
