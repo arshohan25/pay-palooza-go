@@ -287,6 +287,30 @@ export function useChat() {
         {
           event: "UPDATE",
           schema: "public",
+          table: "chat_conversations",
+        },
+        (payload) => {
+          const updated = payload.new as { id: string; updated_at: string; name: string | null; group_icon: string | null };
+          // Re-sort conversation list when updated_at changes
+          setConversations((prev) => {
+            const idx = prev.findIndex((c) => c.id === updated.id);
+            if (idx === -1) return prev;
+            const copy = [...prev];
+            const conv = { ...copy[idx], updated_at: updated.updated_at, name: updated.name ?? copy[idx].name, group_icon: updated.group_icon ?? copy[idx].group_icon };
+            copy.splice(idx, 1);
+            // Insert sorted by updated_at desc
+            const insertIdx = copy.findIndex((c) => c.updated_at < conv.updated_at);
+            if (insertIdx === -1) copy.push(conv);
+            else copy.splice(insertIdx, 0, conv);
+            return copy;
+          });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
           table: "chat_participants",
         },
         (payload) => {
@@ -324,7 +348,13 @@ export function useChat() {
           );
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR") {
+          console.error("[chat-realtime] Channel error — will retry");
+        } else if (status === "TIMED_OUT") {
+          console.warn("[chat-realtime] Subscription timed out");
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
