@@ -1,33 +1,43 @@
 
 
-## Fix "User not found" when adding contacts by phone number
+## Root Cause: `protect_profile_fields` Trigger Blocks RPC Balance Updates
 
-### Root Cause
+### What's Happening
 
-Two cascading bugs:
+The `admin_disburse_funds` RPC **did run successfully** — it inserted the transaction record (+৳100,000, balance_after = ৳518,756) and attempted to update the profile balance. However, the `protect_profile_fields` trigger **silently reverted the balance change**.
 
-1. **Trigger stores email as phone**: The `handle_new_user()` trigger uses `COALESCE(NEW.phone, NEW.email, '')`. Since we use phone-as-email auth (not real phone auth), `NEW.phone` is always null, so the trigger stores `01680693484@easypay.local` as the phone value.
+The trigger checks:
+```sql
+IF current_setting('role') != 'service_role' AND current_setting('role') != 'rls_none' THEN
+  NEW.balance := OLD.balance;  -- REVERTS the change
+END IF;
+```
 
-2. **Hardened RLS blocks phone correction**: The recently hardened RLS policy on `profiles` prevents clients from changing the `phone` field. So when `signUp()` tries to update `phone` to the correct value (`01680693484`), the update silently fails.
+Even though `admin_disburse_funds` is `SECURITY DEFINER`, `current_setting('role')` still returns `'authenticated'` (the caller's session role), not `'service_role'`. So the trigger treats it as a regular client update and blocks the balance change.
 
-3. **Lookup mismatch**: `findUserByPhone("01680693484")` queries `.eq("phone", "01680693484")` but the stored value is `01680693484@easypay.local` — no match, "User not found".
+**Evidence:** The transaction shows `balance_after = ৳518,756` but the actual profile balance is `৳418,756` — exactly ৳100,000 less.
 
-### Changes
+This also explains why **all previous disbursements and RPC-based balance changes** may have had the same problem. Every `transfer_money`, `record_transaction`, `admin_disburse_funds`, and `admin_chargeback` RPC is affected.
 
-**1. Database migration — Fix the trigger + repair existing data**
+### Fix
 
-- Update `handle_new_user()` to extract the phone number from the email by stripping `@easypay.local` suffix when `NEW.phone` is null
-- Fix existing corrupted phone values: `UPDATE profiles SET phone = REPLACE(phone, '@easypay.local', '') WHERE phone LIKE '%@easypay.local'`
+**Database Migration (single migration, two parts):**
 
-**2. Fix `findUserByPhone` in `src/hooks/use-chat.ts`**
+1. **Fix the trigger** — Check `current_user` (which IS changed by `SECURITY DEFINER` to the function owner, typically `'postgres'`) instead of only `current_setting('role')`:
+   ```sql
+   IF NEW.balance IS DISTINCT FROM OLD.balance THEN
+     IF current_user NOT IN ('postgres', 'supabase_admin')
+        AND current_setting('role') NOT IN ('service_role', 'rls_none') THEN
+       NEW.balance := OLD.balance;
+     END IF;
+   END IF;
+   ```
+   Apply the same pattern to the `phone` and `status` guards in the trigger.
 
-- Normalize the input phone (strip spaces/dashes) and also try matching with both raw phone and `@easypay.local` suffix as a fallback for any edge cases
+2. **Repair Shohan's balance** — Set it to the correct value (৳518,756) that reflects the successful disbursement.
 
-**3. No RLS changes needed**
-
-The trigger runs as `SECURITY DEFINER` so it bypasses RLS. Once the trigger stores the correct phone from the start, the `signUp` phone update becomes unnecessary (it would set the same value). The hardened RLS protecting `phone` from client changes remains correct.
+No code changes needed — this is purely a database trigger fix.
 
 ### Files
-- **DB Migration**: Fix `handle_new_user()` trigger + repair existing data
-- **Edit**: `src/hooks/use-chat.ts` — make `findUserByPhone` resilient to format variations
+- **DB Migration**: Update `protect_profile_fields()` trigger + repair balance for user `01909709954`
 
