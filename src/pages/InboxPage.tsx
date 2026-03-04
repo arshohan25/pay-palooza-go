@@ -14,6 +14,8 @@ import { useChat, type ChatConversation, type ChatMessage } from "@/hooks/use-ch
 import { useAuth } from "@/hooks/use-auth";
 import { WebRTCManager, type CallSignal } from "@/lib/webrtc";
 import IncomingCallOverlay from "@/components/IncomingCallOverlay";
+import { useTypingIndicator } from "@/hooks/use-typing-indicator";
+import { useProfile } from "@/hooks/use-profile";
 
 // ── Types (for UI rendering) ──────────────────────────────────────────────────
 interface Reaction {
@@ -819,11 +821,15 @@ interface ChatViewProps {
   webrtc: WebRTCManager | null;
   callMode: "audio" | "video" | null;
   onEndCall: () => void;
+  conversationId: string | null;
+  userId: string | null;
+  userName: string;
 }
 
-const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage, onSendMoney, onReact, onCall, webrtc, callMode, onEndCall }: ChatViewProps) => {
+const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage, onSendMoney, onReact, onCall, webrtc, callMode, onEndCall, conversationId, userId, userName }: ChatViewProps) => {
   const [text, setText] = useState("");
   const [showQuick, setShowQuick] = useState(false);
+  const { typingUsers, setTyping } = useTypingIndicator(conversationId, userId, userName);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [recording, setRecording] = useState(false);
@@ -956,6 +962,35 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage,
             </motion.div>
           </div>
         ))}
+        {/* Typing indicator */}
+        <AnimatePresence>
+          {typingUsers.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              className="flex items-start gap-2 pl-1"
+            >
+              <div className="bg-card border border-border rounded-2xl rounded-bl-md px-4 py-2.5 shadow-card flex items-center gap-2">
+                <div className="flex gap-[3px]">
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      className="w-[6px] h-[6px] rounded-full bg-muted-foreground/60"
+                      animate={{ y: [0, -5, 0] }}
+                      transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15, ease: "easeInOut" }}
+                    />
+                  ))}
+                </div>
+                <span className="text-[11px] text-muted-foreground font-medium">
+                  {typingUsers.length === 1
+                    ? `${typingUsers[0]} is typing…`
+                    : `${typingUsers.length} people are typing…`}
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <div ref={bottomRef} />
       </div>
 
@@ -998,7 +1033,7 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage,
             type="text"
             placeholder={recording ? "Recording…" : "Message…"}
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => { setText(e.target.value); setTyping(true); }}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             disabled={recording}
             className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-w-0 disabled:opacity-50"
@@ -1054,6 +1089,7 @@ interface InboxPageProps {
 
 export default function InboxPage({ onBack, onSendMoney, isActive = false }: InboxPageProps) {
   const { user } = useAuth();
+  const profileData = useProfile();
   const chat = useChat();
   const [search, setSearch] = useState("");
   const [showNewContact, setShowNewContact] = useState(false);
@@ -1369,6 +1405,9 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
               webrtc={webrtcManager}
               callMode={callMode}
               onEndCall={handleEndCall}
+              conversationId={activeContactId}
+              userId={user?.id ?? null}
+              userName={profileData?.name || "Me"}
               onSendMoney={(phone) => {
                 const contactId = activeContactId;
                 const contactPhone = activeContact.phone;
