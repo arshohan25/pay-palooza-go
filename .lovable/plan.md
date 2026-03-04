@@ -1,43 +1,54 @@
 
 
-## Root Cause: `protect_profile_fields` Trigger Blocks RPC Balance Updates
+## Chat Request Accept/Decline Flow + Sound/Vibration Alerts
 
-### What's Happening
+### Current Behavior
+- When user A starts a conversation with user B, the conversation is immediately created and visible to both parties. User B receives a notification in the `notifications` table but there's no acceptance gate.
+- No audio or haptic feedback when chat notifications arrive.
 
-The `admin_disburse_funds` RPC **did run successfully** — it inserted the transaction record (+৳100,000, balance_after = ৳518,756) and attempted to update the profile balance. However, the `protect_profile_fields` trigger **silently reverted the balance change**.
+### Plan
 
-The trigger checks:
+#### 1. Database: Add `status` column to `chat_conversations`
+- Add a `status` column (`pending` | `accepted`) to `chat_conversations`, default `accepted`.
+- When creating a **new direct conversation**, set `status = 'pending'`.
+- Update RLS: participants can still SELECT pending conversations (to see the request), but the INSERT policy on `chat_messages` should block sending messages in `pending` conversations unless sender is the original creator (only the first message allowed).
+
+**Migration:**
 ```sql
-IF current_setting('role') != 'service_role' AND current_setting('role') != 'rls_none' THEN
-  NEW.balance := OLD.balance;  -- REVERTS the change
-END IF;
+ALTER TABLE chat_conversations ADD COLUMN status text NOT NULL DEFAULT 'accepted';
+-- For pending conversations, only the initiator can send messages
+-- Recipients must accept before they can reply
 ```
 
-Even though `admin_disburse_funds` is `SECURITY DEFINER`, `current_setting('role')` still returns `'authenticated'` (the caller's session role), not `'service_role'`. So the trigger treats it as a regular client update and blocks the balance change.
+#### 2. Update `createDirectConversation` in `use-chat.ts`
+- Set `status: 'pending'` when inserting a new conversation.
+- The sender's initial message can still be sent (acts as the "request message").
 
-**Evidence:** The transaction shows `balance_after = ৳518,756` but the actual profile balance is `৳418,756` — exactly ৳100,000 less.
+#### 3. Add accept/decline functions to `use-chat.ts`
+- `acceptConversation(conversationId)`: Updates `chat_conversations.status` to `'accepted'`.
+- `declineConversation(conversationId)`: Deletes the conversation and its participants (or marks it declined). Removes self from participants.
 
-This also explains why **all previous disbursements and RPC-based balance changes** may have had the same problem. Every `transfer_money`, `record_transaction`, `admin_disburse_funds`, and `admin_chargeback` RPC is affected.
+#### 4. Update InboxPage UI — Chat Request Banner
+- In the conversation list, show pending conversations with a distinct visual style (e.g., "Chat Request" badge, muted appearance).
+- When opening a pending conversation as the recipient:
+  - Show the sender's first message.
+  - Display an **Accept / Decline** bar at the bottom instead of the message input.
+  - Accept → updates status to `accepted`, shows normal chat input.
+  - Decline → removes conversation from list, optionally notifies sender.
 
-### Fix
+#### 5. Sound alert on new chat notification
+- Create a `playNotificationSound()` function in a new `src/lib/sounds.ts` using the Web Audio API (consistent with existing audio patterns in the app).
+- Play a short notification chime (ascending 2-note pattern) when:
+  - A new chat message arrives via realtime (in `use-chat.ts` realtime handler).
+  - A new chat request notification arrives.
 
-**Database Migration (single migration, two parts):**
+#### 6. Haptic feedback on new chat notification
+- Use existing `haptics.notify()` from `src/lib/haptics.ts` when a new realtime message arrives from another user.
+- Trigger both sound + haptic together in the realtime handler.
 
-1. **Fix the trigger** — Check `current_user` (which IS changed by `SECURITY DEFINER` to the function owner, typically `'postgres'`) instead of only `current_setting('role')`:
-   ```sql
-   IF NEW.balance IS DISTINCT FROM OLD.balance THEN
-     IF current_user NOT IN ('postgres', 'supabase_admin')
-        AND current_setting('role') NOT IN ('service_role', 'rls_none') THEN
-       NEW.balance := OLD.balance;
-     END IF;
-   END IF;
-   ```
-   Apply the same pattern to the `phone` and `status` guards in the trigger.
-
-2. **Repair Shohan's balance** — Set it to the correct value (৳518,756) that reflects the successful disbursement.
-
-No code changes needed — this is purely a database trigger fix.
-
-### Files
-- **DB Migration**: Update `protect_profile_fields()` trigger + repair balance for user `01909709954`
+### Files to Change
+- **Database migration**: Add `status` column to `chat_conversations`
+- **`src/hooks/use-chat.ts`**: Add `status: 'pending'` on create, add `acceptConversation`/`declineConversation`, trigger sound+haptic on incoming message
+- **`src/pages/InboxPage.tsx`**: Visual distinction for pending requests, accept/decline UI bar
+- **`src/lib/sounds.ts`** (new): Chat notification sound using Web Audio API
 
