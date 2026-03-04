@@ -1,36 +1,31 @@
 
 
-## Add Typing Indicators via Supabase Presence
+## Add Online/Offline Presence Indicators via Supabase Presence
 
 ### Approach
-Use Supabase Realtime Presence channels (ephemeral, no DB needed) to broadcast typing state per conversation.
+Create a new hook that tracks all users' online status using a global Supabase Presence channel. Each authenticated user joins a shared `online-users` channel and tracks their presence. The hook returns a `Set<string>` of currently online user IDs.
 
 ### Changes
 
-**1. New hook: `src/hooks/use-typing-indicator.ts`**
-- Accepts `conversationId` and `userId`/`userName`
-- Creates a Supabase Presence channel `typing:{conversationId}`
-- Exposes `setTyping(isTyping: boolean)` — tracks/shares typing state with a debounced auto-off (3s timeout)
-- Exposes `typingUsers: string[]` — names of other users currently typing, derived from presence state
-- Cleans up channel on unmount
+**1. New hook: `src/hooks/use-online-presence.ts`**
+- Joins a global Supabase Presence channel `online-users` with the current user's ID
+- Listens to `sync` events to maintain a `Set<string>` of online user IDs
+- Exposes `isOnline(userId: string): boolean`
+- Auto-tracks presence on mount, untracks + removes channel on unmount
+- Handles page visibility (goes offline when tab hidden, back online when visible)
 
 **2. Edit: `src/pages/InboxPage.tsx`**
+- Import and use `useOnlinePresence` in `InboxPage`
+- Pass the `isOnline` function into `convToUIContact` so that `online` field reflects real presence state instead of hardcoded `false`
+- In the contact list avatar, the existing green dot indicator (if any) will now reflect actual status
+- In `ChatView` header, show a small "Online" / "Offline" text below the contact name
 
-In `ChatView`:
-- Import and use `useTypingIndicator(conversationId, userId, userName)`
-- Call `setTyping(true)` on input `onChange`, which auto-resets after 3s of no typing
-- Render a typing indicator bubble between the last message and the `bottomRef` div:
-  - Animated three-dot bounce animation
-  - Shows "{name} is typing..." or "2 people are typing..."
-- Pass `conversationId` and user info as new props to `ChatView`
-
-In `InboxPage`:
-- Pass the active conversation ID and user profile info down to `ChatView`
-
-### Typing Indicator UI
-A small row below messages showing animated dots + user name, styled like a received message bubble but smaller and translucent. Uses framer-motion for the bouncing dots animation.
+**3. UI indicators**
+- Contact list: Small green/gray dot on avatar corner (absolute positioned, bottom-right)
+- Chat header: "Online" text in green or "Offline" in muted color below name
+- Animate the dot with a subtle pulse for online users
 
 ### Files
-- **New**: `src/hooks/use-typing-indicator.ts`
-- **Edit**: `src/pages/InboxPage.tsx` — add typing indicator to ChatView
+- **New**: `src/hooks/use-online-presence.ts`
+- **Edit**: `src/pages/InboxPage.tsx` — wire up presence, update avatar dots and chat header
 
