@@ -56,6 +56,16 @@ export default function AdminChargeConfig() {
 
   useEffect(() => { load(); }, []);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-charge-config-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "fee_config" }, () => {
+        load();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   const openAdd = () => {
     setEditing(null);
     setForm({ txn_type: "send", fee_type: "flat", fee_value: "", min_amount: "", max_amount: "", is_active: true });
