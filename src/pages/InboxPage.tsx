@@ -1176,6 +1176,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
   // ── Consolidated WebRTC managers (single ref-based map) ──────────
   const webrtcManagersRef = useRef<Map<string, WebRTCManager>>(new Map());
 
+  // Sync WebRTC managers incrementally — do NOT destroy all on re-render
   useEffect(() => {
     if (!user || chat.conversations.length === 0) return;
 
@@ -1189,13 +1190,21 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
       // Skip if already subscribed
       if (currentMap.has(conv.id)) continue;
 
-      const mgr = new WebRTCManager(conv.id, user.id, "Me");
+      const mgr = new WebRTCManager(conv.id, user.id, profileData?.name ?? "Me");
       mgr.subscribe();
       mgr.setOnIncomingCall((signal) => {
-        setIncomingCall(signal);
-        // Auto-navigate to the conversation
-        setActiveContactId(conv.id);
-        chat.openConversation(conv.id);
+        // Only show incoming call if we're not already in a call
+        setCallMode((current) => {
+          if (current !== null) {
+            // Already in a call — auto-reject the new one
+            mgr.rejectCall();
+            return current;
+          }
+          setIncomingCall(signal);
+          setActiveContactId(conv.id);
+          chat.openConversation(conv.id);
+          return null;
+        });
       });
       currentMap.set(conv.id, mgr);
     }
@@ -1207,12 +1216,17 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
         currentMap.delete(convId);
       }
     }
-
-    return () => {
-      for (const mgr of currentMap.values()) mgr.destroy();
-      currentMap.clear();
-    };
+    // NO cleanup here — managers must persist across re-renders to maintain
+    // stable WebRTC subscriptions. Cleanup happens in the unmount effect below.
   }, [user, chat.conversations.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Unmount-only cleanup: destroy all managers when InboxPage unmounts
+  useEffect(() => {
+    return () => {
+      for (const mgr of webrtcManagersRef.current.values()) mgr.destroy();
+      webrtcManagersRef.current.clear();
+    };
+  }, []);
 
   // Keep webrtcManager state in sync with active conversation's manager
   useEffect(() => {

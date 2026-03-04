@@ -7,6 +7,8 @@ const ICE_SERVERS: RTCIceServer[] = [
 
 export type CallState = "idle" | "calling" | "ringing" | "connected" | "ended";
 
+const CALL_TIMEOUT_MS = 45_000; // 45 seconds ring timeout
+
 export interface CallSignal {
   type: "call-offer" | "call-answer" | "ice-candidate" | "call-end" | "call-reject";
   senderId: string;
@@ -32,6 +34,7 @@ export class WebRTCManager {
   private onIncomingCall: EventCallback | null = null;
   private iceCandidateBuffer: RTCIceCandidateInit[] = [];
   private _state: CallState = "idle";
+  private ringTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     conversationId: string,
@@ -140,6 +143,16 @@ export class WebRTCManager {
       mode,
       payload: offer,
     });
+
+    // Set state to ringing (waiting for remote answer)
+    this.setState("ringing");
+
+    // Auto-end call if not answered within timeout
+    this.ringTimeout = setTimeout(() => {
+      if (this._state === "ringing" || this._state === "calling") {
+        this.endCall();
+      }
+    }, CALL_TIMEOUT_MS);
   }
 
   // ── Answer incoming call ────────────────────────────────────────
@@ -258,6 +271,11 @@ export class WebRTCManager {
 
   private async handleAnswer(answer: RTCSessionDescriptionInit) {
     if (!this.pc) return;
+    // Clear ring timeout — call was answered
+    if (this.ringTimeout) {
+      clearTimeout(this.ringTimeout);
+      this.ringTimeout = null;
+    }
     await this.pc.setRemoteDescription(new RTCSessionDescription(answer));
     this.setState("connected");
 
@@ -281,6 +299,10 @@ export class WebRTCManager {
   }
 
   cleanup() {
+    if (this.ringTimeout) {
+      clearTimeout(this.ringTimeout);
+      this.ringTimeout = null;
+    }
     this.localStream?.getTracks().forEach((t) => t.stop());
     this.remoteStream?.getTracks().forEach((t) => t.stop());
     this.pc?.close();
