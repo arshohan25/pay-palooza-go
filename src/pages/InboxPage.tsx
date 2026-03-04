@@ -150,15 +150,41 @@ function convToUIContact(conv: ChatConversation, userId: string, isOnline?: (uid
   };
 }
 
+// ── Compute per-message read status ───────────────────────────────────────────
+function computeMessageStatus(
+  msg: ChatMessage,
+  userId: string,
+  othersReadTimes: string[] // last_read_at values of other participants
+): "sent" | "delivered" | "read" {
+  // Only compute status for messages sent by the current user
+  if (msg.sender_id !== userId) return "read";
+  if (othersReadTimes.length === 0) return "delivered";
+
+  // If ALL other participants have read_at >= msg.created_at → read
+  const msgTime = new Date(msg.created_at).getTime();
+  const allRead = othersReadTimes.every(
+    (readAt) => new Date(readAt).getTime() >= msgTime
+  );
+  if (allRead) return "read";
+
+  // At least delivered (message was persisted)
+  return "delivered";
+}
+
 // ── Convert DB message to UI message ──────────────────────────────────────────
-function msgToUIMessage(msg: ChatMessage, userId: string): UIMessage {
+function msgToUIMessage(
+  msg: ChatMessage,
+  userId: string,
+  othersReadTimes?: string[]
+): UIMessage {
   const meta = msg.metadata as Record<string, unknown>;
+  const status = computeMessageStatus(msg, userId, othersReadTimes ?? []);
   return {
     id: msg.id,
     text: msg.decryptedContent || msg.content,
     time: new Date(msg.created_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
     sent: msg.sender_id === userId,
-    status: "read",
+    status,
     type: msg.message_type,
     amount: meta?.amount as number | undefined,
     txnId: meta?.txnId as string | undefined,
@@ -1121,9 +1147,20 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
     convToUIContact(conv, user?.id ?? "", isOnline)
   );
 
-  // Convert DB messages to UI messages
+  // Convert DB messages to UI messages with read receipt status
+  const othersReadTimes: string[] = (() => {
+    if (!chat.activeConversationId || !user) return [];
+    const convReadMap = chat.participantReadTimes.get(chat.activeConversationId);
+    if (!convReadMap) return [];
+    const times: string[] = [];
+    convReadMap.forEach((readAt, uid) => {
+      if (uid !== user.id) times.push(readAt);
+    });
+    return times;
+  })();
+
   const uiMessages: UIMessage[] = chat.messages.map((msg) => {
-    const uiMsg = msgToUIMessage(msg, user?.id ?? "");
+    const uiMsg = msgToUIMessage(msg, user?.id ?? "", othersReadTimes);
     uiMsg.reactions = reactions[msg.id] ?? [];
     return uiMsg;
   });

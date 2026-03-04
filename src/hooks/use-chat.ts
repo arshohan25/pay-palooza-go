@@ -200,12 +200,32 @@ export function useChat() {
     loadConversations();
   }, [loadConversations]);
 
-  // ── Realtime subscription for new messages ──────────────────────────
+  // ── Participant read times for read receipts ─────────────────────────
+  const [participantReadTimes, setParticipantReadTimes] = useState<
+    Map<string, Map<string, string>>
+  >(new Map());
+
+  // Build participantReadTimes from conversations data
+  useEffect(() => {
+    const map = new Map<string, Map<string, string>>();
+    for (const conv of conversations) {
+      const userMap = new Map<string, string>();
+      for (const p of conv.participants) {
+        if (p.last_read_at) {
+          userMap.set(p.user_id, p.last_read_at);
+        }
+      }
+      map.set(conv.id, userMap);
+    }
+    setParticipantReadTimes(map);
+  }, [conversations]);
+
+  // ── Realtime subscription for new messages + participant reads ──────
   useEffect(() => {
     if (!user) return;
 
     const channel = supabase
-      .channel("chat-messages-realtime")
+      .channel("chat-realtime-combined")
       .on(
         "postgres_changes",
         {
@@ -260,6 +280,48 @@ export function useChat() {
             updated.unshift(conv);
             return updated;
           });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "chat_participants",
+        },
+        (payload) => {
+          const updated = payload.new as {
+            conversation_id: string;
+            user_id: string;
+            last_read_at: string | null;
+          };
+          // Skip own updates
+          if (updated.user_id === user.id) return;
+          if (!updated.last_read_at) return;
+
+          // Update participant read times
+          setParticipantReadTimes((prev) => {
+            const next = new Map(prev);
+            const convMap = new Map(next.get(updated.conversation_id) ?? []);
+            convMap.set(updated.user_id, updated.last_read_at!);
+            next.set(updated.conversation_id, convMap);
+            return next;
+          });
+
+          // Also update the conversation's participant data
+          setConversations((prev) =>
+            prev.map((c) => {
+              if (c.id !== updated.conversation_id) return c;
+              return {
+                ...c,
+                participants: c.participants.map((p) =>
+                  p.user_id === updated.user_id
+                    ? { ...p, last_read_at: updated.last_read_at }
+                    : p
+                ),
+              };
+            })
+          );
         }
       )
       .subscribe();
@@ -539,6 +601,7 @@ export function useChat() {
     messagesLoading,
     activeConversationId,
     totalUnread,
+    participantReadTimes,
     openConversation,
     closeConversation,
     sendMessage,
