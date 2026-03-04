@@ -143,6 +143,7 @@ function convToUIContact(conv: ChatConversation, userId: string, isOnline?: (uid
     unread: conv.unreadCount,
     online: !isGroup && !!otherUserId && !!isOnline && isOnline(otherUserId),
     avatarUrl,
+    pending: conv.status === "pending",
     isGroup,
     groupIcon: conv.group_icon ?? undefined,
     adminId: conv.admin_id === userId ? "self" : conv.admin_id ?? undefined,
@@ -853,9 +854,13 @@ interface ChatViewProps {
   conversationId: string | null;
   userId: string | null;
   userName: string;
+  isPending?: boolean;
+  isInitiator?: boolean;
+  onAccept?: () => void;
+  onDecline?: () => void;
 }
 
-const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage, onSendMoney, onReact, onCall, webrtc, callMode, onEndCall, conversationId, userId, userName }: ChatViewProps) => {
+const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage, onSendMoney, onReact, onCall, webrtc, callMode, onEndCall, conversationId, userId, userName, isPending, isInitiator, onAccept, onDecline }: ChatViewProps) => {
   const [text, setText] = useState("");
   const [showQuick, setShowQuick] = useState(false);
   const { typingUsers, setTyping } = useTypingIndicator(conversationId, userId, userName);
@@ -1045,63 +1050,92 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage,
         )}
       </AnimatePresence>
 
-      {/* Input bar */}
-      <div className="px-3 pb-5 pt-2 border-t border-border/60 bg-background shrink-0">
-        <AnimatePresence>
-          {recording && (
-            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
-              className="flex items-center gap-2 mb-2 px-3">
-              <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.8, repeat: Infinity }}
-                className="w-2.5 h-2.5 rounded-full bg-destructive" />
-              <span className="text-sm text-destructive font-semibold">Recording… {recordSeconds}s</span>
-              <span className="text-xs text-muted-foreground ml-auto">Release to send</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <div className="flex items-center gap-2 bg-card border border-border rounded-2xl px-3 py-2 shadow-card">
-          <button onClick={() => setShowQuick(!showQuick)}
-            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${showQuick ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-            <Smile size={18} />
-          </button>
-          <input
-            type="text"
-            placeholder={recording ? "Recording…" : "Message…"}
-            value={text}
-            onChange={(e) => { setText(e.target.value); setTyping(true); }}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            disabled={recording}
-            className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-w-0 disabled:opacity-50"
-          />
-          <motion.button whileTap={{ scale: 0.88 }} onClick={() => fileInputRef.current?.click()}
-            className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
-            title="Share image">
-            <ImagePlus size={15} />
-          </motion.button>
-          {!contact.isGroup && (
-            <motion.button whileTap={{ scale: 0.88 }} onClick={() => onSendMoney(contact.phone)}
-              className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
-              title={`Send money to ${contact.name}`}>
-              <Wallet size={15} />
-            </motion.button>
-          )}
-          {text.trim() ? (
-            <motion.button whileTap={{ scale: 0.88 }} onClick={handleSend}
-              className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground shadow-glow transition-all">
-              <Send size={16} />
-            </motion.button>
-          ) : (
+      {/* Input bar or Accept/Decline bar */}
+      {isPending && !isInitiator ? (
+        <div className="px-4 pb-5 pt-3 border-t border-border/60 bg-background shrink-0">
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <Shield size={14} className="text-muted-foreground" />
+            <p className="text-xs text-muted-foreground">
+              This is a chat request. Accept to start chatting.
+            </p>
+          </div>
+          <div className="flex gap-3">
             <motion.button
-              whileTap={{ scale: 0.88 }}
-              onMouseDown={startMicPress} onMouseUp={endMicPress} onMouseLeave={endMicPress}
-              onTouchStart={startMicPress} onTouchEnd={endMicPress}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all select-none ${recording ? "gradient-send text-primary-foreground shadow-glow scale-110" : "bg-primary/10 text-primary"}`}
+              whileTap={{ scale: 0.95 }}
+              onClick={onDecline}
+              className="flex-1 h-12 rounded-2xl border-2 border-destructive/30 bg-destructive/10 text-destructive font-bold text-sm flex items-center justify-center gap-2 transition-colors hover:bg-destructive/20"
             >
-              <Mic size={16} />
+              <X size={16} />
+              Decline
             </motion.button>
-          )}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={onAccept}
+              className="flex-1 h-12 rounded-2xl gradient-primary text-primary-foreground font-bold text-sm shadow-glow flex items-center justify-center gap-2"
+            >
+              <CheckCircle2 size={16} />
+              Accept
+            </motion.button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="px-3 pb-5 pt-2 border-t border-border/60 bg-background shrink-0">
+          <AnimatePresence>
+            {recording && (
+              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
+                className="flex items-center gap-2 mb-2 px-3">
+                <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.8, repeat: Infinity }}
+                  className="w-2.5 h-2.5 rounded-full bg-destructive" />
+                <span className="text-sm text-destructive font-semibold">Recording… {recordSeconds}s</span>
+                <span className="text-xs text-muted-foreground ml-auto">Release to send</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="flex items-center gap-2 bg-card border border-border rounded-2xl px-3 py-2 shadow-card">
+            <button onClick={() => setShowQuick(!showQuick)}
+              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${showQuick ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+              <Smile size={18} />
+            </button>
+            <input
+              type="text"
+              placeholder={recording ? "Recording…" : "Message…"}
+              value={text}
+              onChange={(e) => { setText(e.target.value); setTyping(true); }}
+              onKeyDown={(e) => e.key === "Enter" && handleSend()}
+              disabled={recording}
+              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-w-0 disabled:opacity-50"
+            />
+            <motion.button whileTap={{ scale: 0.88 }} onClick={() => fileInputRef.current?.click()}
+              className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
+              title="Share image">
+              <ImagePlus size={15} />
+            </motion.button>
+            {!contact.isGroup && (
+              <motion.button whileTap={{ scale: 0.88 }} onClick={() => onSendMoney(contact.phone)}
+                className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                title={`Send money to ${contact.name}`}>
+                <Wallet size={15} />
+              </motion.button>
+            )}
+            {text.trim() ? (
+              <motion.button whileTap={{ scale: 0.88 }} onClick={handleSend}
+                className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground shadow-glow transition-all">
+                <Send size={16} />
+              </motion.button>
+            ) : (
+              <motion.button
+                whileTap={{ scale: 0.88 }}
+                onMouseDown={startMicPress} onMouseUp={endMicPress} onMouseLeave={endMicPress}
+                onTouchStart={startMicPress} onTouchEnd={endMicPress}
+                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all select-none ${recording ? "gradient-send text-primary-foreground shadow-glow scale-110" : "bg-primary/10 text-primary"}`}
+              >
+                <Mic size={16} />
+              </motion.button>
+            )}
+          </div>
+        </div>
+      )}
 
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
@@ -1436,12 +1470,19 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
                   </div>
                   <div className="flex items-center justify-between">
                     <p className={`text-[12px] truncate ${contact.unread > 0 ? "text-foreground font-medium" : "text-muted-foreground"}`}>{contact.lastMsg}</p>
-                    {contact.unread > 0 && (
-                      <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
-                        className="ml-2 min-w-[18px] h-[18px] px-1 gradient-send text-white text-[9px] font-bold rounded-full flex items-center justify-center shrink-0">
-                        {contact.unread}
-                      </motion.span>
-                    )}
+                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                      {contact.pending && (
+                        <span className="px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[9px] font-bold">
+                          Request
+                        </span>
+                      )}
+                      {contact.unread > 0 && (
+                        <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
+                          className="min-w-[18px] h-[18px] px-1 gradient-send text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                          {contact.unread}
+                        </motion.span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </motion.button>
@@ -1496,6 +1537,24 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
               conversationId={activeContactId}
               userId={user?.id ?? null}
               userName={profileData?.name || "Me"}
+              isPending={activeContact.pending}
+              isInitiator={(() => {
+                const conv = chat.conversations.find((c) => c.id === activeContactId);
+                return conv?.admin_id === user?.id;
+              })()}
+              onAccept={async () => {
+                if (activeContactId) {
+                  await chat.acceptConversation(activeContactId);
+                  toast.success("Chat request accepted!");
+                }
+              }}
+              onDecline={async () => {
+                if (activeContactId) {
+                  await chat.declineConversation(activeContactId);
+                  setActiveContactId(null);
+                  toast("Chat request declined");
+                }
+              }}
               onSendMoney={(phone) => {
                 const contactId = activeContactId;
                 const contactPhone = activeContact.phone;

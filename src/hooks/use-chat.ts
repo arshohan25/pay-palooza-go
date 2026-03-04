@@ -8,6 +8,8 @@ import {
   tryDecryptMessage,
 } from "@/lib/chatCrypto";
 import { addInboxMsg } from "@/lib/inboxStore";
+import { playChatNotification, playChatRequestSound } from "@/lib/sounds";
+import { haptics } from "@/lib/haptics";
 
 // ── Types ────────────────────────────────────────────────────────────────
 export interface ChatParticipant {
@@ -27,6 +29,7 @@ export interface ChatConversation {
   name: string | null;
   group_icon: string | null;
   admin_id: string | null;
+  status: "pending" | "accepted";
   created_at: string;
   updated_at: string;
   participants: ChatParticipant[];
@@ -184,6 +187,7 @@ export function useChat() {
         name: conv.name,
         group_icon: conv.group_icon,
         admin_id: conv.admin_id,
+        status: (conv.status ?? "accepted") as "pending" | "accepted",
         created_at: conv.created_at,
         updated_at: conv.updated_at,
         participants: parts,
@@ -253,10 +257,13 @@ export function useChat() {
           }
           newMsg.metadata = (newMsg.metadata as Record<string, unknown>) ?? {};
 
-          // If viewing this conversation, add to messages
           if (activeConvRef.current === newMsg.conversation_id) {
             setMessages((prev) => [...prev, newMsg]);
           }
+
+          // Play sound + haptic for incoming message
+          playChatNotification();
+          haptics.notify();
 
           // Update conversation list
           setConversations((prev) => {
@@ -294,6 +301,9 @@ export function useChat() {
           // If current user was added to a new conversation, reload the list
           if (newPart.user_id === user.id) {
             loadConversations();
+            // Play chat request sound + haptic
+            playChatRequestSound();
+            haptics.notify();
           }
         }
       )
@@ -536,7 +546,7 @@ export function useChat() {
       // Create new conversation
       const { data: conv, error: convError } = await supabase
         .from("chat_conversations")
-        .insert({ type: "direct" })
+        .insert({ type: "direct", status: "pending", admin_id: user.id })
         .select()
         .single();
 
@@ -669,6 +679,41 @@ export function useChat() {
     [loadConversations]
   );
 
+  // ── Accept / Decline conversation ────────────────────────────────
+  const acceptConversation = useCallback(
+    async (conversationId: string) => {
+      await supabase
+        .from("chat_conversations")
+        .update({ status: "accepted" })
+        .eq("id", conversationId);
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === conversationId ? { ...c, status: "accepted" as const } : c
+        )
+      );
+    },
+    []
+  );
+
+  const declineConversation = useCallback(
+    async (conversationId: string) => {
+      if (!user) return;
+      // Remove self from participants
+      await supabase
+        .from("chat_participants")
+        .delete()
+        .eq("conversation_id", conversationId)
+        .eq("user_id", user.id);
+      // Remove from local state
+      setConversations((prev) => prev.filter((c) => c.id !== conversationId));
+      if (activeConvRef.current === conversationId) {
+        setActiveConversationId(null);
+        setMessages([]);
+      }
+    },
+    [user]
+  );
+
   // Total unread
   const totalUnread = conversations.reduce(
     (sum, c) => sum + c.unreadCount,
@@ -692,6 +737,8 @@ export function useChat() {
     updateGroup,
     addGroupMember,
     removeGroupMember,
+    acceptConversation,
+    declineConversation,
     loadConversations,
   };
 }
