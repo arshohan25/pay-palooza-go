@@ -1,26 +1,40 @@
 
 
-## Admin KYC Warning Banners + EasyPay Email Branding
+## Add Comprehensive Real-time Auto-update to Admin Panel
 
-Two changes:
+The admin dashboard already has a realtime channel (`admin-global-realtime`) listening to 8 tables, but several key tables are missing. After any admin action (KYC approval, order update, treasury disbursement, etc.), the panel doesn't auto-refresh those sections.
 
-### 1. Non-blocking warning banners in KYC approval flow
+### Changes
 
-**`src/components/admin/AdminKycReview.tsx`**
+**1. Database Migration — Enable realtime for `kyc_verifications`**
 
-- **Remove the auto-reject logic** (lines 150-178): Currently when approving a duplicate NID, the code auto-rejects. Replace this with a non-blocking check that sets warning state instead.
-- **Add state for warnings**: `duplicateNidWarning` (boolean) and track it alongside the existing flow.
-- **Update the face match banner** (lines 370-383): Change from "Cannot Approve" blocking language to a warning-only banner — "⚠ Warning: Low Face Match" with advisory text. Remove the word "Cannot".
-- **Add duplicate NID warning banner**: When admin clicks Approve and a duplicate NID is found, show an amber warning banner in the dialog (similar style to face match warning) saying "Another account is already verified with this NID" but allow the admin to proceed with a confirmation click.
-- **Flow**: First click "Approve" → check for duplicate NID → if found, show warning banner + change button to "Confirm Approve" → second click proceeds. If no duplicate, approve immediately. Face match warning is always visible (informational only, never blocks).
+The `kyc_verifications` table is not in the realtime publication yet. Add it so KYC status changes broadcast to all admin sessions.
 
-### 2. Rebrand all email/SMS sender names to EasyPay
+```sql
+ALTER PUBLICATION supabase_realtime ADD TABLE public.kyc_verifications;
+```
 
-**`supabase/functions/kyc-notify/index.ts`**
-- Line 113: `"MFS Bangladesh <noreply@resend.dev>"` → `"EasyPay <noreply@resend.dev>"`
-- Line 127: `"MFS Bangladesh — Secure Mobile Financial Services"` → `"EasyPay — Secure Digital Wallet"`
-- Line 158: `"MFS: Your KYC..."` → `"EasyPay: Your KYC..."`
-- Line 159: `"MFS: Your KYC..."` → `"EasyPay: Your KYC..."`
+**2. Expand the realtime channel in `src/pages/AdminDashboard.tsx`**
 
-The `send-email-otp` function already uses EasyPay branding, so no change needed there.
+Add listeners for the missing tables to the existing `admin-global-realtime` channel:
+
+- **`kyc_verifications`** (any change) → refresh `pendingKyc` stat count
+- **`orders`** (any change) → no state held in dashboard directly, but refresh stats
+- **`referrals`** / **`referral_rewards`** (any change) → refresh referral stats
+- **`platform_treasury`** / **`treasury_ledger`** (any change) → refresh stats
+- **`support_conversations`** (any change) → stats refresh
+- **`notifications`** (INSERT) → lightweight, no action needed in main dashboard
+- **`global_feature_toggles`** / **`payment_gateways`** (any change) → child components handle their own state, but a lightweight stats refresh ensures consistency
+
+The expanded channel will add ~6 new `.on()` listeners covering all admin-actionable tables. Each triggers either a targeted data refetch or a full `loadData()` call depending on impact.
+
+**3. Add `loadData()` calls after local admin actions that currently don't trigger them**
+
+Review action handlers (KYC approve/reject, order status change, etc.) in child components. Most child components manage their own state, so we ensure the parent dashboard stats stay in sync by relying on the realtime channel rather than manual callbacks — this is the cleaner approach.
+
+### Summary
+
+- 1 small migration (enable realtime for `kyc_verifications`)
+- Expand the realtime channel with ~6 additional table listeners
+- No changes needed to child components — they already manage their own data; the realtime channel keeps parent stats in sync automatically
 
