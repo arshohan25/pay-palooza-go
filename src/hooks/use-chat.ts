@@ -67,6 +67,12 @@ export function useChat() {
   const loadConversations = useCallback(async () => {
     if (!user) return;
 
+    // Get blocked users list
+    let blockedUserIds: string[] = [];
+    try {
+      blockedUserIds = JSON.parse(localStorage.getItem("ep_blocked_users") || "[]");
+    } catch {}
+
     // Get all conversation IDs for this user
     const { data: participantRows } = await supabase
       .from("chat_participants")
@@ -196,7 +202,16 @@ export function useChat() {
       };
     });
 
-    setConversations(mapped);
+    // Filter out conversations with blocked users
+    const filtered = blockedUserIds.length > 0
+      ? mapped.filter((conv) => {
+          if (conv.type !== "direct") return true;
+          const otherParticipant = conv.participants.find((p) => p.user_id !== user.id);
+          return !otherParticipant || !blockedUserIds.includes(otherParticipant.user_id);
+        })
+      : mapped;
+
+    setConversations(filtered);
     setLoading(false);
   }, [user]);
 
@@ -515,7 +530,7 @@ export function useChat() {
     async (otherUserId: string) => {
       if (!user) return null;
 
-      // Check if direct conversation already exists
+      // Check if direct conversation already exists where BOTH users are still participants
       const { data: myConvIds } = await supabase
         .from("chat_participants")
         .select("conversation_id")
@@ -530,7 +545,7 @@ export function useChat() {
           .in("conversation_id", ids);
 
         if (otherConvIds && otherConvIds.length > 0) {
-          // Check if any is a direct conversation
+          // Check if any is a direct conversation where both users are participants
           for (const row of otherConvIds) {
             const { data: conv } = await supabase
               .from("chat_conversations")
@@ -538,7 +553,16 @@ export function useChat() {
               .eq("id", row.conversation_id)
               .eq("type", "direct")
               .single();
-            if (conv) return conv.id;
+            if (!conv) continue;
+
+            // Verify both participants still exist in this conversation
+            const { count } = await supabase
+              .from("chat_participants")
+              .select("*", { count: "exact", head: true })
+              .eq("conversation_id", conv.id)
+              .in("user_id", [user.id, otherUserId]);
+            
+            if (count === 2) return conv.id;
           }
         }
       }
