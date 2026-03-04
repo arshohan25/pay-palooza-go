@@ -1,41 +1,43 @@
 
 
-## Add Visual "Live Updated" Indicator for Admin Realtime Refreshes
+## Add Realtime Activity Feed Sidebar
 
-When the admin dashboard or any child component auto-refreshes via realtime, show a subtle, non-intrusive visual indicator so admins know data just synced.
+A collapsible sidebar on the right side of the admin dashboard showing a chronological, real-time log of all admin-relevant database changes (new users, transactions, fraud alerts, disputes, KYC, orders, etc.).
 
-### Approach
+### New Component: `src/components/admin/AdminActivityFeed.tsx`
 
-**Create a reusable `RealtimeUpdateIndicator` component** that:
-- Renders a small pill/badge (e.g., "● Live updated just now") that fades in with a pulse, then fades out after ~3 seconds
-- Uses framer-motion for smooth enter/exit
-- Positioned inline or as a floating indicator depending on context
+A sidebar panel that:
+- Listens to Supabase realtime on all key tables (`transactions`, `profiles`, `fraud_alerts`, `disputes`, `kyc_verifications`, `orders`, `agents`, `merchants`, `fee_config`, `support_conversations`, `platform_treasury`)
+- Accumulates events into an in-memory array (capped at ~200 entries) with timestamp, event type (INSERT/UPDATE/DELETE), table name, and a brief human-readable summary
+- Renders each event as a compact card with an icon (color-coded by table/event type), description, and relative timestamp
+- Uses `ScrollArea` for overflow, with auto-scroll-to-top on new events
+- Includes a "Clear" button to reset the feed
+- Animated entry via framer-motion for new items
 
-**Create a `useRealtimeIndicator` hook** that:
-- Exposes a `flash()` function and a `visible` boolean
-- Calling `flash()` sets `visible = true`, then auto-resets to `false` after 3 seconds
-- Debounces rapid consecutive updates (multiple tables changing at once) into a single flash
+### Event Display Format
+Each event shows:
+- Icon + color based on table (e.g., green for transactions, red for fraud alerts, blue for profiles)
+- Human-readable label: "New transaction: ৳500 send", "User profile updated", "Fraud alert: high severity", "KYC submission received", "Order status changed to shipped"
+- Relative time ("2s ago", "1m ago")
 
-### Integration Points
+### Integration: `src/pages/AdminDashboard.tsx`
 
-**1. `AdminDashboard.tsx`** — Add the indicator near the top of the dashboard content area. Call `flash()` inside the realtime channel callbacks that trigger `loadData()` or stats refreshes (fraud alerts, transactions, profiles, agents, merchants, KYC, orders, referrals, treasury, support).
+- Add a toggle button (e.g., `Radio` or `Activity` icon) in the admin header to show/hide the feed sidebar
+- Render the feed as a fixed right panel (w-72, hidden on mobile) or as a `Sheet` on mobile
+- The feed sidebar sits alongside the main content area with a smooth slide animation
 
-**2. Child components** (`AdminChargeConfig`, `AdminCommissionSetup`, `AdminChargebackHistory`, `AdminPermissions`, `AdminDisputeResolution`) — Each already has its own realtime subscription. Add the indicator component at the top of each, calling `flash()` inside their existing realtime callback.
+### Layout Change
+```text
+┌──────────┬─────────────────────┬──────────┐
+│ Left Nav │   Main Content      │ Activity │
+│  (w-56)  │                     │  Feed    │
+│          │                     │  (w-72)  │
+└──────────┴─────────────────────┴──────────┘
+```
+
+The right panel is toggled via a button in the header. When hidden, main content expands to full width.
 
 ### Files
-
-- **New**: `src/hooks/use-realtime-indicator.ts` — hook with `flash()` / `visible` / debounce logic
-- **New**: `src/components/admin/RealtimeUpdateIndicator.tsx` — small animated pill component
-- **Edit**: `src/pages/AdminDashboard.tsx` — add indicator + call `flash()` in realtime callbacks
-- **Edit**: 5 child components — add indicator + call `flash()` in their realtime callbacks
-
-### Visual Design
-
-A small pill at the top of the content area:
-```
-[● Data synced just now]
-```
-- Green dot with pulse animation, muted text, rounded-full badge style
-- Fades in via framer-motion, auto-dismisses after 3s
-- Non-blocking, no user interaction required
+- **New**: `src/components/admin/AdminActivityFeed.tsx` — the feed component with its own realtime channel
+- **Edit**: `src/pages/AdminDashboard.tsx` — add toggle state, header button, and render the feed panel
 
