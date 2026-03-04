@@ -93,6 +93,16 @@ export default function AdminChargebackHistory() {
 
   useEffect(() => { loadData(); }, []);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-chargeback-history-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => {
+        loadData();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   const filtered = chargebacks.filter(txn => {
     if (!search) return true;
     const q = search.toLowerCase();

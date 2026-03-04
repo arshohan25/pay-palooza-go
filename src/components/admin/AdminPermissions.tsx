@@ -70,6 +70,16 @@ export default function AdminPermissions() {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-permissions-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_permissions" }, () => {
+        load();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [load]);
+
   const filtered = data.filter(u =>
     !search || u.name?.toLowerCase().includes(search.toLowerCase()) || u.phone.includes(search)
   );

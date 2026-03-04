@@ -38,6 +38,16 @@ export default function AdminCommissionSetup() {
 
   useEffect(() => { load(); }, []);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-commission-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "fee_config" }, () => {
+        load();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   const openEdit = (r: CommissionRow) => {
     setEditing(r);
     setForm({
