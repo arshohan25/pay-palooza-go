@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Scale, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
+import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 
 interface Dispute {
   id: string;
@@ -37,6 +39,7 @@ export default function AdminDisputeResolution() {
   const [newStatus, setNewStatus] = useState("");
   const [notes, setNotes] = useState("");
   const [filter, setFilter] = useState("all");
+  const { visible: realtimeVisible, flash: realtimeFlash } = useRealtimeIndicator();
 
   const load = async () => {
     setLoading(true);
@@ -57,6 +60,7 @@ export default function AdminDisputeResolution() {
       .channel("admin-disputes-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "disputes" }, () => {
         load();
+        realtimeFlash();
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -87,6 +91,7 @@ export default function AdminDisputeResolution() {
 
   return (
     <div className="space-y-4">
+      <RealtimeUpdateIndicator visible={realtimeVisible} />
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">

@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Download, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
+import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 
 type PermType = "contacts" | "camera" | "location" | "sms_read";
 const PERM_TYPES: PermType[] = ["contacts", "camera", "location", "sms_read"];
@@ -29,6 +31,7 @@ export default function AdminPermissions() {
   const [data, setData] = useState<UserPerm[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const { visible: realtimeVisible, flash: realtimeFlash } = useRealtimeIndicator();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -75,6 +78,7 @@ export default function AdminPermissions() {
       .channel("admin-permissions-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "user_permissions" }, () => {
         load();
+        realtimeFlash();
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -106,6 +110,7 @@ export default function AdminPermissions() {
 
   return (
     <div className="space-y-4">
+      <RealtimeUpdateIndicator visible={realtimeVisible} />
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {stats.map(s => (

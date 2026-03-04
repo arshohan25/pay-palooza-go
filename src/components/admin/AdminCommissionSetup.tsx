@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Coins, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
+import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 
 interface CommissionRow {
   id: string;
@@ -25,6 +27,7 @@ export default function AdminCommissionSetup() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<CommissionRow | null>(null);
   const [form, setForm] = useState({ agent: "", distributor: "", platform: "" });
+  const { visible: realtimeVisible, flash: realtimeFlash } = useRealtimeIndicator();
 
   const load = async () => {
     setLoading(true);
@@ -43,6 +46,7 @@ export default function AdminCommissionSetup() {
       .channel("admin-commission-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "fee_config" }, () => {
         load();
+        realtimeFlash();
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -78,6 +82,7 @@ export default function AdminCommissionSetup() {
 
   return (
     <div className="space-y-4">
+      <RealtimeUpdateIndicator visible={realtimeVisible} />
       <div>
         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
           <Coins className="w-5 h-5 text-primary" /> Commission Setup

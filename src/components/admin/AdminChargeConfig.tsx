@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Settings, Plus, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
+import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 
 interface FeeConfig {
   id: string;
@@ -42,6 +44,7 @@ export default function AdminChargeConfig() {
     max_amount: "",
     is_active: true,
   });
+  const { visible: realtimeVisible, flash: realtimeFlash } = useRealtimeIndicator();
 
   const load = async () => {
     setLoading(true);
@@ -61,6 +64,7 @@ export default function AdminChargeConfig() {
       .channel("admin-charge-config-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "fee_config" }, () => {
         load();
+        realtimeFlash();
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -115,6 +119,7 @@ export default function AdminChargeConfig() {
 
   return (
     <div className="space-y-4">
+      <RealtimeUpdateIndicator visible={realtimeVisible} />
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
