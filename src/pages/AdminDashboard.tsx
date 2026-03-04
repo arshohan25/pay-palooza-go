@@ -281,6 +281,43 @@ export default function AdminDashboard() {
         fetchAllMerchants(100).then(m => setMerchants(m));
         fetchAdminStats().then(s => setStats(prev => ({ ...s, pendingKyc: prev.pendingKyc })));
       })
+      // KYC changes → refresh pending KYC count
+      .on("postgres_changes", { event: "*", schema: "public", table: "kyc_verifications" }, () => {
+        supabase.from("kyc_verifications").select("id", { count: "exact", head: true }).eq("status", "pending")
+          .then(({ count }) => setStats(prev => ({ ...prev, pendingKyc: count ?? 0 })));
+      })
+      // Order changes → refresh stats
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
+        // Orders tab has its own state; just keep stats fresh
+        loadData();
+      })
+      // Referral changes → refresh referral stats
+      .on("postgres_changes", { event: "*", schema: "public", table: "referrals" }, () => {
+        fetchAdminStats().then(s => setStats(prev => ({ ...s, pendingKyc: prev.pendingKyc })));
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "referral_rewards" }, () => {
+        fetchAdminStats().then(s => setStats(prev => ({ ...s, pendingKyc: prev.pendingKyc })));
+      })
+      // Treasury changes → refresh stats
+      .on("postgres_changes", { event: "*", schema: "public", table: "platform_treasury" }, () => {
+        // Treasury tab manages its own state; stats refresh for consistency
+        loadData();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "treasury_ledger" }, () => {
+        loadData();
+      })
+      // Support conversation changes → refresh stats
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_conversations" }, () => {
+        // Support tab has its own realtime; lightweight stats refresh
+        loadData();
+      })
+      // Global toggles / gateways → child components manage own state
+      .on("postgres_changes", { event: "*", schema: "public", table: "global_feature_toggles" }, () => {
+        // Toggles tab auto-refreshes
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "payment_gateways" }, () => {
+        // Gateways tab auto-refreshes
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
