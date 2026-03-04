@@ -132,6 +132,7 @@ export type Database = {
           group_icon: string | null
           id: string
           name: string | null
+          status: string
           type: Database["public"]["Enums"]["chat_type"]
           updated_at: string
         }
@@ -141,6 +142,7 @@ export type Database = {
           group_icon?: string | null
           id?: string
           name?: string | null
+          status?: string
           type?: Database["public"]["Enums"]["chat_type"]
           updated_at?: string
         }
@@ -150,6 +152,7 @@ export type Database = {
           group_icon?: string | null
           id?: string
           name?: string | null
+          status?: string
           type?: Database["public"]["Enums"]["chat_type"]
           updated_at?: string
         }
