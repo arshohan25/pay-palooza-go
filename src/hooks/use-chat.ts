@@ -572,12 +572,26 @@ export function useChat() {
 
   // ── Find user by phone ──────────────────────────────────────────────
   const findUserByPhone = useCallback(async (phone: string) => {
+    // Normalize: strip spaces, dashes
+    const normalized = phone.replace(/[\s\-]/g, "");
+
+    // Try exact match first
     const { data } = await supabase
       .from("profiles")
       .select("user_id, name, phone, avatar_url")
-      .eq("phone", phone)
+      .eq("phone", normalized)
       .maybeSingle();
-    return data;
+
+    if (data) return data;
+
+    // Fallback: try with @easypay.local suffix (legacy data)
+    const { data: fallback } = await supabase
+      .from("profiles")
+      .select("user_id, name, phone, avatar_url")
+      .eq("phone", `${normalized}@easypay.local`)
+      .maybeSingle();
+
+    return fallback;
   }, []);
 
   // ── Update group ────────────────────────────────────────────────────
