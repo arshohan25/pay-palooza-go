@@ -285,6 +285,21 @@ export function useChat() {
       .on(
         "postgres_changes",
         {
+          event: "INSERT",
+          schema: "public",
+          table: "chat_participants",
+        },
+        (payload) => {
+          const newPart = payload.new as { conversation_id: string; user_id: string };
+          // If current user was added to a new conversation, reload the list
+          if (newPart.user_id === user.id) {
+            loadConversations();
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
           event: "UPDATE",
           schema: "public",
           table: "chat_conversations",
@@ -534,6 +549,28 @@ export function useChat() {
       ]);
 
       await loadConversations();
+
+      // Send a notification to the other user
+      try {
+        const senderProfile = await supabase
+          .from("profiles")
+          .select("name, phone")
+          .eq("user_id", user.id)
+          .single();
+
+        const senderName = senderProfile.data?.name || senderProfile.data?.phone || "Someone";
+
+        await supabase.from("notifications").insert({
+          user_id: otherUserId,
+          title: "New Message Request",
+          body: `${senderName} wants to chat with you`,
+          category: "chat",
+          metadata: { conversation_id: conv.id, sender_id: user.id } as unknown as Json,
+        });
+      } catch (e) {
+        console.warn("Failed to send chat notification:", e);
+      }
+
       return conv.id;
     },
     [user, loadConversations]
