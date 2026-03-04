@@ -135,18 +135,21 @@ export async function decryptMessage(encryptedBase64: string, key: CryptoKey): P
   return new TextDecoder().decode(plaintext);
 }
 
-/** Try to decrypt, returning fallback text on failure */
+/** Try to decrypt, returning fallback text on failure.
+ *  Since E2E encryption is disabled (keys were never shared cross-device),
+ *  old encrypted messages simply return the raw content. */
 export async function tryDecryptMessage(
   content: string,
   isEncrypted: boolean,
   key: CryptoKey | null
 ): Promise<string> {
   if (!isEncrypted) return content;
-  if (!key) return "🔒 Encrypted message (key unavailable)";
+  if (!key) return content;
   try {
     return await decryptMessage(content, key);
   } catch {
-    return "🔒 Unable to decrypt message";
+    // Can't decrypt — return raw content instead of a lock icon
+    return content;
   }
 }
 
