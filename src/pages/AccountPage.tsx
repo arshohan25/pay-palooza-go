@@ -5,7 +5,7 @@ import {
   Shield, Bell, Fingerprint, BarChart3, CreditCard,
   Gift, Lock, LogOut, BadgeCheck, AlertCircle,
   BellOff, Pencil, PlayCircle, Globe,
-  MessageCircle, Mail, ClipboardList,
+  MessageCircle, Mail, ClipboardList, ShieldBan,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ import LimitsPage from "@/pages/LimitsPage";
 import SpendingInsightsPage from "@/pages/SpendingInsightsPage";
 import ReferPage from "@/pages/ReferPage";
 import MyTicketsPage from "@/pages/MyTicketsPage";
+import BlockedUsersPage from "@/components/BlockedUsersPage";
 import { generateWalletId } from "@/lib/walletId";
 import { useI18n } from "@/lib/i18n";
 import { useUserRoles } from "@/hooks/use-user-roles";
@@ -37,7 +38,7 @@ const ROLE_STYLES: Record<string, { label: string; bg: string; text: string }> =
 
 const ONBOARDING_KEY = "mfs_onboarding_done";
 
-type SubPage = "limits" | "insights" | "refer" | "tickets" | null;
+type SubPage = "limits" | "insights" | "refer" | "tickets" | "blocked" | null;
 
 
 
@@ -161,6 +162,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   if (subPage === "insights") return <SpendingInsightsPage onBack={() => setSubPage(null)} />;
   if (subPage === "refer")    return <ReferPage            onBack={() => setSubPage(null)} />;
   if (subPage === "tickets")  return <MyTicketsPage        onBack={() => setSubPage(null)} />;
+  if (subPage === "blocked")  return <BlockedUsersPage    onBack={() => setSubPage(null)} />;
 
   const handleCopy = async () => {
     try { await navigator.clipboard.writeText(walletId); }
@@ -332,6 +334,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
         <Section title={t("sectionSecurity")}>
           <ToggleRow icon={Fingerprint} iconClass="gradient-send"    label={t("biometricLogin")}  sub={t("biometricSub")}   checked={biometric}   onCheckedChange={(v) => { setBiometric(v); toast.success(v ? t("biometricEnabled") : t("biometricDisabled")); }} />
           <ToggleRow icon={Shield}      iconClass="gradient-primary"  label={t("twoFactorAuth")}  sub={t("twoFactorSub")} checked={twoFa}       onCheckedChange={(v) => { setTwoFa(v); toast.success(v ? t("twoFaEnabled") : t("twoFaDisabled")); }} />
+          <MenuRow icon={ShieldBan} iconClass="bg-destructive/80" label="Blocked Users" sub="Manage blocked accounts" onClick={() => setSubPage("blocked")} />
         </Section>
 
         {/* ── Sign Out ── */}
