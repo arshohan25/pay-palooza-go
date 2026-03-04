@@ -1,12 +1,14 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatDistanceToNowStrict } from "date-fns";
 import {
   ArrowLeftRight, Users, ShieldAlert, Scale, ScanFace, Package,
   Store, UserCheck, Settings, MessageCircle, Wallet, Trash2, Radio,
+  Filter, Plus, RefreshCw, X,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ActivityEvent {
@@ -80,9 +82,44 @@ const LISTENED_TABLES = [
 
 const MAX_EVENTS = 200;
 
+const ALL_TABLES = new Set(LISTENED_TABLES);
+const ALL_EVENT_TYPES = new Set<ActivityEvent["eventType"]>(["INSERT", "UPDATE", "DELETE"]);
+
+const EVENT_TYPE_META: Record<string, { icon: typeof Plus; label: string }> = {
+  INSERT: { icon: Plus, label: "New" },
+  UPDATE: { icon: RefreshCw, label: "Updated" },
+  DELETE: { icon: X, label: "Removed" },
+};
+
 export default function AdminActivityFeed() {
   const [events, setEvents] = useState<ActivityEvent[]>([]);
   const idCounter = useRef(0);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [activeTables, setActiveTables] = useState<Set<string>>(() => new Set(ALL_TABLES));
+  const [activeEventTypes, setActiveEventTypes] = useState<Set<string>>(() => new Set(ALL_EVENT_TYPES));
+
+  const toggleTable = (table: string) => {
+    setActiveTables(prev => {
+      const next = new Set(prev);
+      next.has(table) ? next.delete(table) : next.add(table);
+      return next;
+    });
+  };
+
+  const toggleEventType = (et: string) => {
+    setActiveEventTypes(prev => {
+      const next = new Set(prev);
+      next.has(et) ? next.delete(et) : next.add(et);
+      return next;
+    });
+  };
+
+  const filtersActive = activeTables.size < ALL_TABLES.size || activeEventTypes.size < ALL_EVENT_TYPES.size;
+
+  const filteredEvents = useMemo(
+    () => events.filter(e => activeTables.has(e.table) && activeEventTypes.has(e.eventType)),
+    [events, activeTables, activeEventTypes],
+  );
 
   const pushEvent = useCallback((table: string, eventType: string, payload: any) => {
     const evt: ActivityEvent = {
@@ -110,31 +147,96 @@ export default function AdminActivityFeed() {
 
   return (
     <div className="flex flex-col h-full">
+      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
           <Radio className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
           <span className="text-xs font-semibold text-foreground">Activity Feed</span>
           {events.length > 0 && (
-            <span className="text-[10px] text-muted-foreground">({events.length})</span>
+            <span className="text-[10px] text-muted-foreground">
+              {filtersActive ? `${filteredEvents.length}/${events.length}` : `(${events.length})`}
+            </span>
           )}
         </div>
-        {events.length > 0 && (
-          <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px]" onClick={() => setEvents([])}>
-            <Trash2 className="w-3 h-3 mr-1" /> Clear
+        <div className="flex items-center gap-1">
+          <Button
+            variant={filtersOpen ? "secondary" : "ghost"}
+            size="sm"
+            className="h-6 px-2 text-[10px]"
+            onClick={() => setFiltersOpen(o => !o)}
+          >
+            <Filter className="w-3 h-3 mr-1" />
+            {filtersActive && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
           </Button>
-        )}
+          {events.length > 0 && (
+            <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px]" onClick={() => setEvents([])}>
+              <Trash2 className="w-3 h-3 mr-1" /> Clear
+            </Button>
+          )}
+        </div>
       </div>
 
+      {/* Filter bar */}
+      <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <CollapsibleContent>
+          <div className="px-3 py-2 border-b border-border space-y-2">
+            {/* Event type chips */}
+            <div className="flex flex-wrap gap-1">
+              {(Object.entries(EVENT_TYPE_META) as [string, typeof EVENT_TYPE_META["INSERT"]][]).map(([et, meta]) => {
+                const active = activeEventTypes.has(et);
+                const Icon = meta.icon;
+                return (
+                  <Button
+                    key={et}
+                    variant={active ? "default" : "outline"}
+                    size="sm"
+                    className="h-5 px-1.5 text-[10px] gap-1"
+                    onClick={() => toggleEventType(et)}
+                  >
+                    <Icon className="w-2.5 h-2.5" /> {meta.label}
+                  </Button>
+                );
+              })}
+            </div>
+            {/* Table chips */}
+            <div className="flex flex-wrap gap-1">
+              {LISTENED_TABLES.map(table => {
+                const meta = TABLE_META[table];
+                if (!meta) return null;
+                const active = activeTables.has(table);
+                const Icon = meta.icon;
+                return (
+                  <Button
+                    key={table}
+                    variant={active ? "default" : "outline"}
+                    size="sm"
+                    className="h-5 px-1.5 text-[10px] gap-1"
+                    onClick={() => toggleTable(table)}
+                  >
+                    <Icon className="w-2.5 h-2.5" /> {meta.label}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+
+      {/* Events list */}
       <ScrollArea className="flex-1">
-        {events.length === 0 && (
+        {filteredEvents.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
             <Radio className="w-8 h-8 text-muted-foreground/40 mb-3" />
-            <p className="text-xs text-muted-foreground">Listening for changes…</p>
-            <p className="text-[10px] text-muted-foreground/60 mt-1">Events will appear here in real time</p>
+            <p className="text-xs text-muted-foreground">
+              {events.length === 0 ? "Listening for changes…" : "No events match filters"}
+            </p>
+            {events.length === 0 && (
+              <p className="text-[10px] text-muted-foreground/60 mt-1">Events will appear here in real time</p>
+            )}
           </div>
         )}
         <AnimatePresence initial={false}>
-          {events.map(evt => {
+          {filteredEvents.map(evt => {
             const meta = TABLE_META[evt.table] ?? TABLE_META.profiles;
             const Icon = meta.icon;
             return (
