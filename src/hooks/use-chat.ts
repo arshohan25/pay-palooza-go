@@ -4,7 +4,6 @@ import { useAuth } from "@/hooks/use-auth";
 import type { Json } from "@/integrations/supabase/types";
 import {
   getOrCreateConversationKey,
-  encryptMessage,
   tryDecryptMessage,
 } from "@/lib/chatCrypto";
 import { addInboxMsg } from "@/lib/inboxStore";
@@ -112,13 +111,14 @@ export function useChat() {
     const participantUserIds = [
       ...new Set((allParticipants ?? []).map((p) => p.user_id)),
     ];
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("user_id, name, phone, avatar_url")
-      .in("user_id", participantUserIds);
+    // Use SECURITY DEFINER RPC to fetch profiles of chat participants (bypasses RLS)
+    const { data: profiles } = await supabase.rpc(
+      "get_chat_participant_profiles" as any,
+      { p_user_ids: participantUserIds }
+    );
 
     const profileMap = new Map(
-      (profiles ?? []).map((p) => [p.user_id, p])
+      ((profiles as any[]) ?? []).map((p: any) => [p.user_id, p as { user_id: string; name: string | null; phone: string; avatar_url: string | null }])
     );
 
     // Get last message for each conversation
@@ -468,14 +468,13 @@ export function useChat() {
     ) => {
       if (!user) return;
 
-      const key = await getOrCreateConversationKey(conversationId);
-      const encrypted = await encryptMessage(text, key);
-
+      // Send as plaintext — E2E encryption is disabled because symmetric keys
+      // are device-local and cannot be shared between participants safely.
       const newMsg = {
         conversation_id: conversationId,
         sender_id: user.id,
-        content: encrypted,
-        is_encrypted: true,
+        content: text,
+        is_encrypted: false,
         message_type: messageType,
         metadata: metadata as Json,
       };
