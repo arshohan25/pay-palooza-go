@@ -46,6 +46,8 @@ import AdminPermissions from "@/components/admin/AdminPermissions";
 import AdminTreasury from "@/components/admin/AdminTreasury";
 import AdminWebhookLog from "@/components/admin/AdminWebhookLog";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
+import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
+import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 
 interface Stats {
   totalUsers: number;
@@ -185,7 +187,7 @@ export default function AdminDashboard() {
   const [detailUser, setDetailUser] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailData, setDetailData] = useState<{ profile: any; roles: any[]; kyc: any; transactions: any[] } | null>(null);
-
+  const { visible: realtimeVisible, flash: realtimeFlash } = useRealtimeIndicator();
   const openUserDetail = async (user: any) => {
     setDetailUser(user);
     setDetailLoading(true);
@@ -244,14 +246,17 @@ export default function AdminDashboard() {
           action: { label: "View", onClick: () => setActiveTab("alerts") },
         });
         loadData();
+        realtimeFlash();
       })
       // Fraud alert status changes
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "fraud_alerts" }, () => {
         fetchAdminStats().then(s => setStats(prev => ({ ...s, pendingKyc: prev.pendingKyc })));
+        realtimeFlash();
       })
       // New transactions → refresh overview stats + transaction list
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "transactions" }, () => {
         loadData();
+        realtimeFlash();
       })
       // Profile changes (status, balance) → refresh user list + stats
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles" }, () => {
@@ -584,6 +589,7 @@ export default function AdminDashboard() {
 
         {/* Main content */}
         <main className="flex-1 p-4 md:p-8 overflow-auto min-h-0 pb-8">
+          <RealtimeUpdateIndicator visible={realtimeVisible} />
 
         {/* ═══ OVERVIEW ═══ */}
         {activeTab === "overview" && (

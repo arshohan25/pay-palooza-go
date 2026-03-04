@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
+import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 
 interface AuditEntry {
   id: string;
@@ -39,6 +41,7 @@ export default function AdminChargebackHistory() {
   const [reverseTarget, setReverseTarget] = useState<{ txnId: string; userName: string; amount: number } | null>(null);
   const [reverseReason, setReverseReason] = useState("");
   const [reversing, setReversing] = useState(false);
+  const { visible: realtimeVisible, flash: realtimeFlash } = useRealtimeIndicator();
 
   const resolveProfiles = useCallback(async (userIds: string[], existing: Record<string, Profile>) => {
     const newIds = [...new Set(userIds)].filter(id => id && !existing[id]);
@@ -98,6 +101,7 @@ export default function AdminChargebackHistory() {
       .channel("admin-chargeback-history-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => {
         loadData();
+        realtimeFlash();
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -169,6 +173,7 @@ export default function AdminChargebackHistory() {
 
   return (
     <>
+      <RealtimeUpdateIndicator visible={realtimeVisible} />
       <Card className="border-0 shadow-[var(--shadow-card)]">
         <CardHeader className="pb-3">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
