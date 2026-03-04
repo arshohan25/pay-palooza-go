@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface ProfileData {
   name: string | null;
   phone: string;
+  avatar_url: string | null;
 }
 
 /**
@@ -14,6 +15,7 @@ export function useProfile() {
   const [profile, setProfile] = useState<ProfileData>({
     name: localStorage.getItem("mfs_user_name"),
     phone: localStorage.getItem("mfs_registered_phone") || "",
+    avatar_url: null,
   });
   const [loading, setLoading] = useState(true);
 
@@ -23,14 +25,22 @@ export function useProfile() {
 
     const { data } = await supabase
       .from("profiles")
-      .select("name, phone")
+      .select("name, phone, avatar_url")
       .eq("user_id", user.id)
       .maybeSingle();
 
     if (data) {
-      setProfile({ name: data.name, phone: data.phone });
-      if (data.name) localStorage.setItem("mfs_user_name", data.name);
+      setProfile({ name: data.name, phone: data.phone, avatar_url: data.avatar_url });
+      // Always sync DB values to localStorage to prevent stale data
+      if (data.name) {
+        localStorage.setItem("mfs_user_name", data.name);
+      } else {
+        localStorage.removeItem("mfs_user_name");
+      }
       if (data.phone) localStorage.setItem("mfs_registered_phone", data.phone);
+      if (data.avatar_url) {
+        localStorage.setItem("mfs_display_photo", data.avatar_url);
+      }
     }
     setLoading(false);
   }, []);
