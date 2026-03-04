@@ -1173,39 +1173,56 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
     c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search)
   );
 
-  // ── WebRTC signaling subscription ──────────────────────────────
-  useEffect(() => {
-    if (!user || !activeContactId) return;
-    const mgr = new WebRTCManager(activeContactId, user.id, "Me");
-    mgr.subscribe();
-    mgr.setOnIncomingCall((signal) => {
-      setIncomingCall(signal);
-    });
-    setWebrtcManager(mgr);
-    return () => { mgr.destroy(); };
-  }, [user, activeContactId]);
+  // ── Consolidated WebRTC managers (single ref-based map) ──────────
+  const webrtcManagersRef = useRef<Map<string, WebRTCManager>>(new Map());
 
-  // ── Global incoming call listener ──────────────────────────────
   useEffect(() => {
     if (!user || chat.conversations.length === 0) return;
-    
-    // Subscribe to all conversation channels for incoming calls
-    const managers: WebRTCManager[] = [];
+
+    const currentMap = webrtcManagersRef.current;
+    const activeConvIds = new Set<string>();
+
     for (const conv of chat.conversations) {
-      if (conv.type === "direct") {
-        const mgr = new WebRTCManager(conv.id, user.id, "Me");
-        mgr.subscribe();
-        mgr.setOnIncomingCall((signal) => {
-          setIncomingCall(signal);
-          // Auto-navigate to the conversation
-          setActiveContactId(conv.id);
-          chat.openConversation(conv.id);
-        });
-        managers.push(mgr);
+      if (conv.type !== "direct") continue;
+      activeConvIds.add(conv.id);
+
+      // Skip if already subscribed
+      if (currentMap.has(conv.id)) continue;
+
+      const mgr = new WebRTCManager(conv.id, user.id, "Me");
+      mgr.subscribe();
+      mgr.setOnIncomingCall((signal) => {
+        setIncomingCall(signal);
+        // Auto-navigate to the conversation
+        setActiveContactId(conv.id);
+        chat.openConversation(conv.id);
+      });
+      currentMap.set(conv.id, mgr);
+    }
+
+    // Clean up managers for conversations we're no longer part of
+    for (const [convId, mgr] of currentMap) {
+      if (!activeConvIds.has(convId)) {
+        mgr.destroy();
+        currentMap.delete(convId);
       }
     }
-    return () => { managers.forEach((m) => m.destroy()); };
+
+    return () => {
+      for (const mgr of currentMap.values()) mgr.destroy();
+      currentMap.clear();
+    };
   }, [user, chat.conversations.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Keep webrtcManager state in sync with active conversation's manager
+  useEffect(() => {
+    if (activeContactId) {
+      const mgr = webrtcManagersRef.current.get(activeContactId) ?? null;
+      setWebrtcManager(mgr);
+    } else {
+      setWebrtcManager(null);
+    }
+  }, [activeContactId]);
 
   const handleReact = useCallback((msgId: string, emoji: string) => {
     setReactions((prev) => {
