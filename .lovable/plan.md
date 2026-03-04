@@ -1,34 +1,40 @@
 
 
-## Plan: Block/Report on Decline + Message Preview for Pending Requests
+## Plan: Add "Blocked Users" Management Screen
+
+### Overview
+Add a new sub-page accessible from Account Settings that displays all blocked users and allows unblocking them. Currently blocked users are stored in `localStorage` (`ep_blocked_users`) as an array of user IDs. We'll build a screen that resolves those IDs to profile names/phones and lets the user remove entries.
 
 ### Changes
 
-#### 1. Conversation List — Show sender's first message preview (InboxPage.tsx)
-The `lastMsg` field on `UIContact` already shows the last message content. For pending conversations, this naturally shows the sender's first message since that's the only message. The existing rendering at line 1472 already displays this. **No change needed** for the list preview — it already works.
+#### 1. New component: `src/components/BlockedUsersPage.tsx`
+- Read `ep_blocked_users` from `localStorage`
+- For each blocked user ID, fetch their profile (name, phone, avatar) via a single query to `profiles` using the `find_chat_user_by_phone` pattern — but since we have user IDs, we need a new RPC or use the existing profiles table. Since regular users can only read their own profile via RLS, we'll create a small `SECURITY DEFINER` function `get_blocked_user_profiles(p_user_ids uuid[])` that returns safe public info (name, phone, avatar_url) for the given IDs.
+- Display each blocked user in a list with name, phone, and an "Unblock" button
+- On unblock: remove the user ID from `localStorage` array, update UI, show toast
+- Empty state when no blocked users
+- Back button to return to Account page
 
-However, I'll add a visual enhancement: for pending requests in the conversation list, show a small message preview with a quote-style indicator below the "Request" badge area.
+#### 2. Database migration: `get_blocked_user_profiles` RPC
+```sql
+CREATE OR REPLACE FUNCTION public.get_blocked_user_profiles(p_user_ids uuid[])
+RETURNS TABLE(user_id uuid, name text, phone text, avatar_url text)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT p.user_id, p.name, p.phone, p.avatar_url
+  FROM public.profiles p
+  WHERE p.user_id = ANY(p_user_ids) AND p.status = 'active';
+$$;
+```
 
-#### 2. Accept/Decline bar — Add Block & Report option (InboxPage.tsx)
-Update the decline flow at lines 1053-1080:
-- Replace the simple "Decline" button with a split action: **Decline** and **Block & Report**
-- "Decline" just removes the conversation (existing behavior)
-- "Block & Report" shows a confirmation dialog, then declines + inserts a record into a `blocked_users` table (or uses notifications to flag the user for admin review)
+#### 3. Update `src/pages/AccountPage.tsx`
+- Add a new `MenuRow` in the Security section: "Blocked Users" with `ShieldBan` icon
+- On click, set `subPage` to `"blocked"`
+- Add routing: `if (subPage === "blocked") return <BlockedUsersPage onBack={() => setSubPage(null)} />`
+- Update `SubPage` type to include `"blocked"`
 
-Since we don't have a `blocked_users` table, I'll use a lightweight approach:
-- On "Block & Report", decline the conversation AND insert a fraud alert / audit log entry so admins can review
-- Store blocked user IDs in localStorage as a simple client-side block list (prevents seeing future requests from them)
-
-#### 3. Message preview in the Accept/Decline bar (InboxPage.tsx)
-In the pending chat view (lines 1053-1080), show the sender's first message as a preview quote above the Accept/Decline buttons, making it easier for the recipient to decide.
-
-#### 4. Block/Report dialog (InboxPage.tsx)
-Add a small confirmation dialog when "Block & Report" is tapped, with a text field for optional reason.
-
-### Database
-- **No migration needed** — we'll use the existing `fraud_alerts` table to log block/report actions with `rule_triggered = 'user_report_spam'`
-
-### Files to Edit
-- **`src/pages/InboxPage.tsx`**: Update Accept/Decline bar with message preview, add Block & Report button and confirmation dialog
-- **`src/hooks/use-chat.ts`**: Add `blockAndReport` function that declines + inserts fraud alert
+### Files
+- **New**: `src/components/BlockedUsersPage.tsx`
+- **Edit**: `src/pages/AccountPage.tsx` — add menu item + sub-page routing
+- **Migration**: New RPC function `get_blocked_user_profiles`
 
