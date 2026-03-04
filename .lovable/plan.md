@@ -1,31 +1,33 @@
 
 
-## Fix Real-Time Chat and Calls
+## Fix "User not found" when adding contacts by phone number
 
-### Root Causes Identified
+### Root Cause
 
-1. **Duplicate WebRTC subscriptions causing call failures**: When a user opens a conversation, two separate `WebRTCManager` instances subscribe to the same Supabase Broadcast channel — one from the per-conversation effect (line 1177) and one from the global listener (line 1189). This creates race conditions where signals may be handled by the wrong manager instance, or the global listener's `destroy()` cleanup tears down channels the active conversation still needs.
+Two cascading bugs:
 
-2. **`chat_conversations` not in realtime publication**: The `chat_conversations` table is missing from the `supabase_realtime` publication. When one user sends a message and the hook updates `chat_conversations.updated_at`, other clients won't see conversation order changes in real-time.
+1. **Trigger stores email as phone**: The `handle_new_user()` trigger uses `COALESCE(NEW.phone, NEW.email, '')`. Since we use phone-as-email auth (not real phone auth), `NEW.phone` is always null, so the trigger stores `01680693484@easypay.local` as the phone value.
+
+2. **Hardened RLS blocks phone correction**: The recently hardened RLS policy on `profiles` prevents clients from changing the `phone` field. So when `signUp()` tries to update `phone` to the correct value (`01680693484`), the update silently fails.
+
+3. **Lookup mismatch**: `findUserByPhone("01680693484")` queries `.eq("phone", "01680693484")` but the stored value is `01680693484@easypay.local` — no match, "User not found".
 
 ### Changes
 
-**1. Database migration: Add `chat_conversations` to realtime publication**
-- `ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_conversations;`
-- This enables real-time conversation ordering updates.
+**1. Database migration — Fix the trigger + repair existing data**
 
-**2. Fix WebRTC dual-subscription conflict in `src/pages/InboxPage.tsx`**
-- Remove the per-conversation WebRTC effect (lines 1177-1186) that creates a second manager when `activeContactId` changes.
-- Refactor the global incoming call listener (lines 1189-1208) to also serve as the active call manager. When a conversation is active, reuse the manager from the global set instead of creating a new one.
-- Store the global managers in a `useRef<Map>` so `handleCall` can look up the correct manager for the active conversation.
-- This eliminates duplicate channel subscriptions and ensures signals are handled by exactly one manager.
+- Update `handle_new_user()` to extract the phone number from the email by stripping `@easypay.local` suffix when `NEW.phone` is null
+- Fix existing corrupted phone values: `UPDATE profiles SET phone = REPLACE(phone, '@easypay.local', '') WHERE phone LIKE '%@easypay.local'`
 
-**3. Improve realtime subscription resilience in `src/hooks/use-chat.ts`**
-- Add status handling to the `.subscribe()` call to log connection issues.
-- Subscribe to `chat_conversations` UPDATE events so conversation list order updates in real-time when the other party sends a message.
+**2. Fix `findUserByPhone` in `src/hooks/use-chat.ts`**
+
+- Normalize the input phone (strip spaces/dashes) and also try matching with both raw phone and `@easypay.local` suffix as a fallback for any edge cases
+
+**3. No RLS changes needed**
+
+The trigger runs as `SECURITY DEFINER` so it bypasses RLS. Once the trigger stores the correct phone from the start, the `signUp` phone update becomes unnecessary (it would set the same value). The hardened RLS protecting `phone` from client changes remains correct.
 
 ### Files
-- **DB Migration**: Add `chat_conversations` to realtime publication
-- **Edit**: `src/pages/InboxPage.tsx` — consolidate WebRTC managers into a single ref-based map
-- **Edit**: `src/hooks/use-chat.ts` — add `chat_conversations` realtime subscription + connection status logging
+- **DB Migration**: Fix `handle_new_user()` trigger + repair existing data
+- **Edit**: `src/hooks/use-chat.ts` — make `findUserByPhone` resilient to format variations
 
