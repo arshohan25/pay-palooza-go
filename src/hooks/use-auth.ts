@@ -32,6 +32,11 @@ export function useAuth() {
   }, []);
 
   const signOut = useCallback(async () => {
+    // Clear identity-related localStorage to prevent stale data
+    localStorage.removeItem("mfs_user_name");
+    localStorage.removeItem("mfs_registered_phone");
+    localStorage.removeItem("mfs_display_photo");
+    localStorage.removeItem("mfs_cached_user_id");
     await supabase.auth.signOut();
     setSession(null);
     setUser(null);
