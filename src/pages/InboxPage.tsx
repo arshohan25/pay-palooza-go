@@ -15,6 +15,7 @@ import { toast } from "@/components/ui/sonner";
 import { useChat, type ChatConversation, type ChatMessage } from "@/hooks/use-chat";
 import { useAuth } from "@/hooks/use-auth";
 import { WebRTCManager, type CallSignal } from "@/lib/webrtc";
+import { playRingtone, stopRingtone, playRingbackTone, stopRingbackTone, stopAllCallSounds } from "@/lib/sounds";
 import IncomingCallOverlay from "@/components/IncomingCallOverlay";
 import { useTypingIndicator } from "@/hooks/use-typing-indicator";
 import { useProfile } from "@/hooks/use-profile";
@@ -287,6 +288,7 @@ const CallingOverlay = ({ contact, mode, onEnd, webrtc }: CallingOverlayProps) =
     if (!webrtc) return;
     webrtc.setOnCallStateChange((state) => {
       if (state === "connected") {
+        stopAllCallSounds();
         setStatus("connected");
         timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
       } else if (state === "ended") { onEnd(); }
@@ -299,7 +301,7 @@ const CallingOverlay = ({ contact, mode, onEnd, webrtc }: CallingOverlayProps) =
   }, [webrtc, mode, onEnd]);
 
   const formatDuration = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
-  const handleEnd = () => { webrtc?.endCall(); onEnd(); };
+  const handleEnd = () => { webrtc?.endCall(); };
 
   return (
     <motion.div
@@ -1363,18 +1365,45 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
 
   const handleCall = async (mode: "audio" | "video") => {
     if (!webrtcManager) return;
-    try { setCallMode(mode); await webrtcManager.startCall(mode); }
-    catch (err) { console.error("Call failed:", err); toast.error("Call failed", { description: "Could not access microphone/camera" }); setCallMode(null); }
+    try {
+      setCallMode(mode);
+      await webrtcManager.startCall(mode);
+      playRingbackTone();
+    } catch (err) {
+      console.error("Call failed:", err);
+      toast.error("Call failed", { description: "Could not access microphone/camera" });
+      setCallMode(null);
+      stopAllCallSounds();
+    }
   };
 
   const handleAcceptCall = async () => {
     if (!incomingCall || !webrtcManager) return;
-    try { setCallMode(incomingCall.mode); await webrtcManager.answerCall(incomingCall.payload as RTCSessionDescriptionInit, incomingCall.mode); setIncomingCall(null); }
-    catch (err) { console.error("Answer failed:", err); toast.error("Could not answer call"); setCallMode(null); setIncomingCall(null); }
+    stopAllCallSounds();
+    try {
+      setCallMode(incomingCall.mode);
+      await webrtcManager.answerCall(incomingCall.payload as RTCSessionDescriptionInit, incomingCall.mode);
+      setIncomingCall(null);
+    } catch (err) {
+      console.error("Answer failed:", err);
+      toast.error("Could not answer call");
+      setCallMode(null);
+      setIncomingCall(null);
+    }
   };
 
-  const handleRejectCall = () => { webrtcManager?.rejectCall(); setIncomingCall(null); };
-  const handleEndCall = () => { webrtcManager?.endCall(); setCallMode(null); };
+  const handleRejectCall = () => {
+    stopAllCallSounds();
+    webrtcManager?.rejectCall();
+    setIncomingCall(null);
+  };
+
+  const handleEndCall = useCallback(() => {
+    stopAllCallSounds();
+    webrtcManager?.endCall();
+    setCallMode(null);
+    setIncomingCall(null);
+  }, [webrtcManager]);
 
   const totalUnread = chat.totalUnread;
   const tabCounts = useMemo(() => ({

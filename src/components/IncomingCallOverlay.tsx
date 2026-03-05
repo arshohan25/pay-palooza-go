@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Phone, PhoneOff, Video } from "lucide-react";
+import { playRingtone, stopRingtone } from "@/lib/sounds";
 
 interface IncomingCallOverlayProps {
   callerName: string;
@@ -14,6 +16,11 @@ const IncomingCallOverlay = ({
   onAccept,
   onReject,
 }: IncomingCallOverlayProps) => {
+  useEffect(() => {
+    playRingtone();
+    return () => { stopRingtone(); };
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: "-100%" }}
