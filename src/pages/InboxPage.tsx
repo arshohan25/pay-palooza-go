@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, Send, Phone, Video, MoreVertical, Plus,
@@ -6,7 +6,9 @@ import {
   Mic, Play, Pause, X, UserPlus, ImagePlus,
   Download, PhoneOff, VideoIcon, MicOff, Volume2,
   Clock, UserCheck, Hourglass, Users, ArrowLeft,
-  Shield, UserMinus, Edit3, Info, Lock,
+  Shield, UserMinus, Edit3, Info, Lock, Search,
+  Pin, PinOff, Copy, Forward, Trash2, MessageSquare,
+  Paperclip, Camera, FileText, MapPin,
 } from "lucide-react";
 import { clearInboxCount } from "@/lib/inboxStore";
 import { toast } from "@/components/ui/sonner";
@@ -17,53 +19,30 @@ import IncomingCallOverlay from "@/components/IncomingCallOverlay";
 import { useTypingIndicator } from "@/hooks/use-typing-indicator";
 import { useProfile } from "@/hooks/use-profile";
 import { useOnlinePresence } from "@/hooks/use-online-presence";
+import { supabase } from "@/integrations/supabase/client";
 
-// ── Types (for UI rendering) ──────────────────────────────────────────────────
-interface Reaction {
-  emoji: string;
-  count: number;
-  reacted: boolean;
-}
+// ── Types ─────────────────────────────────────────────────────────────────────
+interface Reaction { emoji: string; count: number; reacted: boolean; }
 
 interface UIMessage {
-  id: string;
-  text: string;
-  time: string;
-  sent: boolean;
-  status: "sent" | "delivered" | "read";
-  seenAt?: string;
+  id: string; text: string; time: string; sent: boolean;
+  status: "sent" | "delivered" | "read"; seenAt?: string;
   type?: "text" | "money" | "order" | "voice" | "image";
-  amount?: number;
-  txnId?: string;
-  orderId?: string;
-  orderStatus?: "Pending" | "Shipped" | "Delivered";
-  itemCount?: number;
-  voiceDuration?: number;
-  imageUrl?: string;
-  reactions?: Reaction[];
+  amount?: number; txnId?: string; orderId?: string;
+  orderStatus?: "Pending" | "Shipped" | "Delivered"; itemCount?: number;
+  voiceDuration?: number; imageUrl?: string; reactions?: Reaction[];
+  senderId?: string;
 }
 
 interface UIContact {
-  id: string;
-  name: string;
-  phone: string;
-  initials: string;
-  gradient: string;
-  lastMsg: string;
-  lastTime: string;
-  lastTimestamp: number;
-  unread: number;
-  online: boolean;
-  avatarUrl?: string;
-  pending?: boolean;
-  isGroup?: boolean;
-  members?: string[];
-  groupIcon?: string;
-  adminId?: string;
-  conversationId: string;
+  id: string; name: string; phone: string; initials: string; gradient: string;
+  lastMsg: string; lastTime: string; lastTimestamp: number; unread: number;
+  online: boolean; avatarUrl?: string; pending?: boolean; isGroup?: boolean;
+  members?: string[]; groupIcon?: string; adminId?: string; conversationId: string;
+  lastSenderId?: string;
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 const QUICK_REPLIES = ["👍", "Thanks!", "OK!", "Send ৳500", "Got it 😊", "Sure!"];
 const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏", "🔥", "👏", "😍", "🎉"];
 const GROUP_ICONS = ["💚", "🏠", "🎯", "⚽", "💼", "🎉", "🌟", "🔥", "🎵", "❤️"];
@@ -104,6 +83,19 @@ const STATUS_STYLES: Record<string, string> = {
   Delivered: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
 };
 
+// ── Pinned conversations (localStorage) ───────────────────────────────────────
+const PINS_KEY = "easypay_pinned_chats";
+const getPinnedIds = (): string[] => {
+  try { return JSON.parse(localStorage.getItem(PINS_KEY) || "[]"); } catch { return []; }
+};
+const setPinnedIds = (ids: string[]) => localStorage.setItem(PINS_KEY, JSON.stringify(ids));
+const togglePin = (id: string): string[] => {
+  const pins = getPinnedIds();
+  const next = pins.includes(id) ? pins.filter((p) => p !== id) : [...pins, id];
+  setPinnedIds(next);
+  return next;
+};
+
 // ── Convert DB conversation to UI contact ─────────────────────────────────────
 function convToUIContact(conv: ChatConversation, userId: string, isOnline?: (uid: string) => boolean): UIContact {
   const otherParticipants = conv.participants.filter((p) => p.user_id !== userId);
@@ -133,13 +125,10 @@ function convToUIContact(conv: ChatConversation, userId: string, isOnline?: (uid
   return {
     id: conv.id,
     conversationId: conv.id,
-    name,
-    phone,
+    name, phone,
     initials: getInitials(name),
     gradient: pickGradient(name),
-    lastMsg,
-    lastTime: formatRelativeTime(lastTimestamp),
-    lastTimestamp,
+    lastMsg, lastTime: formatRelativeTime(lastTimestamp), lastTimestamp,
     unread: conv.unreadCount,
     online: !isGroup && !!otherUserId && !!isOnline && isOnline(otherUserId),
     avatarUrl,
@@ -148,36 +137,23 @@ function convToUIContact(conv: ChatConversation, userId: string, isOnline?: (uid
     groupIcon: conv.group_icon ?? undefined,
     adminId: conv.admin_id === userId ? "self" : conv.admin_id ?? undefined,
     members: otherParticipants.map((p) => p.user_id),
+    lastSenderId: conv.lastMessage?.sender_id,
   };
 }
 
 // ── Compute per-message read status ───────────────────────────────────────────
 function computeMessageStatus(
-  msg: ChatMessage,
-  userId: string,
-  othersReadTimes: string[] // last_read_at values of other participants
+  msg: ChatMessage, userId: string, othersReadTimes: string[]
 ): "sent" | "delivered" | "read" {
-  // Only compute status for messages sent by the current user
   if (msg.sender_id !== userId) return "read";
   if (othersReadTimes.length === 0) return "delivered";
-
-  // If ALL other participants have read_at >= msg.created_at → read
   const msgTime = new Date(msg.created_at).getTime();
-  const allRead = othersReadTimes.every(
-    (readAt) => new Date(readAt).getTime() >= msgTime
-  );
-  if (allRead) return "read";
-
-  // At least delivered (message was persisted)
-  return "delivered";
+  const allRead = othersReadTimes.every((readAt) => new Date(readAt).getTime() >= msgTime);
+  return allRead ? "read" : "delivered";
 }
 
 // ── Convert DB message to UI message ──────────────────────────────────────────
-function msgToUIMessage(
-  msg: ChatMessage,
-  userId: string,
-  othersReadTimes?: string[]
-): UIMessage {
+function msgToUIMessage(msg: ChatMessage, userId: string, othersReadTimes?: string[]): UIMessage {
   const meta = msg.metadata as Record<string, unknown>;
   const status = computeMessageStatus(msg, userId, othersReadTimes ?? []);
   return {
@@ -195,10 +171,11 @@ function msgToUIMessage(
     voiceDuration: meta?.voiceDuration as number | undefined,
     imageUrl: meta?.imageUrl as string | undefined,
     reactions: [],
+    senderId: msg.sender_id,
   };
 }
 
-// ── Emoji Picker ───────────────────────────────────────────────────────────────
+// ── Emoji Picker ──────────────────────────────────────────────────────────────
 const EmojiPicker = ({ onPick, onClose, alignRight }: { onPick: (e: string) => void; onClose: () => void; alignRight?: boolean }) => (
   <>
     <div className="fixed inset-0 z-[70]" onClick={onClose} />
@@ -219,7 +196,7 @@ const EmojiPicker = ({ onPick, onClose, alignRight }: { onPick: (e: string) => v
   </>
 );
 
-// ── Voice Bubble ───────────────────────────────────────────────────────────────
+// ── Voice Bubble ──────────────────────────────────────────────────────────────
 const VoiceBubble = ({ msg }: { msg: UIMessage }) => {
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -271,7 +248,7 @@ const VoiceBubble = ({ msg }: { msg: UIMessage }) => {
   );
 };
 
-// ── Image Bubble ───────────────────────────────────────────────────────────────
+// ── Image Bubble ──────────────────────────────────────────────────────────────
 const ImageBubble = ({ msg }: { msg: UIMessage }) => {
   const handleDownload = () => {
     const a = document.createElement("a");
@@ -283,23 +260,18 @@ const ImageBubble = ({ msg }: { msg: UIMessage }) => {
   return (
     <div className={`relative rounded-2xl overflow-hidden shadow-card max-w-[220px] ${msg.sent ? "rounded-br-md" : "rounded-bl-md"}`}>
       <img src={msg.imageUrl} alt="Shared image" className="w-full object-cover" />
-      <button
-        onClick={handleDownload}
+      <button onClick={handleDownload}
         className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors"
-        title="Download image"
-      >
+        title="Download image">
         <Download size={13} />
       </button>
     </div>
   );
 };
 
-// ── Calling Overlay (with real WebRTC) ─────────────────────────────────────────
+// ── Calling Overlay ───────────────────────────────────────────────────────────
 interface CallingOverlayProps {
-  contact: UIContact;
-  mode: "audio" | "video";
-  onEnd: () => void;
-  webrtc: WebRTCManager | null;
+  contact: UIContact; mode: "audio" | "video"; onEnd: () => void; webrtc: WebRTCManager | null;
 }
 
 const CallingOverlay = ({ contact, mode, onEnd, webrtc }: CallingOverlayProps) => {
@@ -317,70 +289,41 @@ const CallingOverlay = ({ contact, mode, onEnd, webrtc }: CallingOverlayProps) =
       if (state === "connected") {
         setStatus("connected");
         timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
-      } else if (state === "ended") {
-        onEnd();
-      }
+      } else if (state === "ended") { onEnd(); }
     });
     webrtc.setOnRemoteStream((stream) => {
-      if (mode === "video" && remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = stream;
-      } else if (remoteAudioRef.current) {
-        remoteAudioRef.current.srcObject = stream;
-      }
+      if (mode === "video" && remoteVideoRef.current) remoteVideoRef.current.srcObject = stream;
+      else if (remoteAudioRef.current) remoteAudioRef.current.srcObject = stream;
     });
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [webrtc, mode, onEnd]);
 
-  const formatDuration = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${m}:${sec.toString().padStart(2, "0")}`;
-  };
-
-  const handleEnd = () => {
-    webrtc?.endCall();
-    onEnd();
-  };
+  const formatDuration = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
+  const handleEnd = () => { webrtc?.endCall(); onEnd(); };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: "100%" }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: "100%" }}
+      initial={{ opacity: 0, y: "100%" }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: "100%" }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className="fixed inset-0 z-[90] flex flex-col items-center justify-between pb-16 pt-24 bg-gradient-to-b from-primary/90 to-primary/60 backdrop-blur-xl"
     >
       <audio ref={remoteAudioRef} autoPlay />
-      {mode === "video" && (
-        <video ref={remoteVideoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover opacity-30" />
-      )}
-
+      {mode === "video" && <video ref={remoteVideoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover opacity-30" />}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
         <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
       </div>
-
       <div className="flex flex-col items-center gap-5 z-10">
-        <motion.div
-          animate={{ scale: status === "ringing" ? [1, 1.05, 1] : 1 }}
-          transition={{ duration: 1.5, repeat: status === "ringing" ? Infinity : 0 }}
-          className="relative"
-        >
+        <motion.div animate={{ scale: status === "ringing" ? [1, 1.05, 1] : 1 }}
+          transition={{ duration: 1.5, repeat: status === "ringing" ? Infinity : 0 }} className="relative">
           {status === "ringing" && [0, 1, 2].map((i) => (
-            <motion.div
-              key={i}
-              className="absolute inset-0 rounded-full border-2 border-white/30"
+            <motion.div key={i} className="absolute inset-0 rounded-full border-2 border-white/30"
               animate={{ scale: [1, 2.2], opacity: [0.6, 0] }}
-              transition={{ duration: 1.8, repeat: Infinity, delay: i * 0.6, ease: "easeOut" }}
-            />
+              transition={{ duration: 1.8, repeat: Infinity, delay: i * 0.6, ease: "easeOut" }} />
           ))}
           <div className={`w-24 h-24 rounded-full ${contact.gradient} flex items-center justify-center text-white font-bold text-3xl shadow-elevated overflow-hidden`}>
-            {contact.avatarUrl
-              ? <img src={contact.avatarUrl} alt={contact.name} className="w-full h-full object-cover" />
-              : contact.isGroup ? (contact.groupIcon ?? "👥") : contact.initials
-            }
+            {contact.avatarUrl ? <img src={contact.avatarUrl} alt={contact.name} className="w-full h-full object-cover" />
+              : contact.isGroup ? (contact.groupIcon ?? "👥") : contact.initials}
           </div>
         </motion.div>
         <div className="text-center text-white">
@@ -399,7 +342,6 @@ const CallingOverlay = ({ contact, mode, onEnd, webrtc }: CallingOverlayProps) =
           )}
         </div>
       </div>
-
       <div className="flex flex-col items-center gap-6 z-10 w-full px-12">
         <div className="flex justify-center gap-8">
           <button onClick={() => { const m = webrtc?.toggleMute(); setMuted(!!m); }} className="flex flex-col items-center gap-2">
@@ -433,39 +375,107 @@ const CallingOverlay = ({ contact, mode, onEnd, webrtc }: CallingOverlayProps) =
   );
 };
 
-// ── Read Receipt ───────────────────────────────────────────────────────────────
+// ── Read Receipt ──────────────────────────────────────────────────────────────
 const ReadReceipt = ({ msg }: { msg: UIMessage }) => {
   if (!msg.sent) return null;
   return (
-    <div className="flex items-center gap-1 mt-0.5 justify-end">
-      <AnimatePresence mode="wait">
-        {msg.status === "read" ? (
-          <motion.div key="read" initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center gap-1">
-            <CheckCheck size={13} className="text-primary" />
-          </motion.div>
-        ) : msg.status === "delivered" ? (
-          <motion.div key="delivered" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <CheckCheck size={13} className="text-muted-foreground" />
-          </motion.div>
-        ) : (
-          <motion.div key="sent" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <Check size={13} className="text-muted-foreground" />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+    <span className="inline-flex items-center">
+      {msg.status === "read" ? <CheckCheck size={13} className="text-primary" />
+        : msg.status === "delivered" ? <CheckCheck size={13} className="text-muted-foreground" />
+        : <Check size={13} className="text-muted-foreground" />}
+    </span>
   );
 };
 
-// ── Message Bubble ─────────────────────────────────────────────────────────────
-interface BubbleProps {
+// ── Long Press Context Menu ───────────────────────────────────────────────────
+interface MessageMenuProps {
   msg: UIMessage;
-  contactName: string;
+  onClose: () => void;
+  onCopy: () => void;
+  onDelete: () => void;
+  onForward: () => void;
+  onReact: () => void;
+  alignRight: boolean;
+}
+
+const MessageMenu = ({ msg, onClose, onCopy, onDelete, onForward, onReact, alignRight }: MessageMenuProps) => (
+  <>
+    <div className="fixed inset-0 z-[70]" onClick={onClose} />
+    <motion.div
+      initial={{ opacity: 0, scale: 0.85, y: 8 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.85, y: 8 }}
+      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+      className={`absolute bottom-full mb-1 z-[80] bg-card border border-border rounded-2xl shadow-elevated overflow-hidden min-w-[160px] ${alignRight ? "right-0" : "left-0"}`}
+    >
+      <button onClick={() => { onReact(); onClose(); }}
+        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-foreground hover:bg-muted transition-colors">
+        <Smile size={15} className="text-muted-foreground" /> React
+      </button>
+      <button onClick={() => { onCopy(); onClose(); }}
+        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-foreground hover:bg-muted transition-colors">
+        <Copy size={15} className="text-muted-foreground" /> Copy
+      </button>
+      <button onClick={() => { onForward(); onClose(); }}
+        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-foreground hover:bg-muted transition-colors">
+        <Forward size={15} className="text-muted-foreground" /> Forward
+      </button>
+      <button onClick={() => { onDelete(); onClose(); }}
+        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-destructive hover:bg-destructive/10 transition-colors">
+        <Trash2 size={15} /> Delete for me
+      </button>
+    </motion.div>
+  </>
+);
+
+// ── Forward Sheet ─────────────────────────────────────────────────────────────
+interface ForwardSheetProps {
+  contacts: UIContact[];
+  onForward: (contactId: string) => void;
+  onClose: () => void;
+}
+
+const ForwardSheet = ({ contacts, onForward, onClose }: ForwardSheetProps) => (
+  <>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm" onClick={onClose} />
+    <motion.div
+      initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+      transition={{ type: "spring", stiffness: 320, damping: 32 }}
+      className="fixed bottom-0 left-0 right-0 z-[80] max-w-md mx-auto bg-card rounded-t-3xl px-5 pt-3 pb-8 shadow-elevated"
+      style={{ maxHeight: "70vh", display: "flex", flexDirection: "column" }}
+    >
+      <div className="w-10 h-1 bg-border rounded-full mx-auto mb-4 shrink-0" />
+      <h3 className="text-base font-bold text-foreground mb-3 shrink-0">Forward to…</h3>
+      <div className="flex-1 overflow-y-auto space-y-1 min-h-0">
+        {contacts.map((c) => (
+          <motion.button key={c.id} whileTap={{ scale: 0.98 }}
+            onClick={() => { onForward(c.conversationId); onClose(); }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-muted transition-colors text-left">
+            <div className={`w-10 h-10 rounded-full ${c.gradient} flex items-center justify-center text-white font-bold text-sm overflow-hidden shrink-0`}>
+              {c.isGroup ? <span className="text-base">{c.groupIcon ?? "👥"}</span>
+                : c.avatarUrl ? <img src={c.avatarUrl} alt={c.name} className="w-full h-full object-cover" /> : c.initials}
+            </div>
+            <p className="text-[13px] font-medium text-foreground truncate">{c.name}</p>
+          </motion.button>
+        ))}
+      </div>
+    </motion.div>
+  </>
+);
+
+// ── Message Bubble ────────────────────────────────────────────────────────────
+interface BubbleProps {
+  msg: UIMessage; contactName: string;
   onReact: (msgId: string, emoji: string) => void;
+  onCopy: (text: string) => void;
+  onDelete: (msgId: string) => void;
+  onForward: (msgId: string) => void;
   isGroup?: boolean;
 }
 
-const MessageBubble = ({ msg, contactName, onReact, isGroup }: BubbleProps) => {
+const MessageBubble = ({ msg, contactName, onReact, onCopy, onDelete, onForward, isGroup }: BubbleProps) => {
+  const [showMenu, setShowMenu] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMoney = msg.type === "money";
@@ -473,7 +483,7 @@ const MessageBubble = ({ msg, contactName, onReact, isGroup }: BubbleProps) => {
   const isVoice = msg.type === "voice";
   const isImage = msg.type === "image";
 
-  const startLongPress = () => { longPressTimer.current = setTimeout(() => setShowPicker(true), 480); };
+  const startLongPress = () => { longPressTimer.current = setTimeout(() => setShowMenu(true), 480); };
   const cancelLongPress = () => { if (longPressTimer.current) clearTimeout(longPressTimer.current); };
   const pressHandlers = { onMouseDown: startLongPress, onMouseUp: cancelLongPress, onMouseLeave: cancelLongPress, onTouchStart: startLongPress, onTouchEnd: cancelLongPress };
 
@@ -556,6 +566,22 @@ const MessageBubble = ({ msg, contactName, onReact, isGroup }: BubbleProps) => {
           </div>
         )}
 
+        {/* Context menu */}
+        <AnimatePresence>
+          {showMenu && (
+            <MessageMenu
+              msg={msg}
+              alignRight={msg.sent}
+              onClose={() => setShowMenu(false)}
+              onCopy={() => onCopy(msg.text)}
+              onDelete={() => onDelete(msg.id)}
+              onForward={() => onForward(msg.id)}
+              onReact={() => setShowPicker(true)}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Emoji picker */}
         <AnimatePresence>
           {showPicker && (
             <EmojiPicker alignRight={msg.sent} onPick={(emoji) => onReact(msg.id, emoji)} onClose={() => setShowPicker(false)} />
@@ -576,7 +602,7 @@ const MessageBubble = ({ msg, contactName, onReact, isGroup }: BubbleProps) => {
           </motion.div>
         )}
 
-        <div className={`flex items-center gap-1 mt-1 ${msg.sent ? "flex-row-reverse" : ""}`}>
+        <div className={`flex items-center gap-1 mt-0.5 ${msg.sent ? "flex-row-reverse" : ""}`}>
           <span className="text-[10px] text-muted-foreground">{msg.time}</span>
           <ReadReceipt msg={msg} />
         </div>
@@ -585,11 +611,8 @@ const MessageBubble = ({ msg, contactName, onReact, isGroup }: BubbleProps) => {
   );
 };
 
-// ── New Contact Sheet ──────────────────────────────────────────────────────────
-interface NewContactSheetProps {
-  onClose: () => void;
-  onCreate: (phone: string) => void;
-}
+// ── New Contact Sheet ─────────────────────────────────────────────────────────
+interface NewContactSheetProps { onClose: () => void; onCreate: (phone: string) => void; }
 
 const NewContactSheet = ({ onClose, onCreate }: NewContactSheetProps) => {
   const [phone, setPhone] = useState("");
@@ -599,28 +622,22 @@ const NewContactSheet = ({ onClose, onCreate }: NewContactSheetProps) => {
   const validate = () => {
     if (!phone.trim()) { setError("Phone number is required"); return false; }
     if (!/^[\d\-+\s]{10,}$/.test(phone.trim())) { setError("Enter a valid phone number"); return false; }
-    setError("");
-    return true;
+    setError(""); return true;
   };
 
   const handleSend = () => {
     if (!validate()) return;
     setSent(true);
-    setTimeout(() => {
-      onCreate(phone.trim());
-      onClose();
-    }, 1800);
+    setTimeout(() => { onCreate(phone.trim()); onClose(); }, 1800);
   };
 
   return (
     <>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+      <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
         transition={{ type: "spring", stiffness: 320, damping: 32 }}
-        className="fixed bottom-0 left-0 right-0 z-[80] max-w-md mx-auto bg-card rounded-t-3xl px-5 pt-3 pb-8 shadow-elevated"
-      >
+        className="fixed bottom-0 left-0 right-0 z-[80] max-w-md mx-auto bg-card rounded-t-3xl px-5 pt-3 pb-8 shadow-elevated">
         <div className="w-10 h-1 bg-border rounded-full mx-auto mb-5" />
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -631,7 +648,6 @@ const NewContactSheet = ({ onClose, onCreate }: NewContactSheetProps) => {
             <X size={18} />
           </button>
         </div>
-
         <div className="flex justify-center mb-6">
           <AnimatePresence mode="wait">
             {sent ? (
@@ -652,27 +668,19 @@ const NewContactSheet = ({ onClose, onCreate }: NewContactSheetProps) => {
             )}
           </AnimatePresence>
         </div>
-
         {!sent && (
           <>
             <div className="mb-6">
               <label className="text-[12px] font-semibold text-muted-foreground mb-1.5 block">Phone Number</label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => { setPhone(e.target.value); setError(""); }}
+              <input type="tel" value={phone} onChange={(e) => { setPhone(e.target.value); setError(""); }}
                 placeholder="e.g. 01711223344"
-                className={`w-full h-12 px-4 bg-background border rounded-2xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition ${error ? "border-destructive" : "border-border"}`}
-              />
+                className={`w-full h-12 px-4 bg-background border rounded-2xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition ${error ? "border-destructive" : "border-border"}`} />
               {error && <p className="text-[11px] text-destructive mt-1">{error}</p>}
-              <p className="text-[11px] text-muted-foreground mt-2">
-                Enter the phone number of the person you want to chat with
-              </p>
+              <p className="text-[11px] text-muted-foreground mt-2">Enter the phone number of the person you want to chat with</p>
             </div>
             <motion.button whileTap={{ scale: 0.97 }} onClick={handleSend}
               className="w-full h-13 gradient-primary text-primary-foreground font-bold rounded-2xl shadow-glow flex items-center justify-center gap-2 py-4">
-              <UserPlus size={18} />
-              Start Conversation
+              <UserPlus size={18} /> Start Conversation
             </motion.button>
           </>
         )}
@@ -681,12 +689,8 @@ const NewContactSheet = ({ onClose, onCreate }: NewContactSheetProps) => {
   );
 };
 
-// ── New Group Sheet ────────────────────────────────────────────────────────────
-interface NewGroupSheetProps {
-  contacts: UIContact[];
-  onClose: () => void;
-  onCreate: (name: string, icon: string, memberIds: string[]) => void;
-}
+// ── New Group Sheet ───────────────────────────────────────────────────────────
+interface NewGroupSheetProps { contacts: UIContact[]; onClose: () => void; onCreate: (name: string, icon: string, memberIds: string[]) => void; }
 
 const NewGroupSheet = ({ contacts, onClose, onCreate }: NewGroupSheetProps) => {
   const [step, setStep] = useState<"pick" | "name">("pick");
@@ -696,36 +700,19 @@ const NewGroupSheet = ({ contacts, onClose, onCreate }: NewGroupSheetProps) => {
   const [error, setError] = useState("");
 
   const regularContacts = contacts.filter((c) => !c.isGroup);
-
-  const toggleSelect = (id: string) => {
-    setSelected((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
-  };
-
-  const handleNext = () => {
-    if (selected.length < 2) { setError("Select at least 2 contacts"); return; }
-    setError("");
-    setStep("name");
-  };
-
-  const handleCreate = () => {
-    if (!groupName.trim()) { setError("Group name is required"); return; }
-    // selected contains conversation IDs, but we need user IDs (the other participant)
-    onCreate(groupName.trim(), groupIcon, selected);
-    onClose();
-  };
+  const toggleSelect = (id: string) => setSelected((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
+  const handleNext = () => { if (selected.length < 2) { setError("Select at least 2 contacts"); return; } setError(""); setStep("name"); };
+  const handleCreate = () => { if (!groupName.trim()) { setError("Group name is required"); return; } onCreate(groupName.trim(), groupIcon, selected); onClose(); };
 
   return (
     <>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+      <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
         transition={{ type: "spring", stiffness: 320, damping: 32 }}
         className="fixed bottom-0 left-0 right-0 z-[80] max-w-md mx-auto bg-card rounded-t-3xl px-5 pt-3 pb-8 shadow-elevated"
-        style={{ maxHeight: "85vh", display: "flex", flexDirection: "column" }}
-      >
+        style={{ maxHeight: "85vh", display: "flex", flexDirection: "column" }}>
         <div className="w-10 h-1 bg-border rounded-full mx-auto mb-4 shrink-0" />
-
         <div className="flex items-center gap-3 mb-5 shrink-0">
           {step === "name" && (
             <button onClick={() => setStep("pick")} className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
@@ -733,38 +720,26 @@ const NewGroupSheet = ({ contacts, onClose, onCreate }: NewGroupSheetProps) => {
             </button>
           )}
           <div className="flex-1">
-            <h2 className="text-lg font-extrabold text-foreground">
-              {step === "pick" ? "New Group" : "Group Details"}
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              {step === "pick" ? `Select members (${selected.length} selected)` : "Set a name and icon for your group"}
-            </p>
+            <h2 className="text-lg font-extrabold text-foreground">{step === "pick" ? "New Group" : "Group Details"}</h2>
+            <p className="text-xs text-muted-foreground">{step === "pick" ? `Select members (${selected.length} selected)` : "Set a name and icon for your group"}</p>
           </div>
           <button onClick={onClose} className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
             <X size={18} />
           </button>
         </div>
-
         {step === "pick" ? (
           <>
             <div className="flex-1 overflow-y-auto space-y-2 mb-4 min-h-0">
               {regularContacts.length === 0 && (
                 <div className="flex flex-col items-center py-10 text-muted-foreground gap-2">
-                  <Users size={32} className="opacity-30" />
-                  <p className="text-sm">No contacts available</p>
+                  <Users size={32} className="opacity-30" /><p className="text-sm">No contacts available</p>
                 </div>
               )}
               {regularContacts.map((c) => {
                 const isSelected = selected.includes(c.id);
                 return (
-                  <motion.button
-                    key={c.id}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => toggleSelect(c.id)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-2xl border transition-all text-left ${
-                      isSelected ? "bg-primary/10 border-primary/40" : "bg-background border-border hover:bg-muted/50"
-                    }`}
-                  >
+                  <motion.button key={c.id} whileTap={{ scale: 0.98 }} onClick={() => toggleSelect(c.id)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-2xl border transition-all text-left ${isSelected ? "bg-primary/10 border-primary/40" : "bg-background border-border hover:bg-muted/50"}`}>
                     <div className={`w-11 h-11 rounded-2xl ${c.gradient} flex items-center justify-center text-white font-bold text-sm overflow-hidden shrink-0`}>
                       {c.avatarUrl ? <img src={c.avatarUrl} alt={c.name} className="w-full h-full object-cover" /> : c.initials}
                     </div>
@@ -779,56 +754,50 @@ const NewGroupSheet = ({ contacts, onClose, onCreate }: NewGroupSheetProps) => {
                 );
               })}
             </div>
-
             {error && <p className="text-[11px] text-destructive text-center mb-2">{error}</p>}
-
             <motion.button whileTap={{ scale: 0.97 }} onClick={handleNext}
-              className="w-full gradient-primary text-primary-foreground font-bold rounded-2xl shadow-glow flex items-center justify-center gap-2 py-4 shrink-0">
-              Next ({selected.length} selected)
+              className="w-full h-13 gradient-primary text-primary-foreground font-bold rounded-2xl shadow-glow flex items-center justify-center gap-2 py-4 shrink-0">
+              Next <ArrowLeft size={16} className="rotate-180" />
             </motion.button>
           </>
         ) : (
           <>
-            <div className="flex flex-wrap gap-2 mb-4 shrink-0">
-              {GROUP_ICONS.map((icon) => (
-                <motion.button key={icon} whileTap={{ scale: 0.9 }}
-                  onClick={() => setGroupIcon(icon)}
-                  className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center border-2 transition-all ${
-                    groupIcon === icon ? "border-primary bg-primary/10 scale-110" : "border-border bg-muted"
-                  }`}
-                >
-                  {icon}
-                </motion.button>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-3 mb-5 p-3 rounded-2xl bg-muted/50 shrink-0">
-              <div className="w-12 h-12 rounded-2xl gradient-primary flex items-center justify-center text-2xl shadow-glow shrink-0">
-                {groupIcon}
+            <div className="flex-1 overflow-y-auto min-h-0">
+              <div className="flex justify-center mb-5">
+                <div className="flex gap-2 flex-wrap justify-center">
+                  {GROUP_ICONS.map((icon) => (
+                    <motion.button key={icon} whileTap={{ scale: 0.85 }} onClick={() => setGroupIcon(icon)}
+                      className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl border-2 transition-all ${groupIcon === icon ? "border-primary bg-primary/10 shadow-glow" : "border-border bg-card"}`}>
+                      {icon}
+                    </motion.button>
+                  ))}
+                </div>
               </div>
-              <div>
-                <p className="text-[13px] font-bold text-foreground">{groupName || "Group name…"}</p>
-                <p className="text-[11px] text-muted-foreground">{selected.length} members</p>
+              <div className="mb-4">
+                <label className="text-[12px] font-semibold text-muted-foreground mb-1.5 block">Group Name</label>
+                <input type="text" value={groupName} onChange={(e) => { setGroupName(e.target.value); setError(""); }}
+                  placeholder="e.g. Family, Work Team"
+                  className={`w-full h-12 px-4 bg-background border rounded-2xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition ${error ? "border-destructive" : "border-border"}`} />
+                {error && <p className="text-[11px] text-destructive mt-1">{error}</p>}
+              </div>
+              <div className="mb-4">
+                <p className="text-[12px] font-semibold text-muted-foreground mb-2">Members ({selected.length})</p>
+                <div className="flex flex-wrap gap-2">
+                  {selected.map((id) => {
+                    const c = regularContacts.find((rc) => rc.id === id);
+                    return c ? (
+                      <span key={id} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-primary text-[12px] font-semibold">
+                        {c.name}
+                        <button onClick={() => toggleSelect(id)} className="hover:text-destructive"><X size={12} /></button>
+                      </span>
+                    ) : null;
+                  })}
+                </div>
               </div>
             </div>
-
-            <div className="mb-5 shrink-0">
-              <label className="text-[12px] font-semibold text-muted-foreground mb-1.5 block">Group Name</label>
-              <input
-                autoFocus
-                type="text"
-                value={groupName}
-                onChange={(e) => { setGroupName(e.target.value); setError(""); }}
-                placeholder="e.g. Family, Office Team…"
-                className={`w-full h-12 px-4 bg-background border rounded-2xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition ${error ? "border-destructive" : "border-border"}`}
-              />
-              {error && <p className="text-[11px] text-destructive mt-1">{error}</p>}
-            </div>
-
             <motion.button whileTap={{ scale: 0.97 }} onClick={handleCreate}
-              className="w-full gradient-primary text-primary-foreground font-bold rounded-2xl shadow-glow flex items-center justify-center gap-2 py-4 shrink-0">
-              <Users size={18} />
-              Create Group
+              className="w-full h-13 gradient-primary text-primary-foreground font-bold rounded-2xl shadow-glow flex items-center justify-center gap-2 py-4 shrink-0">
+              <Users size={18} /> Create Group
             </motion.button>
           </>
         )}
@@ -837,44 +806,44 @@ const NewGroupSheet = ({ contacts, onClose, onCreate }: NewGroupSheetProps) => {
   );
 };
 
-// ── ChatView ───────────────────────────────────────────────────────────────────
+// ── Chat View ─────────────────────────────────────────────────────────────────
 interface ChatViewProps {
-  contact: UIContact;
-  messages: UIMessage[];
-  onBack: () => void;
-  onSend: (text: string) => void;
-  onSendVoice: (duration: number) => void;
-  onSendImage: (url: string) => void;
-  onSendMoney: (phone: string) => void;
+  contact: UIContact; messages: UIMessage[];
+  onBack: () => void; onSend: (text: string) => void;
+  onSendVoice: (dur: number) => void; onSendImage: (url: string) => void;
   onReact: (msgId: string, emoji: string) => void;
+  onCopy: (text: string) => void;
+  onDelete: (msgId: string) => void;
+  onForward: (msgId: string) => void;
   onCall: (mode: "audio" | "video") => void;
-  webrtc: WebRTCManager | null;
-  callMode: "audio" | "video" | null;
-  onEndCall: () => void;
-  conversationId: string | null;
-  userId: string | null;
-  userName: string;
-  isPending?: boolean;
-  isInitiator?: boolean;
-  onAccept?: () => void;
-  onDecline?: () => void;
+  webrtc: WebRTCManager | null; callMode: "audio" | "video" | null;
+  onEndCall: () => void; conversationId: string | null;
+  userId: string | null; userName: string;
+  isPending?: boolean; isInitiator?: boolean;
+  onAccept?: () => void; onDecline?: () => void;
   onBlockReport?: (reason?: string) => void;
+  onSendMoney: (phone: string) => void;
 }
 
-const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage, onSendMoney, onReact, onCall, webrtc, callMode, onEndCall, conversationId, userId, userName, isPending, isInitiator, onAccept, onDecline, onBlockReport }: ChatViewProps) => {
+const ChatView = ({
+  contact, messages, onBack, onSend, onSendVoice, onSendImage,
+  onReact, onCopy, onDelete, onForward, onCall, webrtc, callMode, onEndCall,
+  conversationId, userId, userName,
+  isPending, isInitiator, onAccept, onDecline, onBlockReport, onSendMoney,
+}: ChatViewProps) => {
   const [text, setText] = useState("");
   const [showQuick, setShowQuick] = useState(false);
-  const [showBlockDialog, setShowBlockDialog] = useState(false);
-  const [blockReason, setBlockReason] = useState("");
-  const { typingUsers, setTyping } = useTypingIndicator(conversationId, userId, userName);
+  const [showAttach, setShowAttach] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const [recording, setRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
   const recordTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const micPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showBlockDialog, setShowBlockDialog] = useState(false);
+  const [blockReason, setBlockReason] = useState("");
 
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const { typingUsers, setTyping } = useTypingIndicator(conversationId, userId, userName);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
@@ -882,8 +851,7 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage,
     if (!text.trim()) return;
     onSend(text.trim());
     setText("");
-    setShowQuick(false);
-    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    setTyping(false);
   };
 
   const startMicPress = () => {
@@ -891,16 +859,15 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage,
       setRecording(true);
       setRecordSeconds(0);
       recordTimer.current = setInterval(() => setRecordSeconds((s) => s + 1), 1000);
-    }, 200);
+    }, 300);
   };
 
   const endMicPress = () => {
-    clearTimeout(micPressTimer.current!);
+    if (micPressTimer.current) clearTimeout(micPressTimer.current);
     if (recording) {
       clearInterval(recordTimer.current!);
       const dur = Math.max(1, recordSeconds);
-      setRecording(false);
-      setRecordSeconds(0);
+      setRecording(false); setRecordSeconds(0);
       onSendVoice(dur);
     }
   };
@@ -911,74 +878,66 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage,
     const file = e.target.files?.[0];
     if (!file) return;
     const url = URL.createObjectURL(file);
-    onSendImage(url);
-    e.target.value = "";
+    onSendImage(url); e.target.value = "";
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
-      {/* Header */}
+      {/* Header — frosted glass style */}
       <motion.div
         initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 28 }}
-        className="gradient-primary px-4 pt-12 pb-3 text-primary-foreground shrink-0"
+        className="bg-background/80 backdrop-blur-xl border-b border-border/50 px-3 pt-[env(safe-area-inset-top,12px)] pb-2.5 shrink-0"
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 pt-2">
           <button onClick={onBack}
-            className="w-10 h-10 rounded-full bg-white/20 ring-1 ring-white/30 flex items-center justify-center active:scale-95 transition-transform shrink-0">
+            className="w-9 h-9 rounded-full bg-muted/80 flex items-center justify-center active:scale-95 transition-transform shrink-0 text-foreground">
             <ChevronLeft size={20} />
           </button>
           <div className="relative shrink-0">
-            <div className={`w-10 h-10 rounded-2xl ${contact.gradient} flex items-center justify-center text-white font-bold text-sm overflow-hidden`}>
-              {contact.isGroup
-                ? <span className="text-lg">{contact.groupIcon ?? "👥"}</span>
-                : contact.avatarUrl
-                  ? <img src={contact.avatarUrl} alt={contact.name} className="w-full h-full object-cover" />
-                  : contact.initials
-              }
+            <div className={`w-9 h-9 rounded-full ${contact.gradient} flex items-center justify-center text-white font-bold text-xs overflow-hidden`}>
+              {contact.isGroup ? <span className="text-base">{contact.groupIcon ?? "👥"}</span>
+                : contact.avatarUrl ? <img src={contact.avatarUrl} alt={contact.name} className="w-full h-full object-cover" /> : contact.initials}
             </div>
             {!contact.isGroup && (
-              <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${contact.online ? "bg-green-500" : "bg-muted-foreground/40"}`} />
+              <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-background ${contact.online ? "bg-green-500" : "bg-muted-foreground/40"}`} />
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-[15px] leading-tight">{contact.name}</p>
-            <p className="text-[11px] text-white/70">
-              {contact.isGroup
-                ? `${(contact.members?.length ?? 0) + 1} members`
-                : contact.online
-                  ? "Online"
-                  : contact.phone}
+            <p className="font-bold text-sm leading-tight text-foreground truncate">{contact.name}</p>
+            <p className="text-[11px] text-muted-foreground">
+              {contact.isGroup ? `${(contact.members?.length ?? 0) + 1} members`
+                : contact.online ? "Online" : contact.phone}
             </p>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             {!contact.isGroup && (
               <>
                 <button onClick={() => onCall("audio")}
-                  className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center active:scale-95 transition-transform">
-                  <Phone size={16} />
+                  className="w-8 h-8 rounded-full bg-muted/60 flex items-center justify-center active:scale-95 transition-transform text-foreground">
+                  <Phone size={14} />
                 </button>
                 <button onClick={() => onCall("video")}
-                  className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center active:scale-95 transition-transform">
-                  <Video size={16} />
+                  className="w-8 h-8 rounded-full bg-muted/60 flex items-center justify-center active:scale-95 transition-transform text-foreground">
+                  <Video size={14} />
                 </button>
               </>
             )}
-            <button className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center active:scale-95 transition-transform">
-              {contact.isGroup ? <Info size={16} /> : <MoreVertical size={16} />}
+            <button className="w-8 h-8 rounded-full bg-muted/60 flex items-center justify-center active:scale-95 transition-transform text-foreground">
+              {contact.isGroup ? <Info size={14} /> : <MoreVertical size={14} />}
             </button>
           </div>
         </div>
       </motion.div>
 
-      {/* E2E encryption banner */}
-      <div className="flex items-center justify-center gap-1.5 py-1.5 bg-muted/40 border-b border-border/40">
-        <Lock size={10} className="text-muted-foreground" />
-        <span className="text-[10px] text-muted-foreground font-medium">Messages are end-to-end encrypted</span>
+      {/* E2E banner */}
+      <div className="flex items-center justify-center gap-1.5 py-1 bg-muted/30 border-b border-border/30">
+        <Lock size={9} className="text-muted-foreground" />
+        <span className="text-[9px] text-muted-foreground font-medium">Messages are end-to-end encrypted</span>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 scrollbar-none">
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2 scrollbar-none">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
             <Lock size={24} className="opacity-30" />
@@ -988,47 +947,31 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage,
         )}
         {messages.map((msg, idx) => (
           <div key={msg.id}>
-            {idx === 0 && (
-              <p className="text-center text-[10px] text-muted-foreground mb-3 font-medium">Today</p>
-            )}
+            {idx === 0 && <p className="text-center text-[10px] text-muted-foreground mb-2 font-medium">Today</p>}
             <motion.div
               initial={{ opacity: 0, y: 8, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ type: "spring", stiffness: 400, damping: 28 }}
             >
-              <MessageBubble
-                msg={msg}
-                contactName={contact.name}
-                onReact={(msgId, emoji) => onReact(msgId, emoji)}
-                isGroup={contact.isGroup}
-              />
+              <MessageBubble msg={msg} contactName={contact.name}
+                onReact={onReact} onCopy={onCopy} onDelete={onDelete} onForward={onForward} isGroup={contact.isGroup} />
             </motion.div>
           </div>
         ))}
         {/* Typing indicator */}
         <AnimatePresence>
           {typingUsers.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 6 }}
-              className="flex items-start gap-2 pl-1"
-            >
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} className="flex items-start gap-2 pl-1">
               <div className="bg-card border border-border rounded-2xl rounded-bl-md px-4 py-2.5 shadow-card flex items-center gap-2">
                 <div className="flex gap-[3px]">
                   {[0, 1, 2].map((i) => (
-                    <motion.div
-                      key={i}
-                      className="w-[6px] h-[6px] rounded-full bg-muted-foreground/60"
+                    <motion.div key={i} className="w-[6px] h-[6px] rounded-full bg-muted-foreground/60"
                       animate={{ y: [0, -5, 0] }}
-                      transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15, ease: "easeInOut" }}
-                    />
+                      transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15, ease: "easeInOut" }} />
                   ))}
                 </div>
                 <span className="text-[11px] text-muted-foreground font-medium">
-                  {typingUsers.length === 1
-                    ? `${typingUsers[0]} is typing…`
-                    : `${typingUsers.length} people are typing…`}
+                  {typingUsers.length === 1 ? `${typingUsers[0]} is typing…` : `${typingUsers.length} people are typing…`}
                 </span>
               </div>
             </motion.div>
@@ -1040,7 +983,7 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage,
       {/* Quick replies */}
       <AnimatePresence>
         {showQuick && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="px-4 pb-2 overflow-hidden">
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="px-3 pb-1 overflow-hidden">
             <div className="flex gap-2 flex-wrap">
               {QUICK_REPLIES.map((r) => (
                 <button key={r} onClick={() => { onSend(r); setShowQuick(false); }}
@@ -1053,71 +996,70 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage,
         )}
       </AnimatePresence>
 
+      {/* Attachment menu */}
+      <AnimatePresence>
+        {showAttach && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+            className="px-3 pb-1 overflow-hidden">
+            <div className="flex gap-3 py-2">
+              {[
+                { icon: Camera, label: "Camera", color: "bg-blue-500", action: () => fileInputRef.current?.click() },
+                { icon: ImagePlus, label: "Gallery", color: "bg-purple-500", action: () => fileInputRef.current?.click() },
+                { icon: FileText, label: "Document", color: "bg-amber-500", action: () => toast.info("Coming soon") },
+                { icon: MapPin, label: "Location", color: "bg-green-500", action: () => toast.info("Coming soon") },
+              ].map((item) => (
+                <button key={item.label} onClick={() => { item.action(); setShowAttach(false); }}
+                  className="flex flex-col items-center gap-1.5 flex-1">
+                  <div className={`w-11 h-11 ${item.color} rounded-full flex items-center justify-center text-white`}>
+                    <item.icon size={18} />
+                  </div>
+                  <span className="text-[10px] text-muted-foreground font-medium">{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Input bar or Accept/Decline bar */}
       {isPending && !isInitiator ? (
-        <div className="px-4 pb-5 pt-3 border-t border-border/60 bg-background shrink-0">
-          {/* Message preview from sender */}
+        <div className="px-3 pb-[env(safe-area-inset-bottom,12px)] pt-2 border-t border-border/40 bg-background shrink-0">
           {messages.length > 0 && (
             <div className="mb-3 px-3 py-2.5 rounded-xl bg-muted/60 border border-border/50">
               <div className="flex items-center gap-1.5 mb-1">
                 <Shield size={12} className="text-muted-foreground" />
                 <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Message Preview</span>
               </div>
-              <p className="text-xs text-foreground/80 line-clamp-3 italic">
-                "{messages[0]?.text || "..."}"
-              </p>
+              <p className="text-xs text-foreground/80 line-clamp-3 italic">"{messages[0]?.text || "..."}"</p>
             </div>
           )}
-          <div className="flex items-center gap-2 mb-3 px-1">
+          <div className="flex items-center gap-2 mb-2 px-1">
             <Shield size={14} className="text-muted-foreground" />
-            <p className="text-xs text-muted-foreground">
-              This is a chat request. Accept to start chatting.
-            </p>
+            <p className="text-xs text-muted-foreground">This is a chat request. Accept to start chatting.</p>
           </div>
           <div className="flex gap-2">
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowBlockDialog(true)}
-              className="h-12 px-3 rounded-2xl border-2 border-destructive/30 bg-destructive/10 text-destructive font-bold text-[11px] flex items-center justify-center gap-1.5 transition-colors hover:bg-destructive/20"
-            >
-              <Lock size={13} />
-              Block
+            <motion.button whileTap={{ scale: 0.95 }} onClick={() => setShowBlockDialog(true)}
+              className="h-11 px-3 rounded-2xl border-2 border-destructive/30 bg-destructive/10 text-destructive font-bold text-[11px] flex items-center justify-center gap-1.5 transition-colors hover:bg-destructive/20">
+              <Lock size={13} /> Block
             </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={onDecline}
-              className="flex-1 h-12 rounded-2xl border-2 border-border bg-card text-foreground font-bold text-sm flex items-center justify-center gap-2 transition-colors hover:bg-muted"
-            >
-              <X size={16} />
-              Decline
+            <motion.button whileTap={{ scale: 0.95 }} onClick={onDecline}
+              className="flex-1 h-11 rounded-2xl border-2 border-border bg-card text-foreground font-bold text-sm flex items-center justify-center gap-2 transition-colors hover:bg-muted">
+              <X size={16} /> Decline
             </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={onAccept}
-              className="flex-1 h-12 rounded-2xl gradient-primary text-primary-foreground font-bold text-sm shadow-glow flex items-center justify-center gap-2"
-            >
-              <CheckCircle2 size={16} />
-              Accept
+            <motion.button whileTap={{ scale: 0.95 }} onClick={onAccept}
+              className="flex-1 h-11 rounded-2xl gradient-primary text-primary-foreground font-bold text-sm shadow-glow flex items-center justify-center gap-2">
+              <CheckCircle2 size={16} /> Accept
             </motion.button>
           </div>
 
           {/* Block & Report Dialog */}
           <AnimatePresence>
             {showBlockDialog && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-6"
-                onClick={() => setShowBlockDialog(false)}
-              >
-                <motion.div
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.9, opacity: 0 }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="bg-card border border-border rounded-3xl p-5 w-full max-w-sm shadow-xl"
-                >
+                onClick={() => setShowBlockDialog(false)}>
+                <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                  onClick={(e) => e.stopPropagation()} className="bg-card border border-border rounded-3xl p-5 w-full max-w-sm shadow-xl">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-10 h-10 rounded-2xl bg-destructive/10 flex items-center justify-center">
                       <Shield size={18} className="text-destructive" />
@@ -1127,29 +1069,13 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage,
                       <p className="text-[11px] text-muted-foreground">This user will be reported to admins</p>
                     </div>
                   </div>
-                  <textarea
-                    value={blockReason}
-                    onChange={(e) => setBlockReason(e.target.value)}
-                    placeholder="Reason (optional)"
-                    className="w-full h-20 p-3 rounded-xl bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-destructive/30 mb-3"
-                  />
+                  <textarea value={blockReason} onChange={(e) => setBlockReason(e.target.value)} placeholder="Reason (optional)"
+                    className="w-full h-20 p-3 rounded-xl bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-destructive/30 mb-3" />
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => { setShowBlockDialog(false); setBlockReason(""); }}
-                      className="flex-1 h-11 rounded-xl border border-border bg-card text-foreground font-semibold text-sm hover:bg-muted transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={() => {
-                        onBlockReport?.(blockReason || undefined);
-                        setShowBlockDialog(false);
-                        setBlockReason("");
-                      }}
-                      className="flex-1 h-11 rounded-xl bg-destructive text-destructive-foreground font-semibold text-sm hover:bg-destructive/90 transition-colors"
-                    >
-                      Block & Report
-                    </button>
+                    <button onClick={() => { setShowBlockDialog(false); setBlockReason(""); }}
+                      className="flex-1 h-11 rounded-xl border border-border bg-card text-foreground font-semibold text-sm hover:bg-muted transition-colors">Cancel</button>
+                    <button onClick={() => { onBlockReport?.(blockReason || undefined); setShowBlockDialog(false); setBlockReason(""); }}
+                      className="flex-1 h-11 rounded-xl bg-destructive text-destructive-foreground font-semibold text-sm hover:bg-destructive/90 transition-colors">Block & Report</button>
                   </div>
                 </motion.div>
               </motion.div>
@@ -1157,11 +1083,10 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage,
           </AnimatePresence>
         </div>
       ) : (
-        <div className="px-3 pb-5 pt-2 border-t border-border/60 bg-background shrink-0">
+        <div className="px-3 pb-[env(safe-area-inset-bottom,8px)] pt-1.5 border-t border-border/40 bg-background shrink-0">
           <AnimatePresence>
             {recording && (
-              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
-                className="flex items-center gap-2 mb-2 px-3">
+              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} className="flex items-center gap-2 mb-1.5 px-3">
                 <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.8, repeat: Infinity }}
                   className="w-2.5 h-2.5 rounded-full bg-destructive" />
                 <span className="text-sm text-destructive font-semibold">Recording… {recordSeconds}s</span>
@@ -1170,29 +1095,22 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage,
             )}
           </AnimatePresence>
 
-          <div className="flex items-center gap-2 bg-card border border-border rounded-2xl px-3 py-2 shadow-card">
-            <button onClick={() => setShowQuick(!showQuick)}
-              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${showQuick ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-              <Smile size={18} />
+          <div className="flex items-center gap-1.5 bg-card border border-border rounded-2xl px-2.5 py-1.5 shadow-card">
+            <button onClick={() => { setShowAttach(!showAttach); setShowQuick(false); }}
+              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${showAttach ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+              <Paperclip size={17} />
             </button>
-            <input
-              type="text"
-              placeholder={recording ? "Recording…" : "Message…"}
-              value={text}
+            <button onClick={() => { setShowQuick(!showQuick); setShowAttach(false); }}
+              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${showQuick ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+              <Smile size={17} />
+            </button>
+            <input type="text" placeholder={recording ? "Recording…" : "Message…"} value={text}
               onChange={(e) => { setText(e.target.value); setTyping(true); }}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              disabled={recording}
-              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-w-0 disabled:opacity-50"
-            />
-            <motion.button whileTap={{ scale: 0.88 }} onClick={() => fileInputRef.current?.click()}
-              className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
-              title="Share image">
-              <ImagePlus size={15} />
-            </motion.button>
+              onKeyDown={(e) => e.key === "Enter" && handleSend()} disabled={recording}
+              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-w-0 disabled:opacity-50" />
             {!contact.isGroup && (
               <motion.button whileTap={{ scale: 0.88 }} onClick={() => onSendMoney(contact.phone)}
-                className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                title={`Send money to ${contact.name}`}>
+                className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0" title={`Send money to ${contact.name}`}>
                 <Wallet size={15} />
               </motion.button>
             )}
@@ -1202,12 +1120,10 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage,
                 <Send size={16} />
               </motion.button>
             ) : (
-              <motion.button
-                whileTap={{ scale: 0.88 }}
+              <motion.button whileTap={{ scale: 0.88 }}
                 onMouseDown={startMicPress} onMouseUp={endMicPress} onMouseLeave={endMicPress}
                 onTouchStart={startMicPress} onTouchEnd={endMicPress}
-                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all select-none ${recording ? "gradient-send text-primary-foreground shadow-glow scale-110" : "bg-primary/10 text-primary"}`}
-              >
+                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all select-none ${recording ? "gradient-send text-primary-foreground shadow-glow scale-110" : "bg-primary/10 text-primary"}`}>
                 <Mic size={16} />
               </motion.button>
             )}
@@ -1219,30 +1135,34 @@ const ChatView = ({ contact, messages, onBack, onSend, onSendVoice, onSendImage,
 
       {/* Calling overlay */}
       <AnimatePresence>
-        {callMode && (
-          <CallingOverlay contact={contact} mode={callMode} onEnd={onEndCall} webrtc={webrtc} />
-        )}
+        {callMode && <CallingOverlay contact={contact} mode={callMode} onEnd={onEndCall} webrtc={webrtc} />}
       </AnimatePresence>
     </div>
   );
 };
 
-// ── InboxPage ──────────────────────────────────────────────────────────────────
+// ── InboxPage ─────────────────────────────────────────────────────────────────
 interface InboxPageProps {
   onBack?: () => void;
   onSendMoney?: (phone: string, onComplete?: (amount: number) => void) => void;
   isActive?: boolean;
 }
 
+type FilterTab = "all" | "unread" | "groups";
+
 export default function InboxPage({ onBack, onSendMoney, isActive = false }: InboxPageProps) {
   const { user } = useAuth();
   const profileData = useProfile();
   const chat = useChat();
-  const { isOnline } = useOnlinePresence(user?.id ?? null);
+  const { isOnline, onlineUsers } = useOnlinePresence(user?.id ?? null);
   const [search, setSearch] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
   const [showNewContact, setShowNewContact] = useState(false);
   const [showNewGroup, setShowNewGroup] = useState(false);
   const [activeContactId, setActiveContactId] = useState<string | null>(null);
+  const [filterTab, setFilterTab] = useState<FilterTab>("all");
+  const [pinnedIds, setPinnedIdsState] = useState<string[]>(getPinnedIds);
+  const [forwardMsgId, setForwardMsgId] = useState<string | null>(null);
 
   // WebRTC state
   const [callMode, setCallMode] = useState<"audio" | "video" | null>(null);
@@ -1265,9 +1185,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
     const convReadMap = chat.participantReadTimes.get(chat.activeConversationId);
     if (!convReadMap) return [];
     const times: string[] = [];
-    convReadMap.forEach((readAt, uid) => {
-      if (uid !== user.id) times.push(readAt);
-    });
+    convReadMap.forEach((readAt, uid) => { if (uid !== user.id) times.push(readAt); });
     return times;
   })();
 
@@ -1281,37 +1199,51 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
     ? uiContacts.find((c) => c.id === activeContactId) ?? null
     : null;
 
-  const filtered = uiContacts.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search)
-  );
+  // Filter & sort: pinned first, then by filter tab, then search
+  const filtered = useMemo(() => {
+    let list = uiContacts;
+    // Apply filter tab
+    if (filterTab === "unread") list = list.filter((c) => c.unread > 0);
+    else if (filterTab === "groups") list = list.filter((c) => c.isGroup);
 
-  // ── Consolidated WebRTC managers (single ref-based map) ──────────
+    // Search filter
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter((c) =>
+        c.name.toLowerCase().includes(q) || c.phone.includes(q) || c.lastMsg.toLowerCase().includes(q)
+      );
+    }
+
+    // Sort: pinned first, then by timestamp
+    const pins = new Set(pinnedIds);
+    return [...list].sort((a, b) => {
+      const aPin = pins.has(a.id) ? 1 : 0;
+      const bPin = pins.has(b.id) ? 1 : 0;
+      if (aPin !== bPin) return bPin - aPin;
+      return b.lastTimestamp - a.lastTimestamp;
+    });
+  }, [uiContacts, filterTab, search, pinnedIds]);
+
+  // Online users for stories-style bar
+  const onlineContacts = useMemo(() =>
+    uiContacts.filter((c) => c.online && !c.isGroup), [uiContacts]);
+
+  // ── WebRTC managers ──────────────────────────────────────────────
   const webrtcManagersRef = useRef<Map<string, WebRTCManager>>(new Map());
 
-  // Sync WebRTC managers incrementally — do NOT destroy all on re-render
   useEffect(() => {
     if (!user || chat.conversations.length === 0) return;
-
     const currentMap = webrtcManagersRef.current;
     const activeConvIds = new Set<string>();
-
     for (const conv of chat.conversations) {
       if (conv.type !== "direct") continue;
       activeConvIds.add(conv.id);
-
-      // Skip if already subscribed
       if (currentMap.has(conv.id)) continue;
-
       const mgr = new WebRTCManager(conv.id, user.id, profileData?.name ?? "Me");
       mgr.subscribe();
       mgr.setOnIncomingCall((signal) => {
-        // Only show incoming call if we're not already in a call
         setCallMode((current) => {
-          if (current !== null) {
-            // Already in a call — auto-reject the new one
-            mgr.rejectCall();
-            return current;
-          }
+          if (current !== null) { mgr.rejectCall(); return current; }
           setIncomingCall(signal);
           setActiveContactId(conv.id);
           chat.openConversation(conv.id);
@@ -1320,34 +1252,18 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
       });
       currentMap.set(conv.id, mgr);
     }
-
-    // Clean up managers for conversations we're no longer part of
     for (const [convId, mgr] of currentMap) {
-      if (!activeConvIds.has(convId)) {
-        mgr.destroy();
-        currentMap.delete(convId);
-      }
+      if (!activeConvIds.has(convId)) { mgr.destroy(); currentMap.delete(convId); }
     }
-    // NO cleanup here — managers must persist across re-renders to maintain
-    // stable WebRTC subscriptions. Cleanup happens in the unmount effect below.
   }, [user, chat.conversations.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Unmount-only cleanup: destroy all managers when InboxPage unmounts
   useEffect(() => {
-    return () => {
-      for (const mgr of webrtcManagersRef.current.values()) mgr.destroy();
-      webrtcManagersRef.current.clear();
-    };
+    return () => { for (const mgr of webrtcManagersRef.current.values()) mgr.destroy(); webrtcManagersRef.current.clear(); };
   }, []);
 
-  // Keep webrtcManager state in sync with active conversation's manager
   useEffect(() => {
-    if (activeContactId) {
-      const mgr = webrtcManagersRef.current.get(activeContactId) ?? null;
-      setWebrtcManager(mgr);
-    } else {
-      setWebrtcManager(null);
-    }
+    if (activeContactId) setWebrtcManager(webrtcManagersRef.current.get(activeContactId) ?? null);
+    else setWebrtcManager(null);
   }, [activeContactId]);
 
   const handleReact = useCallback((msgId: string, emoji: string) => {
@@ -1381,28 +1297,50 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
     await chat.sendMessage(activeContactId, "📷 Photo", "image", { imageUrl: url });
   }, [activeContactId, chat]);
 
+  const handleCopy = useCallback((text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard");
+  }, []);
+
+  const handleDeleteMessage = useCallback(async (msgId: string) => {
+    const { error } = await supabase
+      .from("chat_messages")
+      .update({ is_deleted: true })
+      .eq("id", msgId);
+    if (error) toast.error("Failed to delete message");
+    else toast.success("Message deleted");
+  }, []);
+
+  const handleForwardMessage = useCallback(async (targetConvId: string) => {
+    if (!forwardMsgId) return;
+    const msg = chat.messages.find((m) => m.id === forwardMsgId);
+    if (!msg) return;
+    const text = msg.decryptedContent || msg.content;
+    await chat.sendMessage(targetConvId, `↗️ ${text}`, "text");
+    toast.success("Message forwarded");
+    setForwardMsgId(null);
+  }, [forwardMsgId, chat]);
+
+  const handleTogglePin = useCallback((id: string) => {
+    const next = togglePin(id);
+    setPinnedIdsState(next);
+    toast.success(next.includes(id) ? "Conversation pinned" : "Conversation unpinned");
+  }, []);
+
   const handleCreateContact = async (phone: string) => {
     if (!user) return;
     const found = await chat.findUserByPhone(phone);
-    if (!found) {
-      toast.error("User not found", { description: "No account with this phone number" });
-      return;
-    }
-    if (found.user_id === user.id) {
-      toast.error("That's your own number!");
-      return;
-    }
+    if (!found) { toast.error("User not found", { description: "No account with this phone number" }); return; }
+    if (found.user_id === user.id) { toast.error("That's your own number!"); return; }
     const convId = await chat.createDirectConversation(found.user_id);
     if (convId) {
       toast.success("Conversation started!", { description: `You can now chat with ${found.name || phone}` });
-      setActiveContactId(convId);
-      chat.openConversation(convId);
+      setActiveContactId(convId); chat.openConversation(convId);
     }
   };
 
   const handleCreateGroup = async (name: string, icon: string, memberConvIds: string[]) => {
     if (!user) return;
-    // memberConvIds are conversation IDs of direct chats; extract other user IDs
     const memberUserIds: string[] = [];
     for (const convId of memberConvIds) {
       const conv = chat.conversations.find((c) => c.id === convId);
@@ -1414,8 +1352,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
     const convId = await chat.createGroupConversation(name, icon, memberUserIds);
     if (convId) {
       toast.success(`Group "${name}" created!`);
-      setActiveContactId(convId);
-      chat.openConversation(convId);
+      setActiveContactId(convId); chat.openConversation(convId);
     }
   };
 
@@ -1426,41 +1363,25 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
 
   const handleCall = async (mode: "audio" | "video") => {
     if (!webrtcManager) return;
-    try {
-      setCallMode(mode);
-      await webrtcManager.startCall(mode);
-    } catch (err) {
-      console.error("Call failed:", err);
-      toast.error("Call failed", { description: "Could not access microphone/camera" });
-      setCallMode(null);
-    }
+    try { setCallMode(mode); await webrtcManager.startCall(mode); }
+    catch (err) { console.error("Call failed:", err); toast.error("Call failed", { description: "Could not access microphone/camera" }); setCallMode(null); }
   };
 
   const handleAcceptCall = async () => {
     if (!incomingCall || !webrtcManager) return;
-    try {
-      setCallMode(incomingCall.mode);
-      await webrtcManager.answerCall(incomingCall.payload as RTCSessionDescriptionInit, incomingCall.mode);
-      setIncomingCall(null);
-    } catch (err) {
-      console.error("Answer failed:", err);
-      toast.error("Could not answer call");
-      setCallMode(null);
-      setIncomingCall(null);
-    }
+    try { setCallMode(incomingCall.mode); await webrtcManager.answerCall(incomingCall.payload as RTCSessionDescriptionInit, incomingCall.mode); setIncomingCall(null); }
+    catch (err) { console.error("Answer failed:", err); toast.error("Could not answer call"); setCallMode(null); setIncomingCall(null); }
   };
 
-  const handleRejectCall = () => {
-    webrtcManager?.rejectCall();
-    setIncomingCall(null);
-  };
-
-  const handleEndCall = () => {
-    webrtcManager?.endCall();
-    setCallMode(null);
-  };
+  const handleRejectCall = () => { webrtcManager?.rejectCall(); setIncomingCall(null); };
+  const handleEndCall = () => { webrtcManager?.endCall(); setCallMode(null); };
 
   const totalUnread = chat.totalUnread;
+  const tabCounts = useMemo(() => ({
+    all: uiContacts.length,
+    unread: uiContacts.filter((c) => c.unread > 0).length,
+    groups: uiContacts.filter((c) => c.isGroup).length,
+  }), [uiContacts]);
 
   if (chat.loading) {
     return (
@@ -1474,130 +1395,217 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
 
   return (
     <>
-      {/* ── Contact list ── */}
-      <div className="space-y-0">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h1 className="text-xl font-extrabold text-foreground">Messages</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {totalUnread > 0 ? `${totalUnread} unread message${totalUnread > 1 ? "s" : ""}` : "All caught up!"}
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <motion.button whileTap={{ scale: 0.88 }} onClick={() => setShowNewGroup(true)}
-              className="w-10 h-10 bg-muted rounded-2xl flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-              <Users size={18} />
-            </motion.button>
-            <motion.button whileTap={{ scale: 0.88 }} onClick={() => setShowNewContact(true)}
-              className="w-10 h-10 gradient-primary rounded-2xl flex items-center justify-center text-primary-foreground shadow-glow">
-              <Plus size={18} />
-            </motion.button>
-          </div>
-        </div>
-
-        {/* Search */}
-        <div className="relative mb-4">
-          <input type="text" placeholder="Search contacts…" value={search} onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-4 pr-4 h-10 bg-card border border-border rounded-2xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition" />
-        </div>
-
-        {/* Conversation list */}
-        <div className="space-y-1">
-          <AnimatePresence>
-            {filtered.map((contact, idx) => (
-              <motion.button key={contact.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.04, type: "spring", stiffness: 400, damping: 28 }}
-                onClick={() => openChat(contact)}
-                className="w-full flex items-center gap-3 p-3 rounded-2xl bg-card border border-border hover:shadow-elevated active:scale-[0.98] transition-all text-left shadow-card"
-              >
-                <div className="relative shrink-0">
-                  <div className={`w-12 h-12 rounded-2xl ${contact.gradient} flex items-center justify-center text-white font-bold text-sm overflow-hidden`}>
-                    {contact.isGroup
-                      ? <span className="text-xl">{contact.groupIcon ?? "👥"}</span>
-                      : contact.avatarUrl
-                        ? <img src={contact.avatarUrl} alt={contact.name} className="w-full h-full object-cover" />
-                        : contact.initials
-                    }
-                  </div>
-                  {contact.isGroup ? (
-                    <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-primary rounded-full border-2 border-background flex items-center justify-center">
-                      <Users size={8} className="text-primary-foreground" />
-                    </span>
-                  ) : (
-                    <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-background ${contact.online ? "bg-green-500" : "bg-muted-foreground/40"}`}>
-                      {contact.online && (
-                        <motion.span
-                          className="absolute inset-0 rounded-full bg-green-500"
-                          animate={{ scale: [1, 1.6, 1], opacity: [1, 0, 1] }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                        />
-                      )}
-                    </span>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <p className={`text-[13.5px] ${contact.unread > 0 ? "font-bold text-foreground" : "font-semibold text-foreground/80"} truncate`}>{contact.name}</p>
-                      {contact.isGroup && <Users size={10} className="text-muted-foreground shrink-0" />}
-                    </div>
-                    <span className="text-[10px] text-muted-foreground shrink-0 ml-2 flex items-center gap-0.5">
-                      <Clock size={9} className="opacity-60" />
-                      {contact.lastTime}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p className={`text-[12px] truncate ${contact.unread > 0 ? "text-foreground font-medium" : "text-muted-foreground"}`}>{contact.lastMsg}</p>
-                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                      {contact.pending && (
-                        <span className="px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[9px] font-bold">
-                          Request
-                        </span>
-                      )}
-                      {contact.unread > 0 && (
-                        <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
-                          className="min-w-[18px] h-[18px] px-1 gradient-send text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                          {contact.unread}
-                        </motion.span>
-                      )}
-                    </div>
-                  </div>
-                  {contact.pending && contact.lastMsg && contact.lastMsg !== "No messages yet" && (
-                    <p className="text-[11px] text-muted-foreground/70 italic truncate mt-0.5">
-                      "{contact.lastMsg}"
-                    </p>
-                  )}
-                </div>
-              </motion.button>
-            ))}
-          </AnimatePresence>
-
-          {filtered.length === 0 && !chat.loading && (
-            <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-              <div className="w-14 h-14 rounded-3xl bg-muted flex items-center justify-center"><UserPlus size={22} /></div>
-              <p className="text-sm font-semibold">{uiContacts.length === 0 ? "No conversations yet" : "No contacts found"}</p>
-              <p className="text-xs">Tap + to start a new conversation</p>
+      {/* ── Modern Header ── */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-3">
+          {profileData?.avatar_url ? (
+            <img src={profileData.avatar_url} alt="Me" className="w-9 h-9 rounded-full object-cover border-2 border-primary/20" />
+          ) : (
+            <div className="w-9 h-9 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+              {getInitials(profileData?.name || "U")}
             </div>
           )}
+          <div>
+            <h1 className="text-lg font-extrabold text-foreground leading-tight">Messages</h1>
+            <p className="text-[11px] text-muted-foreground">
+              {totalUnread > 0 ? `${totalUnread} unread` : "All caught up!"}
+            </p>
+          </div>
         </div>
+        <div className="flex gap-1.5">
+          <motion.button whileTap={{ scale: 0.88 }} onClick={() => setShowNewGroup(true)}
+            className="w-9 h-9 bg-muted rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+            <Users size={16} />
+          </motion.button>
+          <motion.button whileTap={{ scale: 0.88 }} onClick={() => setShowNewContact(true)}
+            className="w-9 h-9 gradient-primary rounded-full flex items-center justify-center text-primary-foreground shadow-glow">
+            <Plus size={16} />
+          </motion.button>
+        </div>
+      </div>
+
+      {/* ── Search Bar ── */}
+      <div className="relative mb-2">
+        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+        <input
+          type="text"
+          placeholder="Search messages…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onFocus={() => setSearchFocused(true)}
+          onBlur={() => setTimeout(() => setSearchFocused(false), 100)}
+          className="w-full pl-10 pr-16 h-9 bg-muted/60 rounded-full text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition border-0"
+        />
+        {searchFocused && (
+          <button onClick={() => { setSearch(""); setSearchFocused(false); }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-primary px-2 py-1">
+            Cancel
+          </button>
+        )}
+      </div>
+
+      {/* ── Filter Tabs ── */}
+      <div className="flex gap-1 mb-2">
+        {(["all", "unread", "groups"] as FilterTab[]).map((tab) => (
+          <button key={tab} onClick={() => setFilterTab(tab)}
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+              filterTab === tab
+                ? "bg-primary text-primary-foreground shadow-glow"
+                : "bg-muted/60 text-muted-foreground hover:bg-muted"
+            }`}>
+            {tab === "all" ? "All" : tab === "unread" ? `Unread${tabCounts.unread > 0 ? ` (${tabCounts.unread})` : ""}` : "Groups"}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Online Users Stories Bar ── */}
+      {onlineContacts.length > 0 && filterTab !== "groups" && (
+        <div className="mb-2 -mx-1 overflow-x-auto scrollbar-none">
+          <div className="flex gap-3 px-1 py-1">
+            {onlineContacts.map((c) => (
+              <motion.button key={c.id} whileTap={{ scale: 0.92 }} onClick={() => openChat(c)}
+                className="flex flex-col items-center gap-1 shrink-0 w-14">
+                <div className="relative">
+                  <div className="w-12 h-12 rounded-full p-[2.5px] bg-gradient-to-tr from-green-400 to-green-600 shadow-md">
+                    <div className={`w-full h-full rounded-full ${c.gradient} flex items-center justify-center text-white font-bold text-xs overflow-hidden border-2 border-background`}>
+                      {c.avatarUrl ? <img src={c.avatarUrl} alt={c.name} className="w-full h-full object-cover" /> : c.initials}
+                    </div>
+                  </div>
+                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background" />
+                </div>
+                <span className="text-[10px] text-foreground font-medium truncate w-full text-center">{c.name.split(" ")[0]}</span>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Conversation List ── */}
+      <div className="space-y-0">
+        <AnimatePresence>
+          {filtered.map((contact, idx) => {
+            const isPinned = pinnedIds.includes(contact.id);
+            const isSentByMe = contact.lastSenderId === user?.id;
+
+            return (
+              <motion.div key={contact.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.03, type: "spring", stiffness: 400, damping: 28 }}>
+                <motion.button
+                  onClick={() => openChat(contact)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 active:bg-muted/70 transition-colors text-left relative"
+                >
+                  {/* Avatar with online ring */}
+                  <div className="relative shrink-0">
+                    {contact.online && !contact.isGroup ? (
+                      <div className="w-12 h-12 rounded-full p-[2px] bg-gradient-to-tr from-green-400 to-green-600">
+                        <div className={`w-full h-full rounded-full ${contact.gradient} flex items-center justify-center text-white font-bold text-sm overflow-hidden border-2 border-background`}>
+                          {contact.avatarUrl ? <img src={contact.avatarUrl} alt={contact.name} className="w-full h-full object-cover" /> : contact.initials}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className={`w-12 h-12 rounded-full ${contact.gradient} flex items-center justify-center text-white font-bold text-sm overflow-hidden`}>
+                        {contact.isGroup ? <span className="text-xl">{contact.groupIcon ?? "👥"}</span>
+                          : contact.avatarUrl ? <img src={contact.avatarUrl} alt={contact.name} className="w-full h-full object-cover" /> : contact.initials}
+                      </div>
+                    )}
+                    {contact.isGroup && (
+                      <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-primary rounded-full border-2 border-background flex items-center justify-center">
+                        <Users size={8} className="text-primary-foreground" />
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <div className="flex items-center gap-1 min-w-0">
+                        {isPinned && <Pin size={10} className="text-primary shrink-0" />}
+                        <p className={`text-[13.5px] ${contact.unread > 0 ? "font-bold text-foreground" : "font-semibold text-foreground/80"} truncate`}>{contact.name}</p>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground shrink-0 ml-2">{contact.lastTime}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1 min-w-0 flex-1">
+                        {/* Delivery status for sent messages */}
+                        {isSentByMe && contact.lastMsg !== "No messages yet" && (
+                          <span className="shrink-0">
+                            <CheckCheck size={12} className="text-primary" />
+                          </span>
+                        )}
+                        <p className={`text-[12px] truncate ${contact.unread > 0 ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                          {isSentByMe && contact.lastMsg !== "No messages yet" ? `You: ${contact.lastMsg}` : contact.lastMsg}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0 ml-2">
+                        {contact.pending && (
+                          <span className="px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[9px] font-bold">Request</span>
+                        )}
+                        {contact.unread > 0 && (
+                          <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
+                            className="min-w-[18px] h-[18px] px-1 gradient-send text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                            {contact.unread}
+                          </motion.span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </motion.button>
+                {/* Divider */}
+                {idx < filtered.length - 1 && <div className="h-px bg-border/50 ml-[72px]" />}
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+
+        {/* Swipe hint for pin — long press on conversation */}
+        {filtered.length > 0 && (
+          <div className="pt-2 pb-1 flex justify-center">
+            <p className="text-[10px] text-muted-foreground/50">Long press a chat to pin or manage</p>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {filtered.length === 0 && !chat.loading && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className="flex flex-col items-center justify-center py-14 gap-4"
+          >
+            <div className="w-20 h-20 rounded-full bg-muted/60 flex items-center justify-center">
+              <MessageSquare size={32} className="text-muted-foreground/40" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-bold text-foreground mb-1">
+                {filterTab === "unread" ? "All caught up!" : filterTab === "groups" ? "No groups yet" : uiContacts.length === 0 ? "No conversations yet" : "No results found"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {filterTab === "unread" ? "You've read all your messages" : filterTab === "groups" ? "Create a group to chat with multiple people" : "Tap + to start a new conversation"}
+              </p>
+            </div>
+            {uiContacts.length === 0 && (
+              <motion.button whileTap={{ scale: 0.95 }} onClick={() => setShowNewContact(true)}
+                className="px-5 py-2.5 gradient-primary text-primary-foreground font-semibold text-sm rounded-full shadow-glow flex items-center gap-2">
+                <Plus size={16} /> Start Chatting
+              </motion.button>
+            )}
+          </motion.div>
+        )}
       </div>
 
       {/* ── New Contact Sheet ── */}
       <AnimatePresence>
-        {showNewContact && (
-          <NewContactSheet onClose={() => setShowNewContact(false)} onCreate={handleCreateContact} />
-        )}
+        {showNewContact && <NewContactSheet onClose={() => setShowNewContact(false)} onCreate={handleCreateContact} />}
       </AnimatePresence>
 
       {/* ── New Group Sheet ── */}
       <AnimatePresence>
-        {showNewGroup && (
-          <NewGroupSheet
-            contacts={uiContacts}
-            onClose={() => setShowNewGroup(false)}
-            onCreate={handleCreateGroup}
-          />
-        )}
+        {showNewGroup && <NewGroupSheet contacts={uiContacts} onClose={() => setShowNewGroup(false)} onCreate={handleCreateGroup} />}
+      </AnimatePresence>
+
+      {/* ── Forward Sheet ── */}
+      <AnimatePresence>
+        {forwardMsgId && <ForwardSheet contacts={uiContacts} onForward={handleForwardMessage} onClose={() => setForwardMsgId(null)} />}
       </AnimatePresence>
 
       {/* ── Chat overlay ── */}
@@ -1613,6 +1621,9 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
               onSendVoice={handleSendVoice}
               onSendImage={handleSendImage}
               onReact={handleReact}
+              onCopy={handleCopy}
+              onDelete={handleDeleteMessage}
+              onForward={(msgId) => setForwardMsgId(msgId)}
               onCall={handleCall}
               webrtc={webrtcManager}
               callMode={callMode}
@@ -1626,35 +1637,22 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
                 return conv?.admin_id === user?.id;
               })()}
               onAccept={async () => {
-                if (activeContactId) {
-                  await chat.acceptConversation(activeContactId);
-                  toast.success("Chat request accepted!");
-                }
+                if (activeContactId) { await chat.acceptConversation(activeContactId); toast.success("Chat request accepted!"); }
               }}
               onDecline={async () => {
-                if (activeContactId) {
-                  await chat.declineConversation(activeContactId);
-                  setActiveContactId(null);
-                  toast("Chat request declined");
-                }
+                if (activeContactId) { await chat.declineConversation(activeContactId); setActiveContactId(null); toast("Chat request declined"); }
               }}
               onBlockReport={async (reason) => {
-                if (activeContactId) {
-                  await chat.blockAndReport(activeContactId, reason);
-                  setActiveContactId(null);
-                  toast.success("User blocked & reported");
-                }
+                if (activeContactId) { await chat.blockAndReport(activeContactId, reason); setActiveContactId(null); toast.success("User blocked & reported"); }
               }}
               onSendMoney={(phone) => {
                 const contactId = activeContactId;
                 const contactPhone = activeContact.phone;
-                setActiveContactId(null);
-                chat.closeConversation();
+                setActiveContactId(null); chat.closeConversation();
                 onSendMoney?.(phone, async (amount) => {
                   if (contactId) {
                     await chat.sendMessage(contactId, `Sent ৳${amount.toLocaleString()} to ${contactPhone}`, "money", {
-                      amount,
-                      txnId: `TXN${Date.now().toString(36).toUpperCase()}`,
+                      amount, txnId: `TXN${Date.now().toString(36).toUpperCase()}`,
                     });
                   }
                 });
@@ -1667,12 +1665,8 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
       {/* ── Incoming call overlay ── */}
       <AnimatePresence>
         {incomingCall && (
-          <IncomingCallOverlay
-            callerName={incomingCall.senderName}
-            mode={incomingCall.mode}
-            onAccept={handleAcceptCall}
-            onReject={handleRejectCall}
-          />
+          <IncomingCallOverlay callerName={incomingCall.senderName} mode={incomingCall.mode}
+            onAccept={handleAcceptCall} onReject={handleRejectCall} />
         )}
       </AnimatePresence>
     </>
