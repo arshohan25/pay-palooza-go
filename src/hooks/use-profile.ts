@@ -13,15 +13,32 @@ interface ProfileData {
  */
 export function useProfile() {
   const [profile, setProfile] = useState<ProfileData>({
-    name: localStorage.getItem("mfs_user_name"),
-    phone: localStorage.getItem("mfs_registered_phone") || "",
+    name: null,
+    phone: "",
     avatar_url: null,
   });
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setLoading(false); return; }
+    if (!user) {
+      // No user — clear any cached identity
+      localStorage.removeItem("mfs_user_name");
+      localStorage.removeItem("mfs_registered_phone");
+      localStorage.removeItem("mfs_display_photo");
+      localStorage.removeItem("mfs_cached_user_id");
+      setLoading(false);
+      return;
+    }
+
+    // Detect user switch and clear stale cache
+    const cachedUserId = localStorage.getItem("mfs_cached_user_id");
+    if (cachedUserId && cachedUserId !== user.id) {
+      localStorage.removeItem("mfs_user_name");
+      localStorage.removeItem("mfs_registered_phone");
+      localStorage.removeItem("mfs_display_photo");
+    }
+    localStorage.setItem("mfs_cached_user_id", user.id);
 
     const { data } = await supabase
       .from("profiles")
@@ -31,7 +48,6 @@ export function useProfile() {
 
     if (data) {
       setProfile({ name: data.name, phone: data.phone, avatar_url: data.avatar_url });
-      // Always sync DB values to localStorage to prevent stale data
       if (data.name) {
         localStorage.setItem("mfs_user_name", data.name);
       } else {
