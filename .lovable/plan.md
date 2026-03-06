@@ -1,24 +1,29 @@
 
 
-## Plan: Fix Inbox Chat Issues
+## Plan: Add Biller Categories to API Hub
 
-### Issues identified
-1. **"[Old message]" bubbles** — Old encrypted messages were bulk-replaced with "[Old message]" in the database. These should be hidden or displayed as a subtle system note instead of full chat bubbles.
-2. **Loading spinner on inbox** — The full-screen loading spinner (lines 1481-1489) blocks the UI. Remove it so the conversation list renders immediately.
-3. **Excess empty space in chat** — The empty state area and message spacing create too much whitespace.
+### What
 
-### Changes to `src/pages/InboxPage.tsx`
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-#### 1. Remove inbox loading spinner
-- Delete lines 1481-1489 (the `if (chat.loading) return (...)` block) so the inbox renders immediately, showing conversations as they load.
+### Changes
 
-#### 2. Filter/style "[Old message]" messages
-- In the `MessageBubble` component, detect when `msg.text === "[Old message]"` and render a small muted system note (e.g., italic gray text "Previous message unavailable") instead of a full green/white chat bubble. This removes the visual clutter of old placeholder messages.
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-#### 3. Reduce excess spacing in chat view
-- Reduce the empty state padding from `py-16` to `py-10` (line 979)
-- Tighten message gap from `space-y-3` to `space-y-2` (line 977)
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-### Files modified
-- `src/pages/InboxPage.tsx`
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

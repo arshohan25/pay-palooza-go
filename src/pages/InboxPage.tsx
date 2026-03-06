@@ -569,15 +569,21 @@ const MessageBubble = ({ msg, contactName, onReact, onCopy, onDelete, onForward,
         {isImage && <div {...pressHandlers} className="select-none"><ImageBubble msg={msg} /></div>}
 
         {!isMoney && !isOrder && !isVoice && !isImage && (
-          <div {...pressHandlers}
-            className={`px-4 py-3 rounded-2xl text-sm leading-relaxed font-medium select-none ${
-              msg.sent
-                ? "gradient-primary text-primary-foreground rounded-br-md shadow-glow"
-                : "bg-card border border-border text-foreground rounded-bl-md shadow-card"
-            }`}
-          >
-            {msg.text}
-          </div>
+          msg.text === "[Old message]" ? (
+            <div className="flex justify-center py-1">
+              <span className="text-[11px] italic text-muted-foreground/60">Previous message unavailable</span>
+            </div>
+          ) : (
+            <div {...pressHandlers}
+              className={`px-4 py-3 rounded-2xl text-sm leading-relaxed font-medium select-none ${
+                msg.sent
+                  ? "gradient-primary text-primary-foreground rounded-br-md shadow-glow"
+                  : "bg-card border border-border text-foreground rounded-bl-md shadow-card"
+              }`}
+            >
+              {msg.text}
+            </div>
+          )
         )}
 
         {/* Context menu */}
@@ -974,9 +980,9 @@ const ChatView = ({
       </motion.div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 scrollbar-none">
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 scrollbar-none">
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+          <div className="flex flex-col items-center justify-center py-10 gap-3 text-muted-foreground">
             <Lock size={24} className="opacity-30" />
             <p className="text-sm font-medium">Start a conversation</p>
             <p className="text-xs">Messages are end-to-end encrypted</p>
@@ -1478,15 +1484,6 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
     groups: uiContacts.filter((c) => c.isGroup).length,
   }), [uiContacts]);
 
-  if (chat.loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 gap-3">
-        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
-        <p className="text-sm text-muted-foreground">Loading conversations…</p>
-      </div>
-    );
-  }
 
   return (
     <>
