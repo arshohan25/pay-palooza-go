@@ -51,8 +51,13 @@ export class WebRTCManager {
   }
 
   private setState(s: CallState) {
+    if (this._state === s) return; // idempotent
     this._state = s;
     this.onCallStateChange?.(s);
+  }
+
+  private get isTerminal() {
+    return this._state === "ended" || this._state === "idle";
   }
 
   // ── Event handlers ──────────────────────────────────────────────
@@ -102,8 +107,10 @@ export class WebRTCManager {
         break;
       case "call-end":
       case "call-reject":
-        this.cleanup();
-        this.setState("ended");
+        if (!this.isTerminal) {
+          this.cleanup();
+          this.setState("ended");
+        }
         break;
     }
   }
@@ -187,12 +194,14 @@ export class WebRTCManager {
   }
 
   rejectCall() {
+    if (this.isTerminal) return;
     this.broadcast({ type: "call-reject", mode: this.mode });
     this.cleanup();
     this.setState("idle");
   }
 
   endCall() {
+    if (this.isTerminal) return;
     this.broadcast({ type: "call-end", mode: this.mode });
     this.cleanup();
     this.setState("ended");
