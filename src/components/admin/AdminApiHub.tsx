@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import {
   CreditCard, Smartphone, Mail, MessageSquare, ScanFace, Shield,
   RefreshCw, CheckCircle, XCircle, AlertCircle, Settings2, Loader2,
+  Zap, Droplets, Flame, Wifi, Tv,
 } from "lucide-react";
 
 interface ApiItem {
@@ -113,6 +114,20 @@ export default function AdminApiHub({ onNavigate }: AdminApiHubProps) {
         navigateTo: "permissions",
       });
 
+      // Static biller entries
+      const billers: { category: string; names: string[] }[] = [
+        { category: "Electricity", names: ["DESCO", "DPDC", "BPDB", "NESCO", "WZPDCL"] },
+        { category: "Gas", names: ["Titas Gas", "Bakhrabad Gas", "Jalalabad Gas"] },
+        { category: "Water", names: ["WASA Dhaka", "WASA Chittagong"] },
+        { category: "Internet ISPs", names: ["BTCL", "Carnival", "Amber IT", "Link3", "DOT Internet"] },
+        { category: "TV / Cable", names: ["Dish TV", "Akash DTH"] },
+      ];
+      for (const group of billers) {
+        for (const name of group.names) {
+          items.push({ name, category: group.category, status: "not_configured", navigateTo: "gateways" });
+        }
+      }
+
       setApis(items);
     } catch (err) {
       console.error("Failed to load API hub data", err);
@@ -140,6 +155,11 @@ export default function AdminApiHub({ onNavigate }: AdminApiHubProps) {
     "Email": Mail,
     "KYC": ScanFace,
     "Auth / Device": Shield,
+    "Electricity": Zap,
+    "Gas": Flame,
+    "Water": Droplets,
+    "Internet ISPs": Wifi,
+    "TV / Cable": Tv,
   };
 
   const statusBadge = (s: ApiItem["status"]) => {
