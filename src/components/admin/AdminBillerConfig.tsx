@@ -5,7 +5,7 @@ import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator"
 import { toast } from "sonner";
 import {
   Zap, Droplets, Flame, Wifi, Tv, Plus, Pencil, Trash2, Loader2,
-  Power, PowerOff, Eye, EyeOff, Save, X,
+  Power, PowerOff, Eye, EyeOff, Save, X, Radio,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -78,6 +78,8 @@ export default function AdminBillerConfig() {
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [deleteBiller, setDeleteBiller] = useState<Biller | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [testing, setTesting] = useState<Record<string, boolean>>({});
+  const [testResults, setTestResults] = useState<Record<string, "ok" | "fail">>({});
 
   const loadBillers = useCallback(async () => {
     setLoading(true);
@@ -258,9 +260,32 @@ export default function AdminBillerConfig() {
                       {b.api_base_url && (
                         <p className="text-xs text-muted-foreground truncate font-mono">{b.api_base_url}</p>
                       )}
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         <Button size="sm" variant="outline" className="text-xs gap-1 flex-1" onClick={() => openEdit(b)}>
                           <Pencil className="w-3 h-3" /> Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={`text-xs gap-1 ${testResults[b.id] === "ok" ? "border-emerald-500 text-emerald-700" : testResults[b.id] === "fail" ? "border-destructive text-destructive" : ""}`}
+                          disabled={!b.api_base_url || testing[b.id]}
+                          onClick={async () => {
+                            setTesting(p => ({ ...p, [b.id]: true }));
+                            setTestResults(p => { const n = { ...p }; delete n[b.id]; return n; });
+                            try {
+                              const res = await fetch(b.api_base_url!, { method: "HEAD", mode: "no-cors", signal: AbortSignal.timeout(8000) });
+                              setTestResults(p => ({ ...p, [b.id]: "ok" }));
+                              toast.success(`${b.display_name}: reachable`);
+                            } catch {
+                              setTestResults(p => ({ ...p, [b.id]: "fail" }));
+                              toast.error(`${b.display_name}: unreachable`);
+                            }
+                            setTesting(p => ({ ...p, [b.id]: false }));
+                          }}
+                          title={!b.api_base_url ? "Set an API Base URL first" : "Ping API endpoint"}
+                        >
+                          {testing[b.id] ? <Loader2 className="w-3 h-3 animate-spin" /> : <Radio className="w-3 h-3" />}
+                          {testResults[b.id] === "ok" ? "OK" : testResults[b.id] === "fail" ? "Fail" : "Test"}
                         </Button>
                         <Button size="sm" variant="outline" className="text-xs gap-1 text-destructive hover:text-destructive" onClick={() => setDeleteBiller(b)}>
                           <Trash2 className="w-3 h-3" />
