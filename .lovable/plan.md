@@ -1,29 +1,29 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Replace Logo & Add manifest.json
 
-### What
+### 1. Replace logo asset
+Copy the uploaded image to both locations:
+- `src/assets/easypay-logo.png` (used by React components via import)
+- `public/icons/easypay-logo.png` (used as fallback and in HTML)
+- `public/icons/icon-192.png` and `public/icons/icon-512.png` (PWA icons)
+- `public/favicon.ico`
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### 2. Add static `public/manifest.json`
+Create a proper `manifest.json` in the public directory with complete icon declarations (including the logo as apple-touch-icon), shortcuts, and related_applications fields. This supplements the VitePWA-generated manifest.
 
-### Changes
+Update `index.html` to add `<link rel="manifest" href="/manifest.json">`.
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+### 3. Update VitePWA config
+Add the `easypay-logo.png` icon entry to the manifest icons array in `vite.config.ts` so VitePWA also references it, and split the `purpose` field into separate entries (`any` and `maskable`) per PWA best practices.
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
-
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+### Files modified
+- `src/assets/easypay-logo.png` (replaced)
+- `public/icons/easypay-logo.png` (replaced)
+- `public/icons/icon-192.png` (replaced)
+- `public/icons/icon-512.png` (replaced)
+- `public/favicon.ico` (replaced)
+- `public/manifest.json` (new)
+- `index.html` (add manifest link)
+- `vite.config.ts` (update icon declarations)
 
