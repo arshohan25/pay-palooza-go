@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useRealtimeStatus } from "@/hooks/use-realtime-status";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -192,6 +193,7 @@ export default function AdminDashboard() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailData, setDetailData] = useState<{ profile: any; roles: any[]; kyc: any; transactions: any[] } | null>(null);
   const { visible: realtimeVisible, flash: realtimeFlash } = useRealtimeIndicator();
+  const wsStatus = useRealtimeStatus();
   const openUserDetail = async (user: any) => {
     setDetailUser(user);
     setDetailLoading(true);
@@ -556,6 +558,23 @@ export default function AdminDashboard() {
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                 />
+              </div>
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                wsStatus === "connected"
+                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                  : wsStatus === "connecting"
+                  ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                  : "bg-destructive/10 text-destructive"
+              }`}>
+                <span className="relative flex h-2 w-2">
+                  {wsStatus === "connected" && (
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                  )}
+                  <span className={`relative inline-flex rounded-full h-2 w-2 ${
+                    wsStatus === "connected" ? "bg-emerald-500" : wsStatus === "connecting" ? "bg-amber-500" : "bg-destructive"
+                  }`} />
+                </span>
+                {wsStatus === "connected" ? "Live" : wsStatus === "connecting" ? "Connecting…" : "Offline"}
               </div>
               <Button variant="outline" size="icon" onClick={loadData} disabled={refreshing}>
                 <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
