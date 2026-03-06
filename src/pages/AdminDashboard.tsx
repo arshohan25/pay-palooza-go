@@ -50,6 +50,7 @@ import AdminWebhookLog from "@/components/admin/AdminWebhookLog";
 import AdminActivityFeed from "@/components/admin/AdminActivityFeed";
 import AdminApiHub from "@/components/admin/AdminApiHub";
 import AdminBillerConfig from "@/components/admin/AdminBillerConfig";
+import AdminAuditLogViewer from "@/components/admin/AdminAuditLogViewer";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -166,6 +167,7 @@ const NAV_ITEMS = [
   { id: "permissions", label: "Permissions", icon: ShieldAlert },
   { id: "reporting", label: "Reports", icon: BarChart3 },
   { id: "billers", label: "Billers", icon: FileText },
+  { id: "auditlog", label: "Audit Log", icon: Eye },
   { id: "apihub", label: "API Hub", icon: Plug },
 ];
 
@@ -1079,6 +1081,9 @@ export default function AdminDashboard() {
 
         {/* ═══ BILLER API CONFIGS ═══ */}
         {activeTab === "billers" && <AdminBillerConfig />}
+
+        {/* ═══ AUDIT LOG VIEWER ═══ */}
+        {activeTab === "auditlog" && <AdminAuditLogViewer />}
       </main>
 
       {/* User Lock Dialog - accessible from any user/agent/merchant row */}
