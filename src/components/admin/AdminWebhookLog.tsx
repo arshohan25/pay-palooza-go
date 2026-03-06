@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
+import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,6 +53,7 @@ const PROVIDER_COLORS: Record<string, string> = {
 
 export default function AdminWebhookLog() {
   const [sessions, setSessions] = useState<PaymentSession[]>([]);
+  const { visible, flash } = useRealtimeIndicator();
   const [auditMap, setAuditMap] = useState<Record<string, AuditEntry[]>>({});
   const [loading, setLoading] = useState(true);
   const [providerFilter, setProviderFilter] = useState("all");
@@ -105,8 +108,8 @@ export default function AdminWebhookLog() {
         "postgres_changes",
         { event: "*", schema: "public", table: "payment_sessions" },
         () => {
-          // Re-fetch on any change
           load();
+          flash();
         }
       )
       .subscribe();
@@ -132,6 +135,7 @@ export default function AdminWebhookLog() {
                 Live
               </span>
             )}
+            <RealtimeUpdateIndicator visible={visible} />
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <Select value={providerFilter} onValueChange={setProviderFilter}>

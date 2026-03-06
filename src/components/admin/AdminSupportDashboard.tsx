@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
+import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Bot, User, Loader2, MessageCircle, ArrowLeft, CheckCheck, Check, Zap, ChevronDown, Plus, Trash2, Edit2, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -60,6 +62,7 @@ const fmt = (d: string) =>
 
 export default function AdminSupportDashboard() {
   const { user } = useAuth();
+  const { visible, flash } = useRealtimeIndicator();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -202,9 +205,11 @@ export default function AdminSupportDashboard() {
       .channel("admin-support-convs")
       .on("postgres_changes", { event: "*", schema: "public", table: "support_conversations" }, () => {
         loadConversations();
+        flash();
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "support_messages" }, () => {
         loadConversations();
+        flash();
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -377,6 +382,7 @@ export default function AdminSupportDashboard() {
           <p className="text-[10px] text-muted-foreground mt-0.5">
             {conversations.filter(c => c.status === "open").length} open
           </p>
+          <RealtimeUpdateIndicator visible={visible} />
         </div>
         <ScrollArea className="flex-1">
           {conversations.length === 0 ? (

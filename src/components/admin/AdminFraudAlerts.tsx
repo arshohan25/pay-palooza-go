@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
+import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import {
   AlertTriangle, ShieldAlert, Shield, ShieldCheck, ShieldX, ShieldOff,
   Smartphone, Globe, MapPin, Phone, Hash, Clock, User, ChevronDown, ChevronUp,
@@ -66,6 +68,7 @@ const STATUS_ICON: Record<string, any> = {
 
 export default function AdminFraudAlerts() {
   const [alerts, setAlerts] = useState<FraudAlert[]>([]);
+  const { visible, flash } = useRealtimeIndicator();
   const [profiles, setProfiles] = useState<Map<string, UserProfile>>(new Map());
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -112,6 +115,7 @@ export default function AdminFraudAlerts() {
         async (payload) => {
           const newAlert = payload.new as FraudAlert;
           setAlerts(prev => [newAlert, ...prev]);
+          flash();
 
           // Fetch profile if not cached
           if (!profiles.has(newAlert.user_id)) {
@@ -232,6 +236,7 @@ export default function AdminFraudAlerts() {
 
   return (
     <div className="space-y-4">
+      <RealtimeUpdateIndicator visible={visible} />
       {/* Header & stats */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>

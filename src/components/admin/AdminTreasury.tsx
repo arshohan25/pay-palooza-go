@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
+import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,6 +79,7 @@ function formatBDT(amount: number) {
 
 export default function AdminTreasury() {
   const [treasury, setTreasury] = useState<Treasury | null>(null);
+  const { visible, flash } = useRealtimeIndicator();
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<string>("all");
@@ -116,8 +119,8 @@ export default function AdminTreasury() {
   useEffect(() => {
     const channel = supabase
       .channel("treasury-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "platform_treasury" }, () => loadTreasury())
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "treasury_ledger" }, () => loadTreasury())
+      .on("postgres_changes", { event: "*", schema: "public", table: "platform_treasury" }, () => { loadTreasury(); flash(); })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "treasury_ledger" }, () => { loadTreasury(); flash(); })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [loadTreasury]);
@@ -302,6 +305,7 @@ export default function AdminTreasury() {
 
   return (
     <div className="space-y-6">
+      <RealtimeUpdateIndicator visible={visible} />
       {/* ═══ Overview Cards ═══ */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>

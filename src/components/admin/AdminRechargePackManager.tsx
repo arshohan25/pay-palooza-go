@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
+import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { toast } from "sonner";
 import {
   Loader2, Plus, Pencil, Trash2, Save, Smartphone, Flame, Package, Search, Copy, GripVertical,
@@ -138,6 +140,7 @@ function SortablePackRow({
 
 export default function AdminRechargePackManager() {
   const [packs, setPacks] = useState<Pack[]>([]);
+  const { visible, flash } = useRealtimeIndicator();
   const [loading, setLoading] = useState(true);
   const [filterOp, setFilterOp] = useState<string>("all");
   const [filterType, setFilterType] = useState<string>("all");
@@ -172,7 +175,7 @@ export default function AdminRechargePackManager() {
   useEffect(() => {
     const ch = supabase
       .channel("admin-recharge-packs")
-      .on("postgres_changes", { event: "*", schema: "public", table: "recharge_packs" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "recharge_packs" }, () => { load(); flash(); })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [load]);
@@ -315,6 +318,7 @@ export default function AdminRechargePackManager() {
           <p className="text-sm text-muted-foreground">
             Manage mobile recharge packs for all operators ({packs.length} total) · Drag to reorder
           </p>
+          <RealtimeUpdateIndicator visible={visible} />
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-2">

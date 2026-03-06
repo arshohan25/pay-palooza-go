@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
+import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +59,7 @@ const REJECTION_REASONS = [
 
 export default function AdminKycReview() {
   const [records, setRecords] = useState<KycRecord[]>([]);
+  const { visible, flash } = useRealtimeIndicator();
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "verified" | "rejected">("pending");
   const [selected, setSelected] = useState<KycRecord | null>(null);
@@ -111,6 +114,7 @@ export default function AdminKycReview() {
       .on("postgres_changes", { event: "*", schema: "public", table: "kyc_verifications" }, () => {
         loadRecords();
         loadStats();
+        flash();
       })
       .subscribe();
   return () => { supabase.removeChannel(channel); };
@@ -239,6 +243,7 @@ export default function AdminKycReview() {
 
   return (
     <div className="space-y-4">
+      <RealtimeUpdateIndicator visible={visible} />
       {/* KYC Stats Summary */}
       <div className="grid grid-cols-3 gap-3">
         {[
