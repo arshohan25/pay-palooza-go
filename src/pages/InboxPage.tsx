@@ -932,7 +932,7 @@ const ChatView = ({
                 : contact.online ? "Online" : contact.phone}
             </p>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 relative">
             {!contact.isGroup && (
               <>
                 <button onClick={() => onCall("audio")}
