@@ -7,7 +7,7 @@ import {
   TrendingUp, Activity, Search, RefreshCw, LogOut,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
-  Menu, ScanFace, Gift, Award, Wallet, Radio,
+  Menu, ScanFace, Gift, Award, Wallet, Radio, Plug,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,7 @@ import AdminPermissions from "@/components/admin/AdminPermissions";
 import AdminTreasury from "@/components/admin/AdminTreasury";
 import AdminWebhookLog from "@/components/admin/AdminWebhookLog";
 import AdminActivityFeed from "@/components/admin/AdminActivityFeed";
+import AdminApiHub from "@/components/admin/AdminApiHub";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -163,6 +164,7 @@ const NAV_ITEMS = [
   { id: "webhooks", label: "Webhooks", icon: Activity },
   { id: "permissions", label: "Permissions", icon: ShieldAlert },
   { id: "reporting", label: "Reports", icon: BarChart3 },
+  { id: "apihub", label: "API Hub", icon: Plug },
 ];
 
 export default function AdminDashboard() {
@@ -1069,6 +1071,9 @@ export default function AdminDashboard() {
 
         {/* ═══ REPORTING DASHBOARD ═══ */}
         {activeTab === "reporting" && <AdminReporting />}
+
+        {/* ═══ API HUB ═══ */}
+        {activeTab === "apihub" && <AdminApiHub onNavigate={setActiveTab} />}
       </main>
 
       {/* User Lock Dialog - accessible from any user/agent/merchant row */}
