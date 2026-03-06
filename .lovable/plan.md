@@ -1,49 +1,29 @@
 
 
-## Plan: Redesign Inbox Chat UI — Modern & Dynamic
+## Plan: Add Biller Categories to API Hub
 
-### Overview
-Modernize the inbox conversation list and chat view with better spacing, cleaner layout, and a more dynamic feel. Remove visual clutter and tighten/loosen spacing where needed.
+### What
 
-### Changes to `src/pages/InboxPage.tsx`
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-#### 1. Conversation List (Lines 1497-1695)
-- **Header**: Increase top padding, make title larger (`text-xl`), add subtle bottom border, more breathing room between avatar and text
-- **Search bar**: Add proper vertical margin (`mb-3` instead of `mb-2`), slightly taller (`h-10`), rounded-xl instead of rounded-full for modern look
-- **Filter tabs**: Add more gap between tabs (`gap-2`), increase pill padding (`px-4 py-1.5`), add `mb-3` for spacing below
-- **Online stories bar**: Add `mb-3` and proper padding
-- **Conversation items**: 
-  - Increase row height with `py-3` (was `py-2.5`)
-  - Make avatars `w-13 h-13` (slightly larger) with proper gap-3.5
-  - Add rounded hover state (`rounded-xl`)
-  - Name font size bump to `text-sm` (was `text-[13.5px]`)
-  - Last message size `text-[12.5px]`
-  - Remove the `space-y-0` and add proper dividers with more left margin
-- **Remove**: "Long press a chat to pin or manage" hint text (unnecessary)
-- **Empty state**: Add more vertical padding
+### Changes
 
-#### 2. Chat View (Lines 899-1215)
-- **Header**: 
-  - Increase avatar to `w-10 h-10` (was `w-9 h-9`)
-  - More padding (`px-4` instead of `px-3`)
-  - Increase name font size, add gap-3
-  - Action buttons slightly larger (`w-9 h-9`)
-- **Remove E2E banner**: It takes space and adds clutter — remove the "Messages are end-to-end encrypted" bar entirely
-- **Messages area**: 
-  - Increase padding (`px-4 py-4`), more gap between messages (`space-y-3` instead of `space-y-2`)
-  - Bubble text size `text-sm` (was `text-[13.5px]`)
-  - More bubble padding (`px-4 py-3` instead of `px-4 py-2.5`)
-- **Input bar**: 
-  - More padding (`px-4` instead of `px-3`)
-  - Taller input area with `py-2` instead of `py-1.5`
-  - Slightly larger send/mic buttons (`w-10 h-10`)
-  - Input field `text-sm` with proper height
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-#### 3. Message Bubbles (Lines 491-625)
-- Increase max-width to `max-w-[80%]`
-- Add more breathing room between time/read receipt and bubble (`mt-1` instead of `mt-0.5`)
-- Larger time text (`text-[11px]` instead of `text-[10px]`)
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-### Files modified
-- `src/pages/InboxPage.tsx` — spacing and styling updates throughout
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

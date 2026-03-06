@@ -505,7 +505,7 @@ const MessageBubble = ({ msg, contactName, onReact, onCopy, onDelete, onForward,
 
   return (
     <div className={`flex ${msg.sent ? "justify-end" : "justify-start"}`}>
-      <div className={`flex flex-col max-w-[78%] ${msg.sent ? "items-end" : "items-start"} relative`}>
+      <div className={`flex flex-col max-w-[80%] ${msg.sent ? "items-end" : "items-start"} relative`}>
         {isGroup && !msg.sent && (
           <span className="text-[10px] font-semibold text-primary mb-0.5 ml-1">{contactName}</span>
         )}
@@ -570,7 +570,7 @@ const MessageBubble = ({ msg, contactName, onReact, onCopy, onDelete, onForward,
 
         {!isMoney && !isOrder && !isVoice && !isImage && (
           <div {...pressHandlers}
-            className={`px-4 py-2.5 rounded-2xl text-[13.5px] leading-snug font-medium select-none ${
+            className={`px-4 py-3 rounded-2xl text-sm leading-relaxed font-medium select-none ${
               msg.sent
                 ? "gradient-primary text-primary-foreground rounded-br-md shadow-glow"
                 : "bg-card border border-border text-foreground rounded-bl-md shadow-card"
@@ -616,8 +616,8 @@ const MessageBubble = ({ msg, contactName, onReact, onCopy, onDelete, onForward,
           </motion.div>
         )}
 
-        <div className={`flex items-center gap-1 mt-0.5 ${msg.sent ? "flex-row-reverse" : ""}`}>
-          <span className="text-[10px] text-muted-foreground">{msg.time}</span>
+        <div className={`flex items-center gap-1 mt-1 ${msg.sent ? "flex-row-reverse" : ""}`}>
+          <span className="text-[11px] text-muted-foreground">{msg.time}</span>
           <ReadReceipt msg={msg} />
         </div>
       </div>
@@ -902,15 +902,15 @@ const ChatView = ({
       <motion.div
         initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 28 }}
-        className="bg-background/80 backdrop-blur-xl border-b border-border/50 px-3 pt-[env(safe-area-inset-top,12px)] pb-2.5 shrink-0"
+        className="bg-background/80 backdrop-blur-xl border-b border-border/50 px-4 pt-[env(safe-area-inset-top,12px)] pb-3 shrink-0"
       >
-        <div className="flex items-center gap-2.5 pt-2">
+        <div className="flex items-center gap-3 pt-2">
           <button onClick={onBack}
             className="w-9 h-9 rounded-full bg-muted/80 flex items-center justify-center active:scale-95 transition-transform shrink-0 text-foreground">
             <ChevronLeft size={20} />
           </button>
           <div className="relative shrink-0">
-            <div className={`w-9 h-9 rounded-full ${contact.gradient} flex items-center justify-center text-white font-bold text-xs overflow-hidden`}>
+            <div className={`w-10 h-10 rounded-full ${contact.gradient} flex items-center justify-center text-white font-bold text-sm overflow-hidden`}>
               {contact.isGroup ? <span className="text-base">{contact.groupIcon ?? "👥"}</span>
                 : contact.avatarUrl ? <img src={contact.avatarUrl} alt={contact.name} className="w-full h-full object-cover" /> : contact.initials}
             </div>
@@ -925,20 +925,20 @@ const ChatView = ({
                 : contact.online ? "Online" : contact.phone}
             </p>
           </div>
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-1">
             {!contact.isGroup && (
               <>
                 <button onClick={() => onCall("audio")}
-                  className="w-8 h-8 rounded-full bg-muted/60 flex items-center justify-center active:scale-95 transition-transform text-foreground">
-                  <Phone size={14} />
+                  className="w-9 h-9 rounded-full bg-muted/60 flex items-center justify-center active:scale-95 transition-transform text-foreground">
+                  <Phone size={15} />
                 </button>
                 <button onClick={() => onCall("video")}
-                  className="w-8 h-8 rounded-full bg-muted/60 flex items-center justify-center active:scale-95 transition-transform text-foreground">
-                  <Video size={14} />
+                  className="w-9 h-9 rounded-full bg-muted/60 flex items-center justify-center active:scale-95 transition-transform text-foreground">
+                  <Video size={15} />
                 </button>
               </>
             )}
-            <button onClick={() => setShowChatMenu((v) => !v)} className="w-8 h-8 rounded-full bg-muted/60 flex items-center justify-center active:scale-95 transition-transform text-foreground">
+            <button onClick={() => setShowChatMenu((v) => !v)} className="w-9 h-9 rounded-full bg-muted/60 flex items-center justify-center active:scale-95 transition-transform text-foreground">
               {contact.isGroup ? <Info size={14} /> : <MoreVertical size={14} />}
             </button>
             {/* Chat menu dropdown */}
@@ -973,14 +973,8 @@ const ChatView = ({
         </div>
       </motion.div>
 
-      {/* E2E banner */}
-      <div className="flex items-center justify-center gap-1.5 py-1 bg-muted/30 border-b border-border/30">
-        <Lock size={9} className="text-muted-foreground" />
-        <span className="text-[9px] text-muted-foreground font-medium">Messages are end-to-end encrypted</span>
-      </div>
-
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2 scrollbar-none">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 scrollbar-none">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
             <Lock size={24} className="opacity-30" />
@@ -1126,7 +1120,7 @@ const ChatView = ({
           </AnimatePresence>
         </div>
       ) : (
-        <div className="px-3 pb-[env(safe-area-inset-bottom,8px)] pt-1.5 border-t border-border/40 bg-background shrink-0">
+        <div className="px-4 pb-[env(safe-area-inset-bottom,8px)] pt-2 border-t border-border/40 bg-background shrink-0">
           <AnimatePresence>
             {recording && (
               <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} className="flex items-center gap-2 mb-1.5 px-3">
@@ -1138,7 +1132,7 @@ const ChatView = ({
             )}
           </AnimatePresence>
 
-          <div className="flex items-center gap-1.5 bg-card border border-border rounded-2xl px-2.5 py-1.5 shadow-card">
+          <div className="flex items-center gap-2 bg-card border border-border rounded-2xl px-3 py-2 shadow-card">
             <button onClick={() => { setShowAttach(!showAttach); setShowQuick(false); }}
               className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${showAttach ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
               <Paperclip size={17} />
@@ -1159,15 +1153,15 @@ const ChatView = ({
             )}
             {text.trim() ? (
               <motion.button whileTap={{ scale: 0.88 }} onClick={handleSend}
-                className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground shadow-glow transition-all">
-                <Send size={16} />
+                className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground shadow-glow transition-all">
+                <Send size={17} />
               </motion.button>
             ) : (
               <motion.button whileTap={{ scale: 0.88 }}
                 onMouseDown={startMicPress} onMouseUp={endMicPress} onMouseLeave={endMicPress}
                 onTouchStart={startMicPress} onTouchEnd={endMicPress}
-                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all select-none ${recording ? "gradient-send text-primary-foreground shadow-glow scale-110" : "bg-primary/10 text-primary"}`}>
-                <Mic size={16} />
+                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all select-none ${recording ? "gradient-send text-primary-foreground shadow-glow scale-110" : "bg-primary/10 text-primary"}`}>
+                <Mic size={17} />
               </motion.button>
             )}
           </div>
@@ -1497,37 +1491,37 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
   return (
     <>
       {/* ── Modern Header ── */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between mb-4 pb-3 border-b border-border/30">
+        <div className="flex items-center gap-3.5">
           {profileData?.avatar_url ? (
-            <img src={profileData.avatar_url} alt="Me" className="w-9 h-9 rounded-full object-cover border-2 border-primary/20" />
+            <img src={profileData.avatar_url} alt="Me" className="w-10 h-10 rounded-full object-cover border-2 border-primary/20" />
           ) : (
-            <div className="w-9 h-9 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+            <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
               {getInitials(profileData?.name || "U")}
             </div>
           )}
           <div>
-            <h1 className="text-lg font-extrabold text-foreground leading-tight">Messages</h1>
-            <p className="text-[11px] text-muted-foreground">
+            <h1 className="text-xl font-extrabold text-foreground leading-tight">Messages</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
               {totalUnread > 0 ? `${totalUnread} unread` : "All caught up!"}
             </p>
           </div>
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex gap-2">
           <motion.button whileTap={{ scale: 0.88 }} onClick={() => setShowNewGroup(true)}
-            className="w-9 h-9 bg-muted rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-            <Users size={16} />
+            className="w-10 h-10 bg-muted rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+            <Users size={17} />
           </motion.button>
           <motion.button whileTap={{ scale: 0.88 }} onClick={() => setShowNewContact(true)}
-            className="w-9 h-9 gradient-primary rounded-full flex items-center justify-center text-primary-foreground shadow-glow">
-            <Plus size={16} />
+            className="w-10 h-10 gradient-primary rounded-full flex items-center justify-center text-primary-foreground shadow-glow">
+            <Plus size={17} />
           </motion.button>
         </div>
       </div>
 
       {/* ── Search Bar ── */}
-      <div className="relative mb-2">
-        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+      <div className="relative mb-3">
+        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
         <input
           type="text"
           placeholder="Search messages…"
@@ -1535,7 +1529,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
           onChange={(e) => setSearch(e.target.value)}
           onFocus={() => setSearchFocused(true)}
           onBlur={() => setTimeout(() => setSearchFocused(false), 100)}
-          className="w-full pl-10 pr-16 h-9 bg-muted/60 rounded-full text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition border-0"
+          className="w-full pl-10 pr-16 h-10 bg-muted/60 rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition border-0"
         />
         {searchFocused && (
           <button onClick={() => { setSearch(""); setSearchFocused(false); }}
@@ -1546,10 +1540,10 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
       </div>
 
       {/* ── Filter Tabs ── */}
-      <div className="flex gap-1 mb-2">
+      <div className="flex gap-2 mb-3">
         {(["all", "unread", "groups"] as FilterTab[]).map((tab) => (
           <button key={tab} onClick={() => setFilterTab(tab)}
-            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+            className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
               filterTab === tab
                 ? "bg-primary text-primary-foreground shadow-glow"
                 : "bg-muted/60 text-muted-foreground hover:bg-muted"
@@ -1561,7 +1555,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
 
       {/* ── Online Users Stories Bar ── */}
       {onlineContacts.length > 0 && filterTab !== "groups" && (
-        <div className="mb-2 -mx-1 overflow-x-auto scrollbar-none">
+        <div className="mb-3 -mx-1 overflow-x-auto scrollbar-none">
           <div className="flex gap-3 px-1 py-1">
             {onlineContacts.map((c) => (
               <motion.button key={c.id} whileTap={{ scale: 0.92 }} onClick={() => openChat(c)}
@@ -1582,7 +1576,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
       )}
 
       {/* ── Conversation List ── */}
-      <div className="space-y-0">
+      <div>
         <AnimatePresence>
           {filtered.map((contact, idx) => {
             const isPinned = pinnedIds.includes(contact.id);
@@ -1593,7 +1587,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
                 transition={{ delay: idx * 0.03, type: "spring", stiffness: 400, damping: 28 }}>
                 <motion.button
                   onClick={() => openChat(contact)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 active:bg-muted/70 transition-colors text-left relative"
+                  className="w-full flex items-center gap-3.5 px-3 py-3 hover:bg-muted/50 active:bg-muted/70 rounded-xl transition-colors text-left relative"
                 >
                   {/* Avatar with online ring */}
                   <div className="relative shrink-0">
@@ -1621,7 +1615,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
                     <div className="flex items-center justify-between mb-0.5">
                       <div className="flex items-center gap-1 min-w-0">
                         {isPinned && <Pin size={10} className="text-primary shrink-0" />}
-                        <p className={`text-[13.5px] ${contact.unread > 0 ? "font-bold text-foreground" : "font-semibold text-foreground/80"} truncate`}>{contact.name}</p>
+                        <p className={`text-sm ${contact.unread > 0 ? "font-bold text-foreground" : "font-semibold text-foreground/80"} truncate`}>{contact.name}</p>
                       </div>
                       <span className="text-[10px] text-muted-foreground shrink-0 ml-2">{contact.lastTime}</span>
                     </div>
@@ -1633,7 +1627,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
                             <CheckCheck size={12} className="text-primary" />
                           </span>
                         )}
-                        <p className={`text-[12px] truncate ${contact.unread > 0 ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                        <p className={`text-[12.5px] truncate ${contact.unread > 0 ? "text-foreground font-medium" : "text-muted-foreground"}`}>
                           {isSentByMe && contact.lastMsg !== "No messages yet" ? `You: ${contact.lastMsg}` : contact.lastMsg}
                         </p>
                       </div>
@@ -1652,18 +1646,11 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
                   </div>
                 </motion.button>
                 {/* Divider */}
-                {idx < filtered.length - 1 && <div className="h-px bg-border/50 ml-[72px]" />}
+                {idx < filtered.length - 1 && <div className="h-px bg-border/40 ml-[76px]" />}
               </motion.div>
             );
           })}
         </AnimatePresence>
-
-        {/* Swipe hint for pin — long press on conversation */}
-        {filtered.length > 0 && (
-          <div className="pt-2 pb-1 flex justify-center">
-            <p className="text-[10px] text-muted-foreground/50">Long press a chat to pin or manage</p>
-          </div>
-        )}
 
         {/* Empty State */}
         {filtered.length === 0 && !chat.loading && (
@@ -1671,7 +1658,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="flex flex-col items-center justify-center py-14 gap-4"
+            className="flex flex-col items-center justify-center py-20 gap-4"
           >
             <div className="w-20 h-20 rounded-full bg-muted/60 flex items-center justify-center">
               <MessageSquare size={32} className="text-muted-foreground/40" />
