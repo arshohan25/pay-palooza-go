@@ -931,6 +931,7 @@ export type Database = {
           deactivated_by: string | null
           email: string | null
           id: string
+          kyc_exempt: boolean
           name: string | null
           phone: string
           referral_code: string | null
@@ -947,6 +948,7 @@ export type Database = {
           deactivated_by?: string | null
           email?: string | null
           id?: string
+          kyc_exempt?: boolean
           name?: string | null
           phone: string
           referral_code?: string | null
@@ -963,6 +965,7 @@ export type Database = {
           deactivated_by?: string | null
           email?: string | null
           id?: string
+          kyc_exempt?: boolean
           name?: string | null
           phone?: string
           referral_code?: string | null
