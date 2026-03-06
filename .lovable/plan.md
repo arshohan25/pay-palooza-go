@@ -1,44 +1,29 @@
 
 
-## Plan: Add RealtimeUpdateIndicator to Admin Components Missing It
+## Plan: Add Persistent WebSocket Connection Status Indicator to Admin Dashboard Header
 
-### Components to Update
+### What
 
-11 admin components have real-time subscriptions but lack the visual "Data synced just now" indicator. Two components (AdminActivityFeed, AdminActivityMonitor) are live-feed/monitor UIs where the indicator would be redundant and are excluded.
+A small indicator in the admin dashboard header bar (next to the refresh and activity feed buttons) that shows whether the real-time WebSocket connection is active (green dot + "Live") or disconnected (red dot + "Offline"). It updates automatically based on the Supabase channel subscription status.
 
-| Component | Realtime Table(s) |
-|---|---|
-| AdminSupportDashboard | support_conversations, support_messages |
-| AdminGatewayConfig | payment_gateways |
-| AdminRechargePackManager | recharge_packs |
-| AdminOrderManagement | orders |
-| AdminReferralManagement | referrals, referral_rewards |
-| AdminFeatureLocks | feature_locks |
-| AdminKycReview | kyc_verifications |
-| AdminRechargeLog | transactions (recharge) |
-| AdminGlobalToggles | global_feature_toggles |
-| AdminTreasury | platform_treasury, treasury_ledger |
-| AdminFraudAlerts | fraud_alerts |
-| AdminWebhookLog | payment_sessions |
+### How
 
-### Change per Component (identical pattern)
+**1. Create `src/hooks/use-realtime-status.ts`**
 
-1. Import `useRealtimeIndicator` and `RealtimeUpdateIndicator`
-2. Initialize `const { visible, flash } = useRealtimeIndicator()`
-3. Call `flash()` inside the existing realtime callback alongside the data reload
-4. Render `<RealtimeUpdateIndicator visible={visible} />` near the top of the component's return JSX
+A hook that subscribes to the Supabase channel status events (`SUBSCRIBED`, `CLOSED`, `CHANNEL_ERROR`, `TIMED_OUT`) from the existing `admin-global-realtime` channel pattern. It will:
+- Track connection state: `"connected" | "connecting" | "disconnected"`
+- Create a dedicated lightweight channel (e.g. `admin-heartbeat`) that listens to its own subscription status via `.subscribe((status) => ...)` callback
+- Clean up on unmount
 
-### Files to Modify
-- `src/components/admin/AdminSupportDashboard.tsx`
-- `src/components/admin/AdminGatewayConfig.tsx`
-- `src/components/admin/AdminRechargePackManager.tsx`
-- `src/components/admin/AdminOrderManagement.tsx`
-- `src/components/admin/AdminReferralManagement.tsx`
-- `src/components/admin/AdminFeatureLocks.tsx`
-- `src/components/admin/AdminKycReview.tsx`
-- `src/components/admin/AdminRechargeLog.tsx`
-- `src/components/admin/AdminGlobalToggles.tsx`
-- `src/components/admin/AdminTreasury.tsx`
-- `src/components/admin/AdminFraudAlerts.tsx`
-- `src/components/admin/AdminWebhookLog.tsx`
+**2. Update `src/pages/AdminDashboard.tsx`**
+
+- Import and use the new hook
+- Render a small status badge in the header (line ~541, alongside the existing action buttons):
+  - Connected: green pulsing dot + "Live" text
+  - Connecting: amber dot + "Connecting…"
+  - Disconnected: red dot + "Offline"
+
+### Files
+- `src/hooks/use-realtime-status.ts` (new)
+- `src/pages/AdminDashboard.tsx` (modify header area ~line 541)
 
