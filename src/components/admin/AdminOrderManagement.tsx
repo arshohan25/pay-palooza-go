@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
+import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
+import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import {
   Package, Search, RefreshCw, ChevronDown, ChevronUp,
   Truck, CheckCircle2, XCircle, Clock, MapPin, CreditCard, Wallet,
@@ -70,6 +72,7 @@ interface OrderRow {
 
 export default function AdminOrderManagement() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
+  const { visible, flash } = useRealtimeIndicator();
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -130,6 +133,7 @@ export default function AdminOrderManagement() {
       .channel("admin-orders-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
         fetchOrders();
+        flash();
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -290,6 +294,7 @@ export default function AdminOrderManagement() {
 
   return (
     <div className="space-y-6">
+      <RealtimeUpdateIndicator visible={visible} />
       {/* Stats overview */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {STATUS_OPTIONS.map(s => {

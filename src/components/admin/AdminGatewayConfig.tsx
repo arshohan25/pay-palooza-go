@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
+import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { toast } from "sonner";
 import {
   CreditCard, Plus, Pencil, Trash2, Loader2, Power, PowerOff, Eye, EyeOff, Save, X,
@@ -55,6 +57,7 @@ async function callGatewayApi(body: Record<string, unknown>) {
 
 export default function AdminGatewayConfig() {
   const [gateways, setGateways] = useState<Gateway[]>([]);
+  const { visible, flash } = useRealtimeIndicator();
   const [loading, setLoading] = useState(true);
   const [editGw, setEditGw] = useState<Gateway | null>(null);
   const [editConfig, setEditConfig] = useState<Record<string, string>>({});
@@ -82,7 +85,7 @@ export default function AdminGatewayConfig() {
   useEffect(() => {
     const ch = supabase
       .channel("admin-gateways")
-      .on("postgres_changes", { event: "*", schema: "public", table: "payment_gateways" }, () => loadGateways())
+      .on("postgres_changes", { event: "*", schema: "public", table: "payment_gateways" }, () => { loadGateways(); flash(); })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [loadGateways]);
@@ -191,6 +194,7 @@ export default function AdminGatewayConfig() {
         <div>
           <h3 className="text-lg font-bold text-foreground">Payment Gateways</h3>
           <p className="text-sm text-muted-foreground">Add, edit, remove & toggle payment providers</p>
+          <RealtimeUpdateIndicator visible={visible} />
         </div>
         <Button onClick={openAdd} className="gap-1.5">
           <Plus className="w-4 h-4" /> Add Gateway

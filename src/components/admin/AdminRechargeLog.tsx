@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
+import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,7 @@ const OPERATORS = ["All", "Grameenphone", "Robi", "Banglalink", "Teletalk", "Air
 
 export default function AdminRechargeLog() {
   const [txns, setTxns] = useState<RechargeTxn[]>([]);
+  const { visible, flash } = useRealtimeIndicator();
   const [loading, setLoading] = useState(true);
   const [modeFilter, setModeFilter] = useState<ModeFilter>("all");
   const [operatorFilter, setOperatorFilter] = useState("All");
@@ -59,7 +62,7 @@ export default function AdminRechargeLog() {
       .channel("admin-recharge-log")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "transactions" }, (payload) => {
         const t = payload.new as any;
-        if (t.type === "recharge") load();
+        if (t.type === "recharge") { load(); flash(); }
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -97,6 +100,7 @@ export default function AdminRechargeLog() {
 
   return (
     <div className="space-y-4">
+      <RealtimeUpdateIndicator visible={visible} />
       {/* Summary row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="border-0 shadow-[var(--shadow-card)]">

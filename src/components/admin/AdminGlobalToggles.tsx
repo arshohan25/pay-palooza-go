@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
+import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { toast } from "sonner";
 import { ToggleRight, Loader2, Plus, Pencil, Trash2, Save, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +28,7 @@ interface FeatureToggle {
 
 export default function AdminGlobalToggles() {
   const [toggles, setToggles] = useState<FeatureToggle[]>([]);
+  const { visible, flash } = useRealtimeIndicator();
   const [loading, setLoading] = useState(true);
   const [editToggle, setEditToggle] = useState<FeatureToggle | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -51,7 +54,7 @@ export default function AdminGlobalToggles() {
   useEffect(() => {
     const ch = supabase
       .channel("admin-global-toggles")
-      .on("postgres_changes", { event: "*", schema: "public", table: "global_feature_toggles" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "global_feature_toggles" }, () => { load(); flash(); })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [load]);
@@ -126,6 +129,7 @@ export default function AdminGlobalToggles() {
         <div>
           <h3 className="text-lg font-bold text-foreground">Global Feature Toggles</h3>
           <p className="text-sm text-muted-foreground">Enable or disable features globally for all users</p>
+          <RealtimeUpdateIndicator visible={visible} />
         </div>
         <Button onClick={openAdd} className="gap-1.5">
           <Plus className="w-4 h-4" /> Add Toggle

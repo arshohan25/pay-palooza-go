@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
+import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -63,6 +65,7 @@ const MILESTONE_LABELS: Record<string, string> = {
 
 export default function AdminReferralManagement() {
   const [referrals, setReferrals] = useState<ReferralRow[]>([]);
+  const { visible, flash } = useRealtimeIndicator();
   const [rewards, setRewards] = useState<RewardRow[]>([]);
   const [devices, setDevices] = useState<DeviceRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,8 +127,8 @@ export default function AdminReferralManagement() {
     fetchData();
     const channel = supabase
       .channel("admin-referral-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "referrals" }, () => fetchData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "referral_rewards" }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "referrals" }, () => { fetchData(); flash(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "referral_rewards" }, () => { fetchData(); flash(); })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [fetchData]);
@@ -224,6 +227,7 @@ export default function AdminReferralManagement() {
 
   return (
     <div className="space-y-4">
+      <RealtimeUpdateIndicator visible={visible} />
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

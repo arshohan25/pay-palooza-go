@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
+import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import {
@@ -84,6 +86,7 @@ function isExpired(lock: FeatureLock) {
 
 export default function AdminFeatureLocks() {
   const { user } = useAuth();
+  const { visible, flash } = useRealtimeIndicator();
   const [locks, setLocks] = useState<FeatureLock[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -122,6 +125,7 @@ export default function AdminFeatureLocks() {
       .channel("admin-feature-locks-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "feature_locks" }, () => {
         fetchLocks();
+        flash();
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -196,6 +200,7 @@ export default function AdminFeatureLocks() {
 
   return (
     <div className="space-y-4">
+      <RealtimeUpdateIndicator visible={visible} />
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
