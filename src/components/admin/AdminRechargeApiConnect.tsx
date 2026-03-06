@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
+import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { toast } from "sonner";
 import {
   Wifi, WifiOff, Loader2, Pencil, Save, X, Plus, Eye, EyeOff, Zap, AlertCircle, CheckCircle2,
@@ -70,6 +72,7 @@ export default function AdminRechargeApiConnect() {
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState<string | null>(null);
+  const { visible, flash } = useRealtimeIndicator();
 
   const loadConfigs = useCallback(async () => {
     setLoading(true);
@@ -88,7 +91,7 @@ export default function AdminRechargeApiConnect() {
   useEffect(() => {
     const ch = supabase
       .channel("admin-recharge-api")
-      .on("postgres_changes", { event: "*", schema: "public", table: "recharge_api_configs" }, () => loadConfigs())
+      .on("postgres_changes", { event: "*", schema: "public", table: "recharge_api_configs" }, () => { loadConfigs(); flash(); })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [loadConfigs]);
@@ -184,6 +187,7 @@ export default function AdminRechargeApiConnect() {
       <div>
         <h3 className="text-lg font-bold text-foreground">Operator API Connect</h3>
         <p className="text-sm text-muted-foreground">Configure real-time recharge APIs for each mobile operator</p>
+        <RealtimeUpdateIndicator visible={visible} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
