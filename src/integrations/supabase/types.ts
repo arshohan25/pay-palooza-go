@@ -125,6 +125,51 @@ export type Database = {
         }
         Relationships: []
       }
+      biller_api_configs: {
+        Row: {
+          api_base_url: string | null
+          biller_code: string
+          category: string
+          config: Json
+          created_at: string
+          display_name: string
+          id: string
+          is_enabled: boolean
+          last_tested: string | null
+          sort_order: number
+          test_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          api_base_url?: string | null
+          biller_code: string
+          category?: string
+          config?: Json
+          created_at?: string
+          display_name: string
+          id?: string
+          is_enabled?: boolean
+          last_tested?: string | null
+          sort_order?: number
+          test_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          api_base_url?: string | null
+          biller_code?: string
+          category?: string
+          config?: Json
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_enabled?: boolean
+          last_tested?: string | null
+          sort_order?: number
+          test_status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           admin_id: string | null

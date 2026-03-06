@@ -34,12 +34,15 @@ export default function AdminApiHub({ onNavigate }: AdminApiHubProps) {
       if (!session) return;
 
       // Fetch payment gateways, recharge configs, and secret status in parallel
-      const [gwRes, rechargeRes, secretRes] = await Promise.all([
+      const [gwRes, rechargeRes, billerRes, secretRes] = await Promise.all([
         supabase.functions.invoke("manage-gateway-config", {
           body: { action: "list", table: "payment_gateways" },
         }),
         supabase.functions.invoke("manage-gateway-config", {
           body: { action: "list", table: "recharge_api_configs" },
+        }),
+        supabase.functions.invoke("manage-gateway-config", {
+          body: { action: "list", table: "biller_api_configs" },
         }),
         supabase.functions.invoke("check-api-status", { body: {} }),
       ]);
@@ -114,18 +117,25 @@ export default function AdminApiHub({ onNavigate }: AdminApiHubProps) {
         navigateTo: "permissions",
       });
 
-      // Static biller entries
-      const billers: { category: string; names: string[] }[] = [
-        { category: "Electricity", names: ["DESCO", "DPDC", "BPDB", "NESCO", "WZPDCL"] },
-        { category: "Gas", names: ["Titas Gas", "Bakhrabad Gas", "Jalalabad Gas"] },
-        { category: "Water", names: ["WASA Dhaka", "WASA Chittagong"] },
-        { category: "Internet ISPs", names: ["BTCL", "Carnival", "Amber IT", "Link3", "DOT Internet"] },
-        { category: "TV / Cable", names: ["Dish TV", "Akash DTH"] },
-      ];
-      for (const group of billers) {
-        for (const name of group.names) {
-          items.push({ name, category: group.category, status: "not_configured", navigateTo: "gateways" });
-        }
+      // Biller API Configs (dynamic from DB)
+      const categoryLabels: Record<string, string> = {
+        electricity: "Electricity",
+        water: "Water",
+        gas: "Gas",
+        internet: "Internet ISPs",
+        tv: "TV / Cable",
+      };
+      const billerConfigs = (billerRes.data as any[]) ?? [];
+      for (const bc of billerConfigs) {
+        const hasConfig = bc.config && Object.values(bc.config).some((v: any) => v && v !== "");
+        items.push({
+          name: bc.display_name,
+          provider: bc.biller_code,
+          category: categoryLabels[bc.category] || bc.category,
+          status: bc.is_enabled && hasConfig ? "connected" : !hasConfig ? "not_configured" : "disabled",
+          lastUpdated: bc.updated_at,
+          navigateTo: "billers",
+        });
       }
 
       setApis(items);

@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
     const { action, table } = body;
 
     // Validate table parameter
-    const allowedTables = ["payment_gateways", "recharge_api_configs"];
+    const allowedTables = ["payment_gateways", "recharge_api_configs", "biller_api_configs"];
     if (!allowedTables.includes(table)) {
       return new Response(JSON.stringify({ error: "Invalid table" }), {
         status: 400,
@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
       const { data, error } = await supabaseAdmin
         .from(table)
         .select("*")
-        .order(table === "payment_gateways" ? "sort_order" : "operator");
+        .order(table === "payment_gateways" ? "sort_order" : table === "biller_api_configs" ? "sort_order" : "operator");
 
       if (error) throw error;
 
@@ -203,8 +203,15 @@ Deno.serve(async (req) => {
     }
 
     if (action === "create") {
-      const { provider, display_name, config: newConfig, sort_order } = body;
-      if (!provider || !display_name) {
+      const { provider, display_name, config: newConfig, sort_order, biller_code, category, api_base_url } = body;
+      if (table === "biller_api_configs") {
+        if (!biller_code || !display_name || !category) {
+          return new Response(JSON.stringify({ error: "Missing required fields (biller_code, display_name, category)" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      } else if (!provider || !display_name) {
         return new Response(JSON.stringify({ error: "Missing required fields" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -212,10 +219,16 @@ Deno.serve(async (req) => {
       }
 
       const insertPayload: Record<string, unknown> = {
-        provider,
         display_name,
         config: newConfig || {},
       };
+      if (table === "biller_api_configs") {
+        insertPayload.biller_code = biller_code;
+        insertPayload.category = category;
+        if (api_base_url !== undefined) insertPayload.api_base_url = api_base_url;
+      } else {
+        insertPayload.provider = provider;
+      }
       if (sort_order !== undefined) insertPayload.sort_order = sort_order;
 
       const { error } = await supabaseAdmin.from(table).insert(insertPayload);
