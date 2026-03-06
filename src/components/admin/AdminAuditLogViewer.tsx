@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, RefreshCw, Eye, Users } from "lucide-react";
+import { CalendarIcon, RefreshCw, Eye, Users, ArrowLeftRight, Landmark, Gift, HelpCircle, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,30 @@ interface AdminProfile {
 
 const PAGE_SIZE = 50;
 
+const CATEGORY_MAP: Record<string, { label: string; actions: string[] }> = {
+  profile_views: { label: "Profile Views", actions: ["view_user_profile", "view_all_profiles"] },
+  chargebacks: { label: "Chargebacks", actions: ["chargeback", "chargeback_reversal"] },
+  treasury: { label: "Treasury", actions: ["treasury_disburse"] },
+  referrals: { label: "Referrals", actions: ["referral_milestone_pay", "referral_milestone_reset", "referral_reset_all"] },
+};
+
+const ALL_KNOWN_ACTIONS = Object.values(CATEGORY_MAP).flatMap(c => c.actions);
+
+const ACTION_META: Record<string, { label: string; icon: React.ReactNode }> = {
+  view_user_profile: { label: "View Profile", icon: <Eye className="w-3 h-3" /> },
+  view_all_profiles: { label: "View User List", icon: <Users className="w-3 h-3" /> },
+  chargeback: { label: "Chargeback", icon: <ArrowLeftRight className="w-3 h-3" /> },
+  chargeback_reversal: { label: "Chargeback Reversal", icon: <ArrowLeftRight className="w-3 h-3" /> },
+  treasury_disburse: { label: "Treasury Disburse", icon: <Landmark className="w-3 h-3" /> },
+  referral_milestone_pay: { label: "Referral Pay", icon: <Gift className="w-3 h-3" /> },
+  referral_milestone_reset: { label: "Referral Reset", icon: <Gift className="w-3 h-3" /> },
+  referral_reset_all: { label: "Referral Reset All", icon: <Gift className="w-3 h-3" /> },
+};
+
+function formatAction(action: string) {
+  return action.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+}
+
 export default function AdminAuditLogViewer() {
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,6 +60,7 @@ export default function AdminAuditLogViewer() {
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [adminFilter, setAdminFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
 
@@ -46,9 +71,18 @@ export default function AdminAuditLogViewer() {
     let query = supabase
       .from("audit_logs")
       .select("*")
-      .in("action", ["view_user_profile", "view_all_profiles"])
       .order("created_at", { ascending: false })
       .range(currentOffset, currentOffset + PAGE_SIZE - 1);
+
+    // Category filter
+    if (categoryFilter && categoryFilter !== "all") {
+      if (categoryFilter === "other") {
+        query = query.not("action", "in", `(${ALL_KNOWN_ACTIONS.join(",")})`);
+      } else {
+        const cat = CATEGORY_MAP[categoryFilter];
+        if (cat) query = query.in("action", cat.actions);
+      }
+    }
 
     if (dateFrom) {
       query = query.gte("created_at", dateFrom.toISOString());
@@ -77,7 +111,6 @@ export default function AdminAuditLogViewer() {
     if (reset) setOffset(PAGE_SIZE);
     else setOffset(currentOffset + PAGE_SIZE);
 
-    // Resolve admin profiles for any new actor_ids
     const actorIds = [...new Set(newLogs.map(l => l.actor_id))];
     const missing = actorIds.filter(id => !adminProfiles[id]);
     if (missing.length > 0) {
@@ -93,12 +126,12 @@ export default function AdminAuditLogViewer() {
     }
 
     setLoading(false);
-  }, [offset, dateFrom, dateTo, adminFilter, logs, adminProfiles]);
+  }, [offset, dateFrom, dateTo, adminFilter, categoryFilter, logs, adminProfiles]);
 
   useEffect(() => {
     fetchLogs(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateFrom, dateTo, adminFilter]);
+  }, [dateFrom, dateTo, adminFilter, categoryFilter]);
 
   const distinctAdmins = [...new Set(logs.map(l => l.actor_id))];
 
@@ -109,12 +142,46 @@ export default function AdminAuditLogViewer() {
     return actorId.slice(0, 8) + "…";
   };
 
+  const renderActionBadge = (action: string) => {
+    const meta = ACTION_META[action];
+    return (
+      <Badge variant="secondary" className="text-xs gap-1">
+        {meta ? <>{meta.icon} {meta.label}</> : <><Shield className="w-3 h-3" /> {formatAction(action)}</>}
+      </Badge>
+    );
+  };
+
+  const renderTarget = (log: AuditLogEntry) => {
+    if (log.action === "view_user_profile") {
+      return (
+        <span>{log.details?.viewed_user_name || "—"} <span className="text-muted-foreground text-xs">({log.details?.viewed_user_phone || "—"})</span></span>
+      );
+    }
+    if (log.action === "view_all_profiles") {
+      return <span className="text-muted-foreground text-xs">{log.details?.count ?? "—"} users loaded</span>;
+    }
+    if (log.entity_type && log.entity_id) {
+      return <span className="text-xs">{log.entity_type}: {log.entity_id.slice(0, 8)}…</span>;
+    }
+    return <span className="text-muted-foreground text-xs">—</span>;
+  };
+
+  const renderDetails = (log: AuditLogEntry) => {
+    if (!log.details) return "—";
+    try {
+      const str = JSON.stringify(log.details);
+      return str.length > 60 ? str.slice(0, 60) + "…" : str;
+    } catch {
+      return "—";
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <CardTitle className="text-lg flex items-center gap-2">
-            <Eye className="w-5 h-5" /> Audit Log — Profile Views
+            <Eye className="w-5 h-5" /> Audit Log
           </CardTitle>
           <Button variant="outline" size="sm" onClick={() => fetchLogs(true)} disabled={loading}>
             <RefreshCw className={cn("w-4 h-4 mr-1", loading && "animate-spin")} /> Refresh
@@ -124,7 +191,6 @@ export default function AdminAuditLogViewer() {
       <CardContent className="space-y-4">
         {/* Filters */}
         <div className="flex flex-wrap gap-3 items-end">
-          {/* Date From */}
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">From</label>
             <Popover>
@@ -140,7 +206,6 @@ export default function AdminAuditLogViewer() {
             </Popover>
           </div>
 
-          {/* Date To */}
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">To</label>
             <Popover>
@@ -156,7 +221,22 @@ export default function AdminAuditLogViewer() {
             </Popover>
           </div>
 
-          {/* Admin Filter */}
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Category</label>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-[180px] h-9 text-sm">
+                <SelectValue placeholder="All categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All categories</SelectItem>
+                {Object.entries(CATEGORY_MAP).map(([key, { label }]) => (
+                  <SelectItem key={key} value={key}>{label}</SelectItem>
+                ))}
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">Admin</label>
             <Select value={adminFilter} onValueChange={setAdminFilter}>
@@ -172,9 +252,8 @@ export default function AdminAuditLogViewer() {
             </Select>
           </div>
 
-          {/* Clear filters */}
-          {(dateFrom || dateTo || adminFilter !== "all") && (
-            <Button variant="ghost" size="sm" onClick={() => { setDateFrom(undefined); setDateTo(undefined); setAdminFilter("all"); }}>
+          {(dateFrom || dateTo || adminFilter !== "all" || categoryFilter !== "all") && (
+            <Button variant="ghost" size="sm" onClick={() => { setDateFrom(undefined); setDateTo(undefined); setAdminFilter("all"); setCategoryFilter("all"); }}>
               Clear
             </Button>
           )}
@@ -205,27 +284,11 @@ export default function AdminAuditLogViewer() {
                     <TableCell className="text-xs whitespace-nowrap text-muted-foreground">
                       {format(new Date(log.created_at), "MMM d, yyyy HH:mm")}
                     </TableCell>
-                    <TableCell className="text-sm">
-                      {getAdminLabel(log.actor_id)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="text-xs gap-1">
-                        {log.action === "view_user_profile" ? (
-                          <><Eye className="w-3 h-3" /> View Profile</>
-                        ) : (
-                          <><Users className="w-3 h-3" /> View User List</>
-                        )}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {log.action === "view_user_profile" ? (
-                        <span>{log.details?.viewed_user_name || "—"} <span className="text-muted-foreground text-xs">({log.details?.viewed_user_phone || "—"})</span></span>
-                      ) : (
-                        <span className="text-muted-foreground text-xs">{log.details?.count ?? "—"} users loaded</span>
-                      )}
-                    </TableCell>
+                    <TableCell className="text-sm">{getAdminLabel(log.actor_id)}</TableCell>
+                    <TableCell>{renderActionBadge(log.action)}</TableCell>
+                    <TableCell className="text-sm">{renderTarget(log)}</TableCell>
                     <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
-                      {log.entity_id?.slice(0, 8)}…
+                      {renderDetails(log)}
                     </TableCell>
                   </TableRow>
                 ))
@@ -234,7 +297,6 @@ export default function AdminAuditLogViewer() {
           </Table>
         </div>
 
-        {/* Load More */}
         {hasMore && logs.length > 0 && (
           <div className="flex justify-center pt-2">
             <Button variant="outline" size="sm" onClick={() => fetchLogs(false)} disabled={loading}>
