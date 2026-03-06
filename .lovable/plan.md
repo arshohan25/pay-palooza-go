@@ -1,25 +1,29 @@
 
 
-## Plan: Fix KYC Exempt Toggle Auto-Reverting
+## Plan: Add Biller Categories to API Hub
 
-### Root Cause
-The `profiles` table has an UPDATE RLS policy that only allows users to update **their own** profile (`auth.uid() = user_id`). There is **no admin UPDATE policy** on profiles. When an admin toggles KYC exempt for another user, the database silently ignores the update (0 rows affected, no error), but the UI optimistically shows success. On any data refresh, the toggle reverts to OFF.
+### What
 
-### Fix
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-**1. Database Migration** — Add an RLS policy allowing admins to update any profile:
+### Changes
 
-```sql
-CREATE POLICY "Admins can update all profiles"
-ON public.profiles
-FOR UPDATE
-TO authenticated
-USING (has_role(auth.uid(), 'admin'::app_role))
-WITH CHECK (has_role(auth.uid(), 'admin'::app_role));
-```
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-This is the only change needed. No code changes required — the existing toggle logic in `AdminDashboard.tsx` is correct; it just needs the database to actually accept the write.
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-### Files Modified
-- Database migration (new policy on `profiles` table)
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
