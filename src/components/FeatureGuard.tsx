@@ -21,11 +21,12 @@ const FeatureGuard = ({ featureKey, onClose, children }: FeatureGuardProps) => {
 
   const globalOff = isDisabled(featureKey);
   const lockStatus = isLocked(featureKey);
+  // Only evaluate KYC block when loading is complete
   const kycBlocked = !kycLoading && kycStatus !== "verified";
-  const blocked = globalOff || lockStatus.locked || kycBlocked;
+  const blocked = !kycLoading && (globalOff || lockStatus.locked || kycBlocked);
 
   useEffect(() => {
-    if (kycLoading) return; // Wait for KYC status to load
+    if (kycLoading) return; // Wait for KYC + auth to fully resolve
     if (blocked) {
       let reason: string;
       if (lockStatus.locked) {

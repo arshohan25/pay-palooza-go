@@ -58,7 +58,7 @@ const fireBrowserNotification = (title: string, body: string) => {
 };
 
 export function useKycStatus() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [status, setStatus] = useState<KycStatus>("none");
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,11 +72,17 @@ export function useKycStatus() {
   }, []);
 
   const fetchStatus = useCallback(async () => {
+    if (authLoading) {
+      // Auth still resolving — stay in loading state
+      setLoading(true);
+      return;
+    }
     if (!user) {
       setStatus("none");
       setLoading(false);
       return;
     }
+    setLoading(true);
 
     // Check if user is KYC-exempt first
     const { data: profile } = await supabase
@@ -118,7 +124,7 @@ export function useKycStatus() {
       setRejectionReason(null);
     }
     setLoading(false);
-  }, [user]);
+  }, [user, authLoading]);
 
   // Detect pending → verified / rejected transitions
   useEffect(() => {
