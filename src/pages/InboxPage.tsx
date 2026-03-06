@@ -115,9 +115,10 @@ function convToUIContact(conv: ChatConversation, userId: string, isOnline?: (uid
     otherUserId = other.user_id;
   }
 
-  const lastMsg = conv.lastMessage
+  const rawLastMsg = conv.lastMessage
     ? conv.lastMessage.decryptedContent || conv.lastMessage.content
     : "No messages yet";
+  const lastMsg = rawLastMsg?.includes("[Old message]") ? "Previous message" : rawLastMsg;
 
   const lastTimestamp = conv.lastMessage
     ? new Date(conv.lastMessage.created_at).getTime()
@@ -569,9 +570,9 @@ const MessageBubble = ({ msg, contactName, onReact, onCopy, onDelete, onForward,
         {isImage && <div {...pressHandlers} className="select-none"><ImageBubble msg={msg} /></div>}
 
         {!isMoney && !isOrder && !isVoice && !isImage && (
-          msg.text === "[Old message]" ? (
-            <div className="flex justify-center py-1">
-              <span className="text-[11px] italic text-muted-foreground/60">Previous message unavailable</span>
+          msg.text?.includes("[Old message]") ? (
+            <div className={`flex ${msg.sent ? "justify-end" : "justify-start"} py-0.5`}>
+              <span className="text-[10px] italic text-muted-foreground/50 px-3">Previous message unavailable</span>
             </div>
           ) : (
             <div {...pressHandlers}
@@ -1126,7 +1127,7 @@ const ChatView = ({
           </AnimatePresence>
         </div>
       ) : (
-        <div className="px-4 pb-[env(safe-area-inset-bottom,8px)] pt-2 border-t border-border/40 bg-background shrink-0">
+        <div className="px-4 pb-[max(20px,env(safe-area-inset-bottom,20px))] pt-2 border-t border-border/40 bg-background shrink-0">
           <AnimatePresence>
             {recording && (
               <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} className="flex items-center gap-2 mb-1.5 px-3">
