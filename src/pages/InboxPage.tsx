@@ -284,24 +284,36 @@ const CallingOverlay = ({ contact, mode, onEnd, webrtc }: CallingOverlayProps) =
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
+  const onEndRef = useRef(onEnd);
+  onEndRef.current = onEnd;
+
   useEffect(() => {
     if (!webrtc) return;
+    let alive = true;
     webrtc.setOnCallStateChange((state) => {
+      if (!alive) return;
       if (state === "connected") {
         stopAllCallSounds();
         setStatus("connected");
         timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
-      } else if (state === "ended") { onEnd(); }
+      } else if (state === "ended") {
+        onEndRef.current();
+      }
     });
     webrtc.setOnRemoteStream((stream) => {
+      if (!alive) return;
       if (mode === "video" && remoteVideoRef.current) remoteVideoRef.current.srcObject = stream;
       else if (remoteAudioRef.current) remoteAudioRef.current.srcObject = stream;
     });
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [webrtc, mode, onEnd]);
+    return () => { alive = false; if (timerRef.current) clearInterval(timerRef.current); };
+  }, [webrtc, mode]);
 
   const formatDuration = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
-  const handleEnd = () => { onEnd(); };
+
+  const handleEnd = () => {
+    try { webrtc?.endCall(); } catch (e) { console.error("endCall error:", e); }
+    onEndRef.current();
+  };
 
   return (
     <motion.div
@@ -1459,10 +1471,11 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
 
   const handleEndCall = useCallback(() => {
     stopAllCallSounds();
-    webrtcManager?.endCall();
+    // Do NOT call webrtcManager.endCall() here — CallingOverlay's handleEnd does it.
+    // This is UI-cleanup only, triggered by onCallStateChange("ended") or the overlay's onEnd.
     setCallMode(null);
     setIncomingCall(null);
-  }, [webrtcManager]);
+  }, []);
 
   const totalUnread = chat.totalUnread;
   const tabCounts = useMemo(() => ({
