@@ -86,6 +86,19 @@ export async function fetchAllUsers(limit = 50) {
     .select("*")
     .order("created_at", { ascending: false })
     .limit(limit);
+
+  // Audit log: record admin viewing user list
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    supabase.from("audit_logs").insert({
+      actor_id: session.user.id,
+      action: "view_all_profiles",
+      entity_type: "user_list",
+      entity_id: session.user.id,
+      details: { count: data?.length ?? 0 },
+    }).then(); // fire-and-forget
+  }
+
   return data ?? [];
 }
 
@@ -262,6 +275,22 @@ export async function fetchUserDetails(userId: string) {
     supabase.from("kyc_verifications").select("*").eq("user_id", userId).maybeSingle(),
     supabase.from("transactions").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(10),
   ]);
+
+  // Audit log: record admin viewing user profile
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    supabase.from("audit_logs").insert({
+      actor_id: session.user.id,
+      action: "view_user_profile",
+      entity_type: "user",
+      entity_id: userId,
+      details: {
+        viewed_user_name: profileRes.data?.name,
+        viewed_user_phone: profileRes.data?.phone,
+      },
+    }).then(); // fire-and-forget
+  }
+
   return {
     profile: profileRes.data,
     roles: rolesRes.data ?? [],
