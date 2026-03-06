@@ -71,13 +71,27 @@ export function useProfile() {
         setProfile((prev) => ({ ...prev, name: detail.name }));
         localStorage.setItem("mfs_user_name", detail.name);
       }
-      // Also re-fetch from DB to stay in sync
       fetchProfile();
     };
 
     window.addEventListener("profile-updated", handleProfileUpdate);
+
+    // Real-time subscription for profile changes (multi-device / admin edits)
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      channel = supabase
+        .channel("profile-realtime")
+        .on("postgres_changes", {
+          event: "UPDATE", schema: "public", table: "profiles",
+          filter: `user_id=eq.${user.id}`,
+        }, () => { fetchProfile(); })
+        .subscribe();
+    });
+
     return () => {
       window.removeEventListener("profile-updated", handleProfileUpdate);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [fetchProfile]);
 

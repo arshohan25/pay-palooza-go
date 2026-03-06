@@ -28,7 +28,21 @@ export function useSavedBanks() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => {
+    fetch();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) return;
+      channel = supabase
+        .channel("saved-banks-realtime")
+        .on("postgres_changes", {
+          event: "*", schema: "public", table: "saved_bank_accounts",
+          filter: `user_id=eq.${session.user.id}`,
+        }, () => { fetch(); })
+        .subscribe();
+    });
+    return () => { if (channel) supabase.removeChannel(channel); };
+  }, [fetch]);
 
   const save = useCallback(async (params: {
     bank_name: string;
