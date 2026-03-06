@@ -145,15 +145,24 @@ export function useKycStatus() {
     fetchStatus();
   }, [fetchStatus]);
 
-  // Realtime: listen for KYC status changes
+  // Realtime: listen for both KYC record updates and profile exemption toggles
   useEffect(() => {
     if (!user) return;
+
     const channel = supabase
       .channel("kyc-status-" + user.id)
       .on("postgres_changes", {
         event: "*",
         schema: "public",
         table: "kyc_verifications",
+        filter: `user_id=eq.${user.id}`,
+      }, () => {
+        fetchStatus();
+      })
+      .on("postgres_changes", {
+        event: "UPDATE",
+        schema: "public",
+        table: "profiles",
         filter: `user_id=eq.${user.id}`,
       }, () => {
         fetchStatus();
