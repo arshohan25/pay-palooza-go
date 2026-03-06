@@ -78,6 +78,20 @@ export function useKycStatus() {
       return;
     }
 
+    // Check if user is KYC-exempt first
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("kyc_exempt")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (profile?.kyc_exempt) {
+      setStatus("verified");
+      setRejectionReason(null);
+      setLoading(false);
+      return;
+    }
+
     const { data } = await supabase
       .from("kyc_verifications")
       .select("status, reviewer_notes")
