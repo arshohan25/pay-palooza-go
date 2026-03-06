@@ -301,7 +301,7 @@ const CallingOverlay = ({ contact, mode, onEnd, webrtc }: CallingOverlayProps) =
   }, [webrtc, mode, onEnd]);
 
   const formatDuration = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
-  const handleEnd = () => { webrtc?.endCall(); };
+  const handleEnd = () => { onEnd(); };
 
   return (
     <motion.div
@@ -844,6 +844,7 @@ const ChatView = ({
   const micPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [blockReason, setBlockReason] = useState("");
+  const [showChatMenu, setShowChatMenu] = useState(false);
 
   const { typingUsers, setTyping } = useTypingIndicator(conversationId, userId, userName);
 
@@ -925,9 +926,37 @@ const ChatView = ({
                 </button>
               </>
             )}
-            <button className="w-8 h-8 rounded-full bg-muted/60 flex items-center justify-center active:scale-95 transition-transform text-foreground">
+            <button onClick={() => setShowChatMenu((v) => !v)} className="w-8 h-8 rounded-full bg-muted/60 flex items-center justify-center active:scale-95 transition-transform text-foreground">
               {contact.isGroup ? <Info size={14} /> : <MoreVertical size={14} />}
             </button>
+            {/* Chat menu dropdown */}
+            <AnimatePresence>
+              {showChatMenu && (
+                <>
+                  <div className="fixed inset-0 z-[70]" onClick={() => setShowChatMenu(false)} />
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.85, y: 4 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.85, y: 4 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    className="absolute right-3 top-full mt-1 z-[80] bg-card border border-border rounded-2xl shadow-elevated overflow-hidden min-w-[180px]"
+                  >
+                    {!contact.isGroup && (
+                      <>
+                        <button onClick={() => { setShowChatMenu(false); setShowBlockDialog(true); }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-destructive hover:bg-destructive/10 transition-colors">
+                          <UserMinus size={15} /> Block User
+                        </button>
+                        <button onClick={() => { setShowChatMenu(false); setShowBlockDialog(true); }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-destructive hover:bg-destructive/10 transition-colors">
+                          <Shield size={15} /> Report User
+                        </button>
+                      </>
+                    )}
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </motion.div>
@@ -1139,6 +1168,36 @@ const ChatView = ({
       <AnimatePresence>
         {callMode && <CallingOverlay contact={contact} mode={callMode} onEnd={onEndCall} webrtc={webrtc} />}
       </AnimatePresence>
+
+      {/* Block & Report Dialog (for accepted chats) */}
+      <AnimatePresence>
+        {showBlockDialog && !isPending && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-6"
+            onClick={() => setShowBlockDialog(false)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()} className="bg-card border border-border rounded-3xl p-5 w-full max-w-sm shadow-xl">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-10 h-10 rounded-2xl bg-destructive/10 flex items-center justify-center">
+                  <Shield size={18} className="text-destructive" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-foreground">Block & Report</h3>
+                  <p className="text-[11px] text-muted-foreground">This user will be blocked and reported</p>
+                </div>
+              </div>
+              <textarea value={blockReason} onChange={(e) => setBlockReason(e.target.value)} placeholder="Reason (optional)"
+                className="w-full h-20 p-3 rounded-xl bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-destructive/30 mb-3" />
+              <div className="flex gap-2">
+                <button onClick={() => { setShowBlockDialog(false); setBlockReason(""); }}
+                  className="flex-1 h-11 rounded-xl border border-border bg-card text-foreground font-semibold text-sm hover:bg-muted transition-colors">Cancel</button>
+                <button onClick={() => { onBlockReport?.(blockReason || undefined); setShowBlockDialog(false); setBlockReason(""); }}
+                  className="flex-1 h-11 rounded-xl bg-destructive text-destructive-foreground font-semibold text-sm hover:bg-destructive/90 transition-colors">Block & Report</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -1246,11 +1305,11 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
       mgr.setOnIncomingCall((signal) => {
         setCallMode((current) => {
           if (current !== null) { mgr.rejectCall(); return current; }
-          setIncomingCall(signal);
-          setActiveContactId(conv.id);
-          chat.openConversation(conv.id);
-          return null;
+          return current; // keep null — callMode set on accept
         });
+        setIncomingCall(signal);
+        setActiveContactId(conv.id);
+        chat.openConversation(conv.id);
       });
       currentMap.set(conv.id, mgr);
     }
