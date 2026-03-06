@@ -40,7 +40,16 @@ export function useFeeConfig(): FeeConfig {
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchRules(); }, [fetchRules]);
+  useEffect(() => {
+    fetchRules();
+    const channel = supabase
+      .channel("fee-config-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "fee_config" }, () => {
+        fetchRules();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchRules]);
 
   const findRule = useCallback((txnType: string, amount: number): FeeRule | null => {
     const matching = rules.filter(
