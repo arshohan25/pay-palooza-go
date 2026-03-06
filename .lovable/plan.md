@@ -1,29 +1,26 @@
 
 
-## Plan: Add Persistent WebSocket Connection Status Indicator to Admin Dashboard Header
+## Plan: Enhance WebSocket Status with Auto-Reconnect and Tooltip
 
-### What
+### 1. Update `src/hooks/use-realtime-status.ts`
 
-A small indicator in the admin dashboard header bar (next to the refresh and activity feed buttons) that shows whether the real-time WebSocket connection is active (green dot + "Live") or disconnected (red dot + "Offline"). It updates automatically based on the Supabase channel subscription status.
+Expand the hook to:
+- Track `lastConnectedAt` timestamp and `reconnectAttempt` count
+- On disconnect, start exponential backoff reconnection: remove old channel, create new one, subscribe again after delay (1s, 2s, 4s, 8s... capped at 30s)
+- Reset attempt counter on successful reconnect
+- Return an object: `{ status, lastConnectedAt, reconnectAttempt }`
+- Clean up timeout on unmount
 
-### How
+### 2. Update `src/pages/AdminDashboard.tsx`
 
-**1. Create `src/hooks/use-realtime-status.ts`**
-
-A hook that subscribes to the Supabase channel status events (`SUBSCRIBED`, `CLOSED`, `CHANNEL_ERROR`, `TIMED_OUT`) from the existing `admin-global-realtime` channel pattern. It will:
-- Track connection state: `"connected" | "connecting" | "disconnected"`
-- Create a dedicated lightweight channel (e.g. `admin-heartbeat`) that listens to its own subscription status via `.subscribe((status) => ...)` callback
-- Clean up on unmount
-
-**2. Update `src/pages/AdminDashboard.tsx`**
-
-- Import and use the new hook
-- Render a small status badge in the header (line ~541, alongside the existing action buttons):
-  - Connected: green pulsing dot + "Live" text
-  - Connecting: amber dot + "Connecting…"
-  - Disconnected: red dot + "Offline"
+- Import `Tooltip, TooltipTrigger, TooltipContent, TooltipProvider` from UI
+- Destructure `{ status, lastConnectedAt, reconnectAttempt }` from the hook
+- Wrap the existing status badge in a `Tooltip` that shows:
+  - Channel: `admin-heartbeat`
+  - Last connected: formatted timestamp (or "Never" if null)
+  - Reconnect attempt count (when disconnected)
 
 ### Files
-- `src/hooks/use-realtime-status.ts` (new)
-- `src/pages/AdminDashboard.tsx` (modify header area ~line 541)
+- `src/hooks/use-realtime-status.ts` (modify)
+- `src/pages/AdminDashboard.tsx` (modify ~lines 16, 193, 562-578)
 
