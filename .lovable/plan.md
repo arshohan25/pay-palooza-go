@@ -1,23 +1,29 @@
 
 
-## Plan: Fix Chat Menu, Bottom Spacing & New Message Animation
+## Plan: Add Biller Categories to API Hub
 
-### 1. Fix "Block/Report User" dropdown positioning (Lines 935, 961)
-The dropdown menu is inside a flex container without `relative` positioning, causing it to overlap message content instead of appearing neatly below the header button.
+### What
 
-**Fix**: Add `relative` to the action buttons container (line 935) so the `absolute` positioned dropdown anchors correctly to the button area.
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-Change line 935: `<div className="flex items-center gap-1">` → `<div className="flex items-center gap-1 relative">`
+### Changes
 
-### 2. Reduce bottom padding by 10px (Line 1130)
-Change compose box bottom padding from `pb-[max(20px,env(safe-area-inset-bottom,20px))]` to `pb-[max(10px,env(safe-area-inset-bottom,10px))]`.
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-### 3. Add subtle new message animation (Lines 995-998)
-The current animation already exists (`initial={{ opacity: 0, y: 8, scale: 0.95 }}`), but it fires on mount for ALL messages at once. Improve it:
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-- Keep the spring animation but add a staggered delay based on index for initial load: `transition={{ delay: idx * 0.03 }}`
-- For newly arriving messages (appended in realtime), the existing animation will naturally apply since only the new message mounts
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-### Files modified
-- `src/pages/InboxPage.tsx`
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

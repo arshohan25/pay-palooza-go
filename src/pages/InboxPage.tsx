@@ -932,7 +932,7 @@ const ChatView = ({
                 : contact.online ? "Online" : contact.phone}
             </p>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 relative">
             {!contact.isGroup && (
               <>
                 <button onClick={() => onCall("audio")}
@@ -995,7 +995,7 @@ const ChatView = ({
             <motion.div
               initial={{ opacity: 0, y: 8, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ type: "spring", stiffness: 400, damping: 28 }}
+              transition={{ type: "spring", stiffness: 400, damping: 28, delay: idx * 0.03 }}
             >
               <MessageBubble msg={msg} contactName={contact.name}
                 onReact={onReact} onCopy={onCopy} onDelete={onDelete} onForward={onForward} isGroup={contact.isGroup} />
@@ -1127,7 +1127,7 @@ const ChatView = ({
           </AnimatePresence>
         </div>
       ) : (
-        <div className="px-4 pb-[max(20px,env(safe-area-inset-bottom,20px))] pt-2 border-t border-border/40 bg-background shrink-0">
+        <div className="px-4 pb-[max(10px,env(safe-area-inset-bottom,10px))] pt-2 border-t border-border/40 bg-background shrink-0">
           <AnimatePresence>
             {recording && (
               <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} className="flex items-center gap-2 mb-1.5 px-3">
