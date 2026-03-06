@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN kyc_exempt boolean NOT NULL DEFAULT false;

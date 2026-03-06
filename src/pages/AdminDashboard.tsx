@@ -7,7 +7,7 @@ import {
   TrendingUp, Activity, Search, RefreshCw, LogOut,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings, FileText,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
-  Menu, ScanFace, Gift, Award, Wallet, Radio, Plug,
+  Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -1259,6 +1259,43 @@ export default function AdminDashboard() {
                   ) : (
                     <p className="text-sm text-muted-foreground">No KYC submitted</p>
                   )}
+
+                  {/* KYC Exemption Toggle */}
+                  <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-primary" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">KYC Exempt</p>
+                        <p className="text-xs text-muted-foreground">Allow transactions without KYC</p>
+                      </div>
+                    </div>
+                    <button
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors ${detailData.profile?.kyc_exempt ? "bg-primary" : "bg-input"}`}
+                      onClick={async () => {
+                        const newVal = !detailData.profile?.kyc_exempt;
+                        const { error } = await supabase
+                          .from("profiles")
+                          .update({ kyc_exempt: newVal } as any)
+                          .eq("user_id", detailUser.user_id);
+                        if (error) {
+                          toast.error("Failed to update KYC exemption");
+                          return;
+                        }
+                        setDetailData((prev: any) => prev ? { ...prev, profile: { ...prev.profile, kyc_exempt: newVal } } : prev);
+                        toast.success(newVal ? "User is now KYC-exempt" : "KYC exemption removed");
+                        // Audit log
+                        supabase.from("audit_logs").insert({
+                          actor_id: (await supabase.auth.getSession()).data.session?.user.id,
+                          action: newVal ? "kyc_exempt_granted" : "kyc_exempt_revoked",
+                          entity_type: "user",
+                          entity_id: detailUser.user_id,
+                          details: { kyc_exempt: newVal },
+                        }).then();
+                      }}
+                    >
+                      <span className={`pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg transition-transform ${detailData.profile?.kyc_exempt ? "translate-x-5" : "translate-x-0"}`} />
+                    </button>
+                  </div>
                 </div>
 
                 <Separator />

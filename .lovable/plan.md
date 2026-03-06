@@ -1,29 +1,29 @@
 
 
-## Plan: Admin KYC Exemption for Specific Users
+## Plan: Add Biller Categories to API Hub
 
-### Problem
-Currently, `FeatureGuard` blocks all transaction features for users without verified KYC. Admins need the ability to exempt specific users from this requirement.
+### What
 
-### Approach
-Add a `kyc_exempt` boolean column to the `profiles` table. Admin can toggle it per user. The `FeatureGuard` and `useKycStatus` hook will respect this flag, treating exempt users as if they have verified KYC.
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-### Database Changes
-1. **Migration**: Add `kyc_exempt` column to `profiles` table:
-```sql
-ALTER TABLE public.profiles ADD COLUMN kyc_exempt boolean NOT NULL DEFAULT false;
-```
+### Changes
 
-### Code Changes
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-1. **`src/hooks/use-kyc-status.ts`** — Also fetch `kyc_exempt` from the user's profile. If `kyc_exempt = true`, return status as `"verified"` regardless of actual KYC status. This makes the exemption transparent to all consumers (FeatureGuard, KYC banners, etc.).
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-2. **`src/pages/AdminDashboard.tsx`** (or the user management section) — Add a toggle/switch in the admin user detail view to set `kyc_exempt` on a per-user basis. This will be a simple profile update.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-3. **Admin UI for toggling** — In the existing admin user list/detail area, add a "KYC Exempt" toggle that calls `supabase.from("profiles").update({ kyc_exempt: true/false }).eq("user_id", targetId)`. Since admins use the `has_role` policy and the `protect_profile_fields` trigger only guards balance/phone/status, this column will be updatable by admins.
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-### Files Modified
-- `src/hooks/use-kyc-status.ts` — Check `kyc_exempt` flag from profiles
-- `src/pages/AdminDashboard.tsx` or admin user detail component — Add KYC exempt toggle UI
-- Database migration — Add `kyc_exempt` column
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
