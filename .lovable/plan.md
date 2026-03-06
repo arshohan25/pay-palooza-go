@@ -1,30 +1,29 @@
 
 
-## Plan: Add Audit Log Viewer Tab to Admin Dashboard
+## Plan: Add Biller Categories to API Hub
 
-### What this does
-Adds a new "Audit Log" tab in the admin dashboard sidebar that displays `view_user_profile` and `view_all_profiles` events from the `audit_logs` table, with filters for date range and admin actor.
+### What
+
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-#### 1. Create `src/components/admin/AdminAuditLogViewer.tsx`
-A new component that:
-- Fetches audit logs filtered by `action IN ('view_user_profile', 'view_all_profiles')` from the `audit_logs` table
-- Displays them in a table with columns: Date/Time, Admin (actor_id), Action, Target User (from details JSONB), Details
-- Includes a date range filter using two date pickers (from/to)
-- Includes an admin filter dropdown (populated from distinct actor_ids in the results, resolved to profile names)
-- Supports refresh and pagination (load more)
-- Uses existing UI components: Table, Card, Button, Popover, Calendar, Select, Badge
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-#### 2. Update `src/pages/AdminDashboard.tsx`
-- Add `{ id: "auditlog", label: "Audit Log", icon: Eye }` to `NAV_ITEMS` array (using the already-imported `Eye` icon)
-- Import `AdminAuditLogViewer`
-- Add `{activeTab === "auditlog" && <AdminAuditLogViewer />}` in the tab content section
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-### No database changes needed
-The `audit_logs` table already exists with appropriate RLS policies allowing admin SELECT access.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-### Files modified
-- `src/components/admin/AdminAuditLogViewer.tsx` (new)
-- `src/pages/AdminDashboard.tsx` (2 small additions)
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
