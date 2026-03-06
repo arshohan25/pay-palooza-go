@@ -1,27 +1,29 @@
 
 
-## Plan: Fill Logo Transparent Areas with White
+## Plan: Add Biller Categories to API Hub
 
-### Problem
-The EasyPay logo has transparent areas (visible in the reference image circled in red — the inner circle/pin hole area). When displayed on colored backgrounds (like the teal splash screen), the background bleeds through these transparent regions.
+### What
 
-### Solution
-Use the AI image editing model to process the current logo (`src/assets/easypay-logo.png`) and fill all transparent/blank areas with solid white. Then copy the result to all logo locations:
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-- `src/assets/easypay-logo.png`
-- `public/icons/easypay-logo.png`
-- `public/icons/icon-192.png`
-- `public/icons/icon-512.png`
-- `public/favicon.ico`
+### Changes
 
-### Implementation
-1. Create a simple utility edge function or inline script that sends the current logo to the Gemini image model with the instruction "Fill all transparent/blank areas with solid white color, keep the logo design unchanged"
-2. Save the edited image to all logo asset locations
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-### Files modified
-- `src/assets/easypay-logo.png`
-- `public/icons/easypay-logo.png`
-- `public/icons/icon-192.png`
-- `public/icons/icon-512.png`
-- `public/favicon.ico`
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
