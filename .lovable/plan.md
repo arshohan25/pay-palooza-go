@@ -1,29 +1,31 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Extend Audit Log Viewer to All Actions with Category Filter
 
-### What
+### Changes to `src/components/admin/AdminAuditLogViewer.tsx`
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+1. **Remove the `.in("action", [...])` filter** from the query so all audit actions are fetched by default.
 
-### Changes
+2. **Add a category filter** (new `Select` dropdown) with these categories derived from known audit actions:
+   - "All categories" (default)
+   - "Profile Views" — actions: `view_user_profile`, `view_all_profiles`
+   - "Chargebacks" — actions: `chargeback`, `chargeback_reversal`
+   - "Treasury" — actions: `treasury_disburse`
+   - "Referrals" — actions: `referral_milestone_pay`, `referral_milestone_reset`, `referral_reset_all`
+   - "Other" — catch-all for any action not in above groups
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+   When a category is selected, apply the corresponding `.in("action", [...])` filter. For "Other", use `.not("action", "in", "(known actions)")`.
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+3. **Add `categoryFilter` state** (`string`, default `"all"`), add it to the `useEffect` dependency array alongside existing filters.
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+4. **Update the title** from "Audit Log — Profile Views" to just "Audit Log".
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+5. **Generalize the Action column badge** — use a mapping of action string to human-readable label and icon, with a fallback that formats unknown actions as title-case.
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+6. **Generalize the Target column** — show `entity_type: entity_id` for non-profile-view actions, keeping the existing name/phone display for profile views.
 
-3. Add the new category icons to the `categoryIcons` map.
+7. **Generalize the Details column** — render `JSON.stringify(details)` truncated, instead of only handling profile-view-specific fields.
 
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+### Files modified
+- `src/components/admin/AdminAuditLogViewer.tsx` (updated)
 
