@@ -1,43 +1,41 @@
 
+Goal: fix the end-call flow so tapping the red End button always terminates the call once (no recursion, no rate-limit flood), and restores normal calling reliability.
 
-## Analysis of Call Issues
+What I found
+- Current loop is: End button → `handleEndCall()` → `webrtcManager.endCall()` → `setState("ended")` → overlay `onCallStateChange("ended")` → `onEnd()` → `handleEndCall()` again.
+- That recursive loop matches your runtime errors (`Maximum call stack size exceeded`) and repeated broadcast 429s.
+- Those repeated `call-end` sends are also likely why later calls fail to reach the other person (signaling gets rate-limited).
 
-After reviewing the code, I identified three root causes:
+Implementation plan
+1) Harden call termination in `src/lib/webrtc.ts`
+- Make terminal transitions idempotent:
+  - `setState()` should no-op if state is unchanged.
+  - `endCall()` should return early if already ending/ended.
+  - Ignore duplicate incoming `call-end` / `call-reject` once terminal.
+- Keep cleanup safe to run once.
 
-### Issue 1: Receiver not getting the call
-The `WebRTCManager` subscribes to a Supabase Realtime Broadcast channel per conversation. However, the receiver's manager is created **only when `InboxPage` is mounted and conversations are loaded**. If the receiver hasn't opened InboxPage yet, or the channel subscription isn't ready, the broadcast signal is lost because **Broadcast is ephemeral** — there's no persistence. Also, the `onIncomingCall` handler uses `setCallMode` in a functional update but returns `null` (not the incoming mode), so the call overlay shows but `callMode` stays null, which can cause the overlay to not render.
+2) Separate “signal end” from “UI cleanup” in `src/pages/InboxPage.tsx`
+- In `CallingOverlay`, End button should trigger only `webrtc?.endCall()` (signal + RTC teardown).
+- Keep `onCallStateChange("ended")` responsible for UI closure (`onEnd()`).
+- Update parent `handleEndCall` to be cleanup-only:
+  - stop call sounds
+  - clear `callMode`
+  - clear `incomingCall`
+  - do not call `webrtcManager.endCall()` again
 
-### Issue 2: No ringing sound
-There is no ringtone sound implemented. `sounds.ts` has chat notification and request sounds, but no call ringing sound. When a call-offer arrives, `setIncomingCall` is called but no audio is played. Similarly, the caller hears no ringback tone.
+3) Add defensive error handling on the local End action
+- Wrap end action in `try/catch` at click path to prevent UI lock if signaling throws.
+- Log and safely still clear UI state.
 
-### Issue 3: End button not working
-`handleEndCall` calls `webrtcManager?.endCall()` and sets `callMode(null)`. The `CallingOverlay` also has its own `handleEnd` that calls `webrtc?.endCall()` then `onEnd()`. The problem: `endCall()` calls `cleanup()` which sets state to `"ended"`, which triggers `onCallStateChange` → `onEnd()` in the overlay → which calls `handleEndCall` again → but `webrtcManager` may already be cleaned up. The real issue is that `cleanup()` stops all tracks and closes the PC, but the broadcast of `"call-end"` happens **before** cleanup — so that part works. The end button likely fails because after `endCall()`, the `CallingOverlay`'s `useEffect` fires `onEnd` (due to state change to "ended"), but the component may already be unmounting. Also, the `handleEndCall` sets `callMode(null)` but doesn't clear `incomingCall`, potentially leaving stale state.
+4) Prevent callback leakage
+- On overlay unmount, clear timer and detach/neutralize call-state callback so stale callbacks cannot re-trigger end logic after unmount/remount.
 
-## Plan
+Validation plan
+1. Connected call: tap End once → both sides close once, no stack overflow, no repeated `call-end`.
+2. Ringing call: caller cancels before answer → receiver overlay dismisses once.
+3. Remote hang-up: local UI closes without sending another `call-end`.
+4. Console/network check: no recursive warnings, no 429 burst on `/realtime/.../broadcast`.
 
-### 1. Add ringing/ringback sounds to `src/lib/sounds.ts`
-- Add `playRingtone()` — a repeating pleasant ring tone using Web Audio API oscillators (looping interval)
-- Add `stopRingtone()` — stops the ringing
-- Add `playRingbackTone()` — subtle "ring-ring" for the caller while waiting
-
-### 2. Fix incoming call handling in `src/pages/InboxPage.tsx`
-- When `incomingCall` is set, start playing the ringtone sound
-- When call is accepted or rejected, stop the ringtone
-- When the caller initiates a call, play ringback tone; stop on connect/end
-- Fix `handleEndCall` to also clear `incomingCall` state and stop all sounds
-- Ensure `callMode` is properly not set to null in the `setCallMode` functional update when an incoming call arrives (currently returns `null` which is correct for "not yet accepted" but then the `CallingOverlay` won't show since it checks `callMode`)
-
-### 3. Fix end call flow
-- In `CallingOverlay`, the `handleEnd` function calls both `webrtc.endCall()` and `onEnd()`. But `endCall()` triggers state change to "ended", which via `onCallStateChange` also calls `onEnd()`. This double-call is the bug.
-- Fix: Remove `onEnd()` from the explicit `handleEnd` click — let it only be triggered via the state change callback. OR remove the state change callback trigger and rely only on the explicit click.
-- In `handleEndCall`, ensure both `callMode` and `incomingCall` are cleared, and stop any ringing sounds.
-
-### 4. Improve reliability of incoming call detection
-- Add a global notification sound trigger when `incomingCall` state changes to non-null
-- Ensure `webrtcManager` is set when incoming call arrives on a non-active conversation by updating `activeContactId` first (already done in existing code)
-
-### Files to modify:
-- **`src/lib/sounds.ts`** — Add ringtone and ringback tone functions
-- **`src/pages/InboxPage.tsx`** — Wire up sounds, fix end call double-trigger, clear all state on end
-- **`src/components/IncomingCallOverlay.tsx`** — Add auto-play ringtone on mount, stop on unmount
-
+Files to update
+- `src/lib/webrtc.ts`
+- `src/pages/InboxPage.tsx` (both `CallingOverlay` and parent end-call handler)
