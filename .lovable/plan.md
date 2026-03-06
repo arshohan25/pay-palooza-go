@@ -1,24 +1,29 @@
 
 
-## Plan: Fix Chat UI Issues
+## Plan: Add Biller Categories to API Hub
 
-### Issues
-1. **"[Old message]" still showing as bubbles** — The exact string match `msg.text === "[Old message]"` may not catch all variants (extra whitespace, different casing). Change to a more robust check using `.includes()` or `.trim()`.
-2. **Compose box needs bottom spacing** — Currently `pb-[env(safe-area-inset-bottom,8px)]` gives only 8px fallback. Increase to `pb-4` minimum plus safe-area.
-3. **"Previous message unavailable" centered awkwardly** — Should align with the sender's side rather than centered.
+### What
 
-### Changes to `src/pages/InboxPage.tsx`
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-#### 1. Fix "[Old message]" detection (line ~572)
-- Change `msg.text === "[Old message]"` to `msg.text.trim() === "[Old message]"` or use `.includes("[Old message]")` for robustness
-- Also filter these out from the conversation list's `lastMsg` preview
+### Changes
 
-#### 2. Add bottom padding to compose box (line 1129)
-- Change `pb-[env(safe-area-inset-bottom,8px)]` to `pb-4` with an additional safe-area wrapper, e.g. `pb-[max(16px,env(safe-area-inset-bottom,16px))]`
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-#### 3. Style "Previous message unavailable" better
-- Instead of centering, render as a small muted bubble aligned to the sender's side, consistent with the chat flow
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-### Files modified
-- `src/pages/InboxPage.tsx`
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
