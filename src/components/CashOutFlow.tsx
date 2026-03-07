@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useFeeConfig } from "@/hooks/use-fee-config";
 import { requestLocation } from "@/lib/permissions";
 import { haptics } from "@/lib/haptics";
@@ -62,14 +63,7 @@ interface Agent {
   rating: number;
 }
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-const NEARBY_AGENTS: Agent[] = [
-  { id: "1", name: "Karim Store", agentId: "AGT-10234", address: "Mirpur-10, Dhaka", distance: "0.2 km", initials: "KS", gradient: "gradient-cashout", rating: 4.8 },
-  { id: "2", name: "Rina Telecom", agentId: "AGT-20871", address: "Dhanmondi, Dhaka", distance: "0.5 km", initials: "RT", gradient: "gradient-payment", rating: 4.6 },
-  { id: "3", name: "Hasan Mobile", agentId: "AGT-33512", address: "Gulshan-1, Dhaka", distance: "1.1 km", initials: "HM", gradient: "gradient-addmoney", rating: 4.9 },
-  { id: "4", name: "City Point", agentId: "AGT-44780", address: "Banani, Dhaka", distance: "1.8 km", initials: "CP", gradient: "gradient-send", rating: 4.5 },
-  { id: "5", name: "Quick Cash", agentId: "AGT-55239", address: "Motijheel, Dhaka", distance: "2.3 km", initials: "QC", gradient: "gradient-accent", rating: 4.7 },
-];
+// Recent agents loaded from real transaction history
 
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 20000];
 
