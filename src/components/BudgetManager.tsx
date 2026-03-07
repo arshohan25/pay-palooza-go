@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { useI18n } from "@/lib/i18n";
+
 import { Plus, Trash2, Pencil, Target } from "lucide-react";
 import { useSpendingBudgets, BUDGET_CATEGORIES } from "@/hooks/use-spending-budgets";
 import { Switch } from "@/components/ui/switch";
@@ -57,7 +57,7 @@ const BudgetManager = () => {
           <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
             <Target size={15} className="text-primary" />
           </div>
-          <p className="text-sm font-bold text-foreground">{t("monthlyBudgets") || "Monthly Budgets"}</p>
+          <p className="text-sm font-bold text-foreground">Monthly Budgets</p>
         </div>
         {available.length > 0 && (
           <motion.button
@@ -65,7 +65,7 @@ const BudgetManager = () => {
             onClick={() => { setAdding(!adding); setNewCat(available[0]?.key || ""); }}
             className="text-xs font-semibold text-primary flex items-center gap-1"
           >
-            <Plus size={14} /> {t("addBudget") || "Add"}
+            <Plus size={14} /> Add
           </motion.button>
         )}
       </div>
@@ -104,7 +104,7 @@ const BudgetManager = () => {
       {/* Budget list */}
       {budgets.length === 0 && !adding && (
         <p className="text-xs text-muted-foreground text-center py-3">
-          {t("noBudgetsYet") || "No budgets set. Tap Add to create one."}
+          No budgets set. Tap Add to create one.
         </p>
       )}
 
@@ -158,7 +158,7 @@ const BudgetManager = () => {
                   className="scale-75 origin-left"
                 />
                 <span className="text-[10px] text-muted-foreground">
-                  {b.is_recurring ? (t("recurring") || "Recurring") : (t("oneTime") || "One-time")}
+                  {b.is_recurring ? "Recurring" : "One-time"}
                 </span>
               </div>
               <div className="flex items-center gap-2">

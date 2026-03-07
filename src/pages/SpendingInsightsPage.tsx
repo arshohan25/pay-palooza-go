@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
 import { ArrowLeft, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Gift } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import BudgetManager from "@/components/BudgetManager";
 import { TxCashbackIcon } from "@/components/QuickActionIcons";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -202,6 +203,9 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
           </div>
         )}
       </motion.div>
+
+      {/* Budget Manager */}
+      <BudgetManager />
 
       {/* Monthly bar chart */}
       <motion.div
