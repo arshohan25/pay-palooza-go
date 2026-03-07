@@ -1,15 +1,29 @@
 
 
-## Plan: Remove Dot Stepper and Number Input Spinners
+## Plan: Add Biller Categories to API Hub
 
-Based on the annotated screenshot, two elements need removal:
+### What
 
-### 1. Remove Dot Stepper
-Delete the `DotStepper` component definition (lines 120–133) and its usage (lines 498–501). The step indicator between header and content adds unnecessary vertical space.
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-### 2. Remove Number Input Spinner Arrows
-Change the amount `<input type="number">` to `type="text"` with `inputMode="numeric"` to eliminate the browser's native up/down spinner arrows. Add CSS to hide any residual spinners. Update the `onChange` handler to only allow numeric/decimal input.
+### Changes
 
-### Files Modified
-- `src/components/SendMoneyFlow.tsx`
+**File: `src/components/admin/AdminApiHub.tsx`**
+
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
