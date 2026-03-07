@@ -469,22 +469,26 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
 
                 <div className="space-y-2">
-                  {filteredContacts.slice(0, 3).map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => handleSelectContact(c)}
-                      className="w-full flex items-center gap-3 p-3 rounded-2xl bg-card border border-border shadow-card hover:shadow-elevated active:scale-[0.98] transition-all text-left"
-                    >
-                      <div className={`${c.gradient} w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0`}>
-                        {c.initials}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">{c.name}</p>
-                        <p className="text-xs text-muted-foreground">{c.phone}</p>
-                      </div>
-                      <ChevronLeft size={16} className="text-muted-foreground rotate-180 shrink-0" />
-                    </button>
-                  ))}
+                  {filteredContacts.length === 0 ? (
+                    <p className="text-center text-xs text-muted-foreground py-4">No recent recipients yet. Start sending to build your list!</p>
+                  ) : (
+                    filteredContacts.slice(0, 3).map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => handleSelectContact(c)}
+                        className="w-full flex items-center gap-3 p-3 rounded-2xl bg-card border border-border shadow-card hover:shadow-elevated active:scale-[0.98] transition-all text-left"
+                      >
+                        <div className={`${c.gradient} w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0`}>
+                          {c.initials}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-foreground truncate">{c.name}</p>
+                          <p className="text-xs text-muted-foreground">{c.phone}</p>
+                        </div>
+                        <ChevronLeft size={16} className="text-muted-foreground rotate-180 shrink-0" />
+                      </button>
+                    ))
+                  )}
                 </div>
               </div>
             )}
