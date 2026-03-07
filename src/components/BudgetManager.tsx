@@ -7,7 +7,6 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 
 const BudgetManager = () => {
-  const { budgets, spending, loading, setBudget: setBudgetFn, toggleRecurring, removeBudget, categoryLabel } = useSpendingBudgets();
   const { budgets, spending, loading, setBudget, toggleRecurring, removeBudget, categoryLabel } = useSpendingBudgets();
 
   const [adding, setAdding] = useState(false);
