@@ -1,29 +1,62 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Clean Modern Redesign of Send Money Flow
 
-### What
+Simplify the current over-styled flow into a clean, minimal, eye-catching design with bold typography, generous whitespace, and fewer visual layers.
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### Design Direction
+- Remove heavy glassmorphism and excessive shadows — use flat clean cards with subtle borders
+- Bigger, bolder typography for key information
+- Clean white/transparent backgrounds with accent color pops
+- Simpler header — no radial glow blobs, cleaner stepper
+- More whitespace, less visual noise
+- Smooth but minimal animations
 
-### Changes
+### Changes — `src/components/SendMoneyFlow.tsx`
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**1. Header**
+- Remove decorative radial glow divs (the 2 blur circles)
+- Simplify stepper: clean pill-shaped active indicator instead of glowing dots
+- Tighter, cleaner layout
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+**2. Step 1 — Recipient**
+- Remove the outer card wrapper around search — just the input directly on background
+- Cleaner search input: taller, minimal, with subtle bg
+- QR button: simple icon-only circle instead of gradient pill with text
+- Recent contacts: keep horizontal scroll but use clean circular avatars (not rounded-2xl squares)
+- Remove uppercase tracking-wider labels — use normal-case subtle labels
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+**3. Step 2 — Amount**
+- Recipient pill: simpler, smaller chip
+- Amount input: much larger font (text-5xl), fully centered with currency above
+- Quick amounts: simple rounded-full pills, clean selected state (solid primary, no glow)
+- Note: keep underline style but cleaner
+- Cash-out toggle: simpler row, less padding
+- Fee breakdown: simple list with no card wrapper, just clean rows
+- Remove excessive shadow classes (shadow-glow-lg, shadow-elevated)
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+**4. Step 3 — Confirm**
+- Hero amount: clean and bold
+- Recipient + summary: single clean card, no left accent bar (simpler)
+- Remove security badge (visual noise)
+- Buttons: clean solid + ghost
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+**5. Step 4 — PIN**
+- Keep compact header
+- Clean PIN dots (no glow effect)
+- SlideToConfirm unchanged
 
-3. Add the new category icons to the `categoryIcons` map.
+**6. Step 5 — Success**
+- Simpler success icon: clean circle with check, remove pulsing ring animation
+- Clean receipt card without left accent bar
+- Clean buttons
 
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+**7. General**
+- Replace `rounded-3xl` with `rounded-2xl` throughout (less exaggerated)
+- Replace `shadow-elevated`, `shadow-glow`, `shadow-glow-lg` with `shadow-sm` or none
+- Remove `staggerContainer`/`staggerChild` — use simple fade-in for cleaner feel
+- Keep slide transitions between steps
+
+### Files Modified
+- `src/components/SendMoneyFlow.tsx`
 
