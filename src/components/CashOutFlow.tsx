@@ -242,31 +242,17 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   };
 
   const [validating, setValidating] = useState(false);
+  const [resolvedAgentPhone, setResolvedAgentPhone] = useState("");
 
   const validateAgentExists = async (agentId: string): Promise<{ exists: boolean; name?: string; phone?: string }> => {
-    // Check agents table — look for matching business_name or nid_number pattern
-    // Agent IDs in the UI correspond to the agent's phone from profiles
-    const { data } = await supabase
-      .from("agents")
-      .select("id, business_name, user_id, status")
-      .eq("status", "active")
-      .maybeSingle();
-    // Since we can't match agent ID directly, check profiles by phone
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("name, phone, user_id")
-      .eq("phone", agentId)
-      .eq("status", "active")
-      .maybeSingle();
-    if (profile) {
-      // Verify this user has the agent role
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", profile.user_id)
-        .eq("role", "agent")
-        .maybeSingle();
-      if (roleData) return { exists: true, name: profile.name || undefined, phone: profile.phone };
+    const { data, error } = await supabase.rpc("resolve_transfer_recipient", {
+      p_identifier: agentId,
+      p_flow: "cashout",
+    });
+    if (error) return { exists: false };
+    const result = typeof data === "string" ? JSON.parse(data) : data;
+    if (result?.found) {
+      return { exists: true, name: result.recipient_name || undefined, phone: result.recipient_phone };
     }
     return { exists: false };
   };
@@ -280,10 +266,11 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     setValidating(false);
 
     if (!validation.exists) {
-      setError("Agent not found. Please enter a valid Agent ID.");
+      setError("Agent not found. Please enter a valid Agent ID or phone.");
       return;
     }
 
+    setResolvedAgentPhone(validation.phone || "");
     const found = recentAgents.find((a) => a.agentId.toLowerCase() === result.toLowerCase());
     if (found) {
       setAgent(found);
@@ -303,10 +290,11 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     setValidating(false);
 
     if (!validation.exists) {
-      setError("Agent not found. Please enter a valid Agent ID.");
+      setError("Agent not found. Please enter a valid Agent ID or phone.");
       return;
     }
 
+    setResolvedAgentPhone(validation.phone || "");
     const found = recentAgents.find((a) => a.agentId.toLowerCase() === trimmed.toLowerCase());
     if (found) {
       setAgent(found);
@@ -372,7 +360,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
         });
       } else {
         await transferMoney({
-          recipientPhone: agent?.agentId ?? "",
+          recipientPhone: resolvedAgentPhone || agent?.agentId ?? "",
           amount: amtVal,
           fee: feeVal,
           type: "cashout",
