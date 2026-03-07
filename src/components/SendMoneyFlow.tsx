@@ -547,10 +547,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
                 {/* Send to this number — appears when valid number detected */}
                 {manualRecipientType && inputVal.trim() && (
-                  <button
-                    onClick={handleManualSend}
-                    className="mx-4 mb-3 flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/5 border border-primary/20 hover:bg-primary/10 active:scale-[0.98] transition-all"
-                  >
+                  <div className="mx-4 mb-3 flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/5 border border-primary/20">
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                       <Send size={16} className="text-primary" />
                     </div>
@@ -560,8 +557,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                         {manualRecipientType === "phone" ? "Mobile number" : "Wallet ID"}
                       </p>
                     </div>
-                    <ChevronRight size={16} className="text-primary" />
-                  </button>
+                  </div>
                 )}
 
                 {/* Recent section */}
@@ -608,6 +604,17 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                     </PermissionGate>
                   </div>
                 )}
+
+                {/* Continue button — fixed at bottom */}
+                <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-4 py-4 bg-background/95 backdrop-blur-sm border-t border-border">
+                  <Button
+                    className="w-full h-12 text-base font-semibold rounded-xl"
+                    disabled={!manualRecipientType}
+                    onClick={handleManualSend}
+                  >
+                    Continue
+                  </Button>
+                </div>
               </div>
             )}
 
