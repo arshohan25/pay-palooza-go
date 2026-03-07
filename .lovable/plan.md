@@ -1,37 +1,29 @@
 
 
-## Plan: Date Range Picker + Empty States for Spending Insights
+## Plan: Add Biller Categories to API Hub
 
-### 1. Date Range Picker
+### What
 
-Add a date range picker below the page header (after line 267) that controls the time period for all data on the page.
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-**State changes:**
-- Replace the hardcoded "last 6 months" logic with a `dateRange` state: `{ from: Date, to: Date }` defaulting to 6 months ago → today
-- The `useEffect` fetch query changes `sixMonthsAgo` to use `dateRange.from` and the upper bound to `dateRange.to`
-- The `monthsMeta` computation derives months dynamically from `dateRange.from` to `dateRange.to`
-- Preset buttons for quick selection: "1M", "3M", "6M", "1Y", "Custom"
-- "Custom" opens a date range picker using two Calendar components (from/to) inside a Popover
+### Changes
 
-**UI:** A row of preset chips + a calendar icon button for custom range, styled consistently with the existing card design. Placed between the header and the sent/received summary cards.
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-### 2. Empty States
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-When `!loading && txns.length === 0`, show an empty state illustration instead of blank charts. This applies to:
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-- **Main page level**: If no transactions at all, show a centered empty state with an icon (BarChart3 from lucide), heading "No transactions yet", and subtitle "Your spending insights will appear here once you make transactions"
-- **Donut chart section**: Already conditionally hidden when empty — no change needed
-- **Top recipients section**: Already conditionally hidden when empty — no change needed
-- **Monthly bar chart**: Show a subtle "No data for this period" message inside the chart area when all bars are zero
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-### Files Modified
-- `src/pages/SpendingInsightsPage.tsx` — add date range state, preset buttons, custom range popover, empty state UI, update fetch logic and month derivation
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-### Implementation Details
+3. Add the new category icons to the `categoryIcons` map.
 
-- Import `Calendar`, `Popover`, `PopoverTrigger`, `PopoverContent` from shadcn, `CalendarIcon` from lucide, `format` from date-fns
-- Add `pointer-events-auto` to Calendar className per shadcn datepicker guidelines
-- Use `differenceInMonths` from date-fns to compute month spans
-- Cashback query also respects the selected date range (replace `monthStart` with range)
-- The "vs last month" percentage comparison uses the last two months within the selected range
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
