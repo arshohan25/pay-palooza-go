@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { haptics } from "@/lib/haptics";
 import { supabase } from "@/integrations/supabase/client";
-import { requestLocation } from "@/lib/permissions";
+import { requestLocation, getCachedStatus, requestContacts } from "@/lib/permissions";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { useFeeConfig } from "@/hooks/use-fee-config";
 import { transferMoney, getBalance } from "@/lib/balanceStore";
@@ -24,9 +24,6 @@ import {
   AlertCircle,
   QrCode,
   Banknote,
-  Star,
-  RefreshCw,
-  Users,
   ChevronRight,
   Contact2,
 } from "lucide-react";
@@ -135,17 +132,6 @@ const DotStepper = ({ current, total }: { current: number; total: number }) => (
   </div>
 );
 
-// ─── Category Tab ─────────────────────────────────────────────────────────────
-const CategoryTab = ({ icon: Icon, label, count }: { icon: any; label: string; count?: number }) => (
-  <button className="flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl bg-card border border-border hover:border-primary/30 active:scale-95 transition-all min-w-[80px]">
-    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
-      <Icon size={16} className="text-primary" />
-    </div>
-    <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">
-      {label}{count !== undefined ? ` (${count})` : ""}
-    </span>
-  </button>
-);
 
 interface SendMoneyFlowProps { onClose: () => void; prefilledPhone?: string; onSuccess?: (amount: number) => void; }
 
@@ -216,6 +202,18 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
       txnId.current = genId();
     }
   }, [step]);
+
+  // Auto-load phone contacts if permission was previously granted
+  useEffect(() => {
+    if (getCachedStatus("contacts") === "granted") {
+      (async () => {
+        const result = await requestContacts();
+        if (result.status === "granted" && result.data) {
+          handlePhoneContactsPicked(result.data);
+        }
+      })();
+    }
+  }, []);
 
   const stepIndex = STEPS.indexOf(step);
 
@@ -515,12 +513,6 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   )}
                 </div>
 
-                {/* Category tabs */}
-                <div className="flex gap-2 px-4 pb-4 overflow-x-auto scrollbar-none">
-                  <CategoryTab icon={Star} label="Favourites" count={0} />
-                  <CategoryTab icon={RefreshCw} label="Auto Pay" />
-                  <CategoryTab icon={Users} label="Group Send" />
-                </div>
 
                 {/* Send to this number — appears when valid number detected */}
                 {manualRecipientType && inputVal.trim() && (
@@ -574,15 +566,17 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   </div>
                 )}
 
-                {/* Find in Contacts link */}
-                <div className="px-4 pt-4 pb-2">
-                  <PermissionGate permission="contacts" onGranted={handlePhoneContactsPicked}>
-                    <button className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/30 active:scale-[0.98] transition-all">
-                      <Contact2 size={16} />
-                      Import from Phone Contacts
-                    </button>
-                  </PermissionGate>
-                </div>
+                {/* Find in Contacts link — only show if no contacts loaded yet */}
+                {phoneContacts.length === 0 && (
+                  <div className="px-4 pt-4 pb-2">
+                    <PermissionGate permission="contacts" onGranted={handlePhoneContactsPicked}>
+                      <button className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/30 active:scale-[0.98] transition-all">
+                        <Contact2 size={16} />
+                        Import from Phone Contacts
+                      </button>
+                    </PermissionGate>
+                  </div>
+                )}
               </div>
             )}
 

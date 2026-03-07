@@ -1,22 +1,29 @@
 
 
-## Plan: Simplify Send Money Recipient Step
+## Plan: Add Biller Categories to API Hub
 
-Based on the annotated screenshot, two changes are needed:
+### What
 
-### 1. Remove Category Tabs
-Delete the "Favourites (0)", "Auto Pay", and "Group Send" tab row (lines 518–523) and the `CategoryTab` component definition.
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-### 2. Auto-load Phone Contacts on Permission Grant
-Instead of requiring users to manually tap "Import from Phone Contacts" every time, automatically attempt to load device contacts when the recipient step mounts:
-- On mount, check `getCachedStatus("contacts")` — if already `"granted"`, call `requestContacts()` with `multiple: true` and populate `phoneContacts` state automatically.
-- Keep the "Import from Phone Contacts" button as a fallback for first-time permission grant, but hide it once contacts are already loaded (`phoneContacts.length > 0`).
-- After the first successful import, contacts auto-appear in the "All Contacts" section without further user action.
+### Changes
 
-### Files Modified
-- `src/components/SendMoneyFlow.tsx`
-  - Remove `CategoryTab` component and its usage (lines 518–523)
-  - Remove unused `Star`, `RefreshCw`, `Users` imports
-  - Add `useEffect` that auto-loads contacts when permission is already granted
-  - Conditionally hide the import button when `phoneContacts.length > 0`
+**File: `src/components/admin/AdminApiHub.tsx`**
+
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
