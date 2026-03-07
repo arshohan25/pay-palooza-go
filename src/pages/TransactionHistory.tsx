@@ -31,6 +31,7 @@ interface Transaction {
   detail: string;
   date: string;
   amount: number;
+  fee: number;
   _isCashback?: boolean;
 }
 
@@ -115,6 +116,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           detail: isCashback ? "Drive Cashback" : (t.description || label),
           date: t.created_at,
           amount: isCredit ? t.amount : -t.amount,
+          fee: t.fee,
           _isCashback: isCashback,
         };
       }), [dbTxns, filterTypes]);
@@ -425,6 +427,9 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                       )}
                     </div>
                     <p className="text-[11px] text-muted-foreground truncate mt-0.5">{tx.detail}</p>
+                    {tx.fee > 0 && (
+                      <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium mt-0.5">Fee: ৳{tx.fee.toLocaleString()}</p>
+                    )}
                     <p className="text-[10.5px] text-muted-foreground/60 mt-0.5">{relativeDate(tx.date)}</p>
                   </div>
 
@@ -520,6 +525,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     { icon: User,     label: "Name / Party",   value: selectedTx.name,                        copy: false },
                     { icon: Tag,      label: "Category",       value: catLabel,                               copy: false },
                     { icon: FileText, label: "Description",    value: selectedTx.detail,                     copy: false },
+                    ...(selectedTx.fee > 0 ? [{ icon: Coins, label: "Charge / Fee", value: `৳${selectedTx.fee.toLocaleString()}`, copy: false }] : []),
                     { icon: Clock,    label: "Date & Time",    value: format(txDate, "dd MMM yyyy, h:mm a"), copy: false },
                   ].map(({ icon: RowIcon, label, value, copy }) => (
                     <div key={label} className="flex items-start gap-3 py-2.5 border-b border-border/50 last:border-0">
@@ -543,11 +549,18 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                   ))}
 
                   {/* Amount highlight + share */}
-                  <div className={`mt-4 rounded-2xl p-4 flex items-center justify-between ${isCredit ? "bg-primary/10" : "bg-muted/60"}`}>
-                    <span className="text-[13px] font-semibold text-muted-foreground">Total Amount</span>
-                    <span className={`text-[20px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
-                      {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString()}
-                    </span>
+                  <div className={`mt-4 rounded-2xl p-4 ${isCredit ? "bg-primary/10" : "bg-muted/60"}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] font-semibold text-muted-foreground">Total Amount</span>
+                      <span className={`text-[20px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
+                        {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString()}
+                      </span>
+                    </div>
+                    {selectedTx.fee > 0 && (
+                      <p className="text-[11px] text-muted-foreground mt-1 text-right">
+                        ৳{(Math.abs(selectedTx.amount) - selectedTx.fee).toLocaleString()} + ৳{selectedTx.fee.toLocaleString()} fee
+                      </p>
+                    )}
                   </div>
 
                   {/* Share button */}
@@ -588,6 +601,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                 { label: "Party", value: selectedTx.name },
                 { label: "Category", value: catLabel },
                 { label: "Description", value: selectedTx.detail },
+                ...(selectedTx.fee > 0 ? [{ label: "Fee", value: `৳${selectedTx.fee.toLocaleString()}` }] : []),
                 { label: "Date & Time", value: format(txDate, "dd MMM yyyy, h:mm a") },
               ],
             }}
