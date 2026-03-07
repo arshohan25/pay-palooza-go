@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { toast } from "sonner";
-import { ToggleRight, Loader2, Plus, Pencil, Trash2, Save, X } from "lucide-react";
+import { ToggleRight, ToggleLeft, Loader2, Plus, Pencil, Trash2, Save, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -164,7 +165,13 @@ export default function AdminGlobalToggles() {
             ))}
           </div>
           {toggles.length === 0 && (
-            <p className="text-center text-muted-foreground py-8 text-sm">No feature toggles configured</p>
+            <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
+              <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+                <ToggleLeft className="w-7 h-7 text-muted-foreground" />
+              </motion.div>
+              <p className="text-sm font-semibold text-foreground">No feature toggles configured</p>
+              <p className="text-xs text-muted-foreground mt-1">Add a toggle to get started</p>
+            </motion.div>
           )}
         </CardContent>
       </Card>

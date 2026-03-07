@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import {
   CheckCircle2, XCircle, Eye, RefreshCw, User, CreditCard, Calendar,
-  ShieldCheck, AlertTriangle, Clock, Phone,
+  ShieldCheck, AlertTriangle, Clock, Phone, FileSearch,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -285,11 +286,13 @@ export default function AdminKycReview() {
           <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       ) : records.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            No KYC records found for this filter.
-          </CardContent>
-        </Card>
+        <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-12 text-center">
+          <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+            <FileSearch className="w-7 h-7 text-muted-foreground" />
+          </motion.div>
+          <p className="text-sm font-semibold text-foreground">No KYC records found</p>
+          <p className="text-xs text-muted-foreground mt-1">KYC records will appear here</p>
+        </motion.div>
       ) : (
         <div className="grid gap-3">
           {records.map(record => {

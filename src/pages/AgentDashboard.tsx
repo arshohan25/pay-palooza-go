@@ -438,10 +438,13 @@ const AgentDashboard = () => {
           </div>
           <Card className="border-0 shadow-card rounded-2xl overflow-hidden">
             {recentTxns.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
-                <Clock size={28} className="mb-2 opacity-40" />
-                <p className="text-xs font-medium">No transactions yet</p>
-              </div>
+              <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-10 text-center">
+                <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+                  <Clock className="w-7 h-7 text-muted-foreground" />
+                </motion.div>
+                <p className="text-sm font-semibold text-foreground">No transactions yet</p>
+                <p className="text-xs text-muted-foreground mt-1">Your activity will appear here</p>
+              </motion.div>
             ) : (
               <div className="divide-y divide-border/50">
                 {recentTxns.slice(0, 8).map(tx => {

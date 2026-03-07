@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
 import { format } from "date-fns";
-import { CalendarIcon, RefreshCw, Eye, Users, ArrowLeftRight, Landmark, Gift, HelpCircle, Shield } from "lucide-react";
+import { CalendarIcon, RefreshCw, Eye, Users, ArrowLeftRight, Landmark, Gift, HelpCircle, Shield, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -274,8 +275,14 @@ export default function AdminAuditLogViewer() {
             <TableBody>
               {logs.length === 0 && !loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                    No audit log entries found
+                  <TableCell colSpan={5} className="p-0">
+                    <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
+                      <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+                        <FileText className="w-7 h-7 text-muted-foreground" />
+                      </motion.div>
+                      <p className="text-sm font-semibold text-foreground">No audit log entries found</p>
+                      <p className="text-xs text-muted-foreground mt-1">Audit logs will appear here</p>
+                    </motion.div>
                   </TableCell>
                 </TableRow>
               ) : (
