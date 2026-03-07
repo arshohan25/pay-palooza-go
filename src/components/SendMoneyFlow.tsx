@@ -117,20 +117,6 @@ const PinInput = ({ pin, onChange, error }: PinInputProps) => {
   );
 };
 
-// ─── Dot Stepper ──────────────────────────────────────────────────────────────
-const DotStepper = ({ current, total }: { current: number; total: number }) => (
-  <div className="flex items-center justify-center gap-2 py-3">
-    {Array.from({ length: total }).map((_, i) => (
-      <motion.div
-        key={i}
-        animate={{ scale: i === current ? 1.3 : 1 }}
-        className={`w-2 h-2 rounded-full transition-colors ${
-          i === current ? "bg-primary" : i < current ? "bg-primary/40" : "bg-border"
-        }`}
-      />
-    ))}
-  </div>
-);
 
 
 interface SendMoneyFlowProps { onClose: () => void; prefilledPhone?: string; onSuccess?: (amount: number) => void; }
@@ -495,10 +481,6 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
             {step !== "recipient" && <div className="w-9" />}
             {step === "recipient" && <div className="w-9" />}
           </div>
-          {/* Dot stepper for non-recipient steps */}
-          {step !== "recipient" && (
-            <DotStepper current={STEPS.indexOf(step)} total={STEPS.length} />
-          )}
         </div>
       )}
 
@@ -645,13 +627,13 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   <div className="relative flex items-center">
                     <span className="absolute left-4 text-2xl font-bold text-muted-foreground">৳</span>
                     <input
-                      type="number"
+                      type="text"
                       inputMode="decimal"
                       placeholder="0"
                       value={amount}
-                      onChange={(e) => { setAmount(e.target.value); setError(""); }}
+                      onChange={(e) => { const v = e.target.value; if (v === "" || /^\d*\.?\d*$/.test(v)) { setAmount(v); setError(""); } }}
                       autoFocus
-                      className="w-full pl-10 pr-4 h-16 text-3xl font-bold text-foreground bg-card border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/40"
+                      className="w-full pl-10 pr-4 h-16 text-3xl font-bold text-foreground bg-card border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
                   {error && (
