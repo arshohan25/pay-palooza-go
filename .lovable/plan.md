@@ -1,35 +1,29 @@
 
 
-## Plan: Add Framer Motion Animations to Empty State Illustrations
+## Plan: Add Biller Categories to API Hub
 
-Wrap each empty state `div` in a `motion.div` with a staggered fade-in + scale-up + slight bounce effect. The icon will also get a gentle floating animation.
+### What
+
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-**All three files** (`CashOutFlow.tsx`, `PaymentFlow.tsx`, `SendMoneyFlow.tsx`) follow the same pattern — replace the static `<div>` wrapper with:
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-```tsx
-<motion.div
-  initial={{ opacity: 0, scale: 0.9, y: 12 }}
-  animate={{ opacity: 1, scale: 1, y: 0 }}
-  transition={{ duration: 0.5, ease: "easeOut" }}
-  className="flex flex-col items-center justify-center py-8 text-center"
->
-  <motion.div
-    animate={{ y: [0, -4, 0] }}
-    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-    className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3"
-  >
-    <Icon className="w-7 h-7 text-muted-foreground" />
-  </motion.div>
-  ...
-</motion.div>
-```
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-Each file already imports `motion` from `framer-motion` (or we add it if missing).
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-### Files Modified
-- `src/components/CashOutFlow.tsx` — lines 528-534
-- `src/components/PaymentFlow.tsx` — lines 348-354
-- `src/components/SendMoneyFlow.tsx` — lines 574-580
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

@@ -525,13 +525,22 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                 {/* Agent list */}
                 <div className="space-y-2">
                   {recentAgents.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-8 text-center">
-                      <div className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
-                        <Users className="w-7 h-7 text-muted-foreground" />
-                      </div>
-                      <p className="text-sm font-semibold text-foreground">No recent agents</p>
-                      <p className="text-xs text-muted-foreground mt-1">Your cash out history will appear here</p>
-                    </div>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, y: 12 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                  className="flex flex-col items-center justify-center py-8 text-center"
+                >
+                  <motion.div
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3"
+                  >
+                    <Users className="w-7 h-7 text-muted-foreground" />
+                  </motion.div>
+                  <p className="text-sm font-semibold text-foreground">No recent agents</p>
+                  <p className="text-xs text-muted-foreground mt-1">Your cash out history will appear here</p>
+                </motion.div>
                   ) : filteredAgents.map((a) => (
                     <button
                       key={a.id}
