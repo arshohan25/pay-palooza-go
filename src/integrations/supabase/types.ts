@@ -1184,6 +1184,8 @@ export type Database = {
           category: string
           created_at: string
           id: string
+          is_recurring: boolean
+          last_reset_month: string | null
           monthly_limit: number
           updated_at: string
           user_id: string
@@ -1192,6 +1194,8 @@ export type Database = {
           category: string
           created_at?: string
           id?: string
+          is_recurring?: boolean
+          last_reset_month?: string | null
           monthly_limit?: number
           updated_at?: string
           user_id: string
@@ -1200,6 +1204,8 @@ export type Database = {
           category?: string
           created_at?: string
           id?: string
+          is_recurring?: boolean
+          last_reset_month?: string | null
           monthly_limit?: number
           updated_at?: string
           user_id?: string
