@@ -364,8 +364,6 @@ const Index = () => {
         onClose={() => setShowMore(false)}
         onBankTransfer={() => setShowBankTransfer(true)}
         onSavings={() => setShowSavings(true)}
-        onLimits={() => handleTabChange("account")}
-        onInsights={() => handleTabChange("account")}
       />
 
       {/* Scan & Pay QR flow */}
