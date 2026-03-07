@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { useI18n } from "@/lib/i18n";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
@@ -439,7 +440,16 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                   <div className="shrink-0 text-right max-w-[90px]">
                     <div className="flex items-center justify-end gap-1">
                       {tx.fee > 0 && (
-                        <BadgeDollarSign size={12} className="text-amber-500/70 dark:text-amber-400/70" />
+                        <TooltipProvider delayDuration={0}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <BadgeDollarSign size={12} className="text-amber-500/70 dark:text-amber-400/70 cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="text-xs">
+                              Fee: ৳{tx.fee.toLocaleString()}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       )}
                       <span className={`text-[13px] font-bold ${isCB ? "text-amber-600 dark:text-amber-400" : isCredit ? "text-primary" : "text-foreground"}`}>
                         {isCredit ? "+" : "−"}৳{Math.abs(tx.amount).toLocaleString()}
