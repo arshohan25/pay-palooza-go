@@ -91,7 +91,7 @@ export function useSpendingBudgets() {
       const thresholds = pct >= 100 ? [100, 80] : pct >= 80 ? [80] : [];
 
       for (const threshold of thresholds) {
-        const key = `budget_alert_${b.category}_${threshold}_${month}`;
+        const key = `budget_alert_${b.category}_${threshold}_${alertMonth}`;
         if (sessionStorage.getItem(key)) continue;
 
         // Check if notification already exists this month
@@ -100,7 +100,7 @@ export function useSpendingBudgets() {
           .select("id")
           .eq("user_id", uid)
           .eq("category", "budget")
-          .contains("metadata", { category: b.category, threshold, month })
+          .contains("metadata", { category: b.category, threshold, month: alertMonth })
           .limit(1);
 
         if (existing && existing.length > 0) {
@@ -119,7 +119,7 @@ export function useSpendingBudgets() {
           title,
           body,
           category: "budget",
-          metadata: { category: b.category, threshold, month },
+          metadata: { category: b.category, threshold, month: alertMonth },
         });
         sessionStorage.setItem(key, "1");
       }
