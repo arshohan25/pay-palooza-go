@@ -203,6 +203,18 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     }
   }, [step]);
 
+  // Auto-load phone contacts if permission was previously granted
+  useEffect(() => {
+    if (getCachedStatus("contacts") === "granted") {
+      (async () => {
+        const result = await requestContacts();
+        if (result.status === "granted" && result.data) {
+          handlePhoneContactsPicked(result.data);
+        }
+      })();
+    }
+  }, []);
+
   const stepIndex = STEPS.indexOf(step);
 
   const goTo = (next: Step) => {
