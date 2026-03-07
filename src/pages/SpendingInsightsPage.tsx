@@ -233,6 +233,60 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
         )}
       </motion.div>
 
+      {/* Monthly Fees Chart */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 }}
+        className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden"
+      >
+        <div className="px-4 pt-4 pb-2 flex items-center gap-2">
+          <BadgeDollarSign size={16} className="text-amber-500" />
+          <p className="text-sm font-bold text-foreground">{t("monthlyFees") ?? "Monthly Fees"}</p>
+          {!feesLoading && (
+            <span className="ml-auto text-xs text-amber-500 font-semibold">
+              Total: ৳{feeData.reduce((s, d) => s + d.fees, 0).toLocaleString("en-BD", { minimumFractionDigits: 2 })}
+            </span>
+          )}
+        </div>
+        {feesLoading ? (
+          <div className="h-[180px] flex items-center justify-center">
+            <div className="h-8 w-24 rounded-lg bg-muted animate-pulse" />
+          </div>
+        ) : (
+          <div className="px-1 pb-4" style={{ height: 180 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={feeData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v) => `৳${v}`}
+                />
+                <Tooltip
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null;
+                    return (
+                      <div className="bg-card border border-border rounded-xl px-3 py-2 shadow-elevated text-xs">
+                        <p className="font-semibold text-foreground mb-1">{label}</p>
+                        <span className="text-amber-500 font-medium">৳{Number(payload[0].value).toLocaleString("en-BD", { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    );
+                  }}
+                  cursor={{ fill: "hsl(var(--muted) / 0.5)", radius: 4 }}
+                />
+                <Bar dataKey="fees" fill="hsl(40 80% 50%)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </motion.div>
+
       {/* Monthly bar chart */}
       <motion.div
         initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
