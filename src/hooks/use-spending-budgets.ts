@@ -82,6 +82,48 @@ export function useSpendingBudgets() {
     }
     setSpending(agg);
     setLoading(false);
+
+    // Budget alert notifications
+    const month = currentMonth();
+    for (const b of kept) {
+      const spent = agg[b.category] || 0;
+      const pct = b.monthly_limit > 0 ? (spent / b.monthly_limit) * 100 : 0;
+      const thresholds = pct >= 100 ? [100, 80] : pct >= 80 ? [80] : [];
+
+      for (const threshold of thresholds) {
+        const key = `budget_alert_${b.category}_${threshold}_${month}`;
+        if (sessionStorage.getItem(key)) continue;
+
+        // Check if notification already exists this month
+        const { data: existing } = await supabase
+          .from("notifications")
+          .select("id")
+          .eq("user_id", uid)
+          .eq("category", "budget")
+          .contains("metadata", { category: b.category, threshold, month })
+          .limit(1);
+
+        if (existing && existing.length > 0) {
+          sessionStorage.setItem(key, "1");
+          continue;
+        }
+
+        const label = CATEGORY_MAP[b.category] || b.category;
+        const title = threshold >= 100 ? "Budget Exceeded" : "Budget Warning";
+        const body = threshold >= 100
+          ? `You've exceeded your ৳${b.monthly_limit.toLocaleString()} ${label} budget this month`
+          : `You've used 80% of your ৳${b.monthly_limit.toLocaleString()} ${label} budget this month`;
+
+        await supabase.from("notifications").insert({
+          user_id: uid,
+          title,
+          body,
+          category: "budget",
+          metadata: { category: b.category, threshold, month },
+        });
+        sessionStorage.setItem(key, "1");
+      }
+    }
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
