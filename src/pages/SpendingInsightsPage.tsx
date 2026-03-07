@@ -290,7 +290,74 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
     return spending;
   }, [allTxns]);
 
-  const getBudgetColor = (spent: number, limit: number) => {
+  // Budget threshold alerts (80% and 100%)
+  const alertsFiredRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (insightsLoading || Object.keys(budgets).length === 0) return;
+
+    const checkAlerts = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      const userId = session.user.id;
+      const currentMonth = format(new Date(), "yyyy-MM");
+
+      for (const cat of BUDGET_CATEGORIES) {
+        const limit = budgets[cat];
+        if (!limit || limit <= 0) continue;
+
+        const spent = currentMonthSpending[cat] || 0;
+        const pct = (spent / limit) * 100;
+
+        let threshold: number | null = null;
+        if (pct >= 100) threshold = 100;
+        else if (pct >= 80) threshold = 80;
+
+        if (threshold === null) continue;
+
+        const alertKey = `${cat}-${threshold}`;
+        if (alertsFiredRef.current.has(alertKey)) continue;
+        alertsFiredRef.current.add(alertKey);
+
+        // Check DB for existing alert this month
+        const { data: existing } = await supabase
+          .from("notifications")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("category", "system")
+          .contains("metadata", { type: "budget_alert", category: cat, threshold, month: currentMonth } as any)
+          .limit(1);
+
+        if (existing && existing.length > 0) continue;
+
+        const isExceeded = threshold === 100;
+        const title = isExceeded ? "Budget Exceeded 🚨" : "Budget Alert ⚠️";
+        const catLabel = cat === "total" ? "Total Spending" : cat;
+        const body = isExceeded
+          ? `You've exceeded your ${catLabel} budget of ৳${limit.toLocaleString()}`
+          : `You've used 80% of your ${catLabel} budget (৳${Math.round(spent).toLocaleString()}/৳${limit.toLocaleString()})`;
+
+        await supabase.from("notifications").insert({
+          user_id: userId,
+          title,
+          body,
+          category: "system",
+          metadata: { type: "budget_alert", category: cat, threshold, month: currentMonth },
+        });
+
+        if (isExceeded) {
+          toast.error(body, { duration: 5000 });
+        } else {
+          toast.warning(body, { duration: 5000 });
+        }
+      }
+    };
+
+    checkAlerts();
+  }, [insightsLoading, budgets, currentMonthSpending]);
+
+
     if (limit <= 0) return "bg-primary";
     const pct = (spent / limit) * 100;
     if (pct > 90) return "bg-destructive";
