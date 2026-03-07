@@ -100,12 +100,20 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
   const [topMerchants, setTopMerchants] = useState<{ name: string; category: string; amount: number; icon: string }[]>([]);
   const [allTxns, setAllTxns] = useState<any[]>([]);
 
+  // Budget state
+  const [budgets, setBudgets] = useState<Record<string, number>>({});
+  const [budgetDialogOpen, setBudgetDialogOpen] = useState(false);
+  const [budgetForm, setBudgetForm] = useState<Record<string, string>>({});
+  const [budgetSaving, setBudgetSaving] = useState(false);
+
   // Cashback + fees
   const [cashbackTotal, setCashbackTotal] = useState(0);
   const [cashbackCount, setCashbackCount] = useState(0);
   const [cashbackLoading, setCashbackLoading] = useState(true);
   const [feeData, setFeeData] = useState<{ month: string; fees: number }[]>([]);
   const [feesLoading, setFeesLoading] = useState(true);
+
+  const BUDGET_CATEGORIES = ["total", "Send", "CashOut", "Payment", "Recharge"] as const;
 
   const handlePreset = (label: string, m: number) => {
     setActivePreset(label);
