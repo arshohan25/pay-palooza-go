@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Zap, ImageUp, Camera } from "lucide-react";
+import { X, Zap, ImageUp, Camera, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { requestCamera, getCachedStatus } from "@/lib/permissions";
+import { requestCamera } from "@/lib/permissions";
+import jsQR from "jsqr";
 
 interface QrScannerModalProps {
   open: boolean;
@@ -11,35 +12,65 @@ interface QrScannerModalProps {
   title?: string;
 }
 
-const MOCK_RESULTS: Record<string, string> = {
-  recipient: "01711-223344",
-  agent: "AGT-10234",
-  merchant: "MRC-88901",
-};
-
 const QrScannerModal = ({ open, onClose, onScan, title = "Scan QR Code" }: QrScannerModalProps) => {
   const [detected, setDetected] = useState(false);
-  const [scanType, setScanType] = useState<keyof typeof MOCK_RESULTS>("merchant");
   const [uploadProcessing, setUploadProcessing] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const scanningRef = useRef(false);
+  const rafRef = useRef<number | null>(null);
 
-  // Determine mock result based on title
-  useEffect(() => {
-    if (title.toLowerCase().includes("agent")) setScanType("agent");
-    else if (title.toLowerCase().includes("recipient") || title.toLowerCase().includes("send")) setScanType("recipient");
-    else setScanType("merchant");
-  }, [title]);
+  // Continuously scan video frames for QR codes
+  const scanFrame = useCallback(() => {
+    if (!scanningRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas || video.readyState < video.HAVE_ENOUGH_DATA) {
+      rafRef.current = requestAnimationFrame(scanFrame);
+      return;
+    }
 
-  // Request camera when modal opens
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) {
+      rafRef.current = requestAnimationFrame(scanFrame);
+      return;
+    }
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+      inversionAttempts: "dontInvert",
+    });
+
+    if (code && code.data) {
+      scanningRef.current = false;
+      setDetected(true);
+      setTimeout(() => {
+        onScan(code.data);
+        onClose();
+      }, 600);
+      return;
+    }
+
+    rafRef.current = requestAnimationFrame(scanFrame);
+  }, [onScan, onClose]);
+
+  // Reset state when modal closes
   useEffect(() => {
     if (!open) {
       setDetected(false);
       setUploadProcessing(false);
       setCameraError(false);
-      // Stop camera stream on close
+      setScanError(null);
+      scanningRef.current = false;
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (cameraStream) {
         cameraStream.getTracks().forEach(t => t.stop());
         setCameraStream(null);
@@ -52,7 +83,6 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan QR Code" }: QrSca
     const startCamera = async () => {
       const result = await requestCamera();
       if (cancelled) {
-        // Modal closed before camera resolved
         if (result.data) (result.data as MediaStream).getTracks().forEach(t => t.stop());
         return;
       }
@@ -60,8 +90,6 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan QR Code" }: QrSca
         setCameraStream(result.data as MediaStream);
       } else {
         setCameraError(true);
-        // Fall back to mock scanning
-        startMockScan();
       }
     };
 
@@ -70,57 +98,74 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan QR Code" }: QrSca
     return () => { cancelled = true; };
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Attach stream to video element
+  // Attach stream to video and start scanning
   useEffect(() => {
     if (videoRef.current && cameraStream) {
       videoRef.current.srcObject = cameraStream;
       videoRef.current.play().catch(() => {});
 
-      // Mock: detect after 3 seconds (real QR detection would use a library)
-      const timer = setTimeout(() => {
-        setDetected(true);
-        setTimeout(() => {
-          onScan(MOCK_RESULTS[scanType]);
-          onClose();
-        }, 600);
-      }, 3000);
+      scanningRef.current = true;
+      rafRef.current = requestAnimationFrame(scanFrame);
 
-      return () => clearTimeout(timer);
+      return () => {
+        scanningRef.current = false;
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      };
     }
-  }, [cameraStream, scanType]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const startMockScan = () => {
-    const timer = setTimeout(() => {
-      setDetected(true);
-      setTimeout(() => {
-        onScan(MOCK_RESULTS[scanType]);
-        onClose();
-      }, 600);
-    }, 2000);
-    return () => clearTimeout(timer);
-  };
+  }, [cameraStream, scanFrame]);
 
   // Clean up camera on unmount
   useEffect(() => {
     return () => {
+      scanningRef.current = false;
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (cameraStream) {
         cameraStream.getTracks().forEach(t => t.stop());
       }
     };
   }, [cameraStream]);
 
+  // Decode QR from uploaded image file
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadProcessing(true);
-    setTimeout(() => {
-      setDetected(true);
-      setTimeout(() => {
-        onScan(MOCK_RESULTS[scanType]);
-        onClose();
+    setScanError(null);
+
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        setScanError("Could not process image");
         setUploadProcessing(false);
-      }, 600);
-    }, 1200);
+        return;
+      }
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: "attemptBoth",
+      });
+
+      if (code && code.data) {
+        setDetected(true);
+        setTimeout(() => {
+          onScan(code.data);
+          onClose();
+          setUploadProcessing(false);
+        }, 600);
+      } else {
+        setScanError("No QR code found in image");
+        setUploadProcessing(false);
+      }
+    };
+    img.onerror = () => {
+      setScanError("Could not read image file");
+      setUploadProcessing(false);
+    };
+    img.src = URL.createObjectURL(file);
     e.target.value = "";
   };
 
@@ -163,6 +208,9 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan QR Code" }: QrSca
                 />
               )}
 
+              {/* Hidden canvas for QR decoding */}
+              <canvas ref={canvasRef} className="hidden" />
+
               {/* Corner brackets */}
               {["top-3 left-3", "top-3 right-3", "bottom-3 left-3", "bottom-3 right-3"].map((pos, i) => (
                 <div
@@ -181,16 +229,12 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan QR Code" }: QrSca
                 </div>
               )}
 
-              {!detected && !uploadProcessing && cameraError && (
-                <>
-                  <motion.div
-                    animate={{ top: ["10%", "90%", "10%"] }}
-                    transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute left-4 right-4 h-0.5 bg-primary shadow-[0_0_8px_2px_hsl(var(--primary)/0.6)] z-10"
-                    style={{ position: "absolute" }}
-                  />
-                  <p className="text-white/70 text-xs z-10">Scanning…</p>
-                </>
+              {!detected && cameraError && (
+                <div className="flex flex-col items-center gap-3 text-white z-10 p-4 text-center">
+                  <Camera size={32} className="text-white/40" />
+                  <p className="text-white/70 text-xs">Camera not available</p>
+                  <p className="text-white/50 text-[10px]">Upload a QR image from gallery instead</p>
+                </div>
               )}
 
               {!detected && !uploadProcessing && cameraStream && (
@@ -228,6 +272,14 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan QR Code" }: QrSca
                 </motion.div>
               )}
             </div>
+
+            {/* Scan error */}
+            {scanError && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-destructive/10 border border-destructive/20">
+                <AlertCircle size={14} className="text-destructive shrink-0" />
+                <p className="text-xs text-destructive">{scanError}</p>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex gap-3">
