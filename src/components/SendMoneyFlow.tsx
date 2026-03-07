@@ -52,7 +52,7 @@ const GRADIENTS = ["gradient-send", "gradient-cashout", "gradient-payment", "gra
 const QUICK_AMOUNTS = [100, 200, 500, 1000, 2000, 5000];
 
 // ─── Validation helpers ───────────────────────────────────────────────────────
-const WALLET_ID_RE = /^MFS-[A-Z]{4}-[A-Z]{4}$/i;
+const WALLET_ID_RE = /^EZP-[A-Z]{4}-[A-Z]{4}$/i;
 const BD_PHONE_RE  = /^(?:\+?88)?01[3-9]\d{8}$/;
 
 const normalizePhone = (raw: string) => raw.replace(/[\s\-()]/g, "");
@@ -282,16 +282,19 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   };
 
   const [validating, setValidating] = useState(false);
+  // Track resolved phone separately from display value (important for wallet IDs)
+  const [resolvedPhone, setResolvedPhone] = useState<string>("");
 
-  const validateRecipientExists = async (phone: string): Promise<{ exists: boolean; name?: string }> => {
-    const normalized = normalizePhone(phone);
-    const { data } = await supabase
-      .from("profiles")
-      .select("name, phone")
-      .eq("phone", normalized)
-      .eq("status", "active")
-      .maybeSingle();
-    if (data) return { exists: true, name: data.name || undefined };
+  const validateRecipientExists = async (identifier: string): Promise<{ exists: boolean; name?: string; phone?: string }> => {
+    const { data, error } = await supabase.rpc("resolve_transfer_recipient", {
+      p_identifier: identifier,
+      p_flow: "send",
+    });
+    if (error) return { exists: false };
+    const result = typeof data === "string" ? JSON.parse(data) : data;
+    if (result?.found) {
+      return { exists: true, name: result.recipient_name || undefined, phone: result.recipient_phone };
+    }
     return { exists: false };
   };
 
@@ -306,6 +309,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     }
     const updated = { ...c, name: result.name || c.name };
     setRecipient(updated);
+    setResolvedPhone(result.phone || c.phone);
     setInputVal(c.phone);
     setInputType("phone");
     goTo("amount");
@@ -353,15 +357,17 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     setValidating(true);
     setError("");
 
-    // Validate recipient exists on EasyPay
-    const phone = type === "walletId" ? val : normalizePhone(val);
-    const result = await validateRecipientExists(phone);
+    // Validate recipient exists on EasyPay via secure RPC
+    const result = await validateRecipientExists(val);
     setValidating(false);
 
     if (!result.exists) {
-      setError("This number is not registered on EasyPay.");
+      setError(type === "walletId" ? "Wallet ID not found on EasyPay." : "This number is not registered on EasyPay.");
       return;
     }
+
+    // Store the canonical phone returned by the resolver
+    setResolvedPhone(result.phone || "");
 
     const found = allContacts.find((c) => {
       if (type === "phone") return normalizePhone(c.phone) === normalizePhone(val);
@@ -376,7 +382,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
       setRecipient({
         id: "custom",
         name: result.name || (type === "walletId" ? `Wallet ${val}` : normalizePhone(val)),
-        phone: type === "walletId" ? val : normalizePhone(val),
+        phone: result.phone || normalizePhone(val),
         initials,
         gradient: "gradient-primary",
       });
@@ -400,6 +406,8 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
       return;
     }
 
+    setResolvedPhone(validationResult.phone || "");
+
     const found = allContacts.find((c) => normalizePhone(c.phone) === normalizePhone(result));
     if (found) {
       setRecipient({ ...found, name: validationResult.name || found.name });
@@ -410,7 +418,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
       setRecipient({
         id: "qr",
         name: validationResult.name || (type === "walletId" ? `Wallet ${result}` : result),
-        phone: result,
+        phone: validationResult.phone || result,
         initials,
         gradient: "gradient-send",
       });
@@ -452,7 +460,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     const actualSendAmount = parseFloat((amtVal + cashOutExtra).toFixed(2));
     const feeVal = calcFee("send", actualSendAmount);
     await transferMoney({
-      recipientPhone: recipient?.phone ?? "",
+      recipientPhone: (resolvedPhone || recipient?.phone) ?? "",
       amount: actualSendAmount,
       fee: feeVal,
       type: "send",

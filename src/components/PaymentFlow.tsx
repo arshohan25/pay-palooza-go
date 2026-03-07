@@ -181,23 +181,17 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
   };
 
   const [validating, setValidating] = useState(false);
+  const [resolvedMerchantPhone, setResolvedMerchantPhone] = useState("");
 
   const validateMerchantExists = async (merchantId: string): Promise<{ exists: boolean; name?: string; phone?: string }> => {
-    // Check profiles by phone with merchant role
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("name, phone, user_id")
-      .eq("phone", merchantId)
-      .eq("status", "active")
-      .maybeSingle();
-    if (profile) {
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", profile.user_id)
-        .eq("role", "merchant")
-        .maybeSingle();
-      if (roleData) return { exists: true, name: profile.name || undefined, phone: profile.phone };
+    const { data, error } = await supabase.rpc("resolve_transfer_recipient", {
+      p_identifier: merchantId,
+      p_flow: "payment",
+    });
+    if (error) return { exists: false };
+    const result = typeof data === "string" ? JSON.parse(data) : data;
+    if (result?.found) {
+      return { exists: true, name: result.recipient_name || undefined, phone: result.recipient_phone };
     }
     return { exists: false };
   };
@@ -211,10 +205,11 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
     setValidating(false);
 
     if (!validation.exists) {
-      setError("Merchant not found. Please enter a valid Merchant ID.");
+      setError("Merchant not found. Please enter a valid Merchant ID or phone.");
       return;
     }
 
+    setResolvedMerchantPhone(validation.phone || "");
     const found = recentMerchants.find((m) => m.merchantId.toLowerCase() === result.toLowerCase());
     if (found) {
       setMerchant(found);
@@ -234,10 +229,11 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
     setValidating(false);
 
     if (!validation.exists) {
-      setError("Merchant not found. Please enter a valid Merchant ID.");
+      setError("Merchant not found. Please enter a valid Merchant ID or phone.");
       return;
     }
 
+    setResolvedMerchantPhone(validation.phone || "");
     const found = recentMerchants.find((m) => m.merchantId.toLowerCase() === trimmed.toLowerCase());
     if (found) {
       setMerchant(found);
@@ -280,7 +276,7 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
     txnTime.current = new Date();
     try {
       await transferMoney({
-        recipientPhone: merchant?.merchantId ?? "",
+        recipientPhone: (resolvedMerchantPhone || merchant?.merchantId) ?? "",
         amount: amtVal,
         fee: 0,
         type: "payment",
