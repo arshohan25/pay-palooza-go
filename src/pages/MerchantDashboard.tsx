@@ -668,10 +668,13 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh }: { merchant
             <span className="text-[10px] font-semibold text-primary">{paymentTxns.length} total</span>
           </div>
           {paymentTxns.length === 0 ? (
-            <div className="text-center py-8">
-              <CreditCard size={32} className="text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground">No payments yet</p>
-            </div>
+            <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
+              <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+                <CreditCard className="w-7 h-7 text-muted-foreground" />
+              </motion.div>
+              <p className="text-sm font-semibold text-foreground">No payments yet</p>
+              <p className="text-xs text-muted-foreground mt-1">Payments will appear here</p>
+            </motion.div>
           ) : (
             <div className="space-y-1">
               {paymentTxns.slice(0, 5).map(tx => (
@@ -915,10 +918,13 @@ const AnalyticsTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null
             <Star size={14} className="text-primary" /> Top Customers
           </h3>
           {topCustomers.length === 0 ? (
-            <div className="text-center py-6">
-              <Users size={28} className="text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground">No customer data yet</p>
-            </div>
+            <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
+              <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+                <Users className="w-7 h-7 text-muted-foreground" />
+              </motion.div>
+              <p className="text-sm font-semibold text-foreground">No customer data yet</p>
+              <p className="text-xs text-muted-foreground mt-1">Customer insights will appear here</p>
+            </motion.div>
           ) : (
             <div className="space-y-1.5">
               {topCustomers.map((c, i) => (
@@ -1239,10 +1245,13 @@ const SettlementTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | nul
         <Card className="p-4 border-0 shadow-card">
           <h3 className="text-sm font-bold text-foreground mb-3">Settlement Batches</h3>
           {dailyBatches.length === 0 ? (
-            <div className="text-center py-6">
-              <BanknoteIcon size={32} className="text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground">No settlements yet</p>
-            </div>
+            <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
+              <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+                <BanknoteIcon className="w-7 h-7 text-muted-foreground" />
+              </motion.div>
+              <p className="text-sm font-semibold text-foreground">No settlements yet</p>
+              <p className="text-xs text-muted-foreground mt-1">Settlement batches will appear here</p>
+            </motion.div>
           ) : (
             <div className="space-y-2">
               {dailyBatches.map((b, i) => (

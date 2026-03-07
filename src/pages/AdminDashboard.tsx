@@ -696,7 +696,13 @@ export default function AdminDashboard() {
                   </table>
                 </div>
                 {transactions.length === 0 && (
-                  <p className="text-center text-muted-foreground py-8 text-sm">No transactions yet</p>
+                  <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
+                    <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+                      <FileText className="w-7 h-7 text-muted-foreground" />
+                    </motion.div>
+                    <p className="text-sm font-semibold text-foreground">No transactions yet</p>
+                    <p className="text-xs text-muted-foreground mt-1">Transactions will appear here</p>
+                  </motion.div>
                 )}
               </CardContent>
             </Card>
@@ -897,7 +903,15 @@ export default function AdminDashboard() {
                       </tbody>
                     </table>
                   </div>
-                  {filteredUsers.length === 0 && <p className="text-center text-muted-foreground py-8 text-sm">No users found</p>}
+                  {filteredUsers.length === 0 && (
+                    <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
+                      <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+                        <Users className="w-7 h-7 text-muted-foreground" />
+                      </motion.div>
+                      <p className="text-sm font-semibold text-foreground">No users found</p>
+                      <p className="text-xs text-muted-foreground mt-1">Users will appear here</p>
+                    </motion.div>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -956,7 +970,15 @@ export default function AdminDashboard() {
                       </tbody>
                     </table>
                   </div>
-                  {agents.length === 0 && <p className="text-center text-muted-foreground py-8 text-sm">No agents found</p>}
+                  {agents.length === 0 && (
+                    <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
+                      <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+                        <Users className="w-7 h-7 text-muted-foreground" />
+                      </motion.div>
+                      <p className="text-sm font-semibold text-foreground">No agents found</p>
+                      <p className="text-xs text-muted-foreground mt-1">Agents will appear here</p>
+                    </motion.div>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -1015,7 +1037,15 @@ export default function AdminDashboard() {
                       </tbody>
                     </table>
                   </div>
-                  {merchants.length === 0 && <p className="text-center text-muted-foreground py-8 text-sm">No merchants found</p>}
+                  {merchants.length === 0 && (
+                    <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
+                      <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+                        <Store className="w-7 h-7 text-muted-foreground" />
+                      </motion.div>
+                      <p className="text-sm font-semibold text-foreground">No merchants found</p>
+                      <p className="text-xs text-muted-foreground mt-1">Merchants will appear here</p>
+                    </motion.div>
+                  )}
                 </CardContent>
               </Card>
             )}

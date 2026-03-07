@@ -173,7 +173,13 @@ export default function AdminRechargeLog() {
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
             </div>
           ) : filtered.length === 0 ? (
-            <p className="text-center text-muted-foreground py-10 text-sm">No recharge transactions found</p>
+            <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-10 text-center">
+              <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+                <RefreshCw className="w-7 h-7 text-muted-foreground" />
+              </motion.div>
+              <p className="text-sm font-semibold text-foreground">No recharge transactions found</p>
+              <p className="text-xs text-muted-foreground mt-1">Recharge history will appear here</p>
+            </motion.div>
           ) : (
             <div className="divide-y divide-border">
               {filtered.map((t) => {

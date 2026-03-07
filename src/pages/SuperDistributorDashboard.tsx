@@ -641,7 +641,13 @@ const SuperDistributorDashboard = () => {
           <SheetHeader><SheetTitle className="text-base">Notifications</SheetTitle></SheetHeader>
           <div className="space-y-2 pt-4">
             {notifications.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-8">No notifications yet</p>
+              <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
+                <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+                  <Bell className="w-7 h-7 text-muted-foreground" />
+                </motion.div>
+                <p className="text-sm font-semibold text-foreground">No notifications yet</p>
+                <p className="text-xs text-muted-foreground mt-1">Alerts will appear here</p>
+              </motion.div>
             ) : notifications.map(n => (
               <div key={n.id} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-muted/20 border border-border/30">
                 <div>
@@ -709,7 +715,13 @@ const DistributorsView = ({ distributors, agents, onBack, onRefresh, toast }: {
           ))}
         </div>
         {filtered.length === 0 ? (
-          <p className="text-xs text-muted-foreground text-center py-8">No distributors found</p>
+          <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
+            <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+              <Building2 className="w-7 h-7 text-muted-foreground" />
+            </motion.div>
+            <p className="text-sm font-semibold text-foreground">No distributors found</p>
+            <p className="text-xs text-muted-foreground mt-1">Distributors will appear here</p>
+          </motion.div>
         ) : (
           <div className="space-y-3">
             {filtered.map(d => {
@@ -801,7 +813,13 @@ const AllAgentsView = ({ agents, distributors, onBack }: { agents: AgentRow[]; d
           ))}
         </div>
         {filtered.length === 0 ? (
-          <p className="text-xs text-muted-foreground text-center py-8">No agents found</p>
+          <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
+            <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+              <Users className="w-7 h-7 text-muted-foreground" />
+            </motion.div>
+            <p className="text-sm font-semibold text-foreground">No agents found</p>
+            <p className="text-xs text-muted-foreground mt-1">Agents will appear here</p>
+          </motion.div>
         ) : (
           <div className="space-y-2">
             {filtered.map(ag => (
@@ -1056,7 +1074,13 @@ const DistTxnsView = ({ distributors, onBack }: { distributors: DistRow[]; onBac
                 <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
             ) : filteredTxns.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-8">No transactions found</p>
+              <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
+                <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+                  <FileText className="w-7 h-7 text-muted-foreground" />
+                </motion.div>
+                <p className="text-sm font-semibold text-foreground">No transactions found</p>
+                <p className="text-xs text-muted-foreground mt-1">Transactions will appear here</p>
+              </motion.div>
             ) : (
               <div className="space-y-2">
                 {filteredTxns.map(t => (

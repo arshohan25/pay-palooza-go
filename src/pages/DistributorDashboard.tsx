@@ -521,7 +521,13 @@ const DistributorDashboard = () => {
                   <Target size={14} className="text-primary" /> Top Performing Agents
                 </h3>
                 {agents.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-6">No agents yet</p>
+                  <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
+                    <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+                      <Users className="w-7 h-7 text-muted-foreground" />
+                    </motion.div>
+                    <p className="text-sm font-semibold text-foreground">No agents yet</p>
+                    <p className="text-xs text-muted-foreground mt-1">Your top performers will appear here</p>
+                  </motion.div>
                 ) : (
                   <div className="space-y-2">
                     {[...agents].sort((a, b) => b.commission_earned - a.commission_earned).slice(0, 5).map((ag, i) => (

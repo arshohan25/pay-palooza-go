@@ -375,7 +375,13 @@ export default function AdminRechargePackManager() {
             </SortableContext>
           </DndContext>
           {filtered.length === 0 && (
-            <p className="text-center text-muted-foreground py-8 text-sm">No packs found</p>
+            <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
+              <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+                <Package className="w-7 h-7 text-muted-foreground" />
+              </motion.div>
+              <p className="text-sm font-semibold text-foreground">No packs found</p>
+              <p className="text-xs text-muted-foreground mt-1">Recharge packs will appear here</p>
+            </motion.div>
           )}
         </CardContent>
       </Card>
