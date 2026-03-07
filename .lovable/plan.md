@@ -1,29 +1,28 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Budget Alert Notifications at 80% and 100% Thresholds
 
-### What
+### Approach
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+Add budget threshold checking logic to the `useSpendingBudgets` hook. After fetching budgets and spending data, compare each budget's actual spending against its limit. When spending crosses 80% or 100%, insert a notification into the `notifications` table — but only once per threshold per month (tracked via `sessionStorage` to avoid duplicate alerts within the same session, and by checking existing notifications to avoid duplicates across sessions).
 
 ### Changes
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**File: `src/hooks/use-spending-budgets.ts`**
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+After the spending aggregation completes (after line 84), add a `checkBudgetAlerts` function that:
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+1. For each budget, calculate `pct = spending[category] / monthly_limit * 100`
+2. If `pct >= 100` → check if a "100% exceeded" notification already exists this month for this category; if not, insert one
+3. Else if `pct >= 80` → same check for "80% warning"
+4. Use a deduplication query: check `notifications` table for existing alerts with matching `metadata` (category + threshold + month) before inserting
+5. Notification format:
+   - **80%**: title = "Budget Warning", body = "You've used 80% of your ৳X Send Money budget this month", category = "budget"
+   - **100%**: title = "Budget Exceeded", body = "You've exceeded your ৳X Send Money budget this month", category = "budget"
+   - `metadata`: `{ category, threshold: 80|100, month: "2026-03" }`
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+This runs once after each `fetchAll()` call. The notification will appear in the existing NotificationCenter via the real-time subscription already in place.
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+### Files Modified
+- `src/hooks/use-spending-budgets.ts` — add alert check logic (~30 lines after spending aggregation)
 
