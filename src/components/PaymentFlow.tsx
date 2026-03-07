@@ -111,9 +111,44 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
   const [error, setError]         = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [recentMerchants, setRecentMerchants] = useState<Merchant[]>([]);
   const txnTime = useRef(new Date());
   const genId = () => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; };
   const txnId   = useRef(genId());
+
+  // Fetch recent payment recipients from real transactions
+  const GRADIENTS = ["gradient-payment", "gradient-addmoney", "gradient-accent", "gradient-cashout", "gradient-send"];
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const { data: trans } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .eq("type", "payment")
+        .order("created_at", { ascending: false });
+      if (!trans) return;
+      const seen = new Set<string>();
+      const merchants: Merchant[] = [];
+      for (const tx of trans) {
+        const mid = tx.recipient_phone;
+        if (!mid || seen.has(mid)) continue;
+        seen.add(mid);
+        const name = tx.recipient_name || "Merchant";
+        merchants.push({
+          id: tx.id,
+          name,
+          merchantId: mid,
+          category: "Payment",
+          initials: name.slice(0, 2).toUpperCase(),
+          gradient: GRADIENTS[merchants.length % GRADIENTS.length],
+        });
+        if (merchants.length >= 5) break;
+      }
+      setRecentMerchants(merchants);
+    })();
+  }, []);
 
   useEffect(() => {
     if (step === "success") {
@@ -147,7 +182,7 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
 
   const handleQrScan = (result: string) => {
     setMerchantIdInput(result);
-    const found = RECENT_MERCHANTS.find((m) => m.merchantId.toLowerCase() === result.toLowerCase());
+    const found = recentMerchants.find((m) => m.merchantId.toLowerCase() === result.toLowerCase());
     if (found) {
       setMerchant(found);
     } else {
@@ -159,7 +194,7 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
   const handleMerchantIdContinue = () => {
     const trimmed = merchantIdInput.trim();
     if (trimmed.length < 5) { setError("Enter a valid Merchant ID."); return; }
-    const found = RECENT_MERCHANTS.find((m) => m.merchantId.toLowerCase() === trimmed.toLowerCase());
+    const found = recentMerchants.find((m) => m.merchantId.toLowerCase() === trimmed.toLowerCase());
     if (found) {
       setMerchant(found);
     } else {
@@ -309,7 +344,9 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
 
                 {/* Merchant list */}
                 <div className="space-y-2">
-                  {RECENT_MERCHANTS.map((m) => (
+                  {recentMerchants.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">No recent merchants</p>
+                  ) : recentMerchants.map((m) => (
                     <button
                       key={m.id}
                       onClick={() => handleSelectMerchant(m)}
