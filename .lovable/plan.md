@@ -1,29 +1,32 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Refine Recipient Input Step
 
-### What
+### Changes — `src/components/SendMoneyFlow.tsx`
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+**1. Move QR scan icon to right side of the search input field**
+Replace the standalone `<Search>` icon on the left with the QR icon on the right side of the input. Keep the search icon on the left. The QR icon inside the input should match the primary color scheme (use `text-primary`).
 
-### Changes
+**2. Add tagline below header**
+Re-add the subtitle/tagline text below the "Send Money" title in the header area — something like "Send money to any EasyPay or mobile number" in smaller text.
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**3. Update placeholder text**
+Change the input placeholder from `"Enter name or number"` to `"Name or Number or Wallet ID"`.
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+**4. Input validation — max 11 characters for numbers/wallet IDs**
+Update `handleInputChange`:
+- If the input starts with digits (phone number), auto-strip non-digits and cap at 11 characters.
+- If the input matches the wallet ID pattern prefix (contains `-`), allow the format `MFS-XXXX-XXXX` (max 13 chars with hyphens, auto-insert hyphens).
+- If the input is purely alphabetic (name search), allow unlimited length.
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+**5. Add a "Continue" button**
+Add a visible Continue button at the bottom of the recipient step that is **disabled** until:
+- A phone number with exactly 11 digits is entered, OR
+- A valid wallet ID (`MFS-XXXX-XXXX`) is entered, OR
+- A contact is selected from the list.
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+This replaces the auto-advance on `handleManualSend` — tapping Continue triggers the same logic.
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+### Files Modified
+- `src/components/SendMoneyFlow.tsx`
 
