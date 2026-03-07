@@ -240,7 +240,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
       >
         <div className="px-4 pt-4 pb-2 flex items-center gap-2">
           <BadgeDollarSign size={16} className="text-amber-500" />
-          <p className="text-sm font-bold text-foreground">{t("monthlyFees") ?? "Monthly Fees"}</p>
+          <p className="text-sm font-bold text-foreground">Monthly Fees</p>
           {!feesLoading && (
             <span className="ml-auto text-xs text-amber-500 font-semibold">
               Total: ৳{feeData.reduce((s, d) => s + d.fees, 0).toLocaleString("en-BD", { minimumFractionDigits: 2 })}
