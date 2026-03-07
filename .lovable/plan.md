@@ -1,29 +1,58 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Add Monthly Fees Breakdown Chart to Spending Insights
 
-### What
+Add a new card below the cashback widget showing a bar chart of fees paid per month, using real transaction data from the database.
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### Change
 
-### Changes
+**File: `src/pages/SpendingInsightsPage.tsx`**
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+1. **Add `LineChart, Line` to the existing recharts imports** (already have `BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer`).
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+2. **Add fee data fetching** — extend the existing `useEffect` (or add a new one) to query the last 6 months of completed transactions with `fee > 0`, group by month, and compute total fees per month.
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+3. **Add a new chart card** between the cashback widget and the monthly bar chart (around line 205). It will render:
+   - A card titled "Monthly Fees" with a small amber `BadgeDollarSign` icon
+   - A summary showing total fees across the period
+   - A bar chart (amber-colored bars) with month labels on X-axis and fee amounts on Y-axis
+   - Uses the same card styling (`bg-card rounded-3xl border border-border/60 shadow-card`)
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+### Data Logic
+```tsx
+// Fetch last 6 months of transactions with fees
+const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+const { data } = await supabase
+  .from("transactions")
+  .select("fee, created_at")
+  .eq("user_id", session.user.id)
+  .eq("status", "completed")
+  .gt("fee", 0)
+  .gte("created_at", sixMonthsAgo.toISOString());
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+// Group by month -> [{ month: "Jan", fees: 450 }, ...]
+```
 
-3. Add the new category icons to the `categoryIcons` map.
+### UI Structure
+```tsx
+<motion.div className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden">
+  <div className="px-4 pt-4 pb-2 flex items-center gap-2">
+    <BadgeDollarSign size={16} className="text-amber-500" />
+    <p className="text-sm font-bold text-foreground">Monthly Fees</p>
+    <span className="ml-auto text-xs text-amber-500 font-semibold">
+      Total: ৳{totalFees}
+    </span>
+  </div>
+  <div style={{ height: 180 }}>
+    <ResponsiveContainer>
+      <BarChart data={feeData}>
+        <Bar dataKey="fees" fill="hsl(40, 80%, 50%)" radius={[4,4,0,0]} />
+        ...
+      </BarChart>
+    </ResponsiveContainer>
+  </div>
+</motion.div>
+```
 
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+One file changed. Real data from the database, consistent styling with existing charts.
 
