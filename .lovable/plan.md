@@ -1,29 +1,48 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Empty State Illustrations + Date Range Picker
 
-### What
+### 1. Empty State Illustrations
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+Add a friendly empty state to the page when `allTxns.length === 0` after loading completes. Instead of showing empty charts, show a single centered illustration card with an icon, heading, and subtitle.
 
-### Changes
+**Where**: After the top bar (line ~245), wrap the rest of the content in a conditional:
+- If `!insightsLoading && allTxns.length === 0` → show empty state card
+- Otherwise → show existing content
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**Empty state UI**:
+- Large `BarChart3` icon (from lucide) in a soft gradient circle
+- "No transactions yet" heading
+- "Start transacting to see your spending insights here" subtitle
+- Styled consistently with existing card patterns (`bg-card rounded-3xl border`)
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+### 2. Date Range Picker
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+Add a date range picker below the top bar that lets users select a custom period, replacing the hardcoded 6-month window.
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+**State changes**:
+- Add `dateRange` state: `{ from: Date, to: Date }` defaulting to last 6 months
+- The `useEffect` fetch query uses `dateRange.from` and `dateRange.to` instead of hardcoded `sixMonthsAgo`
+- Add `dateRange` to the `useEffect` dependency array so data refetches on change
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+**UI**: A row with preset chips ("1M", "3M", "6M", "1Y", "Custom") + a Popover with two Calendar pickers for custom range (using shadcn Popover + Calendar with `pointer-events-auto`).
 
-3. Add the new category icons to the `categoryIcons` map.
+**Preset logic**:
+- 1M: last 1 month
+- 3M: last 3 months  
+- 6M: last 6 months (default)
+- 1Y: last 12 months
+- Custom: opens date range popover
 
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+**Data adaptation**: The month labels generation and bar chart grouping already work dynamically based on the fetched data range — just need to adjust the `monthLabels` loop to span from `dateRange.from` to `dateRange.to` instead of hardcoded 5 months back.
+
+### Files Modified
+- `src/pages/SpendingInsightsPage.tsx` — single file, all changes
+
+### Imports to Add
+- `CalendarIcon, BarChart3` from `lucide-react`
+- `Calendar` from `@/components/ui/calendar`
+- `Popover, PopoverTrigger, PopoverContent` from `@/components/ui/popover`
+- `Button` from `@/components/ui/button`
+- `format` from `date-fns`
 
