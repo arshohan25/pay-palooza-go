@@ -3,41 +3,33 @@ import { motion } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
 import { ArrowLeft, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Gift, BadgeDollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { TxCashbackIcon } from "@/components/QuickActionIcons";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from "recharts";
 
-/* ── Mock data ── */
-const MONTHS = ["Aug", "Sep", "Oct", "Nov", "Dec", "Jan"];
+const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-const BAR_DATA = [
-  { month: "Aug", Send: 12000, CashOut: 8000, Payment: 4500, Recharge: 1200 },
-  { month: "Sep", Send: 9500,  CashOut: 6500, Payment: 5200, Recharge: 900  },
-  { month: "Oct", Send: 14000, CashOut: 9000, Payment: 3800, Recharge: 1500 },
-  { month: "Nov", Send: 11000, CashOut: 7500, Payment: 6000, Recharge: 800  },
-  { month: "Dec", Send: 18500, CashOut: 12000, Payment: 7200, Recharge: 2000 },
-  { month: "Jan", Send: 13500, CashOut: 8500, Payment: 5500, Recharge: 1100 },
-];
+const OUTGOING_TYPES = ["send", "cashout", "payment", "recharge", "paybill", "banktransfer"];
+const INCOMING_TYPES = ["receive", "addmoney"];
 
-const DONUT_RAW = [
-  { key: "sendMoney" as const, value: 13500, color: "hsl(262 70% 55%)" },
-  { key: "cashOut" as const,   value: 8500,  color: "hsl(340 75% 55%)" },
-  { key: "payment" as const,   value: 5500,  color: "hsl(200 80% 50%)" },
-  { key: "recharge" as const,  value: 1100,  color: "hsl(36 95% 55%)"  },
-];
+const TYPE_TO_CATEGORY: Record<string, string> = {
+  send: "Send", banktransfer: "Send",
+  cashout: "CashOut",
+  payment: "Payment", paybill: "Payment",
+  recharge: "Recharge",
+};
 
-const TOP_MERCHANTS = [
-  { name: "Pathao",       category: "Ride",     amount: 1850,  icon: "🚗" },
-  { name: "Shajgoj",      category: "Shopping", amount: 1400,  icon: "🛍️" },
-  { name: "Chaldal",      category: "Grocery",  amount: 1200,  icon: "🛒" },
-  { name: "Robi",         category: "Telecom",  amount: 800,   icon: "📡" },
-  { name: "FoodPanda",    category: "Food",     amount: 650,   icon: "🍔" },
-];
+const CATEGORY_COLORS: Record<string, string> = {
+  Send: "hsl(262 70% 55%)",
+  CashOut: "hsl(340 75% 55%)",
+  Payment: "hsl(200 80% 50%)",
+  Recharge: "hsl(36 95% 55%)",
+};
 
-const TOTAL_SENT     = 28600;
-const TOTAL_RECEIVED = 34200;
+const MERCHANT_ICONS: Record<string, string> = {
+  payment: "💳", paybill: "🧾", recharge: "📡", default: "🛒",
+};
 
 /* ── Custom bar tooltip ── */
 const BarTooltip = ({ active, payload, label, totalLabel }: any) => {
@@ -63,87 +55,170 @@ const BarTooltip = ({ active, payload, label, totalLabel }: any) => {
   );
 };
 
-/* ── Custom donut label ── */
-const DonutLabel = ({ cx, cy, total, label }: { cx: number; cy: number; total: number; label: string }) => (
-  <>
-    <text x={cx} y={cy - 8} textAnchor="middle" dominantBaseline="middle"
-      style={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}>
-      {label}
-    </text>
-    <text x={cx} y={cy + 12} textAnchor="middle" dominantBaseline="middle"
-      style={{ fill: "hsl(var(--foreground))", fontSize: 16, fontWeight: 700 }}>
-      ৳{total.toLocaleString()}
-    </text>
-  </>
-);
-
 interface InsightsPageProps {
   onBack: () => void;
 }
 
 const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
   const { t } = useI18n();
-  const [activeMonth, setActiveMonth] = useState("Jan");
 
+  const now = new Date();
+  const currentMonthName = MONTH_NAMES[now.getMonth()];
+  const [activeMonth, setActiveMonth] = useState(currentMonthName);
+
+  // Real data state
+  const [insightsLoading, setInsightsLoading] = useState(true);
+  const [totalSent, setTotalSent] = useState(0);
+  const [totalReceived, setTotalReceived] = useState(0);
+  const [sentDelta, setSentDelta] = useState(0);
+  const [receivedDelta, setReceivedDelta] = useState(0);
+  const [barData, setBarData] = useState<Record<string, any>[]>([]);
+  const [months, setMonths] = useState<string[]>([]);
+  const [topMerchants, setTopMerchants] = useState<{ name: string; category: string; amount: number; icon: string }[]>([]);
+  const [allTxns, setAllTxns] = useState<any[]>([]);
+
+  // Cashback + fees (kept from previous implementation)
   const [cashbackTotal, setCashbackTotal] = useState(0);
   const [cashbackCount, setCashbackCount] = useState(0);
   const [cashbackLoading, setCashbackLoading] = useState(true);
   const [feeData, setFeeData] = useState<{ month: string; fees: number }[]>([]);
   const [feesLoading, setFeesLoading] = useState(true);
 
-  // Fetch cashback + fee data
   useEffect(() => {
     const fetchData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
-      const now = new Date();
+      if (!session?.user) {
+        setInsightsLoading(false);
+        setCashbackLoading(false);
+        setFeesLoading(false);
+        return;
+      }
 
-      // Cashback
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-      const { data: cbData } = await supabase
-        .from("transactions")
-        .select("amount")
-        .eq("user_id", session.user.id)
-        .eq("type", "addmoney")
-        .eq("status", "completed")
-        .gte("created_at", monthStart)
-        .like("description", "Drive Cashback:%");
-      const txns = cbData ?? [];
-      setCashbackTotal(txns.reduce((s, t) => s + Number(t.amount), 0));
-      setCashbackCount(txns.length);
-      setCashbackLoading(false);
-
-      // Monthly fees (last 6 months)
+      const userId = session.user.id;
       const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-      const { data: feeRows } = await supabase
+
+      // Single query for all insights data
+      const { data: txns } = await supabase
         .from("transactions")
-        .select("fee, created_at")
-        .eq("user_id", session.user.id)
+        .select("type, amount, fee, created_at, recipient_name, description")
+        .eq("user_id", userId)
         .eq("status", "completed")
-        .gt("fee", 0)
         .gte("created_at", sixMonthsAgo.toISOString());
 
-      const monthMap: Record<string, number> = {};
-      const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      // Initialize last 6 months
+      const rows = txns ?? [];
+      setAllTxns(rows);
+
+      // Build month labels for last 6 months
+      const monthLabels: string[] = [];
       for (let i = 5; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const key = monthNames[d.getMonth()];
-        monthMap[key] = 0;
+        monthLabels.push(MONTH_NAMES[d.getMonth()]);
       }
-      (feeRows ?? []).forEach((r) => {
+      setMonths(monthLabels);
+
+      // Current & previous month boundaries
+      const curMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+      // Sent / Received totals
+      const curOut = rows.filter(r => new Date(r.created_at) >= curMonthStart && OUTGOING_TYPES.includes(r.type));
+      const curIn = rows.filter(r => new Date(r.created_at) >= curMonthStart && INCOMING_TYPES.includes(r.type));
+      const prevOut = rows.filter(r => {
         const d = new Date(r.created_at);
-        const key = monthNames[d.getMonth()];
-        if (key in monthMap) monthMap[key] += Number(r.fee);
+        return d >= prevMonthStart && d < curMonthStart && OUTGOING_TYPES.includes(r.type);
       });
-      setFeeData(Object.entries(monthMap).map(([month, fees]) => ({ month, fees: Math.round(fees * 100) / 100 })));
+      const prevIn = rows.filter(r => {
+        const d = new Date(r.created_at);
+        return d >= prevMonthStart && d < curMonthStart && INCOMING_TYPES.includes(r.type);
+      });
+
+      const curSentTotal = curOut.reduce((s, r) => s + Number(r.amount), 0);
+      const curRecvTotal = curIn.reduce((s, r) => s + Number(r.amount), 0);
+      const prevSentTotal = prevOut.reduce((s, r) => s + Number(r.amount), 0);
+      const prevRecvTotal = prevIn.reduce((s, r) => s + Number(r.amount), 0);
+
+      setTotalSent(Math.round(curSentTotal));
+      setTotalReceived(Math.round(curRecvTotal));
+      setSentDelta(prevSentTotal > 0 ? Math.round(((curSentTotal - prevSentTotal) / prevSentTotal) * 100) : 0);
+      setReceivedDelta(prevRecvTotal > 0 ? Math.round(((curRecvTotal - prevRecvTotal) / prevRecvTotal) * 100) : 0);
+
+      // Bar chart data grouped by month
+      const barMap: Record<string, Record<string, number>> = {};
+      monthLabels.forEach(m => { barMap[m] = { Send: 0, CashOut: 0, Payment: 0, Recharge: 0 }; });
+      rows.forEach(r => {
+        const cat = TYPE_TO_CATEGORY[r.type];
+        if (!cat) return;
+        const mName = MONTH_NAMES[new Date(r.created_at).getMonth()];
+        if (barMap[mName]) barMap[mName][cat] += Number(r.amount);
+      });
+      setBarData(monthLabels.map(m => ({ month: m, ...barMap[m] })));
+
+      // Top merchants (current month)
+      const merchantMap: Record<string, { amount: number; type: string }> = {};
+      curOut.filter(r => ["payment", "paybill", "recharge"].includes(r.type) && r.recipient_name).forEach(r => {
+        const name = r.recipient_name!;
+        if (!merchantMap[name]) merchantMap[name] = { amount: 0, type: r.type };
+        merchantMap[name].amount += Number(r.amount);
+      });
+      const sortedMerchants = Object.entries(merchantMap)
+        .sort((a, b) => b[1].amount - a[1].amount)
+        .slice(0, 5)
+        .map(([name, data]) => ({
+          name,
+          category: TYPE_TO_CATEGORY[data.type] || "Other",
+          amount: Math.round(data.amount),
+          icon: MERCHANT_ICONS[data.type] || MERCHANT_ICONS.default,
+        }));
+      setTopMerchants(sortedMerchants);
+
+      setInsightsLoading(false);
+
+      // Cashback (kept from previous)
+      const monthStart = curMonthStart.toISOString();
+      const cbTxns = rows.filter(r =>
+        r.type === "addmoney" &&
+        new Date(r.created_at) >= curMonthStart &&
+        r.description?.startsWith("Drive Cashback:")
+      );
+      setCashbackTotal(cbTxns.reduce((s, r) => s + Number(r.amount), 0));
+      setCashbackCount(cbTxns.length);
+      setCashbackLoading(false);
+
+      // Monthly fees
+      const feeMap: Record<string, number> = {};
+      monthLabels.forEach(m => { feeMap[m] = 0; });
+      rows.filter(r => Number(r.fee) > 0).forEach(r => {
+        const mName = MONTH_NAMES[new Date(r.created_at).getMonth()];
+        if (mName in feeMap) feeMap[mName] += Number(r.fee);
+      });
+      setFeeData(Object.entries(feeMap).map(([month, fees]) => ({ month, fees: Math.round(fees * 100) / 100 })));
       setFeesLoading(false);
     };
     fetchData();
   }, []);
 
-  const DONUT_DATA = DONUT_RAW.map(d => ({ ...d, name: t(d.key) }));
-  const donutTotal = DONUT_DATA.reduce((s, d) => s + d.value, 0);
+  // Donut data reacts to activeMonth
+  const donutData = useMemo(() => {
+    const catTotals: Record<string, number> = { Send: 0, CashOut: 0, Payment: 0, Recharge: 0 };
+    allTxns.forEach(r => {
+      const cat = TYPE_TO_CATEGORY[r.type];
+      if (!cat) return;
+      const mName = MONTH_NAMES[new Date(r.created_at).getMonth()];
+      if (mName === activeMonth) catTotals[cat] += Number(r.amount);
+    });
+    return [
+      { key: "sendMoney" as const, name: t("sendMoney"), value: Math.round(catTotals.Send), color: CATEGORY_COLORS.Send },
+      { key: "cashOut" as const, name: t("cashOut"), value: Math.round(catTotals.CashOut), color: CATEGORY_COLORS.CashOut },
+      { key: "payment" as const, name: t("payment"), value: Math.round(catTotals.Payment), color: CATEGORY_COLORS.Payment },
+      { key: "recharge" as const, name: t("recharge"), value: Math.round(catTotals.Recharge), color: CATEGORY_COLORS.Recharge },
+    ].filter(d => d.value > 0);
+  }, [allTxns, activeMonth, t]);
+
+  const donutTotal = donutData.reduce((s, d) => s + d.value, 0);
+
+  const SkeletonBlock = ({ className }: { className?: string }) => (
+    <div className={`rounded-lg bg-muted animate-pulse ${className ?? "h-8 w-24"}`} />
+  );
 
   return (
     <motion.div
@@ -180,11 +255,21 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
             </div>
             <span className="text-[11.5px] font-semibold text-muted-foreground">{t("totalSent")}</span>
           </div>
-          <p className="text-[20px] font-bold text-foreground">৳{TOTAL_SENT.toLocaleString()}</p>
-          <div className="flex items-center gap-1 mt-1">
-            <TrendingDown size={11} className="text-destructive" />
-            <span className="text-[11px] text-destructive font-semibold">+12% {t("vsLastMonth")}</span>
-          </div>
+          {insightsLoading ? <SkeletonBlock /> : (
+            <>
+              <p className="text-[20px] font-bold text-foreground">৳{totalSent.toLocaleString()}</p>
+              <div className="flex items-center gap-1 mt-1">
+                {sentDelta >= 0 ? (
+                  <TrendingUp size={11} className="text-destructive" />
+                ) : (
+                  <TrendingDown size={11} className="text-primary" />
+                )}
+                <span className={`text-[11px] font-semibold ${sentDelta >= 0 ? "text-destructive" : "text-primary"}`}>
+                  {sentDelta >= 0 ? "+" : ""}{sentDelta}% {t("vsLastMonth")}
+                </span>
+              </div>
+            </>
+          )}
         </motion.div>
 
         <motion.div
@@ -197,11 +282,21 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
             </div>
             <span className="text-[11.5px] font-semibold text-muted-foreground">{t("totalReceived")}</span>
           </div>
-          <p className="text-[20px] font-bold text-foreground">৳{TOTAL_RECEIVED.toLocaleString()}</p>
-          <div className="flex items-center gap-1 mt-1">
-            <TrendingUp size={11} className="text-primary" />
-            <span className="text-[11px] text-primary font-semibold">+8% {t("vsLastMonth")}</span>
-          </div>
+          {insightsLoading ? <SkeletonBlock /> : (
+            <>
+              <p className="text-[20px] font-bold text-foreground">৳{totalReceived.toLocaleString()}</p>
+              <div className="flex items-center gap-1 mt-1">
+                {receivedDelta >= 0 ? (
+                  <TrendingUp size={11} className="text-primary" />
+                ) : (
+                  <TrendingDown size={11} className="text-destructive" />
+                )}
+                <span className={`text-[11px] font-semibold ${receivedDelta >= 0 ? "text-primary" : "text-destructive"}`}>
+                  {receivedDelta >= 0 ? "+" : ""}{receivedDelta}% {t("vsLastMonth")}
+                </span>
+              </div>
+            </>
+          )}
         </motion.div>
       </div>
 
@@ -220,7 +315,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
           </div>
         </div>
         {cashbackLoading ? (
-          <div className="h-8 w-24 rounded-lg bg-muted animate-pulse" />
+          <SkeletonBlock />
         ) : (
           <div className="flex items-end gap-3">
             <p className="text-[26px] font-extrabold text-primary">
@@ -249,25 +344,15 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
         </div>
         {feesLoading ? (
           <div className="h-[180px] flex items-center justify-center">
-            <div className="h-8 w-24 rounded-lg bg-muted animate-pulse" />
+            <SkeletonBlock />
           </div>
         ) : (
           <div className="px-1 pb-4" style={{ height: 180 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={feeData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => `৳${v}`}
-                />
+                <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `৳${v}`} />
                 <Tooltip
                   content={({ active, payload, label }) => {
                     if (!active || !payload?.length) return null;
@@ -294,60 +379,60 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
       >
         <div className="px-4 pt-4 pb-2 flex items-center justify-between">
           <p className="text-sm font-bold text-foreground">{t("monthlyBreakdown")}</p>
-          <div className="flex gap-1">
-            {MONTHS.map((m) => (
-              <button
-                key={m}
-                onClick={() => setActiveMonth(m)}
-                className={`text-[11px] font-medium px-2 py-1 rounded-lg transition-colors ${
-                  activeMonth === m
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                {m}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="px-1 pb-4" style={{ height: 210 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={BAR_DATA} margin={{ top: 8, right: 8, left: -20, bottom: 0 }} barCategoryGap="30%">
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-              <XAxis
-                dataKey="month"
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(v) => `৳${(v / 1000).toFixed(0)}k`}
-              />
-              <Tooltip content={<BarTooltip totalLabel={t("total")} />} cursor={{ fill: "hsl(var(--muted) / 0.5)", radius: 4 }} />
-              <Bar dataKey="Send"    stackId="a" fill="hsl(262 70% 55%)" radius={[0,0,0,0]} />
-              <Bar dataKey="CashOut" stackId="a" fill="hsl(340 75% 55%)" />
-              <Bar dataKey="Payment" stackId="a" fill="hsl(200 80% 50%)" />
-              <Bar dataKey="Recharge" stackId="a" fill="hsl(36 95% 55%)" radius={[4,4,0,0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        {/* Legend */}
-        <div className="flex flex-wrap gap-3 px-4 pb-4">
-          {[
-            { label: t("sendMoney"), color: "hsl(262 70% 55%)" },
-            { label: t("cashOut"),   color: "hsl(340 75% 55%)" },
-            { label: t("payment"),   color: "hsl(200 80% 50%)" },
-            { label: t("recharge"),  color: "hsl(36 95% 55%)"  },
-          ].map((l) => (
-            <div key={l.label} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: l.color }} />
-              {l.label}
+          {!insightsLoading && (
+            <div className="flex gap-1">
+              {months.map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setActiveMonth(m)}
+                  className={`text-[11px] font-medium px-2 py-1 rounded-lg transition-colors ${
+                    activeMonth === m
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {m}
+                </button>
+              ))}
             </div>
-          ))}
+          )}
         </div>
+        {insightsLoading ? (
+          <div className="h-[210px] flex items-center justify-center">
+            <SkeletonBlock className="h-32 w-3/4" />
+          </div>
+        ) : (
+          <>
+            <div className="px-1 pb-4" style={{ height: 210 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={barData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }} barCategoryGap="30%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `৳${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip content={<BarTooltip totalLabel={t("total")} />} cursor={{ fill: "hsl(var(--muted) / 0.5)", radius: 4 }} />
+                  <Bar dataKey="Send" stackId="a" fill={CATEGORY_COLORS.Send} radius={[0,0,0,0]} />
+                  <Bar dataKey="CashOut" stackId="a" fill={CATEGORY_COLORS.CashOut} />
+                  <Bar dataKey="Payment" stackId="a" fill={CATEGORY_COLORS.Payment} />
+                  <Bar dataKey="Recharge" stackId="a" fill={CATEGORY_COLORS.Recharge} radius={[4,4,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            {/* Legend */}
+            <div className="flex flex-wrap gap-3 px-4 pb-4">
+              {[
+                { label: t("sendMoney"), color: CATEGORY_COLORS.Send },
+                { label: t("cashOut"),   color: CATEGORY_COLORS.CashOut },
+                { label: t("payment"),   color: CATEGORY_COLORS.Payment },
+                { label: t("recharge"),  color: CATEGORY_COLORS.Recharge },
+              ].map((l) => (
+                <div key={l.label} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: l.color }} />
+                  {l.label}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </motion.div>
 
       {/* Donut chart */}
@@ -355,58 +440,67 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
         initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
         className="bg-card rounded-3xl border border-border/60 shadow-card p-4"
       >
-        <p className="text-sm font-bold text-foreground mb-3">{t("categoryBreakdown")}</p>
-        <div style={{ height: 200 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={DONUT_DATA}
-                cx="50%"
-                cy="50%"
-                innerRadius={58}
-                outerRadius={82}
-                paddingAngle={3}
-                dataKey="value"
-                labelLine={false}
-              >
-                {DONUT_DATA.map((entry, index) => (
-                  <Cell key={index} fill={entry.color} stroke="transparent" />
-                ))}
-              </Pie>
-              <Legend
-                iconType="circle"
-                iconSize={8}
-                formatter={(value, entry: any) => (
-                  <span style={{ color: "hsl(var(--foreground))", fontSize: 11 }}>
-                    {value} <span style={{ color: "hsl(var(--muted-foreground))" }}>
-                      (৳{entry.payload.value.toLocaleString()})
-                    </span>
-                  </span>
-                )}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-        {/* Category bars */}
-        <div className="space-y-2.5 mt-2">
-          {DONUT_DATA.map((d) => {
-            const pct = Math.round((d.value / donutTotal) * 100);
-            return (
-              <div key={d.name} className="space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span className="text-foreground font-medium">{d.name}</span>
-                  <span className="text-muted-foreground">৳{d.value.toLocaleString()} · {pct}%</span>
-                </div>
-                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{ width: `${pct}%`, background: d.color }}
+        <p className="text-sm font-bold text-foreground mb-1">{t("categoryBreakdown")}</p>
+        <p className="text-[11px] text-muted-foreground mb-3">{activeMonth}</p>
+        {insightsLoading ? (
+          <SkeletonBlock className="h-[200px] w-full" />
+        ) : donutData.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">No transactions in {activeMonth}</p>
+        ) : (
+          <>
+            <div style={{ height: 200 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={donutData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={58}
+                    outerRadius={82}
+                    paddingAngle={3}
+                    dataKey="value"
+                    labelLine={false}
+                  >
+                    {donutData.map((entry, index) => (
+                      <Cell key={index} fill={entry.color} stroke="transparent" />
+                    ))}
+                  </Pie>
+                  <Legend
+                    iconType="circle"
+                    iconSize={8}
+                    formatter={(value, entry: any) => (
+                      <span style={{ color: "hsl(var(--foreground))", fontSize: 11 }}>
+                        {value} <span style={{ color: "hsl(var(--muted-foreground))" }}>
+                          (৳{entry.payload.value.toLocaleString()})
+                        </span>
+                      </span>
+                    )}
                   />
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            {/* Category bars */}
+            <div className="space-y-2.5 mt-2">
+              {donutData.map((d) => {
+                const pct = donutTotal > 0 ? Math.round((d.value / donutTotal) * 100) : 0;
+                return (
+                  <div key={d.name} className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-foreground font-medium">{d.name}</span>
+                      <span className="text-muted-foreground">৳{d.value.toLocaleString()} · {pct}%</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{ width: `${pct}%`, background: d.color }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </motion.div>
 
       {/* Top merchants */}
@@ -415,32 +509,40 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
         className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden"
       >
         <p className="text-sm font-bold text-foreground px-4 pt-4 pb-2">{t("topMerchants")}</p>
-        {TOP_MERCHANTS.map((m, i) => {
-          const max = TOP_MERCHANTS[0].amount;
-          const pct = Math.round((m.amount / max) * 100);
-          return (
-            <div key={m.name} className="flex items-center gap-3 px-4 py-3 border-b border-border last:border-0">
-              <span className="text-xl w-8 text-center shrink-0">{m.icon}</span>
-              <div className="flex-1 min-w-0 space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span className="font-medium text-foreground">{m.name}</span>
-                  <span className="font-semibold text-foreground">৳{m.amount.toLocaleString()}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-1 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full gradient-primary transition-all duration-700"
-                      style={{ width: `${pct}%` }}
-                    />
+        {insightsLoading ? (
+          <div className="px-4 pb-4 space-y-3">
+            {[1,2,3].map(i => <SkeletonBlock key={i} className="h-12 w-full" />)}
+          </div>
+        ) : topMerchants.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-6 px-4">No merchant transactions this month</p>
+        ) : (
+          topMerchants.map((m, i) => {
+            const max = topMerchants[0].amount;
+            const pct = max > 0 ? Math.round((m.amount / max) * 100) : 0;
+            return (
+              <div key={m.name} className="flex items-center gap-3 px-4 py-3 border-b border-border last:border-0">
+                <span className="text-xl w-8 text-center shrink-0">{m.icon}</span>
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="font-medium text-foreground">{m.name}</span>
+                    <span className="font-semibold text-foreground">৳{m.amount.toLocaleString()}</span>
                   </div>
-                  <span className="text-[10px] text-muted-foreground w-12 text-right shrink-0">
-                    #{i + 1} · {m.category}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-1 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full gradient-primary transition-all duration-700"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground w-12 text-right shrink-0">
+                      #{i + 1} · {m.category}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </motion.div>
     </motion.div>
   );

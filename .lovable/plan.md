@@ -1,67 +1,29 @@
 
 
-## Plan: Replace All Mock Data with Real Transaction Data
+## Plan: Add Biller Categories to API Hub
 
-### Summary
+### What
 
-Five mock data sources remain in `SpendingInsightsPage.tsx`. All will be replaced with real queries against the `transactions` table.
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-### Mock Data to Replace
+### Changes
 
-| Mock Constant | What it feeds | Replacement |
-|---|---|---|
-| `TOTAL_SENT` / `TOTAL_RECEIVED` | Sent/Received summary cards + % change | Sum outgoing (send, cashout, payment, recharge, paybill, banktransfer) and incoming (receive, addmoney) for current month + previous month for % delta |
-| `BAR_DATA` + `MONTHS` | Monthly stacked bar chart | Group last 6 months of transactions by month and type |
-| `DONUT_RAW` | Category donut chart | Aggregate current month's outgoing transactions by type |
-| `TOP_MERCHANTS` | Top merchants list | Group current month's payment/recharge transactions by `recipient_name`, sort by total amount descending, take top 5 |
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-### Changes (single file: `src/pages/SpendingInsightsPage.tsx`)
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-1. **Remove** all mock constants (`BAR_DATA`, `DONUT_RAW`, `TOP_MERCHANTS`, `TOTAL_SENT`, `TOTAL_RECEIVED`, hardcoded `MONTHS`).
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-2. **Add state variables**:
-   - `insightsLoading` (boolean)
-   - `totalSent`, `totalReceived`, `sentDelta`, `receivedDelta` (numbers)
-   - `barData` (array of `{ month, Send, CashOut, Payment, Recharge }`)
-   - `donutData` (array of `{ key, value, color }`)
-   - `topMerchants` (array of `{ name, category, amount, icon }`)
-   - `months` (string array derived from data)
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-3. **Extend the existing `useEffect`** to fetch all completed transactions from the last 6 months in a single query:
-   ```ts
-   const { data } = await supabase
-     .from("transactions")
-     .select("type, amount, created_at, recipient_name, description")
-     .eq("user_id", session.user.id)
-     .eq("status", "completed")
-     .gte("created_at", sixMonthsAgo.toISOString());
-   ```
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-4. **Process client-side** (all from the single query result):
-   - **Sent/Received**: Filter current month outgoing vs incoming types, sum amounts. Repeat for previous month to compute % delta.
-   - **Bar chart**: Bucket by month name, accumulate per-type totals (send → Send, cashout → CashOut, payment → Payment, recharge → Recharge).
-   - **Donut**: Same as bar chart but only for the selected active month.
-   - **Top merchants**: Filter `payment`/`recharge`/`paybill` types for current month, group by `recipient_name`, sort descending, take top 5. Use a category icon mapping based on transaction type.
-   - **Months**: Derive dynamically from the last 6 calendar months.
+3. Add the new category icons to the `categoryIcons` map.
 
-5. **Set `activeMonth`** to the current month name by default instead of hardcoded "Jan".
-
-6. **Add loading skeleton** to all sections while `insightsLoading` is true.
-
-7. **Update the donut chart** to react to `activeMonth` — when user taps a month in the bar chart header, the donut updates to show that month's category breakdown.
-
-### Data Mapping
-
-```text
-Outgoing types: send, cashout, payment, recharge, paybill, banktransfer
-Incoming types: receive, addmoney (excluding cashback which is already tracked)
-
-Bar chart categories:
-  send + banktransfer → "Send"
-  cashout             → "CashOut"
-  payment + paybill   → "Payment"
-  recharge            → "Recharge"
-```
-
-### No database changes required — all data already exists in the `transactions` table.
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
