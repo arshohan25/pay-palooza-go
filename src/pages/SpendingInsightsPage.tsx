@@ -357,7 +357,7 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
     checkAlerts();
   }, [insightsLoading, budgets, currentMonthSpending]);
 
-
+  const getBudgetColor = (spent: number, limit: number) => {
     if (limit <= 0) return "bg-primary";
     const pct = (spent / limit) * 100;
     if (pct > 90) return "bg-destructive";
