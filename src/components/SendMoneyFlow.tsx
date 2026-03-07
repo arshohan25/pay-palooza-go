@@ -786,10 +786,9 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                       </span>
                     </div>
                     {fee > 0 && (
-                      <div className="flex justify-between text-xs">
-                        <span>{t("feeSource")}</span>
-                        <span className="text-primary font-medium">{feeFromBalance >= fee ? t("fromBalance") : feeFromBalance > 0 ? `৳${feeFromBalance} balance + ৳${feeFromAmount} from amount` : "From send amount"}</span>
-                      </div>
+                      <p className="text-[11px] text-muted-foreground text-right">
+                        ৳{amtNum.toLocaleString()} + ৳{fee} fee ({feeFromBalance >= fee ? "from balance" : feeFromBalance > 0 ? "balance + amount" : "from amount"})
+                      </p>
                     )}
                     <div className="h-px bg-border" />
                     <div className="flex justify-between font-bold text-foreground text-base">
@@ -881,10 +880,9 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                     <span className="text-foreground font-medium">{fee === 0 ? t("free") : `৳${fee}`}</span>
                   </div>
                   {fee > 0 && (
-                    <div className="flex justify-between text-xs text-muted-foreground/70">
-                      <span>{t("feeDeductedFrom")}</span>
-                      <span className="font-medium">{feeFromBalance >= fee ? t("fromBalance") : feeFromBalance > 0 ? `Balance (৳${feeFromBalance}) + Amount (৳${feeFromAmount})` : "Send amount"}</span>
-                    </div>
+                    <p className="text-[11px] text-muted-foreground text-right">
+                      ৳{amtNum.toLocaleString()} + ৳{fee} fee ({feeFromBalance >= fee ? "from balance" : feeFromBalance > 0 ? "balance + amount" : "from amount"})
+                    </p>
                   )}
                   {feeFromAmount > 0 && (
                     <div className="flex justify-between text-muted-foreground">
