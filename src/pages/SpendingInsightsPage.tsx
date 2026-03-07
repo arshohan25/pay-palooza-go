@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
-import { ArrowLeft, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Gift, BadgeDollarSign, BarChart3, CalendarIcon, Target, Pencil } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Gift, BadgeDollarSign, BarChart3, CalendarIcon, Target, Pencil, Download, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subMonths } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -408,6 +408,145 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
 
   const hasBudgets = Object.values(budgets).some(v => v > 0);
 
+  const [pdfExporting, setPdfExporting] = useState(false);
+
+  const handleExportPdf = async () => {
+    setPdfExporting(true);
+    try {
+      const { default: jsPDF } = await import("jspdf");
+      const { default: autoTable } = await import("jspdf-autotable");
+
+      const doc = new jsPDF();
+      let y = 15;
+
+      // Header
+      doc.setFontSize(18);
+      doc.text("EasyPay Spending Insights", 14, y);
+      y += 8;
+      doc.setFontSize(10);
+      doc.setTextColor(120);
+      doc.text(`${format(dateRange.from, "dd MMM yyyy")} – ${format(dateRange.to, "dd MMM yyyy")}`, 14, y);
+      doc.setTextColor(0);
+      y += 10;
+
+      // Summary
+      doc.setFontSize(13);
+      doc.text("Monthly Summary", 14, y);
+      y += 2;
+      autoTable(doc, {
+        startY: y,
+        head: [["Metric", "Amount", "Change"]],
+        body: [
+          ["Total Sent", `৳${totalSent.toLocaleString()}`, `${sentDelta >= 0 ? "+" : ""}${sentDelta}%`],
+          ["Total Received", `৳${totalReceived.toLocaleString()}`, `${receivedDelta >= 0 ? "+" : ""}${receivedDelta}%`],
+        ],
+        theme: "grid",
+        headStyles: { fillColor: [99, 102, 241] },
+        margin: { left: 14 },
+      });
+      y = (doc as any).lastAutoTable.finalY + 10;
+
+      // Monthly spending table
+      doc.setFontSize(13);
+      doc.text("Monthly Spending", 14, y);
+      y += 2;
+      autoTable(doc, {
+        startY: y,
+        head: [["Month", "Send", "CashOut", "Payment", "Recharge", "Total"]],
+        body: barData.map(d => {
+          const total = (d.Send || 0) + (d.CashOut || 0) + (d.Payment || 0) + (d.Recharge || 0);
+          return [d.month, `৳${(d.Send || 0).toLocaleString()}`, `৳${(d.CashOut || 0).toLocaleString()}`, `৳${(d.Payment || 0).toLocaleString()}`, `৳${(d.Recharge || 0).toLocaleString()}`, `৳${total.toLocaleString()}`];
+        }),
+        theme: "grid",
+        headStyles: { fillColor: [99, 102, 241] },
+        margin: { left: 14 },
+      });
+      y = (doc as any).lastAutoTable.finalY + 10;
+
+      // Category breakdown for active month
+      if (donutData.length > 0) {
+        doc.setFontSize(13);
+        doc.text(`Category Breakdown – ${activeMonth}`, 14, y);
+        y += 2;
+        autoTable(doc, {
+          startY: y,
+          head: [["Category", "Amount", "% of Total"]],
+          body: donutData.map(d => [d.name, `৳${d.value.toLocaleString()}`, `${donutTotal > 0 ? Math.round((d.value / donutTotal) * 100) : 0}%`]),
+          theme: "grid",
+          headStyles: { fillColor: [99, 102, 241] },
+          margin: { left: 14 },
+        });
+        y = (doc as any).lastAutoTable.finalY + 10;
+      }
+
+      // Top merchants
+      if (topMerchants.length > 0) {
+        if (y > 240) { doc.addPage(); y = 15; }
+        doc.setFontSize(13);
+        doc.text("Top Merchants", 14, y);
+        y += 2;
+        autoTable(doc, {
+          startY: y,
+          head: [["Merchant", "Category", "Amount"]],
+          body: topMerchants.map(m => [m.name, m.category, `৳${m.amount.toLocaleString()}`]),
+          theme: "grid",
+          headStyles: { fillColor: [99, 102, 241] },
+          margin: { left: 14 },
+        });
+        y = (doc as any).lastAutoTable.finalY + 10;
+      }
+
+      // Fee summary
+      if (feeData.some(f => f.fees > 0)) {
+        if (y > 240) { doc.addPage(); y = 15; }
+        doc.setFontSize(13);
+        doc.text("Fee Summary", 14, y);
+        y += 2;
+        autoTable(doc, {
+          startY: y,
+          head: [["Month", "Fees"]],
+          body: feeData.filter(f => f.fees > 0).map(f => [f.month, `৳${f.fees.toLocaleString()}`]),
+          theme: "grid",
+          headStyles: { fillColor: [99, 102, 241] },
+          margin: { left: 14 },
+        });
+        y = (doc as any).lastAutoTable.finalY + 10;
+      }
+
+      // Budget progress
+      if (hasBudgets) {
+        if (y > 240) { doc.addPage(); y = 15; }
+        doc.setFontSize(13);
+        doc.text("Budget Progress", 14, y);
+        y += 2;
+        const budgetRows = BUDGET_CATEGORIES
+          .filter(cat => budgets[cat] && budgets[cat] > 0)
+          .map(cat => {
+            const limit = budgets[cat];
+            const spent = currentMonthSpending[cat] || 0;
+            const pct = Math.min(Math.round((spent / limit) * 100), 999);
+            return [cat === "total" ? "Total" : cat, `৳${limit.toLocaleString()}`, `৳${Math.round(spent).toLocaleString()}`, `${pct}%`];
+          });
+        autoTable(doc, {
+          startY: y,
+          head: [["Category", "Limit", "Spent", "% Used"]],
+          body: budgetRows,
+          theme: "grid",
+          headStyles: { fillColor: [99, 102, 241] },
+          margin: { left: 14 },
+        });
+      }
+
+      doc.save(`spending-report-${format(new Date(), "yyyy-MM")}.pdf`);
+      toast.success("PDF report downloaded!");
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to generate PDF");
+    } finally {
+      setPdfExporting(false);
+    }
+  };
+
   const SkeletonBlock = ({ className }: { className?: string }) => (
     <div className={`rounded-lg bg-muted animate-pulse ${className ?? "h-8 w-24"}`} />
   );
@@ -429,10 +568,18 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
         >
           <ArrowLeft size={17} className="text-foreground" strokeWidth={2.2} />
         </motion.button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-[17px] font-bold text-foreground">{t("insightsTitle")}</h1>
           <p className="text-[11.5px] text-muted-foreground">{t("insightsSub2")}</p>
         </div>
+        <motion.button
+          whileTap={{ scale: 0.90 }}
+          onClick={handleExportPdf}
+          disabled={pdfExporting || insightsLoading}
+          className="w-10 h-10 rounded-2xl bg-card border border-border/60 shadow-card flex items-center justify-center hover:bg-muted transition-colors tap-target disabled:opacity-50"
+        >
+          {pdfExporting ? <Loader2 size={17} className="text-foreground animate-spin" /> : <Download size={17} className="text-foreground" strokeWidth={2.2} />}
+        </motion.button>
       </div>
 
       {/* Date Range Picker */}
