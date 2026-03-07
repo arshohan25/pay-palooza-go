@@ -437,9 +437,14 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
 
                   {/* Amount */}
                   <div className="shrink-0 text-right max-w-[90px]">
-                    <span className={`text-[13px] font-bold ${isCB ? "text-amber-600 dark:text-amber-400" : isCredit ? "text-primary" : "text-foreground"}`}>
-                      {isCredit ? "+" : "−"}৳{Math.abs(tx.amount).toLocaleString()}
-                    </span>
+                    <div className="flex items-center justify-end gap-1">
+                      {tx.fee > 0 && (
+                        <BadgeDollarSign size={12} className="text-amber-500/70 dark:text-amber-400/70" />
+                      )}
+                      <span className={`text-[13px] font-bold ${isCB ? "text-amber-600 dark:text-amber-400" : isCredit ? "text-primary" : "text-foreground"}`}>
+                        {isCredit ? "+" : "−"}৳{Math.abs(tx.amount).toLocaleString()}
+                      </span>
+                    </div>
                   </div>
                 </motion.button>
               );
