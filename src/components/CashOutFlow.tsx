@@ -360,7 +360,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
         });
       } else {
         await transferMoney({
-          recipientPhone: resolvedAgentPhone || agent?.agentId ?? "",
+          recipientPhone: (resolvedAgentPhone || agent?.agentId) ?? "",
           amount: amtVal,
           fee: feeVal,
           type: "cashout",

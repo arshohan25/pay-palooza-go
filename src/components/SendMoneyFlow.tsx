@@ -460,7 +460,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     const actualSendAmount = parseFloat((amtVal + cashOutExtra).toFixed(2));
     const feeVal = calcFee("send", actualSendAmount);
     await transferMoney({
-      recipientPhone: resolvedPhone || recipient?.phone ?? "",
+      recipientPhone: (resolvedPhone || recipient?.phone) ?? "",
       amount: actualSendAmount,
       fee: feeVal,
       type: "send",

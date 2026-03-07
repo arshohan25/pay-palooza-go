@@ -276,7 +276,7 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
     txnTime.current = new Date();
     try {
       await transferMoney({
-        recipientPhone: resolvedMerchantPhone || merchant?.merchantId ?? "",
+        recipientPhone: (resolvedMerchantPhone || merchant?.merchantId) ?? "",
         amount: amtVal,
         fee: 0,
         type: "payment",
