@@ -1,26 +1,29 @@
 
 
-## Plan: Export Spending Insights as PDF
+## Plan: Add Biller Categories to API Hub
 
-### Approach
-Add a "Download PDF" button to the top bar of the Spending Insights page. When clicked, it generates a multi-section PDF report using `jsPDF` and `jspdf-autotable` (both already installed).
+### What
 
-### PDF Content Structure
-1. **Header**: "EasyPay Spending Insights" title + date range
-2. **Summary**: Sent/Received totals for current month with deltas
-3. **Monthly Spending Table**: Bar chart data as a table (Month | Send | CashOut | Payment | Recharge | Total)
-4. **Category Breakdown**: Donut data for active month as a table
-5. **Top Merchants**: Name, category, amount
-6. **Fee Summary**: Monthly fees table
-7. **Budget Progress** (if budgets exist): Category | Limit | Spent | % Used
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-### UI Changes
-- Add a `Download` icon button next to the page title in the top bar
-- Show a loading spinner while generating
+### Changes
 
-### Implementation
-- Single file change: `src/pages/SpendingInsightsPage.tsx`
-- Import `jsPDF` and `autoTable` from existing dependencies
-- Add an async `handleExportPdf` function that builds the document using the already-computed state variables
-- No database changes needed
+**File: `src/components/admin/AdminApiHub.tsx`**
+
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
