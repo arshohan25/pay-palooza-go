@@ -154,6 +154,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const [error, setError] = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [recentAgents, setRecentAgents] = useState<Agent[]>([]);
   
   // Bank transfer state
   const [bankName, setBankName] = useState("");
@@ -173,6 +174,42 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     }
   }, [step]);
 
+  // Fetch recent cashout agents from real transactions
+  const AGENT_GRADIENTS = ["gradient-cashout", "gradient-payment", "gradient-addmoney", "gradient-send", "gradient-accent"];
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const { data: trans } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .eq("type", "cashout")
+        .order("created_at", { ascending: false });
+      if (!trans) return;
+      const seen = new Set<string>();
+      const agents: Agent[] = [];
+      for (const tx of trans) {
+        const aid = tx.recipient_phone;
+        if (!aid || seen.has(aid)) continue;
+        seen.add(aid);
+        const name = tx.recipient_name || "Agent";
+        agents.push({
+          id: tx.id,
+          name,
+          agentId: aid,
+          address: "",
+          distance: "",
+          initials: name.slice(0, 2).toUpperCase(),
+          gradient: AGENT_GRADIENTS[agents.length % AGENT_GRADIENTS.length],
+          rating: 0,
+        });
+        if (agents.length >= 5) break;
+      }
+      setRecentAgents(agents);
+    })();
+  }, []);
+
   const activeSteps = cashOutMethod === "bank" ? BANK_STEPS : STEPS;
   const stepIndex = activeSteps.indexOf(step);
 
@@ -191,11 +228,10 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     if (step === "pin") { goTo("amount"); return; }
   };
 
-  const filteredAgents = NEARBY_AGENTS.filter(
+  const filteredAgents = recentAgents.filter(
     (a) =>
       a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.agentId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.address.toLowerCase().includes(searchQuery.toLowerCase()),
+      a.agentId.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const handleSelectAgent = (a: Agent) => {
@@ -206,12 +242,12 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
 
   const handleQrScan = (result: string) => {
     setAgentIdInput(result);
-    const found = NEARBY_AGENTS.find((a) => a.agentId.toLowerCase() === result.toLowerCase());
+    const found = recentAgents.find((a) => a.agentId.toLowerCase() === result.toLowerCase());
     if (found) {
       setAgent(found);
       goTo("amount");
     } else {
-      setAgent({ id: "qr", name: "Agent", agentId: result, address: "Unknown location", distance: "—", initials: "AG", gradient: "gradient-cashout", rating: 0 });
+      setAgent({ id: "qr", name: "Agent", agentId: result, address: "", distance: "", initials: "AG", gradient: "gradient-cashout", rating: 0 });
       goTo("amount");
     }
   };
@@ -219,11 +255,11 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const handleAgentIdContinue = () => {
     const trimmed = agentIdInput.trim();
     if (trimmed.length < 5) { setError("Enter a valid Agent ID."); return; }
-    const found = NEARBY_AGENTS.find((a) => a.agentId.toLowerCase() === trimmed.toLowerCase());
+    const found = recentAgents.find((a) => a.agentId.toLowerCase() === trimmed.toLowerCase());
     if (found) {
       setAgent(found);
     } else {
-      setAgent({ id: "custom", name: "Agent", agentId: trimmed, address: "Unknown location", distance: "—", initials: "AG", gradient: "gradient-primary", rating: 0 });
+      setAgent({ id: "custom", name: "Agent", agentId: trimmed, address: "", distance: "", initials: "AG", gradient: "gradient-primary", rating: 0 });
     }
     goTo("amount");
   };
