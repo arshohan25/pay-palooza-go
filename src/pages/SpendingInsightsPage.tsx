@@ -241,6 +241,17 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
       });
       setFeeData(Object.entries(feeMap).map(([month, fees]) => ({ month, fees: Math.round(fees * 100) / 100 })));
       setFeesLoading(false);
+
+      // Budgets
+      const { data: budgetRows } = await supabase
+        .from("spending_budgets" as any)
+        .select("category, monthly_limit")
+        .eq("user_id", userId);
+      if (budgetRows) {
+        const bMap: Record<string, number> = {};
+        (budgetRows as any[]).forEach((r: any) => { bMap[r.category] = Number(r.monthly_limit); });
+        setBudgets(bMap);
+      }
     };
     fetchData();
   }, [dateRange]);
