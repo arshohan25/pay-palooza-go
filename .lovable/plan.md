@@ -1,29 +1,37 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Animated Empty States for Merchant, Agent & User Transaction Views
 
-### What
+### 1. TransactionList.tsx (line 211) — User home page recent transactions
+Replace the plain `<div>` with an animated empty state using `motion.div` entrance + floating icon. Use `FileText` icon with "No transactions yet" / "Your transactions will appear here".
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### 2. MerchantDashboard.tsx (lines 1130-1134) — Merchant transaction list
+Replace the static empty state with the same animated pattern. Keep the `Receipt` icon already in use, add floating animation and entrance transition.
 
-### Changes
+### 3. AgentTransactionHistory.tsx — No changes needed
+This page delegates to `<TransactionHistory>` which already has the animated empty state.
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+### Pattern Applied
+```tsx
+<motion.div
+  initial={{ opacity: 0, scale: 0.9, y: 12 }}
+  animate={{ opacity: 1, scale: 1, y: 0 }}
+  transition={{ duration: 0.5, ease: "easeOut" }}
+  className="flex flex-col items-center justify-center py-8 text-center"
+>
+  <motion.div
+    animate={{ y: [0, -4, 0] }}
+    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+    className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3"
+  >
+    <Icon className="w-7 h-7 text-muted-foreground" />
+  </motion.div>
+  <p className="text-sm font-semibold text-foreground">Title</p>
+  <p className="text-xs text-muted-foreground mt-1">Subtitle</p>
+</motion.div>
+```
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
-
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+### Files Modified
+- `src/components/TransactionList.tsx` — line 211
+- `src/pages/MerchantDashboard.tsx` — lines 1130-1134
 
