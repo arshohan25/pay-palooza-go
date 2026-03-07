@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { haptics } from "@/lib/haptics";
 import { requestLocation } from "@/lib/permissions";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { transferMoney } from "@/lib/balanceStore";
+import { supabase } from "@/integrations/supabase/client";
 import { verifyPin } from "@/lib/verifyPin";
 import { checkDailyLimit } from "@/lib/dailyLimits";
 import { addTxnNotif } from "@/lib/txnNotifStore";
@@ -40,14 +41,7 @@ interface Merchant {
   gradient: string;
 }
 
-// ─── Mock merchants ───────────────────────────────────────────────────────────
-const RECENT_MERCHANTS: Merchant[] = [
-  { id: "1", name: "Shwapno Supershop",  merchantId: "MRC-88901", category: "Grocery",     initials: "SS", gradient: "gradient-payment" },
-  { id: "2", name: "Chaldal Online",     merchantId: "MRC-22341", category: "Grocery",     initials: "CO", gradient: "gradient-addmoney" },
-  { id: "3", name: "Pathao Food",        merchantId: "MRC-55612", category: "Food",         initials: "PF", gradient: "gradient-accent" },
-  { id: "4", name: "Daraz BD",           merchantId: "MRC-71008", category: "Shopping",     initials: "DB", gradient: "gradient-cashout" },
-  { id: "5", name: "Meena Bazar",        merchantId: "MRC-39204", category: "Retail",       initials: "MB", gradient: "gradient-send" },
-];
+// Recent merchants loaded from real transaction history
 
 const QUICK_AMOUNTS = [50, 100, 200, 500, 1000, 2000];
 
