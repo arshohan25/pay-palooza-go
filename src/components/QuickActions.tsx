@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Lock } from "lucide-react";
+import { Lock, Landmark, Wallet, Ticket, Heart, Banknote, ShieldCheck, Gift, ChevronUp } from "lucide-react";
 import {
   SendMoneyIcon,
   CashOutIcon,
@@ -36,6 +36,16 @@ const actionDefs = [
   { Icon: MoreIcon, labelKey: "more" as const, id: "more", bgStyle: "rgba(120,120,140,0.10)", ringStyle: "1px solid rgba(120,120,140,0.20)", rippleColor: "rgba(120,120,140,0.30)" },
 ];
 
+const moreServices = [
+  { id: "bank", icon: Landmark, label: "Bank Transfer", desc: "Transfer to any bank", gradient: "from-blue-500 to-indigo-600" },
+  { id: "savings", icon: Wallet, label: "Savings", desc: "Set goals & grow money", gradient: "from-emerald-500 to-teal-600" },
+  { id: "coupons", icon: Ticket, label: "Coupons & Offers", desc: "Exclusive deals", gradient: "from-pink-500 to-rose-600", soon: true },
+  { id: "donations", icon: Heart, label: "Donations", desc: "Support causes", gradient: "from-red-500 to-rose-700", soon: true },
+  { id: "loan", icon: Banknote, label: "Loan", desc: "Quick personal loans", gradient: "from-amber-500 to-orange-600", soon: true },
+  { id: "insurance", icon: ShieldCheck, label: "Insurance", desc: "Protect what matters", gradient: "from-violet-500 to-purple-600", soon: true },
+  { id: "giftcards", icon: Gift, label: "Gift Cards", desc: "Send & redeem gifts", gradient: "from-orange-400 to-red-500", soon: true },
+];
+
 interface RippleState { x: number; y: number; id: number; }
 
 interface QuickActionsProps {
@@ -47,16 +57,18 @@ interface QuickActionsProps {
   onAddMoney: () => void;
   onRefer: () => void;
   onShop: () => void;
-  onMore: () => void;
+  onBankTransfer: () => void;
+  onSavings: () => void;
 }
 
-const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney, onRefer, onShop, onMore }: QuickActionsProps) => {
+const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney, onRefer, onShop, onBankTransfer, onSavings }: QuickActionsProps) => {
   const { t } = useI18n();
   const { isLocked } = useFeatureLocks();
   const { isDisabled: isGloballyDisabled } = useGlobalToggles();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [ripples, setRipples] = useState<Record<string, RippleState | null>>({});
   const rippleCounterRef = useRef(0);
+  const [expanded, setExpanded] = useState(false);
 
   const triggerRipple = useCallback((id: string, e: React.MouseEvent | React.TouchEvent) => {
     const el = (e.currentTarget as HTMLElement).querySelector("[data-ripple-container]") as HTMLElement;
@@ -74,7 +86,6 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   }, []);
 
   const handleAction = (id: string, label: string) => {
-    // Check global toggle
     const featureKey = FEATURE_MAP[id];
     if (featureKey && isGloballyDisabled(featureKey)) {
       toast.error(`${label} is currently unavailable.`);
@@ -88,8 +99,14 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
     if (id === "bill") return onPayBill();
     if (id === "refer") return onRefer();
     if (id === "shop") return onShop();
-    if (id === "more") return onMore();
+    if (id === "more") return setExpanded(prev => !prev);
     toast.info(`${label} coming soon!`);
+  };
+
+  const handleMoreService = (id: string, soon?: boolean) => {
+    if (soon) { toast.info("Coming soon!"); return; }
+    if (id === "bank") onBankTransfer();
+    else if (id === "savings") onSavings();
   };
 
   return (
@@ -139,9 +156,14 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                     />
                   )}
                 </AnimatePresence>
-                <action.Icon isHovered={isHovered} />
+                {action.id === "more" ? (
+                  <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.3 }}>
+                    <MoreIcon isHovered={isHovered} />
+                  </motion.div>
+                ) : (
+                  <action.Icon isHovered={isHovered} />
+                )}
 
-                {/* Lock badge */}
                 {isFeatureLocked && (
                   <div className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-destructive flex items-center justify-center shadow-md z-10">
                     <Lock className="w-2.5 h-2.5 text-destructive-foreground" />
@@ -155,6 +177,53 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
           );
         })}
       </div>
+
+      {/* Inline expanded More services */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-border/60 mt-4 pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-foreground">More Services</h3>
+                <button onClick={() => setExpanded(false)} className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors">
+                  <ChevronUp size={14} className="text-muted-foreground" />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {moreServices.map((item, i) => (
+                  <motion.button
+                    key={item.id}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.04 * i, duration: 0.3 }}
+                    onClick={() => handleMoreService(item.id, item.soon)}
+                    className={`flex flex-col items-center gap-3 p-4 rounded-2xl bg-background border border-border shadow-sm hover:shadow-md active:scale-[0.97] transition-all text-center ${item.soon ? "opacity-60" : ""}`}
+                  >
+                    <div className={`bg-gradient-to-b ${item.gradient} w-12 h-12 rounded-xl flex items-center justify-center text-white`}>
+                      <item.icon size={22} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <p className="text-xs font-bold text-foreground">{item.label}</p>
+                        {item.soon && (
+                          <span className="text-[8px] font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">Soon</span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{item.desc}</p>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

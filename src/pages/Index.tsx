@@ -22,7 +22,7 @@ import PayBillFlow from "@/components/PayBillFlow";
 import AddMoneyFlow from "@/components/AddMoneyFlow";
 import ShopFlow from "@/components/ShopFlow";
 import BankTransferFlow from "@/components/BankTransferFlow";
-import MoreSheet from "@/components/MoreSheet";
+
 import SavingsFlow from "@/components/SavingsFlow";
 import TransactionHistory from "@/pages/TransactionHistory";
 import AccountPage from "@/pages/AccountPage";
@@ -64,7 +64,7 @@ const Index = () => {
   const [showPayBill, setShowPayBill]     = useState(false);
   const [showAddMoney, setShowAddMoney]   = useState(false);
   const [showShop, setShowShop]           = useState(false);
-  const [showMore, setShowMore]           = useState(false);
+  
   const [showBankTransfer, setShowBankTransfer] = useState(false);
   const [showSavings, setShowSavings]     = useState(false);
   const [showScanPay, setShowScanPay]     = useState(false);
@@ -252,7 +252,8 @@ const Index = () => {
                 onAddMoney={() => setShowAddMoney(true)}
                 onRefer={() => handleTabChange("refer")}
                 onShop={() => setShowShop(true)}
-                onMore={() => setShowMore(true)}
+                onBankTransfer={() => setShowBankTransfer(true)}
+                onSavings={() => setShowSavings(true)}
               />
               
               <PromoCard />
@@ -358,13 +359,6 @@ const Index = () => {
       {showSavings   && <SavingsFlow   onClose={() => setShowSavings(false)} />}
       {showKycFlow   && <KycFlow      onClose={() => setShowKycFlow(false)} />}
 
-      {/* More Services Sheet */}
-      <MoreSheet
-        open={showMore}
-        onClose={() => setShowMore(false)}
-        onBankTransfer={() => setShowBankTransfer(true)}
-        onSavings={() => setShowSavings(true)}
-      />
 
       {/* Scan & Pay QR flow */}
       <QrScannerModal
