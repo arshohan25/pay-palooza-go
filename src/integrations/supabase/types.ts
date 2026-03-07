@@ -1514,6 +1514,10 @@ export type Database = {
       find_chat_user_by_phone: { Args: { p_phone: string }; Returns: Json }
       generate_referral_code: { Args: never; Returns: string }
       generate_short_id: { Args: never; Returns: string }
+      generate_wallet_id_from_phone: {
+        Args: { p_phone: string }
+        Returns: string
+      }
       get_blocked_user_profiles: {
         Args: { p_user_ids: string[] }
         Returns: {
@@ -1543,6 +1547,7 @@ export type Database = {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
       }
+      normalize_bd_phone: { Args: { p_raw: string }; Returns: string }
       record_transaction: {
         Args: {
           p_amount: number
@@ -1553,6 +1558,10 @@ export type Database = {
           p_reference?: string
           p_type: Database["public"]["Enums"]["txn_type"]
         }
+        Returns: Json
+      }
+      resolve_transfer_recipient: {
+        Args: { p_flow: string; p_identifier: string }
         Returns: Json
       }
       transfer_money:
