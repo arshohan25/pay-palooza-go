@@ -1,13 +1,17 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
-import { ArrowLeft, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Gift, BadgeDollarSign, BarChart3, CalendarIcon } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Gift, BadgeDollarSign, BarChart3, CalendarIcon, Target, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subMonths } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -96,12 +100,20 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
   const [topMerchants, setTopMerchants] = useState<{ name: string; category: string; amount: number; icon: string }[]>([]);
   const [allTxns, setAllTxns] = useState<any[]>([]);
 
+  // Budget state
+  const [budgets, setBudgets] = useState<Record<string, number>>({});
+  const [budgetDialogOpen, setBudgetDialogOpen] = useState(false);
+  const [budgetForm, setBudgetForm] = useState<Record<string, string>>({});
+  const [budgetSaving, setBudgetSaving] = useState(false);
+
   // Cashback + fees
   const [cashbackTotal, setCashbackTotal] = useState(0);
   const [cashbackCount, setCashbackCount] = useState(0);
   const [cashbackLoading, setCashbackLoading] = useState(true);
   const [feeData, setFeeData] = useState<{ month: string; fees: number }[]>([]);
   const [feesLoading, setFeesLoading] = useState(true);
+
+  const BUDGET_CATEGORIES = ["total", "Send", "CashOut", "Payment", "Recharge"] as const;
 
   const handlePreset = (label: string, m: number) => {
     setActivePreset(label);
@@ -229,6 +241,17 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
       });
       setFeeData(Object.entries(feeMap).map(([month, fees]) => ({ month, fees: Math.round(fees * 100) / 100 })));
       setFeesLoading(false);
+
+      // Budgets
+      const { data: budgetRows } = await supabase
+        .from("spending_budgets" as any)
+        .select("category, monthly_limit")
+        .eq("user_id", userId);
+      if (budgetRows) {
+        const bMap: Record<string, number> = {};
+        (budgetRows as any[]).forEach((r: any) => { bMap[r.category] = Number(r.monthly_limit); });
+        setBudgets(bMap);
+      }
     };
     fetchData();
   }, [dateRange]);
@@ -251,6 +274,72 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
   }, [allTxns, activeMonth, t]);
 
   const donutTotal = donutData.reduce((s, d) => s + d.value, 0);
+
+  // Current month spending by category for budget tracking
+  const currentMonthSpending = useMemo(() => {
+    const curMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const spending: Record<string, number> = { total: 0, Send: 0, CashOut: 0, Payment: 0, Recharge: 0 };
+    allTxns.forEach(r => {
+      if (new Date(r.created_at) < curMonthStart) return;
+      const cat = TYPE_TO_CATEGORY[r.type];
+      if (!cat) return;
+      const amt = Number(r.amount);
+      spending[cat] += amt;
+      spending.total += amt;
+    });
+    return spending;
+  }, [allTxns]);
+
+  const getBudgetColor = (spent: number, limit: number) => {
+    if (limit <= 0) return "bg-primary";
+    const pct = (spent / limit) * 100;
+    if (pct > 90) return "bg-destructive";
+    if (pct > 75) return "bg-amber-500";
+    return "bg-primary";
+  };
+
+  const handleSaveBudgets = async () => {
+    setBudgetSaving(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) { setBudgetSaving(false); return; }
+
+    const upserts = BUDGET_CATEGORIES
+      .filter(cat => budgetForm[cat] && Number(budgetForm[cat]) > 0)
+      .map(cat => ({
+        user_id: session.user.id,
+        category: cat,
+        monthly_limit: Number(budgetForm[cat]),
+        updated_at: new Date().toISOString(),
+      }));
+
+    if (upserts.length > 0) {
+      const { error } = await (supabase.from("spending_budgets" as any) as any)
+        .upsert(upserts, { onConflict: "user_id,category" });
+      if (error) {
+        toast.error("Failed to save budgets");
+      } else {
+        const newBudgets: Record<string, number> = { ...budgets };
+        upserts.forEach(u => { newBudgets[u.category] = u.monthly_limit; });
+        setBudgets(newBudgets);
+        toast.success("Budgets saved!");
+        setBudgetDialogOpen(false);
+      }
+    } else {
+      setBudgetDialogOpen(false);
+    }
+    setBudgetSaving(false);
+  };
+
+  const openBudgetDialog = () => {
+    const form: Record<string, string> = {};
+    BUDGET_CATEGORIES.forEach(cat => {
+      form[cat] = budgets[cat] ? String(budgets[cat]) : "";
+    });
+    setBudgetForm(form);
+    setBudgetDialogOpen(true);
+  };
+
+  const hasBudgets = Object.values(budgets).some(v => v > 0);
 
   const SkeletonBlock = ({ className }: { className?: string }) => (
     <div className={`rounded-lg bg-muted animate-pulse ${className ?? "h-8 w-24"}`} />
@@ -420,6 +509,61 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
               )}
             </motion.div>
           </div>
+
+          {/* Budget Progress Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.11 }}
+            className="bg-card rounded-3xl border border-border/60 shadow-card p-4"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
+                  <Target size={16} className="text-primary" />
+                </div>
+                <p className="text-sm font-bold text-foreground">Monthly Budget</p>
+              </div>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={openBudgetDialog}>
+                <Pencil size={12} />
+                {hasBudgets ? "Edit" : "Set"}
+              </Button>
+            </div>
+            {hasBudgets ? (
+              <div className="space-y-3">
+                {BUDGET_CATEGORIES.filter(cat => budgets[cat] && budgets[cat] > 0).map(cat => {
+                  const spent = Math.round(currentMonthSpending[cat] || 0);
+                  const limit = budgets[cat];
+                  const pct = Math.min(Math.round((spent / limit) * 100), 100);
+                  const colorClass = getBudgetColor(spent, limit);
+                  return (
+                    <div key={cat} className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium text-foreground">{cat === "total" ? "Total Spending" : cat}</span>
+                        <span className="text-muted-foreground">
+                          ৳{spent.toLocaleString()} / ৳{limit.toLocaleString()}
+                          <span className={cn("ml-1.5 font-semibold", pct > 90 ? "text-destructive" : pct > 75 ? "text-amber-500" : "text-primary")}>
+                            {pct}%
+                          </span>
+                        </span>
+                      </div>
+                      <div className="h-2 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={cn("h-full rounded-full transition-all duration-700", colorClass)}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-xs text-muted-foreground mb-2">Set monthly spending limits to track your budget</p>
+                <Button size="sm" variant="outline" className="rounded-xl text-xs" onClick={openBudgetDialog}>
+                  Set Budget Goals
+                </Button>
+              </div>
+            )}
+          </motion.div>
 
           {/* Cashback Summary Widget */}
           <motion.div
@@ -667,6 +811,44 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
           </motion.div>
         </>
       )}
+
+      {/* Set Budget Dialog */}
+      <Dialog open={budgetDialogOpen} onOpenChange={setBudgetDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Target size={18} className="text-primary" />
+              Set Monthly Budgets
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {BUDGET_CATEGORIES.map(cat => (
+              <div key={cat} className="space-y-1">
+                <label className="text-xs font-medium text-foreground">
+                  {cat === "total" ? "Total Spending Limit" : `${cat} Limit`}
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">৳</span>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    className="pl-7"
+                    value={budgetForm[cat] || ""}
+                    onChange={(e) => setBudgetForm(prev => ({ ...prev, [cat]: e.target.value }))}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBudgetDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveBudgets} disabled={budgetSaving}>
+              {budgetSaving ? "Saving..." : "Save Budgets"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 };
