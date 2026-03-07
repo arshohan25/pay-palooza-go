@@ -1,30 +1,29 @@
 
 
-## Plan: Add Fee Indicator Icon to Transaction List Rows
+## Plan: Add Biller Categories to API Hub
 
-Replace the removed fee text with a small, subtle icon-only indicator for transactions that have fees.
+### What
 
-### Change
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-**File: `src/pages/TransactionHistory.tsx`**
+### Changes
 
-1. **Import `BadgeDollarSign`** (or `CircleDollarSign`) from `lucide-react` — a compact icon that conveys "fee applied."
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-2. **Add a tiny fee icon next to the amount** (around line 441) — show a small amber `BadgeDollarSign` icon beside the amount when `tx.fee > 0`. This keeps the UI clean while still signaling that a fee was charged. Users can tap into the detail sheet to see the exact fee.
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-```tsx
-{/* Amount */}
-<div className="shrink-0 text-right max-w-[90px]">
-  <div className="flex items-center justify-end gap-1">
-    {tx.fee > 0 && (
-      <BadgeDollarSign size={12} className="text-amber-500/70 dark:text-amber-400/70" />
-    )}
-    <span className={`text-[13px] font-bold ...`}>
-      {isCredit ? "+" : "−"}৳{Math.abs(tx.amount).toLocaleString()}
-    </span>
-  </div>
-</div>
-```
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-One file, minimal change. The icon is 12px, muted amber, and only appears when fee > 0.
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
