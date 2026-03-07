@@ -506,20 +506,26 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   <div className="flex-1 h-px bg-border" />
                 </div>
 
-                {/* Search */}
-                <div className="relative">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Search agent name, ID or area…"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 bg-card border-border"
-                  />
-                </div>
+                {recentAgents.length > 0 && (
+                  <>
+                    {/* Search */}
+                    <div className="relative">
+                      <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        placeholder="Search agent name or ID…"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 bg-card border-border"
+                      />
+                    </div>
+                  </>
+                )}
 
                 {/* Agent list */}
                 <div className="space-y-2">
-                  {filteredAgents.map((a) => (
+                  {recentAgents.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">No recent agents</p>
+                  ) : filteredAgents.map((a) => (
                     <button
                       key={a.id}
                       onClick={() => handleSelectAgent(a)}
@@ -531,14 +537,8 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-semibold text-foreground truncate">{a.name}</p>
-                          {a.rating > 0 && (
-                            <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground shrink-0">⭐ {a.rating}</span>
-                          )}
                         </div>
                         <p className="text-xs text-muted-foreground">{a.agentId}</p>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <MapPin size={10} /> {a.address} · {a.distance}
-                        </p>
                       </div>
                       <ChevronLeft size={16} className="text-muted-foreground rotate-180 shrink-0" />
                     </button>
