@@ -676,11 +676,12 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   <div className="relative flex items-center">
                     <span className="absolute left-4 text-2xl font-bold text-muted-foreground">৳</span>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       placeholder="0"
                       value={amount}
-                      onChange={(e) => { setAmount(e.target.value); setError(""); }}
-                      className="w-full pl-10 pr-4 h-16 text-3xl font-bold text-foreground bg-card border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/40"
+                      onChange={(e) => { const v = e.target.value; if (v === "" || /^\d*\.?\d*$/.test(v)) { setAmount(v); setError(""); } }}
+                      className="w-full pl-10 pr-4 h-16 text-3xl font-bold text-foreground bg-card border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
                   {error && (
