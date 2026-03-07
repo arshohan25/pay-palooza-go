@@ -385,7 +385,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                     <Input
                       type="text"
                       inputMode="text"
-                      placeholder="Name, 01XXXXXXXXX or MFS-ABCD-EFGH"
+                      placeholder="Name/Number or W-ID"
                       value={inputVal}
                       maxLength={13}
                       onChange={(e) => handleInputChange(e.target.value)}
@@ -419,46 +419,6 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   {error && (
                     <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {error}</p>
                   )}
-                  {/* Pick from Contacts */}
-                  <PermissionGate
-                    permission="contacts"
-                    onGranted={(contacts) => {
-                      if (contacts?.[0]) {
-                        const tel = contacts[0].tel?.[0]?.replace(/\D/g, "") || "";
-                        const name = contacts[0].name?.[0] || "";
-                        if (tel) {
-                          setInputVal(tel);
-                          setInputType(detectRecipientType(tel));
-                          setRecipient({
-                            id: "contact",
-                            name: name || tel,
-                            phone: tel,
-                            initials: (name || tel).slice(0, 2).toUpperCase(),
-                            gradient: "gradient-send",
-                          });
-                        }
-                      }
-                    }}
-                  >
-                    <button
-                      type="button"
-                      className="w-full h-11 border-2 border-dashed border-border rounded-xl flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/50 hover:bg-primary/5 active:scale-[0.98] transition-all"
-                    >
-                      <Contact2 size={16} />
-                      Pick from Contacts
-                    </button>
-                  </PermissionGate>
-
-                  {/* Upload QR from Gallery */}
-                  <button
-                    type="button"
-                    onClick={() => setShowScanner(true)}
-                    className="w-full h-11 border-2 border-dashed border-border rounded-xl flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/50 hover:bg-primary/5 active:scale-[0.98] transition-all"
-                  >
-                    <QrCode size={16} />
-                    {t("uploadQrGallery")}
-                  </button>
-
                   <Button
                     className="w-full h-11 gradient-send border-0 text-white font-semibold"
                     onClick={handleContinue}
@@ -476,7 +436,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
 
                 <div className="space-y-2">
-                  {filteredContacts.map((c) => (
+                  {filteredContacts.slice(0, 3).map((c) => (
                     <button
                       key={c.id}
                       onClick={() => handleSelectContact(c)}
