@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
-import { ArrowLeft, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Gift } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Gift, BadgeDollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { TxCashbackIcon } from "@/components/QuickActionIcons";
 import {
@@ -88,15 +88,19 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
   const [cashbackTotal, setCashbackTotal] = useState(0);
   const [cashbackCount, setCashbackCount] = useState(0);
   const [cashbackLoading, setCashbackLoading] = useState(true);
+  const [feeData, setFeeData] = useState<{ month: string; fees: number }[]>([]);
+  const [feesLoading, setFeesLoading] = useState(true);
 
-  // Fetch cashback transactions for this month
+  // Fetch cashback + fee data
   useEffect(() => {
-    const fetchCashback = async () => {
+    const fetchData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
       const now = new Date();
+
+      // Cashback
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-      const { data } = await supabase
+      const { data: cbData } = await supabase
         .from("transactions")
         .select("amount")
         .eq("user_id", session.user.id)
@@ -104,12 +108,38 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
         .eq("status", "completed")
         .gte("created_at", monthStart)
         .like("description", "Drive Cashback:%");
-      const txns = data ?? [];
+      const txns = cbData ?? [];
       setCashbackTotal(txns.reduce((s, t) => s + Number(t.amount), 0));
       setCashbackCount(txns.length);
       setCashbackLoading(false);
+
+      // Monthly fees (last 6 months)
+      const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+      const { data: feeRows } = await supabase
+        .from("transactions")
+        .select("fee, created_at")
+        .eq("user_id", session.user.id)
+        .eq("status", "completed")
+        .gt("fee", 0)
+        .gte("created_at", sixMonthsAgo.toISOString());
+
+      const monthMap: Record<string, number> = {};
+      const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      // Initialize last 6 months
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = monthNames[d.getMonth()];
+        monthMap[key] = 0;
+      }
+      (feeRows ?? []).forEach((r) => {
+        const d = new Date(r.created_at);
+        const key = monthNames[d.getMonth()];
+        if (key in monthMap) monthMap[key] += Number(r.fee);
+      });
+      setFeeData(Object.entries(monthMap).map(([month, fees]) => ({ month, fees: Math.round(fees * 100) / 100 })));
+      setFeesLoading(false);
     };
-    fetchCashback();
+    fetchData();
   }, []);
 
   const DONUT_DATA = DONUT_RAW.map(d => ({ ...d, name: t(d.key) }));
@@ -199,6 +229,60 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
             <span className="text-xs text-muted-foreground mb-1.5">
               {cashbackCount} {cashbackCount === 1 ? t("rechargeCount") : t("rechargesCount")}
             </span>
+          </div>
+        )}
+      </motion.div>
+
+      {/* Monthly Fees Chart */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 }}
+        className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden"
+      >
+        <div className="px-4 pt-4 pb-2 flex items-center gap-2">
+          <BadgeDollarSign size={16} className="text-amber-500" />
+          <p className="text-sm font-bold text-foreground">Monthly Fees</p>
+          {!feesLoading && (
+            <span className="ml-auto text-xs text-amber-500 font-semibold">
+              Total: ৳{feeData.reduce((s, d) => s + d.fees, 0).toLocaleString("en-BD", { minimumFractionDigits: 2 })}
+            </span>
+          )}
+        </div>
+        {feesLoading ? (
+          <div className="h-[180px] flex items-center justify-center">
+            <div className="h-8 w-24 rounded-lg bg-muted animate-pulse" />
+          </div>
+        ) : (
+          <div className="px-1 pb-4" style={{ height: 180 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={feeData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v) => `৳${v}`}
+                />
+                <Tooltip
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null;
+                    return (
+                      <div className="bg-card border border-border rounded-xl px-3 py-2 shadow-elevated text-xs">
+                        <p className="font-semibold text-foreground mb-1">{label}</p>
+                        <span className="text-amber-500 font-medium">৳{Number(payload[0].value).toLocaleString("en-BD", { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    );
+                  }}
+                  cursor={{ fill: "hsl(var(--muted) / 0.5)", radius: 4 }}
+                />
+                <Bar dataKey="fees" fill="hsl(40 80% 50%)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         )}
       </motion.div>
