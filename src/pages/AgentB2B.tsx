@@ -93,12 +93,12 @@ const AgentB2B = () => {
                 <p className="text-lg font-extrabold text-foreground">Transfer Successful</p>
                 <p className="text-sm text-muted-foreground mt-1">৳{fmt(Number(amount))} sent to {transferType === "agent" ? "Agent" : "Distributor"} ({phone})</p>
               </div>
-              {fee > 0 && (
-                <div className="bg-muted/50 rounded-xl p-3">
-                  <p className="text-[10px] text-muted-foreground">Fee charged</p>
-                  <p className="text-sm font-bold text-foreground">৳{fmt(fee)}</p>
-                </div>
-              )}
+              <div className="space-y-2 bg-muted/50 rounded-xl p-4 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-extrabold text-foreground">৳{fmt(Number(amount))}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Fee</span><span className="font-bold text-foreground">{fee > 0 ? `৳${fmt(fee)}` : "Free"}</span></div>
+                {fee > 0 && <p className="text-[11px] text-muted-foreground text-right">৳{fmt(Number(amount))} + ৳{fmt(fee)} fee (from balance)</p>}
+                <div className="flex justify-between font-bold border-t border-border/40 pt-2"><span className="text-muted-foreground">Total</span><span className="text-foreground">৳{fmt(Number(amount) + fee)}</span></div>
+              </div>
               <Button onClick={() => { setStep("form"); setPhone(""); setAmount(""); setNote(""); setPin(""); }} className="w-full gradient-primary text-primary-foreground rounded-xl h-11">New Transfer</Button>
               <Button onClick={() => navigate("/agent")} variant="outline" className="w-full rounded-xl h-11 text-sm font-bold gap-2"><Home size={16} /> Back to Dashboard</Button>
             </Card>
@@ -112,6 +112,7 @@ const AgentB2B = () => {
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Phone</span><span className="font-bold text-foreground">{phone}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Amount</span><span className="font-extrabold text-foreground">৳{fmt(Number(amount))}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Fee</span><span className="font-bold text-foreground">{fee > 0 ? `৳${fmt(fee)}` : "Free"}</span></div>
+                {fee > 0 && <p className="text-[11px] text-muted-foreground text-right">৳{fmt(Number(amount))} + ৳{fmt(fee)} fee (from balance)</p>}
                 <div className="flex justify-between text-sm font-bold border-t border-border/40 pt-2"><span className="text-muted-foreground">Total</span><span className="text-foreground">৳{fmt(Number(amount) + fee)}</span></div>
                 {note && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Note</span><span className="font-medium text-foreground">{note}</span></div>}
               </div>
