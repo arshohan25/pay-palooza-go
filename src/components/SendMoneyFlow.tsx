@@ -148,6 +148,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   const [showShare, setShowShare] = useState(false);
   const [addCashOutCharge, setAddCashOutCharge] = useState(false);
   const [recentContacts, setRecentContacts] = useState<Contact[]>([]);
+  const [phoneContacts, setPhoneContacts] = useState<Contact[]>([]);
   const txnTime = useRef(new Date());
   const genId = () => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; };
   const txnId   = useRef(genId());
@@ -215,13 +216,64 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     if (step === "pin")       { goTo("confirm"); return; }
   };
 
-  const filteredContacts = recentContacts.filter(
+  // Merge recent + phone contacts, deduplicate by phone
+  const allContacts = useMemo(() => {
+    const seen = new Set<string>();
+    const merged: (Contact & { source?: "recent" | "contacts" })[] = [];
+    for (const c of recentContacts) {
+      const key = normalizePhone(c.phone);
+      if (!seen.has(key)) { seen.add(key); merged.push({ ...c, source: "recent" }); }
+    }
+    for (const c of phoneContacts) {
+      const key = normalizePhone(c.phone);
+      if (!seen.has(key)) { seen.add(key); merged.push({ ...c, source: "contacts" }); }
+    }
+    return merged;
+  }, [recentContacts, phoneContacts]);
+
+  const filteredContacts = allContacts.filter(
     (c) => {
       if (!inputVal.trim()) return true;
       const q = inputVal.trim().toLowerCase();
       return c.name.toLowerCase().includes(q) || c.phone.includes(q.replace(/\D/g, ""));
     },
   );
+
+  // Detect if input looks like a name search (non-numeric, not a wallet ID pattern)
+  const isNameSearch = inputVal.trim().length >= 2 && !/^\+?\d/.test(inputVal.trim()) && !WALLET_ID_RE.test(inputVal.trim());
+
+  const handlePhoneContactsPicked = (data: any) => {
+    if (!data || !Array.isArray(data)) return;
+    const newContacts: Contact[] = [];
+    for (const entry of data) {
+      const name = entry.name?.[0] || "Unknown";
+      const tel = entry.tel?.[0];
+      if (!tel) continue;
+      const phone = normalizePhone(tel);
+      if (!phone) continue;
+      const initials = name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase() || phone.slice(-2);
+      newContacts.push({
+        id: `contact-${phone}`,
+        name,
+        phone,
+        initials,
+        gradient: GRADIENTS[newContacts.length % GRADIENTS.length],
+      });
+    }
+    if (newContacts.length > 0) {
+      setPhoneContacts((prev) => {
+        const seen = new Set(prev.map((c) => normalizePhone(c.phone)));
+        const merged = [...prev];
+        for (const c of newContacts) {
+          if (!seen.has(normalizePhone(c.phone))) {
+            seen.add(normalizePhone(c.phone));
+            merged.push(c);
+          }
+        }
+        return merged;
+      });
+    }
+  };
 
   const handleSelectContact = (c: Contact) => {
     setRecipient(c);
@@ -244,7 +296,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
       setError(t("enterValidNumber"));
       return;
     }
-    const found = recentContacts.find((c) => {
+    const found = allContacts.find((c) => {
       if (type === "phone") return normalizePhone(c.phone) === normalizePhone(val);
       return false;
     });
@@ -270,7 +322,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     const type = detectRecipientType(result);
     setInputVal(result);
     setInputType(type);
-    const found = recentContacts.find((c) => normalizePhone(c.phone) === normalizePhone(result));
+    const found = allContacts.find((c) => normalizePhone(c.phone) === normalizePhone(result));
     if (found) {
       setRecipient(found);
     } else {
@@ -433,21 +485,34 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                     </button>
                   </div>
 
-                  {/* live type badge */}
-                  {inputVal.trim() && (
-                    <div className="flex items-center gap-1.5">
-                      {inputType ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                          {inputType === "phone" ? <Phone size={10} /> : <Hash size={10} />}
-                          {inputType === "phone" ? t("mobileNumber") : t("walletIdLabel")}
+                  {/* live type badge + find in contacts */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {inputVal.trim() && (
+                      <>
+                        {inputType ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                            {inputType === "phone" ? <Phone size={10} /> : <Hash size={10} />}
+                            {inputType === "phone" ? t("mobileNumber") : t("walletIdLabel")}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground">
+                            Enter valid 11-digit number or MFS-ABCD-EFGH
+                          </span>
+                        )}
+                      </>
+                    )}
+                    {isNameSearch && (
+                      <PermissionGate
+                        permission="contacts"
+                        onGranted={handlePhoneContactsPicked}
+                      >
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-full cursor-pointer hover:bg-primary/15 active:scale-95 transition-all">
+                          <Contact2 size={12} />
+                          Find in Contacts
                         </span>
-                      ) : (
-                        <span className="text-[11px] text-muted-foreground">
-                          Enter valid 11-digit number or MFS-ABCD-EFGH
-                        </span>
-                      )}
-                    </div>
-                  )}
+                      </PermissionGate>
+                    )}
+                  </div>
 
                   {error && (
                     <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {error}</p>
@@ -472,7 +537,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   {filteredContacts.length === 0 ? (
                     <p className="text-center text-xs text-muted-foreground py-4">No recent recipients yet. Start sending to build your list!</p>
                   ) : (
-                    filteredContacts.slice(0, 3).map((c) => (
+                    filteredContacts.slice(0, 5).map((c) => (
                       <button
                         key={c.id}
                         onClick={() => handleSelectContact(c)}
@@ -485,7 +550,12 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                           <p className="text-sm font-semibold text-foreground truncate">{c.name}</p>
                           <p className="text-xs text-muted-foreground">{c.phone}</p>
                         </div>
-                        <ChevronLeft size={16} className="text-muted-foreground rotate-180 shrink-0" />
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {(c as any).source === "contacts" && (
+                            <span className="text-[9px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">Contacts</span>
+                          )}
+                          <ChevronLeft size={16} className="text-muted-foreground rotate-180" />
+                        </div>
                       </button>
                     ))
                   )}
