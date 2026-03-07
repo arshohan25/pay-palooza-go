@@ -126,26 +126,7 @@ const BILL_TYPES: BillType[] = [
   },
 ];
 
-// ─── Mock bill generation ────────────────────────────────────────────────────
-const generateBillAmount = (typeId: string): { due: number; month: string; dueDate: string } => {
-  const seed = Math.floor(Math.random() * 8000) + 200;
-  const amounts: Record<string, number> = {
-    electricity: 450 + (seed % 1800),
-    gas:         180 + (seed % 600),
-    water:       120 + (seed % 400),
-    internet:    500 + (seed % 1000),
-    tv:          250 + (seed % 500),
-  };
-  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-  const now = new Date();
-  const month = months[now.getMonth() === 0 ? 11 : now.getMonth() - 1];
-  const dueDate = new Date(now.getFullYear(), now.getMonth(), 15 + (seed % 10));
-  return {
-    due: amounts[typeId] || 500,
-    month,
-    dueDate: dueDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-  };
-};
+// Bill amount is entered manually by the user (no mock generation)
 
 const generateTxnId = () => {
   const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -214,7 +195,7 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
   const [accountNo, setAccountNo]   = useState("");
   const [pin, setPin]               = useState("");
   const [error, setError]           = useState("");
-  const [billInfo, setBillInfo]     = useState<{ due: number; month: string; dueDate: string } | null>(null);
+  const [billAmount, setBillAmount] = useState("");
   const [showShare, setShowShare]   = useState(false);
 
   const txnTime = useRef(new Date());
@@ -250,7 +231,7 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
     if (!provider) { setError("Please select a provider."); return; }
     const trimmed = accountNo.trim();
     if (trimmed.length < 4) { setError(`Enter a valid ${billType?.accountLabel ?? "account number"}.`); return; }
-    setBillInfo(generateBillAmount(billType!.id));
+    setBillAmount("");
     txnTime.current = new Date();
     txnId.current = generateTxnId();
     goTo("bill");
@@ -267,7 +248,7 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
     if (!pinValid) { setError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
 
     // Check daily limit
-    const dueAmt = billInfo?.due ?? 0;
+    const dueAmt = parseFloat(billAmount) || 0;
     const limitCheck = await checkDailyLimit("paybill", dueAmt);
     if (!limitCheck.allowed) {
       setError(`Daily limit exceeded. Used ৳${limitCheck.used.toLocaleString()} of ৳${limitCheck.limit.toLocaleString()} today.`);
