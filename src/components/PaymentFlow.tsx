@@ -180,25 +180,69 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
     goTo("amount");
   };
 
-  const handleQrScan = (result: string) => {
+  const [validating, setValidating] = useState(false);
+
+  const validateMerchantExists = async (merchantId: string): Promise<{ exists: boolean; name?: string; phone?: string }> => {
+    // Check profiles by phone with merchant role
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("name, phone, user_id")
+      .eq("phone", merchantId)
+      .eq("status", "active")
+      .maybeSingle();
+    if (profile) {
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", profile.user_id)
+        .eq("role", "merchant")
+        .maybeSingle();
+      if (roleData) return { exists: true, name: profile.name || undefined, phone: profile.phone };
+    }
+    return { exists: false };
+  };
+
+  const handleQrScan = async (result: string) => {
     setMerchantIdInput(result);
+    setValidating(true);
+    setError("");
+
+    const validation = await validateMerchantExists(result);
+    setValidating(false);
+
+    if (!validation.exists) {
+      setError("Merchant not found. Please enter a valid Merchant ID.");
+      return;
+    }
+
     const found = recentMerchants.find((m) => m.merchantId.toLowerCase() === result.toLowerCase());
     if (found) {
       setMerchant(found);
     } else {
-      setMerchant({ id: "qr", name: "Merchant", merchantId: result, category: "Payment", initials: "MR", gradient: "gradient-payment" });
+      setMerchant({ id: "qr", name: validation.name || "Merchant", merchantId: result, category: "Payment", initials: "MR", gradient: "gradient-payment" });
     }
     goTo("amount");
   };
 
-  const handleMerchantIdContinue = () => {
+  const handleMerchantIdContinue = async () => {
     const trimmed = merchantIdInput.trim();
     if (trimmed.length < 5) { setError("Enter a valid Merchant ID."); return; }
+
+    setValidating(true);
+    setError("");
+    const validation = await validateMerchantExists(trimmed);
+    setValidating(false);
+
+    if (!validation.exists) {
+      setError("Merchant not found. Please enter a valid Merchant ID.");
+      return;
+    }
+
     const found = recentMerchants.find((m) => m.merchantId.toLowerCase() === trimmed.toLowerCase());
     if (found) {
       setMerchant(found);
     } else {
-      setMerchant({ id: "custom", name: "Merchant", merchantId: trimmed, category: "Payment", initials: "MR", gradient: "gradient-payment" });
+      setMerchant({ id: "custom", name: validation.name || "Merchant", merchantId: trimmed, category: "Payment", initials: "MR", gradient: "gradient-payment" });
     }
     goTo("amount");
   };

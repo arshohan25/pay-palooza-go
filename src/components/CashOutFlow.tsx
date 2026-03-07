@@ -241,26 +241,77 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     goTo("amount");
   };
 
-  const handleQrScan = (result: string) => {
+  const [validating, setValidating] = useState(false);
+
+  const validateAgentExists = async (agentId: string): Promise<{ exists: boolean; name?: string; phone?: string }> => {
+    // Check agents table — look for matching business_name or nid_number pattern
+    // Agent IDs in the UI correspond to the agent's phone from profiles
+    const { data } = await supabase
+      .from("agents")
+      .select("id, business_name, user_id, status")
+      .eq("status", "active")
+      .maybeSingle();
+    // Since we can't match agent ID directly, check profiles by phone
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("name, phone, user_id")
+      .eq("phone", agentId)
+      .eq("status", "active")
+      .maybeSingle();
+    if (profile) {
+      // Verify this user has the agent role
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", profile.user_id)
+        .eq("role", "agent")
+        .maybeSingle();
+      if (roleData) return { exists: true, name: profile.name || undefined, phone: profile.phone };
+    }
+    return { exists: false };
+  };
+
+  const handleQrScan = async (result: string) => {
     setAgentIdInput(result);
+    setValidating(true);
+    setError("");
+
+    const validation = await validateAgentExists(result);
+    setValidating(false);
+
+    if (!validation.exists) {
+      setError("Agent not found. Please enter a valid Agent ID.");
+      return;
+    }
+
     const found = recentAgents.find((a) => a.agentId.toLowerCase() === result.toLowerCase());
     if (found) {
       setAgent(found);
-      goTo("amount");
     } else {
-      setAgent({ id: "qr", name: "Agent", agentId: result, address: "", distance: "", initials: "AG", gradient: "gradient-cashout", rating: 0 });
-      goTo("amount");
+      setAgent({ id: "qr", name: validation.name || "Agent", agentId: result, address: "", distance: "", initials: "AG", gradient: "gradient-cashout", rating: 0 });
     }
+    goTo("amount");
   };
 
-  const handleAgentIdContinue = () => {
+  const handleAgentIdContinue = async () => {
     const trimmed = agentIdInput.trim();
     if (trimmed.length < 5) { setError("Enter a valid Agent ID."); return; }
+
+    setValidating(true);
+    setError("");
+    const validation = await validateAgentExists(trimmed);
+    setValidating(false);
+
+    if (!validation.exists) {
+      setError("Agent not found. Please enter a valid Agent ID.");
+      return;
+    }
+
     const found = recentAgents.find((a) => a.agentId.toLowerCase() === trimmed.toLowerCase());
     if (found) {
       setAgent(found);
     } else {
-      setAgent({ id: "custom", name: "Agent", agentId: trimmed, address: "", distance: "", initials: "AG", gradient: "gradient-primary", rating: 0 });
+      setAgent({ id: "custom", name: validation.name || "Agent", agentId: trimmed, address: "", distance: "", initials: "AG", gradient: "gradient-primary", rating: 0 });
     }
     goTo("amount");
   };

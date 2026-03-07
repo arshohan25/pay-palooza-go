@@ -281,8 +281,31 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     }
   };
 
-  const handleSelectContact = (c: Contact) => {
-    setRecipient(c);
+  const [validating, setValidating] = useState(false);
+
+  const validateRecipientExists = async (phone: string): Promise<{ exists: boolean; name?: string }> => {
+    const normalized = normalizePhone(phone);
+    const { data } = await supabase
+      .from("profiles")
+      .select("name, phone")
+      .eq("phone", normalized)
+      .eq("status", "active")
+      .maybeSingle();
+    if (data) return { exists: true, name: data.name || undefined };
+    return { exists: false };
+  };
+
+  const handleSelectContact = async (c: Contact) => {
+    setValidating(true);
+    setError("");
+    const result = await validateRecipientExists(c.phone);
+    setValidating(false);
+    if (!result.exists) {
+      setError("This number is not registered on EasyPay.");
+      return;
+    }
+    const updated = { ...c, name: result.name || c.name };
+    setRecipient(updated);
     setInputVal(c.phone);
     setInputType("phone");
     goTo("amount");
@@ -322,23 +345,37 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     setError("");
   };
 
-  const handleManualSend = () => {
+  const handleManualSend = async () => {
     const val = inputVal.trim();
     const type = detectRecipientType(val);
     if (!type) return;
+
+    setValidating(true);
+    setError("");
+
+    // Validate recipient exists on EasyPay
+    const phone = type === "walletId" ? val : normalizePhone(val);
+    const result = await validateRecipientExists(phone);
+    setValidating(false);
+
+    if (!result.exists) {
+      setError("This number is not registered on EasyPay.");
+      return;
+    }
+
     const found = allContacts.find((c) => {
       if (type === "phone") return normalizePhone(c.phone) === normalizePhone(val);
       return false;
     });
     if (found) {
-      setRecipient(found);
+      setRecipient({ ...found, name: result.name || found.name });
     } else {
       const initials = type === "walletId"
         ? val.slice(4, 6).toUpperCase()
         : normalizePhone(val).slice(-2);
       setRecipient({
         id: "custom",
-        name: type === "walletId" ? `Wallet ${val}` : normalizePhone(val),
+        name: result.name || (type === "walletId" ? `Wallet ${val}` : normalizePhone(val)),
         phone: type === "walletId" ? val : normalizePhone(val),
         initials,
         gradient: "gradient-primary",
@@ -348,20 +385,31 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     goTo("amount");
   };
 
-  const handleQrScan = (result: string) => {
+  const handleQrScan = async (result: string) => {
     const type = detectRecipientType(result);
     setInputVal(result);
     setInputType(type);
+
+    setValidating(true);
+    setError("");
+    const validationResult = await validateRecipientExists(result);
+    setValidating(false);
+
+    if (!validationResult.exists) {
+      setError("This number is not registered on EasyPay.");
+      return;
+    }
+
     const found = allContacts.find((c) => normalizePhone(c.phone) === normalizePhone(result));
     if (found) {
-      setRecipient(found);
+      setRecipient({ ...found, name: validationResult.name || found.name });
     } else {
       const initials = type === "walletId"
         ? result.slice(4, 6).toUpperCase()
         : result.slice(-2);
       setRecipient({
         id: "qr",
-        name: type === "walletId" ? `Wallet ${result}` : result,
+        name: validationResult.name || (type === "walletId" ? `Wallet ${result}` : result),
         phone: result,
         initials,
         gradient: "gradient-send",
