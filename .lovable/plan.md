@@ -1,26 +1,29 @@
 
 
-## Plan: Add Total Commission Summary Badge to Header
+## Plan: Add Biller Categories to API Hub
 
-The page already has a full "Earnings Summary" card with commission, volume, and counts. The request is to add a prominent **badge** in the header area that highlights total commission earned at a glance.
+### What
+
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-**File: `src/pages/AgentTransactionHistory.tsx`**
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-1. **Import `Badge`** from `@/components/ui/badge`.
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-2. **Add a commission badge next to the header title** (line 65-68) — after the "Agent Transactions" title, insert a `Badge` showing `৳{totalCommission}` styled with a green/emerald background to make it stand out as a quick-glance earnings indicator.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-```tsx
-<div className="flex items-center gap-2">
-  <Building2 size={18} className="text-primary" />
-  <h1 className="text-base font-bold text-foreground">Agent Transactions</h1>
-  <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 text-[11px] font-bold">
-    ৳{fmt(summary.totalCommission)} earned
-  </Badge>
-</div>
-```
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-One file, one small addition. No database changes needed.
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

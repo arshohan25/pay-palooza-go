@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Building2, Shield, TrendingUp, Banknote, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { motion } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { useTransactions } from "@/hooks/use-transactions";
@@ -65,6 +66,9 @@ const AgentTransactionHistory = () => {
         <div className="flex items-center gap-2">
           <Building2 size={18} className="text-primary" />
           <h1 className="text-base font-bold text-foreground">Agent Transactions</h1>
+          <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 text-[11px] font-bold">
+            ৳{fmt(summary.totalCommission)} earned
+          </Badge>
         </div>
       </div>
 
