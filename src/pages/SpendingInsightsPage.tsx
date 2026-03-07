@@ -1,13 +1,17 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
-import { ArrowLeft, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Gift, BadgeDollarSign, BarChart3, CalendarIcon } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Gift, BadgeDollarSign, BarChart3, CalendarIcon, Target, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subMonths } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
