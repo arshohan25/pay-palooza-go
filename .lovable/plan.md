@@ -1,51 +1,29 @@
 
 
-## Plan: Add Recurring Budget Feature
+## Plan: Add Biller Categories to API Hub
 
-The `spending_budgets` table already exists in the database with `category`, `monthly_limit`, and `user_id` columns. It currently has no frontend usage. This plan adds a budget management section to the Spending Insights page that automatically carries over each month (budgets are persistent — they apply every month until changed).
+### What
 
-### Database Change
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-Add a `is_recurring` boolean column (default `true`) and `last_reset_month` text column to `spending_budgets` so the system can track carryover state. This lets users optionally disable recurrence per category.
+### Changes
 
-```sql
-ALTER TABLE spending_budgets
-  ADD COLUMN is_recurring boolean NOT NULL DEFAULT true,
-  ADD COLUMN last_reset_month text;
-```
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-### Frontend Changes
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-**1. New hook: `src/hooks/use-spending-budgets.ts`**
-- CRUD operations on `spending_budgets` table using Supabase client
-- Fetch user's budgets, upsert (create/update) a budget for a category, delete a budget
-- Compare actual spending from `transactions` table (current month, grouped by type) against each budget's `monthly_limit`
-- Expose: `budgets`, `spending`, `loading`, `setBudget`, `removeBudget`
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-**2. New component: `src/components/BudgetManager.tsx`**
-- Renders inside the Spending Insights page as a new card section
-- Shows each budget category with:
-  - Progress bar (spent / limit) colored green → amber → red as usage increases
-  - Percentage used label
-  - Edit button (inline input to change limit)
-  - Toggle for `is_recurring` (on by default)
-  - Delete button
-- "Add Budget" button opens a small form: pick category (Send, Cash Out, Payment, Recharge, Bill Pay), set monthly limit
-- Categories map to transaction types: `send`, `cashout`, `payment`, `recharge`, `paybill`
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-**3. Update `src/pages/SpendingInsightsPage.tsx`**
-- Import and render `<BudgetManager />` between the cashback widget and the monthly bar chart
-- Simple integration — one line addition
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-### How "Recurring" Works
-- Budgets are stored persistently — they apply to every month automatically (no cron needed)
-- The hook calculates spending for the **current month** against the stored limit each time
-- The `is_recurring` toggle, when turned off, means the budget is treated as a one-time budget; the hook will auto-delete it after the month ends (checked client-side on load)
-- No server-side scheduled jobs required — the carryover is implicit by design
+3. Add the new category icons to the `categoryIcons` map.
 
-### Files Created/Modified
-- **Migration**: Add `is_recurring` and `last_reset_month` columns to `spending_budgets`
-- **Create**: `src/hooks/use-spending-budgets.ts`
-- **Create**: `src/components/BudgetManager.tsx`
-- **Edit**: `src/pages/SpendingInsightsPage.tsx` (add one import + render)
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
