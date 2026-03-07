@@ -153,7 +153,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
         .from("transactions")
         .select("recipient_phone, recipient_name")
         .eq("user_id", session.user.id)
-        .in("type", ["send", "payment", "cashin"])
+        .eq("type", "send")
         .eq("status", "completed")
         .not("recipient_phone", "is", null)
         .order("created_at", { ascending: false })
@@ -163,7 +163,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
       const contacts: Contact[] = [];
       for (const t of data) {
         const phone = t.recipient_phone!;
-        if (seen.has(phone)) continue;
+        if (seen.has(phone) || !/^\d{11}$/.test(phone)) continue;
         seen.add(phone);
         const name = t.recipient_name || phone;
         const initials = name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
@@ -475,7 +475,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 {t("flowSendMoney")}
               </h1>
               {step === "recipient" && (
-                <p className="text-xs text-primary-foreground/70 mt-0.5">Send money to any EasyPay or mobile number</p>
+                <p className="text-xs text-primary-foreground/70 mt-0.5">Secure & Instant Transfer</p>
               )}
             </div>
             {step !== "recipient" && <div className="w-9" />}
