@@ -1,24 +1,29 @@
 
 
-## Plan: Add Commission Column to Agent Transaction History Detail View
+## Plan: Add Biller Categories to API Hub
 
-### Problem
-The `commission` field from the database is not mapped into the `Transaction` interface, so it never appears in the detail sheet or receipt — even when `agentView` is active.
+### What
+
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-**File: `src/pages/TransactionHistory.tsx`**
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-1. **Add `commission` to `Transaction` interface** — add `commission: number` field (line 34).
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-2. **Map `commission` in the data transform** — add `commission: t.commission` in the mapping (line 119).
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-3. **Show commission row in detail sheet** (line 528-529) — add a "Commission Earned" row with a `TrendingUp` icon, conditionally shown when `agentView && selectedTx.commission > 0`, styled in primary/green to highlight earnings.
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-4. **Include commission in Share Receipt rows** (line 604) — add `{ label: "Commission", value: "৳..." }` when commission > 0 and agentView.
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-5. **Show commission in the list row** (around line 420) — display a small green "Commission: ৳X" label below the fee label when `agentView && tx.commission > 0`.
+3. Add the new category icons to the `categoryIcons` map.
 
-### Import
-Add `TrendingUp` to the lucide-react import (already used in AgentTransactionHistory but needs adding to TransactionHistory).
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
