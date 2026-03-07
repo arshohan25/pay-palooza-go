@@ -275,7 +275,71 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
 
   const donutTotal = donutData.reduce((s, d) => s + d.value, 0);
 
-  const SkeletonBlock = ({ className }: { className?: string }) => (
+  // Current month spending by category for budget tracking
+  const currentMonthSpending = useMemo(() => {
+    const curMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const spending: Record<string, number> = { total: 0, Send: 0, CashOut: 0, Payment: 0, Recharge: 0 };
+    allTxns.forEach(r => {
+      if (new Date(r.created_at) < curMonthStart) return;
+      const cat = TYPE_TO_CATEGORY[r.type];
+      if (!cat) return;
+      const amt = Number(r.amount);
+      spending[cat] += amt;
+      spending.total += amt;
+    });
+    return spending;
+  }, [allTxns]);
+
+  const getBudgetColor = (spent: number, limit: number) => {
+    if (limit <= 0) return "bg-primary";
+    const pct = (spent / limit) * 100;
+    if (pct > 90) return "bg-destructive";
+    if (pct > 75) return "bg-amber-500";
+    return "bg-primary";
+  };
+
+  const handleSaveBudgets = async () => {
+    setBudgetSaving(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) { setBudgetSaving(false); return; }
+
+    const upserts = BUDGET_CATEGORIES
+      .filter(cat => budgetForm[cat] && Number(budgetForm[cat]) > 0)
+      .map(cat => ({
+        user_id: session.user.id,
+        category: cat,
+        monthly_limit: Number(budgetForm[cat]),
+        updated_at: new Date().toISOString(),
+      }));
+
+    if (upserts.length > 0) {
+      const { error } = await (supabase.from("spending_budgets" as any) as any)
+        .upsert(upserts, { onConflict: "user_id,category" });
+      if (error) {
+        toast.error("Failed to save budgets");
+      } else {
+        const newBudgets: Record<string, number> = { ...budgets };
+        upserts.forEach(u => { newBudgets[u.category] = u.monthly_limit; });
+        setBudgets(newBudgets);
+        toast.success("Budgets saved!");
+        setBudgetDialogOpen(false);
+      }
+    } else {
+      setBudgetDialogOpen(false);
+    }
+    setBudgetSaving(false);
+  };
+
+  const openBudgetDialog = () => {
+    const form: Record<string, string> = {};
+    BUDGET_CATEGORIES.forEach(cat => {
+      form[cat] = budgets[cat] ? String(budgets[cat]) : "";
+    });
+    setBudgetForm(form);
+    setBudgetDialogOpen(true);
+  };
+
+  const hasBudgets = Object.values(budgets).some(v => v > 0);
     <div className={`rounded-lg bg-muted animate-pulse ${className ?? "h-8 w-24"}`} />
   );
 
