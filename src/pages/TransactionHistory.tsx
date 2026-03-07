@@ -583,7 +583,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     </div>
                     {selectedTx.fee > 0 && (
                       <p className="text-[11px] text-muted-foreground mt-1 text-right">
-                        ৳{(Math.abs(selectedTx.amount) - selectedTx.fee).toLocaleString()} + ৳{selectedTx.fee.toLocaleString()} fee
+                        ৳{Math.abs(selectedTx.amount).toLocaleString()} + ৳{selectedTx.fee.toLocaleString()} fee (from balance)
                       </p>
                     )}
                   </div>
