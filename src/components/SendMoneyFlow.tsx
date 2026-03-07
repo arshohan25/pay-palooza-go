@@ -91,7 +91,7 @@ const slideVariants = {
 const staggerContainer = { animate: { transition: { staggerChildren: 0.06 } } };
 const staggerChild = {
   initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 400, damping: 30 } },
+  animate: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 400, damping: 30 } },
 };
 
 interface PinInputProps { pin: string; onChange: (p: string) => void; error: string; }
