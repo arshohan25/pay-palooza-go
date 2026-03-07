@@ -419,7 +419,7 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
             )}
 
             {/* ── STEP 3: Bill details ── */}
-            {step === "bill" && billType && provider && billInfo && (
+            {step === "bill" && billType && provider && (
               <div className="px-4 pt-6 pb-32 space-y-5">
                 {/* Available balance & daily limit */}
                 <div className="flex justify-end">
@@ -445,20 +445,29 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
 
                   {/* Details */}
                   <div className="px-5 py-4 space-y-3">
-                    {[
-                      { label: "Account No.",  value: accountNo },
-                      { label: "Bill Month",   value: billInfo.month },
-                      { label: "Due Date",     value: billInfo.dueDate },
-                    ].map(({ label, value }) => (
-                      <div key={label} className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">{label}</span>
-                        <span className="text-xs font-semibold text-foreground">{value}</span>
-                      </div>
-                    ))}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">Account No.</span>
+                      <span className="text-xs font-semibold text-foreground">{accountNo}</span>
+                    </div>
 
-                    <div className="border-t border-border pt-3 mt-1 flex items-center justify-between">
-                      <span className="text-sm font-semibold text-foreground">Bill Amount</span>
-                      <span className="text-2xl font-extrabold text-foreground">৳{billInfo.due.toLocaleString()}</span>
+                    <div className="border-t border-border pt-3 mt-1 space-y-2">
+                      <label className="text-sm font-semibold text-foreground">Enter Bill Amount</label>
+                      <div className="relative flex items-center">
+                        <span className="absolute left-4 text-2xl font-bold text-muted-foreground">৳</span>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          placeholder="0"
+                          value={billAmount}
+                          onChange={(e) => { const v = e.target.value; if (v === "" || /^\d*\.?\d*$/.test(v)) { setBillAmount(v); setError(""); } }}
+                          className="w-full pl-10 pr-4 h-16 text-3xl font-bold text-foreground bg-card border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                      </div>
+                      {error && (
+                        <p className="text-xs text-destructive flex items-center gap-1">
+                          <AlertCircle size={12} /> {error}
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between">
@@ -478,20 +487,25 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
 
                 <Button
                   className="w-full h-11 gradient-primary border-0 text-white font-semibold"
-                  onClick={() => goTo("pin")}
+                  onClick={() => {
+                    const val = parseFloat(billAmount);
+                    if (!billAmount || isNaN(val) || val <= 0) { setError("Enter a valid bill amount."); return; }
+                    goTo("pin");
+                  }}
+                  disabled={!billAmount || parseFloat(billAmount) <= 0}
                 >
-                  Pay ৳{billInfo.due.toLocaleString()}
+                  Pay ৳{(parseFloat(billAmount) || 0).toLocaleString()}
                 </Button>
               </div>
             )}
 
             {/* ── STEP 4: PIN ── */}
-            {step === "pin" && billType && billInfo && (
+            {step === "pin" && billType && (
               <div className="px-4 pt-8 pb-32 space-y-8">
                 <div className="text-center space-y-1">
                   <p className="text-base font-bold text-foreground">{t("confirmPayment")}</p>
                   <p className="text-sm text-muted-foreground">
-                    Paying <span className="font-semibold text-foreground">৳{billInfo.due.toLocaleString()}</span> for {billType.name} bill
+                    Paying <span className="font-semibold text-foreground">৳{(parseFloat(billAmount) || 0).toLocaleString()}</span> for {billType.name} bill
                   </p>
                 </div>
                 <PinInput pin={pin} onChange={(p) => { setPin(p); setError(""); }} error={error} />
@@ -509,7 +523,7 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
             )}
 
             {/* ── SUCCESS ── */}
-            {step === "success" && billType && provider && billInfo && (
+            {step === "success" && billType && provider && (
               <div className="px-4 pt-10 pb-20 flex flex-col items-center gap-6">
                 {/* Success icon */}
                 <motion.div
@@ -541,7 +555,7 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
                   {/* Amount band */}
                   <div className={`${billType.gradient} px-5 py-5 text-center text-white`}>
                     <p className="text-xs text-white/70 mb-1">Amount Paid</p>
-                    <p className="text-4xl font-extrabold">৳{billInfo.due.toLocaleString()}</p>
+                    <p className="text-4xl font-extrabold">৳{(parseFloat(billAmount) || 0).toLocaleString()}</p>
                   </div>
 
                   {/* Receipt rows */}
@@ -549,7 +563,7 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
                     {[
                       { label: "Bill Type",    value: `${billType.name} (${provider.name})` },
                       { label: "Account No.",  value: accountNo },
-                      { label: "Bill Month",   value: billInfo.month },
+                      { label: "Amount",      value: `৳${(parseFloat(billAmount) || 0).toLocaleString()}` },
                       { label: "Service Fee",  value: FEE === 0 ? "Free" : `৳${FEE}` },
                       { label: "Fee Source",   value: "N/A (Free)" },
                       { label: "Transaction ID",value: txnId.current },
@@ -601,13 +615,13 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
         onClose={() => setShowShare(false)}
         receipt={{
           title: "Bill Payment Successful",
-          amount: `৳${billInfo?.due.toLocaleString() ?? "0"}`,
+          amount: `৳${(parseFloat(billAmount) || 0).toLocaleString()}`,
           gradient: billType?.gradient ?? "gradient-primary",
           txnId: txnId.current,
           rows: [
             { label: "Bill Type", value: `${billType?.name ?? ""} (${provider?.name ?? ""})` },
             { label: "Account No.", value: accountNo },
-            { label: "Bill Month", value: billInfo?.month ?? "" },
+            { label: "Amount", value: `৳${(parseFloat(billAmount) || 0).toLocaleString()}` },
             { label: "Fee", value: "Free" },
             { label: "Date", value: txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) },
             { label: "Time", value: txnTime.current.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) },
