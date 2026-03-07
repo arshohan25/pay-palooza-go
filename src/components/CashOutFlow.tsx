@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useFeeConfig } from "@/hooks/use-fee-config";
 import { requestLocation } from "@/lib/permissions";
 import { haptics } from "@/lib/haptics";
@@ -62,14 +63,7 @@ interface Agent {
   rating: number;
 }
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-const NEARBY_AGENTS: Agent[] = [
-  { id: "1", name: "Karim Store", agentId: "AGT-10234", address: "Mirpur-10, Dhaka", distance: "0.2 km", initials: "KS", gradient: "gradient-cashout", rating: 4.8 },
-  { id: "2", name: "Rina Telecom", agentId: "AGT-20871", address: "Dhanmondi, Dhaka", distance: "0.5 km", initials: "RT", gradient: "gradient-payment", rating: 4.6 },
-  { id: "3", name: "Hasan Mobile", agentId: "AGT-33512", address: "Gulshan-1, Dhaka", distance: "1.1 km", initials: "HM", gradient: "gradient-addmoney", rating: 4.9 },
-  { id: "4", name: "City Point", agentId: "AGT-44780", address: "Banani, Dhaka", distance: "1.8 km", initials: "CP", gradient: "gradient-send", rating: 4.5 },
-  { id: "5", name: "Quick Cash", agentId: "AGT-55239", address: "Motijheel, Dhaka", distance: "2.3 km", initials: "QC", gradient: "gradient-accent", rating: 4.7 },
-];
+// Recent agents loaded from real transaction history
 
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 20000];
 
@@ -160,6 +154,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const [error, setError] = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [recentAgents, setRecentAgents] = useState<Agent[]>([]);
   
   // Bank transfer state
   const [bankName, setBankName] = useState("");
@@ -179,6 +174,42 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     }
   }, [step]);
 
+  // Fetch recent cashout agents from real transactions
+  const AGENT_GRADIENTS = ["gradient-cashout", "gradient-payment", "gradient-addmoney", "gradient-send", "gradient-accent"];
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const { data: trans } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .eq("type", "cashout")
+        .order("created_at", { ascending: false });
+      if (!trans) return;
+      const seen = new Set<string>();
+      const agents: Agent[] = [];
+      for (const tx of trans) {
+        const aid = tx.recipient_phone;
+        if (!aid || seen.has(aid)) continue;
+        seen.add(aid);
+        const name = tx.recipient_name || "Agent";
+        agents.push({
+          id: tx.id,
+          name,
+          agentId: aid,
+          address: "",
+          distance: "",
+          initials: name.slice(0, 2).toUpperCase(),
+          gradient: AGENT_GRADIENTS[agents.length % AGENT_GRADIENTS.length],
+          rating: 0,
+        });
+        if (agents.length >= 5) break;
+      }
+      setRecentAgents(agents);
+    })();
+  }, []);
+
   const activeSteps = cashOutMethod === "bank" ? BANK_STEPS : STEPS;
   const stepIndex = activeSteps.indexOf(step);
 
@@ -197,11 +228,10 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     if (step === "pin") { goTo("amount"); return; }
   };
 
-  const filteredAgents = NEARBY_AGENTS.filter(
+  const filteredAgents = recentAgents.filter(
     (a) =>
       a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.agentId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.address.toLowerCase().includes(searchQuery.toLowerCase()),
+      a.agentId.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const handleSelectAgent = (a: Agent) => {
@@ -212,12 +242,12 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
 
   const handleQrScan = (result: string) => {
     setAgentIdInput(result);
-    const found = NEARBY_AGENTS.find((a) => a.agentId.toLowerCase() === result.toLowerCase());
+    const found = recentAgents.find((a) => a.agentId.toLowerCase() === result.toLowerCase());
     if (found) {
       setAgent(found);
       goTo("amount");
     } else {
-      setAgent({ id: "qr", name: "Agent", agentId: result, address: "Unknown location", distance: "—", initials: "AG", gradient: "gradient-cashout", rating: 0 });
+      setAgent({ id: "qr", name: "Agent", agentId: result, address: "", distance: "", initials: "AG", gradient: "gradient-cashout", rating: 0 });
       goTo("amount");
     }
   };
@@ -225,11 +255,11 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const handleAgentIdContinue = () => {
     const trimmed = agentIdInput.trim();
     if (trimmed.length < 5) { setError("Enter a valid Agent ID."); return; }
-    const found = NEARBY_AGENTS.find((a) => a.agentId.toLowerCase() === trimmed.toLowerCase());
+    const found = recentAgents.find((a) => a.agentId.toLowerCase() === trimmed.toLowerCase());
     if (found) {
       setAgent(found);
     } else {
-      setAgent({ id: "custom", name: "Agent", agentId: trimmed, address: "Unknown location", distance: "—", initials: "AG", gradient: "gradient-primary", rating: 0 });
+      setAgent({ id: "custom", name: "Agent", agentId: trimmed, address: "", distance: "", initials: "AG", gradient: "gradient-primary", rating: 0 });
     }
     goTo("amount");
   };
@@ -476,20 +506,26 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   <div className="flex-1 h-px bg-border" />
                 </div>
 
-                {/* Search */}
-                <div className="relative">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Search agent name, ID or area…"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 bg-card border-border"
-                  />
-                </div>
+                {recentAgents.length > 0 && (
+                  <>
+                    {/* Search */}
+                    <div className="relative">
+                      <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        placeholder="Search agent name or ID…"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 bg-card border-border"
+                      />
+                    </div>
+                  </>
+                )}
 
                 {/* Agent list */}
                 <div className="space-y-2">
-                  {filteredAgents.map((a) => (
+                  {recentAgents.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">No recent agents</p>
+                  ) : filteredAgents.map((a) => (
                     <button
                       key={a.id}
                       onClick={() => handleSelectAgent(a)}
@@ -501,14 +537,8 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-semibold text-foreground truncate">{a.name}</p>
-                          {a.rating > 0 && (
-                            <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground shrink-0">⭐ {a.rating}</span>
-                          )}
                         </div>
                         <p className="text-xs text-muted-foreground">{a.agentId}</p>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <MapPin size={10} /> {a.address} · {a.distance}
-                        </p>
                       </div>
                       <ChevronLeft size={16} className="text-muted-foreground rotate-180 shrink-0" />
                     </button>
