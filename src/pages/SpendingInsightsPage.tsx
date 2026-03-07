@@ -510,6 +510,61 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
             </motion.div>
           </div>
 
+          {/* Budget Progress Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.11 }}
+            className="bg-card rounded-3xl border border-border/60 shadow-card p-4"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
+                  <Target size={16} className="text-primary" />
+                </div>
+                <p className="text-sm font-bold text-foreground">Monthly Budget</p>
+              </div>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={openBudgetDialog}>
+                <Pencil size={12} />
+                {hasBudgets ? "Edit" : "Set"}
+              </Button>
+            </div>
+            {hasBudgets ? (
+              <div className="space-y-3">
+                {BUDGET_CATEGORIES.filter(cat => budgets[cat] && budgets[cat] > 0).map(cat => {
+                  const spent = Math.round(currentMonthSpending[cat] || 0);
+                  const limit = budgets[cat];
+                  const pct = Math.min(Math.round((spent / limit) * 100), 100);
+                  const colorClass = getBudgetColor(spent, limit);
+                  return (
+                    <div key={cat} className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium text-foreground">{cat === "total" ? "Total Spending" : cat}</span>
+                        <span className="text-muted-foreground">
+                          ৳{spent.toLocaleString()} / ৳{limit.toLocaleString()}
+                          <span className={cn("ml-1.5 font-semibold", pct > 90 ? "text-destructive" : pct > 75 ? "text-amber-500" : "text-primary")}>
+                            {pct}%
+                          </span>
+                        </span>
+                      </div>
+                      <div className="h-2 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={cn("h-full rounded-full transition-all duration-700", colorClass)}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-xs text-muted-foreground mb-2">Set monthly spending limits to track your budget</p>
+                <Button size="sm" variant="outline" className="rounded-xl text-xs" onClick={openBudgetDialog}>
+                  Set Budget Goals
+                </Button>
+              </div>
+            )}
+          </motion.div>
+
           {/* Cashback Summary Widget */}
           <motion.div
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
