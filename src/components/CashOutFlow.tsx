@@ -847,16 +847,11 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                     <span className="text-muted-foreground">{t("youReceive")}</span>
                     <span className="font-bold text-primary">৳{parseFloat(receive).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-xs text-muted-foreground/70">
-                    <span>Fee ({FEE_LABEL}) source</span>
-                    <span className="text-primary font-medium">
-                      {feeFromBalance >= feeNum
-                        ? "From your balance"
-                        : feeFromBalance > 0
-                        ? `৳${feeFromBalance.toFixed(2)} balance + ৳${feeFromAmount} from amount`
-                        : "Deducted from amount"}
-                    </span>
-                  </div>
+                  {feeNum > 0 && (
+                    <p className="text-[11px] text-muted-foreground text-right">
+                      ৳{parseFloat(amount).toLocaleString()} + ৳{fee} fee ({feeFromBalance >= feeNum ? "from balance" : feeFromBalance > 0 ? "balance + amount" : "from amount"})
+                    </p>
+                  )}
                 </div>
 
                 <PinInput pin={pin} onChange={(p) => { setPin(p); setError(""); }} error={error} />
@@ -941,20 +936,17 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                     <span>Fee ({FEE_LABEL})</span>
                     <span className="text-foreground font-medium">৳{fee}</span>
                   </div>
-                  <div className="flex justify-between text-xs text-muted-foreground/70">
-                    <span>Fee deducted from</span>
-                    <span className="font-medium">
-                      {feeFromBalance >= feeNum
-                        ? "Balance"
-                        : feeFromBalance > 0
-                        ? `Balance (৳${feeFromBalance.toFixed(2)}) + Amount (৳${feeFromAmount})`
-                        : "Cash out amount"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>You Received</span>
-                    <span className="font-semibold text-primary">৳{parseFloat(receive).toLocaleString()}</span>
-                  </div>
+                  {feeNum > 0 && (
+                    <p className="text-[11px] text-muted-foreground text-right">
+                      ৳{parseFloat(amount).toLocaleString()} + ৳{fee} fee ({feeFromBalance >= feeNum ? "from balance" : feeFromBalance > 0 ? "balance + amount" : "from amount"})
+                    </p>
+                  )}
+                  {feeFromAmount > 0 && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>You Received</span>
+                      <span className="font-semibold text-primary">৳{parseFloat(receive).toLocaleString()}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-muted-foreground">
                     <span>Date</span>
                     <span className="text-foreground font-medium">
