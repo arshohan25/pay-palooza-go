@@ -1,29 +1,20 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Fix Tagline & Filter Merchant IDs from Recent Contacts
 
-### What
+### Changes — `src/components/SendMoneyFlow.tsx`
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+**1. Update tagline**
+Change line 478 from `"Send money to any EasyPay or mobile number"` to `"Secure & Instant Transfer"`.
 
-### Changes
+**2. Filter out merchant IDs from recent contacts**
+In the `fetchRecent` useEffect (line 156), remove `"payment"` and `"cashin"` from the `.in("type", ...)` filter so only `"send"` type transactions are queried. This prevents merchant payment recipients from appearing in the send money recent directory.
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+Additionally, add a filter to skip entries where `recipient_phone` doesn't look like a valid 11-digit mobile number (i.e., skip merchant IDs or wallet IDs that aren't phone numbers):
+```tsx
+if (seen.has(phone) || !/^\d{11}$/.test(phone)) continue;
+```
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
-
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+### Files Modified
+- `src/components/SendMoneyFlow.tsx`
 
