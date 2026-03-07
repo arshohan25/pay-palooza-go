@@ -21,21 +21,22 @@ import {
   CheckCircle2,
   Send,
   User,
-  Phone,
   AlertCircle,
   QrCode,
-  Hash,
   Banknote,
+  Star,
+  RefreshCw,
+  Users,
+  ChevronRight,
+  Contact2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import QrScannerModal from "@/components/QrScannerModal";
 import { useI18n } from "@/lib/i18n";
 import { useFeatureLocks } from "@/hooks/use-feature-locks";
 import FeatureGuard from "@/components/FeatureGuard";
 import FeatureLockedOverlay from "@/components/FeatureLockedOverlay";
 import PermissionGate from "@/components/PermissionGate";
-import { Contact2 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = "recipient" | "amount" | "confirm" | "pin" | "success";
@@ -67,17 +68,8 @@ const detectRecipientType = (val: string): RecipientType | null => {
   return null;
 };
 
-// Fee logic now driven by useFeeConfig hook
-
 // ─── Step config ──────────────────────────────────────────────────────────────
 const STEPS: Step[] = ["recipient", "amount", "confirm", "pin"];
-const STEP_LABELS: Record<Step, string> = {
-  recipient: "Recipient",
-  amount: "Amount",
-  confirm: "Confirm",
-  pin: "PIN",
-  success: "Done",
-};
 
 // ─── Slide animation ──────────────────────────────────────────────────────────
 const slideVariants = {
@@ -128,6 +120,33 @@ const PinInput = ({ pin, onChange, error }: PinInputProps) => {
   );
 };
 
+// ─── Dot Stepper ──────────────────────────────────────────────────────────────
+const DotStepper = ({ current, total }: { current: number; total: number }) => (
+  <div className="flex items-center justify-center gap-2 py-3">
+    {Array.from({ length: total }).map((_, i) => (
+      <motion.div
+        key={i}
+        animate={{ scale: i === current ? 1.3 : 1 }}
+        className={`w-2 h-2 rounded-full transition-colors ${
+          i === current ? "bg-primary" : i < current ? "bg-primary/40" : "bg-border"
+        }`}
+      />
+    ))}
+  </div>
+);
+
+// ─── Category Tab ─────────────────────────────────────────────────────────────
+const CategoryTab = ({ icon: Icon, label, count }: { icon: any; label: string; count?: number }) => (
+  <button className="flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl bg-card border border-border hover:border-primary/30 active:scale-95 transition-all min-w-[80px]">
+    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+      <Icon size={16} className="text-primary" />
+    </div>
+    <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">
+      {label}{count !== undefined ? ` (${count})` : ""}
+    </span>
+  </button>
+);
+
 interface SendMoneyFlowProps { onClose: () => void; prefilledPhone?: string; onSuccess?: (amount: number) => void; }
 
 const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProps) => {
@@ -168,7 +187,6 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
         .order("created_at", { ascending: false })
         .limit(20);
       if (!data?.length) return;
-      // Deduplicate by phone
       const seen = new Set<string>();
       const contacts: Contact[] = [];
       for (const t of data) {
@@ -231,16 +249,19 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     return merged;
   }, [recentContacts, phoneContacts]);
 
-  const filteredContacts = allContacts.filter(
-    (c) => {
-      if (!inputVal.trim()) return true;
-      const q = inputVal.trim().toLowerCase();
-      return c.name.toLowerCase().includes(q) || c.phone.includes(q.replace(/\D/g, ""));
-    },
-  );
+  const filteredContacts = allContacts.filter((c) => {
+    if (!inputVal.trim()) return true;
+    const q = inputVal.trim().toLowerCase();
+    return c.name.toLowerCase().includes(q) || c.phone.includes(q.replace(/\D/g, ""));
+  });
 
-  // Detect if input looks like a name search (non-numeric, not a wallet ID pattern)
+  const recentFiltered = filteredContacts.filter((c) => c.source === "recent");
+  const contactsFiltered = filteredContacts.filter((c) => c.source === "contacts").sort((a, b) => a.name.localeCompare(b.name));
+
   const isNameSearch = inputVal.trim().length >= 2 && !/^\+?\d/.test(inputVal.trim()) && !WALLET_ID_RE.test(inputVal.trim());
+
+  // Check if input is a valid number for the "Send to this number" row
+  const manualRecipientType = detectRecipientType(inputVal);
 
   const handlePhoneContactsPicked = (data: any) => {
     if (!data || !Array.isArray(data)) return;
@@ -283,19 +304,15 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   };
 
   const handleInputChange = (val: string) => {
-    const trimmed = val.slice(0, 13);
-    setInputVal(trimmed);
-    setInputType(detectRecipientType(trimmed));
+    setInputVal(val);
+    setInputType(detectRecipientType(val));
     setError("");
   };
 
-  const handleContinue = () => {
+  const handleManualSend = () => {
     const val = inputVal.trim();
     const type = detectRecipientType(val);
-    if (!type) {
-      setError(t("enterValidNumber"));
-      return;
-    }
+    if (!type) return;
     const found = allContacts.find((c) => {
       if (type === "phone") return normalizePhone(c.phone) === normalizePhone(val);
       return false;
@@ -356,11 +373,9 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     if (processing) return;
     setProcessing(true);
 
-    // Verify PIN
     const pinValid = await verifyPin(pin);
     if (!pinValid) { setError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
 
-    // Check daily limit
     const amtVal = parseFloat(amount) || 0;
     const limitCheck = await checkDailyLimit("send", amtVal);
     if (!limitCheck.allowed) {
@@ -369,7 +384,6 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
       return;
     }
 
-    // Silently capture location for fraud detection
     requestLocation().catch(() => {});
     haptics.success();
     txnTime.current = new Date();
@@ -401,8 +415,6 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   const totalFromBalance = sendAmount + feeFromBalance;
   const recipientReceives = parseFloat((sendAmount - feeFromAmount).toFixed(2));
 
-  const PROGRESS_STEPS: Step[] = ["recipient", "amount", "confirm", "pin"];
-
   if (sendLock.locked) {
     return (
       <FeatureLockedOverlay
@@ -414,39 +426,60 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     );
   }
 
+  // ─── Contact row component ─────────────────────────────────────────────────
+  const ContactRow = ({ contact }: { contact: Contact & { source?: string } }) => (
+    <button
+      onClick={() => handleSelectContact(contact)}
+      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/50 active:bg-accent transition-colors"
+    >
+      <div className={`${contact.gradient} w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0`}>
+        {contact.initials}
+      </div>
+      <div className="flex-1 min-w-0 text-left">
+        <p className="text-sm font-semibold text-foreground truncate">{contact.name}</p>
+        <p className="text-xs text-muted-foreground">{contact.phone}</p>
+      </div>
+      {contact.source === "contacts" && (
+        <span className="text-[9px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full shrink-0">Contacts</span>
+      )}
+      <ChevronRight size={16} className="text-muted-foreground/50 shrink-0" />
+    </button>
+  );
+
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
-      {/* Header */}
+      {/* ─── Header ─── */}
       {step !== "success" && (
-        <motion.div
-          className="gradient-send px-4 pt-3 pb-3 text-primary-foreground"
-          initial={{ y: -60, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 300, damping: 28, duration: 0.4 }}
-        >
-          <div className="flex items-center gap-3 mb-2">
+        <div className="bg-primary px-4 pt-3 pb-3">
+          <div className="flex items-center gap-3">
             <button
               onClick={goBack}
-              className="w-10 h-10 rounded-full bg-white/20 ring-1 ring-white/30 backdrop-blur-sm flex items-center justify-center active:scale-95 transition-transform shrink-0"
+              className="w-9 h-9 rounded-full bg-primary-foreground/15 flex items-center justify-center active:scale-95 transition-transform shrink-0"
             >
-              <ChevronLeft size={20} />
+              <ChevronLeft size={20} className="text-primary-foreground" />
             </button>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-extrabold tracking-tight">{t("flowSendMoney")}</h1>
-              <p className="text-xs text-white/70 mt-0.5">{t("flowSecureTransfer")}</p>
-            </div>
+            <h1 className="flex-1 text-center text-lg font-bold text-primary-foreground tracking-tight">
+              {t("flowSendMoney")}
+            </h1>
+            {step === "recipient" ? (
+              <button
+                onClick={() => setShowScanner(true)}
+                className="w-9 h-9 rounded-full bg-primary-foreground/15 flex items-center justify-center active:scale-95 transition-transform shrink-0"
+              >
+                <QrCode size={18} className="text-primary-foreground" />
+              </button>
+            ) : (
+              <div className="w-9" />
+            )}
           </div>
-          <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
-            <motion.div
-              className="h-full bg-white rounded-full shadow-[0_0_8px_2px_rgba(255,255,255,0.55)]"
-              animate={{ width: `${((STEPS.indexOf(step) + 1) / STEPS.length) * 100}%` }}
-              transition={{ type: "spring", stiffness: 200, damping: 28 }}
-            />
-          </div>
-        </motion.div>
+          {/* Dot stepper for non-recipient steps */}
+          {step !== "recipient" && (
+            <DotStepper current={STEPS.indexOf(step)} total={STEPS.length} />
+          )}
+        </div>
       )}
 
-      {/* Animated step content */}
+      {/* ─── Animated step content ─── */}
       <div className="flex-1 overflow-hidden relative">
         <AnimatePresence custom={direction} mode="popLayout">
           <motion.div
@@ -460,120 +493,110 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
             className="absolute inset-0 overflow-y-auto scrollbar-none"
           >
 
-            {/* ── STEP 1: Recipient ── */}
+            {/* ── STEP 1: Recipient (bKash-inspired) ── */}
             {step === "recipient" && (
-              <div className="px-4 pt-6 pb-32 space-y-6">
-                <div className="space-y-4">
-                  <label className="text-sm font-semibold text-foreground">{t("searchByNameNumberWallet")}</label>
+              <div className="flex flex-col pb-20">
+                {/* Search */}
+                <div className="px-4 pt-4 pb-3">
                   <div className="relative">
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <Input
+                    <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <input
                       type="text"
                       inputMode="text"
-                      placeholder="Name/Number or W-ID"
+                      placeholder="Enter name or number"
                       value={inputVal}
-                      maxLength={13}
                       onChange={(e) => handleInputChange(e.target.value)}
-                      className="pl-9 pr-12 h-12 text-base bg-card border-border"
+                      className="w-full pl-10 pr-4 h-12 text-sm bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground/60 transition-all"
                       autoFocus
                     />
-                    <button
-                      onClick={() => setShowScanner(true)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
-                    >
-                      <QrCode size={16} className="text-muted-foreground" />
-                    </button>
                   </div>
-
-                  {/* live type badge + find in contacts */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {inputVal.trim() && (
-                      <>
-                        {inputType ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                            {inputType === "phone" ? <Phone size={10} /> : <Hash size={10} />}
-                            {inputType === "phone" ? t("mobileNumber") : t("walletIdLabel")}
-                          </span>
-                        ) : (
-                          <span className="text-[11px] text-muted-foreground">
-                            Enter valid 11-digit number or MFS-ABCD-EFGH
-                          </span>
-                        )}
-                      </>
-                    )}
-                    {isNameSearch && (
-                      <PermissionGate
-                        permission="contacts"
-                        onGranted={handlePhoneContactsPicked}
-                      >
-                        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-full cursor-pointer hover:bg-primary/15 active:scale-95 transition-all">
-                          <Contact2 size={12} />
-                          Find in Contacts
-                        </span>
-                      </PermissionGate>
-                    )}
-                  </div>
-
                   {error && (
-                    <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {error}</p>
+                    <p className="text-xs text-destructive flex items-center gap-1 mt-2"><AlertCircle size={12} /> {error}</p>
                   )}
-                  <Button
-                    className="w-full h-11 gradient-send border-0 text-white font-semibold"
-                    onClick={handleContinue}
-                    disabled={!inputVal.trim()}
+                </div>
+
+                {/* Category tabs */}
+                <div className="flex gap-2 px-4 pb-4 overflow-x-auto scrollbar-none">
+                  <CategoryTab icon={Star} label="Favourites" count={0} />
+                  <CategoryTab icon={RefreshCw} label="Auto Pay" />
+                  <CategoryTab icon={Users} label="Group Send" />
+                </div>
+
+                {/* Send to this number — appears when valid number detected */}
+                {manualRecipientType && inputVal.trim() && (
+                  <button
+                    onClick={handleManualSend}
+                    className="mx-4 mb-3 flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/5 border border-primary/20 hover:bg-primary/10 active:scale-[0.98] transition-all"
                   >
-                    {t("continue")}
-                  </Button>
-                </div>
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Send size={16} className="text-primary" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-semibold text-foreground">Send to {inputVal.trim()}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {manualRecipientType === "phone" ? "Mobile number" : "Wallet ID"}
+                      </p>
+                    </div>
+                    <ChevronRight size={16} className="text-primary" />
+                  </button>
+                )}
 
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-px bg-border" />
-                  <span className="text-xs text-muted-foreground">{t("recentContacts")}</span>
-                  <div className="flex-1 h-px bg-border" />
-                </div>
+                {/* Recent section */}
+                {recentFiltered.length > 0 && (
+                  <div>
+                    <div className="px-4 py-2 flex items-center gap-2">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recent</span>
+                      <div className="flex-1 h-px bg-border" />
+                    </div>
+                    {recentFiltered.slice(0, 4).map((c) => (
+                      <ContactRow key={c.id} contact={c} />
+                    ))}
+                  </div>
+                )}
 
+                {/* All Contacts section (from device) */}
+                {contactsFiltered.length > 0 && (
+                  <div>
+                    <div className="px-4 py-2 flex items-center gap-2 mt-1">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">All Contacts</span>
+                      <div className="flex-1 h-px bg-border" />
+                    </div>
+                    {contactsFiltered.map((c) => (
+                      <ContactRow key={c.id} contact={c} />
+                    ))}
+                  </div>
+                )}
 
-                <div className="space-y-2">
-                  {filteredContacts.length === 0 ? (
-                    <p className="text-center text-xs text-muted-foreground py-4">No recent recipients yet. Start sending to build your list!</p>
-                  ) : (
-                    filteredContacts.slice(0, 5).map((c) => (
-                      <button
-                        key={c.id}
-                        onClick={() => handleSelectContact(c)}
-                        className="w-full flex items-center gap-3 p-3 rounded-2xl bg-card border border-border shadow-card hover:shadow-elevated active:scale-[0.98] transition-all text-left"
-                      >
-                        <div className={`${c.gradient} w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0`}>
-                          {c.initials}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-foreground truncate">{c.name}</p>
-                          <p className="text-xs text-muted-foreground">{c.phone}</p>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {(c as any).source === "contacts" && (
-                            <span className="text-[9px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">Contacts</span>
-                          )}
-                          <ChevronLeft size={16} className="text-muted-foreground rotate-180" />
-                        </div>
-                      </button>
-                    ))
-                  )}
+                {/* Empty state */}
+                {recentFiltered.length === 0 && contactsFiltered.length === 0 && !manualRecipientType && (
+                  <div className="px-4 py-10 text-center">
+                    <p className="text-sm text-muted-foreground">No contacts found. Enter a number or import from your phone.</p>
+                  </div>
+                )}
+
+                {/* Find in Contacts link */}
+                <div className="px-4 pt-4 pb-2">
+                  <PermissionGate permission="contacts" onGranted={handlePhoneContactsPicked}>
+                    <button className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/30 active:scale-[0.98] transition-all">
+                      <Contact2 size={16} />
+                      Import from Phone Contacts
+                    </button>
+                  </PermissionGate>
                 </div>
               </div>
             )}
 
             {/* ── STEP 2: Amount ── */}
             {step === "amount" && (
-              <div className="px-4 pt-6 pb-32 space-y-6">
+              <div className="px-4 pt-5 pb-32 space-y-5">
                 {recipient && (
-                  <div className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border shadow-card">
-                    <div className={`${recipient.gradient} w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0`}>
+                  <div className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border">
+                    <div className={`${recipient.gradient} w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0`}>
                       {recipient.initials}
                     </div>
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <p className="text-xs text-muted-foreground">{t("sendingTo")}</p>
-                      <p className="text-sm font-bold text-foreground">{recipient.name}</p>
+                      <p className="text-sm font-bold text-foreground truncate">{recipient.name}</p>
                       <p className="text-xs text-muted-foreground">{recipient.phone}</p>
                     </div>
                   </div>
@@ -595,6 +618,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                       placeholder="0"
                       value={amount}
                       onChange={(e) => { setAmount(e.target.value); setError(""); }}
+                      autoFocus
                       className="w-full pl-10 pr-4 h-16 text-3xl font-bold text-foreground bg-card border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/40"
                     />
                   </div>
@@ -603,16 +627,17 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   )}
                 </div>
 
+                {/* Quick amounts — horizontal scroll */}
                 <div className="space-y-2">
                   <p className="text-xs text-muted-foreground font-medium">{t("quickSelect")}</p>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
                     {QUICK_AMOUNTS.map((q) => (
                       <button
                         key={q}
                         onClick={() => setAmount(String(q))}
-                        className={`py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 ${
+                        className={`px-4 py-2 rounded-full text-sm font-semibold border whitespace-nowrap transition-all active:scale-95 shrink-0 ${
                           amount === String(q)
-                            ? "gradient-send text-white border-transparent shadow-card"
+                            ? "gradient-send text-white border-transparent"
                             : "bg-card border-border text-foreground hover:border-primary/50"
                         }`}
                       >
@@ -624,46 +649,41 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-foreground">{t("noteOptional")}</label>
-                  <Input
+                  <input
                     placeholder="What's it for?"
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
-                    className="bg-card border-border"
+                    className="w-full px-3 h-10 text-sm bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground/60"
                   />
                 </div>
 
-                {/* Cash Out Charge Toggle */}
+                {/* Cash Out Charge Toggle — reduced visual weight */}
                 <button
                   onClick={() => { setAddCashOutCharge(!addCashOutCharge); haptics.light(); }}
-                  className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all active:scale-[0.98] ${
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all active:scale-[0.98] ${
                     addCashOutCharge
-                      ? "border-primary bg-primary/10 shadow-card"
-                      : "border-border bg-card hover:border-primary/40"
+                      ? "border-primary/40 bg-primary/5"
+                      : "border-border bg-card"
                   }`}
                 >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                    addCashOutCharge ? "gradient-cashout text-white" : "bg-muted text-muted-foreground"
-                  }`}>
-                    <Banknote size={18} />
-                  </div>
+                  <Banknote size={16} className={addCashOutCharge ? "text-primary" : "text-muted-foreground"} />
                   <div className="flex-1 text-left">
-                    <p className="text-sm font-semibold text-foreground">Add Cash Out Charge</p>
-                    <p className="text-[11px] text-muted-foreground">Add 1.19% so recipient gets full amount after cash out</p>
+                    <p className="text-xs font-medium text-foreground">Add Cash Out Charge (1.19%)</p>
                   </div>
-                  <div className={`w-11 h-6 rounded-full transition-colors relative ${addCashOutCharge ? "bg-primary" : "bg-muted"}`}>
-                    <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${addCashOutCharge ? "translate-x-5" : "translate-x-0.5"}`} />
+                  <div className={`w-9 h-5 rounded-full transition-colors relative ${addCashOutCharge ? "bg-primary" : "bg-muted"}`}>
+                    <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${addCashOutCharge ? "translate-x-4" : "translate-x-0.5"}`} />
                   </div>
                 </button>
 
                 {amtNum > 0 && (
-                  <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2 text-sm">
+                  <div className="rounded-xl bg-muted/50 border border-border p-3.5 space-y-2 text-sm">
                     <div className="flex justify-between text-muted-foreground">
                       <span>{t("amount")}</span>
                       <span className="text-foreground font-medium">৳{amtNum.toLocaleString()}</span>
                     </div>
                     {addCashOutCharge && cashOutExtra > 0 && (
                       <div className="flex justify-between text-muted-foreground">
-                        <span>Cash Out Charge (1.19%)</span>
+                        <span>Cash Out Charge</span>
                         <span className="text-foreground font-medium">+ ৳{cashOutExtra.toLocaleString()}</span>
                       </div>
                     )}
@@ -693,7 +713,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   </div>
                 )}
 
-                <Button className="w-full h-12 gradient-send border-0 text-white font-semibold text-base" onClick={handleAmountContinue}>
+                <Button className="w-full h-12 gradient-send border-0 text-white font-semibold text-base rounded-xl" onClick={handleAmountContinue}>
                   {t("reviewTransfer")}
                 </Button>
               </div>
@@ -701,15 +721,15 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
             {/* ── STEP 3: Confirm ── */}
             {step === "confirm" && (
-              <div className="px-4 pt-6 pb-32 space-y-5">
+              <div className="px-4 pt-5 pb-32 space-y-5">
                 <div className="text-center space-y-1">
                   <p className="text-sm text-muted-foreground">{t("youreSending")}</p>
                   <p className="text-4xl font-extrabold text-foreground">৳{amtNum.toLocaleString()}</p>
                 </div>
 
-                <div className="rounded-2xl bg-card border border-border shadow-card p-4 space-y-4">
+                <div className="rounded-2xl bg-card border border-border p-4 space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className={`${recipient?.gradient} w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold shrink-0`}>
+                    <div className={`${recipient?.gradient} w-11 h-11 rounded-full flex items-center justify-center text-white font-bold shrink-0`}>
                       {recipient?.initials}
                     </div>
                     <div>
@@ -724,7 +744,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   )}
                 </div>
 
-                <div className="rounded-2xl bg-card border border-border shadow-card p-4 space-y-3 text-sm">
+                <div className="rounded-2xl bg-card border border-border p-4 space-y-3 text-sm">
                   <p className="font-semibold text-foreground">{t("transferSummary")}</p>
                   <div className="space-y-2 text-muted-foreground">
                     <div className="flex justify-between">
@@ -759,10 +779,10 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/40 text-xs text-muted-foreground">
                   <User size={14} />
-                  <span>{t("availableBalance")}: <strong className="text-foreground">৳12,450.75</strong></span>
+                  <span>{t("availableBalance")}: <strong className="text-foreground">৳{BALANCE.toLocaleString("en-BD", { minimumFractionDigits: 2 })}</strong></span>
                 </div>
 
-                <Button className="w-full h-12 gradient-send border-0 text-white font-bold text-base" onClick={handleConfirm}>
+                <Button className="w-full h-12 gradient-send border-0 text-white font-bold text-base rounded-xl" onClick={handleConfirm}>
                   <Send size={18} /> {t("confirmEnterPin")}
                 </Button>
                 <Button variant="ghost" className="w-full" onClick={() => goTo("amount")}>{t("edit")}</Button>
@@ -771,14 +791,14 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
             {/* ── STEP 4: PIN ── */}
             {step === "pin" && (
-              <div className="px-4 pt-6 pb-32 space-y-6">
+              <div className="px-4 pt-5 pb-32 space-y-6">
                 <div className="text-center space-y-1">
                   <p className="text-sm text-muted-foreground">{t("sending")}</p>
                   <p className="text-4xl font-extrabold text-foreground">৳{amtNum.toLocaleString()}</p>
                   <p className="text-xs text-muted-foreground">to <span className="font-semibold text-foreground">{recipient?.name}</span></p>
                 </div>
 
-                <div className="rounded-2xl bg-muted/40 border border-border p-3 flex justify-between text-sm">
+                <div className="rounded-xl bg-muted/40 border border-border p-3 flex justify-between text-sm">
                   <span className="text-muted-foreground">{t("totalFromBalance")}</span>
                   <span className="font-bold text-foreground">৳{totalFromBalance.toLocaleString()}</span>
                 </div>
@@ -864,10 +884,10 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="w-full space-y-3">
-                  <Button className="w-full h-12 gradient-send border-0 text-white font-semibold" onClick={onClose}>
+                  <Button className="w-full h-12 gradient-send border-0 text-white font-semibold rounded-xl" onClick={onClose}>
                     {t("backToHome")}
                   </Button>
-                  <Button variant="outline" className="w-full h-11" onClick={() => setShowShare(true)}>
+                  <Button variant="outline" className="w-full h-11 rounded-xl" onClick={() => setShowShare(true)}>
                     {t("shareReceipt")}
                   </Button>
                 </motion.div>
