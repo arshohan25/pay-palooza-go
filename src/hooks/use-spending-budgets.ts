@@ -84,7 +84,7 @@ export function useSpendingBudgets() {
     setLoading(false);
 
     // Budget alert notifications
-    const month = currentMonth();
+    const alertMonth = currentMonth();
     for (const b of kept) {
       const spent = agg[b.category] || 0;
       const pct = b.monthly_limit > 0 ? (spent / b.monthly_limit) * 100 : 0;
