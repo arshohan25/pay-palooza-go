@@ -158,7 +158,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                 </AnimatePresence>
                 {action.id === "more" ? (
                   <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.3 }} className="flex items-center justify-center">
-                    <MoreIcon isHovered={isHovered} />
+                    <MoreIcon />
                   </motion.div>
                 ) : (
                   <action.Icon isHovered={isHovered} />
