@@ -88,15 +88,19 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
   const [cashbackTotal, setCashbackTotal] = useState(0);
   const [cashbackCount, setCashbackCount] = useState(0);
   const [cashbackLoading, setCashbackLoading] = useState(true);
+  const [feeData, setFeeData] = useState<{ month: string; fees: number }[]>([]);
+  const [feesLoading, setFeesLoading] = useState(true);
 
-  // Fetch cashback transactions for this month
+  // Fetch cashback + fee data
   useEffect(() => {
-    const fetchCashback = async () => {
+    const fetchData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
       const now = new Date();
+
+      // Cashback
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-      const { data } = await supabase
+      const { data: cbData } = await supabase
         .from("transactions")
         .select("amount")
         .eq("user_id", session.user.id)
@@ -104,12 +108,38 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
         .eq("status", "completed")
         .gte("created_at", monthStart)
         .like("description", "Drive Cashback:%");
-      const txns = data ?? [];
+      const txns = cbData ?? [];
       setCashbackTotal(txns.reduce((s, t) => s + Number(t.amount), 0));
       setCashbackCount(txns.length);
       setCashbackLoading(false);
+
+      // Monthly fees (last 6 months)
+      const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+      const { data: feeRows } = await supabase
+        .from("transactions")
+        .select("fee, created_at")
+        .eq("user_id", session.user.id)
+        .eq("status", "completed")
+        .gt("fee", 0)
+        .gte("created_at", sixMonthsAgo.toISOString());
+
+      const monthMap: Record<string, number> = {};
+      const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      // Initialize last 6 months
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = monthNames[d.getMonth()];
+        monthMap[key] = 0;
+      }
+      (feeRows ?? []).forEach((r) => {
+        const d = new Date(r.created_at);
+        const key = monthNames[d.getMonth()];
+        if (key in monthMap) monthMap[key] += Number(r.fee);
+      });
+      setFeeData(Object.entries(monthMap).map(([month, fees]) => ({ month, fees: Math.round(fees * 100) / 100 })));
+      setFeesLoading(false);
     };
-    fetchCashback();
+    fetchData();
   }, []);
 
   const DONUT_DATA = DONUT_RAW.map(d => ({ ...d, name: t(d.key) }));
