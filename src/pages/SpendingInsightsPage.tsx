@@ -340,6 +340,8 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
   };
 
   const hasBudgets = Object.values(budgets).some(v => v > 0);
+
+  const SkeletonBlock = ({ className }: { className?: string }) => (
     <div className={`rounded-lg bg-muted animate-pulse ${className ?? "h-8 w-24"}`} />
   );
 
