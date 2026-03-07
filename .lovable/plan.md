@@ -1,29 +1,20 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Animated Empty States for Transaction History & Inbox
 
-### What
+### 1. TransactionHistory.tsx (lines 370-387)
+Update the existing empty state to match the animated pattern used in other flows:
+- Change the icon container from static `div` to `motion.div` with the floating animation (`animate={{ y: [0, -4, 0] }}`, `duration: 2`, `repeat: Infinity`)
+- Update the outer `motion.div` to use `scale: 0.9` initial state matching the other flows (`initial={{ opacity: 0, scale: 0.9, y: 12 }}`)
+- Change icon container shape from `rounded-3xl` to `rounded-full` for consistency with the other empty states
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### 2. InboxPage.tsx (lines 1654-1678)
+Update the existing empty state similarly:
+- Add `scale: 0.9` to the outer `motion.div` initial state
+- Wrap the icon container (`w-20 h-20 rounded-full`) in `motion.div` with the same floating animation
+- Keep all existing conditional text and the "Start Chatting" button as-is
 
-### Changes
-
-**File: `src/components/admin/AdminApiHub.tsx`**
-
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
-
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+### Files Modified
+- `src/pages/TransactionHistory.tsx`
+- `src/pages/InboxPage.tsx`
 
