@@ -21,6 +21,9 @@ import MobileRechargeFlow from "@/components/MobileRechargeFlow";
 import PayBillFlow from "@/components/PayBillFlow";
 import AddMoneyFlow from "@/components/AddMoneyFlow";
 import ShopFlow from "@/components/ShopFlow";
+import BankTransferFlow from "@/components/BankTransferFlow";
+import MoreSheet from "@/components/MoreSheet";
+import SavingsFlow from "@/components/SavingsFlow";
 import TransactionHistory from "@/pages/TransactionHistory";
 import AccountPage from "@/pages/AccountPage";
 import ReferPage from "@/pages/ReferPage";
@@ -61,6 +64,9 @@ const Index = () => {
   const [showPayBill, setShowPayBill]     = useState(false);
   const [showAddMoney, setShowAddMoney]   = useState(false);
   const [showShop, setShowShop]           = useState(false);
+  const [showMore, setShowMore]           = useState(false);
+  const [showBankTransfer, setShowBankTransfer] = useState(false);
+  const [showSavings, setShowSavings]     = useState(false);
   const [showScanPay, setShowScanPay]     = useState(false);
   const [isLoading, setIsLoading]         = useState(true);
   const [isPulling, setIsPulling]         = useState(false);
@@ -246,6 +252,7 @@ const Index = () => {
                 onAddMoney={() => setShowAddMoney(true)}
                 onRefer={() => handleTabChange("refer")}
                 onShop={() => setShowShop(true)}
+                onMore={() => setShowMore(true)}
               />
               
               <PromoCard />
@@ -347,7 +354,19 @@ const Index = () => {
       {showPayBill   && <PayBillFlow   onClose={() => setShowPayBill(false)} />}
       {showAddMoney  && <AddMoneyFlow  onClose={() => setShowAddMoney(false)} />}
       {showShop      && <ShopFlow      onClose={() => setShowShop(false)} />}
+      {showBankTransfer && <BankTransferFlow onClose={() => setShowBankTransfer(false)} />}
+      {showSavings   && <SavingsFlow   onClose={() => setShowSavings(false)} />}
       {showKycFlow   && <KycFlow      onClose={() => setShowKycFlow(false)} />}
+
+      {/* More Services Sheet */}
+      <MoreSheet
+        open={showMore}
+        onClose={() => setShowMore(false)}
+        onBankTransfer={() => setShowBankTransfer(true)}
+        onSavings={() => setShowSavings(true)}
+        onLimits={() => handleTabChange("account")}
+        onInsights={() => handleTabChange("account")}
+      />
 
       {/* Scan & Pay QR flow */}
       <QrScannerModal
