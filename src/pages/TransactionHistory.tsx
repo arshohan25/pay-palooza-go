@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import {
   Search, X, CalendarIcon, SlidersHorizontal,
-  CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw, Share2, Coins,
+  CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw, Share2, Coins, TrendingUp,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ interface Transaction {
   date: string;
   amount: number;
   fee: number;
+  commission: number;
   _isCashback?: boolean;
 }
 
@@ -117,6 +118,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           date: t.created_at,
           amount: isCredit ? t.amount : -t.amount,
           fee: t.fee,
+          commission: t.commission || 0,
           _isCashback: isCashback,
         };
       }), [dbTxns, filterTypes]);
@@ -430,6 +432,9 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     {tx.fee > 0 && (
                       <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium mt-0.5">Fee: ৳{tx.fee.toLocaleString()}</p>
                     )}
+                    {agentView && tx.commission > 0 && (
+                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">Commission: ৳{tx.commission.toLocaleString()}</p>
+                    )}
                     <p className="text-[10.5px] text-muted-foreground/60 mt-0.5">{relativeDate(tx.date)}</p>
                   </div>
 
@@ -526,6 +531,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     { icon: Tag,      label: "Category",       value: catLabel,                               copy: false },
                     { icon: FileText, label: "Description",    value: selectedTx.detail,                     copy: false },
                     ...(selectedTx.fee > 0 ? [{ icon: Coins, label: "Charge / Fee", value: `৳${selectedTx.fee.toLocaleString()}`, copy: false }] : []),
+                    ...(agentView && selectedTx.commission > 0 ? [{ icon: TrendingUp, label: "Commission Earned", value: `৳${selectedTx.commission.toLocaleString()}`, copy: false }] : []),
                     { icon: Clock,    label: "Date & Time",    value: format(txDate, "dd MMM yyyy, h:mm a"), copy: false },
                   ].map(({ icon: RowIcon, label, value, copy }) => (
                     <div key={label} className="flex items-start gap-3 py-2.5 border-b border-border/50 last:border-0">
@@ -602,6 +608,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                 { label: "Category", value: catLabel },
                 { label: "Description", value: selectedTx.detail },
                 ...(selectedTx.fee > 0 ? [{ label: "Fee", value: `৳${selectedTx.fee.toLocaleString()}` }] : []),
+                ...(agentView && selectedTx.commission > 0 ? [{ label: "Commission", value: `৳${selectedTx.commission.toLocaleString()}` }] : []),
                 { label: "Date & Time", value: format(txDate, "dd MMM yyyy, h:mm a") },
               ],
             }}
