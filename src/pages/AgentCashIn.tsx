@@ -98,9 +98,11 @@ const AgentCashIn = () => {
                 <p className="text-lg font-extrabold text-foreground">Cash In Successful</p>
                 <p className="text-sm text-muted-foreground mt-1">৳{fmt(Number(amount))} deposited to {phone}</p>
               </div>
-              <div className="bg-primary/5 rounded-xl p-3">
-                <p className="text-[10px] text-muted-foreground">Commission earned</p>
-                <p className="text-sm font-bold text-primary">+৳{fmt(commission)}</p>
+              <div className="space-y-2 bg-muted/50 rounded-xl p-4 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-extrabold text-foreground">৳{fmt(Number(amount))}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Fee</span><span className="font-bold text-primary">Free</span></div>
+                <p className="text-[11px] text-muted-foreground text-right">৳{fmt(Number(amount))} + Free</p>
+                <div className="flex justify-between border-t border-border/40 pt-2"><span className="text-muted-foreground">Commission earned</span><span className="font-bold text-primary">+৳{fmt(commission)}</span></div>
               </div>
               <Button onClick={() => { setStep("form"); setPhone(""); setAmount(""); setPin(""); }} className="w-full gradient-primary text-primary-foreground rounded-xl h-11">
                 New Transaction

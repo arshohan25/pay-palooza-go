@@ -1,30 +1,29 @@
 
 
-## Plan: Add Consistent Fee Breakdown to AgentCashIn & AgentB2B Receipts
+## Plan: Add Biller Categories to API Hub
+
+### What
+
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-#### 1. AgentCashIn.tsx — Success receipt (lines 97-104)
-Currently shows amount and commission but no fee breakdown. Cash In has `fee: 0` (free), so add a structured receipt summary matching the standard format:
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-Replace the simple text + commission block with a proper breakdown:
-- Amount: `৳{amount}`
-- Fee: `Free`
-- Commission earned: `+৳{commission}`
-- Add `৳{amount} + Free` subtitle line for consistency
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-#### 2. AgentB2B.tsx — Success receipt (lines 92-101)
-Currently shows amount text and a simple "Fee charged" box. Replace with consistent format:
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-- Amount: `৳{amount}`
-- Fee: `৳{fee}` or `Free`
-- If fee > 0: `৳{amount} + ৳{fee} fee (from balance)` subtitle
-- Total: `৳{amount + fee}`
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-#### 3. AgentB2B.tsx — Confirm step (lines 113-114)
-Already has proper fee/total rows. Add the `(from balance)` subtitle when fee > 0 after the fee row for consistency.
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-### Files Modified (2)
-- `src/pages/AgentCashIn.tsx`
-- `src/pages/AgentB2B.tsx`
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
