@@ -244,7 +244,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
       setError(t("enterValidNumber"));
       return;
     }
-    const found = RECENT_CONTACTS.find((c) => {
+    const found = recentContacts.find((c) => {
       if (type === "phone") return normalizePhone(c.phone) === normalizePhone(val);
       return false;
     });
@@ -270,7 +270,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     const type = detectRecipientType(result);
     setInputVal(result);
     setInputType(type);
-    const found = RECENT_CONTACTS.find((c) => normalizePhone(c.phone) === normalizePhone(result));
+    const found = recentContacts.find((c) => normalizePhone(c.phone) === normalizePhone(result));
     if (found) {
       setRecipient(found);
     } else {
