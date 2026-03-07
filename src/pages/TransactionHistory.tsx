@@ -370,13 +370,18 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
         {filtered.length === 0 ? (
           <motion.div
             key="empty"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.9, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
             className="flex flex-col items-center justify-center py-16 gap-3"
           >
-            <div className="w-16 h-16 rounded-3xl bg-muted flex items-center justify-center">
+            <motion.div
+              animate={{ y: [0, -4, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              className="w-16 h-16 rounded-full bg-muted flex items-center justify-center"
+            >
               <Search size={26} className="text-muted-foreground" />
-            </div>
+            </motion.div>
             <p className="text-[14px] font-bold text-foreground">{t("noTransactionsFound")}</p>
             <p className="text-[12px] text-muted-foreground text-center max-w-[220px] leading-relaxed">
               {t("adjustFilters")}

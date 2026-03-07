@@ -1653,14 +1653,18 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
         {/* Empty State */}
         {filtered.length === 0 && !chat.loading && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            initial={{ opacity: 0, scale: 0.9, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
             className="flex flex-col items-center justify-center py-20 gap-4"
           >
-            <div className="w-20 h-20 rounded-full bg-muted/60 flex items-center justify-center">
+            <motion.div
+              animate={{ y: [0, -4, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              className="w-20 h-20 rounded-full bg-muted/60 flex items-center justify-center"
+            >
               <MessageSquare size={32} className="text-muted-foreground/40" />
-            </div>
+            </motion.div>
             <div className="text-center">
               <p className="text-sm font-bold text-foreground mb-1">
                 {filterTab === "unread" ? "All caught up!" : filterTab === "groups" ? "No groups yet" : uiContacts.length === 0 ? "No conversations yet" : "No results found"}
