@@ -345,7 +345,13 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
                 {/* Merchant list */}
                 <div className="space-y-2">
                   {recentMerchants.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">No recent merchants</p>
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <div className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+                        <ShoppingBag className="w-7 h-7 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm font-semibold text-foreground">No recent merchants</p>
+                      <p className="text-xs text-muted-foreground mt-1">Your payment history will appear here</p>
+                    </div>
                   ) : recentMerchants.map((m) => (
                     <button
                       key={m.id}

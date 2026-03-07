@@ -1,32 +1,29 @@
 
 
-## Plan: Empty State Illustrations & Spinner-Free Input Consistency
+## Plan: Add Biller Categories to API Hub
 
-### 1. MobileRechargeFlow.tsx — Spinner-free amount input
-The amount input at line 908 uses `type="tel"`. Change to `type="text"` with `inputMode="decimal"`, add regex validation (`/^\d*\.?\d*$/`), and append the spinner-hiding CSS classes for consistency with other flows.
+### What
 
-### 2. Empty State Illustrations — CashOutFlow, PaymentFlow, SendMoneyFlow
-Replace the plain text empty states with illustrated empty state components featuring an icon, title, and subtitle:
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-**CashOutFlow.tsx** (line 527): Replace `<p>No recent agents</p>` with an illustrated empty state using a `Users` icon + "No recent agents" + "Your cash out history will appear here".
+### Changes
 
-**PaymentFlow.tsx** (line 348): Replace `<p>No recent merchants</p>` with an illustrated empty state using a `ShoppingBag` icon + "No recent merchants" + "Your payment history will appear here".
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-**SendMoneyFlow.tsx** (line 572-575): Already has an empty state but enhance it with an icon illustration for consistency.
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-Each empty state will follow this pattern:
-```
-[Icon in a soft circular background]
-Title text (semi-bold)
-Subtitle text (muted, smaller)
-```
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-### 3. PayBillFlow & AddMoneyFlow — Already done
-Both already have `type="text"` + `inputMode="decimal"` + regex validation + spinner-hiding CSS. No changes needed.
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-### Files Modified
-- `src/components/MobileRechargeFlow.tsx`
-- `src/components/CashOutFlow.tsx`
-- `src/components/PaymentFlow.tsx`
-- `src/components/SendMoneyFlow.tsx`
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

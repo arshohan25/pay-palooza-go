@@ -21,6 +21,7 @@ import {
   CheckCircle2,
   Send,
   User,
+  Users,
   AlertCircle,
   QrCode,
   Banknote,
@@ -570,8 +571,12 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
                 {/* Empty state */}
                 {recentFiltered.length === 0 && contactsFiltered.length === 0 && !manualRecipientType && (
-                  <div className="px-4 py-10 text-center">
-                    <p className="text-sm text-muted-foreground">No contacts found. Enter a number or import from your phone.</p>
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <div className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+                      <Users className="w-7 h-7 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">No contacts found</p>
+                    <p className="text-xs text-muted-foreground mt-1">Enter a number or import from your phone</p>
                   </div>
                 )}
 

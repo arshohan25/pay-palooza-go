@@ -906,17 +906,19 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-muted-foreground">৳</span>
                     <input
-                      type="tel"
-                      inputMode="numeric"
+                      type="text"
+                      inputMode="decimal"
                       placeholder="0"
                       autoFocus
                       value={customAmount}
                       onChange={(e) => {
-                        const v = e.target.value.replace(/\D/g, "").slice(0, 4);
-                        setCustomAmount(v);
-                        setError("");
+                        const v = e.target.value;
+                        if (v === "" || /^\d*\.?\d*$/.test(v)) {
+                          setCustomAmount(v.slice(0, 4));
+                          setError("");
+                        }
                       }}
-                      className="w-full h-16 pl-9 pr-4 text-2xl font-extrabold bg-card border-2 border-border rounded-2xl focus:outline-none transition-colors text-foreground"
+                      className="w-full h-16 pl-9 pr-4 text-2xl font-extrabold bg-card border-2 border-border rounded-2xl focus:outline-none transition-colors text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       style={{ borderColor: customAmountNum >= 10 ? operator.brandColor : undefined }}
                     />
                   </div>
