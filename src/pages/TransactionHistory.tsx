@@ -429,9 +429,6 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                       )}
                     </div>
                     <p className="text-[11px] text-muted-foreground truncate mt-0.5">{tx.detail}</p>
-                    {tx.fee > 0 && (
-                      <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium mt-0.5">Fee: ৳{tx.fee.toLocaleString()}</p>
-                    )}
                     {agentView && tx.commission > 0 && (
                       <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">Commission: ৳{tx.commission.toLocaleString()}</p>
                     )}
