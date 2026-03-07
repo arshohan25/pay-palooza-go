@@ -47,9 +47,10 @@ interface QuickActionsProps {
   onAddMoney: () => void;
   onRefer: () => void;
   onShop: () => void;
+  onMore: () => void;
 }
 
-const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney, onRefer, onShop }: QuickActionsProps) => {
+const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney, onRefer, onShop, onMore }: QuickActionsProps) => {
   const { t } = useI18n();
   const { isLocked } = useFeatureLocks();
   const { isDisabled: isGloballyDisabled } = useGlobalToggles();
@@ -87,6 +88,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
     if (id === "bill") return onPayBill();
     if (id === "refer") return onRefer();
     if (id === "shop") return onShop();
+    if (id === "more") return onMore();
     toast.info(`${label} coming soon!`);
   };
 
