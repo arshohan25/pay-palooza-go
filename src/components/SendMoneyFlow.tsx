@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { haptics } from "@/lib/haptics";
+import { supabase } from "@/integrations/supabase/client";
 import { requestLocation } from "@/lib/permissions";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { useFeeConfig } from "@/hooks/use-fee-config";
@@ -47,14 +48,7 @@ interface Contact {
   gradient: string;
 }
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-const RECENT_CONTACTS: Contact[] = [
-  { id: "1", name: "Rahim Uddin",   phone: "01711223344", initials: "RU", gradient: "gradient-send" },
-  { id: "2", name: "Fatema Begum",  phone: "01812334455", initials: "FB", gradient: "gradient-cashout" },
-  { id: "3", name: "Karim Sheikh",  phone: "01900445566", initials: "KS", gradient: "gradient-payment" },
-  { id: "4", name: "Nusrat Jahan",  phone: "01655556677", initials: "NJ", gradient: "gradient-addmoney" },
-  { id: "5", name: "Shakil Ahmed",  phone: "01523667788", initials: "SA", gradient: "gradient-accent" },
-];
+const GRADIENTS = ["gradient-send", "gradient-cashout", "gradient-payment", "gradient-addmoney", "gradient-accent"];
 
 const QUICK_AMOUNTS = [100, 200, 500, 1000, 2000, 5000];
 
@@ -153,9 +147,48 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   const [showScanner, setShowScanner] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [addCashOutCharge, setAddCashOutCharge] = useState(false);
+  const [recentContacts, setRecentContacts] = useState<Contact[]>([]);
   const txnTime = useRef(new Date());
   const genId = () => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; };
   const txnId   = useRef(genId());
+
+  // Fetch real recent transaction recipients
+  useEffect(() => {
+    const fetchRecent = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const { data } = await supabase
+        .from("transactions")
+        .select("recipient_phone, recipient_name")
+        .eq("user_id", session.user.id)
+        .in("type", ["send", "payment", "cashin"])
+        .eq("status", "completed")
+        .not("recipient_phone", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (!data?.length) return;
+      // Deduplicate by phone
+      const seen = new Set<string>();
+      const contacts: Contact[] = [];
+      for (const t of data) {
+        const phone = t.recipient_phone!;
+        if (seen.has(phone)) continue;
+        seen.add(phone);
+        const name = t.recipient_name || phone;
+        const initials = name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
+        contacts.push({
+          id: phone,
+          name,
+          phone,
+          initials: initials || phone.slice(0, 2),
+          gradient: GRADIENTS[contacts.length % GRADIENTS.length],
+        });
+        if (contacts.length >= 5) break;
+      }
+      setRecentContacts(contacts);
+    };
+    fetchRecent();
+  }, []);
 
   useEffect(() => {
     if (step === "success") {
@@ -182,7 +215,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     if (step === "pin")       { goTo("confirm"); return; }
   };
 
-  const filteredContacts = RECENT_CONTACTS.filter(
+  const filteredContacts = recentContacts.filter(
     (c) => {
       if (!inputVal.trim()) return true;
       const q = inputVal.trim().toLowerCase();
@@ -211,7 +244,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
       setError(t("enterValidNumber"));
       return;
     }
-    const found = RECENT_CONTACTS.find((c) => {
+    const found = recentContacts.find((c) => {
       if (type === "phone") return normalizePhone(c.phone) === normalizePhone(val);
       return false;
     });
@@ -237,7 +270,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     const type = detectRecipientType(result);
     setInputVal(result);
     setInputType(type);
-    const found = RECENT_CONTACTS.find((c) => normalizePhone(c.phone) === normalizePhone(result));
+    const found = recentContacts.find((c) => normalizePhone(c.phone) === normalizePhone(result));
     if (found) {
       setRecipient(found);
     } else {
@@ -378,7 +411,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
             {/* ── STEP 1: Recipient ── */}
             {step === "recipient" && (
               <div className="px-4 pt-6 pb-32 space-y-6">
-                <div className="space-y-2">
+                <div className="space-y-4">
                   <label className="text-sm font-semibold text-foreground">{t("searchByNameNumberWallet")}</label>
                   <div className="relative">
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
