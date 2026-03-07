@@ -4,6 +4,7 @@ import { useI18n } from "@/lib/i18n";
 import { ArrowLeft, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Gift } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import BudgetManager from "@/components/BudgetManager";
+import { useSpendingBudgets } from "@/hooks/use-spending-budgets";
 import { TxCashbackIcon } from "@/components/QuickActionIcons";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -85,6 +86,16 @@ interface InsightsPageProps {
 const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
   const { t } = useI18n();
   const [activeMonth, setActiveMonth] = useState("Jan");
+  const { budgets, spending, categoryLabel } = useSpendingBudgets();
+
+  const budgetChartData = useMemo(() =>
+    budgets.map(b => ({
+      category: categoryLabel(b.category),
+      Budget: b.monthly_limit,
+      Actual: spending[b.category] || 0,
+    })),
+    [budgets, spending, categoryLabel]
+  );
 
   const [cashbackTotal, setCashbackTotal] = useState(0);
   const [cashbackCount, setCashbackCount] = useState(0);
@@ -206,6 +217,83 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
 
       {/* Budget Manager */}
       <BudgetManager />
+
+      {/* Budget vs Actual Chart */}
+      {budgets.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }}
+          className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden"
+        >
+          <div className="px-4 pt-4 pb-2">
+            <p className="text-sm font-bold text-foreground">Budget vs Actual</p>
+            <p className="text-[11px] text-muted-foreground">This month's spending against your limits</p>
+          </div>
+          <div className="px-1 pb-4" style={{ height: 220 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={budgetChartData} margin={{ top: 8, right: 12, left: -16, bottom: 0 }} barCategoryGap="30%">
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis
+                  dataKey="category"
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v) => `৳${(v / 1000).toFixed(0)}k`}
+                />
+                <Tooltip
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null;
+                    const budget = payload.find(p => p.dataKey === "Budget")?.value as number || 0;
+                    const actual = payload.find(p => p.dataKey === "Actual")?.value as number || 0;
+                    const pct = budget > 0 ? Math.round((actual / budget) * 100) : 0;
+                    return (
+                      <div className="bg-card border border-border rounded-xl px-3 py-2.5 shadow-elevated text-xs space-y-1 min-w-[140px]">
+                        <p className="font-semibold text-foreground mb-1">{label}</p>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Budget</span><span className="font-medium text-foreground">৳{budget.toLocaleString()}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Actual</span><span className="font-medium text-foreground">৳{actual.toLocaleString()}</span></div>
+                        <div className="border-t border-border pt-1 mt-1 flex justify-between font-semibold">
+                          <span className="text-muted-foreground">Used</span>
+                          <span className={pct >= 90 ? "text-destructive" : pct >= 70 ? "text-amber-500" : "text-primary"}>{pct}%</span>
+                        </div>
+                      </div>
+                    );
+                  }}
+                  cursor={{ fill: "hsl(var(--muted) / 0.5)", radius: 4 }}
+                />
+                <Bar dataKey="Budget" fill="hsl(var(--muted-foreground) / 0.3)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Actual" radius={[4, 4, 0, 0]}>
+                  {budgetChartData.map((entry, index) => (
+                    <Cell
+                      key={index}
+                      fill={
+                        entry.Budget > 0 && (entry.Actual / entry.Budget) >= 0.9
+                          ? "hsl(var(--destructive))"
+                          : entry.Budget > 0 && (entry.Actual / entry.Budget) >= 0.7
+                            ? "hsl(36 95% 55%)"
+                            : "hsl(var(--primary))"
+                      }
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex gap-4 px-4 pb-4">
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: "hsl(var(--muted-foreground) / 0.3)" }} />
+              Budget
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: "hsl(var(--primary))" }} />
+              Actual
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Monthly bar chart */}
       <motion.div
