@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -14,7 +15,7 @@ import {
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { RefreshCw, ChevronDown, ChevronRight, Radio } from "lucide-react";
+import { RefreshCw, ChevronDown, ChevronRight, Radio, Webhook } from "lucide-react";
 import { format } from "date-fns";
 
 interface PaymentSession {

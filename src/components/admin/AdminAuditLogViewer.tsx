@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
 import { format } from "date-fns";
-import { CalendarIcon, RefreshCw, Eye, Users, ArrowLeftRight, Landmark, Gift, HelpCircle, Shield } from "lucide-react";
+import { CalendarIcon, RefreshCw, Eye, Users, ArrowLeftRight, Landmark, Gift, HelpCircle, Shield, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

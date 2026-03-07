@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { toast } from "sonner";
 import {
   Zap, Droplets, Flame, Wifi, Tv, Plus, Pencil, Trash2, Loader2,
-  Power, PowerOff, Eye, EyeOff, Save, X, Radio,
+  Power, PowerOff, Eye, EyeOff, Save, X, Radio, Settings,
+} from "lucide-react";
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

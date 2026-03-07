@@ -8,7 +8,7 @@ import {
   UserCheck, UserX, ChevronRight, DollarSign,
   Globe, Activity, Target, Zap, AlertTriangle, Eye, EyeOff,
   Bell, UserPlus, History, Headphones, Network, PieChart,
-  Crown, Banknote, Search, X, ListChecks, FileBarChart, Download,
+  Crown, Banknote, Search, X, ListChecks, FileBarChart, Download, FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";

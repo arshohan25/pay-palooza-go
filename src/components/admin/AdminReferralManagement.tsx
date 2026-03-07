@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -9,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Search, Gift, Award, Smartphone, Check, X, RefreshCw, MoreHorizontal, RotateCcw, Loader2 } from "lucide-react";
+import { Search, Gift, Award, Smartphone, Check, X, RefreshCw, MoreHorizontal, RotateCcw, Loader2, Users } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
