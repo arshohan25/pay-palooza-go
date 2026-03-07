@@ -811,6 +811,44 @@ const SpendingInsightsPage = ({ onBack }: InsightsPageProps) => {
           </motion.div>
         </>
       )}
+
+      {/* Set Budget Dialog */}
+      <Dialog open={budgetDialogOpen} onOpenChange={setBudgetDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Target size={18} className="text-primary" />
+              Set Monthly Budgets
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {BUDGET_CATEGORIES.map(cat => (
+              <div key={cat} className="space-y-1">
+                <label className="text-xs font-medium text-foreground">
+                  {cat === "total" ? "Total Spending Limit" : `${cat} Limit`}
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">৳</span>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    className="pl-7"
+                    value={budgetForm[cat] || ""}
+                    onChange={(e) => setBudgetForm(prev => ({ ...prev, [cat]: e.target.value }))}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBudgetDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveBudgets} disabled={budgetSaving}>
+              {budgetSaving ? "Saving..." : "Save Budgets"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 };
