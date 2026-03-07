@@ -1,29 +1,30 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Budget vs Actual Spending Comparison Chart
 
-### What
+Add a grouped bar chart below the `BudgetManager` component that visually compares budget limits against actual spending for each budgeted category.
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### Change
 
-### Changes
+**File: `src/pages/SpendingInsightsPage.tsx`**
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+1. **Import** `useSpendingBudgets` hook (already have `BudgetManager` imported).
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+2. **Add a new chart section** after `<BudgetManager />` (after line 208) — a grouped `BarChart` using Recharts (already imported) that shows side-by-side bars for each budgeted category:
+   - **Budget** bar (muted/outline style, e.g. `hsl(var(--muted-foreground))`)  
+   - **Actual** bar (colored based on overspend: green if under, amber if 70-90%, red if over 90%)
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+3. **Data source**: Call `useSpendingBudgets()` in the component to get `budgets` and `spending`. Transform into chart data:
+   ```tsx
+   const budgetChartData = budgets.map(b => ({
+     category: categoryLabel(b.category),
+     Budget: b.monthly_limit,
+     Actual: spending[b.category] || 0,
+   }));
+   ```
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+4. **Render**: Only show the chart when `budgets.length > 0`. Card styled consistently with existing sections — rounded-3xl, border, shadow-card. Include a custom tooltip showing both values and percentage used.
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+### Files Modified
+- `src/pages/SpendingInsightsPage.tsx` — add hook call + chart section (~40 lines)
 
