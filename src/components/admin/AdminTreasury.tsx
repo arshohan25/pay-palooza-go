@@ -16,7 +16,6 @@ import {
   ArrowDownCircle, ArrowUpCircle, Coins, Landmark, Filter,
   CalendarIcon, Download, CheckCircle2, FileText, BookOpen,
 } from "lucide-react";
-} from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { fireSuccessConfetti } from "@/lib/confetti";

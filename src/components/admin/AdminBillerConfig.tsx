@@ -8,7 +8,6 @@ import {
   Zap, Droplets, Flame, Wifi, Tv, Plus, Pencil, Trash2, Loader2,
   Power, PowerOff, Eye, EyeOff, Save, X, Radio, Settings,
 } from "lucide-react";
-} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
