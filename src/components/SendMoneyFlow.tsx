@@ -302,6 +302,34 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   };
 
   const handleInputChange = (val: string) => {
+    // If starts with digit, cap at 11 digits (strip non-digits)
+    if (/^\d/.test(val)) {
+      const digits = val.replace(/\D/g, "").slice(0, 11);
+      setInputVal(digits);
+      setInputType(detectRecipientType(digits));
+      setError("");
+      return;
+    }
+    // Wallet ID pattern: auto-hyphenate EZP-XXXX-XXXX
+    if (/^[A-Za-z]{1,3}$/i.test(val) || val.includes("-")) {
+      const upper = val.toUpperCase().replace(/[^A-Z\-]/g, "");
+      // Auto-format: after 3 chars add hyphen, after 8 chars add hyphen
+      let formatted = upper;
+      const letters = upper.replace(/-/g, "");
+      if (letters.length <= 3) {
+        formatted = letters;
+      } else if (letters.length <= 7) {
+        formatted = letters.slice(0, 3) + "-" + letters.slice(3);
+      } else {
+        formatted = letters.slice(0, 3) + "-" + letters.slice(3, 7) + "-" + letters.slice(7, 11);
+      }
+      if (formatted.replace(/-/g, "").length > 11) return;
+      setInputVal(formatted);
+      setInputType(detectRecipientType(formatted));
+      setError("");
+      return;
+    }
+    // Name search: unlimited
     setInputVal(val);
     setInputType(detectRecipientType(val));
     setError("");
@@ -456,19 +484,16 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
             >
               <ChevronLeft size={20} className="text-primary-foreground" />
             </button>
-            <h1 className="flex-1 text-center text-lg font-bold text-primary-foreground tracking-tight">
-              {t("flowSendMoney")}
-            </h1>
-            {step === "recipient" ? (
-              <button
-                onClick={() => setShowScanner(true)}
-                className="w-9 h-9 rounded-full bg-primary-foreground/15 flex items-center justify-center active:scale-95 transition-transform shrink-0"
-              >
-                <QrCode size={18} className="text-primary-foreground" />
-              </button>
-            ) : (
-              <div className="w-9" />
-            )}
+            <div className="flex-1 text-center">
+              <h1 className="text-lg font-bold text-primary-foreground tracking-tight">
+                {t("flowSendMoney")}
+              </h1>
+              {step === "recipient" && (
+                <p className="text-xs text-primary-foreground/70 mt-0.5">Send money to any EasyPay or mobile number</p>
+              )}
+            </div>
+            {step !== "recipient" && <div className="w-9" />}
+            {step === "recipient" && <div className="w-9" />}
           </div>
           {/* Dot stepper for non-recipient steps */}
           {step !== "recipient" && (
@@ -501,12 +526,18 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                     <input
                       type="text"
                       inputMode="text"
-                      placeholder="Enter name or number"
+                      placeholder="Name or Number or Wallet ID"
                       value={inputVal}
                       onChange={(e) => handleInputChange(e.target.value)}
-                      className="w-full pl-10 pr-4 h-12 text-sm bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground/60 transition-all"
+                      className="w-full pl-10 pr-11 h-12 text-sm bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground/60 transition-all"
                       autoFocus
                     />
+                    <button
+                      onClick={() => setShowScanner(true)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-accent/50 active:scale-95 transition-all"
+                    >
+                      <QrCode size={18} className="text-primary" />
+                    </button>
                   </div>
                   {error && (
                     <p className="text-xs text-destructive flex items-center gap-1 mt-2"><AlertCircle size={12} /> {error}</p>
