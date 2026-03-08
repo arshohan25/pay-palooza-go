@@ -72,11 +72,11 @@ const SlotIcon = ({ isHovered }: { isHovered?: boolean }) => (
 );
 
 const blankSlots = [
-  { id: "feature_slot_1", Icon: SlotIcon, label: "New Feature 1", desc: "Coming soon", gradient: "from-sky-500 to-blue-600", featureKey: "feature_slot_1" },
-  { id: "feature_slot_2", Icon: SlotIcon, label: "New Feature 2", desc: "Coming soon", gradient: "from-indigo-500 to-violet-600", featureKey: "feature_slot_2" },
-  { id: "feature_slot_3", Icon: SlotIcon, label: "New Feature 3", desc: "Coming soon", gradient: "from-teal-500 to-cyan-600", featureKey: "feature_slot_3" },
-  { id: "feature_slot_4", Icon: SlotIcon, label: "New Feature 4", desc: "Coming soon", gradient: "from-fuchsia-500 to-pink-600", featureKey: "feature_slot_4" },
-  { id: "feature_slot_5", Icon: SlotIcon, label: "New Feature 5", desc: "Coming soon", gradient: "from-lime-500 to-green-600", featureKey: "feature_slot_5" },
+  { id: "feature_slot_1", Icon: SlotIcon, label: "New Feature 1", desc: "Coming soon", gradient: "from-sky-500 to-blue-600", featureKey: "feature_slot_1", soon: false as boolean | undefined },
+  { id: "feature_slot_2", Icon: SlotIcon, label: "New Feature 2", desc: "Coming soon", gradient: "from-indigo-500 to-violet-600", featureKey: "feature_slot_2", soon: false as boolean | undefined },
+  { id: "feature_slot_3", Icon: SlotIcon, label: "New Feature 3", desc: "Coming soon", gradient: "from-teal-500 to-cyan-600", featureKey: "feature_slot_3", soon: false as boolean | undefined },
+  { id: "feature_slot_4", Icon: SlotIcon, label: "New Feature 4", desc: "Coming soon", gradient: "from-fuchsia-500 to-pink-600", featureKey: "feature_slot_4", soon: false as boolean | undefined },
+  { id: "feature_slot_5", Icon: SlotIcon, label: "New Feature 5", desc: "Coming soon", gradient: "from-lime-500 to-green-600", featureKey: "feature_slot_5", soon: false as boolean | undefined },
 ];
 
 interface RippleState { x: number; y: number; id: number; }
