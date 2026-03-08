@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, User, Loader2, MessageCircle, ArrowLeft, CheckCheck, Check, Zap, ChevronDown, Plus, Trash2, Edit2, Save, X } from "lucide-react";
+import { Send, Bot, User, Loader2, MessageCircle, ArrowLeft, CheckCheck, Check, Zap, ChevronDown, Plus, Trash2, Edit2, Save, X, UserPlus } from "lucide-react";
+import { useAgentRouting } from "@/components/admin/SupportAgentRouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -22,12 +23,14 @@ interface Conversation {
   updated_at: string;
   admin_last_read_at: string | null;
   user_last_read_at: string | null;
+  assigned_agent_id?: string | null;
   // joined
   user_name?: string;
   user_phone?: string;
   last_message?: string;
   last_message_at?: string;
   unread_count?: number;
+  assigned_agent_name?: string;
 }
 
 interface Message {
