@@ -444,62 +444,113 @@ export default function AdminTeamManagement() {
       </Tabs>
 
       {/* ═══ ADD MEMBER DIALOG ═══ */}
-      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+      <Dialog open={showAdd} onOpenChange={o => { if (!o) { setShowAdd(false); setCreatedCreds(null); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Team Member</DialogTitle>
-            <DialogDescription>Search for an existing user by phone number to add them to your team.</DialogDescription>
+            <DialogTitle>{createdCreds ? "Credentials Created" : "Add Team Member"}</DialogTitle>
+            <DialogDescription>
+              {createdCreds
+                ? "Share these credentials securely with the team member."
+                : "Create a new team member account with auto-generated credentials."}
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Phone Number</Label>
-              <div className="flex gap-2 mt-1">
-                <Input placeholder="01XXXXXXXXX" value={addPhone} onChange={e => setAddPhone(e.target.value)} />
-                <Button onClick={searchUser} disabled={addLooking || !addPhone} size="sm">
-                  {addLooking ? "..." : "Find"}
-                </Button>
+
+          {createdCreds ? (
+            <div className="space-y-4">
+              <div className="bg-muted/50 rounded-lg p-4 space-y-3 border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Username</p>
+                    <p className="font-mono font-semibold text-foreground">{createdCreds.username}</p>
+                  </div>
+                  <Button size="icon" variant="ghost" onClick={() => { navigator.clipboard.writeText(createdCreds.username); toast.success("Username copied"); }}>
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Password</p>
+                    <p className="font-mono font-semibold text-foreground">{createdCreds.password}</p>
+                  </div>
+                  <Button size="icon" variant="ghost" onClick={() => { navigator.clipboard.writeText(createdCreds.password); toast.success("Password copied"); }}>
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground">Login URL</p>
+                  <p className="text-sm font-mono text-foreground break-all">{window.location.origin}/team-login</p>
+                  <Button size="sm" variant="ghost" className="mt-1 h-7 text-xs" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/team-login`); toast.success("URL copied"); }}>
+                    <Copy className="w-3 h-3 mr-1" />Copy URL
+                  </Button>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground text-center">⚠️ Save these credentials now. The password won't be shown again.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Username</Label>
+                  <div className="flex gap-1 mt-1">
+                    <Input value={addUsername} onChange={e => setAddUsername(e.target.value)} className="font-mono" />
+                    <Button size="icon" variant="outline" onClick={() => setAddUsername(generateUsername())} title="Regenerate">
+                      <RefreshCw className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <Label>Password</Label>
+                  <div className="flex gap-1 mt-1">
+                    <Input value={addPassword} onChange={e => setAddPassword(e.target.value)} className="font-mono" />
+                    <Button size="icon" variant="outline" onClick={() => setAddPassword(generatePassword())} title="Regenerate">
+                      <RefreshCw className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <Label>Display Name</Label>
+                <Input value={addName} onChange={e => setAddName(e.target.value)} className="mt-1" placeholder="John Doe" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Role</Label>
+                  <Select value={addRole} onValueChange={v => setAddRole(v as AppRole)}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {STAFF_ROLES.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Department</Label>
+                  <Select value={addDept} onValueChange={setAddDept}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {DEPARTMENTS.map(d => <SelectItem key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label>Notes (optional)</Label>
+                <Textarea value={addNotes} onChange={e => setAddNotes(e.target.value)} className="mt-1" rows={2} />
               </div>
             </div>
-            {foundUser && (
+          )}
+
+          <DialogFooter>
+            {createdCreds ? (
+              <Button onClick={() => { setShowAdd(false); setCreatedCreds(null); }}>Done</Button>
+            ) : (
               <>
-                <div className="bg-muted/50 rounded-lg p-3">
-                  <p className="text-sm font-medium text-foreground">{foundUser.name || "No name"}</p>
-                  <p className="text-xs text-muted-foreground">{foundUser.phone}</p>
-                </div>
-                <div>
-                  <Label>Display Name</Label>
-                  <Input value={addName} onChange={e => setAddName(e.target.value)} className="mt-1" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>Role</Label>
-                    <Select value={addRole} onValueChange={v => setAddRole(v as AppRole)}>
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {STAFF_ROLES.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Department</Label>
-                    <Select value={addDept} onValueChange={setAddDept}>
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {DEPARTMENTS.map(d => <SelectItem key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div>
-                  <Label>Notes (optional)</Label>
-                  <Textarea value={addNotes} onChange={e => setAddNotes(e.target.value)} className="mt-1" rows={2} />
-                </div>
+                <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
+                <Button onClick={addMember} disabled={adding || !addUsername.trim() || !addPassword.trim() || !addName.trim()}>
+                  <KeyRound className="w-4 h-4 mr-1" />
+                  {adding ? "Creating..." : "Create Account"}
+                </Button>
               </>
             )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
-            <Button onClick={addMember} disabled={!foundUser || adding}>{adding ? "Adding..." : "Add Member"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
