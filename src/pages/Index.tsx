@@ -314,10 +314,10 @@ const Index = () => {
       <AnimatePresence mode="wait">
         <motion.div
           key={activeTab}
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -12 }}
-          transition={{ duration: 0.25, ease: "easeInOut" }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.15, ease: [0.32, 0.72, 0, 1] }}
         >
           {content}
         </motion.div>
