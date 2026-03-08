@@ -436,7 +436,21 @@ export default function AdminSupportDashboard() {
                           )}
                         </div>
                       </div>
-                      <p className="text-[9px] text-muted-foreground/60 mt-0.5">{conv.user_phone}</p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <p className="text-[9px] text-muted-foreground/60">{conv.user_phone}</p>
+                        {conv.assigned_agent_name && (
+                          <Badge variant="outline" className="text-[7px] px-1 py-0 ml-auto">👤 {conv.assigned_agent_name}</Badge>
+                        )}
+                        {!conv.assigned_agent_id && conv.status === "open" && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); assignConversation(conv.id); }}
+                            disabled={routing}
+                            className="ml-auto text-[8px] text-primary hover:underline flex items-center gap-0.5"
+                          >
+                            <UserPlus size={10} /> Assign
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </button>
