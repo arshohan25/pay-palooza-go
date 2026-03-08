@@ -193,7 +193,12 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
   const activeMeta = stepMeta[step];
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
+    <motion.div
+      initial={{ y: "100%" }}
+      animate={{ y: 0 }}
+      exit={{ y: "100%" }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
 
       {step !== "success" && (
         <motion.div
@@ -352,7 +357,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
           </motion.div>
         </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

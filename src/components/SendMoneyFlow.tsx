@@ -520,7 +520,12 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   );
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
+    <motion.div
+      initial={{ y: "100%" }}
+      animate={{ y: 0 }}
+      exit={{ y: "100%" }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
       {/* ─── Header ─── */}
       {step !== "success" && (
         <div className="bg-primary px-4 pt-3 pb-3">
@@ -1010,7 +1015,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
           ],
         }}
       />
-    </div>
+    </motion.div>
   );
 };
 

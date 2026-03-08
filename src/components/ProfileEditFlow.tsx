@@ -265,7 +265,12 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
   const hasChanges = name !== getDisplayName() || photo !== getDisplayPhoto() || (emailChanged && emailVerified);
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
+    <motion.div
+      initial={{ y: "100%" }}
+      animate={{ y: 0 }}
+      exit={{ y: "100%" }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
 
       {/* ── Header ── */}
       <motion.div
@@ -560,7 +565,7 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
           </div>
         </SheetContent>
       </Sheet>
-    </div>
+    </motion.div>
   );
 };
 

@@ -174,6 +174,7 @@ const Index = () => {
   usePullToRefresh({ onRefresh: triggerRefresh, threshold: 70 });
 
   const mainContent = () => {
+    const content = (() => {
     if (activeTab === "home") {
       return (
         <div className="space-y-5">
@@ -307,6 +308,21 @@ const Index = () => {
         <p className="text-sm">Coming soon</p>
       </div>
     );
+    })();
+
+    return (
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -12 }}
+          transition={{ duration: 0.25, ease: "easeInOut" }}
+        >
+          {content}
+        </motion.div>
+      </AnimatePresence>
+    );
   };
 
   // Show splash first, then onboarding (once), then auth/home
@@ -365,16 +381,18 @@ const Index = () => {
       <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
 
       {/* ── Flow overlays ── */}
-      {showSendMoney && <SendMoneyFlow prefilledPhone={sendMoneyPrefilledPhone} onSuccess={(amt) => { sendMoneyOnComplete?.(amt); setSendMoneyOnComplete(undefined); }} onClose={() => { setShowSendMoney(false); setSendMoneyPrefilledPhone(undefined); setSendMoneyOnComplete(undefined); }} />}
-      {showCashOut   && <CashOutFlow   onClose={() => setShowCashOut(false)} />}
-      {showPayment   && <PaymentFlow   onClose={() => setShowPayment(false)} />}
-      {showRecharge  && <MobileRechargeFlow onClose={() => setShowRecharge(false)} />}
-      {showPayBill   && <PayBillFlow   onClose={() => setShowPayBill(false)} />}
-      {showAddMoney  && <AddMoneyFlow  onClose={() => setShowAddMoney(false)} />}
-      {showShop      && <ShopFlow      onClose={() => setShowShop(false)} />}
-      {showBankTransfer && <BankTransferFlow onClose={() => setShowBankTransfer(false)} />}
-      {showSavings   && <SavingsFlow   onClose={() => setShowSavings(false)} />}
-      {showKycFlow   && <KycFlow      onClose={() => setShowKycFlow(false)} />}
+      <AnimatePresence>
+        {showSendMoney && <SendMoneyFlow prefilledPhone={sendMoneyPrefilledPhone} onSuccess={(amt) => { sendMoneyOnComplete?.(amt); setSendMoneyOnComplete(undefined); }} onClose={() => { setShowSendMoney(false); setSendMoneyPrefilledPhone(undefined); setSendMoneyOnComplete(undefined); }} />}
+        {showCashOut   && <CashOutFlow   onClose={() => setShowCashOut(false)} />}
+        {showPayment   && <PaymentFlow   onClose={() => setShowPayment(false)} />}
+        {showRecharge  && <MobileRechargeFlow onClose={() => setShowRecharge(false)} />}
+        {showPayBill   && <PayBillFlow   onClose={() => setShowPayBill(false)} />}
+        {showAddMoney  && <AddMoneyFlow  onClose={() => setShowAddMoney(false)} />}
+        {showShop      && <ShopFlow      onClose={() => setShowShop(false)} />}
+        {showBankTransfer && <BankTransferFlow onClose={() => setShowBankTransfer(false)} />}
+        {showSavings   && <SavingsFlow   onClose={() => setShowSavings(false)} />}
+        {showKycFlow   && <KycFlow      onClose={() => setShowKycFlow(false)} />}
+      </AnimatePresence>
 
 
       {/* Scan & Pay QR flow */}
