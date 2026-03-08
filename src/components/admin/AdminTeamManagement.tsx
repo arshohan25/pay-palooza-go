@@ -67,14 +67,14 @@ export default function AdminTeamManagement() {
 
   // Add member state
   const [showAdd, setShowAdd] = useState(false);
-  const [addPhone, setAddPhone] = useState("");
-  const [addLooking, setAddLooking] = useState(false);
-  const [foundUser, setFoundUser] = useState<{ user_id: string; name: string; phone: string } | null>(null);
+  const [addUsername, setAddUsername] = useState("");
+  const [addPassword, setAddPassword] = useState("");
   const [addRole, setAddRole] = useState<AppRole>("compliance");
   const [addDept, setAddDept] = useState("general");
   const [addName, setAddName] = useState("");
   const [addNotes, setAddNotes] = useState("");
   const [adding, setAdding] = useState(false);
+  const [createdCreds, setCreatedCreds] = useState<{ username: string; password: string } | null>(null);
 
   // Edit / permissions state
   const [editMember, setEditMember] = useState<TeamMember | null>(null);
