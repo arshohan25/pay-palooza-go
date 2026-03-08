@@ -1,27 +1,29 @@
 
 
-## Fix: MerchantApiTab Not Showing Generated Key (Rendering Issue)
+## Plan: Add Biller Categories to API Hub
 
-### Root Cause
-The API key generation works at the database level (confirmed via network logs: POST returns 201). The problem is a **React rendering issue**: `AnimatePresence` in `MerchantDashboard` is passing a ref to `MerchantApiTab`, which is a function component that doesn't use `React.forwardRef()`. This causes the console warning and can prevent proper re-renders after state changes like `setShowNewSecret`.
+### What
 
-### Fix
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-**1. Wrap `MerchantApiTab` with `React.forwardRef`** in `src/components/MerchantApiTab.tsx`
-- Change the component to use `forwardRef` so `AnimatePresence`/`motion.div` can properly manage it
-- This resolves the ref warning and ensures state updates (showing the secret key card) trigger proper re-renders
+### Changes
 
-**2. Similarly wrap `MerchantAnalyticsTab`** (same issue from console logs)
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-### Files to Modify
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-| File | Change |
-|------|--------|
-| `src/components/MerchantApiTab.tsx` | Wrap with `React.forwardRef` |
-| `src/components/MerchantAnalyticsTab.tsx` | Wrap with `React.forwardRef` |
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-### Alternative (simpler)
-If `forwardRef` isn't the issue, we can also add a `key` prop on the `motion.div` wrapping the tab content in `MerchantDashboard.tsx` to force re-mount, ensuring the component re-renders fresh when switching to the API tab. This is a one-line change.
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-Both approaches are small, safe fixes.
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

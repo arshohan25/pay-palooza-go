@@ -31,7 +31,7 @@ const STATUS_COLORS: Record<string, string> = {
   expired: "hsl(220 10% 60%)",
 };
 
-const MerchantAnalyticsTab = ({ merchantId }: { merchantId: string }) => {
+const MerchantAnalyticsTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(({ merchantId }, ref) => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState(30);
@@ -102,7 +102,7 @@ const MerchantAnalyticsTab = ({ merchantId }: { merchantId: string }) => {
   }
 
   return (
-    <div className="space-y-5">
+    <div ref={ref} className="space-y-5">
       {/* Range selector */}
       <div className="flex items-center gap-2">
         <span className="text-xs font-semibold text-muted-foreground">Period:</span>
@@ -212,6 +212,8 @@ const MerchantAnalyticsTab = ({ merchantId }: { merchantId: string }) => {
       )}
     </div>
   );
-};
+});
+
+MerchantAnalyticsTab.displayName = "MerchantAnalyticsTab";
 
 export default MerchantAnalyticsTab;
