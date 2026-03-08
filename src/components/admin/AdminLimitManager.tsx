@@ -58,8 +58,8 @@ function GlobalDefaultsTab() {
   const [roleFilter, setRoleFilter] = useState("user");
 
   const fetchLimits = useCallback(async () => {
-    const { data } = await supabase.from("transaction_limits" as any).select("*").order("txn_type");
-    setLimits((data as any[]) ?? []);
+    const { data } = await supabase.from("transaction_limits").select("*").order("txn_type");
+    setLimits((data ?? []) as LimitRow[]);
     setLoading(false);
   }, []);
 
