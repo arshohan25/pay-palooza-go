@@ -210,6 +210,7 @@ export function useChat() {
       : mapped;
 
     setConversations(filtered);
+    try { localStorage.setItem("mfs_cached_conversations", JSON.stringify(filtered)); } catch {}
     setLoading(false);
   }, [user]);
 
