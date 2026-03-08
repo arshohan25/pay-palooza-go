@@ -20,6 +20,7 @@ import DistributorCreateAgent from "./pages/DistributorCreateAgent";
 import SuperDistributorDashboard from "./pages/SuperDistributorDashboard";
 import SuperDistributorCreateDistributor from "./pages/SuperDistributorCreateDistributor";
 import MerchantDashboard from "./pages/MerchantDashboard";
+import CheckoutPage from "./pages/CheckoutPage";
 import NotFound from "./pages/NotFound";
 import TeamLoginPage from "./pages/TeamLoginPage";
 
@@ -48,6 +49,7 @@ const App = () => (
               <Route path="/super-distributor" element={<RoleGuard roles={["super_distributor", "admin"]}><SuperDistributorDashboard /></RoleGuard>} />
               <Route path="/super-distributor/create-distributor" element={<RoleGuard roles={["super_distributor", "admin"]}><SuperDistributorCreateDistributor /></RoleGuard>} />
               <Route path="/merchant" element={<RoleGuard roles={["merchant", "admin"]}><MerchantDashboard /></RoleGuard>} />
+              <Route path="/checkout/:sessionId" element={<CheckoutPage />} />
               <Route path="/team-login" element={<TeamLoginPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
