@@ -1193,6 +1193,9 @@ export default function AdminDashboard() {
         {/* ═══ API HUB ═══ */}
         {activeTab === "apihub" && <AdminApiHub onNavigate={setActiveTab} />}
 
+        {/* ═══ API REQUESTS ═══ */}
+        {activeTab === "api-requests" && <AdminApiRequests />}
+
         {/* ═══ BILLER API CONFIGS ═══ */}
         {activeTab === "billers" && <AdminBillerConfig />}
 
