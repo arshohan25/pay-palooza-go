@@ -99,7 +99,9 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   const handleAction = (id: string, label: string) => {
     const featureKey = FEATURE_MAP[id];
     if (featureKey && isGloballyDisabled(featureKey)) {
-      toast.error(`${label} is currently unavailable.`);
+      toast.info(`${label} is temporarily unavailable`, {
+        description: "This feature has been disabled by the system. Please try again later.",
+      });
       return;
     }
     if (id === "send") return onSendMoney();
