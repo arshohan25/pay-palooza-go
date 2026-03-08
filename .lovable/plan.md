@@ -1,29 +1,27 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Create a Long-Lived Test Payment Session
 
-### What
+The default `expires_at` on `merchant_payment_sessions` is `now() + 3 minutes`, which is too short for manual testing. I can't UPDATE via read-only tools. 
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### Approach
 
-### Changes
+**Database migration**: Change the default expiry from 3 minutes to 10 minutes so new sessions give enough testing time.
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+```sql
+ALTER TABLE merchant_payment_sessions 
+ALTER COLUMN expires_at SET DEFAULT (now() + interval '10 minutes');
+```
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+Then I'll invoke the merchant-payment-api edge function again to create a fresh session with the new 10-minute window. This gives you time to:
+1. Navigate to the checkout URL
+2. Enter phone + PIN on the login step
+3. Review the confirm step with slide-to-pay
+4. Complete payment and see the success animation
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+### Files Changed
+- **Database migration**: Update `expires_at` default from 3 → 10 minutes
+- No code file changes needed
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+After the migration, I'll create a new test session and provide the checkout URL.
 
