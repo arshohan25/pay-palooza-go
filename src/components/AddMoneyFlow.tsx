@@ -493,7 +493,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
       initial={{ y: "100%" }}
       animate={{ y: 0 }}
       exit={{ y: "100%" }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      transition={{ type: "spring", stiffness: 500, damping: 40 }}
       className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
 
       {/* ── Header ── */}

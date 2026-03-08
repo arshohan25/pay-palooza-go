@@ -1,19 +1,21 @@
 // Centralized Framer Motion transition presets for consistent animations
 
+// Fast spring for flow overlays - snappy response
 export const springTransition = {
   type: "spring" as const,
-  stiffness: 300,
-  damping: 30,
+  stiffness: 400,
+  damping: 35,
 };
 
+// Smooth easing for subtle transitions
 export const smoothTransition = {
-  duration: 0.3,
-  ease: [0.23, 1, 0.32, 1] as const,
+  duration: 0.2,
+  ease: [0.32, 0.72, 0, 1] as const,
 };
 
 export const fastTransition = {
-  duration: 0.2,
-  ease: [0.23, 1, 0.32, 1] as const,
+  duration: 0.15,
+  ease: [0.32, 0.72, 0, 1] as const,
 };
 
 export const pageVariants = {
