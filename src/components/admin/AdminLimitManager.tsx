@@ -200,8 +200,9 @@ function UserOverridesTab() {
   const selectUser = async (user: any) => {
     setSelectedUser(user);
     setSearchResults([]);
-    const { data } = await supabase.from("user_limit_overrides" as any).select("*")
+    const { data, error } = await supabase.from("user_limit_overrides").select("*")
       .eq("target_user_id", user.user_id).eq("is_active", true);
+    if (error) { console.error("Failed to load overrides:", error); toast.error("Failed to load overrides: " + error.message); }
     setOverrides((data as any[]) ?? []);
   };
 
@@ -209,6 +210,7 @@ function UserOverridesTab() {
     if (!selectedUser) return;
     setSaving(true);
     const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) { toast.error("Session expired — please re-login"); setSaving(false); return; }
     const payload = {
       target_user_id: selectedUser.user_id,
       txn_type: form.txn_type,
@@ -216,18 +218,17 @@ function UserOverridesTab() {
       max_amount: form.max_amount ? Number(form.max_amount) : null,
       max_count: form.max_count ? Number(form.max_count) : null,
       reason: form.reason || null,
-      set_by: session?.user?.id,
+      set_by: session.user.id,
       expires_at: form.expires_at || null,
       is_active: true,
       updated_at: new Date().toISOString(),
     };
-    const { error } = await supabase.from("user_limit_overrides" as any).upsert(payload as any, { onConflict: "target_user_id,txn_type,period" });
-    if (error) toast.error("Failed: " + error.message);
+    const { error } = await supabase.from("user_limit_overrides").upsert(payload, { onConflict: "target_user_id,txn_type,period" });
+    if (error) { console.error("Override upsert failed:", error); toast.error("Failed: " + error.message); }
     else {
       toast.success("Override saved");
-      // Audit log
       await supabase.from("audit_logs").insert({
-        actor_id: session?.user?.id!,
+        actor_id: session.user.id,
         action: "limit_override_created",
         entity_type: "limits",
         details: {
@@ -248,18 +249,21 @@ function UserOverridesTab() {
   };
 
   const removeOverride = async (id: string) => {
-    await supabase.from("user_limit_overrides" as any).update({ is_active: false, updated_at: new Date().toISOString() } as any).eq("id", id);
+    const { error } = await supabase.from("user_limit_overrides").update({ is_active: false, updated_at: new Date().toISOString() }).eq("id", id);
+    if (error) { console.error("Remove override failed:", error); toast.error("Failed: " + error.message); return; }
     const { data: { session } } = await supabase.auth.getSession();
-    await supabase.from("audit_logs").insert({
-      actor_id: session?.user?.id!,
-      action: "limit_override_removed",
-      entity_type: "limits",
-      entity_id: id,
-      details: {
-        target_name: selectedUser?.name,
-        target_phone: selectedUser?.phone,
-      },
-    });
+    if (session?.user?.id) {
+      await supabase.from("audit_logs").insert({
+        actor_id: session.user.id,
+        action: "limit_override_removed",
+        entity_type: "limits",
+        entity_id: id,
+        details: {
+          target_name: selectedUser?.name,
+          target_phone: selectedUser?.phone,
+        },
+      });
+    }
     toast.success("Override removed");
     if (selectedUser) await selectUser(selectedUser);
   };
@@ -404,7 +408,7 @@ function BulkActionsTab() {
         is_active: true,
         updated_at: new Date().toISOString(),
       };
-      const { error } = await supabase.from("user_limit_overrides" as any).upsert(payload as any, { onConflict: "target_user_id,txn_type,period" });
+      const { error } = await supabase.from("user_limit_overrides").upsert(payload, { onConflict: "target_user_id,txn_type,period" });
       if (error) fail++; else success++;
     }
 
@@ -437,8 +441,8 @@ function BulkActionsTab() {
 
     // Deactivate all overrides for these users
     for (const uid of userIds) {
-      await supabase.from("user_limit_overrides" as any)
-        .update({ is_active: false, updated_at: new Date().toISOString() } as any)
+      await supabase.from("user_limit_overrides")
+        .update({ is_active: false, updated_at: new Date().toISOString() })
         .eq("target_user_id", uid);
     }
 
