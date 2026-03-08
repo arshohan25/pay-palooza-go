@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface FeatureToggle {
   feature_key: string;
   is_enabled: boolean;
+  label: string;
 }
 
 /**
@@ -17,7 +18,7 @@ export function useGlobalToggles() {
   const load = useCallback(async () => {
     const { data } = await supabase
       .from("global_feature_toggles")
-      .select("feature_key, is_enabled");
+      .select("feature_key, is_enabled, label");
     setToggles((data as FeatureToggle[] | null) ?? []);
     setLoading(false);
   }, []);
