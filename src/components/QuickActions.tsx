@@ -168,13 +168,13 @@ const SortableActionItem = ({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: transition ?? (isDragging ? "transform 200ms ease" : undefined),
     zIndex: isDragging ? 50 : undefined,
-    opacity: isDragging ? 0.7 : undefined,
+    scale: isDragging ? 1.12 : 1,
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="relative">
+    <div ref={setNodeRef} style={style} className={`relative transition-[scale,opacity] duration-200 ${isDragging ? "opacity-80 drop-shadow-lg" : ""}`}>
       <motion.button
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
