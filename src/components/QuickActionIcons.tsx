@@ -7,27 +7,44 @@ interface IconProps {
 
 export const SendMoneyIcon = ({ isHovered }: IconProps) => (
   <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" overflow="visible">
+    <defs>
+      <linearGradient id="planeGrad" x1="10" y1="12" x2="46" y2="46" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#F06292"/>
+        <stop offset="100%" stopColor="#AD1457"/>
+      </linearGradient>
+      <filter id="sendCoinGlow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
     {/* Paper plane body */}
     <motion.g
       animate={isHovered ? { x: [0, 4, -1, 3, 0], y: [0, -3, 1, -2, 0] } : { x: 0, y: 0 }}
       transition={isHovered ? { duration: 0.55, ease: "easeInOut" } : { duration: 0.3 }}
     >
-      {/* Main plane body */}
       <path d="M10 28 L46 12 L34 46 L26 34 Z" fill="#E91E8C"/>
       <path d="M10 28 L46 12 L34 46 L26 34 Z" fill="url(#planeGrad)"/>
-      <defs>
-        <linearGradient id="planeGrad" x1="10" y1="12" x2="46" y2="46" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#F06292"/>
-          <stop offset="100%" stopColor="#AD1457"/>
-        </linearGradient>
-      </defs>
-      {/* Fold crease */}
       <path d="M26 34 L46 12 L34 36 Z" fill="#AD1457" opacity="0.5"/>
-      {/* Wing highlight */}
       <path d="M10 28 L26 34 L20 30 Z" fill="white" opacity="0.2"/>
+      {/* Coin glow pulse */}
+      <motion.circle
+        cx="42" cy="40" r="10" fill="#FFC107" opacity={0}
+        animate={isHovered ? { opacity: [0, 0.3, 0] } : { opacity: 0 }}
+        transition={{ duration: 1.4, repeat: Infinity }}
+      />
       {/* Taka badge */}
-      <circle cx="42" cy="40" r="7" fill="#FFC107"/>
+      <circle cx="42" cy="40" r="7" fill="#FFC107" filter="url(#sendCoinGlow)"/>
       <text x="42" y="43.5" textAnchor="middle" fill="#7B3F00" fontSize="8" fontWeight="bold" fontFamily="serif">৳</text>
+      {/* Sparkle diamonds */}
+      <motion.g
+        animate={isHovered ? { opacity: [0, 1, 0], scale: [0.5, 1, 0.5] } : { opacity: 0 }}
+        transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+        style={{ transformOrigin: "42px 40px" }}
+      >
+        <path d="M50 34 L51 32 L52 34 L51 36 Z" fill="#FFF8E1"/>
+        <path d="M34 34 L35 32 L36 34 L35 36 Z" fill="#FFF8E1"/>
+        <path d="M48 48 L49 46 L50 48 L49 50 Z" fill="#FFF8E1"/>
+      </motion.g>
     </motion.g>
     {/* Trail dots */}
     <motion.g
@@ -213,6 +230,16 @@ export const PayBillIcon = ({ isHovered }: IconProps) => (
 
 export const ShopIcon = ({ isHovered }: IconProps) => (
   <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" overflow="visible">
+    <defs>
+      <linearGradient id="bagGrad" x1="14" y1="22" x2="42" y2="46" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#FF8A65"/>
+        <stop offset="100%" stopColor="#BF360C"/>
+      </linearGradient>
+      <filter id="shopCoinGlow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
     <motion.g
       animate={isHovered ? { rotate: [0, -6, 6, -4, 4, 0] } : { rotate: 0 }}
       transition={isHovered ? { duration: 0.5, ease: "easeInOut" } : { duration: 0.3 }}
@@ -220,16 +247,26 @@ export const ShopIcon = ({ isHovered }: IconProps) => (
     >
       <path d="M16 22 L14 44 Q14 46 16 46 L40 46 Q42 46 42 44 L40 22 Z" fill="#FF7043"/>
       <path d="M16 22 L14 44 Q14 46 16 46 L40 46 Q42 46 42 44 L40 22 Z" fill="url(#bagGrad)"/>
-      <defs>
-        <linearGradient id="bagGrad" x1="14" y1="22" x2="42" y2="46" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#FF8A65"/>
-          <stop offset="100%" stopColor="#BF360C"/>
-        </linearGradient>
-      </defs>
       <rect x="14" y="22" width="28" height="5" rx="1" fill="#FF5722" opacity="0.6"/>
       <path d="M22 22 Q22 14 28 14 Q34 14 34 22" fill="none" stroke="#FF7043" strokeWidth="3" strokeLinecap="round"/>
-      <circle cx="28" cy="35" r="5" fill="white" opacity="0.2"/>
+      {/* Coin glow pulse */}
+      <motion.circle
+        cx="28" cy="35" r="8" fill="white" opacity={0}
+        animate={isHovered ? { opacity: [0, 0.25, 0] } : { opacity: 0 }}
+        transition={{ duration: 1.4, repeat: Infinity }}
+      />
+      <circle cx="28" cy="35" r="5" fill="white" opacity="0.2" filter="url(#shopCoinGlow)"/>
       <text x="28" y="38" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">৳</text>
+      {/* Sparkle diamonds */}
+      <motion.g
+        animate={isHovered ? { opacity: [0, 1, 0], scale: [0.5, 1, 0.5] } : { opacity: 0 }}
+        transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+        style={{ transformOrigin: "28px 35px" }}
+      >
+        <path d="M20 30 L21 28 L22 30 L21 32 Z" fill="#FFF8E1"/>
+        <path d="M35 30 L36 28 L37 30 L36 32 Z" fill="#FFF8E1"/>
+        <path d="M28 44 L29 42 L30 44 L29 46 Z" fill="#FFF8E1"/>
+      </motion.g>
     </motion.g>
   </svg>
 );
@@ -297,8 +334,23 @@ export const BankTransferIcon = ({ isHovered }: IconProps) => (
     <rect x="32" y="25" width="4" height="17" rx="1" fill="#90CAF9" opacity="0.35"/>
     {/* Base */}
     <rect x="10" y="42" width="36" height="4" rx="1" fill="#0D47A1"/>
+    {/* Taka glow pulse */}
+    <motion.circle
+      cx="28" cy="35" r="8" fill="#90CAF9" opacity={0}
+      animate={isHovered ? { opacity: [0, 0.2, 0] } : { opacity: 0 }}
+      transition={{ duration: 1.4, repeat: Infinity }}
+    />
     {/* Taka symbol */}
     <text x="28" y="38" textAnchor="middle" fill="white" fontSize="9" fontWeight="bold" fontFamily="serif">৳</text>
+    {/* Sparkle diamonds */}
+    <motion.g
+      animate={isHovered ? { opacity: [0, 1, 0], scale: [0.5, 1, 0.5] } : { opacity: 0 }}
+      transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+      style={{ transformOrigin: "28px 35px" }}
+    >
+      <path d="M20 32 L21 30 L22 32 L21 34 Z" fill="#E3F2FD"/>
+      <path d="M36 32 L37 30 L38 32 L37 34 Z" fill="#E3F2FD"/>
+    </motion.g>
     {/* Transfer arrow — slides right on hover */}
     <motion.g
       animate={isHovered ? { x: [0, 5, 0], opacity: [0.7, 1, 0.7] } : { x: 0, opacity: 0.8 }}

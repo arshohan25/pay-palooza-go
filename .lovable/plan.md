@@ -1,24 +1,29 @@
 
 
-## Plan: Add Sparkle/Glow to Coin/Money Icons
+## Plan: Add Biller Categories to API Hub
 
-Add the same sparkle and glow effect pattern from `SavingsIcon` to the other icons that have visible coin or Taka (৳) badge elements.
+### What
 
-### Icons to update in `src/components/QuickActionIcons.tsx`:
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-**1. SendMoneyIcon (lines 8-41)** — Has a gold coin badge at `cx=42, cy=40, r=7`
-- Add a `coinGlow` filter (with unique ID `sendCoinGlow`)
-- Add a pulsing glow `motion.circle` behind the coin
-- Add 3 sparkle diamond paths around `(42, 40)`
-- Apply glow filter to the existing coin circle
+### Changes
 
-**2. ShopIcon (lines 214-235)** — Has a ৳ circle at `cx=28, cy=35, r=5`
-- Add a `shopCoinGlow` filter in defs
-- Add a pulsing glow `motion.circle` behind the ৳ badge
-- Add 3 sparkle diamonds around `(28, 35)`
-- Apply glow filter to the badge circle
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-**3. BankTransferIcon (lines 276-311)** — Has ৳ text at `(28, 38)` but no coin circle; skip or add a very subtle glow behind the text only — will add a small pulsing glow circle behind the ৳ text and 2 sparkle diamonds for subtlety.
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-All effects are hover-only (`isHovered` gated), matching the SavingsIcon pattern with `motion.circle` glow pulse and `motion.g` sparkle diamonds.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
