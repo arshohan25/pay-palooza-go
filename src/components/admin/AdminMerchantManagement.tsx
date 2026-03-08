@@ -35,7 +35,8 @@ interface MerchantDetail {
   transactions: any[];
 }
 
-const CATEGORIES = ["retail", "food", "ecommerce", "services", "healthcare", "education", "travel", "electronics", "fashion", "grocery", "pharmacy", "restaurant", "transportation", "real_estate", "agriculture", "manufacturing", "telecom", "entertainment", "beauty", "sports", "logistics", "consulting", "ngo", "government", "other"];
+import { useMerchantCategories } from "@/hooks/use-merchant-categories";
+
 const SETTLEMENT_OPTIONS = ["T+0", "T+1", "T+2", "T+3"];
 
 // ─── Helpers ───
@@ -86,6 +87,7 @@ function exportMerchantsCSV(merchants: any[]) {
 }
 
 export default function AdminMerchantManagement() {
+  const { categories: dbCategories, addCategory, getLabelForName } = useMerchantCategories();
   const [mainTab, setMainTab] = useState<"merchants" | "api-requests" | "applications">("merchants");
   const [merchants, setMerchants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -464,7 +466,7 @@ export default function AdminMerchantManagement() {
               <SelectTrigger className="w-[130px]"><SelectValue placeholder="Category" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {CATEGORIES.map(c => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}
+                {dbCategories.map(c => <SelectItem key={c.name} value={c.name}>{c.label}</SelectItem>)}
               </SelectContent>
             </Select>
             <Button variant="outline" size="sm" onClick={() => exportMerchantsCSV(filtered)} className="gap-1">
@@ -534,7 +536,7 @@ export default function AdminMerchantManagement() {
                       />
                     </td>
                     <td className="px-4 py-3 font-medium text-foreground">{m.business_name}</td>
-                    <td className="px-4 py-3 text-muted-foreground capitalize hidden md:table-cell">{m.category}</td>
+                    <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{getLabelForName(m.category)}</td>
                     <td className="px-4 py-3"><StatusBadge status={m.status} /></td>
                     <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{(Number(m.mdr_rate) * 100).toFixed(2)}%</td>
                     <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">{m.settlement_frequency}</td>
@@ -992,7 +994,7 @@ export default function AdminMerchantManagement() {
               <Select value={createForm.category} onValueChange={v => setCreateForm(f => ({ ...f, category: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map(c => <SelectItem key={c} value={c} className="capitalize">{c.replace(/_/g, " ")}</SelectItem>)}
+                  {dbCategories.map(c => <SelectItem key={c.name} value={c.name}>{c.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
