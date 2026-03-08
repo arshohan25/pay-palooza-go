@@ -74,7 +74,10 @@ export default function AdminTeamManagement() {
   const [addName, setAddName] = useState("");
   const [addNotes, setAddNotes] = useState("");
   const [adding, setAdding] = useState(false);
+  const [addEmail, setAddEmail] = useState("");
   const [createdCreds, setCreatedCreds] = useState<{ username: string; password: string } | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   // Edit / permissions state
   const [editMember, setEditMember] = useState<TeamMember | null>(null);
@@ -134,9 +137,34 @@ export default function AdminTeamManagement() {
     setAddPassword(generatePassword());
     setAddName("");
     setAddNotes("");
+    setAddEmail("");
     setAddRole("compliance");
     setAddDept("general");
     setCreatedCreds(null);
+    setEmailSent(false);
+  };
+
+  const sendCredentialsEmail = async (email: string, username: string, password: string) => {
+    setSendingEmail(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-team-credentials", {
+        body: {
+          email,
+          displayName: addName.trim(),
+          username,
+          password,
+          loginUrl: `${window.location.origin}/team-login`,
+          role: addRole,
+          department: addDept,
+        },
+      });
+      if (error) throw error;
+      setEmailSent(true);
+      toast.success(`Credentials sent to ${email}`);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to send email");
+    }
+    setSendingEmail(false);
   };
 
   const addMember = async () => {
