@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import TeamActivityDashboard from "@/components/admin/TeamActivityDashboard";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -331,9 +332,10 @@ export default function AdminTeamManagement() {
   return (
     <div className="space-y-4">
       <Tabs defaultValue="members">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="members">Team Members</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="members">Members</TabsTrigger>
           <TabsTrigger value="matrix">Access Matrix</TabsTrigger>
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
         </TabsList>
 
         {/* ═══ MEMBERS TAB ═══ */}
