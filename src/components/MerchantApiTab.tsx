@@ -53,7 +53,7 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
     setLoading(true);
     const [keysRes, sessRes] = await Promise.all([
       supabase.from("merchant_api_keys").select("*").eq("merchant_id", merchantId).order("created_at", { ascending: false }),
-      supabase.from("merchant_payment_sessions").select("id, amount, currency, reference, status, customer_phone, webhook_delivered, completed_at, expires_at, created_at")
+      supabase.from("merchant_payment_sessions").select("id, amount, currency, reference, status, customer_phone, webhook_delivered, webhook_attempts, webhook_next_retry_at, completed_at, expires_at, created_at")
         .eq("merchant_id", merchantId).order("created_at", { ascending: false }).limit(50),
     ]);
     setKeys((keysRes.data || []) as ApiKey[]);
