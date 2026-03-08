@@ -55,6 +55,7 @@ import AdminBannerManager from "@/components/admin/AdminBannerManager";
 import AdminLimitManager from "@/components/admin/AdminLimitManager";
 import AdminTeamManagement from "@/components/admin/AdminTeamManagement";
 import TeamOnboardingChecklist from "@/components/admin/TeamOnboardingChecklist";
+import AdminMerchantManagement from "@/components/admin/AdminMerchantManagement";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -151,6 +152,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 const NAV_ITEMS = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "merchants", label: "Merchants", icon: Store },
   { id: "users", label: "Users", icon: UserCog },
   { id: "transactions", label: "Transactions", icon: Receipt },
   { id: "chargebacks", label: "Chargebacks", icon: RotateCcw },
@@ -729,7 +731,7 @@ export default function AdminDashboard() {
               <StatCard icon={Users} label="Total Users" value={stats.totalUsers} color="bg-primary" onClick={() => setActiveTab("users")} />
               <StatCard icon={ArrowLeftRight} label="Transactions" value={stats.totalTransactions} color="bg-blue-500" onClick={() => setActiveTab("transactions")} />
               <StatCard icon={UserCheck} label="Agents" value={stats.totalAgents} color="bg-emerald-500" onClick={() => setActiveTab("users")} />
-              <StatCard icon={Store} label="Merchants" value={stats.totalMerchants} color="bg-purple-500" onClick={() => setActiveTab("users")} />
+              <StatCard icon={Store} label="Merchants" value={stats.totalMerchants} color="bg-purple-500" onClick={() => setActiveTab("merchants")} />
               <StatCard icon={ShieldAlert} label="Open Alerts" value={stats.openAlerts} color="bg-destructive" onClick={() => setActiveTab("alerts")} />
               <StatCard icon={ScanFace} label="Pending KYC" value={stats.pendingKyc} color="bg-orange-500" onClick={() => setActiveTab("kyc")} />
               <StatCard icon={Gift} label="Referrals" value={stats.totalReferrals} color="bg-teal-500" onClick={() => setActiveTab("referrals")} />
@@ -1200,6 +1202,9 @@ export default function AdminDashboard() {
 
         {/* ═══ LIMIT MANAGEMENT ═══ */}
         {activeTab === "limits" && <AdminLimitManager />}
+
+        {/* ═══ MERCHANT MANAGEMENT ═══ */}
+        {activeTab === "merchants" && <AdminMerchantManagement />}
 
         {/* ═══ TEAM MANAGEMENT ═══ */}
         {activeTab === "team" && <AdminTeamManagement />}
