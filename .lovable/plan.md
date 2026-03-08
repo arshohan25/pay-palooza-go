@@ -1,20 +1,29 @@
 
 
-## Plan: Add Missing Toggle + Disabled Feature Tooltip
+## Plan: Add Biller Categories to API Hub
 
-### 1. Insert missing `refer` toggle into `global_feature_toggles`
+### What
 
-The only missing feature key is `refer`. All others (`bank_transfer`, `savings`, `mobile_recharge`, `pay_bill`) already exist. Insert it using the data insert tool.
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-### 2. Add tooltip/toast for disabled features (`src/components/QuickActions.tsx`)
+### Changes
 
-When a user taps a greyed-out (globally disabled) feature, show a more informative toast message explaining the feature is temporarily unavailable and maintained by the system. Update both the main grid `handleAction` and the `handleMoreService` handler:
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-- Change the generic `toast.error` to include a descriptive message like: `"${label} is temporarily unavailable. This feature has been disabled by the system. Please try again later."`
-- Use `toast.info` with a custom icon (Ban/AlertCircle) for a friendlier UX
-- Also handle feature-locked scenarios with reason text if available (e.g., `lockStatus.reason`)
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-### Files Modified
-- **Data insert**: Add `refer` toggle row to `global_feature_toggles`
-- `src/components/QuickActions.tsx` — enhanced disabled feature messages
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

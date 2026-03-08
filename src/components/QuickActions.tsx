@@ -99,7 +99,9 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   const handleAction = (id: string, label: string) => {
     const featureKey = FEATURE_MAP[id];
     if (featureKey && isGloballyDisabled(featureKey)) {
-      toast.error(`${label} is currently unavailable.`);
+      toast.info(`${label} is temporarily unavailable`, {
+        description: "This feature has been disabled by the system. Please try again later.",
+      });
       return;
     }
     if (id === "send") return onSendMoney();
@@ -217,7 +219,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                       transition={{ delay: 0.06 * i, duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
                       whileTap={{ scale: 0.90 }}
                       onClick={() => {
-                        if (moreGlobalOff) { toast.error(`${item.label} is currently unavailable.`); return; }
+                        if (moreGlobalOff) { toast.info(`${item.label} is temporarily unavailable`, { description: "This feature has been disabled by the system. Please try again later." }); return; }
                         handleMoreService(item.id, item.soon);
                       }}
                       onMouseEnter={() => setHoveredMoreId(item.id)}
