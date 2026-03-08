@@ -46,8 +46,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check phone is registered (for pin_reset purpose)
-    if (validPurpose === "pin_reset") {
+    // Check phone is registered (for pin_reset and payment purposes)
+    if (validPurpose === "pin_reset" || validPurpose === "payment") {
       const { data: profile } = await supabaseAdmin
         .from("profiles")
         .select("id")
