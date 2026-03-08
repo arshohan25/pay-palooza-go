@@ -217,7 +217,7 @@ export default function AdminDashboard() {
   const { visible: realtimeVisible, flash: realtimeFlash } = useRealtimeIndicator();
   const { status: wsStatus, lastConnectedAt, reconnectAttempt } = useRealtimeStatus();
   const [disabledTogglesCount, setDisabledTogglesCount] = useState(0);
-  const [pendingApiRequests, setPendingApiRequests] = useState(0);
+  
 
   // Fetch disabled toggles count
   useEffect(() => {
