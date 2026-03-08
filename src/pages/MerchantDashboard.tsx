@@ -29,9 +29,11 @@ import { haptics } from "@/lib/haptics";
 import DailyLimitBadge from "@/components/DailyLimitBadge";
 import MerchantApiTab from "@/components/MerchantApiTab";
 import MerchantAnalyticsTab from "@/components/MerchantAnalyticsTab";
+import MerchantProductsTab from "@/components/MerchantProductsTab";
+import MerchantOrdersTab from "@/components/MerchantOrdersTab";
 
 /* ─── Types ─── */
-type MerchTab = "overview" | "qr" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api";
+type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api";
 
 interface MerchantInfo {
   id: string;
@@ -67,6 +69,8 @@ const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 
 const mainTabs: { id: MerchTab; icon: typeof QrCode; label: string }[] = [
   { id: "overview",     icon: BarChart3,    label: "Overview" },
+  { id: "products",     icon: Package,      label: "Products" },
+  { id: "orders",       icon: Receipt,      label: "Orders" },
   { id: "qr",           icon: QrCode,       label: "QR Code" },
 ];
 
@@ -389,6 +393,8 @@ const MerchantDashboard = () => {
         <AnimatePresence mode="wait">
           <motion.div key={activeTab} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }}>
             {activeTab === "overview"     && <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} onRefresh={loadData} />}
+            {activeTab === "products"     && merchant && <MerchantProductsTab merchantId={merchant.id} />}
+            {activeTab === "orders"       && merchant && <MerchantOrdersTab merchantId={merchant.id} />}
             {activeTab === "qr"           && <QRTab merchant={merchant} toast={toast} />}
             {activeTab === "analytics"    && merchant && <MerchantAnalyticsTab merchantId={merchant.id} />}
             {activeTab === "paylinks"     && <PayLinksTab merchant={merchant} toast={toast} />}
