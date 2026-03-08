@@ -456,7 +456,7 @@ const CheckoutPage = () => {
                 )}
                 <div className="flex justify-between items-center py-1">
                   <span className="text-xs text-muted-foreground">Fee</span>
-                  <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">FREE</span>
+                  <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">FREE</span>
                 </div>
               </div>
 
@@ -496,9 +496,9 @@ const CheckoutPage = () => {
                 initial={{ scale: 0, rotate: -30 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.1 }}
-                className="w-24 h-24 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-5"
+                className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-5"
               >
-                <CheckCircle2 size={52} className="text-emerald-500" strokeWidth={2} />
+                <CheckCircle2 size={52} className="text-primary" strokeWidth={2} />
               </motion.div>
 
               <motion.h2
