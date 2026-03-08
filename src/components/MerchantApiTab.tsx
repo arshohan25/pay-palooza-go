@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Key, Copy, CheckCircle2, Globe, Code, Clock, AlertTriangle, RefreshCw, Shield,
-  Webhook, ChevronDown, ChevronUp, Send, Loader2
+  Webhook, ChevronDown, ChevronUp, Send, Loader2, BarChart3, Plus, Trash2, ShieldCheck,
+  Activity, Zap, XCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { BarChart, Bar, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, PieChart, Pie, Cell } from "recharts";
 
 interface ApiKey {
   id: string;
