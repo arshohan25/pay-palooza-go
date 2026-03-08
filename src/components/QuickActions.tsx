@@ -407,7 +407,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
     if (id === "bill") return onPayBill();
     if (id === "bank") return onBankTransfer();
     if (id === "shop") return onShop();
-    if (id === "more") return setExpanded(prev => !prev);
+    if (id === "more") { haptics.light(); return setExpanded(prev => !prev); }
     toast.info(`${label} coming soon!`);
   };
 
