@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Shield, Clock, CheckCircle2, XCircle, AlertTriangle,
-  Lock, BadgeCheck, ChevronLeft, Send, RotateCcw,
+  Lock, BadgeCheck, ChevronLeft, Send, RotateCcw, KeyRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fireSuccessConfetti } from "@/lib/confetti";
@@ -23,7 +23,7 @@ type SessionData = {
   description: string | null; status: string; success_url: string | null;
   cancel_url: string | null; expires_at: string; merchant_id: string;
 };
-type Step = "loading" | "expired" | "error" | "phone" | "otp" | "processing" | "success" | "failed";
+type Step = "loading" | "expired" | "error" | "phone" | "otp" | "pin" | "processing" | "success" | "failed";
 
 /* ─── Circular Countdown ───────────────────────────────────────── */
 const CircularCountdown = ({ secondsLeft, total }: { secondsLeft: number; total: number }) => {
@@ -78,45 +78,59 @@ const PulsingRings = () => (
   </div>
 );
 
-/* ─── OTP Input ────────────────────────────────────────────────── */
+/* ─── Premium OTP Input ────────────────────────────────────────── */
 const OtpInput = ({ value, onChange, length = 6 }: { value: string; onChange: (v: string) => void; length?: number }) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="flex flex-col items-center gap-3">
       <div
-        className="flex gap-2.5 cursor-text"
+        className="flex gap-2 cursor-text"
         onClick={() => inputRef.current?.focus()}
       >
         {Array.from({ length }).map((_, i) => {
           const char = value[i];
           const isActive = i === value.length;
+          const isFilled = !!char;
           return (
             <motion.div
               key={i}
-              className={`w-11 h-13 rounded-xl flex items-center justify-center text-lg font-bold transition-all duration-200 ${
-                char
-                  ? "bg-primary/10 border-2 border-primary text-foreground"
+              className={`
+                relative w-12 h-14 rounded-2xl flex items-center justify-center text-xl font-black
+                backdrop-blur-sm transition-all duration-300 overflow-hidden
+                ${isFilled
+                  ? "bg-primary/15 border-2 border-primary text-foreground shadow-[0_0_16px_-4px_hsl(var(--primary)/0.4)]"
                   : isActive
-                    ? "bg-muted border-2 border-primary/50"
-                    : "bg-muted border-2 border-transparent"
-              }`}
-              animate={char ? { scale: [0.85, 1.05, 1] } : {}}
-              transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                    ? "bg-muted/80 border-2 border-primary/60 shadow-[0_0_12px_-4px_hsl(var(--primary)/0.25)]"
+                    : "bg-muted/50 border-2 border-border/60"
+                }
+              `}
+              animate={isFilled ? { scale: [0.8, 1.08, 1] } : {}}
+              transition={{ type: "spring", stiffness: 500, damping: 20 }}
             >
+              {/* Gradient shine on filled */}
+              {isFilled && (
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                />
+              )}
               {char ? (
                 <motion.span
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.15 }}
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                  className="relative z-10"
                 >
                   {char}
                 </motion.span>
               ) : isActive ? (
                 <motion.div
-                  className="w-0.5 h-5 bg-primary rounded-full"
-                  animate={{ opacity: [1, 0] }}
-                  transition={{ duration: 0.8, repeat: Infinity }}
+                  className="w-0.5 h-6 bg-primary rounded-full"
+                  animate={{ opacity: [1, 0.2] }}
+                  transition={{ duration: 0.7, repeat: Infinity, ease: "easeInOut" }}
                 />
               ) : null}
             </motion.div>
@@ -136,6 +150,73 @@ const OtpInput = ({ value, onChange, length = 6 }: { value: string; onChange: (v
         }}
         className="sr-only"
         autoComplete="one-time-code"
+        autoFocus
+      />
+    </div>
+  );
+};
+
+/* ─── PIN Input (masked dots) ──────────────────────────────────── */
+const PinInput = ({ value, onChange, length = 4 }: { value: string; onChange: (v: string) => void; length?: number }) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <div
+        className="flex gap-4 cursor-text"
+        onClick={() => inputRef.current?.focus()}
+      >
+        {Array.from({ length }).map((_, i) => {
+          const isFilled = i < value.length;
+          const isActive = i === value.length;
+          return (
+            <motion.div
+              key={i}
+              className={`
+                w-14 h-14 rounded-2xl flex items-center justify-center
+                backdrop-blur-sm transition-all duration-300
+                ${isFilled
+                  ? "bg-primary/15 border-2 border-primary shadow-[0_0_20px_-4px_hsl(var(--primary)/0.5)]"
+                  : isActive
+                    ? "bg-muted/80 border-2 border-primary/50 shadow-[0_0_12px_-4px_hsl(var(--primary)/0.2)]"
+                    : "bg-muted/50 border-2 border-border/60"
+                }
+              `}
+              animate={isFilled ? { scale: [0.75, 1.1, 1] } : {}}
+              transition={{ type: "spring", stiffness: 500, damping: 18 }}
+            >
+              {isFilled ? (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 15 }}
+                  className="w-3.5 h-3.5 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary)/0.4)]"
+                />
+              ) : isActive ? (
+                <motion.div
+                  className="w-0.5 h-6 bg-primary/60 rounded-full"
+                  animate={{ opacity: [1, 0.2] }}
+                  transition={{ duration: 0.7, repeat: Infinity, ease: "easeInOut" }}
+                />
+              ) : (
+                <div className="w-3 h-3 rounded-full bg-border/40" />
+              )}
+            </motion.div>
+          );
+        })}
+      </div>
+      <input
+        ref={inputRef}
+        type="password"
+        inputMode="numeric"
+        maxLength={length}
+        value={value}
+        onChange={(e) => {
+          const v = e.target.value.replace(/\D/g, "").slice(0, length);
+          if (v.length > value.length) haptics.light();
+          onChange(v);
+        }}
+        className="sr-only"
         autoFocus
       />
     </div>
@@ -164,6 +245,7 @@ const CheckoutPage = () => {
   const [merchantName, setMerchantName] = useState("");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
+  const [pin, setPin] = useState("");
   const [devOtp, setDevOtp] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
@@ -197,7 +279,7 @@ const CheckoutPage = () => {
 
   /* ── Session countdown ─────────────────────────────────────── */
   useEffect(() => {
-    if (!session?.expires_at || (step !== "phone" && step !== "otp")) return;
+    if (!session?.expires_at || !["phone", "otp", "pin"].includes(step)) return;
     const expires = new Date(session.expires_at).getTime();
     const tick = () => {
       const remaining = Math.max(0, Math.floor((expires - Date.now()) / 1000));
@@ -266,9 +348,19 @@ const CheckoutPage = () => {
     }
   }, [phone]);
 
-  /* ── Verify OTP & Pay ──────────────────────────────────────── */
-  const handleVerifyAndPay = useCallback(async () => {
-    if (!session || otp.length < 6) return;
+  /* ── Transition to PIN step on OTP complete ────────────────── */
+  useEffect(() => {
+    if (otp.length === 6 && step === "otp") {
+      haptics.medium();
+      setErrorMsg("");
+      setPin("");
+      setStep("pin");
+    }
+  }, [otp, step]);
+
+  /* ── Verify OTP + PIN & Pay ────────────────────────────────── */
+  const handleConfirmPin = useCallback(async () => {
+    if (!session || otp.length < 6 || pin.length < 4) return;
     setErrorMsg("");
     setStep("processing");
     haptics.medium();
@@ -278,7 +370,7 @@ const CheckoutPage = () => {
       const res = await fetch(`https://${projectId}.supabase.co/functions/v1/checkout-pay`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: session.id, phone: cleanPhone, otp_code: otp }),
+        body: JSON.stringify({ session_id: session.id, phone: cleanPhone, otp_code: otp, pin }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Payment failed");
@@ -289,19 +381,24 @@ const CheckoutPage = () => {
       playPaymentSuccess();
     } catch (err: any) {
       setErrorMsg(err.message || "Payment failed");
-      setStep("failed");
+      setPin("");
+      // If PIN wrong, go back to PIN step; otherwise show failed
+      if (err.message?.toLowerCase().includes("pin")) {
+        setStep("pin");
+      } else {
+        setStep("failed");
+      }
       haptics.error();
       playPaymentError();
     }
-  }, [session, otp, phone]);
+  }, [session, otp, pin, phone]);
 
-  /* ── Auto-submit OTP when complete ─────────────────────────── */
+  /* ── Auto-submit PIN when 4 digits ─────────────────────────── */
   useEffect(() => {
-    if (otp.length === 6 && step === "otp") {
-      haptics.medium();
-      handleVerifyAndPay();
+    if (pin.length === 4 && step === "pin") {
+      handleConfirmPin();
     }
-  }, [otp, step, handleVerifyAndPay]);
+  }, [pin, step, handleConfirmPin]);
 
   const handleCancel = () => {
     if (session?.cancel_url) window.location.href = session.cancel_url;
@@ -515,6 +612,63 @@ const CheckoutPage = () => {
             </motion.div>
           )}
 
+          {/* PIN CONFIRMATION */}
+          {step === "pin" && session && (
+            <motion.div key="pin" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              className="rounded-3xl bg-card border border-border shadow-lg overflow-hidden"
+            >
+              {/* Header */}
+              <div className="px-5 pt-5 pb-3 flex items-center justify-between">
+                <button onClick={() => { setStep("otp"); setPin(""); setOtp(""); setErrorMsg(""); }} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <ChevronLeft size={16} />
+                  Back
+                </button>
+                {secondsLeft !== null && (
+                  <CircularCountdown secondsLeft={secondsLeft} total={totalSeconds} />
+                )}
+              </div>
+
+              {/* Amount pill */}
+              <div className="text-center pb-5">
+                <div className="inline-flex items-center gap-1.5 bg-primary/10 rounded-full px-5 py-2">
+                  <span className="text-primary text-sm font-bold">৳</span>
+                  <span className="text-lg font-black text-foreground">{fmt(session.amount)}</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-2">
+                  to <span className="font-semibold text-foreground">{merchantName || "Merchant"}</span>
+                </p>
+              </div>
+
+              {/* PIN Input */}
+              <div className="px-5 pb-6 space-y-5">
+                <div className="text-center">
+                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                    <KeyRound size={22} className="text-primary" />
+                  </div>
+                  <h3 className="text-base font-bold text-foreground">Enter your PIN</h3>
+                  <p className="text-xs text-muted-foreground mt-1">Confirm with your 4-digit EasyPay PIN</p>
+                </div>
+
+                <PinInput value={pin} onChange={setPin} />
+
+                {errorMsg && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                    className="text-xs text-destructive text-center font-medium"
+                  >
+                    {errorMsg}
+                  </motion.p>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="px-5 pb-4 pt-1 flex items-center justify-center gap-1.5 text-muted-foreground/40">
+                <Shield size={9} />
+                <p className="text-[8px] font-medium">PIN verified securely by EasyPay</p>
+              </div>
+            </motion.div>
+          )}
+
           {/* PROCESSING */}
           {step === "processing" && (
             <motion.div key="processing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -568,7 +722,6 @@ const CheckoutPage = () => {
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }}
                 className="mt-6 space-y-2"
               >
-                {/* Countdown number */}
                 <div className="flex items-center justify-center">
                   <motion.div
                     key={countdown}
@@ -598,7 +751,7 @@ const CheckoutPage = () => {
               <p className="text-sm text-muted-foreground mb-5 max-w-[240px] mx-auto">{errorMsg || "Something went wrong."}</p>
               <div className="flex gap-3 justify-center">
                 <Button variant="outline" onClick={handleCancel} className="rounded-xl px-6">Cancel</Button>
-                <Button onClick={() => { setStep("phone"); setOtp(""); setErrorMsg(""); }} className="rounded-xl px-6 gradient-primary text-primary-foreground">Try Again</Button>
+                <Button onClick={() => { setStep("phone"); setOtp(""); setPin(""); setErrorMsg(""); }} className="rounded-xl px-6 gradient-primary text-primary-foreground">Try Again</Button>
               </div>
             </motion.div>
           )}

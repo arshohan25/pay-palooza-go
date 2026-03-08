@@ -5,19 +5,26 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const jsonRes = (body: object, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { session_id, phone, otp_code } = await req.json();
+    const { session_id, phone, otp_code, pin } = await req.json();
 
-    if (!session_id || !phone || !otp_code) {
-      return new Response(
-        JSON.stringify({ error: "Missing required fields" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (!session_id || !phone || !otp_code || !pin) {
+      return jsonRes({ error: "Missing required fields" }, 400);
+    }
+
+    if (!/^\d{4}$/.test(pin)) {
+      return jsonRes({ error: "PIN must be 4 digits" }, 400);
     }
 
     const supabaseAdmin = createClient(
@@ -25,7 +32,6 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Normalize phone
     const cleanPhone = phone.replace(/\D/g, "").replace(/^(88)/, "");
 
     // 1. Verify OTP
@@ -43,10 +49,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (otpErr || !otpRow) {
-      return new Response(
-        JSON.stringify({ error: "Invalid or expired OTP" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonRes({ error: "Invalid or expired OTP" }, 400);
     }
 
     // Mark OTP as verified
@@ -63,24 +66,13 @@ Deno.serve(async (req) => {
       .single();
 
     if (sessErr || !session) {
-      return new Response(
-        JSON.stringify({ error: "Payment session not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonRes({ error: "Payment session not found" }, 404);
     }
-
     if (session.status !== "pending") {
-      return new Response(
-        JSON.stringify({ error: `Session already ${session.status}` }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonRes({ error: `Session already ${session.status}` }, 400);
     }
-
     if (new Date(session.expires_at) < new Date()) {
-      return new Response(
-        JSON.stringify({ error: "Payment session expired" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonRes({ error: "Payment session expired" }, 400);
     }
 
     // 3. Look up payer profile
@@ -92,13 +84,23 @@ Deno.serve(async (req) => {
       .single();
 
     if (!payer) {
-      return new Response(
-        JSON.stringify({ error: "Account not found or inactive" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonRes({ error: "Account not found or inactive" }, 400);
     }
 
-    // 4. Look up merchant
+    // 4. Verify PIN via Supabase Auth sign-in
+    const email = `${cleanPhone}@easypay.local`;
+    const password = `${pin}EP`;
+
+    const { error: authError } = await supabaseAdmin.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (authError) {
+      return jsonRes({ error: "Incorrect PIN" }, 400);
+    }
+
+    // 5. Look up merchant
     const { data: merchant } = await supabaseAdmin
       .from("merchants")
       .select("id, business_name, user_id")
@@ -107,10 +109,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (!merchant) {
-      return new Response(
-        JSON.stringify({ error: "Merchant not found" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonRes({ error: "Merchant not found" }, 400);
     }
 
     const { data: merchantProfile } = await supabaseAdmin
@@ -120,40 +119,30 @@ Deno.serve(async (req) => {
       .single();
 
     if (!merchantProfile) {
-      return new Response(
-        JSON.stringify({ error: "Merchant profile not found" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonRes({ error: "Merchant profile not found" }, 400);
     }
 
     const amount = session.amount;
 
-    // 5. Check payer balance
+    // 6. Check payer balance
     if (payer.balance < amount) {
-      return new Response(
-        JSON.stringify({ error: "Insufficient balance" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonRes({ error: "Insufficient balance" }, 400);
     }
 
-    // 6. Execute transfer atomically
+    // 7. Execute transfer
     const payerNewBalance = payer.balance - amount;
     const merchantNewBalance = merchantProfile.balance + amount;
 
-    // Debit payer
     const { error: debitErr } = await supabaseAdmin
       .from("profiles")
       .update({ balance: payerNewBalance })
       .eq("user_id", payer.user_id);
-
     if (debitErr) throw debitErr;
 
-    // Credit merchant
     const { error: creditErr } = await supabaseAdmin
       .from("profiles")
       .update({ balance: merchantNewBalance })
       .eq("user_id", merchant.user_id);
-
     if (creditErr) throw creditErr;
 
     // Record payer transaction
@@ -184,7 +173,7 @@ Deno.serve(async (req) => {
       status: "completed",
     });
 
-    // 7. Update session to completed
+    // 8. Update session to completed
     await supabaseAdmin
       .from("merchant_payment_sessions")
       .update({
@@ -196,7 +185,7 @@ Deno.serve(async (req) => {
       })
       .eq("id", session.id);
 
-    // 8. Trigger webhook (fire & forget)
+    // 9. Trigger webhook (fire & forget)
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     fetch(`${supabaseUrl}/functions/v1/merchant-payment-webhook`, {
       method: "POST",
@@ -204,15 +193,9 @@ Deno.serve(async (req) => {
       body: JSON.stringify({ session_id: session.id }),
     }).catch(() => {});
 
-    return new Response(
-      JSON.stringify({ success: true, message: "Payment completed" }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return jsonRes({ success: true, message: "Payment completed" });
   } catch (err) {
     console.error("checkout-pay error:", err);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return jsonRes({ error: "Internal server error" }, 500);
   }
 });
