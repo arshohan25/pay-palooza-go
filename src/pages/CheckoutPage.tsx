@@ -164,8 +164,8 @@ const CheckoutPage = () => {
       if (data.status === "failed" || data.status === "expired") { setStep("expired"); setSession(data as SessionData); return; }
       if (new Date(data.expires_at) < new Date()) { setStep("expired"); setSession(data as SessionData); return; }
 
-      const totalSec = Math.max(0, Math.floor((new Date(data.expires_at).getTime() - new Date(data.created_at).getTime()) / 1000));
-      setTotalSeconds(totalSec || 600);
+      const remainingSec = Math.max(0, Math.floor((new Date(data.expires_at).getTime() - Date.now()) / 1000));
+      setTotalSeconds(remainingSec || 600);
 
       const { data: merch } = await supabase.from("merchants").select("business_name, user_id").eq("id", data.merchant_id).single();
       if (merch) {
