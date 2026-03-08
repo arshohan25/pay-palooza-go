@@ -1,7 +1,7 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Lock, ChevronUp } from "lucide-react";
+import { Lock, ChevronUp, Sparkles } from "lucide-react";
 import {
   SendMoneyIcon,
   CashOutIcon,
@@ -38,6 +38,11 @@ const FEATURE_MAP: Record<string, string> = {
   loan: "loan",
   insurance: "insurance",
   giftcards: "gift_cards",
+  feature_slot_1: "feature_slot_1",
+  feature_slot_2: "feature_slot_2",
+  feature_slot_3: "feature_slot_3",
+  feature_slot_4: "feature_slot_4",
+  feature_slot_5: "feature_slot_5",
 };
 
 const actionDefs = [
@@ -59,6 +64,19 @@ const moreServices = [
   { id: "loan", Icon: LoanIcon, label: "Loan", desc: "Quick personal loans", gradient: "from-amber-500 to-orange-600", soon: true, featureKey: "loan" },
   { id: "insurance", Icon: InsuranceIcon, label: "Insurance", desc: "Protect what matters", gradient: "from-violet-500 to-purple-600", soon: true, featureKey: "insurance" },
   { id: "giftcards", Icon: GiftCardsIcon, label: "Gift Cards", desc: "Send & redeem gifts", gradient: "from-orange-400 to-red-500", soon: true, featureKey: "gift_cards" },
+];
+
+// Blank feature slots — only visible when admin enables the toggle
+const SlotIcon = ({ isHovered }: { isHovered?: boolean }) => (
+  <Sparkles className={`w-6 h-6 transition-colors ${isHovered ? "text-primary" : "text-muted-foreground"}`} />
+);
+
+const blankSlots = [
+  { id: "feature_slot_1", Icon: SlotIcon, label: "New Feature 1", desc: "Coming soon", gradient: "from-sky-500 to-blue-600", featureKey: "feature_slot_1" },
+  { id: "feature_slot_2", Icon: SlotIcon, label: "New Feature 2", desc: "Coming soon", gradient: "from-indigo-500 to-violet-600", featureKey: "feature_slot_2" },
+  { id: "feature_slot_3", Icon: SlotIcon, label: "New Feature 3", desc: "Coming soon", gradient: "from-teal-500 to-cyan-600", featureKey: "feature_slot_3" },
+  { id: "feature_slot_4", Icon: SlotIcon, label: "New Feature 4", desc: "Coming soon", gradient: "from-fuchsia-500 to-pink-600", featureKey: "feature_slot_4" },
+  { id: "feature_slot_5", Icon: SlotIcon, label: "New Feature 5", desc: "Coming soon", gradient: "from-lime-500 to-green-600", featureKey: "feature_slot_5" },
 ];
 
 interface RippleState { x: number; y: number; id: number; }
