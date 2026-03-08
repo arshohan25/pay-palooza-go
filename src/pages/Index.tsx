@@ -437,6 +437,18 @@ const Index = () => {
         }}
       />
 
+      {/* Dynamic QR Payment Sheet */}
+      {dynamicQrSession && (
+        <DynamicQrPaySheet
+          open={!!dynamicQrSession}
+          onClose={() => setDynamicQrSession(null)}
+          sessionId={dynamicQrSession.sessionId}
+          merchantId={dynamicQrSession.merchantId}
+          amount={dynamicQrSession.amount}
+          ref_={dynamicQrSession.ref}
+        />
+      )}
+
       {/* PWA install prompt */}
       <InstallPrompt />
 
