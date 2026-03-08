@@ -236,6 +236,12 @@ export default function AdminTeamManagement() {
 
       toast.success("Team member created successfully");
       setCreatedCreds({ username: addUsername.trim(), password: addPassword });
+
+      // Auto-send credentials email if email was provided
+      if (addEmail.trim()) {
+        await sendCredentialsEmail(addEmail.trim(), addUsername.trim(), addPassword);
+      }
+
       loadMembers();
     } catch (e: any) {
       toast.error(e.message || "Failed to create team member");
