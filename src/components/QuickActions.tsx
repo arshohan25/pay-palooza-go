@@ -478,7 +478,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
               <div className="flex flex-col items-center gap-2.5 drop-shadow-xl">
                 <div
                   className="relative flex items-center justify-center rounded-full shadow-lg ring-2 ring-primary/30 overflow-hidden"
-                  style={{ width: 56, height: 56, background: action.bgStyle }}
+                  style={{ width: iconSizePx, height: iconSizePx, background: action.bgStyle }}
                 >
                   {action.id === "more" ? <MoreIcon /> : <action.Icon />}
                 </div>
