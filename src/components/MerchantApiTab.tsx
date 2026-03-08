@@ -185,6 +185,69 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
   const hasPendingRequest = requests.some(r => r.status === "pending");
   const hasActiveKey = keys.some(k => k.is_active);
 
+  // ─── Analytics computation ───
+  const analytics = useMemo(() => {
+    const total = apiLogs.length;
+    const successful = apiLogs.filter(l => l.status_code >= 200 && l.status_code < 300).length;
+    const failed = apiLogs.filter(l => l.status_code >= 400).length;
+    const rateLimited = apiLogs.filter(l => l.status_code === 429).length;
+    const avgResponseTime = total > 0 ? Math.round(apiLogs.reduce((s, l) => s + l.response_time_ms, 0) / total) : 0;
+    const successRate = total > 0 ? Math.round((successful / total) * 100) : 0;
+
+    // Daily breakdown
+    const dayMap: Record<string, { date: string; success: number; error: number; total: number; avgMs: number; count: number }> = {};
+    apiLogs.forEach(l => {
+      const day = new Date(l.created_at).toISOString().slice(0, 10);
+      if (!dayMap[day]) dayMap[day] = { date: day, success: 0, error: 0, total: 0, avgMs: 0, count: 0 };
+      dayMap[day].total++;
+      dayMap[day].count++;
+      dayMap[day].avgMs += l.response_time_ms;
+      if (l.status_code >= 200 && l.status_code < 300) dayMap[day].success++;
+      else dayMap[day].error++;
+    });
+    const daily = Object.values(dayMap).map(d => ({ ...d, avgMs: Math.round(d.avgMs / d.count) })).sort((a, b) => a.date.localeCompare(b.date));
+
+    // Action breakdown
+    const actionMap: Record<string, number> = {};
+    apiLogs.forEach(l => { actionMap[l.action] = (actionMap[l.action] || 0) + 1; });
+    const actionBreakdown = Object.entries(actionMap).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+
+    // Top IPs
+    const ipMap: Record<string, number> = {};
+    apiLogs.forEach(l => { if (l.ip_address) ipMap[l.ip_address] = (ipMap[l.ip_address] || 0) + 1; });
+    const topIps = Object.entries(ipMap).map(([ip, count]) => ({ ip, count })).sort((a, b) => b.count - a.count).slice(0, 5);
+
+    return { total, successful, failed, rateLimited, avgResponseTime, successRate, daily, actionBreakdown, topIps };
+  }, [apiLogs]);
+
+  // ─── IP Whitelist management ───
+  const addIpAddress = async () => {
+    if (!newIp.trim()) return;
+    setAddingIp(true);
+    const { error } = await (supabase as any).from("merchant_ip_whitelist").insert({
+      merchant_id: merchantId,
+      ip_address: newIp.trim(),
+      label: newIpLabel.trim() || null,
+    });
+    setAddingIp(false);
+    if (error) { toast({ title: "Failed to add IP", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "IP Address Added" });
+    setNewIp(""); setNewIpLabel("");
+    loadData();
+  };
+
+  const removeIp = async (id: string) => {
+    await (supabase as any).from("merchant_ip_whitelist").delete().eq("id", id);
+    toast({ title: "IP Address Removed" });
+    loadData();
+  };
+
+  const toggleIpWhitelist = async (keyId: string, enabled: boolean) => {
+    await supabase.from("merchant_api_keys").update({ ip_whitelist_enabled: enabled } as any).eq("id", keyId);
+    toast({ title: enabled ? "IP Whitelisting Enabled" : "IP Whitelisting Disabled" });
+    loadData();
+  };
+
   const requestStatusColor: Record<string, string> = {
     pending: "bg-amber-500/10 text-amber-600 border-amber-500/20",
     approved: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
