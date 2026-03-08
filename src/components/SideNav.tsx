@@ -53,7 +53,7 @@ const SideNav = ({ activeTab = "home", onTabChange }: SideNavProps) => {
               key={item.id}
               onClick={() => onTabChange?.(item.id)}
               whileTap={{ scale: 0.97 }}
-              className={`relative w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[13.5px] font-semibold transition-all duration-150 group ${
+              className={`relative w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[13.5px] font-semibold transition-all duration-200 group ${
                 isActive
                   ? "text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
