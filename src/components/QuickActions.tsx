@@ -304,6 +304,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   const [expanded, setExpanded] = useState(false);
   const [hoveredMoreId, setHoveredMoreId] = useState<string | null>(null);
   const [longPressId, setLongPressId] = useState<string | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didLongPress = useRef(false);
 
@@ -333,11 +334,13 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
   );
 
-  const handleDragStart = useCallback((_event: DragStartEvent) => {
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveDragId(event.active.id as string);
     haptics.medium();
   }, []);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
+    setActiveDragId(null);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     haptics.success();
