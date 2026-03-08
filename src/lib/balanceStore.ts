@@ -6,11 +6,17 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-let balance = 0;
+const CACHE_KEY = "mfs_cached_balance";
+const cached = parseFloat(localStorage.getItem(CACHE_KEY) || "0");
+
+let balance = isNaN(cached) ? 0 : cached;
 let loaded = false;
 const listeners = new Set<(b: number) => void>();
 
-const notify = () => listeners.forEach((fn) => fn(balance));
+const notify = () => {
+  listeners.forEach((fn) => fn(balance));
+  try { localStorage.setItem(CACHE_KEY, String(balance)); } catch {}
+};
 
 export const getBalance = () => balance;
 export const isBalanceLoaded = () => loaded;

@@ -28,7 +28,8 @@ import MerchantApplicationFlow from "@/components/MerchantApplicationFlow";
 import TransactionHistory from "@/pages/TransactionHistory";
 import AccountPage from "@/pages/AccountPage";
 import ReferPage from "@/pages/ReferPage";
-import { BalanceCardSkeleton, QuickActionsSkeleton, TransactionListSkeleton } from "@/components/HomeSkeletons";
+// Skeletons kept for potential future use
+// import { BalanceCardSkeleton, QuickActionsSkeleton, TransactionListSkeleton } from "@/components/HomeSkeletons";
 
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import InstallPrompt from "@/components/InstallPrompt";
@@ -71,15 +72,10 @@ const Index = () => {
   const [showSavings, setShowSavings]     = useState(false);
   const [showMerchantApply, setShowMerchantApply] = useState(false);
   const [showScanPay, setShowScanPay]     = useState(false);
-  const [isLoading, setIsLoading]         = useState(true);
+  const [isLoading, setIsLoading]         = useState(false);
   const [isPulling, setIsPulling]         = useState(false);
   const [refreshKey, setRefreshKey]       = useState(0);
   const mainRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const t = setTimeout(() => setIsLoading(false), 400);
-    return () => clearTimeout(t);
-  }, []);
 
   // ── AsthaPay return redirect handler ──
   useEffect(() => {
@@ -162,16 +158,14 @@ const Index = () => {
   }, [user, isAuthenticated, signOut]);
 
   const triggerRefresh = useCallback(() => {
-    if (isLoading) return;
+    if (isPulling) return;
     setIsPulling(true);
-    setIsLoading(true);
     fetchBalance();
     setRefreshKey((k) => k + 1);
     setTimeout(() => {
-      setIsLoading(false);
       setIsPulling(false);
     }, 600);
-  }, [isLoading]);
+  }, [isPulling]);
 
   usePullToRefresh({ onRefresh: triggerRefresh, threshold: 70 });
 
@@ -200,15 +194,7 @@ const Index = () => {
             )}
           </AnimatePresence>
 
-          {isLoading ? (
-            <>
-              <BalanceCardSkeleton />
-              <QuickActionsSkeleton />
-              <TransactionListSkeleton />
-            </>
-          ) : (
-            <>
-              <BalanceCard onAddMoney={() => setShowAddMoney(true)} />
+          <BalanceCard onAddMoney={() => setShowAddMoney(true)} />
 
               {/* KYC prompt banner */}
               {kycStatus !== "verified" && (
@@ -279,8 +265,6 @@ const Index = () => {
                 map[feature]?.();
               }} />
               <TransactionList onSeeAll={() => handleTabChange("history")} refreshKey={refreshKey} />
-            </>
-          )}
         </div>
       );
     }
