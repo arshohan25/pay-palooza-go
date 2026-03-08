@@ -1888,6 +1888,7 @@ export type Database = {
         }
         Returns: Json
       }
+      expire_stale_payment_sessions: { Args: never; Returns: number }
       find_chat_user_by_phone: { Args: { p_phone: string }; Returns: Json }
       generate_referral_code: { Args: never; Returns: string }
       generate_short_id: { Args: never; Returns: string }
