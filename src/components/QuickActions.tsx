@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Lock, Landmark, Wallet, Ticket, Heart, Banknote, ShieldCheck, Gift, ChevronUp } from "lucide-react";
+import { Lock, Wallet, Ticket, Heart, Banknote, ShieldCheck, Gift, ChevronUp } from "lucide-react";
 import {
   SendMoneyIcon,
   CashOutIcon,
