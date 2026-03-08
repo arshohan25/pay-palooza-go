@@ -280,11 +280,15 @@ const CheckoutPage = () => {
                 <Button variant="ghost" onClick={handleCancel} className="w-full text-xs">Cancel</Button>
               </Card>
 
-              {/* Expiry */}
-              <p className="text-[10px] text-muted-foreground text-center mt-3 flex items-center justify-center gap-1">
-                <Clock size={10} />
-                Expires at {new Date(session.expires_at).toLocaleTimeString()}
-              </p>
+              {/* Countdown timer */}
+              {secondsLeft !== null && (
+                <div className={`text-center mt-3 flex items-center justify-center gap-1.5 text-xs font-semibold ${
+                  secondsLeft > 60 ? "text-muted-foreground" : secondsLeft > 30 ? "text-amber-500" : "text-destructive"
+                }`}>
+                  <Clock size={12} />
+                  <span>{fmtTime(secondsLeft)}</span>
+                </div>
+              )}
             </motion.div>
           )}
 
