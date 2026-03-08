@@ -24,6 +24,7 @@ import ShopFlow from "@/components/ShopFlow";
 import BankTransferFlow from "@/components/BankTransferFlow";
 
 import SavingsFlow from "@/components/SavingsFlow";
+import MerchantApplicationFlow from "@/components/MerchantApplicationFlow";
 import TransactionHistory from "@/pages/TransactionHistory";
 import AccountPage from "@/pages/AccountPage";
 import ReferPage from "@/pages/ReferPage";
@@ -68,6 +69,7 @@ const Index = () => {
   
   const [showBankTransfer, setShowBankTransfer] = useState(false);
   const [showSavings, setShowSavings]     = useState(false);
+  const [showMerchantApply, setShowMerchantApply] = useState(false);
   const [showScanPay, setShowScanPay]     = useState(false);
   const [isLoading, setIsLoading]         = useState(true);
   const [isPulling, setIsPulling]         = useState(false);
@@ -256,6 +258,7 @@ const Index = () => {
                 onShop={() => setShowShop(true)}
                 onBankTransfer={() => setShowBankTransfer(true)}
                 onSavings={() => setShowSavings(true)}
+                onMerchantApply={() => setShowMerchantApply(true)}
               />
               
               <PromoSlider onFeatureOpen={(feature) => {
@@ -393,6 +396,7 @@ const Index = () => {
         {showSavings   && <SavingsFlow   onClose={() => setShowSavings(false)} />}
         {showKycFlow   && <KycFlow      onClose={() => setShowKycFlow(false)} />}
       </AnimatePresence>
+      <MerchantApplicationFlow open={showMerchantApply} onOpenChange={setShowMerchantApply} />
 
 
       {/* Scan & Pay QR flow */}

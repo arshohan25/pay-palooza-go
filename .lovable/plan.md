@@ -1,26 +1,29 @@
 
 
-## Plan: Fix Merchant Account Creation Access
+## Plan: Add Biller Categories to API Hub
 
-### Issues Identified
-1. **"Become a Merchant" option is buried** — It only exists deep in Account Page settings. Users may not discover it. It should also be accessible from more prominent locations (e.g., the More sheet or home page).
-2. **No admin "Create Merchant" button** — After the application system was added, admins lost the ability to directly create a merchant account without an application. The Merchants sub-tab has no "Add Merchant" action.
+### What
+
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-**1. Add "Become a Merchant" to the More Sheet (`src/components/MoreSheet.tsx`)**
-- Add a `Store` icon menu item "Become a Merchant" visible to non-merchant users
-- Opens the existing `MerchantApplicationFlow` sheet
-- Import `useUserRoles` to check if user already has `merchant` role
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-**2. Add "Create Merchant" button for admins (`src/components/admin/AdminMerchantManagement.tsx`)**
-- Add a `+ Create Merchant` button in the Merchants sub-tab header
-- Opens a dialog/sheet with a form: search user by phone, enter business name, category, bank details
-- On submit: inserts into `merchants` table, assigns `merchant` role in `user_roles`, sends notification
-- This lets admins bypass the application flow when needed
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-| File | Action |
-|------|--------|
-| `src/components/MoreSheet.tsx` | Add "Become a Merchant" menu item |
-| `src/components/admin/AdminMerchantManagement.tsx` | Add "Create Merchant" button + form in Merchants tab |
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

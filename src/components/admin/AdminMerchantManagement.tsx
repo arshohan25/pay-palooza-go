@@ -117,6 +117,11 @@ export default function AdminMerchantManagement() {
   const [showNewSecret, setShowNewSecret] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
+  // Create Merchant dialog
+  const [showCreateMerchant, setShowCreateMerchant] = useState(false);
+  const [createForm, setCreateForm] = useState({ phone: "", business_name: "", category: "retail", bank_name: "", bank_account_number: "", bank_routing: "" });
+  const [createLoading, setCreateLoading] = useState(false);
+
   const loadMerchants = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase.from("merchants").select("*").order("created_at", { ascending: false }).limit(200);
@@ -281,6 +286,55 @@ export default function AdminMerchantManagement() {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
+  // ─── Create Merchant directly ───
+  const handleCreateMerchant = async () => {
+    if (!createForm.phone.trim() || !createForm.business_name.trim()) {
+      toast.error("Phone and business name are required");
+      return;
+    }
+    setCreateLoading(true);
+    try {
+      // Find user by phone
+      const { data: profile } = await supabase.from("profiles").select("user_id, phone").eq("phone", createForm.phone.trim()).maybeSingle();
+      if (!profile) { toast.error("No user found with that phone number"); setCreateLoading(false); return; }
+
+      // Check if already a merchant
+      const { data: existingMerchant } = await supabase.from("merchants").select("id").eq("user_id", profile.user_id).maybeSingle();
+      if (existingMerchant) { toast.error("This user is already a merchant"); setCreateLoading(false); return; }
+
+      // Create merchant
+      const { error: mErr } = await supabase.from("merchants").insert({
+        user_id: profile.user_id,
+        business_name: createForm.business_name.trim(),
+        category: createForm.category as any,
+        status: "active" as any,
+        bank_name: createForm.bank_name || null,
+        bank_account_number: createForm.bank_account_number || null,
+        bank_routing: createForm.bank_routing || null,
+      });
+      if (mErr) { toast.error("Failed to create merchant: " + mErr.message); setCreateLoading(false); return; }
+
+      // Assign merchant role
+      await (supabase as any).from("user_roles").insert({ user_id: profile.user_id, role: "merchant" });
+
+      // Notify user
+      await supabase.from("notifications").insert({
+        user_id: profile.user_id,
+        title: "Merchant Account Created",
+        body: `Your merchant account "${createForm.business_name}" has been created and is active.`,
+        category: "merchant",
+      });
+
+      toast.success("Merchant created successfully");
+      setShowCreateMerchant(false);
+      setCreateForm({ phone: "", business_name: "", category: "retail", bank_name: "", bank_account_number: "", bank_routing: "" });
+      loadMerchants();
+    } catch (err: any) {
+      toast.error("Error: " + (err.message || "Unknown"));
+    }
+    setCreateLoading(false);
+  };
+
   // ─── Approve/Reject API request ───
   const handleApiRequest = async (requestId: string, action: "approved" | "rejected", notes?: string) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -414,6 +468,9 @@ export default function AdminMerchantManagement() {
             </Select>
             <Button variant="outline" size="sm" onClick={() => exportMerchantsCSV(filtered)} className="gap-1">
               <Download className="w-3.5 h-3.5" /> Export
+            </Button>
+            <Button size="sm" onClick={() => setShowCreateMerchant(true)} className="gap-1">
+              <Plus className="w-3.5 h-3.5" /> Create Merchant
             </Button>
             <Button variant="outline" size="icon" onClick={loadMerchants} disabled={loading}>
               <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -910,6 +967,55 @@ export default function AdminMerchantManagement() {
         </SheetContent>
       </Sheet>
       </>}
+
+      {/* Create Merchant Dialog */}
+      <Sheet open={showCreateMerchant} onOpenChange={setShowCreateMerchant}>
+        <SheetContent side="bottom" className="rounded-t-3xl h-[75vh] flex flex-col p-0">
+          <SheetHeader className="px-6 pt-5 pb-3">
+            <SheetTitle className="flex items-center gap-2 text-base">
+              <Plus size={18} /> Create Merchant
+            </SheetTitle>
+            <SheetDescription>Directly create a merchant account for an existing user.</SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-6 pb-8 space-y-4">
+            <div>
+              <label className="text-sm font-medium text-foreground">User Phone *</label>
+              <Input value={createForm.phone} onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value }))} placeholder="01XXXXXXXXX" maxLength={15} />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Business Name *</label>
+              <Input value={createForm.business_name} onChange={e => setCreateForm(f => ({ ...f, business_name: e.target.value }))} placeholder="Business name" maxLength={100} />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Category</label>
+              <Select value={createForm.category} onValueChange={v => setCreateForm(f => ({ ...f, category: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map(c => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Bank Name (optional)</label>
+              <Input value={createForm.bank_name} onChange={e => setCreateForm(f => ({ ...f, bank_name: e.target.value }))} placeholder="e.g. Dutch Bangla Bank" maxLength={100} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium text-foreground">Account Number</label>
+                <Input value={createForm.bank_account_number} onChange={e => setCreateForm(f => ({ ...f, bank_account_number: e.target.value }))} maxLength={30} />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Routing</label>
+                <Input value={createForm.bank_routing} onChange={e => setCreateForm(f => ({ ...f, bank_routing: e.target.value }))} maxLength={20} />
+              </div>
+            </div>
+            <Button className="w-full" onClick={handleCreateMerchant} disabled={createLoading || !createForm.phone.trim() || !createForm.business_name.trim()}>
+              {createLoading ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Store className="w-4 h-4 mr-2" />}
+              Create Merchant
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
