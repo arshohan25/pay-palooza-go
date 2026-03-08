@@ -1,29 +1,33 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Premium OTP + PIN Confirmation Step
 
-### What
-
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### Flow Change
+```text
+Current:  Phone → OTP (auto-submits → processing → success)
+New:      Phone → OTP → PIN (4-digit) → Processing → Success
+```
 
 ### Changes
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**1. `src/pages/CheckoutPage.tsx`**
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+- Add `"pin"` to the `Step` type
+- Add `pin` state variable
+- **Redesign OTP input**: Premium glassmorphism style with larger slots, gradient borders on active/filled states, subtle glow effect, smooth scale animations on digit entry
+- **After OTP completes 6 digits**: Instead of auto-calling `handleVerifyAndPay`, transition directly to `"pin"` step (no loading/processing in between — instant transition)
+- **New PIN step UI**: Minimal card with 4-dot PIN input (masked with dots), "Enter your PIN to confirm" heading, amount pill at top. Uses the same premium input style
+- **PIN submit**: Calls `checkout-pay` with `session_id`, `phone`, `otp_code`, and `pin`
+- Remove the auto-submit on OTP completion that triggers payment; instead it transitions to PIN step
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+**2. `supabase/functions/checkout-pay/index.ts`**
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+- Accept additional `pin` field in request body
+- After OTP verification and payer lookup, verify PIN by checking against Supabase Auth: sign in with `{phone}@easypay.local` and password `{pin}EP`
+- If PIN auth fails, return error "Incorrect PIN"
+- If PIN passes, proceed with transfer as before
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+### Files Changed
+1. `src/pages/CheckoutPage.tsx` — Add PIN step, redesign OTP, remove auto-pay on OTP complete
+2. `supabase/functions/checkout-pay/index.ts` — Add PIN verification via auth sign-in
 
