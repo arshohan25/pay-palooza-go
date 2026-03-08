@@ -167,7 +167,9 @@ Deno.serve(async (req) => {
 
       if (sessErr) { statusCode = 500; errorMessage = sessErr.message; await logRequest(); return json({ error: sessErr.message }, 500); }
 
-      const baseUrl = Deno.env.get("SITE_URL") || `https://${Deno.env.get("SUPABASE_URL")?.replace("https://", "").replace(".supabase.co", "")}-preview.lovable.app`;
+      // Derive base URL: prefer request origin (caller's host), then SITE_URL env, then fallback
+      const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/+$/, "") || "";
+      const baseUrl = origin || Deno.env.get("SITE_URL") || `https://${Deno.env.get("SUPABASE_URL")?.replace("https://", "").replace(".supabase.co", "")}-preview.lovable.app`;
       const checkoutUrl = `${baseUrl}/checkout/${session.id}`;
       const qrPageUrl = `${baseUrl}/pay/qr/${session.id}`;
 

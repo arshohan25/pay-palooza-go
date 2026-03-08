@@ -655,8 +655,9 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh }: { merchant
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-      // Open QR page in new tab
-      window.open(`/pay/qr/${data.session_id}`, "_blank");
+      // Open QR page in new tab — prefer backend-returned URL for correct host
+      const qrUrl = data.qr_page_url || `/pay/qr/${data.session_id}`;
+      window.open(qrUrl, "_blank");
       toast({ title: "QR Page Opened", description: "Scan with the EasyPay app to test the payment flow." });
     } catch (err: any) {
       toast({ title: "Demo Failed", description: err.message, variant: "destructive" });
