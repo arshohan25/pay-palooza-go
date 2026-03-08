@@ -27,6 +27,7 @@ import { useI18n } from "@/lib/i18n";
 import { useUserRoles } from "@/hooks/use-user-roles";
 import { useCustomization } from "@/hooks/use-customization";
 import { supabase } from "@/integrations/supabase/client";
+import { useGlobalToggles } from "@/hooks/use-global-toggles";
 
 const ROLE_STYLES: Record<string, { label: string; bg: string; text: string }> = {
   customer:          { label: "Customer",          bg: "bg-primary/10",      text: "text-primary" },
@@ -64,17 +65,24 @@ const KycBadge = ({ verified }: { verified: boolean }) => {
   );
 };
 
-/* ─── Section ─── */
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <div className="space-y-2">
-    <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted-foreground px-1">
-      {title}
-    </p>
-    <div className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden">
-      {children}
+/* ─── Section — auto-hides when all children are hidden ─── */
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => {
+  // Filter out falsy children (hidden by toggles)
+  const validChildren = Array.isArray(children)
+    ? children.filter(Boolean)
+    : children ? [children] : [];
+  if (validChildren.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted-foreground px-1">
+        {title}
+      </p>
+      <div className="bg-card rounded-3xl border border-border/60 shadow-card overflow-hidden">
+        {validChildren}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 /* ─── Menu Row ─── */
 const MenuRow = ({
@@ -145,6 +153,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
 
   const { roles } = useUserRoles();
   const { displayName, avatar_url } = useProfile();
+  const { isDisabled } = useGlobalToggles();
   const {
     theme: currentTheme, cycleTheme, themeLabel,
     iconSize, iconSizeLabel, cycleIconSize,
@@ -271,18 +280,18 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
 
         {/* ── Account ── */}
         <Section title={t("sectionAccount")}>
-          <MenuRow icon={Pencil}    iconClass="gradient-hero"    label={t("editProfile")}      sub={t("updateNamePhoto")}      onClick={() => setShowProfileEdit(true)} />
-          <MenuRow icon={BadgeCheck} iconClass="gradient-primary" label={t("kycVerification")} sub={t("kycSub")} onClick={() => setShowKyc(true)} />
-          <MenuRow icon={Lock}       iconClass="gradient-send"    label={t("changePin")}        sub={t("changePinSub")}    onClick={() => setShowChangePin(true)} />
-          <MenuRow icon={Gift}       iconClass="gradient-accent"  label={t("referAFriend")}   sub={t("referSub")} onClick={() => setSubPage("refer")} />
-          {!roles.includes("merchant") && (
+          {!isDisabled("account_edit_profile") && <MenuRow icon={Pencil}    iconClass="gradient-hero"    label={t("editProfile")}      sub={t("updateNamePhoto")}      onClick={() => setShowProfileEdit(true)} />}
+          {!isDisabled("account_kyc") && <MenuRow icon={BadgeCheck} iconClass="gradient-primary" label={t("kycVerification")} sub={t("kycSub")} onClick={() => setShowKyc(true)} />}
+          {!isDisabled("account_change_pin") && <MenuRow icon={Lock}       iconClass="gradient-send"    label={t("changePin")}        sub={t("changePinSub")}    onClick={() => setShowChangePin(true)} />}
+          {!isDisabled("account_refer") && <MenuRow icon={Gift}       iconClass="gradient-accent"  label={t("referAFriend")}   sub={t("referSub")} onClick={() => setSubPage("refer")} />}
+          {!isDisabled("account_become_merchant") && !roles.includes("merchant") && (
             <MenuRow icon={Store} iconClass="gradient-payment" label="Become a Merchant" sub="Apply for a merchant account" onClick={() => setShowMerchantApp(true)} />
           )}
         </Section>
 
         {/* ── App Experience ── */}
         <Section title={t("sectionAppExperience")}>
-          <MenuRow
+          {!isDisabled("account_language") && <MenuRow
             icon={Globe}
             iconClass="gradient-payment"
             label={t("language")}
@@ -293,8 +302,8 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
               </span>
             }
             onClick={toggleLang}
-          />
-          <MenuRow
+          />}
+          {!isDisabled("account_theme") && <MenuRow
             icon={Sun}
             iconClass="gradient-accent"
             label="Theme"
@@ -305,8 +314,8 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
               </span>
             }
             onClick={cycleTheme}
-          />
-          <MenuRow
+          />}
+          {!isDisabled("account_icon_size") && <MenuRow
             icon={Grid3X3}
             iconClass="gradient-cashout"
             label="Icon Size"
@@ -317,8 +326,8 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
               </span>
             }
             onClick={cycleIconSize}
-          />
-          <MenuRow
+          />}
+          {!isDisabled("account_grid_layout") && <MenuRow
             icon={Grid3X3}
             iconClass="gradient-primary"
             label="Grid Layout"
@@ -329,8 +338,8 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
               </span>
             }
             onClick={cycleGridLayout}
-          />
-          <ToggleRow
+          />}
+          {!isDisabled("account_compact_mode") && <ToggleRow
             icon={Minimize2}
             iconClass="gradient-hero"
             label="Compact Mode"
@@ -340,8 +349,8 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
               setCompactMode(v);
               toast.success(v ? "Compact mode enabled" : "Compact mode disabled");
             }}
-          />
-          <ToggleRow
+          />}
+          {!isDisabled("account_rearrange_actions") && <ToggleRow
             icon={GripVertical}
             iconClass="gradient-send"
             label="Rearrange Quick Actions"
@@ -352,8 +361,8 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
               localStorage.setItem("mfs_dnd_enabled", String(v));
               toast.success(v ? "Drag & drop enabled" : "Drag & drop disabled");
             }}
-          />
-          <MenuRow
+          />}
+          {!isDisabled("account_onboarding") && <MenuRow
             icon={PlayCircle}
             iconClass="gradient-hero"
             label={t("viewOnboarding")}
@@ -363,51 +372,51 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
               toast.success(t("onboardingReset"));
               setTimeout(() => onReplayOnboarding?.(), 600);
             }}
-          />
+          />}
         </Section>
 
         {/* ── Insights & Limits ── */}
         <Section title={t("sectionInsightsLimits")}>
-          <MenuRow icon={BarChart3}  iconClass="gradient-payment"  label={t("spendingInsights")} sub={t("insightsSub")}        onClick={() => setSubPage("insights")} />
-          <MenuRow icon={CreditCard} iconClass="gradient-cashout"  label={t("limitsCharges")}  sub={t("limitsSub")}   onClick={() => setSubPage("limits")} />
+          {!isDisabled("account_spending_insights") && <MenuRow icon={BarChart3}  iconClass="gradient-payment"  label={t("spendingInsights")} sub={t("insightsSub")}        onClick={() => setSubPage("insights")} />}
+          {!isDisabled("account_limits_charges") && <MenuRow icon={CreditCard} iconClass="gradient-cashout"  label={t("limitsCharges")}  sub={t("limitsSub")}   onClick={() => setSubPage("limits")} />}
         </Section>
 
         {/* ── Notifications ── */}
         <Section title={t("sectionNotifications")}>
-          <ToggleRow icon={Bell}   iconClass="gradient-accent"  label={t("pushNotifications")} sub={t("pushSub")} checked={pushNotifs}  onCheckedChange={setPushNotifs} />
-          <ToggleRow icon={BellOff} iconClass="gradient-payment" label={t("promotionalAlerts")} sub={t("promoAlertsSub")}     checked={promoNotifs} onCheckedChange={setPromoNotifs} />
+          {!isDisabled("account_push_notifications") && <ToggleRow icon={Bell}   iconClass="gradient-accent"  label={t("pushNotifications")} sub={t("pushSub")} checked={pushNotifs}  onCheckedChange={setPushNotifs} />}
+          {!isDisabled("account_promo_alerts") && <ToggleRow icon={BellOff} iconClass="gradient-payment" label={t("promotionalAlerts")} sub={t("promoAlertsSub")}     checked={promoNotifs} onCheckedChange={setPromoNotifs} />}
         </Section>
 
         {/* ── Support & Help ── */}
         <Section title={t("sectionSupport")}>
-          <MenuRow
+          {!isDisabled("account_live_chat") && <MenuRow
             icon={MessageCircle}
             iconClass="gradient-primary"
             label={t("liveChat")}
             sub={t("liveChatSub")}
             onClick={() => setShowSupport(true)}
-          />
-          <MenuRow
+          />}
+          {!isDisabled("account_email_support") && <MenuRow
             icon={Mail}
             iconClass="gradient-accent"
             label={t("emailUs")}
             sub="EasyPay@smartshop.bd"
             onClick={() => window.open("mailto:EasyPay@smartshop.bd?subject=Support%20Request", "_self")}
-          />
-          <MenuRow
+          />}
+          {!isDisabled("account_my_tickets") && <MenuRow
             icon={ClipboardList}
             iconClass="gradient-cashout"
             label={t("myTickets")}
             sub={t("myTicketsSub")}
             onClick={() => setSubPage("tickets")}
-          />
+          />}
         </Section>
 
         {/* ── Security ── */}
         <Section title={t("sectionSecurity")}>
-          <ToggleRow icon={Fingerprint} iconClass="gradient-send"    label={t("biometricLogin")}  sub={t("biometricSub")}   checked={biometric}   onCheckedChange={(v) => { setBiometric(v); toast.success(v ? t("biometricEnabled") : t("biometricDisabled")); }} />
-          <ToggleRow icon={Shield}      iconClass="gradient-primary"  label={t("twoFactorAuth")}  sub={t("twoFactorSub")} checked={twoFa}       onCheckedChange={(v) => { setTwoFa(v); toast.success(v ? t("twoFaEnabled") : t("twoFaDisabled")); }} />
-          <MenuRow icon={ShieldBan} iconClass="bg-destructive/80" label="Blocked Users" sub="Manage blocked accounts" onClick={() => setSubPage("blocked")} />
+          {!isDisabled("account_biometric") && <ToggleRow icon={Fingerprint} iconClass="gradient-send"    label={t("biometricLogin")}  sub={t("biometricSub")}   checked={biometric}   onCheckedChange={(v) => { setBiometric(v); toast.success(v ? t("biometricEnabled") : t("biometricDisabled")); }} />}
+          {!isDisabled("account_2fa") && <ToggleRow icon={Shield}      iconClass="gradient-primary"  label={t("twoFactorAuth")}  sub={t("twoFactorSub")} checked={twoFa}       onCheckedChange={(v) => { setTwoFa(v); toast.success(v ? t("twoFaEnabled") : t("twoFaDisabled")); }} />}
+          {!isDisabled("account_blocked_users") && <MenuRow icon={ShieldBan} iconClass="bg-destructive/80" label="Blocked Users" sub="Manage blocked accounts" onClick={() => setSubPage("blocked")} />}
         </Section>
 
         {/* ── Sign Out ── */}
