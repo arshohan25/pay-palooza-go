@@ -289,6 +289,43 @@ app.post('/webhook', (req, res) => {
   // Process payment notification...
 });`}</pre>
             </div>
+
+            <div className="border-t border-border pt-3 mt-3">
+              <p className="text-[11px] font-bold text-foreground mb-1 flex items-center gap-1.5">
+                <Globe size={12} className="text-primary" />SDK Widget (Embed on any website)
+              </p>
+              <p className="text-[10px] text-muted-foreground mb-2">
+                Add a "Pay with EasyPay" button to your website with a single script tag:
+              </p>
+              <pre className="bg-muted/50 rounded-lg p-3 text-[9px] font-mono overflow-x-auto whitespace-pre">{`<!-- 1. Include the SDK -->
+<script src="https://pay-palooza-go.lovable.app/sdk/easypay-sdk.js"></script>
+
+<!-- 2. Add a container for the button -->
+<div id="easypay-button"></div>
+
+<!-- 3. Initialize and render -->
+<script>
+  EasyPay.init({
+    apiKey: 'your_api_key_here',
+    endpoint: '${apiEndpoint}'
+  });
+
+  EasyPay.renderButton('#easypay-button', {
+    amount: 500,
+    reference: 'ORDER-123',
+    description: 'Product purchase',
+    successUrl: 'https://yoursite.com/success',
+    cancelUrl: 'https://yoursite.com/cancel',
+    onError: function(err) { alert(err.message); }
+  });
+</script>`}</pre>
+              <div className="flex items-center gap-2 mt-2">
+                <button onClick={() => copyText(`<script src="https://pay-palooza-go.lovable.app/sdk/easypay-sdk.js"></script>`, "sdk-tag")} className="text-[10px] text-primary font-semibold flex items-center gap-1">
+                  {copiedField === "sdk-tag" ? <CheckCircle2 size={11} className="text-emerald-600" /> : <Copy size={11} />}
+                  Copy script tag
+                </button>
+              </div>
+            </div>
           </Card>
         )}
       </div>
