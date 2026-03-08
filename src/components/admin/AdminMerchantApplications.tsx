@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useMerchantCategories } from "@/hooks/use-merchant-categories";
 
 interface Application {
   id: string;
@@ -39,6 +40,7 @@ interface Application {
 }
 
 export default function AdminMerchantApplications() {
+  const { getLabelForName } = useMerchantCategories();
   const [apps, setApps] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("pending");
@@ -229,7 +231,7 @@ export default function AdminMerchantApplications() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                    <div><span className="text-muted-foreground">Category:</span> <span className="text-foreground capitalize">{app.category}</span></div>
+                    <div><span className="text-muted-foreground">Category:</span> <span className="text-foreground">{getLabelForName(app.category)}</span></div>
                     {app.owner_name && <div><span className="text-muted-foreground">Owner:</span> <span className="text-foreground">{app.owner_name}</span></div>}
                     {app.contact_number && <div><span className="text-muted-foreground">Contact:</span> <span className="text-foreground">{app.contact_number}</span></div>}
                     {app.contact_email && <div><span className="text-muted-foreground">Email:</span> <span className="text-foreground">{app.contact_email}</span></div>}

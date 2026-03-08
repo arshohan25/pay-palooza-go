@@ -1,75 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Store, Clock, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Store, Clock, CheckCircle, XCircle, Loader2, ChevronsUpDown, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
-
-const CATEGORIES = [
-  "retail",
-  "food",
-  "ecommerce",
-  "services",
-  "healthcare",
-  "education",
-  "travel",
-  "electronics",
-  "fashion",
-  "grocery",
-  "pharmacy",
-  "restaurant",
-  "transportation",
-  "real_estate",
-  "agriculture",
-  "manufacturing",
-  "telecom",
-  "entertainment",
-  "beauty",
-  "sports",
-  "logistics",
-  "consulting",
-  "ngo",
-  "government",
-  "other",
-];
-
-const CATEGORY_LABELS: Record<string, string> = {
-  retail: "Retail",
-  food: "Food & Beverage",
-  ecommerce: "E-Commerce",
-  services: "Services",
-  healthcare: "Healthcare",
-  education: "Education",
-  travel: "Travel & Tourism",
-  electronics: "Electronics",
-  fashion: "Fashion & Clothing",
-  grocery: "Grocery",
-  pharmacy: "Pharmacy",
-  restaurant: "Restaurant",
-  transportation: "Transportation",
-  real_estate: "Real Estate",
-  agriculture: "Agriculture",
-  manufacturing: "Manufacturing",
-  telecom: "Telecom",
-  entertainment: "Entertainment",
-  beauty: "Beauty & Wellness",
-  sports: "Sports & Fitness",
-  logistics: "Logistics & Delivery",
-  consulting: "Consulting",
-  ngo: "NGO / Non-Profit",
-  government: "Government",
-  other: "Other",
-};
+import { cn } from "@/lib/utils";
+import { useMerchantCategories } from "@/hooks/use-merchant-categories";
 
 const applicationSchema = z.object({
   business_name: z.string().trim().min(2, "Business name required").max(100),
-  category: z.string().min(1),
+  category: z.string().min(1, "Category required"),
   trade_license: z.string().max(50).optional(),
   owner_name: z.string().trim().min(2, "Owner name required").max(100),
   contact_number: z.string().trim().min(6, "Contact number required").max(20),
@@ -89,9 +36,13 @@ interface Props {
 }
 
 export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
+  const { categories, loading: catsLoading, getLabelForName } = useMerchantCategories();
   const [existing, setExisting] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [catOpen, setCatOpen] = useState(false);
+  const [catSearch, setCatSearch] = useState("");
+  const [customCategory, setCustomCategory] = useState("");
   const [form, setForm] = useState({
     business_name: "",
     category: "retail",
@@ -107,6 +58,12 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
     bank_routing: "",
     reason: "",
   });
+
+  const filteredCats = useMemo(() => {
+    if (!catSearch) return categories;
+    const q = catSearch.toLowerCase();
+    return categories.filter(c => c.label.toLowerCase().includes(q) || c.name.includes(q));
+  }, [categories, catSearch]);
 
   useEffect(() => {
     if (!open) return;
@@ -128,7 +85,8 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
   }, [open]);
 
   const handleSubmit = async () => {
-    const parsed = applicationSchema.safeParse(form);
+    const finalCategory = form.category === "__other__" ? customCategory.trim() : form.category;
+    const parsed = applicationSchema.safeParse({ ...form, category: finalCategory });
     if (!parsed.success) {
       toast.error(parsed.error.errors[0]?.message || "Invalid input");
       return;
@@ -178,6 +136,10 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
 
   const set = (key: string, value: string) => setForm(f => ({ ...f, [key]: value }));
 
+  const selectedLabel = form.category === "__other__"
+    ? (customCategory || "Other (custom)")
+    : getLabelForName(form.category);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="rounded-t-3xl h-[90vh] flex flex-col p-0">
@@ -188,12 +150,12 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6 pb-8 space-y-5">
-          {loading ? (
+          {loading || catsLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
             </div>
           ) : existing && (existing.status === "pending" || existing.status === "approved") ? (
-            <ExistingApplicationView existing={existing} statusUI={statusUI} />
+            <ExistingApplicationView existing={existing} statusUI={statusUI} getLabelForName={getLabelForName} />
           ) : (
             <>
               {existing?.status === "rejected" && (
@@ -207,7 +169,7 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
 
               <div className="space-y-4">
                 <p className="text-xs text-muted-foreground">Fields marked with * are required</p>
-                
+
                 {/* Business Information */}
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-foreground border-b border-border pb-1">Business Information</h3>
@@ -217,12 +179,44 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
                   </div>
                   <div>
                     <Label>Category *</Label>
-                    <Select value={form.category} onValueChange={v => set("category", v)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {CATEGORIES.map(c => <SelectItem key={c} value={c}>{CATEGORY_LABELS[c] || c}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <Popover open={catOpen} onOpenChange={setCatOpen}>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" role="combobox" aria-expanded={catOpen} className="w-full justify-between font-normal">
+                          {selectedLabel}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                        <Command shouldFilter={false}>
+                          <CommandInput placeholder="Search categories..." value={catSearch} onValueChange={setCatSearch} />
+                          <CommandList>
+                            <CommandEmpty>No category found.</CommandEmpty>
+                            <CommandGroup className="max-h-[200px] overflow-y-auto">
+                              {filteredCats.map(c => (
+                                <CommandItem
+                                  key={c.name}
+                                  value={c.name}
+                                  onSelect={() => { set("category", c.name); setCustomCategory(""); setCatOpen(false); setCatSearch(""); }}
+                                >
+                                  <Check className={cn("mr-2 h-4 w-4", form.category === c.name ? "opacity-100" : "opacity-0")} />
+                                  {c.label}
+                                </CommandItem>
+                              ))}
+                              <CommandItem
+                                value="__other__"
+                                onSelect={() => { set("category", "__other__"); setCatOpen(false); setCatSearch(""); }}
+                              >
+                                <Check className={cn("mr-2 h-4 w-4", form.category === "__other__" ? "opacity-100" : "opacity-0")} />
+                                Other (type your own)
+                              </CommandItem>
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    {form.category === "__other__" && (
+                      <Input className="mt-2" value={customCategory} onChange={e => setCustomCategory(e.target.value)} placeholder="Enter your category..." maxLength={100} />
+                    )}
                   </div>
                   <div>
                     <Label>Trade License Number</Label>
@@ -234,7 +228,7 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
                   </div>
                 </div>
 
-                {/* Owner / Contact Information */}
+                {/* Contact Information */}
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-foreground border-b border-border pb-1">Contact Information</h3>
                   <div>
@@ -281,10 +275,14 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
                 {/* Reason */}
                 <div>
                   <Label>Why do you want a merchant account?</Label>
-                  <Textarea value={form.reason} onChange={e => set("reason", e.target.value)} placeholder="Tell us about your business and why you need a merchant account..." maxLength={500} rows={3} />
+                  <Textarea value={form.reason} onChange={e => set("reason", e.target.value)} placeholder="Tell us about your business..." maxLength={500} rows={3} />
                 </div>
 
-                <Button className="w-full" onClick={handleSubmit} disabled={submitting || !form.business_name.trim() || !form.owner_name.trim() || !form.contact_number.trim()}>
+                <Button
+                  className="w-full"
+                  onClick={handleSubmit}
+                  disabled={submitting || !form.business_name.trim() || !form.owner_name.trim() || !form.contact_number.trim() || (form.category === "__other__" && !customCategory.trim())}
+                >
                   {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Store className="w-4 h-4 mr-2" />}
                   Submit Application
                 </Button>
@@ -297,7 +295,7 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
   );
 }
 
-function ExistingApplicationView({ existing, statusUI }: { existing: any; statusUI: (s: string) => { icon: any; color: string; label: string } }) {
+function ExistingApplicationView({ existing, statusUI, getLabelForName }: { existing: any; statusUI: (s: string) => { icon: any; color: string; label: string }; getLabelForName: (n: string) => string }) {
   const s = statusUI(existing.status);
   const Icon = s.icon;
   return (
@@ -313,7 +311,9 @@ function ExistingApplicationView({ existing, statusUI }: { existing: any; status
       </div>
       <div className="space-y-2 text-sm">
         <div className="flex justify-between"><span className="text-muted-foreground">Business</span><span className="font-medium text-foreground">{existing.business_name}</span></div>
-        <div className="flex justify-between"><span className="text-muted-foreground">Category</span><Badge variant="outline" className="capitalize">{existing.category}</Badge></div>
+        <div className="flex justify-between"><span className="text-muted-foreground">Category</span><Badge variant="outline">{getLabelForName(existing.category)}</Badge></div>
+        {existing.owner_name && <div className="flex justify-between"><span className="text-muted-foreground">Owner</span><span className="text-foreground">{existing.owner_name}</span></div>}
+        {existing.contact_number && <div className="flex justify-between"><span className="text-muted-foreground">Contact</span><span className="text-foreground">{existing.contact_number}</span></div>}
         <div className="flex justify-between"><span className="text-muted-foreground">Submitted</span><span className="text-foreground">{new Date(existing.created_at).toLocaleDateString()}</span></div>
         {existing.admin_notes && (
           <div className="pt-2 border-t border-border">
