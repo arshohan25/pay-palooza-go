@@ -106,14 +106,16 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
   const paybillFee = getFeeLabel("paybill");
   const banktransferFee = getFeeLabel("banktransfer");
 
+  const lim = limits;
+
   const SERVICES: ServiceCardProps[] = [
     {
       icon: ArrowUpRight,
       iconClass: "gradient-send",
       title: t("sendMoney"),
       limits: [
-        { label: t("sendMoney"), used: daily.send.usedAmount, limit: 50000, maxTxn: 40, usedTxn: daily.send.usedCount, period: "Daily", fee: "Free/৳3/৳5" },
-        { label: t("sendMoney"), used: monthly.send.usedAmount, limit: 400000, maxTxn: 100, usedTxn: monthly.send.usedCount, period: "Monthly", fee: "Free/৳3/৳5" },
+        { label: t("sendMoney"), used: daily.send.usedAmount, limit: lim.send.dailyAmount, maxTxn: lim.send.dailyCount, usedTxn: daily.send.usedCount, period: "Daily", fee: "Free/৳3/৳5" },
+        { label: t("sendMoney"), used: monthly.send.usedAmount, limit: lim.send.monthlyAmount, maxTxn: lim.send.monthlyCount, usedTxn: monthly.send.usedCount, period: "Monthly", fee: "Free/৳3/৳5" },
       ],
     },
     {
@@ -121,8 +123,8 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
       iconClass: "gradient-addmoney",
       title: t("cashIn"),
       limits: [
-        { label: t("cashIn"), used: daily.cashin.usedAmount, limit: 50000, maxTxn: 20, usedTxn: daily.cashin.usedCount, period: "Daily", fee: cashinFee },
-        { label: t("cashIn"), used: monthly.cashin.usedAmount, limit: 300000, maxTxn: 100, usedTxn: monthly.cashin.usedCount, period: "Monthly", fee: cashinFee },
+        { label: t("cashIn"), used: daily.cashin.usedAmount, limit: lim.cashin.dailyAmount, maxTxn: lim.cashin.dailyCount, usedTxn: daily.cashin.usedCount, period: "Daily", fee: cashinFee },
+        { label: t("cashIn"), used: monthly.cashin.usedAmount, limit: lim.cashin.monthlyAmount, maxTxn: lim.cashin.monthlyCount, usedTxn: monthly.cashin.usedCount, period: "Monthly", fee: cashinFee },
       ],
     },
     {
@@ -130,8 +132,8 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
       iconClass: "gradient-cashout",
       title: t("cashOut"),
       limits: [
-        { label: t("cashOut"), used: daily.cashout.usedAmount, limit: 35000, maxTxn: 15, usedTxn: daily.cashout.usedCount, period: "Daily", fee: cashoutFee },
-        { label: t("cashOut"), used: monthly.cashout.usedAmount, limit: 300000, maxTxn: 100, usedTxn: monthly.cashout.usedCount, period: "Monthly", fee: cashoutFee },
+        { label: t("cashOut"), used: daily.cashout.usedAmount, limit: lim.cashout.dailyAmount, maxTxn: lim.cashout.dailyCount, usedTxn: daily.cashout.usedCount, period: "Daily", fee: cashoutFee },
+        { label: t("cashOut"), used: monthly.cashout.usedAmount, limit: lim.cashout.monthlyAmount, maxTxn: lim.cashout.monthlyCount, usedTxn: monthly.cashout.usedCount, period: "Monthly", fee: cashoutFee },
       ],
     },
     {
@@ -139,8 +141,8 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
       iconClass: "gradient-addmoney",
       title: t("addMoney"),
       limits: [
-        { label: t("addMoney"), used: daily.addmoney.usedAmount, limit: 50000, maxTxn: 20, usedTxn: daily.addmoney.usedCount, period: "Daily", fee: addmoneyFee },
-        { label: t("addMoney"), used: monthly.addmoney.usedAmount, limit: 300000, maxTxn: 50, usedTxn: monthly.addmoney.usedCount, period: "Monthly", fee: addmoneyFee },
+        { label: t("addMoney"), used: daily.addmoney.usedAmount, limit: lim.addmoney.dailyAmount, maxTxn: lim.addmoney.dailyCount, usedTxn: daily.addmoney.usedCount, period: "Daily", fee: addmoneyFee },
+        { label: t("addMoney"), used: monthly.addmoney.usedAmount, limit: lim.addmoney.monthlyAmount, maxTxn: lim.addmoney.monthlyCount, usedTxn: monthly.addmoney.usedCount, period: "Monthly", fee: addmoneyFee },
       ],
     },
     {
@@ -148,8 +150,8 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
       iconClass: "gradient-payment",
       title: t("payment"),
       limits: [
-        { label: t("payment"), used: daily.payment.usedAmount, limit: 0, maxTxn: 0, usedTxn: daily.payment.usedCount, period: "Daily", fee: paymentFee },
-        { label: t("payment"), used: monthly.payment.usedAmount, limit: 0, maxTxn: 0, usedTxn: monthly.payment.usedCount, period: "Monthly", fee: paymentFee },
+        { label: t("payment"), used: daily.payment.usedAmount, limit: lim.payment.dailyAmount, maxTxn: lim.payment.dailyCount, usedTxn: daily.payment.usedCount, period: "Daily", fee: paymentFee },
+        { label: t("payment"), used: monthly.payment.usedAmount, limit: lim.payment.monthlyAmount, maxTxn: lim.payment.monthlyCount, usedTxn: monthly.payment.usedCount, period: "Monthly", fee: paymentFee },
       ],
     },
     {
@@ -157,8 +159,8 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
       iconClass: "gradient-send",
       title: t("mobileRecharge"),
       limits: [
-        { label: t("mobileRecharge"), used: daily.recharge.usedAmount, limit: 50000, maxTxn: 200, usedTxn: daily.recharge.usedCount, period: "Daily", fee: rechargeFee },
-        { label: t("mobileRecharge"), used: monthly.recharge.usedAmount, limit: 300000, maxTxn: 2000, usedTxn: monthly.recharge.usedCount, period: "Monthly", fee: rechargeFee },
+        { label: t("mobileRecharge"), used: daily.recharge.usedAmount, limit: lim.recharge.dailyAmount, maxTxn: lim.recharge.dailyCount, usedTxn: daily.recharge.usedCount, period: "Daily", fee: rechargeFee },
+        { label: t("mobileRecharge"), used: monthly.recharge.usedAmount, limit: lim.recharge.monthlyAmount, maxTxn: lim.recharge.monthlyCount, usedTxn: monthly.recharge.usedCount, period: "Monthly", fee: rechargeFee },
       ],
     },
     {
@@ -166,8 +168,8 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
       iconClass: "gradient-payment",
       title: t("payBill"),
       limits: [
-        { label: t("payBill"), used: daily.paybill.usedAmount, limit: 0, maxTxn: 0, usedTxn: daily.paybill.usedCount, period: "Daily", fee: paybillFee },
-        { label: t("payBill"), used: monthly.paybill.usedAmount, limit: 0, maxTxn: 0, usedTxn: monthly.paybill.usedCount, period: "Monthly", fee: paybillFee },
+        { label: t("payBill"), used: daily.paybill.usedAmount, limit: lim.paybill.dailyAmount, maxTxn: lim.paybill.dailyCount, usedTxn: daily.paybill.usedCount, period: "Daily", fee: paybillFee },
+        { label: t("payBill"), used: monthly.paybill.usedAmount, limit: lim.paybill.monthlyAmount, maxTxn: lim.paybill.monthlyCount, usedTxn: monthly.paybill.usedCount, period: "Monthly", fee: paybillFee },
       ],
     },
     {
@@ -175,8 +177,8 @@ const LimitsPage = ({ onBack }: LimitsPageProps) => {
       iconClass: "gradient-cashout",
       title: t("bankTransfer"),
       limits: [
-        { label: t("bankTransfer"), used: daily.banktransfer.usedAmount, limit: 50000, maxTxn: 40, usedTxn: daily.banktransfer.usedCount, period: "Daily", fee: banktransferFee },
-        { label: t("bankTransfer"), used: monthly.banktransfer.usedAmount, limit: 400000, maxTxn: 100, usedTxn: monthly.banktransfer.usedCount, period: "Monthly", fee: banktransferFee },
+        { label: t("bankTransfer"), used: daily.banktransfer.usedAmount, limit: lim.banktransfer.dailyAmount, maxTxn: lim.banktransfer.dailyCount, usedTxn: daily.banktransfer.usedCount, period: "Daily", fee: banktransferFee },
+        { label: t("bankTransfer"), used: monthly.banktransfer.usedAmount, limit: lim.banktransfer.monthlyAmount, maxTxn: lim.banktransfer.monthlyCount, usedTxn: monthly.banktransfer.usedCount, period: "Monthly", fee: banktransferFee },
       ],
     },
   ];
