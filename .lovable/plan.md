@@ -1,29 +1,37 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Bulk Limit Editing + Usage Progress Bars
 
-### What
+### 1. Bulk Limit Editing — Select Multiple Users (AdminLimitManager.tsx)
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+**Current state:** The Bulk Actions tab applies overrides to ALL users/merchants/agents of a role. There's no way to select specific users.
 
-### Changes
+**Changes to `BulkActionsTab` in `src/components/admin/AdminLimitManager.tsx`:**
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+- Add a user search + multi-select UI at the top of the Bulk Actions tab
+- Admin searches users by name/phone, results appear as checkable rows
+- Selected users show as chips/badges with remove option
+- The existing txn_type/period/amount/count form stays the same
+- "Apply to Selected" button upserts overrides only for checked users (instead of all)
+- Keep existing "Apply to All" as a secondary action
+- Add a confirmation step showing: "Apply Send Money daily limit ৳X to N users?"
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+### 2. Usage Progress Bars — User Details Sheet (AdminDashboard.tsx)
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+**Current state:** The Transaction Limits section in the User Details sheet shows limit values but no usage data.
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+**Changes to the Transaction Limits section in `src/pages/AdminDashboard.tsx`:**
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+- After opening User Details, fetch the user's transactions for the current day and month (same logic as `useUsageStats` but for a target user)
+- Add a helper function `fetchUserUsage(userId)` that queries `transactions` table for the user's completed transactions this month, then splits into daily/monthly buckets
+- For each limit row (e.g., "Send Money Daily ৳50,000"), show a progress bar:
+  - Bar fill = `usedAmount / limitAmount * 100`
+  - Label: "৳12,000 / ৳50,000 used (24%)" and "5 / 40 txns"
+  - Color: green (<60%), yellow (60-85%), red (>85%)
+- Progress bar uses the existing `Progress` component from `src/components/ui/progress.tsx`
+- Usage data loads alongside `fetchUserDetails` when a user is selected
 
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+### Files Modified
+- `src/components/admin/AdminLimitManager.tsx` — BulkActionsTab: add multi-user search+select
+- `src/pages/AdminDashboard.tsx` — Transaction Limits section: add usage fetch + progress bars
 
