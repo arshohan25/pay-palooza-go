@@ -22,6 +22,7 @@ import PayBillFlow from "@/components/PayBillFlow";
 import AddMoneyFlow from "@/components/AddMoneyFlow";
 import ShopFlow from "@/components/ShopFlow";
 import BankTransferFlow from "@/components/BankTransferFlow";
+import DynamicQrPaySheet from "@/components/DynamicQrPaySheet";
 
 import SavingsFlow from "@/components/SavingsFlow";
 import MerchantApplicationFlow from "@/components/MerchantApplicationFlow";
@@ -72,6 +73,7 @@ const Index = () => {
   const [showSavings, setShowSavings]     = useState(false);
   const [showMerchantApply, setShowMerchantApply] = useState(false);
   const [showScanPay, setShowScanPay]     = useState(false);
+  const [dynamicQrSession, setDynamicQrSession] = useState<{ sessionId: string; merchantId?: string; amount?: number; ref?: string | null } | null>(null);
   const [isLoading, setIsLoading]         = useState(false);
   const [isPulling, setIsPulling]         = useState(false);
   const [refreshKey, setRefreshKey]       = useState(0);
@@ -392,7 +394,14 @@ const Index = () => {
           setShowScanPay(false);
           const parsed = parseQrData(result);
 
-          if (parsed.flow === "payment") {
+          if (parsed.flow === "dynamic_payment" && parsed.sessionId) {
+            setDynamicQrSession({
+              sessionId: parsed.sessionId,
+              merchantId: parsed.identifier,
+              amount: parsed.amount,
+              ref: parsed.ref,
+            });
+          } else if (parsed.flow === "payment") {
             setShowPayment(true);
           } else if (parsed.flow === "send") {
             setSendMoneyPrefilledPhone(parsed.identifier);
