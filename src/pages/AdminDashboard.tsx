@@ -203,6 +203,21 @@ export default function AdminDashboard() {
   const [detailData, setDetailData] = useState<{ profile: any; roles: any[]; kyc: any; transactions: any[] } | null>(null);
   const { visible: realtimeVisible, flash: realtimeFlash } = useRealtimeIndicator();
   const { status: wsStatus, lastConnectedAt, reconnectAttempt } = useRealtimeStatus();
+  const [disabledTogglesCount, setDisabledTogglesCount] = useState(0);
+
+  // Fetch disabled toggles count
+  useEffect(() => {
+    if (!isAdmin) return;
+    const fetchCount = async () => {
+      const { count } = await supabase.from("global_feature_toggles").select("id", { count: "exact", head: true }).eq("is_enabled", false);
+      setDisabledTogglesCount(count ?? 0);
+    };
+    fetchCount();
+    const ch = supabase.channel("admin-toggle-count")
+      .on("postgres_changes", { event: "*", schema: "public", table: "global_feature_toggles" }, () => fetchCount())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [isAdmin]);
   const openUserDetail = async (user: any) => {
     setDetailUser(user);
     setDetailLoading(true);
