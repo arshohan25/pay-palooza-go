@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import TeamActivityDashboard from "@/components/admin/TeamActivityDashboard";
+import TeamActivityLog from "@/components/admin/TeamActivityLog";
 import { supabase } from "@/integrations/supabase/client";
 import { teamSignUp, generateUsername, generatePassword } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -382,10 +383,11 @@ export default function AdminTeamManagement() {
   return (
     <div className="space-y-4">
       <Tabs defaultValue="members">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="members">Members</TabsTrigger>
           <TabsTrigger value="matrix">Access Matrix</TabsTrigger>
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="activity">Activity Log</TabsTrigger>
         </TabsList>
 
         {/* ═══ MEMBERS TAB ═══ */}
@@ -487,6 +489,11 @@ export default function AdminTeamManagement() {
         {/* ═══ DASHBOARD TAB ═══ */}
         <TabsContent value="dashboard" className="space-y-4">
           <TeamActivityDashboard />
+        </TabsContent>
+
+        {/* ═══ ACTIVITY LOG TAB ═══ */}
+        <TabsContent value="activity" className="space-y-4">
+          <TeamActivityLog />
         </TabsContent>
       </Tabs>
 
