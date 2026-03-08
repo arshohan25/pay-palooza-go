@@ -324,37 +324,42 @@ export const MoreIcon = () => (
   </svg>
 );
 
-// Savings / Piggy bank icon — green/yellow
+// Savings / Growing plant icon — growth metaphor
 export const SavingsIcon = ({ isHovered }: IconProps) => (
   <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" overflow="visible">
     <defs>
-      <linearGradient id="piggyGrad" x1="10" y1="18" x2="46" y2="48" gradientUnits="userSpaceOnUse">
+      <linearGradient id="potGrad" x1="18" y1="34" x2="38" y2="52" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#8D6E63"/>
+        <stop offset="100%" stopColor="#5D4037"/>
+      </linearGradient>
+      <linearGradient id="leafGrad" x1="0%" y1="0%" x2="0%" y2="100%">
         <stop offset="0%" stopColor="#4CAF50"/>
         <stop offset="100%" stopColor="#1B5E20"/>
       </linearGradient>
     </defs>
-    {/* Piggy body */}
-    <ellipse cx="28" cy="33" rx="17" ry="14" fill="url(#piggyGrad)"/>
-    {/* Snout */}
-    <ellipse cx="44" cy="35" rx="5" ry="3.5" fill="#81C784"/>
-    <circle cx="43" cy="34.5" r="1" fill="#1B5E20"/>
-    <circle cx="45" cy="34.5" r="1" fill="#1B5E20"/>
-    {/* Ear */}
-    <ellipse cx="20" cy="20" rx="5" ry="5" fill="#81C784"/>
-    <ellipse cx="20" cy="20" rx="3" ry="3" fill="#4CAF50"/>
-    {/* Eye */}
-    <circle cx="36" cy="28" r="2.2" fill="white"/>
-    <circle cx="36.6" cy="28.2" r="1" fill="#1B5E20"/>
-    {/* Blush */}
-    <ellipse cx="40" cy="34" rx="3" ry="2" fill="#F48FB1" opacity="0.35"/>
-    {/* Coin slot */}
-    <rect x="23" y="18" width="10" height="2.5" rx="1.25" fill="#1B5E20"/>
-    {/* Legs */}
-    <rect x="18" y="45" width="5" height="5" rx="2" fill="#388E3C"/>
-    <rect x="26" y="45" width="5" height="5" rx="2" fill="#388E3C"/>
-    <rect x="34" y="45" width="5" height="5" rx="2" fill="#388E3C"/>
-    {/* Tail curl */}
-    <path d="M11 30 Q7 28 9 24" stroke="#388E3C" strokeWidth="2" strokeLinecap="round" fill="none"/>
+    {/* Pot rim */}
+    <rect x="16" y="34" width="24" height="4" rx="2" fill="#A1887F"/>
+    {/* Pot body — trapezoid */}
+    <path d="M18 38 L20 50 Q20 52 22 52 L34 52 Q36 52 36 50 L38 38 Z" fill="url(#potGrad)"/>
+    {/* Soil */}
+    <ellipse cx="28" cy="37" rx="10" ry="3" fill="#3E2723"/>
+    {/* Stem */}
+    <motion.g
+      animate={isHovered ? { scaleY: [1, 1.08, 1], rotate: [0, 2, -2, 0] } : { scaleY: 1, rotate: 0 }}
+      transition={isHovered ? { duration: 1.2, ease: "easeInOut", repeat: Infinity } : { duration: 0.3 }}
+      style={{ transformBox: "fill-box", transformOrigin: "28px 34px" }}
+    >
+      <path d="M28 34 L28 18" stroke="#388E3C" strokeWidth="2.5" strokeLinecap="round"/>
+      {/* Left leaf */}
+      <path d="M28 26 Q20 20 18 14 Q22 16 28 22" fill="url(#leafGrad)"/>
+      <path d="M28 26 Q23 22 22 17" stroke="#1B5E20" strokeWidth="0.6" fill="none" opacity="0.5"/>
+      {/* Right leaf */}
+      <path d="M28 22 Q36 16 38 10 Q34 12 28 18" fill="url(#leafGrad)"/>
+      <path d="M28 22 Q33 18 34 13" stroke="#1B5E20" strokeWidth="0.6" fill="none" opacity="0.5"/>
+      {/* Top small leaf / bud */}
+      <path d="M28 18 Q26 13 24 10 Q27 12 28 15" fill="#4CAF50"/>
+      <path d="M28 18 Q30 13 32 10 Q29 12 28 15" fill="#66BB6A"/>
+    </motion.g>
     {/* Coin badge — bounces on hover */}
     <motion.g
       animate={isHovered ? { y: [0, -4, 0], rotate: [0, 15, -10, 0] } : { y: 0, rotate: 0 }}
