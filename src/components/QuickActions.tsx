@@ -10,6 +10,7 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragStartEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -36,6 +37,7 @@ import {
   GiftCardsIcon,
 } from "./QuickActionIcons";
 import { useI18n } from "@/lib/i18n";
+import { haptics } from "@/lib/haptics";
 import { useFeatureLocks } from "@/hooks/use-feature-locks";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
 
@@ -312,9 +314,14 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
   );
 
+  const handleDragStart = useCallback((_event: DragStartEvent) => {
+    haptics.medium();
+  }, []);
+
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
+    haptics.success();
     setSortableOrder(prev => {
       const oldIndex = prev.indexOf(active.id as string);
       const newIndex = prev.indexOf(over.id as string);
