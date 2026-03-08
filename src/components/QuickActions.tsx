@@ -436,7 +436,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
               const isFeatureLocked = lockStatus.locked;
               const isGlobalOff = featureKey ? isGloballyDisabled(featureKey) : false;
               const isUnavailable = isFeatureLocked || isGlobalOff;
-              const isDraggable = !FIXED_IDS.has(action.id);
+              const isDraggable = isDnDEnabled && !FIXED_IDS.has(action.id);
 
               return (
                 <SortableActionItem
