@@ -258,7 +258,44 @@ export default function AdminMerchantManagement() {
     }
   };
 
-  // ─── Analytics computation ───
+  // ─── Generate API key for merchant ───
+  const generateApiKey = async (merchantId: string) => {
+    const apiKey = "epk_" + crypto.randomUUID().replace(/-/g, "");
+    const secretKey = "eps_" + crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+    const { error } = await supabase.from("merchant_api_keys").insert({ merchant_id: merchantId, api_key: apiKey, secret_key: secretKey }).select().single();
+    if (error) { toast.error("Failed to generate key: " + error.message); return; }
+    setShowNewSecret(secretKey);
+    toast.success("API key generated");
+    if (detailMerchant) {
+      const d = await fetchMerchantDetail(detailMerchant.id, detailMerchant.user_id);
+      setDetail(d);
+    }
+  };
+
+  const copyText = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(label);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
+  // ─── Approve/Reject API request ───
+  const handleApiRequest = async (requestId: string, action: "approved" | "rejected", notes?: string) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+    await (supabase as any).from("merchant_api_requests").update({
+      status: action,
+      admin_notes: notes || null,
+      reviewed_by: session.user.id,
+      reviewed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq("id", requestId);
+    toast.success(`Request ${action}`);
+    if (detailMerchant) {
+      const d = await fetchMerchantDetail(detailMerchant.id, detailMerchant.user_id);
+      setDetail(d);
+    }
+  };
+
   const computeAnalytics = () => {
     if (!detail) return { summary: { total: 0, completed: 0, revenue: 0, successRate: 0 }, daily: [] as any[] };
     const days = parseInt(analyticsRange);
