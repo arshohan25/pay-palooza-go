@@ -1,41 +1,29 @@
 
 
-## Plan: Long-Press Tooltip for Quick Action Icons
+## Plan: Add Biller Categories to API Hub
 
-Add a long-press/hold interaction (500ms) on both the main grid and "More Services" grid icons that shows an animated tooltip bubble with a brief description of each service.
+### What
 
-### 1. Add descriptions to `actionDefs` (line 48-57)
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-Add a `desc` field to each action definition:
-- send: "Send money to anyone instantly"
-- cashout: "Withdraw cash from your wallet"
-- payment: "Pay merchants & stores"
-- bank: "Transfer to bank accounts"
-- recharge: "Top up mobile balance"
-- bill: "Pay utility & other bills"
-- shop: "Browse & buy from shops"
-- more: "Explore more services"
+### Changes
 
-### 2. Add long-press state and handlers
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-Add state: `longPressId: string | null` and a `longPressTimer` ref.
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-Create handlers:
-- `onPointerDown(id)` — starts a 500ms timer, on expiry sets `longPressId` to show tooltip
-- `onPointerUp/onPointerLeave` — clears timer and hides tooltip
-- When `longPressId` is set, prevent the `onClick` from firing (use a `didLongPress` ref flag)
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-### 3. Render tooltip bubble on main grid icons (lines ~170-210)
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-When `longPressId === action.id`, render a `motion.div` tooltip positioned above the icon with `AnimatePresence` for smooth enter/exit. Shows the `desc` text in a small styled bubble with a caret pointing down.
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-### 4. Render tooltip bubble on "More Services" icons (lines ~250-300)
+3. Add the new category icons to the `categoryIcons` map.
 
-Same long-press logic applied to the expanded grid items, using `item.desc` which already exists on `moreServices`.
-
-### 5. Prevent click on long-press
-
-Use a ref flag `didLongPress` — set it `true` when tooltip shows, check it in `onClick`/`handleAction` to skip the action, reset on pointer up.
-
-### Single file change: `src/components/QuickActions.tsx`, ~40 lines added.
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
