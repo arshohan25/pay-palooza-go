@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
+import { playPinTick, playPaymentSuccess, playPaymentError, playSlideConfirm } from "@/lib/sounds";
 
 /* ─── helpers ──────────────────────────────────────────────────── */
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);

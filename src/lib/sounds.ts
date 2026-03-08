@@ -52,3 +52,44 @@ export function playChatRequestSound() {
   playTone(659.25, now + 0.2, 0.18, 0.07, ctx);   // E5
 }
 
+/** Soft tick for PIN digit entry */
+export function playPinTick() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  if (ctx.state === "suspended") ctx.resume();
+  const now = ctx.currentTime;
+  playTone(880, now, 0.04, 0.06, ctx); // A5 short tick
+}
+
+/** Ascending success chime for payment completion */
+export function playPaymentSuccess() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  if (ctx.state === "suspended") ctx.resume();
+  const now = ctx.currentTime;
+  playTone(523.25, now, 0.12, 0.1, ctx);          // C5
+  playTone(659.25, now + 0.1, 0.12, 0.1, ctx);    // E5
+  playTone(783.99, now + 0.2, 0.12, 0.1, ctx);    // G5
+  playTone(1046.5, now + 0.3, 0.3, 0.08, ctx);    // C6
+}
+
+/** Descending error tone for payment failure */
+export function playPaymentError() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  if (ctx.state === "suspended") ctx.resume();
+  const now = ctx.currentTime;
+  playTone(440, now, 0.15, 0.1, ctx);             // A4
+  playTone(349.23, now + 0.15, 0.25, 0.08, ctx);  // F4
+}
+
+/** Confirmation slide sound */
+export function playSlideConfirm() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  if (ctx.state === "suspended") ctx.resume();
+  const now = ctx.currentTime;
+  playTone(587.33, now, 0.08, 0.07, ctx);         // D5
+  playTone(783.99, now + 0.07, 0.12, 0.06, ctx);  // G5
+}
+
