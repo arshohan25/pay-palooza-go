@@ -43,8 +43,12 @@ export default function AdminGlobalToggles() {
   const [bulkAction, setBulkAction] = useState<"enable" | "disable" | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
 
+  const accountToggles = toggles.filter(t => t.feature_key.startsWith("account_"));
+  const generalToggles = toggles.filter(t => !t.feature_key.startsWith("account_"));
   const disabledCount = toggles.filter(t => !t.is_enabled).length;
   const enabledCount = toggles.filter(t => t.is_enabled).length;
+  const accountDisabledCount = accountToggles.filter(t => !t.is_enabled).length;
+  const generalDisabledCount = generalToggles.filter(t => !t.is_enabled).length;
 
   const load = useCallback(async () => {
     setLoading(true);
