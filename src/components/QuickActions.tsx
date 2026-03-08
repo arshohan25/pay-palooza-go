@@ -478,6 +478,26 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
             })}
           </div>
         </SortableContext>
+        <DragOverlay dropAnimation={{ duration: 200, easing: "ease" }}>
+          {activeDragId ? (() => {
+            const action = allActionDefs.find(a => a.id === activeDragId);
+            if (!action) return null;
+            const label = t(action.labelKey);
+            return (
+              <div className="flex flex-col items-center gap-2.5 drop-shadow-xl">
+                <div
+                  className="relative flex items-center justify-center rounded-full shadow-lg ring-2 ring-primary/30 overflow-hidden"
+                  style={{ width: 56, height: 56, background: action.bgStyle }}
+                >
+                  {action.id === "more" ? <MoreIcon /> : <action.Icon />}
+                </div>
+                <span className="text-[10px] sm:text-[10.5px] font-semibold text-foreground leading-tight text-center px-0.5">
+                  {label}
+                </span>
+              </div>
+            );
+          })() : null}
+        </DragOverlay>
       </DndContext>
 
       {/* Inline expanded More services */}
