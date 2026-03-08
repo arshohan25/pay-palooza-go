@@ -133,6 +133,73 @@
       return btn;
     },
 
+    /** Display a dynamic QR code for a payment session */
+    displayQR: function (selector, sessionData, options) {
+      injectStyles();
+      var container = typeof selector === "string" ? document.querySelector(selector) : selector;
+      if (!container) { console.error("EasyPay: container not found:", selector); return; }
+
+      var opts = options || {};
+      var qrData = typeof sessionData === "string" ? sessionData : (sessionData.qr_data || "");
+      var amount = sessionData.amount || 0;
+      var qrPageUrl = sessionData.qr_page_url || "";
+
+      // Build QR display
+      var wrapper = document.createElement("div");
+      wrapper.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:12px;padding:24px;border-radius:16px;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,0.08);max-width:320px;margin:0 auto;";
+
+      var title = document.createElement("div");
+      title.style.cssText = "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;font-weight:600;color:#64748b;";
+      title.textContent = "Scan to Pay with EasyPay";
+      wrapper.appendChild(title);
+
+      var amountEl = document.createElement("div");
+      amountEl.style.cssText = "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:28px;font-weight:800;color:#0f172a;";
+      amountEl.textContent = "৳" + amount;
+      wrapper.appendChild(amountEl);
+
+      // QR image (use qr_page_url as fallback for external QR generators)
+      var qrImg = document.createElement("img");
+      qrImg.style.cssText = "width:220px;height:220px;border-radius:12px;";
+      qrImg.alt = "Payment QR Code";
+
+      // Generate QR using a simple API or canvas
+      if (typeof QRCode !== "undefined") {
+        QRCode.toDataURL(qrData, { width: 220, margin: 2 }, function(err, url) {
+          if (!err) qrImg.src = url;
+        });
+      } else {
+        // Fallback: use an inline QR generator API
+        qrImg.src = "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" + encodeURIComponent(qrData);
+      }
+      wrapper.appendChild(qrImg);
+
+      var statusEl = document.createElement("div");
+      statusEl.style.cssText = "font-size:13px;color:#94a3b8;display:flex;align-items:center;gap:6px;";
+      statusEl.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;animation:easypay-spin 1.5s ease-in-out infinite;"></span> Waiting for payment…';
+      wrapper.appendChild(statusEl);
+
+      container.appendChild(wrapper);
+
+      // Poll for completion
+      var pollInterval = setInterval(function () {
+        if (!sessionData.session_id) return;
+        EasyPay.checkStatus(sessionData.session_id).then(function (session) {
+          if (session.status === "completed") {
+            clearInterval(pollInterval);
+            statusEl.innerHTML = '<span style="color:#16a34a;font-weight:700;">✓ Payment Received!</span>';
+            if (opts.onSuccess) opts.onSuccess(session);
+          } else if (session.status === "expired" || session.status === "failed") {
+            clearInterval(pollInterval);
+            statusEl.innerHTML = '<span style="color:#dc2626;">Session expired</span>';
+            if (opts.onExpired) opts.onExpired(session);
+          }
+        }).catch(function () {});
+      }, 3000);
+
+      return { destroy: function () { clearInterval(pollInterval); wrapper.remove(); } };
+    },
+
     /** Check payment status */
     checkStatus: function (sessionId) {
       if (!config.apiKey || !config.endpoint) {

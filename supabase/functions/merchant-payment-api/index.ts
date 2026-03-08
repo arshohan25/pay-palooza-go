@@ -169,12 +169,24 @@ Deno.serve(async (req) => {
 
       const baseUrl = Deno.env.get("SITE_URL") || `https://${Deno.env.get("SUPABASE_URL")?.replace("https://", "").replace(".supabase.co", "")}-preview.lovable.app`;
       const checkoutUrl = `${baseUrl}/checkout/${session.id}`;
+      const qrPageUrl = `${baseUrl}/pay/qr/${session.id}`;
+
+      // Dynamic QR payload — scannable by EasyPay app
+      const qrData = JSON.stringify({
+        type: "easypay",
+        sessionId: session.id,
+        merchantId: keyRow.merchant_id,
+        amount: session.amount,
+        ref: session.reference || null,
+      });
 
       await logRequest();
       return json({
         success: true,
         session_id: session.id,
         checkout_url: checkoutUrl,
+        qr_page_url: qrPageUrl,
+        qr_data: qrData,
         amount: session.amount,
         currency: session.currency,
         reference: session.reference,

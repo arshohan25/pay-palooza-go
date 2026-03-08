@@ -3,12 +3,16 @@
  * and determines the correct transaction flow to route to.
  */
 
-export type QrFlow = "send" | "payment" | "unknown";
+export type QrFlow = "send" | "payment" | "dynamic_payment" | "unknown";
 
 export interface QrParseResult {
   flow: QrFlow;
   identifier: string;
   name?: string;
+  /** Present only when flow === "dynamic_payment" */
+  sessionId?: string;
+  amount?: number;
+  ref?: string | null;
 }
 
 const PHONE_RE = /^(?:\+?880|0)?1[3-9]\d{8}$/;
@@ -27,6 +31,17 @@ export function parseQrData(raw: string): QrParseResult {
   try {
     const obj = JSON.parse(trimmed);
     if (obj && typeof obj === "object") {
+      // Dynamic payment QR (EasyPay session)
+      if (obj.type === "easypay" && obj.sessionId) {
+        return {
+          flow: "dynamic_payment",
+          identifier: obj.merchantId || obj.merchant_id || "",
+          sessionId: obj.sessionId,
+          amount: obj.amount,
+          ref: obj.ref || null,
+          name: obj.name || undefined,
+        };
+      }
       // Merchant QR (JSON)
       if (obj.merchantId || obj.merchant_id) {
         return {
