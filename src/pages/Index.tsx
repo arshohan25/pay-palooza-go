@@ -157,16 +157,14 @@ const Index = () => {
   }, [user, isAuthenticated, signOut]);
 
   const triggerRefresh = useCallback(() => {
-    if (isLoading) return;
+    if (isPulling) return;
     setIsPulling(true);
-    setIsLoading(true);
     fetchBalance();
     setRefreshKey((k) => k + 1);
     setTimeout(() => {
-      setIsLoading(false);
       setIsPulling(false);
     }, 600);
-  }, [isLoading]);
+  }, [isPulling]);
 
   usePullToRefresh({ onRefresh: triggerRefresh, threshold: 70 });
 
