@@ -486,106 +486,140 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
         </DragOverlay>
       </DndContext>
 
-      {/* Inline expanded More services */}
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
-            className="overflow-hidden"
-          >
-            <div className="border-t border-border/60 mt-4 pt-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-foreground">More Services</h3>
-                <button onClick={() => setExpanded(false)} className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors">
-                  <ChevronUp size={14} className="text-muted-foreground" />
-                </button>
-              </div>
-              <div className="grid grid-cols-4 gap-y-5 gap-x-2 sm:gap-x-3">
-                {visibleMoreServices.map((item, i) => {
-                  const moreGlobalOff = item.featureKey ? isGloballyDisabled(item.featureKey) : false;
-                  return (
-                    <motion.button
-                      key={item.id}
-                      initial={{ opacity: 0, scale: 0, rotate: 0 }}
-                      animate={{ opacity: 1, scale: 1, rotate: [0, 0, -8, 8, -4, 0] }}
-                      transition={{ type: "spring", stiffness: 400, damping: 22, delay: 0.04 * i, rotate: { delay: 0.04 * i + 0.3, duration: 0.4, ease: "easeInOut" } }}
-                      whileTap={{ scale: 0.90 }}
-                      onClick={() => {
-                        if (didLongPress.current) { didLongPress.current = false; return; }
-                        if (moreGlobalOff) { toast.info(`${item.label} is temporarily unavailable`, { description: "This feature has been disabled by the system. Please try again later." }); return; }
-                        handleMoreService(item.id, item.soon);
-                      }}
-                      onPointerDown={() => startLongPress(item.id)}
-                      onPointerUp={cancelLongPress}
-                      onPointerLeave={cancelLongPress}
-                      onMouseEnter={() => setHoveredMoreId(item.id)}
-                      onMouseLeave={() => setHoveredMoreId(null)}
-                      className="flex flex-col items-center gap-2.5 group outline-none relative"
+    </div>
+  );
+};
+
+/* ─── More Services Overlay (renders outside the card via portal-like pattern) ─── */
+const MoreServicesOverlay = ({
+  expanded, setExpanded, visibleMoreServices, isGloballyDisabled, handleMoreService,
+  longPressId, startLongPress, cancelLongPress, didLongPress, hoveredMoreId, setHoveredMoreId,
+}: {
+  expanded: boolean;
+  setExpanded: (v: boolean) => void;
+  visibleMoreServices: typeof moreServices;
+  isGloballyDisabled: (key: string) => boolean;
+  handleMoreService: (id: string, soon?: boolean) => void;
+  longPressId: string | null;
+  startLongPress: (id: string) => void;
+  cancelLongPress: () => void;
+  didLongPress: React.MutableRefObject<boolean>;
+  hoveredMoreId: string | null;
+  setHoveredMoreId: (id: string | null) => void;
+}) => (
+  <AnimatePresence>
+    {expanded && (
+      <>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.25 }}
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+          onClick={() => setExpanded(false)}
+        />
+        <motion.div
+          initial={{ y: "100%", opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: "100%", opacity: 0 }}
+          transition={{ type: "spring", stiffness: 320, damping: 32 }}
+          className="fixed inset-x-0 bottom-0 z-50 flex items-end justify-center"
+        >
+          <div className="w-full max-w-md mx-auto bg-card rounded-t-3xl border-t border-x border-border shadow-xl">
+            <div className="flex items-center justify-between px-5 pt-5 pb-2">
+              <h3 className="text-base font-extrabold text-foreground">More Services</h3>
+              <button
+                onClick={() => setExpanded(false)}
+                className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
+              >
+                <ChevronUp size={16} className="text-muted-foreground" />
+              </button>
+            </div>
+
+            <div className="px-4 pb-8 pt-3 grid grid-cols-4 gap-y-5 gap-x-2 sm:gap-x-3">
+              {visibleMoreServices.map((item, i) => {
+                const moreGlobalOff = item.featureKey ? isGloballyDisabled(item.featureKey) : false;
+                return (
+                  <motion.button
+                    key={item.id}
+                    initial={{ opacity: 0, scale: 0, rotate: 0 }}
+                    animate={{ opacity: 1, scale: 1, rotate: [0, 0, -8, 8, -4, 0] }}
+                    transition={{ type: "spring", stiffness: 400, damping: 22, delay: 0.04 * i, rotate: { delay: 0.04 * i + 0.3, duration: 0.4, ease: "easeInOut" } }}
+                    whileTap={{ scale: 0.90 }}
+                    onClick={() => {
+                      if (didLongPress.current) { didLongPress.current = false; return; }
+                      if (moreGlobalOff) { toast.info(`${item.label} is temporarily unavailable`, { description: "This feature has been disabled by the system. Please try again later." }); return; }
+                      setExpanded(false);
+                      setTimeout(() => handleMoreService(item.id, item.soon), 200);
+                    }}
+                    onPointerDown={() => startLongPress(item.id)}
+                    onPointerUp={cancelLongPress}
+                    onPointerLeave={cancelLongPress}
+                    onMouseEnter={() => setHoveredMoreId(item.id)}
+                    onMouseLeave={() => setHoveredMoreId(null)}
+                    className="flex flex-col items-center gap-2.5 group outline-none relative"
+                  >
+                    <motion.div
+                      whileHover={{ scale: 1.06, y: -2 }}
+                      transition={{ type: "spring", stiffness: 380, damping: 22 }}
+                      className="relative flex items-center justify-center rounded-full shadow-sm group-hover:shadow-md transition-all duration-200 overflow-hidden"
+                      style={{ width: 56, height: 56, filter: moreGlobalOff ? "grayscale(1)" : "none", opacity: moreGlobalOff ? 0.5 : 1 }}
                     >
-                      <motion.div
-                        whileHover={{ scale: 1.06, y: -2 }}
-                        transition={{ type: "spring", stiffness: 380, damping: 22 }}
-                        className="relative flex items-center justify-center rounded-full shadow-sm group-hover:shadow-md transition-all duration-200 overflow-hidden"
-                        style={{ width: 56, height: 56, filter: moreGlobalOff ? "grayscale(1)" : "none", opacity: moreGlobalOff ? 0.5 : 1 }}
-                      >
-                        <div className={`absolute inset-0 rounded-full bg-gradient-to-b ${item.gradient} opacity-[0.14]`} />
-                        {item.soon && (
-                          <div className={`absolute inset-0 rounded-full bg-gradient-to-b ${item.gradient} opacity-20 animate-pulse`} />
-                        )}
-                        {item.soon && (
-                          <div className="absolute inset-0 rounded-full overflow-hidden pointer-events-none">
-                            <div
-                              className="absolute inset-0"
-                              style={{
-                                background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.25) 50%, transparent 60%)",
-                                animation: "shimmer-sweep 2.5s ease-in-out infinite",
-                              }}
-                            />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 blur-[10px] transition-opacity duration-300 -z-10 scale-110">
-                          <div className={`w-full h-full bg-gradient-to-b ${item.gradient} opacity-30`} />
-                        </div>
-                        <item.Icon isHovered={hoveredMoreId === item.id} />
-                      </motion.div>
+                      <div className={`absolute inset-0 rounded-full bg-gradient-to-b ${item.gradient} opacity-[0.14]`} />
                       {item.soon && (
+                        <div className={`absolute inset-0 rounded-full bg-gradient-to-b ${item.gradient} opacity-20 animate-pulse`} />
+                      )}
+                      {item.soon && (
+                        <div className="absolute inset-0 rounded-full overflow-hidden pointer-events-none">
+                          <div
+                            className="absolute inset-0"
+                            style={{
+                              background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.25) 50%, transparent 60%)",
+                              animation: "shimmer-sweep 2.5s ease-in-out infinite",
+                            }}
+                          />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 blur-[10px] transition-opacity duration-300 -z-10 scale-110">
+                        <div className={`w-full h-full bg-gradient-to-b ${item.gradient} opacity-30`} />
+                      </div>
+                      <item.Icon isHovered={hoveredMoreId === item.id} />
+                    </motion.div>
+                    {item.soon && (
+                      <motion.div
+                        className="absolute -top-1 right-0 z-10"
+                        animate={{ scale: [1, 1.15, 1] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                      >
+                        <span className="text-[8px] font-bold text-muted-foreground" style={{ textShadow: '0 0.5px 2px hsl(var(--background) / 0.8)' }}>Soon</span>
+                      </motion.div>
+                    )}
+                    <AnimatePresence>
+                      {longPressId === item.id && (
                         <motion.div
-                          className="absolute -top-1 right-0 z-10"
-                          animate={{ scale: [1, 1.15, 1] }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                          initial={{ opacity: 0, y: 6, scale: 0.9 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          transition={{ duration: 0.18 }}
+                          className="absolute -top-10 left-1/2 -translate-x-1/2 z-50 whitespace-nowrap rounded-lg bg-popover border border-border px-2.5 py-1 text-[10px] font-medium text-popover-foreground shadow-lg pointer-events-none"
                         >
-                          <span className="text-[8px] font-bold text-muted-foreground" style={{ textShadow: '0 0.5px 2px hsl(var(--background) / 0.8)' }}>Soon</span>
+                          {item.desc}
+                          <div className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 rotate-45 bg-popover border-r border-b border-border" />
                         </motion.div>
                       )}
-                      <AnimatePresence>
-                        {longPressId === item.id && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 6, scale: 0.9 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            transition={{ duration: 0.18 }}
-                            className="absolute -top-10 left-1/2 -translate-x-1/2 z-50 whitespace-nowrap rounded-lg bg-popover border border-border px-2.5 py-1 text-[10px] font-medium text-popover-foreground shadow-lg pointer-events-none"
-                          >
-                            {item.desc}
-                            <div className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 rotate-45 bg-popover border-r border-b border-border" />
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                      <span className={`text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-all duration-150 px-0.5 ${moreGlobalOff ? "opacity-50 grayscale" : ""}`}>
-                        {item.label}
-                      </span>
-                    </motion.button>
-                  );
-                })}
-              </div>
+                    </AnimatePresence>
+                    <span className={`text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-all duration-150 px-0.5 ${moreGlobalOff ? "opacity-50 grayscale" : ""}`}>
+                      {item.label}
+                    </span>
+                  </motion.button>
+                );
+              })}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+          </div>
+        </motion.div>
+      </>
+    )}
+  </AnimatePresence>
   );
 };
 
