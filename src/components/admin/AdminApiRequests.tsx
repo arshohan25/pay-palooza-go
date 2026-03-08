@@ -99,18 +99,20 @@ export default function AdminApiRequests() {
       }).eq("id", requestId);
 
       if (action === "approved") {
-        // Generate API key
+        // Generate API key + app password
         const apiKey = "epk_" + crypto.randomUUID().replace(/-/g, "");
         const secretKey = "eps_" + crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
+        const appPassword = "epp_" + crypto.randomUUID().replace(/-/g, "").slice(0, 24);
         const req = requests.find(r => r.id === requestId);
 
         await supabase.from("merchant_api_keys").insert({
           merchant_id: merchantId,
           api_key: apiKey,
           secret_key: secretKey,
+          app_password: appPassword,
           webhook_url: req?.webhook_url || null,
           is_active: true,
-        });
+        } as any);
 
         setGeneratedSecret({ requestId, secret: secretKey });
 

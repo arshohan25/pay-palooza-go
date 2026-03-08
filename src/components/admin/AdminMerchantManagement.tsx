@@ -272,7 +272,8 @@ export default function AdminMerchantManagement() {
   const generateApiKey = async (merchantId: string) => {
     const apiKey = "epk_" + crypto.randomUUID().replace(/-/g, "");
     const secretKey = "eps_" + crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "").slice(0, 16);
-    const { error } = await supabase.from("merchant_api_keys").insert({ merchant_id: merchantId, api_key: apiKey, secret_key: secretKey }).select().single();
+    const appPassword = "epp_" + crypto.randomUUID().replace(/-/g, "").slice(0, 24);
+    const { error } = await supabase.from("merchant_api_keys").insert({ merchant_id: merchantId, api_key: apiKey, secret_key: secretKey, app_password: appPassword } as any).select().single();
     if (error) { toast.error("Failed to generate key: " + error.message); return; }
     setShowNewSecret(secretKey);
     toast.success("API key generated");
