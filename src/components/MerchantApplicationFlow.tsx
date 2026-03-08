@@ -142,12 +142,16 @@ export default function MerchantApplicationFlow({ open, onOpenChange }: Props) {
       business_name: parsed.data.business_name,
       category: parsed.data.category,
       trade_license: parsed.data.trade_license || null,
+      owner_name: parsed.data.owner_name || null,
+      contact_number: parsed.data.contact_number || null,
+      contact_email: parsed.data.contact_email || null,
+      business_address: parsed.data.business_address || null,
       bank_name: parsed.data.bank_name || null,
+      bank_branch: parsed.data.bank_branch || null,
+      bank_account_holder: parsed.data.bank_account_holder || null,
       bank_account_number: parsed.data.bank_account_number || null,
       bank_routing: parsed.data.bank_routing || null,
       reason: parsed.data.reason || null,
-      // Store extra fields in reason as JSON metadata appended
-      // We'll use the reason field creatively or add to the insert
     });
 
     if (error) {
