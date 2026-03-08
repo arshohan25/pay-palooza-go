@@ -233,19 +233,6 @@ export default function AdminDashboard() {
     return () => { supabase.removeChannel(ch); };
   }, [isAdmin]);
 
-  // Fetch pending API requests count
-  useEffect(() => {
-    if (!isAdmin) return;
-    const fetchApiCount = async () => {
-      const { count } = await (supabase as any).from("merchant_api_requests").select("id", { count: "exact", head: true }).eq("status", "pending");
-      setPendingApiRequests(count ?? 0);
-    };
-    fetchApiCount();
-    const ch = supabase.channel("admin-api-req-count")
-      .on("postgres_changes", { event: "*", schema: "public", table: "merchant_api_requests" }, () => fetchApiCount())
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [isAdmin]);
   const fetchUserUsage = async (userId: string) => {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
