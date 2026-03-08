@@ -227,12 +227,12 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                         <div className={`w-full h-full bg-gradient-to-b ${item.gradient} opacity-30`} />
                       </div>
                       <item.Icon isHovered={hoveredMoreId === item.id} />
-                      {item.soon && (
-                        <div className="absolute -top-1.5 -right-1.5 z-10">
-                          <span className="text-[7px] font-bold text-muted-foreground/70">Soon</span>
-                        </div>
-                      )}
                     </motion.div>
+                    {item.soon && (
+                      <div className="absolute -top-1 right-0 z-10">
+                        <span className="text-[7px] font-bold text-muted-foreground/70">Soon</span>
+                      </div>
+                    )}
                     <span className="text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-colors duration-150 px-0.5">
                       {item.label}
                     </span>
