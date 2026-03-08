@@ -110,6 +110,10 @@ export default function AdminMerchantManagement() {
   // Analytics
   const [analyticsRange, setAnalyticsRange] = useState<"7" | "30" | "90">("30");
 
+  // API key generation
+  const [showNewSecret, setShowNewSecret] = useState<string | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
   const loadMerchants = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase.from("merchants").select("*").order("created_at", { ascending: false }).limit(200);
