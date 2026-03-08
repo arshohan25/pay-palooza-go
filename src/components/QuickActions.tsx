@@ -46,14 +46,14 @@ const FEATURE_MAP: Record<string, string> = {
 };
 
 const actionDefs = [
-  { Icon: SendMoneyIcon, labelKey: "sendMoney" as const, id: "send", bgStyle: "rgba(233,30,140,0.12)", ringStyle: "1px solid rgba(233,30,140,0.25)", rippleColor: "rgba(233,30,140,0.35)" },
-  { Icon: CashOutIcon, labelKey: "cashOut" as const, id: "cashout", bgStyle: "rgba(67,160,71,0.12)", ringStyle: "1px solid rgba(67,160,71,0.25)", rippleColor: "rgba(67,160,71,0.35)" },
-  { Icon: PaymentIcon, labelKey: "payment" as const, id: "payment", bgStyle: "rgba(156,39,176,0.12)", ringStyle: "1px solid rgba(156,39,176,0.25)", rippleColor: "rgba(156,39,176,0.35)" },
-  { Icon: BankTransferIcon, labelKey: "bankTransfer" as const, id: "bank", bgStyle: "rgba(33,150,243,0.12)", ringStyle: "1px solid rgba(33,150,243,0.25)", rippleColor: "rgba(33,150,243,0.35)" },
-  { Icon: RechargeIcon, labelKey: "recharge" as const, id: "recharge", bgStyle: "rgba(0,188,212,0.12)", ringStyle: "1px solid rgba(0,188,212,0.25)", rippleColor: "rgba(0,188,212,0.35)" },
-  { Icon: PayBillIcon, labelKey: "payBill" as const, id: "bill", bgStyle: "rgba(255,193,7,0.12)", ringStyle: "1px solid rgba(255,193,7,0.25)", rippleColor: "rgba(255,193,7,0.45)" },
-  { Icon: ShopIcon, labelKey: "shop" as const, id: "shop", bgStyle: "rgba(255,112,67,0.12)", ringStyle: "1px solid rgba(255,112,67,0.25)", rippleColor: "rgba(255,112,67,0.35)" },
-  { Icon: MoreIcon, labelKey: "more" as const, id: "more", bgStyle: "rgba(120,120,140,0.10)", ringStyle: "1px solid rgba(120,120,140,0.20)", rippleColor: "rgba(120,120,140,0.30)" },
+  { Icon: SendMoneyIcon, labelKey: "sendMoney" as const, id: "send", desc: "Send money to anyone instantly", bgStyle: "rgba(233,30,140,0.12)", ringStyle: "1px solid rgba(233,30,140,0.25)", rippleColor: "rgba(233,30,140,0.35)" },
+  { Icon: CashOutIcon, labelKey: "cashOut" as const, id: "cashout", desc: "Withdraw cash from your wallet", bgStyle: "rgba(67,160,71,0.12)", ringStyle: "1px solid rgba(67,160,71,0.25)", rippleColor: "rgba(67,160,71,0.35)" },
+  { Icon: PaymentIcon, labelKey: "payment" as const, id: "payment", desc: "Pay merchants & stores", bgStyle: "rgba(156,39,176,0.12)", ringStyle: "1px solid rgba(156,39,176,0.25)", rippleColor: "rgba(156,39,176,0.35)" },
+  { Icon: BankTransferIcon, labelKey: "bankTransfer" as const, id: "bank", desc: "Transfer to bank accounts", bgStyle: "rgba(33,150,243,0.12)", ringStyle: "1px solid rgba(33,150,243,0.25)", rippleColor: "rgba(33,150,243,0.35)" },
+  { Icon: RechargeIcon, labelKey: "recharge" as const, id: "recharge", desc: "Top up mobile balance", bgStyle: "rgba(0,188,212,0.12)", ringStyle: "1px solid rgba(0,188,212,0.25)", rippleColor: "rgba(0,188,212,0.35)" },
+  { Icon: PayBillIcon, labelKey: "payBill" as const, id: "bill", desc: "Pay utility & other bills", bgStyle: "rgba(255,193,7,0.12)", ringStyle: "1px solid rgba(255,193,7,0.25)", rippleColor: "rgba(255,193,7,0.45)" },
+  { Icon: ShopIcon, labelKey: "shop" as const, id: "shop", desc: "Browse & buy from shops", bgStyle: "rgba(255,112,67,0.12)", ringStyle: "1px solid rgba(255,112,67,0.25)", rippleColor: "rgba(255,112,67,0.35)" },
+  { Icon: MoreIcon, labelKey: "more" as const, id: "more", desc: "Explore more services", bgStyle: "rgba(120,120,140,0.10)", ringStyle: "1px solid rgba(120,120,140,0.20)", rippleColor: "rgba(120,120,140,0.30)" },
 ];
 
 const moreServices = [
@@ -103,6 +103,23 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   const rippleCounterRef = useRef(0);
   const [expanded, setExpanded] = useState(false);
   const [hoveredMoreId, setHoveredMoreId] = useState<string | null>(null);
+  const [longPressId, setLongPressId] = useState<string | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didLongPress = useRef(false);
+
+  const startLongPress = useCallback((id: string) => {
+    didLongPress.current = false;
+    longPressTimer.current = setTimeout(() => {
+      setLongPressId(id);
+      didLongPress.current = true;
+    }, 500);
+  }, []);
+
+  const cancelLongPress = useCallback(() => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    longPressTimer.current = null;
+    setLongPressId(null);
+  }, []);
 
   // Merge moreServices with enabled blank slots (blank slots hidden by default, shown only when enabled)
   const visibleMoreServices = useMemo(() => {
@@ -178,8 +195,11 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35, delay: 0.04 + index * 0.05, ease: [0.23, 1, 0.32, 1] }}
               whileTap={{ scale: 0.90 }}
-              onClick={(e) => { triggerRipple(action.id, e); handleAction(action.id, label); }}
+              onClick={(e) => { if (didLongPress.current) { didLongPress.current = false; return; } triggerRipple(action.id, e); handleAction(action.id, label); }}
               onTouchStart={(e) => triggerRipple(action.id, e)}
+              onPointerDown={() => startLongPress(action.id)}
+              onPointerUp={cancelLongPress}
+              onPointerLeave={cancelLongPress}
               onHoverStart={() => setHoveredId(action.id)}
               onHoverEnd={() => setHoveredId(null)}
               className={`flex flex-col items-center gap-2.5 group outline-none relative ${isUnavailable ? "opacity-60" : ""}`}
@@ -219,6 +239,20 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                   </div>
                 )}
               </motion.div>
+              <AnimatePresence>
+                {longPressId === action.id && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.18 }}
+                    className="absolute -top-10 left-1/2 -translate-x-1/2 z-50 whitespace-nowrap rounded-lg bg-popover border border-border px-2.5 py-1 text-[10px] font-medium text-popover-foreground shadow-lg pointer-events-none"
+                  >
+                    {action.desc}
+                    <div className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 rotate-45 bg-popover border-r border-b border-border" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
               <span className={`text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-all duration-150 px-0.5 ${isGlobalOff ? "opacity-50 grayscale" : ""}`}>
                 {label}
               </span>
@@ -255,9 +289,13 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                       transition={{ type: "spring", stiffness: 400, damping: 22, delay: 0.04 * i, rotate: { delay: 0.04 * i + 0.3, duration: 0.4, ease: "easeInOut" } }}
                       whileTap={{ scale: 0.90 }}
                       onClick={() => {
+                        if (didLongPress.current) { didLongPress.current = false; return; }
                         if (moreGlobalOff) { toast.info(`${item.label} is temporarily unavailable`, { description: "This feature has been disabled by the system. Please try again later." }); return; }
                         handleMoreService(item.id, item.soon);
                       }}
+                      onPointerDown={() => startLongPress(item.id)}
+                      onPointerUp={cancelLongPress}
+                      onPointerLeave={cancelLongPress}
                       onMouseEnter={() => setHoveredMoreId(item.id)}
                       onMouseLeave={() => setHoveredMoreId(null)}
                       className="flex flex-col items-center gap-2.5 group outline-none relative"
@@ -297,6 +335,20 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                           <span className="text-[8px] font-bold text-muted-foreground" style={{ textShadow: '0 0.5px 2px hsl(var(--background) / 0.8)' }}>Soon</span>
                         </motion.div>
                       )}
+                      <AnimatePresence>
+                        {longPressId === item.id && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 6, scale: 0.9 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            transition={{ duration: 0.18 }}
+                            className="absolute -top-10 left-1/2 -translate-x-1/2 z-50 whitespace-nowrap rounded-lg bg-popover border border-border px-2.5 py-1 text-[10px] font-medium text-popover-foreground shadow-lg pointer-events-none"
+                          >
+                            {item.desc}
+                            <div className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 rotate-45 bg-popover border-r border-b border-border" />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                       <span className={`text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-all duration-150 px-0.5 ${moreGlobalOff ? "opacity-50 grayscale" : ""}`}>
                         {item.label}
                       </span>
