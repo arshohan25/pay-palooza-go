@@ -994,6 +994,74 @@ export type Database = {
           },
         ]
       }
+      merchant_products: {
+        Row: {
+          badge: string | null
+          badge_color: string | null
+          category: string
+          created_at: string
+          description: string | null
+          emoji: string
+          id: string
+          image_url: string | null
+          is_active: boolean
+          merchant_id: string
+          name: string
+          original_price: number | null
+          price: number
+          rating: number
+          review_count: number
+          stock: number
+          updated_at: string
+        }
+        Insert: {
+          badge?: string | null
+          badge_color?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          emoji?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          merchant_id: string
+          name: string
+          original_price?: number | null
+          price?: number
+          rating?: number
+          review_count?: number
+          stock?: number
+          updated_at?: string
+        }
+        Update: {
+          badge?: string | null
+          badge_color?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          emoji?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          merchant_id?: string
+          name?: string
+          original_price?: number | null
+          price?: number
+          rating?: number
+          review_count?: number
+          stock?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_products_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchants: {
         Row: {
           bank_account_number: string | null
@@ -1084,6 +1152,7 @@ export type Database = {
           estimated_delivery: string | null
           id: string
           items: Json
+          merchant_id: string | null
           notes: string | null
           order_num: string
           payment_method: string
@@ -1101,6 +1170,7 @@ export type Database = {
           estimated_delivery?: string | null
           id?: string
           items?: Json
+          merchant_id?: string | null
           notes?: string | null
           order_num?: string
           payment_method?: string
@@ -1118,6 +1188,7 @@ export type Database = {
           estimated_delivery?: string | null
           id?: string
           items?: Json
+          merchant_id?: string | null
           notes?: string | null
           order_num?: string
           payment_method?: string
@@ -1130,7 +1201,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       otp_codes: {
         Row: {
@@ -2162,6 +2241,29 @@ export type Database = {
         }[]
       }
       get_public_session_info: { Args: { p_session_id: string }; Returns: Json }
+      get_shop_products: {
+        Args: never
+        Returns: {
+          badge: string
+          badge_color: string
+          category: string
+          created_at: string
+          description: string
+          emoji: string
+          id: string
+          image_url: string
+          is_active: boolean
+          merchant_id: string
+          name: string
+          original_price: number
+          price: number
+          rating: number
+          review_count: number
+          stock: number
+          updated_at: string
+          vendor_name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
