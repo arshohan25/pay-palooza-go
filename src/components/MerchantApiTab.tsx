@@ -50,15 +50,42 @@ interface PaymentSession {
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 
+const ANALYTICS_COLORS = ["hsl(var(--primary))", "hsl(var(--destructive))", "hsl(var(--muted-foreground))", "#f59e0b"];
+const PIE_COLORS = ["#10b981", "#ef4444", "#f59e0b", "#6b7280"];
+
+interface ApiLog {
+  action: string;
+  status_code: number;
+  response_time_ms: number;
+  ip_address: string | null;
+  created_at: string;
+  error_message: string | null;
+}
+
+interface IpWhitelistEntry {
+  id: string;
+  ip_address: string;
+  label: string | null;
+  created_at: string;
+}
+
 const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(({ merchantId }, ref) => {
   const { toast } = useToast();
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [requests, setRequests] = useState<ApiRequest[]>([]);
   const [sessions, setSessions] = useState<PaymentSession[]>([]);
+  const [apiLogs, setApiLogs] = useState<ApiLog[]>([]);
+  const [ipWhitelist, setIpWhitelist] = useState<IpWhitelistEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDocs, setShowDocs] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [revealedFields, setRevealedFields] = useState<Set<string>>(new Set());
+  const [analyticsRange, setAnalyticsRange] = useState<"24h" | "7d" | "30d">("7d");
+  const [showAnalytics, setShowAnalytics] = useState(true);
+  const [showIpWhitelist, setShowIpWhitelist] = useState(false);
+  const [newIp, setNewIp] = useState("");
+  const [newIpLabel, setNewIpLabel] = useState("");
+  const [addingIp, setAddingIp] = useState(false);
 
   // Request form
   const [showRequestForm, setShowRequestForm] = useState(false);
@@ -72,17 +99,25 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const [keysRes, reqRes, sessRes] = await Promise.all([
+    const rangeCutoff = analyticsRange === "24h" ? 1 : analyticsRange === "7d" ? 7 : 30;
+    const cutoffDate = new Date(Date.now() - rangeCutoff * 86400000).toISOString();
+
+    const [keysRes, reqRes, sessRes, logsRes, ipRes] = await Promise.all([
       supabase.from("merchant_api_keys").select("*").eq("merchant_id", merchantId).order("created_at", { ascending: false }),
       (supabase as any).from("merchant_api_requests").select("*").eq("merchant_id", merchantId).order("created_at", { ascending: false }),
       supabase.from("merchant_payment_sessions").select("id, amount, currency, reference, status, customer_phone, webhook_delivered, webhook_attempts, webhook_next_retry_at, completed_at, expires_at, created_at")
         .eq("merchant_id", merchantId).order("created_at", { ascending: false }).limit(50),
+      (supabase as any).from("merchant_api_logs").select("action, status_code, response_time_ms, ip_address, created_at, error_message")
+        .eq("merchant_id", merchantId).gte("created_at", cutoffDate).order("created_at", { ascending: false }).limit(1000),
+      (supabase as any).from("merchant_ip_whitelist").select("*").eq("merchant_id", merchantId).order("created_at", { ascending: false }),
     ]);
     setKeys((keysRes.data || []) as ApiKey[]);
     setRequests((reqRes.data || []) as unknown as ApiRequest[]);
     setSessions((sessRes.data || []) as PaymentSession[]);
+    setApiLogs((logsRes.data || []) as ApiLog[]);
+    setIpWhitelist((ipRes.data || []) as IpWhitelistEntry[]);
     setLoading(false);
-  }, [merchantId]);
+  }, [merchantId, analyticsRange]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
