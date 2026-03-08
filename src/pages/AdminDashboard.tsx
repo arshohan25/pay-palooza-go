@@ -205,6 +205,10 @@ export default function AdminDashboard() {
   const [detailUser, setDetailUser] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailData, setDetailData] = useState<{ profile: any; roles: any[]; kyc: any; transactions: any[]; limitOverrides: any[]; globalLimits: any[] } | null>(null);
+  const [editingLimit, setEditingLimit] = useState<{
+    txnType: string; period: string; oldAmount: number; oldCount: number; newAmount: string; newCount: string; isCustom: boolean; overrideId: string | null;
+  } | null>(null);
+  const [savingLimit, setSavingLimit] = useState(false);
   const { visible: realtimeVisible, flash: realtimeFlash } = useRealtimeIndicator();
   const { status: wsStatus, lastConnectedAt, reconnectAttempt } = useRealtimeStatus();
   const [disabledTogglesCount, setDisabledTogglesCount] = useState(0);
