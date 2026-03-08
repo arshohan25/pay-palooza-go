@@ -1,19 +1,29 @@
 
 
-## Plan: Make Savings Icon More Vibrant with Larger Coin
+## Plan: Add Biller Categories to API Hub
 
-### Changes to `src/components/QuickActionIcons.tsx` (lines 326-369)
+### What
 
-1. **More vibrant green piggy bank**:
-   - Gradient stops: `#4CAF50` → `#1B5E20` (deeper, more saturated green)
-   - Snout/ear highlights: `#81C784` (brighter)
-   - Legs: `#388E3C` (richer green)
-   - Tail: `#388E3C`
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-2. **Larger golden coin**:
-   - Increase coin circle radius from `r="8"` to `r="11"` 
-   - Inner circle from `r="6"` to `r="8.5"`
-   - Taka symbol font size from `8` to `11`
-   - Adjust position slightly (e.g. `cx="12" cy="12"`) so it sits nicely at top-left
-   - Keep the bounce/rotate hover animation
+### Changes
+
+**File: `src/components/admin/AdminApiHub.tsx`**
+
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
