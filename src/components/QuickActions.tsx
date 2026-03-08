@@ -217,11 +217,21 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                       <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 blur-[10px] transition-opacity duration-300 -z-10 scale-110">
                         <div className={`w-full h-full bg-gradient-to-b ${item.gradient} opacity-30`} />
                       </div>
-                      <item.icon size={22} className="text-foreground relative z-10" />
+                      <motion.div
+                        className="relative z-10"
+                        whileHover={{ rotate: [0, -8, 8, -4, 0] }}
+                        transition={{ duration: 0.5, ease: "easeInOut" }}
+                      >
+                        <item.icon size={22} className="text-foreground" />
+                      </motion.div>
                       {item.soon && (
-                        <div className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-muted flex items-center justify-center shadow-md z-10">
-                          <span className="text-[7px] font-bold text-muted-foreground">Soon</span>
-                        </div>
+                        <motion.div
+                          className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-destructive/80 flex items-center justify-center shadow-lg z-10 ring-2 ring-background"
+                          animate={{ scale: [1, 1.12, 1] }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                          <span className="text-[6.5px] font-bold text-destructive-foreground">Soon</span>
+                        </motion.div>
                       )}
                     </motion.div>
                     <span className="text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-colors duration-150 px-0.5">
