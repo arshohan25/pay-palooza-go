@@ -207,14 +207,14 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                 {moreServices.map((item, i) => (
                   <motion.button
                     key={item.id}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.04 * i, duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                    initial={{ opacity: 0, scale: 0.7, y: 12 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ delay: 0.06 * i, duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
                     whileTap={{ scale: 0.90 }}
                     onClick={() => handleMoreService(item.id, item.soon)}
                     onMouseEnter={() => setHoveredMoreId(item.id)}
                     onMouseLeave={() => setHoveredMoreId(null)}
-                    className={`flex flex-col items-center gap-2.5 group outline-none relative ${item.soon ? "opacity-60" : ""}`}
+                    className="flex flex-col items-center gap-2.5 group outline-none relative"
                   >
                     <motion.div
                       whileHover={{ scale: 1.06, y: -2 }}
@@ -228,13 +228,9 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                       </div>
                       <item.Icon isHovered={hoveredMoreId === item.id} />
                       {item.soon && (
-                        <motion.div
-                          className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-destructive/80 flex items-center justify-center shadow-lg z-10 ring-2 ring-background"
-                          animate={{ scale: [1, 1.12, 1] }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                        >
-                          <span className="text-[6.5px] font-bold text-destructive-foreground">Soon</span>
-                        </motion.div>
+                        <div className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-muted/90 border border-border/60 shadow-sm z-10">
+                          <span className="text-[7px] font-semibold text-muted-foreground">Soon</span>
+                        </div>
                       )}
                     </motion.div>
                     <span className="text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-colors duration-150 px-0.5">

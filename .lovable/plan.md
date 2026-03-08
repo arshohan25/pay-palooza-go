@@ -1,15 +1,29 @@
 
 
-## Plan: Update Savings Icon, Fix "Soon" Styling, Add Scale-Up Entrance
+## Plan: Add Biller Categories to API Hub
 
-### 1. Change Savings Icon (`QuickActionIcons.tsx`)
-Replace the current teal piggy bank with a warmer green/yellow piggy bank matching the reference image — rounder body, brighter green with a yellow coin on top, pink/peach accent tones.
+### What
 
-### 2. Fix "Soon" Badge Styling (`QuickActions.tsx`)
-Currently "Soon" items have `opacity-60` making them look broken/disabled, and use a pulsing red destructive badge which is too aggressive. Fix:
-- Remove `opacity-60` class from soon items so they look normal
-- Replace the red destructive badge with a subtle muted pill badge (small grey/muted text, no pulsing animation)
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-### 3. Add Scale-Up Entrance Animation (`QuickActions.tsx`)
-Update each More Services icon's `motion.button` to include `initial={{ opacity: 0, scale: 0.7, y: 12 }}` and `animate={{ opacity: 1, scale: 1, y: 0 }}` with staggered delays, so icons pop in with a scale-up effect when the section expands.
+### Changes
+
+**File: `src/components/admin/AdminApiHub.tsx`**
+
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
