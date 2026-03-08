@@ -137,6 +137,20 @@ body::-webkit-scrollbar {
     max-width: 100vw;
   }
 
+  /* Compact mode */
+  html.compact-mode {
+    font-size: 14px;
+  }
+  html.compact-mode .space-y-5 {
+    gap: 0.75rem;
+  }
+  html.compact-mode .p-4, html.compact-mode .p-5, html.compact-mode .sm\:p-6 {
+    padding: 0.75rem;
+  }
+  html.compact-mode .rounded-3xl {
+    border-radius: 1.25rem;
+  }
+
   /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 4px;

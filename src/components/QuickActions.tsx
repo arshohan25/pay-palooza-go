@@ -42,6 +42,7 @@ import { haptics } from "@/lib/haptics";
 import { useFeatureLocks } from "@/hooks/use-feature-locks";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { useQuickActionOrder } from "@/hooks/use-quick-action-order";
+import { useCustomization } from "@/hooks/use-customization";
 
 const FEATURE_MAP: Record<string, string> = {
   send: "send_money",
@@ -126,6 +127,7 @@ interface SortableActionItemProps {
   expanded: boolean;
   longPressId: string | null;
   justDropped: boolean;
+  iconSizePx: number;
   onTriggerRipple: (id: string, e: React.MouseEvent | React.TouchEvent) => void;
   onHandleAction: (id: string, label: string) => void;
   onHoverStart: (id: string) => void;
@@ -137,7 +139,7 @@ interface SortableActionItemProps {
 
 const SortableActionItem = ({
   action, index, isDraggable, isHovered, ripple, label,
-  isFeatureLocked, isGlobalOff, isUnavailable, expanded, longPressId, justDropped,
+  isFeatureLocked, isGlobalOff, isUnavailable, expanded, longPressId, justDropped, iconSizePx,
   onTriggerRipple, onHandleAction, onHoverStart, onHoverEnd,
   onStartLongPress, onCancelLongPress, didLongPressRef,
 }: SortableActionItemProps) => {
@@ -168,7 +170,7 @@ const SortableActionItem = ({
         <div className="flex flex-col items-center gap-2.5">
           <div
             className="rounded-full border-2 border-dashed border-primary/40 bg-primary/5 animate-pulse"
-            style={{ width: 56, height: 56 }}
+            style={{ width: iconSizePx, height: iconSizePx }}
           />
           <span className="text-[10px] font-semibold text-transparent select-none px-0.5">
             {label}
@@ -215,7 +217,7 @@ const SortableActionItem = ({
           whileHover={{ scale: 1.06, y: -2 }}
           transition={{ type: "spring", stiffness: 380, damping: 22 }}
           className="relative flex items-center justify-center rounded-full shadow-sm group-hover:shadow-md transition-all duration-200 overflow-hidden"
-          style={{ width: 56, height: 56, background: action.bgStyle, outline: action.ringStyle, filter: isGlobalOff ? "grayscale(1)" : "none", opacity: isGlobalOff ? 0.5 : 1 }}
+          style={{ width: iconSizePx, height: iconSizePx, background: action.bgStyle, outline: action.ringStyle, filter: isGlobalOff ? "grayscale(1)" : "none", opacity: isGlobalOff ? 0.5 : 1 }}
         >
           <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 blur-[10px] transition-opacity duration-300 -z-10 scale-110" style={{ background: action.bgStyle }} />
           <AnimatePresence>
@@ -298,6 +300,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   // Sortable order state (persisted to DB)
   const { order: sortableOrder, setOrder: setSortableOrder, resetOrder: resetOrderFn, isCustomOrder } = useQuickActionOrder();
   const isDnDEnabled = typeof window !== "undefined" && localStorage.getItem("mfs_dnd_enabled") === "true";
+  const { iconSizePx, gridCols, compactMode } = useCustomization();
 
   const resetOrder = useCallback(() => {
     resetOrderFn();
@@ -405,7 +408,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   };
 
   return (
-    <div className="bg-card rounded-3xl shadow-card border border-border/60 p-4 sm:p-5">
+    <div className={`bg-card rounded-3xl shadow-card border border-border/60 ${compactMode ? "p-3" : "p-4 sm:p-5"}`}>
       <AnimatePresence>
         {isDnDEnabled && isCustomOrder && (
           <motion.div
@@ -426,7 +429,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
       </AnimatePresence>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <SortableContext items={sortableOrder} strategy={rectSortingStrategy}>
-          <div className="grid grid-cols-4 gap-y-5 gap-x-2 sm:gap-x-3">
+          <div className={`grid gap-x-2 sm:gap-x-3 ${compactMode ? "gap-y-3" : "gap-y-5"} ${gridCols === 3 ? "grid-cols-3" : "grid-cols-4"}`}>
             {orderedActions.map((action, index) => {
               const isHov = hoveredId === action.id;
               const ripple = ripples[action.id];
@@ -453,6 +456,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                   expanded={expanded}
                   longPressId={longPressId}
                   justDropped={justDroppedId === action.id}
+                  iconSizePx={iconSizePx}
                   onTriggerRipple={triggerRipple}
                   onHandleAction={handleAction}
                   onHoverStart={(id) => setHoveredId(id)}
@@ -474,7 +478,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
               <div className="flex flex-col items-center gap-2.5 drop-shadow-xl">
                 <div
                   className="relative flex items-center justify-center rounded-full shadow-lg ring-2 ring-primary/30 overflow-hidden"
-                  style={{ width: 56, height: 56, background: action.bgStyle }}
+                  style={{ width: iconSizePx, height: iconSizePx, background: action.bgStyle }}
                 >
                   {action.id === "more" ? <MoreIcon /> : <action.Icon />}
                 </div>

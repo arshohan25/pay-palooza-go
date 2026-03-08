@@ -6,6 +6,7 @@ import {
   Gift, Lock, LogOut, BadgeCheck, AlertCircle,
   BellOff, Pencil, PlayCircle, Globe,
   MessageCircle, Mail, ClipboardList, ShieldBan, GripVertical,
+  Sun, Grid3X3, Minimize2,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -23,6 +24,7 @@ import BlockedUsersPage from "@/components/BlockedUsersPage";
 import { generateWalletId } from "@/lib/walletId";
 import { useI18n } from "@/lib/i18n";
 import { useUserRoles } from "@/hooks/use-user-roles";
+import { useCustomization } from "@/hooks/use-customization";
 import { supabase } from "@/integrations/supabase/client";
 
 const ROLE_STYLES: Record<string, { label: string; bg: string; text: string }> = {
@@ -141,6 +143,12 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
 
   const { roles } = useUserRoles();
   const { displayName, avatar_url } = useProfile();
+  const {
+    theme: currentTheme, cycleTheme, themeLabel,
+    iconSize, iconSizeLabel, cycleIconSize,
+    gridLayout, cycleGridLayout,
+    compactMode, setCompactMode,
+  } = useCustomization();
   const registeredPhone = getRegisteredPhone();
   const walletId = useMemo(() => generateWalletId(registeredPhone || "WALLET_USER"), [registeredPhone]);
 
@@ -280,6 +288,53 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
               </span>
             }
             onClick={toggleLang}
+          />
+          <MenuRow
+            icon={Sun}
+            iconClass="gradient-accent"
+            label="Theme"
+            sub="Switch between light, dark & system"
+            right={
+              <span className="text-[12px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-xl">
+                {themeLabel}
+              </span>
+            }
+            onClick={cycleTheme}
+          />
+          <MenuRow
+            icon={Grid3X3}
+            iconClass="gradient-cashout"
+            label="Icon Size"
+            sub="Adjust Quick Action icon size"
+            right={
+              <span className="text-[12px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-xl">
+                {iconSizeLabel}
+              </span>
+            }
+            onClick={cycleIconSize}
+          />
+          <MenuRow
+            icon={Grid3X3}
+            iconClass="gradient-primary"
+            label="Grid Layout"
+            sub="Change Quick Actions grid arrangement"
+            right={
+              <span className="text-[12px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-xl">
+                {gridLayout}
+              </span>
+            }
+            onClick={cycleGridLayout}
+          />
+          <ToggleRow
+            icon={Minimize2}
+            iconClass="gradient-hero"
+            label="Compact Mode"
+            sub="Reduce spacing for more content"
+            checked={compactMode}
+            onCheckedChange={(v) => {
+              setCompactMode(v);
+              toast.success(v ? "Compact mode enabled" : "Compact mode disabled");
+            }}
           />
           <ToggleRow
             icon={GripVertical}
