@@ -1,33 +1,29 @@
 
 
-## Plan: Add Dynamic QR Demo & SDK Integration Example
+## Plan: Add Biller Categories to API Hub
 
-The Dynamic QR payment system is already fully implemented (QR page, parser, pay sheet, API, SDK). Two things remain:
+### What
 
-### 1. Dynamic QR Demo on Merchant Dashboard
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-**File: `src/pages/MerchantDashboard.tsx`**
+### Changes
 
-Add a "Test Dynamic QR" button to the **MerchOverview** quick actions grid (line ~618). When tapped, it:
-- Calls the `merchant-payment-api` edge function with `action: "create_session"` using the merchant's own API key
-- Opens the resulting `/pay/qr/:sessionId` page in a new tab (or shows it in a modal)
-- Lets the merchant see exactly what their customers would see
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-This will be added as a 5th quick action or as a prominent card below the existing quick actions.
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-### 2. SDK Integration Example Page/Section
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-**File: `src/components/MerchantApiTab.tsx`**
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-Add a "Dynamic QR Integration" section to the existing API tab showing:
-- A code snippet demonstrating `EasyPay.displayQR()` usage
-- A complete HTML example merchants can copy-paste
-- Explains the flow: create session -> display QR -> listen for completion
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-### Files to Change
+3. Add the new category icons to the `categoryIcons` map.
 
-| File | Change |
-|------|--------|
-| `src/pages/MerchantDashboard.tsx` | Add "Test Dynamic QR" demo flow to MerchOverview |
-| `src/components/MerchantApiTab.tsx` | Add Dynamic QR SDK integration docs section |
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

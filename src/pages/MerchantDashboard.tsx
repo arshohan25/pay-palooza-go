@@ -615,6 +615,56 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh }: { merchant
   const peakHour = hourCounts.indexOf(Math.max(...hourCounts));
   const peakLabel = `${peakHour % 12 || 12}${peakHour < 12 ? "AM" : "PM"}`;
 
+  const [qrDemoLoading, setQrDemoLoading] = useState(false);
+
+  const handleTestDynamicQR = async () => {
+    if (!merchant) return;
+    setQrDemoLoading(true);
+    try {
+      // Fetch the merchant's active API key
+      const { data: keyData } = await supabase
+        .from("merchant_api_keys")
+        .select("api_key, app_password")
+        .eq("merchant_id", merchant.id)
+        .eq("is_active", true)
+        .limit(1)
+        .single();
+
+      if (!keyData) {
+        toast({ title: "No API Key", description: "Request API access from the API tab first.", variant: "destructive" });
+        setQrDemoLoading(false);
+        return;
+      }
+
+      const endpoint = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/merchant-payment-api`;
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": keyData.api_key,
+          "X-App-Password": keyData.app_password || "",
+        },
+        body: JSON.stringify({
+          action: "create_session",
+          amount: 100,
+          reference: `DEMO-${Date.now().toString(36).toUpperCase()}`,
+          description: "Dynamic QR Test Payment",
+        }),
+      });
+
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      // Open QR page in new tab
+      window.open(`/pay/qr/${data.session_id}`, "_blank");
+      toast({ title: "QR Page Opened", description: "Scan with the EasyPay app to test the payment flow." });
+    } catch (err: any) {
+      toast({ title: "Demo Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setQrDemoLoading(false);
+    }
+  };
+
   const quickActions = [
     { icon: Send, label: "Send Money", desc: "Flat ৳5 fee", gradient: "from-blue-500 to-indigo-600", onClick: () => setShowSendMoney(true) },
     { icon: HandCoins, label: "Cash Out", desc: "1.15% charge", gradient: "from-emerald-500 to-teal-600", onClick: () => setShowCashOut(true) },
@@ -643,6 +693,30 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh }: { merchant
             </motion.button>
           ))}
         </div>
+      </motion.div>
+
+      {/* Dynamic QR Demo Card */}
+      <motion.div variants={stagger.item}>
+        <Card className="p-4 border-0 shadow-card bg-gradient-to-r from-primary/5 to-primary/10">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm shrink-0">
+              <QrCode size={22} className="text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="text-sm font-bold text-foreground">Dynamic QR Payments</h4>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Generate a QR code that customers scan to pay instantly — like UPI</p>
+            </div>
+            <Button
+              size="sm"
+              className="h-9 text-[11px] font-bold gap-1.5 shrink-0"
+              onClick={handleTestDynamicQR}
+              disabled={qrDemoLoading}
+            >
+              {qrDemoLoading ? <RefreshCw size={13} className="animate-spin" /> : <ScanLine size={13} />}
+              Test QR
+            </Button>
+          </div>
+        </Card>
       </motion.div>
 
       {/* Revenue cards */}

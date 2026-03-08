@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Key, Copy, CheckCircle2, Globe, Code, Clock, AlertTriangle, RefreshCw, Shield,
   Webhook, ChevronDown, ChevronUp, Send, Loader2, BarChart3, Plus, Trash2, ShieldCheck,
-  Activity, Zap, XCircle
+  Activity, Zap, XCircle, QrCode
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -497,6 +497,54 @@ app.post('/webhook', (req, res) => {
   }
   // Process payment notification...
 });`}</pre>
+            </div>
+
+            <div className="border-t border-border pt-3 mt-3">
+              <p className="text-[11px] font-bold text-foreground mb-1 flex items-center gap-1.5">
+                <QrCode size={12} className="text-primary" />Dynamic QR Integration (UPI-style)
+              </p>
+              <p className="text-[10px] text-muted-foreground mb-2">
+                Display a dynamic QR code on your checkout page. Customers scan it with the EasyPay app to pay instantly — no redirect needed.
+              </p>
+              <pre className="bg-muted/50 rounded-lg p-3 text-[9px] font-mono overflow-x-auto whitespace-pre">{`<!-- 1. Include the SDK -->
+<script src="https://pay-palooza-go.lovable.app/sdk/easypay-sdk.js"></script>
+
+<div id="qr-container"></div>
+
+<script>
+  // Initialize
+  EasyPay.init({
+    apiKey: 'your_api_key_here',
+    appPassword: 'your_app_password_here',
+    endpoint: '${apiEndpoint}'
+  });
+
+  // Step 1: Create a payment session
+  EasyPay.createPayment({
+    amount: 500,
+    reference: 'ORDER-123',
+    description: 'Product purchase'
+  }).then(function(session) {
+
+    // Step 2: Display the QR code
+    EasyPay.displayQR('#qr-container', session, {
+      onSuccess: function(result) {
+        alert('Payment received! ID: ' + result.id);
+        window.location.href = '/order-success';
+      },
+      onExpired: function() {
+        alert('QR expired. Please try again.');
+      }
+    });
+
+  });
+</script>`}</pre>
+              <div className="flex items-center gap-2 mt-2">
+                <button onClick={() => copyText(`EasyPay.displayQR('#qr-container', session, { onSuccess: fn, onExpired: fn });`, "qr-snippet")} className="text-[10px] text-primary font-semibold flex items-center gap-1">
+                  {copiedField === "qr-snippet" ? <CheckCircle2 size={11} className="text-emerald-600" /> : <Copy size={11} />}
+                  Copy QR snippet
+                </button>
+              </div>
             </div>
 
             <div className="border-t border-border pt-3 mt-3">
