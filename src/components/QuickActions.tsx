@@ -295,18 +295,13 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didLongPress = useRef(false);
 
-  // Sortable order state
-  const [sortableOrder, setSortableOrder] = useState<string[]>(loadSortableOrder);
-  const isCustomOrder = useMemo(() => JSON.stringify(sortableOrder) !== JSON.stringify(DEFAULT_SORTABLE_ORDER), [sortableOrder]);
+  // Sortable order state (persisted to DB)
+  const { order: sortableOrder, setOrder: setSortableOrder, resetOrder: resetOrderFn, isCustomOrder } = useQuickActionOrder();
 
   const resetOrder = useCallback(() => {
-    setSortableOrder(DEFAULT_SORTABLE_ORDER);
+    resetOrderFn();
     toast.success("Quick Actions order restored to default");
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sortableOrder));
-  }, [sortableOrder]);
+  }, [resetOrderFn]);
 
   // Build the final ordered action list: fixed first 3 + sorted rest
   const orderedActions = useMemo(() => {
