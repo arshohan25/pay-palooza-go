@@ -265,7 +265,10 @@ export default function AdminMerchantManagement() {
     sessions.forEach(s => {
       const day = new Date(s.created_at).toISOString().slice(0, 10);
       if (!dayMap[day]) dayMap[day] = { date: day, completed: 0, failed: 0, expired: 0, pending: 0, revenue: 0 };
-      dayMap[day][s.status as keyof typeof dayMap[string]] = ((dayMap[day][s.status as keyof typeof dayMap[string]] as number) || 0) + 1;
+      const statusKey = s.status as string;
+      if (statusKey in dayMap[day]) {
+        (dayMap[day] as any)[statusKey] = ((dayMap[day] as any)[statusKey] || 0) + 1;
+      }
       if (s.status === "completed") dayMap[day].revenue += Number(s.amount || 0);
     });
     const daily = Object.values(dayMap).sort((a, b) => a.date.localeCompare(b.date));
