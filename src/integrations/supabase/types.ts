@@ -686,7 +686,9 @@ export type Database = {
           status: string
           success_url: string | null
           updated_at: string
+          webhook_attempts: number
           webhook_delivered: boolean
+          webhook_next_retry_at: string | null
         }
         Insert: {
           amount: number
@@ -707,7 +709,9 @@ export type Database = {
           status?: string
           success_url?: string | null
           updated_at?: string
+          webhook_attempts?: number
           webhook_delivered?: boolean
+          webhook_next_retry_at?: string | null
         }
         Update: {
           amount?: number
@@ -728,7 +732,9 @@ export type Database = {
           status?: string
           success_url?: string | null
           updated_at?: string
+          webhook_attempts?: number
           webhook_delivered?: boolean
+          webhook_next_retry_at?: string | null
         }
         Relationships: [
           {
