@@ -785,6 +785,33 @@ export type Database = {
         }
         Relationships: []
       }
+      merchant_categories: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          label: string
+          name: string
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          label: string
+          name: string
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          label?: string
+          name?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
       merchant_payment_sessions: {
         Row: {
           amount: number
