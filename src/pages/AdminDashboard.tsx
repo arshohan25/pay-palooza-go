@@ -586,6 +586,11 @@ export default function AdminDashboard() {
               {supportUnread}
             </span>
           )}
+          {item.id === "api-requests" && pendingApiRequests > 0 && (
+            <span className="ml-auto min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+              {pendingApiRequests}
+            </span>
+          )}
           {item.id === "kyc" && stats.pendingKyc > 0 && (
             <span className="ml-auto min-w-[16px] h-4 px-1 bg-orange-500 text-white text-[9px] font-bold rounded-full inline-flex items-center justify-center">
               {stats.pendingKyc}
