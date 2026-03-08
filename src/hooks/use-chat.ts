@@ -54,8 +54,15 @@ export interface ChatMessage {
 // ── Hook ─────────────────────────────────────────────────────────────────
 export function useChat() {
   const { user } = useAuth();
-  const [conversations, setConversations] = useState<ChatConversation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [conversations, setConversations] = useState<ChatConversation[]>(() => {
+    try {
+      const cached = localStorage.getItem("mfs_cached_conversations");
+      return cached ? JSON.parse(cached) : [];
+    } catch { return []; }
+  });
+  const [loading, setLoading] = useState(() => {
+    try { return !localStorage.getItem("mfs_cached_conversations"); } catch { return true; }
+  });
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
@@ -121,9 +128,9 @@ export function useChat() {
       ((profiles as any[]) ?? []).map((p: any) => [p.user_id, p as { user_id: string; name: string | null; phone: string; avatar_url: string | null }])
     );
 
-    // Get last message for each conversation
+    // Get last message for each conversation — batch parallel
     const lastMessages: Map<string, ChatMessage> = new Map();
-    for (const convId of convIds) {
+    const lastMsgPromises = convIds.map(async (convId) => {
       const { data: msgs } = await supabase
         .from("chat_messages")
         .select("*")
@@ -132,51 +139,42 @@ export function useChat() {
         .limit(1);
       if (msgs && msgs.length > 0) {
         const msg = msgs[0];
-        // Try decrypt
         try {
           const key = await getOrCreateConversationKey(convId);
-          const decrypted = await tryDecryptMessage(
-            msg.content,
-            msg.is_encrypted,
-            key
-          );
-          lastMessages.set(convId, {
-            ...msg,
-            message_type: msg.message_type as ChatMessage["message_type"],
-            metadata: (msg.metadata as Record<string, unknown>) ?? {},
-            decryptedContent: decrypted,
-          });
+          const decrypted = await tryDecryptMessage(msg.content, msg.is_encrypted, key);
+          return { convId, msg: { ...msg, message_type: msg.message_type as ChatMessage["message_type"], metadata: (msg.metadata as Record<string, unknown>) ?? {}, decryptedContent: decrypted } };
         } catch {
-          lastMessages.set(convId, {
-            ...msg,
-            message_type: msg.message_type as ChatMessage["message_type"],
-            metadata: (msg.metadata as Record<string, unknown>) ?? {},
-            decryptedContent: msg.content,
-          });
+          return { convId, msg: { ...msg, message_type: msg.message_type as ChatMessage["message_type"], metadata: (msg.metadata as Record<string, unknown>) ?? {}, decryptedContent: msg.content } };
         }
       }
-    }
+      return null;
+    });
 
-    // Count unread messages per conversation
+    // Count unread messages per conversation — batch parallel
     const unreadCounts: Map<string, number> = new Map();
-    for (const convId of convIds) {
+    const unreadPromises = convIds.map(async (convId) => {
       const lastRead = lastReadMap.get(convId);
-      if (lastRead) {
-        const { count } = await supabase
-          .from("chat_messages")
-          .select("*", { count: "exact", head: true })
-          .eq("conversation_id", convId)
-          .neq("sender_id", user.id)
-          .gt("created_at", lastRead);
-        unreadCounts.set(convId, count ?? 0);
-      } else {
-        const { count } = await supabase
-          .from("chat_messages")
-          .select("*", { count: "exact", head: true })
-          .eq("conversation_id", convId)
-          .neq("sender_id", user.id);
-        unreadCounts.set(convId, count ?? 0);
-      }
+      const query = supabase
+        .from("chat_messages")
+        .select("*", { count: "exact", head: true })
+        .eq("conversation_id", convId)
+        .neq("sender_id", user.id);
+      if (lastRead) query.gt("created_at", lastRead);
+      const { count } = await query;
+      return { convId, count: count ?? 0 };
+    });
+
+    // Await all in parallel
+    const [lastMsgResults, unreadResults] = await Promise.all([
+      Promise.all(lastMsgPromises),
+      Promise.all(unreadPromises),
+    ]);
+
+    for (const r of lastMsgResults) {
+      if (r) lastMessages.set(r.convId, r.msg as ChatMessage);
+    }
+    for (const r of unreadResults) {
+      unreadCounts.set(r.convId, r.count);
     }
 
     const mapped: ChatConversation[] = convRows.map((conv) => {
@@ -212,6 +210,7 @@ export function useChat() {
       : mapped;
 
     setConversations(filtered);
+    try { localStorage.setItem("mfs_cached_conversations", JSON.stringify(filtered)); } catch {}
     setLoading(false);
   }, [user]);
 
