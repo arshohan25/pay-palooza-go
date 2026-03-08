@@ -5,6 +5,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const BACKOFF_SCHEDULE = [60, 300, 1800, 7200, 86400]; // 1m, 5m, 30m, 2h, 24h in seconds
+const MAX_ATTEMPTS = 5;
+const INLINE_RETRIES = 3;
+const INLINE_DELAYS = [1000, 3000, 9000]; // 1s, 3s, 9s
+
 async function hmacSign(secret: string, payload: string): Promise<string> {
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
@@ -12,6 +17,23 @@ async function hmacSign(secret: string, payload: string): Promise<string> {
   );
   const sig = await crypto.subtle.sign("HMAC", key, enc.encode(payload));
   return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function deliverWebhook(callbackUrl: string, payload: string, signature: string): Promise<{ ok: boolean; status: number }> {
+  const res = await fetch(callbackUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-EasyPay-Signature": signature,
+      "X-EasyPay-Timestamp": new Date().toISOString(),
+    },
+    body: payload,
+  });
+  return { ok: res.ok, status: res.status };
 }
 
 Deno.serve(async (req) => {
@@ -28,7 +50,6 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "session_id required" }), { status: 400, headers: corsHeaders });
     }
 
-    // Get session + API key info
     const { data: session } = await supabase
       .from("merchant_payment_sessions")
       .select("*, merchant_api_keys!api_key_id(secret_key, webhook_url)")
@@ -41,7 +62,6 @@ Deno.serve(async (req) => {
 
     const callbackUrl = session.callback_url || (session.merchant_api_keys as any)?.webhook_url;
     if (!callbackUrl) {
-      // No webhook configured, just mark as delivered
       await supabase
         .from("merchant_payment_sessions")
         .update({ webhook_delivered: true, updated_at: new Date().toISOString() })
@@ -50,6 +70,7 @@ Deno.serve(async (req) => {
     }
 
     const secretKey = (session.merchant_api_keys as any)?.secret_key || "";
+    const currentAttempts = session.webhook_attempts || 0;
 
     const payload = JSON.stringify({
       event: session.status === "completed" ? "payment.completed" : "payment.failed",
@@ -65,55 +86,81 @@ Deno.serve(async (req) => {
 
     const signature = await hmacSign(secretKey, payload);
 
-    // POST to merchant webhook
-    try {
-      const webhookRes = await fetch(callbackUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-EasyPay-Signature": signature,
-          "X-EasyPay-Timestamp": new Date().toISOString(),
-        },
-        body: payload,
-      });
+    // Try inline delivery with retries
+    let delivered = false;
+    let lastStatus = 0;
+    let lastError = "";
 
+    for (let i = 0; i < INLINE_RETRIES; i++) {
+      try {
+        const result = await deliverWebhook(callbackUrl, payload, signature);
+        lastStatus = result.status;
+        if (result.ok) {
+          delivered = true;
+          break;
+        }
+      } catch (err) {
+        lastError = String(err);
+      }
+      if (i < INLINE_RETRIES - 1) {
+        await sleep(INLINE_DELAYS[i]);
+      }
+    }
+
+    const newAttempts = currentAttempts + 1;
+
+    if (delivered) {
       await supabase
         .from("merchant_payment_sessions")
         .update({
-          webhook_delivered: webhookRes.ok,
+          webhook_delivered: true,
+          webhook_attempts: newAttempts,
+          webhook_next_retry_at: null,
           updated_at: new Date().toISOString(),
           metadata: {
             ...(session.metadata || {}),
-            webhook_status: webhookRes.status,
+            webhook_status: lastStatus,
             webhook_delivered_at: new Date().toISOString(),
           },
         })
         .eq("id", session_id);
 
-      return new Response(JSON.stringify({
-        success: true,
-        webhook_status: webhookRes.status,
-        delivered: webhookRes.ok,
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    } catch (fetchErr) {
-      await supabase
-        .from("merchant_payment_sessions")
-        .update({
-          webhook_delivered: false,
-          updated_at: new Date().toISOString(),
-          metadata: {
-            ...(session.metadata || {}),
-            webhook_error: String(fetchErr),
-            webhook_attempted_at: new Date().toISOString(),
-          },
-        })
-        .eq("id", session_id);
-
-      return new Response(JSON.stringify({ success: false, error: "Webhook delivery failed" }), {
-        status: 502,
+      return new Response(JSON.stringify({ success: true, delivered: true, attempts: newAttempts }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Failed — schedule async retry if under max attempts
+    const nextRetryAt = newAttempts < MAX_ATTEMPTS
+      ? new Date(Date.now() + BACKOFF_SCHEDULE[Math.min(newAttempts - 1, BACKOFF_SCHEDULE.length - 1)] * 1000).toISOString()
+      : null;
+
+    await supabase
+      .from("merchant_payment_sessions")
+      .update({
+        webhook_delivered: false,
+        webhook_attempts: newAttempts,
+        webhook_next_retry_at: nextRetryAt,
+        updated_at: new Date().toISOString(),
+        metadata: {
+          ...(session.metadata || {}),
+          webhook_error: lastError || `HTTP ${lastStatus}`,
+          webhook_attempted_at: new Date().toISOString(),
+          ...(newAttempts >= MAX_ATTEMPTS ? { webhook_permanently_failed: true } : {}),
+        },
+      })
+      .eq("id", session_id);
+
+    return new Response(JSON.stringify({
+      success: false,
+      delivered: false,
+      attempts: newAttempts,
+      next_retry_at: nextRetryAt,
+      permanently_failed: newAttempts >= MAX_ATTEMPTS,
+    }), {
+      status: 502,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (err) {
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
