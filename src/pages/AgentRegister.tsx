@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { usePhoneValidation } from "@/hooks/use-phone-validation";
 
 const AgentRegister = () => {
   const navigate = useNavigate();
@@ -17,8 +18,10 @@ const AgentRegister = () => {
   const [nid, setNid] = useState("");
   const [processing, setProcessing] = useState(false);
   const [done, setDone] = useState(false);
+  const phoneValidation = usePhoneValidation(phone);
 
   const handleRegister = async () => {
+    if (phoneValidation.triggerShake()) return;
     if (processing) return;
     setProcessing(true);
     try {
@@ -82,7 +85,8 @@ const AgentRegister = () => {
             <Card className="p-5 border-0 shadow-elevated rounded-2xl space-y-4">
               <div>
                 <Label className="text-xs font-semibold">Phone Number</Label>
-                <Input type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ""))} maxLength={11} className="rounded-xl h-11 mt-1" />
+                <Input type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ""))} onBlur={() => phoneValidation.setTouched(true)} maxLength={11} className={`rounded-xl h-11 mt-1 ${phoneValidation.inputClassName}`} />
+                {phoneValidation.showError && <p className="text-[10px] text-destructive font-medium mt-1 animate-fade-in">{phoneValidation.errorMessage}</p>}
               </div>
               <div>
                 <Label className="text-xs font-semibold">Full Name</Label>
@@ -92,7 +96,7 @@ const AgentRegister = () => {
                 <Label className="text-xs font-semibold">NID Number (Optional)</Label>
                 <Input type="text" inputMode="numeric" placeholder="NID number" value={nid} onChange={e => setNid(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-11 mt-1" />
               </div>
-              <Button onClick={handleRegister} disabled={phone.length < 11 || processing} className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold">
+              <Button onClick={handleRegister} disabled={!phoneValidation.isValid || processing} className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold">
                 {processing ? "Registering…" : "Register Customer"}
               </Button>
             </Card>

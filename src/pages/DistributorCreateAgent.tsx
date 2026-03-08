@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { usePhoneValidation } from "@/hooks/use-phone-validation";
 
 const DistributorCreateAgent = () => {
   const navigate = useNavigate();
@@ -24,8 +25,10 @@ const DistributorCreateAgent = () => {
   const [maxFloat, setMaxFloat] = useState("500000");
   const [processing, setProcessing] = useState(false);
   const [done, setDone] = useState(false);
+  const phoneValidation = usePhoneValidation(phone);
 
   const handleCreate = async () => {
+    if (phoneValidation.triggerShake()) return;
     if (processing || !user) return;
     setProcessing(true);
     try {
@@ -151,7 +154,8 @@ const DistributorCreateAgent = () => {
 
               <div>
                 <Label className="text-xs font-semibold">Phone Number *</Label>
-                <Input type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ""))} maxLength={11} className="rounded-xl h-11 mt-1" />
+                <Input type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ""))} onBlur={() => phoneValidation.setTouched(true)} maxLength={11} className={`rounded-xl h-11 mt-1 ${phoneValidation.inputClassName}`} />
+                {phoneValidation.showError && <p className="text-[10px] text-destructive font-medium mt-1 animate-fade-in">{phoneValidation.errorMessage}</p>}
               </div>
 
               <div>
@@ -186,7 +190,7 @@ const DistributorCreateAgent = () => {
                 </div>
               </div>
 
-              <Button onClick={handleCreate} disabled={phone.length < 11 || !name || processing} className="w-full rounded-xl h-11 text-sm font-bold text-primary-foreground" style={{ background: "linear-gradient(135deg, hsl(217 80% 50%), hsl(226 75% 40%))" }}>
+              <Button onClick={handleCreate} disabled={!phoneValidation.isValid || !name || processing} className="w-full rounded-xl h-11 text-sm font-bold text-primary-foreground" style={{ background: "linear-gradient(135deg, hsl(217 80% 50%), hsl(226 75% 40%))" }}>
                 {processing ? "Creating Agent…" : "Create Agent Account"}
               </Button>
             </Card>

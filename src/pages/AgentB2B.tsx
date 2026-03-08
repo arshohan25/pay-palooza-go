@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import { supabase } from "@/integrations/supabase/client";
+import { usePhoneValidation } from "@/hooks/use-phone-validation";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 
@@ -22,6 +23,7 @@ const AgentB2B = () => {
   const [pin, setPin] = useState("");
   const [step, setStep] = useState<"form" | "confirm" | "done">("form");
   const [processing, setProcessing] = useState(false);
+  const phoneValidation = usePhoneValidation(phone);
   const fee = Number(amount) > 100 ? 3 : 0;
 
   const handleConfirm = async () => {
@@ -136,7 +138,8 @@ const AgentB2B = () => {
               </div>
               <div>
                 <Label className="text-xs font-semibold">{transferType === "agent" ? "Agent" : "Distributor"} Phone</Label>
-                <Input type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ""))} maxLength={11} className="rounded-xl h-11 mt-1" />
+                <Input type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ""))} onBlur={() => phoneValidation.setTouched(true)} maxLength={11} className={`rounded-xl h-11 mt-1 ${phoneValidation.inputClassName}`} />
+                {phoneValidation.showError && <p className="text-[10px] text-destructive font-medium mt-1 animate-fade-in">{phoneValidation.errorMessage}</p>}
               </div>
               <div>
                 <Label className="text-xs font-semibold">Amount (৳)</Label>
@@ -152,7 +155,7 @@ const AgentB2B = () => {
                   <button key={a} onClick={() => setAmount(String(a))} className="px-3 py-2 rounded-xl text-xs font-bold bg-muted text-muted-foreground press-effect hover:bg-primary/10 hover:text-primary transition-colors">৳{fmt(a)}</button>
                 ))}
               </div>
-              <Button onClick={() => setStep("confirm")} disabled={phone.length < 11 || !amount || Number(amount) < 10} className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold">Continue</Button>
+              <Button onClick={() => { if (phoneValidation.triggerShake()) return; setStep("confirm"); }} disabled={!phoneValidation.isValid || !amount || Number(amount) < 10} className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold">Continue</Button>
             </Card>
           </motion.div>
         )}
