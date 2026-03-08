@@ -40,8 +40,9 @@ const CheckoutPage = () => {
   const [pin, setPin] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+  // Load session
   useEffect(() => {
-    if (!sessionId) { setStep("error"); return; }
+    if (!sessionId || !isValidUUID(sessionId)) { setStep("error"); return; }
 
     (async () => {
       const { data, error } = await supabase
