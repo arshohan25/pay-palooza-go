@@ -519,7 +519,7 @@ const CheckoutPage = () => {
               <div className="px-6 pb-4 space-y-4">
                 <div className="h-px bg-border/50" />
                 <div>
-                  <label className="text-xs font-semibold text-foreground block mb-2">Phone Number</label>
+                  <label className="text-xs font-semibold text-foreground block mb-2 text-center">Phone Number</label>
                   <input
                     type="tel"
                     placeholder="01XXXXXXXXX"
@@ -527,7 +527,7 @@ const CheckoutPage = () => {
                     onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
                     maxLength={11}
                     inputMode="numeric"
-                    className="w-full h-12 px-4 rounded-2xl bg-muted/50 border border-border/60 text-base font-semibold text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all"
+                    className="w-full h-12 px-4 rounded-2xl bg-muted/50 border border-border/60 text-base font-semibold text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all text-center"
                   />
                 </div>
 
