@@ -74,7 +74,7 @@ function GlobalDefaultsTab() {
     if (!changes) return;
     setSaving(row.id);
     const { data: { session } } = await supabase.auth.getSession();
-    const { error } = await supabase.from("transaction_limits" as any)
+    const { error } = await supabase.from("transaction_limits")
       .update({ ...changes, updated_at: new Date().toISOString(), updated_by: session?.user?.id } as any)
       .eq("id", row.id);
     if (error) toast.error("Failed to save");
