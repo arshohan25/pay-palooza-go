@@ -18,7 +18,13 @@ interface Application {
   business_name: string;
   category: string;
   trade_license: string | null;
+  owner_name: string | null;
+  contact_number: string | null;
+  contact_email: string | null;
+  business_address: string | null;
   bank_name: string | null;
+  bank_branch: string | null;
+  bank_account_holder: string | null;
   bank_account_number: string | null;
   bank_routing: string | null;
   reason: string | null;
@@ -58,8 +64,8 @@ export default function AdminMerchantApplications() {
       const profileMap = new Map((profiles ?? []).map(p => [p.user_id, p]));
       const enriched = data.map((a: any) => ({
         ...a,
-        applicant_name: profileMap.get(a.user_id)?.name || "Unknown",
-        applicant_phone: profileMap.get(a.user_id)?.phone || "",
+        applicant_name: profileMap.get(a.user_id)?.name || a.owner_name || "Unknown",
+        applicant_phone: a.contact_number || profileMap.get(a.user_id)?.phone || "",
       }));
       setApps(enriched);
     }
@@ -224,13 +230,25 @@ export default function AdminMerchantApplications() {
 
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                     <div><span className="text-muted-foreground">Category:</span> <span className="text-foreground capitalize">{app.category}</span></div>
+                    {app.owner_name && <div><span className="text-muted-foreground">Owner:</span> <span className="text-foreground">{app.owner_name}</span></div>}
+                    {app.contact_number && <div><span className="text-muted-foreground">Contact:</span> <span className="text-foreground">{app.contact_number}</span></div>}
+                    {app.contact_email && <div><span className="text-muted-foreground">Email:</span> <span className="text-foreground">{app.contact_email}</span></div>}
                     {app.trade_license && <div><span className="text-muted-foreground">License:</span> <span className="text-foreground">{app.trade_license}</span></div>}
                     {app.bank_name && <div><span className="text-muted-foreground">Bank:</span> <span className="text-foreground">{app.bank_name}</span></div>}
+                    {app.bank_branch && <div><span className="text-muted-foreground">Branch:</span> <span className="text-foreground">{app.bank_branch}</span></div>}
+                    {app.bank_account_holder && <div><span className="text-muted-foreground">A/C Holder:</span> <span className="text-foreground">{app.bank_account_holder}</span></div>}
                     {app.bank_account_number && <div><span className="text-muted-foreground">Account:</span> <span className="text-foreground">{app.bank_account_number}</span></div>}
                   </div>
 
-                  {app.reason && (
-                    <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2 italic">"{app.reason}"</p>
+                  {(app.business_address || app.reason) && (
+                    <div className="space-y-1">
+                      {app.business_address && (
+                        <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2"><span className="font-medium">Address:</span> {app.business_address}</p>
+                      )}
+                      {app.reason && (
+                        <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2 italic">"{app.reason}"</p>
+                      )}
+                    </div>
                   )}
 
                   {app.status === "pending" && (

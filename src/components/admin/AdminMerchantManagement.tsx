@@ -35,7 +35,7 @@ interface MerchantDetail {
   transactions: any[];
 }
 
-const CATEGORIES = ["retail", "food", "ecommerce", "services", "healthcare", "education", "travel", "other"];
+const CATEGORIES = ["retail", "food", "ecommerce", "services", "healthcare", "education", "travel", "electronics", "fashion", "grocery", "pharmacy", "restaurant", "transportation", "real_estate", "agriculture", "manufacturing", "telecom", "entertainment", "beauty", "sports", "logistics", "consulting", "ngo", "government", "other"];
 const SETTLEMENT_OPTIONS = ["T+0", "T+1", "T+2", "T+3"];
 
 // ─── Helpers ───
@@ -119,7 +119,7 @@ export default function AdminMerchantManagement() {
 
   // Create Merchant dialog
   const [showCreateMerchant, setShowCreateMerchant] = useState(false);
-  const [createForm, setCreateForm] = useState({ phone: "", business_name: "", category: "retail", bank_name: "", bank_account_number: "", bank_routing: "" });
+  const [createForm, setCreateForm] = useState({ phone: "", business_name: "", trade_license: "", category: "retail", bank_name: "", bank_account_number: "", bank_routing: "" });
   const [createLoading, setCreateLoading] = useState(false);
 
   const loadMerchants = useCallback(async () => {
@@ -306,6 +306,7 @@ export default function AdminMerchantManagement() {
       const { error: mErr } = await supabase.from("merchants").insert({
         user_id: profile.user_id,
         business_name: createForm.business_name.trim(),
+        trade_license: createForm.trade_license.trim() || null,
         category: createForm.category as any,
         status: "active" as any,
         bank_name: createForm.bank_name || null,
@@ -327,7 +328,7 @@ export default function AdminMerchantManagement() {
 
       toast.success("Merchant created successfully");
       setShowCreateMerchant(false);
-      setCreateForm({ phone: "", business_name: "", category: "retail", bank_name: "", bank_account_number: "", bank_routing: "" });
+      setCreateForm({ phone: "", business_name: "", trade_license: "", category: "retail", bank_name: "", bank_account_number: "", bank_routing: "" });
       loadMerchants();
     } catch (err: any) {
       toast.error("Error: " + (err.message || "Unknown"));
@@ -991,9 +992,13 @@ export default function AdminMerchantManagement() {
               <Select value={createForm.category} onValueChange={v => setCreateForm(f => ({ ...f, category: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map(c => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}
+                  {CATEGORIES.map(c => <SelectItem key={c} value={c} className="capitalize">{c.replace(/_/g, " ")}</SelectItem>)}
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Trade License (optional)</label>
+              <Input value={createForm.trade_license} onChange={e => setCreateForm(f => ({ ...f, trade_license: e.target.value }))} placeholder="License number" maxLength={50} />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground">Bank Name (optional)</label>
