@@ -1,29 +1,49 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Comprehensive Admin Merchant Management System
 
-### What
+### Current State
+The admin dashboard has only a minimal merchant sub-tab under "Users" — a basic table with business name, category, status, and suspend/lock buttons. There's no dedicated merchant management section, no detail views, no onboarding workflow, no per-merchant fee configuration, no settlement oversight, and no API key administration.
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### What We'll Build
 
-### Changes
+**1. Dedicated "Merchants" nav tab in Admin Dashboard** (replacing the sub-tab under Users)
+- Full-featured merchant list with search, filters (status, category), and bulk actions
+- Sortable columns: Business Name, Owner, Phone, Category, Status, MDR Rate, Revenue, Created
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**2. Merchant Detail Sheet** (click any merchant row)
+- **Profile tab**: Business info, owner profile, bank details, trade license, QR code
+- **Transactions tab**: All transactions for this merchant with filters
+- **API Keys tab**: View/revoke merchant API keys, see webhook URLs, payment session logs
+- **Limits tab**: View/edit merchant-specific limit overrides (reuse existing MerchantLimitsTab logic)
+- **Settings tab**: Edit MDR rate, settlement frequency, category, bank details
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+**3. Merchant Onboarding/Approval Workflow**
+- Pending merchants shown with highlighted badge and "Review" button
+- Approval dialog: view submitted docs (trade license, NID), approve or reject with notes
+- Auto-notify merchant on status change (via notifications table)
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+**4. Per-Merchant Fee/MDR Configuration**
+- Inline editor to set custom MDR rate per merchant
+- Override settlement frequency (T+0, T+1, T+2)
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+**5. Merchant Analytics Summary**
+- Total revenue, transaction count, average ticket size per merchant
+- Top merchants by revenue (leaderboard card)
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+**6. Bulk Actions**
+- Bulk approve pending merchants
+- Bulk suspend/activate
+- Export merchants CSV
 
-3. Add the new category icons to the `categoryIcons` map.
+### Files to Create/Modify
 
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+| File | Action |
+|------|--------|
+| `src/components/admin/AdminMerchantManagement.tsx` | New — full merchant management component |
+| `src/pages/AdminDashboard.tsx` | Add "merchants" nav item + wire component |
+| `src/hooks/use-admin.ts` | Add merchant detail fetch, approval, MDR update helpers |
+
+### No Database Changes Needed
+The existing `merchants`, `merchant_api_keys`, `merchant_payment_sessions`, `profiles`, `transactions`, and `notifications` tables already have the columns and RLS policies needed. Admin has full access via `has_role(auth.uid(), 'admin')` policies.
 
