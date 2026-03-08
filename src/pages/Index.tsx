@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import AppHeader from "@/components/AppHeader";
 import BalanceCard from "@/components/BalanceCard";
 import QuickActions from "@/components/QuickActions";
-import PromoCard from "@/components/PromoCard";
+import PromoSlider from "@/components/PromoSlider";
 import TransactionList from "@/components/TransactionList";
 import BottomNav from "@/components/BottomNav";
 import SideNav from "@/components/SideNav";
@@ -256,7 +256,7 @@ const Index = () => {
                 onSavings={() => setShowSavings(true)}
               />
               
-              <PromoCard />
+              <PromoSlider />
               <TransactionList onSeeAll={() => handleTabChange("history")} refreshKey={refreshKey} />
             </>
           )}
