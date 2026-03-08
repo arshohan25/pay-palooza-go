@@ -405,87 +405,119 @@ const CheckoutPage = () => {
     else navigate("/");
   };
 
+  /* ── Step indicator ──────────────────────────────────────────── */
+  const stepIndex = step === "phone" ? 0 : step === "otp" ? 1 : step === "pin" ? 2 : -1;
+  const StepDots = () =>
+    stepIndex >= 0 ? (
+      <div className="flex items-center justify-center gap-2 py-3">
+        {["Phone", "OTP", "PIN"].map((label, i) => (
+          <div key={label} className="flex items-center gap-2">
+            <div className={`h-2 rounded-full transition-all duration-300 ${
+              i < stepIndex ? "w-2 bg-primary" : i === stepIndex ? "w-6 bg-primary" : "w-2 bg-border"
+            }`} />
+          </div>
+        ))}
+      </div>
+    ) : null;
+
+  /* ── Merchant bar ──────────────────────────────────────────── */
+  const MerchantBar = () => (
+    <div className="flex items-center gap-3 px-6 pt-6 pb-2">
+      <MerchantAvatar name={merchantName} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1">
+          <p className="text-sm font-bold text-foreground truncate">{merchantName || "Merchant"}</p>
+          <BadgeCheck size={14} className="text-primary shrink-0" />
+        </div>
+        {session?.description && (
+          <p className="text-[11px] text-muted-foreground truncate">{session.description}</p>
+        )}
+      </div>
+      {secondsLeft !== null && ["phone", "otp", "pin"].includes(step) && (
+        <CircularCountdown secondsLeft={secondsLeft} total={totalSeconds} />
+      )}
+    </div>
+  );
+
+  /* ── Amount hero ───────────────────────────────────────────── */
+  const AmountHero = () => (
+    <div className="text-center py-5">
+      <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] font-semibold mb-1">Amount to Pay</p>
+      <p className="text-4xl font-black text-foreground tracking-tight">
+        <span className="text-primary text-2xl mr-0.5">৳</span>
+        {session ? fmt(session.amount) : "—"}
+      </p>
+      {session?.reference && (
+        <p className="text-[10px] text-muted-foreground mt-2 font-medium">Ref: {session.reference}</p>
+      )}
+    </div>
+  );
+
+  /* ── Footer ────────────────────────────────────────────────── */
+  const SecuredFooter = () => (
+    <div className="px-6 pb-5 pt-2 flex items-center justify-center gap-1.5 text-muted-foreground/40">
+      <Shield size={10} />
+      <p className="text-[9px] font-medium tracking-wide">Secured by EasyPay</p>
+    </div>
+  );
+
   /* ═══════════════════════════════════════════════════════════ */
   /*  RENDER                                                     */
   /* ═══════════════════════════════════════════════════════════ */
   return (
-    <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen bg-gradient-to-br from-muted/60 via-background to-muted/40 flex items-center justify-center p-4">
+      <div className="w-full max-w-[400px]">
         <AnimatePresence mode="wait">
           {/* LOADING */}
           {step === "loading" && (
-            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="py-16">
+            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="rounded-3xl bg-card border border-border/60 shadow-elevated p-10 text-center"
+            >
               <PulsingRings />
-              <p className="text-sm text-muted-foreground text-center mt-5 font-medium">Loading payment...</p>
+              <p className="text-sm text-muted-foreground text-center mt-6 font-medium">Loading payment...</p>
             </motion.div>
           )}
 
           {/* EXPIRED */}
           {step === "expired" && (
-            <motion.div key="expired" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="rounded-3xl bg-card border border-border shadow-lg p-8 text-center"
+            <motion.div key="expired" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+              className="rounded-3xl bg-card border border-border/60 shadow-elevated p-10 text-center"
             >
-              <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-5">
                 <Clock size={30} className="text-accent" />
               </div>
-              <h2 className="text-lg font-bold text-foreground mb-1">Session Expired</h2>
-              <p className="text-sm text-muted-foreground mb-5">Please request a new payment link from the merchant.</p>
-              <Button variant="outline" onClick={handleCancel} className="rounded-xl px-8">Go Back</Button>
+              <h2 className="text-lg font-bold text-foreground mb-2">Session Expired</h2>
+              <p className="text-sm text-muted-foreground mb-6 max-w-[260px] mx-auto">Please request a new payment link from the merchant.</p>
+              <Button variant="outline" onClick={handleCancel} className="rounded-2xl px-8 h-11">Go Back</Button>
             </motion.div>
           )}
 
           {/* ERROR */}
           {step === "error" && (
-            <motion.div key="error" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="rounded-3xl bg-card border border-border shadow-lg p-8 text-center"
+            <motion.div key="error" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+              className="rounded-3xl bg-card border border-border/60 shadow-elevated p-10 text-center"
             >
-              <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-5">
                 <AlertTriangle size={30} className="text-destructive" />
               </div>
-              <h2 className="text-lg font-bold text-foreground mb-1">Invalid Session</h2>
-              <p className="text-sm text-muted-foreground mb-5">This payment link is invalid or no longer available.</p>
-              <Button variant="outline" onClick={() => navigate("/")} className="rounded-xl px-8">Go Home</Button>
+              <h2 className="text-lg font-bold text-foreground mb-2">Invalid Session</h2>
+              <p className="text-sm text-muted-foreground mb-6">This payment link is invalid or no longer available.</p>
+              <Button variant="outline" onClick={() => navigate("/")} className="rounded-2xl px-8 h-11">Go Home</Button>
             </motion.div>
           )}
 
           {/* PHONE ENTRY */}
           {step === "phone" && session && (
-            <motion.div key="phone" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="rounded-3xl bg-card border border-border shadow-lg overflow-hidden"
+            <motion.div key="phone" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="rounded-3xl bg-card border border-border/60 shadow-elevated overflow-hidden"
             >
-              {/* Header */}
-              <div className="px-5 pt-5 pb-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <MerchantAvatar name={merchantName} />
-                  <div>
-                    <div className="flex items-center gap-1">
-                      <p className="text-sm font-bold text-foreground truncate max-w-[160px]">{merchantName || "Merchant"}</p>
-                      <BadgeCheck size={14} className="text-primary shrink-0" />
-                    </div>
-                    {session.description && (
-                      <p className="text-[11px] text-muted-foreground truncate max-w-[180px]">{session.description}</p>
-                    )}
-                  </div>
-                </div>
-                {secondsLeft !== null && (
-                  <CircularCountdown secondsLeft={secondsLeft} total={totalSeconds} />
-                )}
-              </div>
+              <MerchantBar />
+              <StepDots />
+              <AmountHero />
 
-              {/* Amount */}
-              <div className="text-center py-5 border-t border-b border-border/50 bg-muted/30">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold mb-1">Amount</p>
-                <p className="text-3xl font-black text-foreground">
-                  <span className="text-primary text-xl mr-0.5">৳</span>
-                  {fmt(session.amount)}
-                </p>
-                {session.reference && (
-                  <p className="text-[10px] text-muted-foreground mt-1.5">Ref: {session.reference}</p>
-                )}
-              </div>
-
-              {/* Phone input */}
-              <div className="p-5 space-y-4">
+              <div className="px-6 pb-4 space-y-4">
+                <div className="h-px bg-border/50" />
                 <div>
                   <label className="text-xs font-semibold text-foreground block mb-2">Phone Number</label>
                   <input
@@ -495,13 +527,12 @@ const CheckoutPage = () => {
                     onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
                     maxLength={11}
                     inputMode="numeric"
-                    className="w-full h-12 px-4 rounded-xl bg-muted/50 text-base font-semibold text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                    className="w-full h-12 px-4 rounded-2xl bg-muted/50 border border-border/60 text-base font-semibold text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all"
                   />
                 </div>
 
                 {errorMsg && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                  <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
                     className="text-xs text-destructive text-center font-medium"
                   >
                     {errorMsg}
@@ -511,7 +542,7 @@ const CheckoutPage = () => {
                 <Button
                   onClick={handleSendOtp}
                   disabled={phone.replace(/\D/g, "").length < 11}
-                  className="w-full h-12 rounded-xl text-sm font-bold gradient-primary text-primary-foreground"
+                  className="w-full h-12 rounded-2xl text-sm font-bold gradient-primary text-primary-foreground shadow-glow"
                 >
                   <Send size={15} className="mr-2" />
                   Send OTP
@@ -522,21 +553,18 @@ const CheckoutPage = () => {
                 </button>
               </div>
 
-              {/* Footer */}
-              <div className="px-5 pb-4 pt-1 flex items-center justify-center gap-1.5 text-muted-foreground/40">
-                <Lock size={9} />
-                <p className="text-[8px] font-medium">Secured by EasyPay</p>
-              </div>
+              <SecuredFooter />
             </motion.div>
           )}
 
           {/* OTP VERIFICATION */}
           {step === "otp" && session && (
-            <motion.div key="otp" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="rounded-3xl bg-card border border-border shadow-lg overflow-hidden"
+            <motion.div key="otp" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="rounded-3xl bg-card border border-border/60 shadow-elevated overflow-hidden"
             >
-              {/* Header */}
-              <div className="px-5 pt-5 pb-3 flex items-center justify-between">
+              {/* Back + timer */}
+              <div className="px-6 pt-5 pb-1 flex items-center justify-between">
                 <button onClick={() => { setStep("phone"); setOtp(""); setErrorMsg(""); }} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
                   <ChevronLeft size={16} />
                   Back
@@ -546,21 +574,17 @@ const CheckoutPage = () => {
                 )}
               </div>
 
-              {/* Amount pill */}
+              <StepDots />
+
+              {/* Compact amount pill */}
               <div className="text-center pb-4">
-                <div className="inline-flex items-center gap-2 bg-muted/50 rounded-full px-4 py-2">
-                  <MerchantAvatar name={merchantName} />
-                  <div className="text-left">
-                    <p className="text-xs font-bold text-foreground">{merchantName}</p>
-                    <p className="text-lg font-black text-foreground leading-tight">
-                      <span className="text-primary text-sm">৳</span>{fmt(session.amount)}
-                    </p>
-                  </div>
+                <div className="inline-flex items-center gap-1.5 bg-primary/8 border border-primary/15 rounded-full px-5 py-2">
+                  <span className="text-primary text-sm font-bold">৳</span>
+                  <span className="text-lg font-black text-foreground">{fmt(session.amount)}</span>
                 </div>
               </div>
 
-              {/* OTP */}
-              <div className="px-5 pb-5 space-y-4">
+              <div className="px-6 pb-5 space-y-4">
                 <div className="text-center">
                   <h3 className="text-base font-bold text-foreground">Enter OTP</h3>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -570,23 +594,20 @@ const CheckoutPage = () => {
 
                 <OtpInput value={otp} onChange={setOtp} />
 
-                {/* Dev OTP hint */}
                 {devOtp && (
-                  <p className="text-[10px] text-center text-muted-foreground bg-muted/50 rounded-lg px-3 py-1.5">
+                  <p className="text-[10px] text-center text-muted-foreground bg-muted/50 rounded-xl px-3 py-1.5">
                     Dev OTP: <span className="font-mono font-bold text-foreground">{devOtp}</span>
                   </p>
                 )}
 
                 {errorMsg && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                  <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
                     className="text-xs text-destructive text-center font-medium"
                   >
                     {errorMsg}
                   </motion.p>
                 )}
 
-                {/* Resend */}
                 <div className="text-center">
                   {resendCooldown > 0 ? (
                     <p className="text-xs text-muted-foreground">
@@ -604,21 +625,18 @@ const CheckoutPage = () => {
                 </div>
               </div>
 
-              {/* Footer */}
-              <div className="px-5 pb-4 pt-1 flex items-center justify-center gap-1.5 text-muted-foreground/40">
-                <Lock size={9} />
-                <p className="text-[8px] font-medium">Secured by EasyPay</p>
-              </div>
+              <SecuredFooter />
             </motion.div>
           )}
 
           {/* PIN CONFIRMATION */}
           {step === "pin" && session && (
-            <motion.div key="pin" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="rounded-3xl bg-card border border-border shadow-lg overflow-hidden"
+            <motion.div key="pin" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="rounded-3xl bg-card border border-border/60 shadow-elevated overflow-hidden"
             >
-              {/* Header */}
-              <div className="px-5 pt-5 pb-3 flex items-center justify-between">
+              {/* Back + timer */}
+              <div className="px-6 pt-5 pb-1 flex items-center justify-between">
                 <button onClick={() => { setStep("otp"); setPin(""); setOtp(""); setErrorMsg(""); }} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
                   <ChevronLeft size={16} />
                   Back
@@ -628,9 +646,11 @@ const CheckoutPage = () => {
                 )}
               </div>
 
+              <StepDots />
+
               {/* Amount pill */}
-              <div className="text-center pb-5">
-                <div className="inline-flex items-center gap-1.5 bg-primary/10 rounded-full px-5 py-2">
+              <div className="text-center pb-4">
+                <div className="inline-flex items-center gap-1.5 bg-primary/8 border border-primary/15 rounded-full px-5 py-2">
                   <span className="text-primary text-sm font-bold">৳</span>
                   <span className="text-lg font-black text-foreground">{fmt(session.amount)}</span>
                 </div>
@@ -639,8 +659,7 @@ const CheckoutPage = () => {
                 </p>
               </div>
 
-              {/* PIN Input */}
-              <div className="px-5 pb-6 space-y-5">
+              <div className="px-6 pb-5 space-y-5">
                 <div className="text-center">
                   <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
                     <KeyRound size={22} className="text-primary" />
@@ -652,50 +671,55 @@ const CheckoutPage = () => {
                 <PinInput value={pin} onChange={setPin} />
 
                 {errorMsg && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                  <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
                     className="text-xs text-destructive text-center font-medium"
                   >
                     {errorMsg}
                   </motion.p>
                 )}
+
+                {/* Manual Pay button — fallback if auto-submit misses */}
+                <Button
+                  onClick={handleConfirmPin}
+                  disabled={pin.length < 4}
+                  className="w-full h-12 rounded-2xl text-sm font-bold gradient-primary text-primary-foreground shadow-glow disabled:opacity-40"
+                >
+                  <Lock size={15} className="mr-2" />
+                  Pay ৳{fmt(session.amount)}
+                </Button>
               </div>
 
-              {/* Footer */}
-              <div className="px-5 pb-4 pt-1 flex items-center justify-center gap-1.5 text-muted-foreground/40">
-                <Shield size={9} />
-                <p className="text-[8px] font-medium">PIN verified securely by EasyPay</p>
-              </div>
+              <SecuredFooter />
             </motion.div>
           )}
 
           {/* PROCESSING */}
           {step === "processing" && (
             <motion.div key="processing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="rounded-3xl bg-card border border-border shadow-lg p-8"
+              className="rounded-3xl bg-card border border-border/60 shadow-elevated p-10 text-center"
             >
               <PulsingRings />
               <motion.p
-                className="text-sm font-semibold text-foreground text-center mt-5"
+                className="text-sm font-semibold text-foreground text-center mt-6"
                 animate={{ opacity: [1, 0.4, 1] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
               >
                 Processing payment...
               </motion.p>
-              <p className="text-[11px] text-muted-foreground text-center mt-1">Please don't close this page</p>
+              <p className="text-[11px] text-muted-foreground text-center mt-1.5">Please don't close this page</p>
             </motion.div>
           )}
 
           {/* SUCCESS */}
           {step === "success" && (
-            <motion.div key="success" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="rounded-3xl bg-card border border-border shadow-lg p-8 text-center"
+            <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+              className="rounded-3xl bg-card border border-border/60 shadow-elevated p-10 text-center"
             >
               <motion.div
                 initial={{ scale: 0, rotate: -30 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.1 }}
-                className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4"
+                className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-5"
               >
                 <CheckCircle2 size={44} className="text-primary" strokeWidth={2} />
               </motion.div>
@@ -741,17 +765,17 @@ const CheckoutPage = () => {
 
           {/* FAILED */}
           {step === "failed" && (
-            <motion.div key="failed" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="rounded-3xl bg-card border border-border shadow-lg p-8 text-center"
+            <motion.div key="failed" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+              className="rounded-3xl bg-card border border-border/60 shadow-elevated p-10 text-center"
             >
-              <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-5">
                 <XCircle size={34} className="text-destructive" />
               </div>
-              <h2 className="text-lg font-bold text-foreground mb-1">Payment Failed</h2>
-              <p className="text-sm text-muted-foreground mb-5 max-w-[240px] mx-auto">{errorMsg || "Something went wrong."}</p>
+              <h2 className="text-lg font-bold text-foreground mb-2">Payment Failed</h2>
+              <p className="text-sm text-muted-foreground mb-6 max-w-[260px] mx-auto">{errorMsg || "Something went wrong."}</p>
               <div className="flex gap-3 justify-center">
-                <Button variant="outline" onClick={handleCancel} className="rounded-xl px-6">Cancel</Button>
-                <Button onClick={() => { setStep("phone"); setOtp(""); setPin(""); setErrorMsg(""); }} className="rounded-xl px-6 gradient-primary text-primary-foreground">Try Again</Button>
+                <Button variant="outline" onClick={handleCancel} className="rounded-2xl px-6 h-11">Cancel</Button>
+                <Button onClick={() => { setStep("phone"); setOtp(""); setPin(""); setErrorMsg(""); }} className="rounded-2xl px-6 h-11 gradient-primary text-primary-foreground">Try Again</Button>
               </div>
             </motion.div>
           )}
