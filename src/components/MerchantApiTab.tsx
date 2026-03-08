@@ -113,6 +113,22 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
     setTimeout(() => setCopiedField(null), 2000);
   };
 
+  const retryWebhook = async (sessionId: string) => {
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    try {
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/merchant-payment-webhook`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+      if (!res.ok) throw new Error("Webhook delivery failed");
+      toast({ title: "Webhook Retried", description: "Notification sent successfully." });
+      loadData();
+    } catch {
+      toast({ title: "Retry Failed", description: "Could not deliver webhook. Check your URL.", variant: "destructive" });
+    }
+  };
+
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
   const apiEndpoint = `https://${projectId}.supabase.co/functions/v1/merchant-payment-api`;
 
