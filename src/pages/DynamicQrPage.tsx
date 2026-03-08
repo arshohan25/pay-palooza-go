@@ -59,7 +59,7 @@ const DynamicQrPage = () => {
         return;
       }
 
-      const session = data as SessionInfo | null;
+      const session = data as unknown as SessionInfo | null;
       if (!session) {
         setStatus("not_found");
         return;
