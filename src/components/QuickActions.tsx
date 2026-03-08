@@ -486,35 +486,24 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
         </DragOverlay>
       </DndContext>
 
-      {/* Full-screen More Services overlay */}
+      {/* Inline expanded More services */}
       <AnimatePresence>
         {expanded && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
-              onClick={() => setExpanded(false)}
-            />
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", stiffness: 340, damping: 34 }}
-              className="fixed inset-x-0 bottom-0 z-50 max-w-md mx-auto bg-card rounded-t-3xl border-t border-border shadow-elevated"
-            >
-              <div className="flex items-center justify-between px-5 pt-4 pb-2">
-                <h3 className="text-base font-extrabold text-foreground">More Services</h3>
-                <button
-                  onClick={() => setExpanded(false)}
-                  className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
-                >
-                  <ChevronUp size={16} className="text-muted-foreground" />
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-border/60 mt-4 pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-foreground">More Services</h3>
+                <button onClick={() => setExpanded(false)} className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors">
+                  <ChevronUp size={14} className="text-muted-foreground" />
                 </button>
               </div>
-              <div className="px-4 pb-8 pt-2 grid grid-cols-4 gap-y-5 gap-x-2 sm:gap-x-3">
+              <div className="grid grid-cols-4 gap-y-5 gap-x-2 sm:gap-x-3">
                 {visibleMoreServices.map((item, i) => {
                   const moreGlobalOff = item.featureKey ? isGloballyDisabled(item.featureKey) : false;
                   return (
@@ -527,8 +516,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                       onClick={() => {
                         if (didLongPress.current) { didLongPress.current = false; return; }
                         if (moreGlobalOff) { toast.info(`${item.label} is temporarily unavailable`, { description: "This feature has been disabled by the system. Please try again later." }); return; }
-                        setExpanded(false);
-                        setTimeout(() => handleMoreService(item.id, item.soon), 200);
+                        handleMoreService(item.id, item.soon);
                       }}
                       onPointerDown={() => startLongPress(item.id)}
                       onPointerUp={cancelLongPress}
@@ -593,8 +581,8 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                   );
                 })}
               </div>
-            </motion.div>
-          </>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
