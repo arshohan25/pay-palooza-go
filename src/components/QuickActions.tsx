@@ -170,7 +170,7 @@ const SortableActionItem = ({
         <div className="flex flex-col items-center gap-2.5">
           <div
             className="rounded-full border-2 border-dashed border-primary/40 bg-primary/5 animate-pulse"
-            style={{ width: 56, height: 56 }}
+            style={{ width: iconSizePx, height: iconSizePx }}
           />
           <span className="text-[10px] font-semibold text-transparent select-none px-0.5">
             {label}
@@ -217,7 +217,7 @@ const SortableActionItem = ({
           whileHover={{ scale: 1.06, y: -2 }}
           transition={{ type: "spring", stiffness: 380, damping: 22 }}
           className="relative flex items-center justify-center rounded-full shadow-sm group-hover:shadow-md transition-all duration-200 overflow-hidden"
-          style={{ width: 56, height: 56, background: action.bgStyle, outline: action.ringStyle, filter: isGlobalOff ? "grayscale(1)" : "none", opacity: isGlobalOff ? 0.5 : 1 }}
+          style={{ width: iconSizePx, height: iconSizePx, background: action.bgStyle, outline: action.ringStyle, filter: isGlobalOff ? "grayscale(1)" : "none", opacity: isGlobalOff ? 0.5 : 1 }}
         >
           <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 blur-[10px] transition-opacity duration-300 -z-10 scale-110" style={{ background: action.bgStyle }} />
           <AnimatePresence>
@@ -456,6 +456,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                   expanded={expanded}
                   longPressId={longPressId}
                   justDropped={justDroppedId === action.id}
+                  iconSizePx={iconSizePx}
                   onTriggerRipple={triggerRipple}
                   onHandleAction={handleAction}
                   onHoverStart={(id) => setHoveredId(id)}
