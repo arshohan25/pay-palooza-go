@@ -1493,6 +1493,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_quick_action_order: {
+        Row: {
+          action_order: string[]
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_order: string[]
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_order?: string[]
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
