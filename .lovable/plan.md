@@ -1,27 +1,29 @@
 
 
-## Plan: Add Missing Feature Toggle Keys
+## Plan: Add Biller Categories to API Hub
 
-### Current State
-The `global_feature_toggles` table already has 13 entries: `send_money`, `cash_out`, `cash_in`, `add_money`, `payment`, `mobile_recharge`, `pay_bill`, `bank_transfer`, `qr_scan`, `refer`, `savings`, `shop`, `drive_offers`.
+### What
 
-### Missing Feature Keys
-The "More Services" section has 5 features without toggle entries. These need to be inserted:
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-| Feature Key | Label | Sort Order |
-|---|---|---|
-| `coupons` | Coupons & Offers | 14 |
-| `donations` | Donations | 15 |
-| `loan` | Loan | 16 |
-| `insurance` | Insurance | 17 |
-| `gift_cards` | Gift Cards | 18 |
+### Changes
 
-### Code Fix
-In `FEATURE_MAP`, `shop` currently maps to `"payment"` instead of `"shop"`. This will be corrected. Also, add the 5 new feature keys to `FEATURE_MAP` so the grayscale/disabled logic applies to them too, and add `featureKey` to each of the "coming soon" moreServices items.
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-Additionally, add missing mappings for `add_money`, `cash_in`, and `qr_scan` features that exist in the DB but aren't in `FEATURE_MAP` — these are triggered from other parts of the UI but should be consistent.
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-### Files Modified
-- **Data insert**: 5 new rows into `global_feature_toggles`
-- `src/components/QuickActions.tsx` — fix `shop` mapping, add new feature keys to `FEATURE_MAP` and `moreServices` items
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
