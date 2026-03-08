@@ -1015,7 +1015,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
           ],
         }}
       />
-    </div>
+    </motion.div>
   );
 };
 

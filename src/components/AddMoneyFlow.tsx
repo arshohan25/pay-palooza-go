@@ -1306,7 +1306,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
           ],
         }}
       />
-    </div>
+    </motion.div>
   );
 };
 

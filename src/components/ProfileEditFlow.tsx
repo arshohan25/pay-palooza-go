@@ -565,7 +565,7 @@ const ProfileEditFlow = ({ onClose, onSaved }: ProfileEditFlowProps) => {
           </div>
         </SheetContent>
       </Sheet>
-    </div>
+    </motion.div>
   );
 };
 

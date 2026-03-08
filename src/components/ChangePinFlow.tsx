@@ -357,7 +357,7 @@ const ChangePinFlow = ({ onClose }: ChangePinFlowProps) => {
           </motion.div>
         </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

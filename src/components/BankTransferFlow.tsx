@@ -365,7 +365,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </motion.div>
   );
 };
 

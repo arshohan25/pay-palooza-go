@@ -1178,7 +1178,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
           ],
         }}
       />
-    </div>
+    </motion.div>
   );
 };
 

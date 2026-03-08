@@ -633,7 +633,7 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
           ],
         }}
       />
-    </div>
+    </motion.div>
   );
 };
 

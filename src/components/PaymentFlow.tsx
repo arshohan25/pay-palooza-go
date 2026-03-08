@@ -667,7 +667,7 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
           ],
         }}
       />
-    </div>
+    </motion.div>
   );
 };
 

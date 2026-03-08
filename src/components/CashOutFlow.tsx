@@ -762,7 +762,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
           ],
         }}
       />
-    </div>
+    </motion.div>
   );
 };
 
