@@ -256,7 +256,23 @@ const Index = () => {
                 onSavings={() => setShowSavings(true)}
               />
               
-              <PromoSlider />
+              <PromoSlider onFeatureOpen={(feature) => {
+                const map: Record<string, () => void> = {
+                  sendmoney: () => setShowSendMoney(true),
+                  cashout: () => setShowCashOut(true),
+                  payment: () => setShowPayment(true),
+                  recharge: () => setShowRecharge(true),
+                  paybill: () => setShowPayBill(true),
+                  addmoney: () => setShowAddMoney(true),
+                  shop: () => setShowShop(true),
+                  banktransfer: () => setShowBankTransfer(true),
+                  savings: () => setShowSavings(true),
+                  refer: () => handleTabChange("refer"),
+                  kyc: () => setShowKycFlow(true),
+                  history: () => handleTabChange("history"),
+                };
+                map[feature]?.();
+              }} />
               <TransactionList onSeeAll={() => handleTabChange("history")} refreshKey={refreshKey} />
             </>
           )}
