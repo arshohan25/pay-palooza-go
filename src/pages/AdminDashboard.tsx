@@ -724,6 +724,7 @@ export default function AdminDashboard() {
         {/* ═══ OVERVIEW ═══ */}
         {activeTab === "overview" && (
           <div className="space-y-6">
+            <TeamOnboardingChecklist />
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               <StatCard icon={Users} label="Total Users" value={stats.totalUsers} color="bg-primary" onClick={() => setActiveTab("users")} />
               <StatCard icon={ArrowLeftRight} label="Transactions" value={stats.totalTransactions} color="bg-blue-500" onClick={() => setActiveTab("transactions")} />
