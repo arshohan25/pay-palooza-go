@@ -94,7 +94,7 @@ interface LimitsPageProps {
 
 const LimitsPage = ({ onBack }: LimitsPageProps) => {
   const { t } = useI18n();
-  const { daily, monthly, loading } = useUsageStats();
+  const { daily, monthly, limits, loading } = useUsageStats();
   const { getFeeLabel, loading: feeLoading } = useFeeConfig();
 
   const sendFee = getFeeLabel("send");
