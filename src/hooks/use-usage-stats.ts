@@ -56,12 +56,12 @@ export function useUsageStats(): UsageStats {
 
     // Fetch global defaults
     const { data: globalLimits } = await supabase
-      .from("transaction_limits" as any)
+      .from("transaction_limits")
       .select("txn_type, period, max_amount, max_count")
       .eq("applies_to", "user")
       .eq("is_active", true);
 
-    for (const row of (globalLimits as any[]) ?? []) {
+    for (const row of globalLimits ?? []) {
       const key = row.txn_type as TxnKey;
       if (!TXN_KEYS.includes(key)) continue;
       if (row.period === "daily") {
@@ -75,12 +75,15 @@ export function useUsageStats(): UsageStats {
 
     // Fetch user-specific overrides
     const { data: overrides } = await supabase
-      .from("user_limit_overrides" as any)
-      .select("txn_type, period, max_amount, max_count")
+      .from("user_limit_overrides")
+      .select("txn_type, period, max_amount, max_count, expires_at")
       .eq("target_user_id", user.id)
       .eq("is_active", true);
 
-    for (const row of (overrides as any[]) ?? []) {
+    const now = new Date();
+    for (const row of overrides ?? []) {
+      // Skip expired overrides
+      if (row.expires_at && new Date(row.expires_at) < now) continue;
       const key = row.txn_type as TxnKey;
       if (!TXN_KEYS.includes(key)) continue;
       if (row.period === "daily") {

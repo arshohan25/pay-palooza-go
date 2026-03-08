@@ -28,22 +28,26 @@ const DAILY_LIMITS: Record<string, DailyLimitConfig> = {
 async function getEffectiveLimit(userId: string, txnType: string): Promise<number> {
   // 1. User override
   const { data: override } = await supabase
-    .from("user_limit_overrides" as any)
-    .select("max_amount")
+    .from("user_limit_overrides")
+    .select("max_amount, expires_at")
     .eq("target_user_id", userId)
     .eq("txn_type", txnType)
     .eq("period", "daily")
     .eq("is_active", true)
     .maybeSingle();
 
-  if (override && (override as any).max_amount != null) {
-    // Check expiry client-side
-    return Number((override as any).max_amount);
+  if (override && override.max_amount != null) {
+    // Check if expired
+    if (override.expires_at && new Date(override.expires_at) < new Date()) {
+      // Expired — fall through to global
+    } else {
+      return Number(override.max_amount);
+    }
   }
 
   // 2. Global DB default
   const { data: globalLimit } = await supabase
-    .from("transaction_limits" as any)
+    .from("transaction_limits")
     .select("max_amount")
     .eq("txn_type", txnType)
     .eq("period", "daily")
@@ -51,8 +55,8 @@ async function getEffectiveLimit(userId: string, txnType: string): Promise<numbe
     .eq("is_active", true)
     .maybeSingle();
 
-  if (globalLimit && (globalLimit as any).max_amount != null) {
-    return Number((globalLimit as any).max_amount);
+  if (globalLimit && globalLimit.max_amount != null) {
+    return Number(globalLimit.max_amount);
   }
 
   // 3. Hardcoded fallback
