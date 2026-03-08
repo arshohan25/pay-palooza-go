@@ -250,9 +250,9 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                   return (
                     <motion.button
                       key={item.id}
-                      initial={{ opacity: 0, scale: 0 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 22, delay: 0.04 * i }}
+                      initial={{ opacity: 0, scale: 0, rotate: 0 }}
+                      animate={{ opacity: 1, scale: 1, rotate: [0, 0, -8, 8, -4, 0] }}
+                      transition={{ type: "spring", stiffness: 400, damping: 22, delay: 0.04 * i, rotate: { delay: 0.04 * i + 0.3, duration: 0.4, ease: "easeInOut" } }}
                       whileTap={{ scale: 0.90 }}
                       onClick={() => {
                         if (moreGlobalOff) { toast.info(`${item.label} is temporarily unavailable`, { description: "This feature has been disabled by the system. Please try again later." }); return; }
