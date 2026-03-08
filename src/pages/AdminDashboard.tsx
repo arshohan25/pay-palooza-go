@@ -218,6 +218,7 @@ export default function AdminDashboard() {
   const { visible: realtimeVisible, flash: realtimeFlash } = useRealtimeIndicator();
   const { status: wsStatus, lastConnectedAt, reconnectAttempt } = useRealtimeStatus();
   const [disabledTogglesCount, setDisabledTogglesCount] = useState(0);
+  const [pendingApiRequests, setPendingApiRequests] = useState(0);
 
   // Fetch disabled toggles count
   useEffect(() => {
@@ -229,6 +230,20 @@ export default function AdminDashboard() {
     fetchCount();
     const ch = supabase.channel("admin-toggle-count")
       .on("postgres_changes", { event: "*", schema: "public", table: "global_feature_toggles" }, () => fetchCount())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [isAdmin]);
+
+  // Fetch pending API requests count
+  useEffect(() => {
+    if (!isAdmin) return;
+    const fetchApiCount = async () => {
+      const { count } = await (supabase as any).from("merchant_api_requests").select("id", { count: "exact", head: true }).eq("status", "pending");
+      setPendingApiRequests(count ?? 0);
+    };
+    fetchApiCount();
+    const ch = supabase.channel("admin-api-req-count")
+      .on("postgres_changes", { event: "*", schema: "public", table: "merchant_api_requests" }, () => fetchApiCount())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [isAdmin]);
