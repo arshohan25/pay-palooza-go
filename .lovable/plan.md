@@ -1,29 +1,59 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Linkable Banners with Media Upload Support
 
-### What
+### Overview
+Make promo banners clickable to open any app feature, and allow admins to upload images/GIFs/videos as banner backgrounds.
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### 1. Database Migration
+Add two new columns to `promo_banners`:
+- `media_url` (text, nullable) — URL of uploaded image/GIF/video
+- `media_type` (text, nullable) — `image`, `gif`, or `video`
 
-### Changes
+Create a `banner-media` storage bucket (public) with RLS policies allowing admin uploads and public reads.
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+### 2. Internal Feature Linking System
+Replace the free-text "Link URL" field in `AdminBannerManager` with a dropdown of linkable targets:
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+| Link Value | Opens |
+|---|---|
+| `feature:sendmoney` | Send Money flow |
+| `feature:cashout` | Cash Out flow |
+| `feature:payment` | Payment flow |
+| `feature:recharge` | Mobile Recharge |
+| `feature:paybill` | Pay Bill |
+| `feature:addmoney` | Add Money |
+| `feature:shop` | Shop |
+| `feature:banktransfer` | Bank Transfer |
+| `feature:savings` | Savings |
+| `feature:refer` | Refer page |
+| `feature:kyc` | KYC flow |
+| `feature:history` | Transaction History |
+| External URL | Opens in new tab |
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+### 3. PromoSlider Changes (`src/components/PromoSlider.tsx`)
+- Accept an `onFeatureOpen` callback prop from `Index.tsx` that maps feature keys to their respective `setState(true)` calls
+- Wrap each slide in a clickable element; on click:
+  - If `link_url` starts with `feature:`, call the corresponding feature opener
+  - If it's an external URL, open in new tab
+- If `media_url` exists, render image/video as banner background instead of (or overlaying) the gradient
+- Fetch `media_url` and `media_type` in the query
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+### 4. Index.tsx Changes
+- Pass a `onFeatureOpen` handler to `PromoSlider` that maps feature keys to the existing state setters (e.g., `sendmoney` → `setShowSendMoney(true)`)
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+### 5. AdminBannerManager Changes (`src/components/admin/AdminBannerManager.tsx`)
+- Add media upload section with file input accepting `image/*,video/*,.gif`
+- Upload to `banner-media` bucket via Supabase Storage
+- Show preview of uploaded media in the form
+- Replace "Link URL" text input with:
+  - A select dropdown for internal features
+  - A toggle to switch between "Internal Feature" and "External URL"
+- Show media thumbnail in the banner list
 
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+### Files Modified
+- **Migration**: Add `media_url`, `media_type` columns + storage bucket
+- `src/components/PromoSlider.tsx` — clickable slides, media rendering
+- `src/components/admin/AdminBannerManager.tsx` — feature link dropdown, media upload
+- `src/pages/Index.tsx` — pass feature opener map to PromoSlider
 
