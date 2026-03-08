@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
-  Plus, Package, Pencil, Trash2, X, ChevronDown, ChevronUp,
-  Eye, EyeOff, Search, ToggleLeft, ToggleRight
+  Plus, Pencil, Trash2, Eye, EyeOff, Search, ToggleLeft, ToggleRight,
+  ImagePlus, X, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,19 +55,24 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
   const [editing, setEditing] = useState<Product | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Form state
   const [form, setForm] = useState({
     name: "", description: "", price: "", original_price: "",
     category: "General", emoji: "📦", stock: "0",
-    badge: "", badge_color: "", is_active: true,
+    badge: "", badge_color: "", is_active: true, image_url: "" as string | null,
   });
 
-  const resetForm = () => setForm({
-    name: "", description: "", price: "", original_price: "",
-    category: "General", emoji: "📦", stock: "0",
-    badge: "", badge_color: "", is_active: true,
-  });
+  const resetForm = () => {
+    setForm({
+      name: "", description: "", price: "", original_price: "",
+      category: "General", emoji: "📦", stock: "0",
+      badge: "", badge_color: "", is_active: true, image_url: null,
+    });
+    setImagePreview(null);
+  };
 
   const loadProducts = useCallback(async () => {
     setLoading(true);
@@ -82,7 +87,6 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
 
   useEffect(() => { loadProducts(); }, [loadProducts]);
 
-  // Realtime
   useEffect(() => {
     const channel = supabase
       .channel("merchant-products-rt")
@@ -94,6 +98,60 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
     return () => { supabase.removeChannel(channel); };
   }, [merchantId, loadProducts]);
 
+  const uploadImage = async (file: File): Promise<string | null> => {
+    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const path = `${merchantId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+    setUploading(true);
+    const { error } = await supabase.storage
+      .from("product-images")
+      .upload(path, file, { contentType: file.type, upsert: false });
+
+    if (error) {
+      toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+      setUploading(false);
+      return null;
+    }
+
+    const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
+    setUploading(false);
+    return urlData.publicUrl;
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Invalid file", description: "Please select an image file", variant: "destructive" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Max 5MB allowed", variant: "destructive" });
+      return;
+    }
+
+    // Show preview immediately
+    const reader = new FileReader();
+    reader.onload = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+
+    const url = await uploadImage(file);
+    if (url) {
+      setForm(f => ({ ...f, image_url: url }));
+    } else {
+      setImagePreview(null);
+    }
+
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeImage = () => {
+    setForm(f => ({ ...f, image_url: null }));
+    setImagePreview(null);
+  };
+
   const openAdd = () => { resetForm(); setEditing(null); setShowSheet(true); };
   const openEdit = (p: Product) => {
     setEditing(p);
@@ -102,7 +160,9 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
       price: String(p.price), original_price: p.original_price ? String(p.original_price) : "",
       category: p.category, emoji: p.emoji, stock: String(p.stock),
       badge: p.badge || "", badge_color: p.badge_color || "", is_active: p.is_active,
+      image_url: p.image_url || null,
     });
+    setImagePreview(p.image_url || null);
     setShowSheet(true);
   };
 
@@ -122,20 +182,18 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
       badge: form.badge || null,
       badge_color: form.badge_color || null,
       is_active: form.is_active,
+      image_url: form.image_url || null,
       updated_at: new Date().toISOString(),
     };
 
     if (editing) {
       const { error } = await (supabase as any)
-        .from("merchant_products")
-        .update(payload)
-        .eq("id", editing.id);
+        .from("merchant_products").update(payload).eq("id", editing.id);
       if (error) { toast({ title: "Update failed", description: error.message, variant: "destructive" }); }
       else { toast({ title: "Product updated ✓" }); setShowSheet(false); loadProducts(); }
     } else {
       const { error } = await (supabase as any)
-        .from("merchant_products")
-        .insert(payload);
+        .from("merchant_products").insert(payload);
       if (error) { toast({ title: "Create failed", description: error.message, variant: "destructive" }); }
       else { toast({ title: "Product added ✓" }); setShowSheet(false); loadProducts(); }
     }
@@ -171,6 +229,8 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.category.toLowerCase().includes(search.toLowerCase())
   );
+
+  const currentImageSrc = imagePreview || form.image_url;
 
   return (
     <div className="space-y-4">
@@ -234,8 +294,12 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
               transition={{ delay: i * 0.03 }}
               className={`bg-card border rounded-2xl p-3.5 flex items-center gap-3 transition-opacity ${!p.is_active ? "opacity-60 border-border/40" : "border-border/60"}`}
             >
-              <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-2xl shrink-0">
-                {p.emoji}
+              <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+                {p.image_url ? (
+                  <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-2xl">{p.emoji}</span>
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
@@ -253,7 +317,6 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
                   <span className="text-[10px] text-muted-foreground">· {p.category}</span>
                 </div>
                 <div className="flex items-center gap-3 mt-1">
-                  {/* Stock controls */}
                   <div className="flex items-center gap-1.5">
                     <button onClick={() => updateStock(p, -1)}
                       className="w-5 h-5 rounded bg-muted flex items-center justify-center text-[10px] font-bold text-foreground">−</button>
@@ -290,9 +353,57 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
             <SheetTitle>{editing ? "Edit Product" : "Add Product"}</SheetTitle>
           </SheetHeader>
           <div className="space-y-4 pt-4 pb-8">
+            {/* Product Image Upload */}
+            <div>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Product Photo</label>
+              <div className="mt-1.5">
+                {currentImageSrc ? (
+                  <div className="relative w-full h-40 rounded-2xl overflow-hidden border border-border/60 bg-muted">
+                    <img src={currentImageSrc} alt="Product" className="w-full h-full object-cover" />
+                    {uploading && (
+                      <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
+                        <Loader2 size={24} className="animate-spin text-primary" />
+                      </div>
+                    )}
+                    <button
+                      onClick={removeImage}
+                      className="absolute top-2 right-2 w-7 h-7 rounded-full bg-background/90 shadow-md flex items-center justify-center"
+                    >
+                      <X size={14} className="text-foreground" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="w-full h-32 rounded-2xl border-2 border-dashed border-border/80 bg-muted/30 flex flex-col items-center justify-center gap-2 transition-colors hover:border-primary/40 hover:bg-primary/5"
+                  >
+                    {uploading ? (
+                      <Loader2 size={24} className="animate-spin text-primary" />
+                    ) : (
+                      <>
+                        <ImagePlus size={28} className="text-muted-foreground" />
+                        <span className="text-[12px] font-medium text-muted-foreground">Tap to upload photo</span>
+                        <span className="text-[10px] text-muted-foreground/70">JPG, PNG · Max 5MB</span>
+                      </>
+                    )}
+                  </button>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+              </div>
+            </div>
+
             {/* Emoji picker */}
             <div>
-              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Emoji Icon</label>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+                Emoji Icon {currentImageSrc && <span className="text-muted-foreground/60">(fallback)</span>}
+              </label>
               <div className="flex gap-2 flex-wrap mt-1.5">
                 {EMOJIS.map(e => (
                   <button key={e} onClick={() => setForm(f => ({ ...f, emoji: e }))}
@@ -370,8 +481,8 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
               </button>
             </div>
 
-            <Button onClick={handleSave} disabled={saving} className="w-full h-12 rounded-xl text-[14px] font-bold">
-              {saving ? "Saving..." : editing ? "Update Product" : "Add Product"}
+            <Button onClick={handleSave} disabled={saving || uploading} className="w-full h-12 rounded-xl text-[14px] font-bold">
+              {saving ? "Saving..." : uploading ? "Uploading..." : editing ? "Update Product" : "Add Product"}
             </Button>
           </div>
         </SheetContent>
