@@ -26,6 +26,7 @@ import { verifyPin } from "@/lib/verifyPin";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import { haptics } from "@/lib/haptics";
 import DailyLimitBadge from "@/components/DailyLimitBadge";
+import MerchantApiTab from "@/components/MerchantApiTab";
 
 /* ─── Types ─── */
 type MerchTab = "overview" | "qr" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api";
@@ -392,6 +393,7 @@ const MerchantDashboard = () => {
             {activeTab === "transactions" && <TxnTab txns={paymentTxns} />}
             {activeTab === "settlements"  && <SettlementTab merchant={merchant} paymentTxns={paymentTxns} />}
             {activeTab === "mdr"          && <MDRTab merchant={merchant} paymentTxns={paymentTxns} />}
+            {activeTab === "api"          && merchant && <MerchantApiTab merchantId={merchant.id} />}
           </motion.div>
         </AnimatePresence>
       </div>
