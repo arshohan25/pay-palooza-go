@@ -273,6 +273,43 @@ export const ReferIcon = ({ isHovered }: IconProps) => (
   </svg>
 );
 
+export const BankTransferIcon = ({ isHovered }: IconProps) => (
+  <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" overflow="visible">
+    <defs>
+      <linearGradient id="bankBuildGrad" x1="10" y1="12" x2="46" y2="48" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#1E88E5"/>
+        <stop offset="100%" stopColor="#0D47A1"/>
+      </linearGradient>
+      <linearGradient id="bankRoofGrad" x1="10" y1="8" x2="46" y2="20" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#42A5F5"/>
+        <stop offset="100%" stopColor="#1565C0"/>
+      </linearGradient>
+    </defs>
+    {/* Roof / pediment */}
+    <path d="M28 8 L10 22 L46 22 Z" fill="url(#bankRoofGrad)"/>
+    {/* Roof trim */}
+    <rect x="8" y="21" width="40" height="4" rx="1" fill="#1565C0"/>
+    {/* Building body */}
+    <rect x="12" y="25" width="32" height="17" rx="1" fill="url(#bankBuildGrad)"/>
+    {/* Columns */}
+    <rect x="16" y="25" width="4" height="17" rx="1" fill="#90CAF9" opacity="0.35"/>
+    <rect x="24" y="25" width="4" height="17" rx="1" fill="#90CAF9" opacity="0.35"/>
+    <rect x="32" y="25" width="4" height="17" rx="1" fill="#90CAF9" opacity="0.35"/>
+    {/* Base */}
+    <rect x="10" y="42" width="36" height="4" rx="1" fill="#0D47A1"/>
+    {/* Taka symbol */}
+    <text x="28" y="38" textAnchor="middle" fill="white" fontSize="9" fontWeight="bold" fontFamily="serif">৳</text>
+    {/* Transfer arrow — slides right on hover */}
+    <motion.g
+      animate={isHovered ? { x: [0, 5, 0], opacity: [0.7, 1, 0.7] } : { x: 0, opacity: 0.8 }}
+      transition={isHovered ? { duration: 0.6, ease: "easeInOut", repeat: Infinity } : { duration: 0.3 }}
+    >
+      <path d="M36 50 L44 50" stroke="#42A5F5" strokeWidth="2.5" strokeLinecap="round"/>
+      <path d="M41 47 L44 50 L41 53" stroke="#42A5F5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </motion.g>
+  </svg>
+);
+
 export const MoreIcon = () => (
   <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
     <circle cx="18" cy="18" r="5" fill="#E91E8C"/>
