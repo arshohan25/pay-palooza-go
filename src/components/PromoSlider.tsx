@@ -46,6 +46,16 @@ export default function PromoSlider({ onFeatureOpen }: PromoSliderProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "start" });
   const [selectedIdx, setSelectedIdx] = useState(0);
   const navigate = useNavigate();
+  const { isDisabled } = useGlobalToggles();
+
+  // Filter out banners linked to disabled features
+  const visibleBanners = useMemo(() => {
+    return banners.filter((b) => {
+      if (!b.link_url?.startsWith("feature:")) return true;
+      const featureKey = b.link_url.replace("feature:", "");
+      return !isDisabled(featureKey);
+    });
+  }, [banners, isDisabled]);
 
   useEffect(() => {
     const load = async () => {
