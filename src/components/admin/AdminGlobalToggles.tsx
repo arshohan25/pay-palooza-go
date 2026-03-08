@@ -260,6 +260,29 @@ export default function AdminGlobalToggles() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Bulk Confirmation */}
+      <AlertDialog open={!!bulkAction} onOpenChange={(o) => { if (!o) setBulkAction(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{bulkAction === "enable" ? "Enable" : "Disable"} all features?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will {bulkAction === "enable" ? "enable" : "disable"} all {bulkAction === "enable" ? disabledCount : enabledCount} feature toggles at once.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmBulk}
+              disabled={bulkLoading}
+              className={bulkAction === "disable" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+            >
+              {bulkLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
+              {bulkAction === "enable" ? "Enable All" : "Disable All"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
