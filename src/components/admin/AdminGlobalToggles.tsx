@@ -177,44 +177,31 @@ export default function AdminGlobalToggles() {
         </div>
       </div>
 
-      <Card className="border-0 shadow-[var(--shadow-card)]">
-        <CardContent className="p-0">
-          <div className="divide-y divide-border">
-            {toggles.map(t => (
-              <div key={t.id} className="flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <ToggleRight className={`w-5 h-5 shrink-0 ${t.is_enabled ? "text-emerald-500" : "text-muted-foreground"}`} />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground">{t.label}</p>
-                    {t.description && (
-                      <p className="text-xs text-muted-foreground truncate">{t.description}</p>
-                    )}
-                    <p className="text-[10px] font-mono text-muted-foreground/60">{t.feature_key}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openEdit(t)}>
-                    <Pencil className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => setDeleteToggle(t)}>
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                  <Switch checked={t.is_enabled} onCheckedChange={() => toggleFeature(t)} />
-                </div>
-              </div>
-            ))}
-          </div>
-          {toggles.length === 0 && (
-            <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
-              <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
-                <ToggleLeft className="w-7 h-7 text-muted-foreground" />
-              </motion.div>
-              <p className="text-sm font-semibold text-foreground">No feature toggles configured</p>
-              <p className="text-xs text-muted-foreground mt-1">Add a toggle to get started</p>
-            </motion.div>
-          )}
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="general" className="w-full">
+        <TabsList className="w-full grid grid-cols-2 mb-4">
+          <TabsTrigger value="general" className="gap-1.5">
+            <Settings2 className="w-3.5 h-3.5" />
+            General
+            {generalDisabledCount > 0 && (
+              <Badge variant="destructive" className="text-[10px] px-1.5 py-0 ml-1">{generalDisabledCount}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="account" className="gap-1.5">
+            <UserCog className="w-3.5 h-3.5" />
+            Account Features
+            {accountDisabledCount > 0 && (
+              <Badge variant="destructive" className="text-[10px] px-1.5 py-0 ml-1">{accountDisabledCount}</Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="general">
+          {renderToggleList(generalToggles)}
+        </TabsContent>
+        <TabsContent value="account">
+          {renderToggleList(accountToggles)}
+        </TabsContent>
+      </Tabs>
 
       {/* Edit / Add Dialog */}
       <Dialog open={!!editToggle || addOpen} onOpenChange={(o) => { if (!o) { setEditToggle(null); setAddOpen(false); } }}>
