@@ -77,7 +77,7 @@ const Index = () => {
   const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const t = setTimeout(() => setIsLoading(false), 1800);
+    const t = setTimeout(() => setIsLoading(false), 400);
     return () => clearTimeout(t);
   }, []);
 
@@ -170,7 +170,7 @@ const Index = () => {
     setTimeout(() => {
       setIsLoading(false);
       setIsPulling(false);
-    }, 1200);
+    }, 600);
   }, [isLoading]);
 
   usePullToRefresh({ onRefresh: triggerRefresh, threshold: 70 });
