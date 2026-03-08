@@ -9,10 +9,8 @@ import { Loader2, Save, Search, Trash2, RotateCcw, Users, Store, UserCheck, Hist
 import MerchantLimitsTab from "./MerchantLimitsTab";
 import LimitAuditTab from "./LimitAuditTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 
 interface LimitRow {
   id: string;
@@ -22,22 +20,6 @@ interface LimitRow {
   max_count: number;
   applies_to: string;
   is_active: boolean;
-}
-
-interface OverrideRow {
-  id: string;
-  target_user_id: string;
-  txn_type: string;
-  period: string;
-  max_amount: number | null;
-  max_count: number | null;
-  reason: string | null;
-  set_by: string;
-  expires_at: string | null;
-  is_active: boolean;
-  created_at: string;
-  profile_name?: string;
-  profile_phone?: string;
 }
 
 const TXN_TYPES = ["send", "cashin", "cashout", "addmoney", "payment", "recharge", "paybill", "banktransfer"];
@@ -80,20 +62,15 @@ function GlobalDefaultsTab() {
     if (error) toast.error("Failed to save");
     else {
       toast.success("Limit updated");
-      // Audit log
       await supabase.from("audit_logs").insert({
         actor_id: session?.user?.id!,
         action: "limit_updated",
         entity_type: "limits",
         entity_id: row.id,
         details: {
-          txn_type: row.txn_type,
-          period: row.period,
-          applies_to: row.applies_to,
-          old_max_amount: row.max_amount,
-          new_max_amount: changes.max_amount ?? row.max_amount,
-          old_max_count: row.max_count,
-          new_max_count: changes.max_count ?? row.max_count,
+          txn_type: row.txn_type, period: row.period, applies_to: row.applies_to,
+          old_max_amount: row.max_amount, new_max_amount: changes.max_amount ?? row.max_amount,
+          old_max_count: row.max_count, new_max_count: changes.max_count ?? row.max_count,
         },
       });
       setEdits(prev => { const n = { ...prev }; delete n[row.id]; return n; });
@@ -135,24 +112,14 @@ function GlobalDefaultsTab() {
               return (
                 <tr key={row.id} className="border-t border-border/50 hover:bg-muted/20">
                   <td className="px-3 py-2.5 font-medium">{TXN_LABELS[row.txn_type] || row.txn_type}</td>
+                  <td className="px-3 py-2.5"><Badge variant="outline" className="capitalize text-xs">{row.period}</Badge></td>
                   <td className="px-3 py-2.5">
-                    <Badge variant="outline" className="capitalize text-xs">{row.period}</Badge>
+                    <Input type="number" className="h-8 w-28" value={edit.max_amount ?? row.max_amount}
+                      onChange={e => handleEdit(row.id, "max_amount", e.target.value)} />
                   </td>
                   <td className="px-3 py-2.5">
-                    <Input
-                      type="number"
-                      className="h-8 w-28"
-                      value={edit.max_amount ?? row.max_amount}
-                      onChange={e => handleEdit(row.id, "max_amount", e.target.value)}
-                    />
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <Input
-                      type="number"
-                      className="h-8 w-20"
-                      value={edit.max_count ?? row.max_count}
-                      onChange={e => handleEdit(row.id, "max_count", e.target.value)}
-                    />
+                    <Input type="number" className="h-8 w-20" value={edit.max_count ?? row.max_count}
+                      onChange={e => handleEdit(row.id, "max_count", e.target.value)} />
                   </td>
                   <td className="px-3 py-2.5">
                     {isDirty && (
@@ -175,16 +142,26 @@ function GlobalDefaultsTab() {
 }
 
 // ═══════════════════════════════════════
-// User Overrides Tab
+// User Overrides Tab — Effective Limits Table
 // ═══════════════════════════════════════
+interface EffectiveLimit {
+  txn_type: string;
+  period: string;
+  max_amount: number;
+  max_count: number;
+  source: "default" | "custom";
+  override_id?: string;
+}
+
 function UserOverridesTab() {
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [overrides, setOverrides] = useState<OverrideRow[]>([]);
-  const [showDialog, setShowDialog] = useState(false);
-  const [form, setForm] = useState({ txn_type: "send", period: "daily", max_amount: "", max_count: "", reason: "", expires_at: "" });
+  const [effectiveLimits, setEffectiveLimits] = useState<EffectiveLimit[]>([]);
+  const [loadingLimits, setLoadingLimits] = useState(false);
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ max_amount: "", max_count: "", reason: "", expires_at: "" });
   const [saving, setSaving] = useState(false);
 
   const handleSearch = async () => {
@@ -197,80 +174,125 @@ function UserOverridesTab() {
     setSearching(false);
   };
 
+  const loadEffectiveLimits = useCallback(async (userId: string) => {
+    setLoadingLimits(true);
+    const { data: globals } = await supabase.from("transaction_limits")
+      .select("txn_type, period, max_amount, max_count")
+      .eq("applies_to", "user").eq("is_active", true);
+
+    const { data: overrides, error } = await supabase.from("user_limit_overrides")
+      .select("id, txn_type, period, max_amount, max_count, expires_at")
+      .eq("target_user_id", userId).eq("is_active", true);
+
+    if (error) { console.error("Failed to load overrides:", error); toast.error("Failed to load overrides"); }
+
+    const result: EffectiveLimit[] = [];
+    const now = new Date();
+
+    for (const txn of TXN_TYPES) {
+      for (const period of ["daily", "monthly"]) {
+        const global = (globals ?? []).find(g => g.txn_type === txn && g.period === period);
+        const override = (overrides ?? []).find(o =>
+          o.txn_type === txn && o.period === period &&
+          (!o.expires_at || new Date(o.expires_at) >= now)
+        );
+
+        if (override) {
+          result.push({
+            txn_type: txn, period,
+            max_amount: override.max_amount != null ? Number(override.max_amount) : (global ? Number(global.max_amount) : 0),
+            max_count: override.max_count != null ? Number(override.max_count) : (global ? Number(global.max_count) : 0),
+            source: "custom", override_id: override.id,
+          });
+        } else {
+          result.push({
+            txn_type: txn, period,
+            max_amount: global ? Number(global.max_amount) : 0,
+            max_count: global ? Number(global.max_count) : 0,
+            source: "default",
+          });
+        }
+      }
+    }
+
+    setEffectiveLimits(result);
+    setLoadingLimits(false);
+  }, []);
+
   const selectUser = async (user: any) => {
     setSelectedUser(user);
     setSearchResults([]);
-    const { data, error } = await supabase.from("user_limit_overrides").select("*")
-      .eq("target_user_id", user.user_id).eq("is_active", true);
-    if (error) { console.error("Failed to load overrides:", error); toast.error("Failed to load overrides: " + error.message); }
-    setOverrides((data as any[]) ?? []);
+    setEditingKey(null);
+    await loadEffectiveLimits(user.user_id);
   };
 
-  const addOverride = async () => {
+  const startEdit = (limit: EffectiveLimit) => {
+    setEditingKey(`${limit.txn_type}-${limit.period}`);
+    setEditForm({ max_amount: String(limit.max_amount), max_count: String(limit.max_count), reason: "", expires_at: "" });
+  };
+
+  const cancelEdit = () => { setEditingKey(null); };
+
+  const saveEdit = async (limit: EffectiveLimit) => {
     if (!selectedUser) return;
     setSaving(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user?.id) { toast.error("Session expired — please re-login"); setSaving(false); return; }
-    const payload = {
-      target_user_id: selectedUser.user_id,
-      txn_type: form.txn_type,
-      period: form.period,
-      max_amount: form.max_amount ? Number(form.max_amount) : null,
-      max_count: form.max_count ? Number(form.max_count) : null,
-      reason: form.reason || null,
-      set_by: session.user.id,
-      expires_at: form.expires_at || null,
-      is_active: true,
-      updated_at: new Date().toISOString(),
-    };
-    const { error } = await supabase.from("user_limit_overrides").upsert(payload, { onConflict: "target_user_id,txn_type,period" });
-    if (error) { console.error("Override upsert failed:", error); toast.error("Failed: " + error.message); }
+
+    const { error } = await supabase.from("user_limit_overrides")
+      .upsert({
+        target_user_id: selectedUser.user_id,
+        txn_type: limit.txn_type,
+        period: limit.period,
+        max_amount: editForm.max_amount ? Number(editForm.max_amount) : null,
+        max_count: editForm.max_count ? Number(editForm.max_count) : null,
+        reason: editForm.reason || null,
+        set_by: session.user.id,
+        expires_at: editForm.expires_at || null,
+        is_active: true,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "target_user_id,txn_type,period" });
+
+    if (error) { console.error("Override save failed:", error); toast.error("Failed: " + error.message); }
     else {
-      toast.success("Override saved");
+      toast.success(`${TXN_LABELS[limit.txn_type]} ${limit.period} limit updated`);
       await supabase.from("audit_logs").insert({
-        actor_id: session.user.id,
-        action: "limit_override_created",
-        entity_type: "limits",
+        actor_id: session.user.id, action: "limit_override_created", entity_type: "limits",
         details: {
-          txn_type: form.txn_type,
-          period: form.period,
-          max_amount: form.max_amount || null,
-          max_count: form.max_count || null,
-          target_name: selectedUser.name,
-          target_phone: selectedUser.phone,
-          reason: form.reason || null,
+          txn_type: limit.txn_type, period: limit.period,
+          old_max_amount: limit.max_amount, new_max_amount: Number(editForm.max_amount) || null,
+          old_max_count: limit.max_count, new_max_count: Number(editForm.max_count) || null,
+          target_name: selectedUser.name, target_phone: selectedUser.phone,
+          reason: editForm.reason || null,
         },
       });
-      setShowDialog(false);
-      setForm({ txn_type: "send", period: "daily", max_amount: "", max_count: "", reason: "", expires_at: "" });
-      await selectUser(selectedUser);
+      setEditingKey(null);
+      await loadEffectiveLimits(selectedUser.user_id);
     }
     setSaving(false);
   };
 
-  const removeOverride = async (id: string) => {
-    const { error } = await supabase.from("user_limit_overrides").update({ is_active: false, updated_at: new Date().toISOString() }).eq("id", id);
-    if (error) { console.error("Remove override failed:", error); toast.error("Failed: " + error.message); return; }
+  const resetToDefault = async (limit: EffectiveLimit) => {
+    if (!limit.override_id) return;
+    const { error } = await supabase.from("user_limit_overrides")
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq("id", limit.override_id);
+    if (error) { console.error("Reset failed:", error); toast.error("Failed: " + error.message); return; }
+
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user?.id) {
       await supabase.from("audit_logs").insert({
-        actor_id: session.user.id,
-        action: "limit_override_removed",
-        entity_type: "limits",
-        entity_id: id,
-        details: {
-          target_name: selectedUser?.name,
-          target_phone: selectedUser?.phone,
-        },
+        actor_id: session.user.id, action: "limit_override_removed", entity_type: "limits",
+        entity_id: limit.override_id,
+        details: { txn_type: limit.txn_type, period: limit.period, target_name: selectedUser?.name, target_phone: selectedUser?.phone },
       });
     }
-    toast.success("Override removed");
-    if (selectedUser) await selectUser(selectedUser);
+    toast.success(`${TXN_LABELS[limit.txn_type]} ${limit.period} reset to default`);
+    if (selectedUser) await loadEffectiveLimits(selectedUser.user_id);
   };
 
   return (
     <div className="space-y-4">
-      {/* Search */}
       <div className="flex gap-2">
         <Input placeholder="Search by phone or name..." value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSearch()} className="flex-1" />
         <Button onClick={handleSearch} disabled={searching}>
@@ -278,7 +300,6 @@ function UserOverridesTab() {
         </Button>
       </div>
 
-      {/* Search results */}
       {searchResults.length > 0 && (
         <Card>
           <CardContent className="p-2 space-y-1">
@@ -293,75 +314,102 @@ function UserOverridesTab() {
         </Card>
       )}
 
-      {/* Selected user overrides */}
       {selectedUser && (
         <Card>
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">{selectedUser.name || selectedUser.phone} — Limit Overrides</CardTitle>
-              <Button size="sm" onClick={() => setShowDialog(true)}><Plus className="w-4 h-4 mr-1" /> Add Override</Button>
-            </div>
+            <CardTitle className="text-base">{selectedUser.name || selectedUser.phone} — Effective Limits</CardTitle>
+            <p className="text-xs text-muted-foreground">Click Edit to increase or decrease any limit. Custom overrides are highlighted.</p>
           </CardHeader>
-          <CardContent className="space-y-2">
-            {overrides.length === 0 && <p className="text-sm text-muted-foreground py-4 text-center">No active overrides — using global defaults</p>}
-            {overrides.map(ov => (
-              <div key={ov.id} className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2.5">
-                <div className="space-y-0.5">
-                  <p className="text-sm font-medium">{TXN_LABELS[ov.txn_type] || ov.txn_type} <Badge variant="outline" className="ml-1 text-xs capitalize">{ov.period}</Badge></p>
-                  <p className="text-xs text-muted-foreground">
-                    {ov.max_amount != null && `৳${Number(ov.max_amount).toLocaleString()} max`}
-                    {ov.max_amount != null && ov.max_count != null && " · "}
-                    {ov.max_count != null && `${ov.max_count} txns`}
-                    {ov.reason && ` — ${ov.reason}`}
-                    {ov.expires_at && ` · Expires ${new Date(ov.expires_at).toLocaleDateString()}`}
-                  </p>
-                </div>
-                <Button size="sm" variant="ghost" onClick={() => removeOverride(ov.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+          <CardContent className="p-0">
+            {loadingLimits ? (
+              <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+            ) : (
+              <div className="overflow-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Type</th>
+                      <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Period</th>
+                      <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Max Amount (৳)</th>
+                      <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Max Txns</th>
+                      <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Source</th>
+                      <th className="px-3 py-2 font-semibold text-muted-foreground">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {effectiveLimits.map(limit => {
+                      const key = `${limit.txn_type}-${limit.period}`;
+                      const isEditing = editingKey === key;
+                      return (
+                        <tr key={key} className={`border-t border-border/50 ${limit.source === "custom" ? "bg-primary/5" : "hover:bg-muted/20"}`}>
+                          <td className="px-3 py-2.5 font-medium">{TXN_LABELS[limit.txn_type] || limit.txn_type}</td>
+                          <td className="px-3 py-2.5"><Badge variant="outline" className="capitalize text-xs">{limit.period}</Badge></td>
+                          <td className="px-3 py-2.5">
+                            {isEditing ? (
+                              <Input type="number" className="h-8 w-28" value={editForm.max_amount}
+                                onChange={e => setEditForm(f => ({ ...f, max_amount: e.target.value }))} autoFocus />
+                            ) : (
+                              <span>{limit.max_amount === 0 ? "No Limit" : `৳${limit.max_amount.toLocaleString()}`}</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2.5">
+                            {isEditing ? (
+                              <Input type="number" className="h-8 w-20" value={editForm.max_count}
+                                onChange={e => setEditForm(f => ({ ...f, max_count: e.target.value }))} />
+                            ) : (
+                              <span>{limit.max_count === 0 ? "∞" : limit.max_count}</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <Badge variant={limit.source === "custom" ? "default" : "secondary"} className="text-xs">
+                              {limit.source === "custom" ? "Custom" : "Default"}
+                            </Badge>
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <div className="flex gap-1">
+                              {isEditing ? (
+                                <>
+                                  <Button size="sm" variant="ghost" onClick={() => saveEdit(limit)} disabled={saving}>
+                                    {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 text-green-600" />}
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={cancelEdit}><X className="w-3.5 h-3.5 text-muted-foreground" /></Button>
+                                </>
+                              ) : (
+                                <>
+                                  <Button size="sm" variant="ghost" onClick={() => startEdit(limit)} title="Edit limit">
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </Button>
+                                  {limit.source === "custom" && (
+                                    <Button size="sm" variant="ghost" onClick={() => resetToDefault(limit)} title="Reset to default">
+                                      <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                                    </Button>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-            ))}
+            )}
           </CardContent>
         </Card>
       )}
 
-      {/* Add Override Dialog */}
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Add Limit Override</DialogTitle></DialogHeader>
-          <div className="space-y-3">
+      {editingKey && (
+        <Card className="border-dashed">
+          <CardContent className="p-3 space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Optional: Add a reason or expiry for this override</p>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Transaction Type</Label>
-                <Select value={form.txn_type} onValueChange={v => setForm(f => ({ ...f, txn_type: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {TXN_TYPES.map(t => <SelectItem key={t} value={t}>{TXN_LABELS[t]}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Period</Label>
-                <Select value={form.period} onValueChange={v => setForm(f => ({ ...f, period: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">Daily</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <div><Label className="text-xs">Reason</Label><Input value={editForm.reason} onChange={e => setEditForm(f => ({ ...f, reason: e.target.value }))} placeholder="e.g. VIP user request" className="h-8 text-sm" /></div>
+              <div><Label className="text-xs">Expires At</Label><Input type="date" value={editForm.expires_at} onChange={e => setEditForm(f => ({ ...f, expires_at: e.target.value }))} className="h-8 text-sm" /></div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Max Amount (৳)</Label><Input type="number" value={form.max_amount} onChange={e => setForm(f => ({ ...f, max_amount: e.target.value }))} placeholder="Leave empty for no change" /></div>
-              <div><Label>Max Transactions</Label><Input type="number" value={form.max_count} onChange={e => setForm(f => ({ ...f, max_count: e.target.value }))} placeholder="Leave empty for no change" /></div>
-            </div>
-            <div><Label>Reason</Label><Textarea value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} placeholder="Optional reason" rows={2} /></div>
-            <div><Label>Expires At (optional)</Label><Input type="date" value={form.expires_at} onChange={e => setForm(f => ({ ...f, expires_at: e.target.value }))} /></div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-            <Button onClick={addOverride} disabled={saving}>{saving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}Save Override</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
@@ -381,8 +429,7 @@ function BulkActionsTab() {
   const applyBulk = async () => {
     setProcessing(true);
     const { data: { session } } = await supabase.auth.getSession();
-    
-    // Get all user_ids for the target role
+
     let userIds: string[] = [];
     if (targetRole === "user") {
       const { data } = await supabase.from("profiles").select("user_id").eq("status", "active");
@@ -404,7 +451,7 @@ function BulkActionsTab() {
         max_amount: maxAmount ? Number(maxAmount) : null,
         max_count: maxCount ? Number(maxCount) : null,
         reason: reason || `Bulk ${targetRole} limit update`,
-        set_by: session?.user?.id,
+        set_by: session?.user?.id!,
         is_active: true,
         updated_at: new Date().toISOString(),
       };
@@ -414,7 +461,6 @@ function BulkActionsTab() {
 
     toast.success(`Applied to ${success} ${targetRole}s${fail ? `, ${fail} failed` : ""}`);
 
-    // Audit log
     await supabase.from("audit_logs").insert({
       actor_id: session?.user?.id!,
       action: "bulk_limit_override",
@@ -439,7 +485,6 @@ function BulkActionsTab() {
       userIds = (data ?? []).map(a => a.user_id);
     }
 
-    // Deactivate all overrides for these users
     for (const uid of userIds) {
       await supabase.from("user_limit_overrides")
         .update({ is_active: false, updated_at: new Date().toISOString() })
