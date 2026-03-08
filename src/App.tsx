@@ -21,6 +21,7 @@ import SuperDistributorDashboard from "./pages/SuperDistributorDashboard";
 import SuperDistributorCreateDistributor from "./pages/SuperDistributorCreateDistributor";
 import MerchantDashboard from "./pages/MerchantDashboard";
 import NotFound from "./pages/NotFound";
+import TeamLoginPage from "./pages/TeamLoginPage";
 
 const queryClient = new QueryClient();
 

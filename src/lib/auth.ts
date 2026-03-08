@@ -13,11 +13,65 @@ import { supabase } from "@/integrations/supabase/client";
 
 const EMAIL_DOMAIN = "easypay.local";
 
+const TEAM_EMAIL_DOMAIN = "team.easypay.local";
+
 /** Convert a BD phone number to an email for Supabase Auth */
 export const phoneToEmail = (phone: string) => {
   const cleaned = phone.replace(/\D/g, "").replace(/^(\+?88)/, "");
   return `${cleaned}@${EMAIL_DOMAIN}`;
 };
+
+/** Convert a team username to an email for Supabase Auth */
+export const usernameToEmail = (username: string) =>
+  `${username.toLowerCase()}@${TEAM_EMAIL_DOMAIN}`;
+
+/** Generate a random username like staff-A7K2 */
+export function generateUsername(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code = "";
+  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return `staff-${code}`;
+}
+
+/** Generate a random 8-char alphanumeric password */
+export function generatePassword(): string {
+  const chars = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let pw = "";
+  for (let i = 0; i < 8; i++) pw += chars[Math.floor(Math.random() * chars.length)];
+  return pw;
+}
+
+/** Sign up a new team member with username + password */
+export async function teamSignUp(username: string, password: string, displayName: string) {
+  const email = usernameToEmail(username);
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        display_name: displayName,
+        is_team_member: true,
+      },
+    },
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+/** Sign in a team member with username + password */
+export async function teamSignIn(username: string, password: string) {
+  const email = usernameToEmail(username);
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) throw error;
+  return data;
+}
 
 /** Pad PIN to meet Supabase's 6-char minimum password requirement */
 export const pinToPassword = (pin: string) => `${pin}EP`;
