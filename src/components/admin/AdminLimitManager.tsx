@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Save, Search, Trash2, Plus, RotateCcw, Users, Store, UserCheck } from "lucide-react";
+import MerchantLimitsTab from "./MerchantLimitsTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -459,13 +460,15 @@ export default function AdminLimitManager() {
     <div className="space-y-4">
       <h2 className="text-lg font-bold text-foreground">Transaction Limit Management</h2>
       <Tabs defaultValue="global" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="global">Global Defaults</TabsTrigger>
           <TabsTrigger value="overrides">User Overrides</TabsTrigger>
+          <TabsTrigger value="merchant"><Store className="w-3.5 h-3.5 mr-1 inline" />Merchant</TabsTrigger>
           <TabsTrigger value="bulk">Bulk Actions</TabsTrigger>
         </TabsList>
         <TabsContent value="global"><GlobalDefaultsTab /></TabsContent>
         <TabsContent value="overrides"><UserOverridesTab /></TabsContent>
+        <TabsContent value="merchant"><MerchantLimitsTab /></TabsContent>
         <TabsContent value="bulk"><BulkActionsTab /></TabsContent>
       </Tabs>
     </div>
