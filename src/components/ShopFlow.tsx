@@ -19,6 +19,7 @@ import { useOrderNotifications } from "@/hooks/use-order-notifications";
 import FeatureGuard from "@/components/FeatureGuard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
+import ProductImage from "@/components/ProductImage";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Product {
