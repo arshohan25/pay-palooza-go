@@ -45,6 +45,9 @@ Deno.serve(async (req) => {
       return json({ error: "Merchant account is not active" }, 403);
     }
 
+    // Piggyback: expire stale sessions on every request
+    await supabase.rpc("expire_stale_payment_sessions").catch(() => {});
+
     const body = await req.json().catch(() => ({}));
     const action = body.action || "create_session";
 

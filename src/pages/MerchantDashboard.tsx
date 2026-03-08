@@ -27,6 +27,7 @@ import SlideToConfirm from "@/components/SlideToConfirm";
 import { haptics } from "@/lib/haptics";
 import DailyLimitBadge from "@/components/DailyLimitBadge";
 import MerchantApiTab from "@/components/MerchantApiTab";
+import MerchantAnalyticsTab from "@/components/MerchantAnalyticsTab";
 
 /* ─── Types ─── */
 type MerchTab = "overview" | "qr" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api";
@@ -388,7 +389,7 @@ const MerchantDashboard = () => {
           <motion.div key={activeTab} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }}>
             {activeTab === "overview"     && <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} onRefresh={loadData} />}
             {activeTab === "qr"           && <QRTab merchant={merchant} toast={toast} />}
-            {activeTab === "analytics"    && <AnalyticsTab merchant={merchant} paymentTxns={paymentTxns} />}
+            {activeTab === "analytics"    && merchant && <MerchantAnalyticsTab merchantId={merchant.id} />}
             {activeTab === "paylinks"     && <PayLinksTab merchant={merchant} toast={toast} />}
             {activeTab === "transactions" && <TxnTab txns={paymentTxns} />}
             {activeTab === "settlements"  && <SettlementTab merchant={merchant} paymentTxns={paymentTxns} />}
