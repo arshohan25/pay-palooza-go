@@ -336,6 +336,13 @@ export const SavingsIcon = ({ isHovered }: IconProps) => (
         <stop offset="0%" stopColor="#4CAF50"/>
         <stop offset="100%" stopColor="#1B5E20"/>
       </linearGradient>
+      <filter id="coinGlow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
+        <feMerge>
+          <feMergeNode in="blur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
     </defs>
     {/* Pot rim */}
     <rect x="16" y="34" width="24" height="4" rx="2" fill="#A1887F"/>
@@ -360,13 +367,31 @@ export const SavingsIcon = ({ isHovered }: IconProps) => (
       <path d="M28 18 Q26 13 24 10 Q27 12 28 15" fill="#4CAF50"/>
       <path d="M28 18 Q30 13 32 10 Q29 12 28 15" fill="#66BB6A"/>
     </motion.g>
+    {/* Glow pulse behind coin */}
+    <motion.circle
+      cx="12" cy="12" r="14"
+      fill="#FFD54F"
+      opacity={0}
+      animate={isHovered ? { opacity: [0, 0.35, 0] } : { opacity: 0 }}
+      transition={isHovered ? { duration: 1.4, ease: "easeInOut", repeat: Infinity } : { duration: 0.3 }}
+    />
+    {/* Sparkle diamonds around coin */}
+    <motion.g
+      animate={isHovered ? { opacity: [0, 1, 0], scale: [0.5, 1, 0.5] } : { opacity: 0 }}
+      transition={isHovered ? { duration: 1.2, ease: "easeInOut", repeat: Infinity } : { duration: 0.2 }}
+      style={{ transformBox: "fill-box", transformOrigin: "12px 12px" }}
+    >
+      <path d="M3 5 L4 3 L5 5 L4 7 Z" fill="#FFF8E1"/>
+      <path d="M20 3 L21 1 L22 3 L21 5 Z" fill="#FFF8E1"/>
+      <path d="M4 19 L5 17 L6 19 L5 21 Z" fill="#FFF8E1"/>
+    </motion.g>
     {/* Coin badge — bounces on hover */}
     <motion.g
       animate={isHovered ? { y: [0, -4, 0], rotate: [0, 15, -10, 0] } : { y: 0, rotate: 0 }}
       transition={isHovered ? { duration: 0.55, ease: "easeInOut", repeat: Infinity } : { duration: 0.3 }}
       style={{ transformBox: "fill-box", transformOrigin: "12px 12px" }}
     >
-      <circle cx="12" cy="12" r="11" fill="#FFD54F"/>
+      <circle cx="12" cy="12" r="11" fill="#FFD54F" filter="url(#coinGlow)"/>
       <circle cx="12" cy="12" r="8.5" fill="#FFC107" opacity="0.6"/>
       <text x="12" y="16.5" textAnchor="middle" fill="#7B3F00" fontSize="11" fontWeight="bold" fontFamily="serif">৳</text>
     </motion.g>
