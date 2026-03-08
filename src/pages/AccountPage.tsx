@@ -5,7 +5,7 @@ import {
   Shield, Bell, Fingerprint, BarChart3, CreditCard,
   Gift, Lock, LogOut, BadgeCheck, AlertCircle,
   BellOff, Pencil, PlayCircle, Globe,
-  MessageCircle, Mail, ClipboardList, ShieldBan,
+  MessageCircle, Mail, ClipboardList, ShieldBan, GripVertical,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -129,6 +129,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const [pushNotifs, setPushNotifs]     = useState(true);
   const [promoNotifs, setPromoNotifs]   = useState(true);
   const [twoFa, setTwoFa]               = useState(false);
+  const [dndEnabled, setDndEnabled]     = useState(() => localStorage.getItem("mfs_dnd_enabled") === "true");
   const [showChangePin, setShowChangePin] = useState(false);
   const [showKyc, setShowKyc]           = useState(false);
   const [showProfileEdit, setShowProfileEdit] = useState(false);
@@ -279,6 +280,18 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
               </span>
             }
             onClick={toggleLang}
+          />
+          <ToggleRow
+            icon={GripVertical}
+            iconClass="gradient-send"
+            label="Rearrange Quick Actions"
+            sub="Enable drag & drop to customize icon order"
+            checked={dndEnabled}
+            onCheckedChange={(v) => {
+              setDndEnabled(v);
+              localStorage.setItem("mfs_dnd_enabled", String(v));
+              toast.success(v ? "Drag & drop enabled" : "Drag & drop disabled");
+            }}
           />
           <MenuRow
             icon={PlayCircle}

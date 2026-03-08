@@ -297,6 +297,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
 
   // Sortable order state (persisted to DB)
   const { order: sortableOrder, setOrder: setSortableOrder, resetOrder: resetOrderFn, isCustomOrder } = useQuickActionOrder();
+  const isDnDEnabled = typeof window !== "undefined" && localStorage.getItem("mfs_dnd_enabled") === "true";
 
   const resetOrder = useCallback(() => {
     resetOrderFn();
@@ -406,7 +407,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   return (
     <div className="bg-card rounded-3xl shadow-card border border-border/60 p-4 sm:p-5">
       <AnimatePresence>
-        {isCustomOrder && (
+        {isDnDEnabled && isCustomOrder && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
