@@ -36,7 +36,7 @@ interface PaymentSession {
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 
-const MerchantApiTab = ({ merchantId }: { merchantId: string }) => {
+const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(({ merchantId }, ref) => {
   const { toast } = useToast();
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [sessions, setSessions] = useState<PaymentSession[]>([]);
@@ -127,7 +127,7 @@ const MerchantApiTab = ({ merchantId }: { merchantId: string }) => {
   }
 
   return (
-    <div className="space-y-5">
+    <div ref={ref} className="space-y-5">
       {/* API Keys Section */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -375,6 +375,8 @@ app.post('/webhook', (req, res) => {
       </div>
     </div>
   );
-};
+});
+
+MerchantApiTab.displayName = "MerchantApiTab";
 
 export default MerchantApiTab;
