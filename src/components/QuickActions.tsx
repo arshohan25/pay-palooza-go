@@ -41,6 +41,7 @@ import { useI18n } from "@/lib/i18n";
 import { haptics } from "@/lib/haptics";
 import { useFeatureLocks } from "@/hooks/use-feature-locks";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
+import { useQuickActionOrder } from "@/hooks/use-quick-action-order";
 
 const FEATURE_MAP: Record<string, string> = {
   send: "send_money",
@@ -86,22 +87,6 @@ const allActionDefs: ActionDef[] = [
 ];
 
 const FIXED_IDS = new Set(["send", "cashout", "payment"]);
-const STORAGE_KEY = "quickaction-order";
-const DEFAULT_SORTABLE_ORDER = ["bank", "recharge", "bill", "shop", "more"];
-
-function loadSortableOrder(): string[] {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved) as string[];
-      // Validate: must contain exactly the sortable IDs
-      if (parsed.length === DEFAULT_SORTABLE_ORDER.length && DEFAULT_SORTABLE_ORDER.every(id => parsed.includes(id))) {
-        return parsed;
-      }
-    }
-  } catch {}
-  return DEFAULT_SORTABLE_ORDER;
-}
 
 const moreServices = [
   { id: "refer", Icon: ReferIcon, label: "Refer & Earn", desc: "Invite friends & earn", gradient: "from-orange-500 to-red-500", featureKey: "refer" },
@@ -310,18 +295,13 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didLongPress = useRef(false);
 
-  // Sortable order state
-  const [sortableOrder, setSortableOrder] = useState<string[]>(loadSortableOrder);
-  const isCustomOrder = useMemo(() => JSON.stringify(sortableOrder) !== JSON.stringify(DEFAULT_SORTABLE_ORDER), [sortableOrder]);
+  // Sortable order state (persisted to DB)
+  const { order: sortableOrder, setOrder: setSortableOrder, resetOrder: resetOrderFn, isCustomOrder } = useQuickActionOrder();
 
   const resetOrder = useCallback(() => {
-    setSortableOrder(DEFAULT_SORTABLE_ORDER);
+    resetOrderFn();
     toast.success("Quick Actions order restored to default");
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sortableOrder));
-  }, [sortableOrder]);
+  }, [resetOrderFn]);
 
   // Build the final ordered action list: fixed first 3 + sorted rest
   const orderedActions = useMemo(() => {
