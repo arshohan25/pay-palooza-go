@@ -1,28 +1,29 @@
 
 
-## Limit Changes Audit Trail
+## Plan: Add Biller Categories to API Hub
 
-### Overview
-Add a 5th tab "Audit Trail" to the `AdminLimitManager` component that queries `audit_logs` for limit-related actions and displays them in a filterable, chronological table.
+### What
+
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-**1. `src/components/admin/AdminLimitManager.tsx`**
-- Update `grid-cols-4` to `grid-cols-5`
-- Add "Audit Trail" tab with `History` icon
-- Add new `LimitAuditTab` component that:
-  - Fetches from `audit_logs` where `action` matches limit-related actions: `bulk_limit_override`, `bulk_limit_reset`, `limit_override_created`, `limit_override_removed`, `limit_updated`
-  - Also fetches from `user_limit_overrides` recent changes (by `updated_at`) to show individual override activity
-  - Resolves actor IDs to profile names via a profiles lookup
-  - Displays a table with columns: Date/Time, Admin, Action, Details (txn type, period, amounts, target user, reason)
-  - Filterable by action type and date range
-  - Shows last 100 entries, sorted newest first
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-**2. Update existing actions to log audit entries**
-- `GlobalDefaultsTab.handleSave`: Insert audit log with action `limit_updated`, capturing old/new values
-- `UserOverridesTab.addOverride`: Insert audit log with action `limit_override_created`
-- `UserOverridesTab.removeOverride`: Insert audit log with action `limit_override_removed`
-- (Bulk actions already log to `audit_logs`)
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-No database changes needed — uses existing `audit_logs` table.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

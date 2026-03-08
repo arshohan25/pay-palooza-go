@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Save, Search, Trash2, Plus, RotateCcw, Users, Store, UserCheck } from "lucide-react";
+import { Loader2, Save, Search, Trash2, Plus, RotateCcw, Users, Store, UserCheck, History } from "lucide-react";
 import MerchantLimitsTab from "./MerchantLimitsTab";
+import LimitAuditTab from "./LimitAuditTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -77,7 +78,27 @@ function GlobalDefaultsTab() {
       .update({ ...changes, updated_at: new Date().toISOString(), updated_by: session?.user?.id } as any)
       .eq("id", row.id);
     if (error) toast.error("Failed to save");
-    else { toast.success("Limit updated"); setEdits(prev => { const n = { ...prev }; delete n[row.id]; return n; }); await fetchLimits(); }
+    else {
+      toast.success("Limit updated");
+      // Audit log
+      await supabase.from("audit_logs").insert({
+        actor_id: session?.user?.id!,
+        action: "limit_updated",
+        entity_type: "limits",
+        entity_id: row.id,
+        details: {
+          txn_type: row.txn_type,
+          period: row.period,
+          applies_to: row.applies_to,
+          old_max_amount: row.max_amount,
+          new_max_amount: changes.max_amount ?? row.max_amount,
+          old_max_count: row.max_count,
+          new_max_count: changes.max_count ?? row.max_count,
+        },
+      });
+      setEdits(prev => { const n = { ...prev }; delete n[row.id]; return n; });
+      await fetchLimits();
+    }
     setSaving(null);
   };
 
@@ -202,12 +223,43 @@ function UserOverridesTab() {
     };
     const { error } = await supabase.from("user_limit_overrides" as any).upsert(payload as any, { onConflict: "target_user_id,txn_type,period" });
     if (error) toast.error("Failed: " + error.message);
-    else { toast.success("Override saved"); setShowDialog(false); setForm({ txn_type: "send", period: "daily", max_amount: "", max_count: "", reason: "", expires_at: "" }); await selectUser(selectedUser); }
+    else {
+      toast.success("Override saved");
+      // Audit log
+      await supabase.from("audit_logs").insert({
+        actor_id: session?.user?.id!,
+        action: "limit_override_created",
+        entity_type: "limits",
+        details: {
+          txn_type: form.txn_type,
+          period: form.period,
+          max_amount: form.max_amount || null,
+          max_count: form.max_count || null,
+          target_name: selectedUser.name,
+          target_phone: selectedUser.phone,
+          reason: form.reason || null,
+        },
+      });
+      setShowDialog(false);
+      setForm({ txn_type: "send", period: "daily", max_amount: "", max_count: "", reason: "", expires_at: "" });
+      await selectUser(selectedUser);
+    }
     setSaving(false);
   };
 
   const removeOverride = async (id: string) => {
     await supabase.from("user_limit_overrides" as any).update({ is_active: false, updated_at: new Date().toISOString() } as any).eq("id", id);
+    const { data: { session } } = await supabase.auth.getSession();
+    await supabase.from("audit_logs").insert({
+      actor_id: session?.user?.id!,
+      action: "limit_override_removed",
+      entity_type: "limits",
+      entity_id: id,
+      details: {
+        target_name: selectedUser?.name,
+        target_phone: selectedUser?.phone,
+      },
+    });
     toast.success("Override removed");
     if (selectedUser) await selectUser(selectedUser);
   };
@@ -460,16 +512,18 @@ export default function AdminLimitManager() {
     <div className="space-y-4">
       <h2 className="text-lg font-bold text-foreground">Transaction Limit Management</h2>
       <Tabs defaultValue="global" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="global">Global Defaults</TabsTrigger>
           <TabsTrigger value="overrides">User Overrides</TabsTrigger>
           <TabsTrigger value="merchant"><Store className="w-3.5 h-3.5 mr-1 inline" />Merchant</TabsTrigger>
           <TabsTrigger value="bulk">Bulk Actions</TabsTrigger>
+          <TabsTrigger value="audit"><History className="w-3.5 h-3.5 mr-1 inline" />Audit Trail</TabsTrigger>
         </TabsList>
         <TabsContent value="global"><GlobalDefaultsTab /></TabsContent>
         <TabsContent value="overrides"><UserOverridesTab /></TabsContent>
         <TabsContent value="merchant"><MerchantLimitsTab /></TabsContent>
         <TabsContent value="bulk"><BulkActionsTab /></TabsContent>
+        <TabsContent value="audit"><LimitAuditTab /></TabsContent>
       </Tabs>
     </div>
   );
