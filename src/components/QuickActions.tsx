@@ -37,6 +37,8 @@ import {
   InsuranceIcon,
   GiftCardsIcon,
 } from "./QuickActionIcons";
+import { Store } from "lucide-react";
+import { useUserRoles } from "@/hooks/use-user-roles";
 import { useI18n } from "@/lib/i18n";
 import { haptics } from "@/lib/haptics";
 import { useFeatureLocks } from "@/hooks/use-feature-locks";
@@ -89,9 +91,14 @@ const allActionDefs: ActionDef[] = [
 
 const FIXED_IDS = new Set(["send", "cashout", "payment"]);
 
+const MerchantApplyIcon = ({ isHovered }: { isHovered?: boolean }) => (
+  <Store className={`w-6 h-6 transition-colors ${isHovered ? "text-purple-600" : "text-purple-500"}`} />
+);
+
 const moreServices = [
   { id: "refer", Icon: ReferIcon, label: "Refer & Earn", desc: "Invite friends & earn", gradient: "from-orange-500 to-red-500", featureKey: "refer" },
   { id: "savings", Icon: SavingsIcon, label: "Savings", desc: "Set goals & grow money", gradient: "from-emerald-500 to-teal-600", featureKey: "savings" },
+  { id: "merchant_apply", Icon: MerchantApplyIcon, label: "Become a Merchant", desc: "Apply for merchant account", gradient: "from-purple-500 to-indigo-600", featureKey: "merchant_apply" },
   { id: "coupons", Icon: CouponsIcon, label: "Coupons & Offers", desc: "Exclusive deals", gradient: "from-pink-500 to-rose-600", soon: true, featureKey: "coupons" },
   { id: "donations", Icon: DonationsIcon, label: "Donations", desc: "Support causes", gradient: "from-red-500 to-rose-700", soon: true, featureKey: "donations" },
   { id: "loan", Icon: LoanIcon, label: "Loan", desc: "Quick personal loans", gradient: "from-amber-500 to-orange-600", soon: true, featureKey: "loan" },
@@ -280,9 +287,10 @@ interface QuickActionsProps {
   onShop: () => void;
   onBankTransfer: () => void;
   onSavings: () => void;
+  onMerchantApply?: () => void;
 }
 
-const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney, onRefer, onShop, onBankTransfer, onSavings }: QuickActionsProps) => {
+const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney, onRefer, onShop, onBankTransfer, onSavings, onMerchantApply }: QuickActionsProps) => {
   const { t } = useI18n();
   const { isLocked } = useFeatureLocks();
   const { isDisabled: isGloballyDisabled, toggles } = useGlobalToggles();
@@ -411,11 +419,20 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
     toast.info(`${label} coming soon!`);
   };
 
+  const { roles } = useUserRoles();
+  const isMerchant = roles.includes("merchant");
+
   const handleMoreService = (id: string, soon?: boolean) => {
     if (soon) { toast.info("Coming soon!"); return; }
     if (id === "refer") onRefer();
     else if (id === "savings") onSavings();
+    else if (id === "merchant_apply") onMerchantApply?.();
   };
+
+  // Filter out "Become a Merchant" if user already has merchant role
+  const filteredMoreServices = visibleMoreServices.filter(
+    (item) => !(item.id === "merchant_apply" && isMerchant)
+  );
 
   return (
     <div className={`bg-card rounded-3xl shadow-card border border-border/60 ${compactMode ? "p-3" : "p-4 sm:p-5"}`}>
@@ -523,7 +540,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                 </button>
               </div>
               <div className={`grid gap-y-5 gap-x-2 sm:gap-x-3 ${gridCols === 3 ? "grid-cols-3" : "grid-cols-4"}`}>
-                {visibleMoreServices.map((item, i) => {
+                {filteredMoreServices.map((item, i) => {
                   const moreGlobalOff = item.featureKey ? isGloballyDisabled(item.featureKey) : false;
                   return (
                     <motion.button
