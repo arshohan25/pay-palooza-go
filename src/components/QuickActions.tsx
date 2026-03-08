@@ -1,7 +1,23 @@
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Lock, ChevronUp, Sparkles } from "lucide-react";
+import { Lock, ChevronUp, Sparkles, GripVertical } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  rectSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   SendMoneyIcon,
   CashOutIcon,
@@ -45,16 +61,44 @@ const FEATURE_MAP: Record<string, string> = {
   feature_slot_5: "feature_slot_5",
 };
 
-const actionDefs = [
-  { Icon: SendMoneyIcon, labelKey: "sendMoney" as const, id: "send", desc: "Send money to anyone instantly", bgStyle: "rgba(233,30,140,0.12)", ringStyle: "1px solid rgba(233,30,140,0.25)", rippleColor: "rgba(233,30,140,0.35)" },
-  { Icon: CashOutIcon, labelKey: "cashOut" as const, id: "cashout", desc: "Withdraw cash from your wallet", bgStyle: "rgba(67,160,71,0.12)", ringStyle: "1px solid rgba(67,160,71,0.25)", rippleColor: "rgba(67,160,71,0.35)" },
-  { Icon: PaymentIcon, labelKey: "payment" as const, id: "payment", desc: "Pay merchants & stores", bgStyle: "rgba(156,39,176,0.12)", ringStyle: "1px solid rgba(156,39,176,0.25)", rippleColor: "rgba(156,39,176,0.35)" },
-  { Icon: BankTransferIcon, labelKey: "bankTransfer" as const, id: "bank", desc: "Transfer to bank accounts", bgStyle: "rgba(33,150,243,0.12)", ringStyle: "1px solid rgba(33,150,243,0.25)", rippleColor: "rgba(33,150,243,0.35)" },
-  { Icon: RechargeIcon, labelKey: "recharge" as const, id: "recharge", desc: "Top up mobile balance", bgStyle: "rgba(0,188,212,0.12)", ringStyle: "1px solid rgba(0,188,212,0.25)", rippleColor: "rgba(0,188,212,0.35)" },
-  { Icon: PayBillIcon, labelKey: "payBill" as const, id: "bill", desc: "Pay utility & other bills", bgStyle: "rgba(255,193,7,0.12)", ringStyle: "1px solid rgba(255,193,7,0.25)", rippleColor: "rgba(255,193,7,0.45)" },
-  { Icon: ShopIcon, labelKey: "shop" as const, id: "shop", desc: "Browse & buy from shops", bgStyle: "rgba(255,112,67,0.12)", ringStyle: "1px solid rgba(255,112,67,0.25)", rippleColor: "rgba(255,112,67,0.35)" },
-  { Icon: MoreIcon, labelKey: "more" as const, id: "more", desc: "Explore more services", bgStyle: "rgba(120,120,140,0.10)", ringStyle: "1px solid rgba(120,120,140,0.20)", rippleColor: "rgba(120,120,140,0.30)" },
+interface ActionDef {
+  Icon: React.FC<{ isHovered?: boolean }>;
+  labelKey: "sendMoney" | "cashOut" | "payment" | "bankTransfer" | "recharge" | "payBill" | "shop" | "more";
+  id: string;
+  desc: string;
+  bgStyle: string;
+  ringStyle: string;
+  rippleColor: string;
+}
+
+const allActionDefs: ActionDef[] = [
+  { Icon: SendMoneyIcon, labelKey: "sendMoney", id: "send", desc: "Send money to anyone instantly", bgStyle: "rgba(233,30,140,0.12)", ringStyle: "1px solid rgba(233,30,140,0.25)", rippleColor: "rgba(233,30,140,0.35)" },
+  { Icon: CashOutIcon, labelKey: "cashOut", id: "cashout", desc: "Withdraw cash from your wallet", bgStyle: "rgba(67,160,71,0.12)", ringStyle: "1px solid rgba(67,160,71,0.25)", rippleColor: "rgba(67,160,71,0.35)" },
+  { Icon: PaymentIcon, labelKey: "payment", id: "payment", desc: "Pay merchants & stores", bgStyle: "rgba(156,39,176,0.12)", ringStyle: "1px solid rgba(156,39,176,0.25)", rippleColor: "rgba(156,39,176,0.35)" },
+  { Icon: BankTransferIcon, labelKey: "bankTransfer", id: "bank", desc: "Transfer to bank accounts", bgStyle: "rgba(33,150,243,0.12)", ringStyle: "1px solid rgba(33,150,243,0.25)", rippleColor: "rgba(33,150,243,0.35)" },
+  { Icon: RechargeIcon, labelKey: "recharge", id: "recharge", desc: "Top up mobile balance", bgStyle: "rgba(0,188,212,0.12)", ringStyle: "1px solid rgba(0,188,212,0.25)", rippleColor: "rgba(0,188,212,0.35)" },
+  { Icon: PayBillIcon, labelKey: "payBill", id: "bill", desc: "Pay utility & other bills", bgStyle: "rgba(255,193,7,0.12)", ringStyle: "1px solid rgba(255,193,7,0.25)", rippleColor: "rgba(255,193,7,0.45)" },
+  { Icon: ShopIcon, labelKey: "shop", id: "shop", desc: "Browse & buy from shops", bgStyle: "rgba(255,112,67,0.12)", ringStyle: "1px solid rgba(255,112,67,0.25)", rippleColor: "rgba(255,112,67,0.35)" },
+  { Icon: MoreIcon, labelKey: "more", id: "more", desc: "Explore more services", bgStyle: "rgba(120,120,140,0.10)", ringStyle: "1px solid rgba(120,120,140,0.20)", rippleColor: "rgba(120,120,140,0.30)" },
 ];
+
+const FIXED_IDS = new Set(["send", "cashout", "payment"]);
+const STORAGE_KEY = "quickaction-order";
+const DEFAULT_SORTABLE_ORDER = ["bank", "recharge", "bill", "shop", "more"];
+
+function loadSortableOrder(): string[] {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved) as string[];
+      // Validate: must contain exactly the sortable IDs
+      if (parsed.length === DEFAULT_SORTABLE_ORDER.length && DEFAULT_SORTABLE_ORDER.every(id => parsed.includes(id))) {
+        return parsed;
+      }
+    }
+  } catch {}
+  return DEFAULT_SORTABLE_ORDER;
+}
 
 const moreServices = [
   { id: "refer", Icon: ReferIcon, label: "Refer & Earn", desc: "Invite friends & earn", gradient: "from-orange-500 to-red-500", featureKey: "refer" },
@@ -66,7 +110,6 @@ const moreServices = [
   { id: "giftcards", Icon: GiftCardsIcon, label: "Gift Cards", desc: "Send & redeem gifts", gradient: "from-orange-400 to-red-500", soon: true, featureKey: "gift_cards" },
 ];
 
-// Blank feature slots — only visible when admin enables the toggle
 const SlotIcon = ({ isHovered }: { isHovered?: boolean }) => (
   <Sparkles className={`w-6 h-6 transition-colors ${isHovered ? "text-primary" : "text-muted-foreground"}`} />
 );
@@ -81,6 +124,142 @@ const blankSlots = [
 
 interface RippleState { x: number; y: number; id: number; }
 
+/* ─── Sortable Action Item ─── */
+interface SortableActionItemProps {
+  action: ActionDef;
+  index: number;
+  isDraggable: boolean;
+  isHovered: boolean;
+  ripple: RippleState | null;
+  label: string;
+  isFeatureLocked: boolean;
+  isGlobalOff: boolean;
+  isUnavailable: boolean;
+  expanded: boolean;
+  longPressId: string | null;
+  onTriggerRipple: (id: string, e: React.MouseEvent | React.TouchEvent) => void;
+  onHandleAction: (id: string, label: string) => void;
+  onHoverStart: (id: string) => void;
+  onHoverEnd: () => void;
+  onStartLongPress: (id: string) => void;
+  onCancelLongPress: () => void;
+  didLongPressRef: React.MutableRefObject<boolean>;
+}
+
+const SortableActionItem = ({
+  action, index, isDraggable, isHovered, ripple, label,
+  isFeatureLocked, isGlobalOff, isUnavailable, expanded, longPressId,
+  onTriggerRipple, onHandleAction, onHoverStart, onHoverEnd,
+  onStartLongPress, onCancelLongPress, didLongPressRef,
+}: SortableActionItemProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: action.id,
+    disabled: !isDraggable,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    opacity: isDragging ? 0.7 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative">
+      <motion.button
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: 0.04 + index * 0.05, ease: [0.23, 1, 0.32, 1] }}
+        whileTap={isDragging ? undefined : { scale: 0.90 }}
+        onClick={(e) => {
+          if (isDragging) return;
+          if (didLongPressRef.current) { didLongPressRef.current = false; return; }
+          onTriggerRipple(action.id, e);
+          onHandleAction(action.id, label);
+        }}
+        onTouchStart={(e) => { if (!isDragging) onTriggerRipple(action.id, e); }}
+        onPointerDown={() => { if (!isDraggable) onStartLongPress(action.id); }}
+        onPointerUp={onCancelLongPress}
+        onPointerLeave={onCancelLongPress}
+        onHoverStart={() => onHoverStart(action.id)}
+        onHoverEnd={onHoverEnd}
+        className={`flex flex-col items-center gap-2.5 group outline-none relative w-full ${isUnavailable ? "opacity-60" : ""}`}
+      >
+        {/* Drag handle indicator for draggable items */}
+        {isDraggable && (
+          <div
+            {...attributes}
+            {...listeners}
+            className="absolute -top-1 -right-0.5 z-20 w-5 h-5 rounded-full bg-muted/80 flex items-center justify-center cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity touch-none"
+            style={{ touchAction: "none" }}
+          >
+            <GripVertical className="w-3 h-3 text-muted-foreground" />
+          </div>
+        )}
+        <motion.div
+          data-ripple-container
+          whileHover={{ scale: 1.06, y: -2 }}
+          transition={{ type: "spring", stiffness: 380, damping: 22 }}
+          className="relative flex items-center justify-center rounded-full shadow-sm group-hover:shadow-md transition-all duration-200 overflow-hidden"
+          style={{ width: 56, height: 56, background: action.bgStyle, outline: action.ringStyle, filter: isGlobalOff ? "grayscale(1)" : "none", opacity: isGlobalOff ? 0.5 : 1 }}
+        >
+          <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 blur-[10px] transition-opacity duration-300 -z-10 scale-110" style={{ background: action.bgStyle }} />
+          <AnimatePresence>
+            {ripple && (
+              <motion.span
+                key={ripple.id}
+                className="absolute rounded-full pointer-events-none"
+                style={{ left: ripple.x, top: ripple.y, width: 8, height: 8, marginLeft: -4, marginTop: -4, background: action.rippleColor }}
+                initial={{ scale: 0, opacity: 1 }}
+                animate={{ scale: 10, opacity: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.55, ease: "easeOut" }}
+              />
+            )}
+          </AnimatePresence>
+          {action.id === "more" ? (
+            <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.3 }} className="flex items-center justify-center">
+              <MoreIcon />
+            </motion.div>
+          ) : (
+            <action.Icon isHovered={isHovered} />
+          )}
+          {isFeatureLocked && (
+            <div className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-destructive flex items-center justify-center shadow-md z-10">
+              <Lock className="w-2.5 h-2.5 text-destructive-foreground" />
+            </div>
+          )}
+        </motion.div>
+        <AnimatePresence>
+          {longPressId === action.id && (
+            <motion.div
+              initial={{ opacity: 0, y: 6, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.18 }}
+              className="absolute -top-10 left-1/2 -translate-x-1/2 z-50 whitespace-nowrap rounded-lg bg-popover border border-border px-2.5 py-1 text-[10px] font-medium text-popover-foreground shadow-lg pointer-events-none"
+            >
+              {action.desc}
+              <div className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 rotate-45 bg-popover border-r border-b border-border" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <span className={`text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-all duration-150 px-0.5 ${isGlobalOff ? "opacity-50 grayscale" : ""}`}>
+          {label}
+        </span>
+      </motion.button>
+    </div>
+  );
+};
+
+/* ─── Main Component ─── */
 interface QuickActionsProps {
   onSendMoney: () => void;
   onCashOut: () => void;
@@ -107,6 +286,37 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didLongPress = useRef(false);
 
+  // Sortable order state
+  const [sortableOrder, setSortableOrder] = useState<string[]>(loadSortableOrder);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sortableOrder));
+  }, [sortableOrder]);
+
+  // Build the final ordered action list: fixed first 3 + sorted rest
+  const orderedActions = useMemo(() => {
+    const fixed = allActionDefs.filter(a => FIXED_IDS.has(a.id));
+    const sortableMap = new Map(allActionDefs.filter(a => !FIXED_IDS.has(a.id)).map(a => [a.id, a]));
+    const sorted = sortableOrder.map(id => sortableMap.get(id)!).filter(Boolean);
+    return [...fixed, ...sorted];
+  }, [sortableOrder]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+  );
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setSortableOrder(prev => {
+      const oldIndex = prev.indexOf(active.id as string);
+      const newIndex = prev.indexOf(over.id as string);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      return arrayMove(prev, oldIndex, newIndex);
+    });
+  }, []);
+
   const startLongPress = useCallback((id: string) => {
     didLongPress.current = false;
     longPressTimer.current = setTimeout(() => {
@@ -121,13 +331,11 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
     setLongPressId(null);
   }, []);
 
-  // Merge moreServices with enabled blank slots (blank slots hidden by default, shown only when enabled)
   const visibleMoreServices = useMemo(() => {
     const enabledSlots = blankSlots.filter((slot) => {
       const toggle = toggles.find((t) => t.feature_key === slot.featureKey);
       return toggle?.is_enabled === true;
     }).map((slot) => {
-      // Use admin-set label from toggles if available
       const toggle = toggles.find((t) => t.feature_key === slot.featureKey);
       return { ...slot, label: toggle?.label || slot.label };
     });
@@ -177,89 +385,47 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
 
   return (
     <div className="bg-card rounded-3xl shadow-card border border-border/60 p-4 sm:p-5">
-      <div className="grid grid-cols-4 gap-y-5 gap-x-2 sm:gap-x-3">
-        {actionDefs.map((action, index) => {
-          const isHovered = hoveredId === action.id;
-          const ripple = ripples[action.id];
-          const label = t(action.labelKey);
-          const featureKey = FEATURE_MAP[action.id];
-          const lockStatus = featureKey ? isLocked(featureKey) : { locked: false };
-          const isFeatureLocked = lockStatus.locked;
-          const isGlobalOff = featureKey ? isGloballyDisabled(featureKey) : false;
-          const isUnavailable = isFeatureLocked || isGlobalOff;
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={sortableOrder} strategy={rectSortingStrategy}>
+          <div className="grid grid-cols-4 gap-y-5 gap-x-2 sm:gap-x-3">
+            {orderedActions.map((action, index) => {
+              const isHov = hoveredId === action.id;
+              const ripple = ripples[action.id];
+              const label = t(action.labelKey);
+              const featureKey = FEATURE_MAP[action.id];
+              const lockStatus = featureKey ? isLocked(featureKey) : { locked: false };
+              const isFeatureLocked = lockStatus.locked;
+              const isGlobalOff = featureKey ? isGloballyDisabled(featureKey) : false;
+              const isUnavailable = isFeatureLocked || isGlobalOff;
+              const isDraggable = !FIXED_IDS.has(action.id);
 
-          return (
-            <motion.button
-              key={action.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, delay: 0.04 + index * 0.05, ease: [0.23, 1, 0.32, 1] }}
-              whileTap={{ scale: 0.90 }}
-              onClick={(e) => { if (didLongPress.current) { didLongPress.current = false; return; } triggerRipple(action.id, e); handleAction(action.id, label); }}
-              onTouchStart={(e) => triggerRipple(action.id, e)}
-              onPointerDown={() => startLongPress(action.id)}
-              onPointerUp={cancelLongPress}
-              onPointerLeave={cancelLongPress}
-              onHoverStart={() => setHoveredId(action.id)}
-              onHoverEnd={() => setHoveredId(null)}
-              className={`flex flex-col items-center gap-2.5 group outline-none relative ${isUnavailable ? "opacity-60" : ""}`}
-            >
-              <motion.div
-                data-ripple-container
-                whileHover={{ scale: 1.06, y: -2 }}
-                transition={{ type: "spring", stiffness: 380, damping: 22 }}
-                className="relative flex items-center justify-center rounded-full shadow-sm group-hover:shadow-md transition-all duration-200 overflow-hidden"
-                style={{ width: 56, height: 56, background: action.bgStyle, outline: action.ringStyle, filter: isGlobalOff ? "grayscale(1)" : "none", opacity: isGlobalOff ? 0.5 : 1 }}
-              >
-                <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 blur-[10px] transition-opacity duration-300 -z-10 scale-110" style={{ background: action.bgStyle }} />
-                <AnimatePresence>
-                  {ripple && (
-                    <motion.span
-                      key={ripple.id}
-                      className="absolute rounded-full pointer-events-none"
-                      style={{ left: ripple.x, top: ripple.y, width: 8, height: 8, marginLeft: -4, marginTop: -4, background: action.rippleColor }}
-                      initial={{ scale: 0, opacity: 1 }}
-                      animate={{ scale: 10, opacity: 0 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.55, ease: "easeOut" }}
-                    />
-                  )}
-                </AnimatePresence>
-                {action.id === "more" ? (
-                  <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.3 }} className="flex items-center justify-center">
-                    <MoreIcon />
-                  </motion.div>
-                ) : (
-                  <action.Icon isHovered={isHovered} />
-                )}
-
-                {isFeatureLocked && (
-                  <div className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-destructive flex items-center justify-center shadow-md z-10">
-                    <Lock className="w-2.5 h-2.5 text-destructive-foreground" />
-                  </div>
-                )}
-              </motion.div>
-              <AnimatePresence>
-                {longPressId === action.id && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 6, scale: 0.9 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.18 }}
-                    className="absolute -top-10 left-1/2 -translate-x-1/2 z-50 whitespace-nowrap rounded-lg bg-popover border border-border px-2.5 py-1 text-[10px] font-medium text-popover-foreground shadow-lg pointer-events-none"
-                  >
-                    {action.desc}
-                    <div className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 rotate-45 bg-popover border-r border-b border-border" />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <span className={`text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-all duration-150 px-0.5 ${isGlobalOff ? "opacity-50 grayscale" : ""}`}>
-                {label}
-              </span>
-            </motion.button>
-          );
-        })}
-      </div>
+              return (
+                <SortableActionItem
+                  key={action.id}
+                  action={action}
+                  index={index}
+                  isDraggable={isDraggable}
+                  isHovered={isHov}
+                  ripple={ripple}
+                  label={label}
+                  isFeatureLocked={isFeatureLocked}
+                  isGlobalOff={isGlobalOff}
+                  isUnavailable={isUnavailable}
+                  expanded={expanded}
+                  longPressId={longPressId}
+                  onTriggerRipple={triggerRipple}
+                  onHandleAction={handleAction}
+                  onHoverStart={(id) => setHoveredId(id)}
+                  onHoverEnd={() => setHoveredId(null)}
+                  onStartLongPress={startLongPress}
+                  onCancelLongPress={cancelLongPress}
+                  didLongPressRef={didLongPress}
+                />
+              );
+            })}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       {/* Inline expanded More services */}
       <AnimatePresence>
