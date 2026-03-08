@@ -1,34 +1,29 @@
 
 
-## Plan: Add Standalone API Request Management to Admin Dashboard
+## Plan: Add Biller Categories to API Hub
 
-### Problem
-Currently, API access requests can only be reviewed from within individual merchant detail sheets. There's no centralized view to see all pending requests across all merchants.
+### What
+
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-**1. New Component: `src/components/admin/AdminApiRequests.tsx`**
-A dedicated admin panel component that:
-- Fetches all `merchant_api_requests` with merchant business name (join via `merchant_id`)
-- Shows a summary card with counts: pending, approved, rejected
-- Displays a filterable/searchable table of all requests
-- Each row shows: merchant name, webhook URL, reason, status badge, date
-- Pending requests have inline "Approve & Generate Key" and "Reject" buttons (with optional admin notes input)
-- On approve: generates API key (same `epk_`/`eps_` pattern), updates request status, sends notification to merchant
-- On reject: updates status with admin notes, sends notification
-- Realtime subscription on `merchant_api_requests` table for live updates
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-**2. Update: `src/pages/AdminDashboard.tsx`**
-- Import `AdminApiRequests` component
-- Add a new nav item `{ id: "api-requests", label: "API Requests", icon: Key }` to `NAV_ITEMS` (after "API Hub")
-- Render `<AdminApiRequests />` when `activeTab === "api-requests"`
-- Add pending request count badge on the nav item (similar to support unread badge)
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-### No database changes needed
-The `merchant_api_requests` table and RLS policies already exist with admin full access.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-| File | Action |
-|------|--------|
-| `src/components/admin/AdminApiRequests.tsx` | Create — standalone request management component |
-| `src/pages/AdminDashboard.tsx` | Add nav item + render component |
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

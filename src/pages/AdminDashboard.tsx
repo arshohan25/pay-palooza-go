@@ -7,7 +7,7 @@ import {
   TrendingUp, Activity, Search, RefreshCw, LogOut,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings, FileText,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
-  Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck, Image,
+  Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck, Image, Key,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,7 @@ import AdminLimitManager from "@/components/admin/AdminLimitManager";
 import AdminTeamManagement from "@/components/admin/AdminTeamManagement";
 import TeamOnboardingChecklist from "@/components/admin/TeamOnboardingChecklist";
 import AdminMerchantManagement from "@/components/admin/AdminMerchantManagement";
+import AdminApiRequests from "@/components/admin/AdminApiRequests";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -175,6 +176,7 @@ const NAV_ITEMS = [
   { id: "billers", label: "Billers", icon: FileText },
   { id: "auditlog", label: "Audit Log", icon: Eye },
   { id: "apihub", label: "API Hub", icon: Plug },
+  { id: "api-requests", label: "API Requests", icon: Key },
   { id: "banners", label: "Banners", icon: Image },
   { id: "limits", label: "Limits", icon: Scale },
   { id: "team", label: "Team", icon: Users },
@@ -216,6 +218,7 @@ export default function AdminDashboard() {
   const { visible: realtimeVisible, flash: realtimeFlash } = useRealtimeIndicator();
   const { status: wsStatus, lastConnectedAt, reconnectAttempt } = useRealtimeStatus();
   const [disabledTogglesCount, setDisabledTogglesCount] = useState(0);
+  const [pendingApiRequests, setPendingApiRequests] = useState(0);
 
   // Fetch disabled toggles count
   useEffect(() => {
@@ -227,6 +230,20 @@ export default function AdminDashboard() {
     fetchCount();
     const ch = supabase.channel("admin-toggle-count")
       .on("postgres_changes", { event: "*", schema: "public", table: "global_feature_toggles" }, () => fetchCount())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [isAdmin]);
+
+  // Fetch pending API requests count
+  useEffect(() => {
+    if (!isAdmin) return;
+    const fetchApiCount = async () => {
+      const { count } = await (supabase as any).from("merchant_api_requests").select("id", { count: "exact", head: true }).eq("status", "pending");
+      setPendingApiRequests(count ?? 0);
+    };
+    fetchApiCount();
+    const ch = supabase.channel("admin-api-req-count")
+      .on("postgres_changes", { event: "*", schema: "public", table: "merchant_api_requests" }, () => fetchApiCount())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [isAdmin]);
@@ -567,6 +584,11 @@ export default function AdminDashboard() {
           {item.id === "support" && supportUnread > 0 && (
             <span className="ml-auto min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
               {supportUnread}
+            </span>
+          )}
+          {item.id === "api-requests" && pendingApiRequests > 0 && (
+            <span className="ml-auto min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+              {pendingApiRequests}
             </span>
           )}
           {item.id === "kyc" && stats.pendingKyc > 0 && (
@@ -1190,6 +1212,9 @@ export default function AdminDashboard() {
 
         {/* ═══ API HUB ═══ */}
         {activeTab === "apihub" && <AdminApiHub onNavigate={setActiveTab} />}
+
+        {/* ═══ API REQUESTS ═══ */}
+        {activeTab === "api-requests" && <AdminApiRequests />}
 
         {/* ═══ BILLER API CONFIGS ═══ */}
         {activeTab === "billers" && <AdminBillerConfig />}
