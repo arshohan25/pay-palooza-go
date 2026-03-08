@@ -329,7 +329,7 @@ export default function AdminTeamManagement() {
   };
 
   const filtered = members.filter(m => {
-    const matchSearch = !search || m.display_name.toLowerCase().includes(search.toLowerCase()) || m.profile?.phone?.includes(search);
+    const matchSearch = !search || m.display_name.toLowerCase().includes(search.toLowerCase()) || m.profile?.phone?.includes(search) || m.username?.toLowerCase().includes(search.toLowerCase());
     const matchDept = deptFilter === "all" || m.department === deptFilter;
     return matchSearch && matchDept;
   });
@@ -398,7 +398,7 @@ export default function AdminTeamManagement() {
                           <div className={`w-2 h-2 rounded-full ${member.is_available ? "bg-emerald-500" : "bg-muted-foreground"}`} />
                           <span className="text-xs text-muted-foreground">{member.is_available ? "Online" : "Offline"}</span>
                         </div>
-                        <p className="text-sm text-muted-foreground">{member.profile?.phone || "—"}</p>
+                        <p className="text-sm text-muted-foreground font-mono">{member.username || member.profile?.phone || "—"}</p>
                         <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                           <Badge variant="outline" className="text-xs">{member.department}</Badge>
                           {(member.roles || []).map(r => (
