@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import TeamActivityDashboard from "@/components/admin/TeamActivityDashboard";
 import { supabase } from "@/integrations/supabase/client";
+import { teamSignUp, generateUsername, generatePassword } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { UserPlus, Shield, Trash2, Search, Clock, CheckCircle, XCircle, Eye, Pencil, Activity, RefreshCw, UsersRound } from "lucide-react";
+import { UserPlus, Shield, Trash2, Search, Clock, CheckCircle, XCircle, Eye, Pencil, Activity, RefreshCw, UsersRound, Copy, KeyRound } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 type AppRole = "customer" | "agent" | "merchant" | "distributor" | "super_distributor" | "admin" | "compliance" | "finance";
@@ -46,6 +47,7 @@ interface TeamMember {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  username?: string | null;
   roles?: AppRole[];
   profile?: { phone: string; name: string | null; avatar_url: string | null };
 }
@@ -65,14 +67,14 @@ export default function AdminTeamManagement() {
 
   // Add member state
   const [showAdd, setShowAdd] = useState(false);
-  const [addPhone, setAddPhone] = useState("");
-  const [addLooking, setAddLooking] = useState(false);
-  const [foundUser, setFoundUser] = useState<{ user_id: string; name: string; phone: string } | null>(null);
+  const [addUsername, setAddUsername] = useState("");
+  const [addPassword, setAddPassword] = useState("");
   const [addRole, setAddRole] = useState<AppRole>("compliance");
   const [addDept, setAddDept] = useState("general");
   const [addName, setAddName] = useState("");
   const [addNotes, setAddNotes] = useState("");
   const [adding, setAdding] = useState(false);
+  const [createdCreds, setCreatedCreds] = useState<{ username: string; password: string } | null>(null);
 
   // Edit / permissions state
   const [editMember, setEditMember] = useState<TeamMember | null>(null);
@@ -127,74 +129,88 @@ export default function AdminTeamManagement() {
     return () => { supabase.removeChannel(ch); };
   }, [loadMembers]);
 
-  // Search user by phone
-  const searchUser = async () => {
-    if (!addPhone || addPhone.length < 5) return;
-    setAddLooking(true);
-    setFoundUser(null);
-    const norm = addPhone.replace(/\D/g, "").replace(/^88/, "");
-    const { data } = await supabase.from("profiles").select("user_id, name, phone").eq("phone", norm).maybeSingle();
-    if (data) {
-      setFoundUser(data);
-      setAddName(data.name || norm);
-    } else {
-      toast.error("No user found with this phone number");
-    }
-    setAddLooking(false);
+  const resetAddForm = () => {
+    setAddUsername(generateUsername());
+    setAddPassword(generatePassword());
+    setAddName("");
+    setAddNotes("");
+    setAddRole("compliance");
+    setAddDept("general");
+    setCreatedCreds(null);
   };
 
   const addMember = async () => {
-    if (!foundUser) return;
+    if (!addUsername.trim() || !addPassword.trim() || !addName.trim()) {
+      toast.error("Username, password and display name are required");
+      return;
+    }
     setAdding(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      // Check if already a team member
-      const { data: existing } = await supabase.from("team_members").select("id").eq("user_id", foundUser.user_id).maybeSingle();
-      if (existing) { toast.error("User is already a team member"); setAdding(false); return; }
+      const adminSession = session; // save admin session
 
-      // Insert team member
-      const { error: tmErr } = await supabase.from("team_members").insert({
-        user_id: foundUser.user_id,
-        display_name: addName || foundUser.name || foundUser.phone,
-        department: addDept,
-        notes: addNotes || null,
-        created_by: session?.user?.id,
-      });
-      if (tmErr) throw tmErr;
+      // Create auth account for team member
+      const signUpData = await teamSignUp(addUsername.trim(), addPassword, addName.trim());
+      if (!signUpData.user) throw new Error("Failed to create account");
+      const newUserId = signUpData.user.id;
 
-      // Assign role if not already assigned
-      const { data: existingRole } = await supabase.from("user_roles")
-        .select("id").eq("user_id", foundUser.user_id).eq("role", addRole).maybeSingle();
-      if (!existingRole) {
-        await supabase.from("user_roles").insert({ user_id: foundUser.user_id, role: addRole });
+      // Re-authenticate as admin (teamSignUp changes the session)
+      // We need to restore admin session
+      if (adminSession) {
+        await supabase.auth.setSession({
+          access_token: adminSession.access_token,
+          refresh_token: adminSession.refresh_token,
+        });
       }
 
-      // Insert default permissions (all view, no edit/delete)
+      // Create profile with synthetic phone
+      const syntheticPhone = `TEAM-${addUsername.trim()}`;
+      await supabase.from("profiles").insert({
+        user_id: newUserId,
+        phone: syntheticPhone,
+        name: addName.trim(),
+        status: "active",
+      });
+
+      // Insert team member row
+      await supabase.from("team_members").insert({
+        user_id: newUserId,
+        display_name: addName.trim(),
+        department: addDept,
+        notes: addNotes || null,
+        created_by: adminSession?.user?.id,
+        username: addUsername.trim(),
+        temp_password: addPassword,
+      } as any);
+
+      // Assign role
+      await supabase.from("user_roles").insert({ user_id: newUserId, role: addRole });
+
+      // Insert default permissions
       const perms = SECTIONS.map(s => ({
-        user_id: foundUser.user_id,
+        user_id: newUserId,
         section: s,
         can_view: true,
         can_edit: false,
         can_delete: false,
-        granted_by: session?.user?.id,
+        granted_by: adminSession?.user?.id,
       }));
       await supabase.from("team_access_permissions").upsert(perms, { onConflict: "user_id,section" });
 
       // Audit log
       await supabase.from("audit_logs").insert({
-        actor_id: session?.user?.id!,
-        action: "team_member_added",
+        actor_id: adminSession?.user?.id!,
+        action: "team_member_created",
         entity_type: "team",
-        entity_id: foundUser.user_id,
-        details: { display_name: addName, role: addRole, department: addDept },
+        entity_id: newUserId,
+        details: { display_name: addName.trim(), username: addUsername.trim(), role: addRole, department: addDept },
       });
 
-      toast.success("Team member added successfully");
-      setShowAdd(false);
-      setAddPhone(""); setFoundUser(null); setAddName(""); setAddNotes("");
+      toast.success("Team member created successfully");
+      setCreatedCreds({ username: addUsername.trim(), password: addPassword });
       loadMembers();
     } catch (e: any) {
-      toast.error(e.message || "Failed to add team member");
+      toast.error(e.message || "Failed to create team member");
     }
     setAdding(false);
   };
@@ -313,7 +329,7 @@ export default function AdminTeamManagement() {
   };
 
   const filtered = members.filter(m => {
-    const matchSearch = !search || m.display_name.toLowerCase().includes(search.toLowerCase()) || m.profile?.phone?.includes(search);
+    const matchSearch = !search || m.display_name.toLowerCase().includes(search.toLowerCase()) || m.profile?.phone?.includes(search) || m.username?.toLowerCase().includes(search.toLowerCase());
     const matchDept = deptFilter === "all" || m.department === deptFilter;
     return matchSearch && matchDept;
   });
@@ -356,7 +372,7 @@ export default function AdminTeamManagement() {
             </div>
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={() => loadMembers()}><RefreshCw className="w-4 h-4 mr-1" />Refresh</Button>
-              <Button size="sm" onClick={() => { setShowAdd(true); setAddPhone(""); setFoundUser(null); setAddName(""); setAddNotes(""); }}>
+              <Button size="sm" onClick={() => { setShowAdd(true); resetAddForm(); }}>
                 <UserPlus className="w-4 h-4 mr-1" />Add Member
               </Button>
             </div>
@@ -382,7 +398,7 @@ export default function AdminTeamManagement() {
                           <div className={`w-2 h-2 rounded-full ${member.is_available ? "bg-emerald-500" : "bg-muted-foreground"}`} />
                           <span className="text-xs text-muted-foreground">{member.is_available ? "Online" : "Offline"}</span>
                         </div>
-                        <p className="text-sm text-muted-foreground">{member.profile?.phone || "—"}</p>
+                        <p className="text-sm text-muted-foreground font-mono">{member.username || member.profile?.phone || "—"}</p>
                         <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                           <Badge variant="outline" className="text-xs">{member.department}</Badge>
                           {(member.roles || []).map(r => (
@@ -428,62 +444,113 @@ export default function AdminTeamManagement() {
       </Tabs>
 
       {/* ═══ ADD MEMBER DIALOG ═══ */}
-      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+      <Dialog open={showAdd} onOpenChange={o => { if (!o) { setShowAdd(false); setCreatedCreds(null); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Team Member</DialogTitle>
-            <DialogDescription>Search for an existing user by phone number to add them to your team.</DialogDescription>
+            <DialogTitle>{createdCreds ? "Credentials Created" : "Add Team Member"}</DialogTitle>
+            <DialogDescription>
+              {createdCreds
+                ? "Share these credentials securely with the team member."
+                : "Create a new team member account with auto-generated credentials."}
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Phone Number</Label>
-              <div className="flex gap-2 mt-1">
-                <Input placeholder="01XXXXXXXXX" value={addPhone} onChange={e => setAddPhone(e.target.value)} />
-                <Button onClick={searchUser} disabled={addLooking || !addPhone} size="sm">
-                  {addLooking ? "..." : "Find"}
-                </Button>
+
+          {createdCreds ? (
+            <div className="space-y-4">
+              <div className="bg-muted/50 rounded-lg p-4 space-y-3 border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Username</p>
+                    <p className="font-mono font-semibold text-foreground">{createdCreds.username}</p>
+                  </div>
+                  <Button size="icon" variant="ghost" onClick={() => { navigator.clipboard.writeText(createdCreds.username); toast.success("Username copied"); }}>
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Password</p>
+                    <p className="font-mono font-semibold text-foreground">{createdCreds.password}</p>
+                  </div>
+                  <Button size="icon" variant="ghost" onClick={() => { navigator.clipboard.writeText(createdCreds.password); toast.success("Password copied"); }}>
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground">Login URL</p>
+                  <p className="text-sm font-mono text-foreground break-all">{window.location.origin}/team-login</p>
+                  <Button size="sm" variant="ghost" className="mt-1 h-7 text-xs" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/team-login`); toast.success("URL copied"); }}>
+                    <Copy className="w-3 h-3 mr-1" />Copy URL
+                  </Button>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground text-center">⚠️ Save these credentials now. The password won't be shown again.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Username</Label>
+                  <div className="flex gap-1 mt-1">
+                    <Input value={addUsername} onChange={e => setAddUsername(e.target.value)} className="font-mono" />
+                    <Button size="icon" variant="outline" onClick={() => setAddUsername(generateUsername())} title="Regenerate">
+                      <RefreshCw className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <Label>Password</Label>
+                  <div className="flex gap-1 mt-1">
+                    <Input value={addPassword} onChange={e => setAddPassword(e.target.value)} className="font-mono" />
+                    <Button size="icon" variant="outline" onClick={() => setAddPassword(generatePassword())} title="Regenerate">
+                      <RefreshCw className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <Label>Display Name</Label>
+                <Input value={addName} onChange={e => setAddName(e.target.value)} className="mt-1" placeholder="John Doe" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Role</Label>
+                  <Select value={addRole} onValueChange={v => setAddRole(v as AppRole)}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {STAFF_ROLES.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Department</Label>
+                  <Select value={addDept} onValueChange={setAddDept}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {DEPARTMENTS.map(d => <SelectItem key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label>Notes (optional)</Label>
+                <Textarea value={addNotes} onChange={e => setAddNotes(e.target.value)} className="mt-1" rows={2} />
               </div>
             </div>
-            {foundUser && (
+          )}
+
+          <DialogFooter>
+            {createdCreds ? (
+              <Button onClick={() => { setShowAdd(false); setCreatedCreds(null); }}>Done</Button>
+            ) : (
               <>
-                <div className="bg-muted/50 rounded-lg p-3">
-                  <p className="text-sm font-medium text-foreground">{foundUser.name || "No name"}</p>
-                  <p className="text-xs text-muted-foreground">{foundUser.phone}</p>
-                </div>
-                <div>
-                  <Label>Display Name</Label>
-                  <Input value={addName} onChange={e => setAddName(e.target.value)} className="mt-1" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>Role</Label>
-                    <Select value={addRole} onValueChange={v => setAddRole(v as AppRole)}>
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {STAFF_ROLES.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Department</Label>
-                    <Select value={addDept} onValueChange={setAddDept}>
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {DEPARTMENTS.map(d => <SelectItem key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div>
-                  <Label>Notes (optional)</Label>
-                  <Textarea value={addNotes} onChange={e => setAddNotes(e.target.value)} className="mt-1" rows={2} />
-                </div>
+                <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
+                <Button onClick={addMember} disabled={adding || !addUsername.trim() || !addPassword.trim() || !addName.trim()}>
+                  <KeyRound className="w-4 h-4 mr-1" />
+                  {adding ? "Creating..." : "Create Account"}
+                </Button>
               </>
             )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
-            <Button onClick={addMember} disabled={!foundUser || adding}>{adding ? "Adding..." : "Add Member"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
