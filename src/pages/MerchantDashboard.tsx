@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { usePhoneValidation } from "@/hooks/use-phone-validation";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -1714,6 +1715,7 @@ const MerchantSendMoneySheet = ({ open, onClose, onSuccess }: { open: boolean; o
   const [amount, setAmount] = useState("");
   const [processing, setProcessing] = useState(false);
   const [showQr, setShowQr] = useState(false);
+  const phoneValidation = usePhoneValidation(phone);
   const [step, setStep] = useState<"details" | "pin" | "success">("details");
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
@@ -1750,8 +1752,8 @@ const MerchantSendMoneySheet = ({ open, onClose, onSuccess }: { open: boolean; o
   };
 
   const goToPin = () => {
-    if (!phone || phone.length < 11) {
-      toast({ title: "Invalid number", description: "Enter a valid 11-digit number", variant: "destructive" }); return;
+    if (phoneValidation.triggerShake()) {
+      toast({ title: "Invalid number", description: "Enter a valid 11-digit number starting with 01", variant: "destructive" }); return;
     }
     if (parsedAmount <= 0 || parsedAmount > 50000) {
       toast({ title: "Invalid amount", description: "Amount must be between ৳1 and ৳50,000", variant: "destructive" }); return;
@@ -1837,11 +1839,12 @@ const MerchantSendMoneySheet = ({ open, onClose, onSuccess }: { open: boolean; o
                 <div>
                   <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Recipient Number</label>
                   <div className="flex gap-2">
-                    <Input placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))} className="h-12 rounded-xl text-lg flex-1" inputMode="numeric" />
+                    <Input placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))} onBlur={() => phoneValidation.setTouched(true)} className={`h-12 rounded-xl text-lg flex-1 ${phoneValidation.inputClassName}`} inputMode="numeric" />
                     <Button variant="outline" className="h-12 w-12 rounded-xl shrink-0 border-dashed border-primary/40" onClick={() => setShowQr(true)}>
                       <ScanLine size={18} className="text-primary" />
                     </Button>
                   </div>
+                  {phoneValidation.showError && <p className="text-[10px] text-destructive font-medium mt-1 animate-fade-in">{phoneValidation.errorMessage}</p>}
                 </div>
                 <div>
                   <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Amount (Max ৳{fmt(MERCH_SEND_DAILY_LIMIT)}/day)</label>
