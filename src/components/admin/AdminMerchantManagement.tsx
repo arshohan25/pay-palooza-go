@@ -4,6 +4,7 @@ import {
   Store, Search, Download, Eye, Lock, CheckCircle, XCircle, TrendingUp,
   CreditCard, Settings, Key, BarChart3, FileText, ExternalLink, Trash2,
   Filter, ChevronDown, Edit2, Save, X, RefreshCw, Globe, Ban, Shield,
+  Plus, Copy, AlertTriangle, CheckCircle2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ interface MerchantDetail {
   merchant: any;
   ownerProfile: any;
   apiKeys: any[];
+  apiRequests: any[];
   sessions: any[];
   transactions: any[];
 }
@@ -36,10 +38,11 @@ const SETTLEMENT_OPTIONS = ["T+0", "T+1", "T+2", "T+3"];
 
 // ─── Helpers ───
 async function fetchMerchantDetail(merchantId: string, userId: string): Promise<MerchantDetail> {
-  const [merchantRes, profileRes, keysRes, sessionsRes, txnRes] = await Promise.all([
+  const [merchantRes, profileRes, keysRes, reqRes, sessionsRes, txnRes] = await Promise.all([
     supabase.from("merchants").select("*").eq("id", merchantId).maybeSingle(),
     supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
     supabase.from("merchant_api_keys").select("*").eq("merchant_id", merchantId).order("created_at", { ascending: false }),
+    (supabase as any).from("merchant_api_requests").select("*").eq("merchant_id", merchantId).order("created_at", { ascending: false }),
     supabase.from("merchant_payment_sessions").select("*").eq("merchant_id", merchantId).order("created_at", { ascending: false }).limit(50),
     supabase.from("transactions").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(50),
   ]);
@@ -58,6 +61,7 @@ async function fetchMerchantDetail(merchantId: string, userId: string): Promise<
     merchant: merchantRes.data,
     ownerProfile: profileRes.data,
     apiKeys: keysRes.data ?? [],
+    apiRequests: reqRes.data ?? [],
     sessions: sessionsRes.data ?? [],
     transactions: txnRes.data ?? [],
   };
@@ -105,6 +109,10 @@ export default function AdminMerchantManagement() {
 
   // Analytics
   const [analyticsRange, setAnalyticsRange] = useState<"7" | "30" | "90">("30");
+
+  // API key generation
+  const [showNewSecret, setShowNewSecret] = useState<string | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const loadMerchants = useCallback(async () => {
     setLoading(true);
@@ -250,7 +258,44 @@ export default function AdminMerchantManagement() {
     }
   };
 
-  // ─── Analytics computation ───
+  // ─── Generate API key for merchant ───
+  const generateApiKey = async (merchantId: string) => {
+    const apiKey = "epk_" + crypto.randomUUID().replace(/-/g, "");
+    const secretKey = "eps_" + crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+    const { error } = await supabase.from("merchant_api_keys").insert({ merchant_id: merchantId, api_key: apiKey, secret_key: secretKey }).select().single();
+    if (error) { toast.error("Failed to generate key: " + error.message); return; }
+    setShowNewSecret(secretKey);
+    toast.success("API key generated");
+    if (detailMerchant) {
+      const d = await fetchMerchantDetail(detailMerchant.id, detailMerchant.user_id);
+      setDetail(d);
+    }
+  };
+
+  const copyText = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(label);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
+  // ─── Approve/Reject API request ───
+  const handleApiRequest = async (requestId: string, action: "approved" | "rejected", notes?: string) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+    await (supabase as any).from("merchant_api_requests").update({
+      status: action,
+      admin_notes: notes || null,
+      reviewed_by: session.user.id,
+      reviewed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq("id", requestId);
+    toast.success(`Request ${action}`);
+    if (detailMerchant) {
+      const d = await fetchMerchantDetail(detailMerchant.id, detailMerchant.user_id);
+      setDetail(d);
+    }
+  };
+
   const computeAnalytics = () => {
     if (!detail) return { summary: { total: 0, completed: 0, revenue: 0, successRate: 0 }, daily: [] as any[] };
     const days = parseInt(analyticsRange);
@@ -581,9 +626,37 @@ export default function AdminMerchantManagement() {
                 </TabsContent>
 
                 {/* ── API Keys Tab ── */}
-                <TabsContent value="apikeys" className="mt-4 space-y-3">
+                <TabsContent value="apikeys" className="mt-4 space-y-4">
+                  {/* Generate Key Button */}
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-foreground">API Keys</h4>
+                    <Button size="sm" className="text-xs h-8 gap-1" onClick={() => generateApiKey(detail.merchant.id)}>
+                      <Plus className="w-3 h-3" /> Generate Key
+                    </Button>
+                  </div>
+
+                  {/* New secret alert */}
+                  {showNewSecret && (
+                    <Card className="p-3 border-amber-500/30 bg-amber-500/5">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-amber-700">Save the Secret Key now!</p>
+                          <p className="text-[10px] text-amber-600 mb-2">This will not be shown again. Share it securely with the merchant.</p>
+                          <div className="flex items-center gap-2 bg-amber-100/50 dark:bg-amber-900/20 rounded-lg p-2">
+                            <code className="text-[10px] break-all flex-1 font-mono">{showNewSecret}</code>
+                            <button onClick={() => copyText(showNewSecret, "admin-secret")}>
+                              {copiedField === "admin-secret" ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-amber-600" />}
+                            </button>
+                          </div>
+                          <Button size="sm" variant="outline" className="mt-2 h-7 text-[10px]" onClick={() => setShowNewSecret(null)}>Dismiss</Button>
+                        </div>
+                      </div>
+                    </Card>
+                  )}
+
                   {detail.apiKeys.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">No API keys generated</p>
+                    <p className="text-sm text-muted-foreground text-center py-4">No API keys generated yet</p>
                   ) : (
                     detail.apiKeys.map(k => (
                       <Card key={k.id} className="border border-border">
@@ -591,7 +664,10 @@ export default function AdminMerchantManagement() {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <Key className="w-4 h-4 text-muted-foreground" />
-                              <code className="text-xs font-mono bg-muted px-2 py-0.5 rounded">{k.api_key.slice(0, 12)}…</code>
+                              <code className="text-xs font-mono bg-muted px-2 py-0.5 rounded">{k.api_key}</code>
+                              <button onClick={() => copyText(k.api_key, "key-" + k.id)}>
+                                {copiedField === "key-" + k.id ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-muted-foreground" />}
+                              </button>
                             </div>
                             <Badge variant={k.is_active ? "secondary" : "destructive"} className="text-xs">
                               {k.is_active ? "Active" : "Revoked"}
@@ -611,6 +687,47 @@ export default function AdminMerchantManagement() {
                               </Button>
                             )}
                           </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+
+                  {/* ── API Access Requests ── */}
+                  <Separator />
+                  <h4 className="text-sm font-semibold text-foreground">API Access Requests ({detail.apiRequests.length})</h4>
+                  {detail.apiRequests.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">No requests from this merchant</p>
+                  ) : (
+                    detail.apiRequests.map((r: any) => (
+                      <Card key={r.id} className="border border-border">
+                        <CardContent className="p-4 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Badge className={`text-xs ${r.status === "pending" ? "bg-amber-500/10 text-amber-600 border-amber-500/20" : r.status === "approved" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-destructive/10 text-destructive border-destructive/20"}`}>
+                              {r.status}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</span>
+                          </div>
+                          {r.reason && <p className="text-xs text-muted-foreground">{r.reason}</p>}
+                          {r.webhook_url && (
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <Globe className="w-3 h-3" />
+                              <span className="truncate">{r.webhook_url}</span>
+                            </div>
+                          )}
+                          {r.admin_notes && <p className="text-xs bg-muted/50 rounded p-2"><span className="font-semibold">Notes:</span> {r.admin_notes}</p>}
+                          {r.status === "pending" && (
+                            <div className="flex items-center gap-2 pt-1">
+                              <Button size="sm" className="text-xs h-7 gap-1 bg-emerald-600 hover:bg-emerald-700" onClick={async () => {
+                                await handleApiRequest(r.id, "approved");
+                                generateApiKey(detail.merchant.id);
+                              }}>
+                                <CheckCircle className="w-3 h-3" /> Approve & Generate Key
+                              </Button>
+                              <Button size="sm" variant="destructive" className="text-xs h-7 gap-1" onClick={() => handleApiRequest(r.id, "rejected")}>
+                                <XCircle className="w-3 h-3" /> Reject
+                              </Button>
+                            </div>
+                          )}
                         </CardContent>
                       </Card>
                     ))
