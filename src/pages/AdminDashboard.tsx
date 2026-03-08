@@ -209,6 +209,7 @@ export default function AdminDashboard() {
     txnType: string; period: string; oldAmount: number; oldCount: number; newAmount: string; newCount: string; isCustom: boolean; overrideId: string | null;
   } | null>(null);
   const [savingLimit, setSavingLimit] = useState(false);
+  const [detailUsage, setDetailUsage] = useState<{ daily: Record<string, { usedAmount: number; usedCount: number }>; monthly: Record<string, { usedAmount: number; usedCount: number }> } | null>(null);
   const { visible: realtimeVisible, flash: realtimeFlash } = useRealtimeIndicator();
   const { status: wsStatus, lastConnectedAt, reconnectAttempt } = useRealtimeStatus();
   const [disabledTogglesCount, setDisabledTogglesCount] = useState(0);
@@ -226,12 +227,35 @@ export default function AdminDashboard() {
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [isAdmin]);
+  const fetchUserUsage = async (userId: string) => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const { data } = await supabase.from("transactions")
+      .select("type, amount, created_at")
+      .eq("user_id", userId).eq("status", "completed")
+      .gte("created_at", monthStart.toISOString());
+    const TXN_KEYS = ["send", "cashin", "cashout", "addmoney", "payment", "recharge", "paybill", "banktransfer"];
+    const empty = () => Object.fromEntries(TXN_KEYS.map(k => [k, { usedAmount: 0, usedCount: 0 }]));
+    const d = empty(), m = empty();
+    for (const txn of data ?? []) {
+      const key = txn.type as string;
+      if (!TXN_KEYS.includes(key)) continue;
+      const amt = Number(txn.amount);
+      m[key].usedAmount += amt; m[key].usedCount += 1;
+      if (new Date(txn.created_at) >= todayStart) { d[key].usedAmount += amt; d[key].usedCount += 1; }
+    }
+    return { daily: d, monthly: m };
+  };
+
   const openUserDetail = async (user: any) => {
     setDetailUser(user);
     setDetailLoading(true);
+    setDetailUsage(null);
     try {
-      const data = await fetchUserDetails(user.user_id);
+      const [data, usage] = await Promise.all([fetchUserDetails(user.user_id), fetchUserUsage(user.user_id)]);
       setDetailData(data);
+      setDetailUsage(usage);
     } catch {
       setDetailData(null);
     } finally {
