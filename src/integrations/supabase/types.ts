@@ -988,6 +988,8 @@ export type Database = {
           id: string
           is_active: boolean | null
           link_url: string | null
+          media_type: string | null
+          media_url: string | null
           sort_order: number | null
           subtitle: string | null
           title: string
@@ -1003,6 +1005,8 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           link_url?: string | null
+          media_type?: string | null
+          media_url?: string | null
           sort_order?: number | null
           subtitle?: string | null
           title: string
@@ -1018,6 +1022,8 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           link_url?: string | null
+          media_type?: string | null
+          media_url?: string | null
           sort_order?: number | null
           subtitle?: string | null
           title?: string

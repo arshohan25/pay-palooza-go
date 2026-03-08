@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { icons } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
 interface PromoBanner {
   id: string;
@@ -14,7 +15,13 @@ interface PromoBanner {
   gradient_from: string | null;
   gradient_to: string | null;
   link_url: string | null;
+  media_url: string | null;
+  media_type: string | null;
   sort_order: number;
+}
+
+interface PromoSliderProps {
+  onFeatureOpen?: (feature: string) => void;
 }
 
 const FALLBACK_BANNERS: PromoBanner[] = [
@@ -26,24 +33,27 @@ const FALLBACK_BANNERS: PromoBanner[] = [
     icon: "Gift",
     gradient_from: "#0ea5e9",
     gradient_to: "#06b6d4",
-    link_url: null,
+    link_url: "feature:refer",
+    media_url: null,
+    media_type: null,
     sort_order: 0,
   },
 ];
 
-export default function PromoSlider() {
+export default function PromoSlider({ onFeatureOpen }: PromoSliderProps) {
   const [banners, setBanners] = useState<PromoBanner[]>([]);
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "start" });
   const [selectedIdx, setSelectedIdx] = useState(0);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase
         .from("promo_banners")
-        .select("id, title, subtitle, badge_text, icon, gradient_from, gradient_to, link_url, sort_order")
+        .select("id, title, subtitle, badge_text, icon, gradient_from, gradient_to, link_url, media_url, media_type, sort_order")
         .eq("is_active", true)
         .order("sort_order");
-      setBanners(data && data.length > 0 ? data : FALLBACK_BANNERS);
+      setBanners(data && data.length > 0 ? (data as PromoBanner[]) : FALLBACK_BANNERS);
     };
     load();
   }, []);
@@ -67,6 +77,21 @@ export default function PromoSlider() {
     return () => clearInterval(iv);
   }, [emblaApi, banners.length]);
 
+  const handleClick = (b: PromoBanner) => {
+    if (!b.link_url) return;
+
+    if (b.link_url.startsWith("feature:")) {
+      const feature = b.link_url.replace("feature:", "");
+      if (onFeatureOpen) {
+        onFeatureOpen(feature);
+      }
+    } else if (b.link_url.startsWith("/")) {
+      navigate(b.link_url);
+    } else if (b.link_url.startsWith("http")) {
+      window.open(b.link_url, "_blank", "noopener");
+    }
+  };
+
   if (banners.length === 0) return null;
 
   return (
@@ -75,16 +100,46 @@ export default function PromoSlider() {
         <div className="flex">
           {banners.map((b) => {
             const IconComp = (icons as any)[b.icon || "Gift"] || icons.Gift;
+            const hasMedia = !!b.media_url;
             return (
               <div key={b.id} className="min-w-0 shrink-0 grow-0 basis-full">
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="relative overflow-hidden rounded-2xl p-5"
+                  className={cn(
+                    "relative overflow-hidden rounded-2xl p-5",
+                    b.link_url ? "cursor-pointer" : ""
+                  )}
                   style={{
-                    background: `linear-gradient(135deg, ${b.gradient_from || "#0ea5e9"}, ${b.gradient_to || "#06b6d4"})`,
+                    background: hasMedia
+                      ? undefined
+                      : `linear-gradient(135deg, ${b.gradient_from || "#0ea5e9"}, ${b.gradient_to || "#06b6d4"})`,
                   }}
+                  onClick={() => handleClick(b)}
                 >
+                  {/* Media background */}
+                  {hasMedia && b.media_type === "video" ? (
+                    <video
+                      src={b.media_url!}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  ) : hasMedia ? (
+                    <img
+                      src={b.media_url!}
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  ) : null}
+
+                  {/* Dark overlay for media backgrounds */}
+                  {hasMedia && (
+                    <div className="absolute inset-0 bg-black/40" />
+                  )}
+
                   <div className="relative z-10 flex items-center gap-4">
                     <div className="flex-1 min-w-0">
                       {b.badge_text && (
@@ -97,13 +152,19 @@ export default function PromoSlider() {
                         <p className="text-white/80 text-xs mt-1 leading-snug line-clamp-2">{b.subtitle}</p>
                       )}
                     </div>
-                    <div className="w-11 h-11 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
-                      <IconComp className="w-6 h-6 text-white" />
-                    </div>
+                    {!hasMedia && (
+                      <div className="w-11 h-11 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
+                        <IconComp className="w-6 h-6 text-white" />
+                      </div>
+                    )}
                   </div>
-                  {/* Decorative circles */}
-                  <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full" />
-                  <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-white/10 rounded-full" />
+                  {/* Decorative circles (only for gradient banners) */}
+                  {!hasMedia && (
+                    <>
+                      <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full" />
+                      <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-white/10 rounded-full" />
+                    </>
+                  )}
                 </motion.div>
               </div>
             );
