@@ -158,12 +158,17 @@ export default function AdminSupportDashboard() {
 
     // Get user profiles for each conversation
     const userIds = [...new Set(convs.map(c => c.user_id))];
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("user_id, name, phone")
-      .in("user_id", userIds);
+    const agentIds = [...new Set(convs.map((c: any) => c.assigned_agent_id).filter(Boolean))];
 
-    const profileMap = new Map(profiles?.map(p => [p.user_id, p]) ?? []);
+    const [profilesRes, agentProfilesRes] = await Promise.all([
+      supabase.from("profiles").select("user_id, name, phone").in("user_id", userIds),
+      agentIds.length > 0
+        ? supabase.from("team_members").select("user_id, display_name").in("user_id", agentIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    const profileMap = new Map(profilesRes.data?.map(p => [p.user_id, p]) ?? []);
+    const agentMap = new Map((agentProfilesRes.data ?? []).map((a: any) => [a.user_id, a.display_name]));
 
     // Get last message per conversation
     const enriched: Conversation[] = await Promise.all(
@@ -176,7 +181,6 @@ export default function AdminSupportDashboard() {
           .order("created_at", { ascending: false })
           .limit(1);
 
-        // Count unread (messages from user after admin_last_read_at)
         let unreadCount = 0;
         const { count } = await supabase
           .from("support_messages")
@@ -188,11 +192,13 @@ export default function AdminSupportDashboard() {
 
         return {
           ...c,
+          assigned_agent_id: (c as any).assigned_agent_id || null,
           user_name: profile?.name || "Unknown",
           user_phone: profile?.phone || "",
           last_message: lastMsg?.[0]?.content || "",
           last_message_at: lastMsg?.[0]?.created_at || c.created_at,
           unread_count: unreadCount,
+          assigned_agent_name: (c as any).assigned_agent_id ? agentMap.get((c as any).assigned_agent_id) || null : null,
         };
       })
     );
