@@ -976,6 +976,54 @@ export type Database = {
         }
         Relationships: []
       }
+      promo_banners: {
+        Row: {
+          badge_text: string | null
+          created_at: string | null
+          created_by: string | null
+          expires_at: string | null
+          gradient_from: string | null
+          gradient_to: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          link_url: string | null
+          sort_order: number | null
+          subtitle: string | null
+          title: string
+        }
+        Insert: {
+          badge_text?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          gradient_from?: string | null
+          gradient_to?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          link_url?: string | null
+          sort_order?: number | null
+          subtitle?: string | null
+          title: string
+        }
+        Update: {
+          badge_text?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          gradient_from?: string | null
+          gradient_to?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          link_url?: string | null
+          sort_order?: number | null
+          subtitle?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       recharge_api_configs: {
         Row: {
           api_base_url: string | null

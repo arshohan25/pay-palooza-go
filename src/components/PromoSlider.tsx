@@ -1,0 +1,131 @@
+import { useState, useEffect, useCallback } from "react";
+import useEmblaCarousel from "embla-carousel-react";
+import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+import { icons } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface PromoBanner {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  badge_text: string | null;
+  icon: string | null;
+  gradient_from: string | null;
+  gradient_to: string | null;
+  link_url: string | null;
+  sort_order: number;
+}
+
+const FALLBACK_BANNERS: PromoBanner[] = [
+  {
+    id: "fallback-1",
+    title: "Invite Friends & Earn ৳50",
+    subtitle: "Share your referral code and earn rewards when friends join EasyPay",
+    badge_text: "Limited Offer",
+    icon: "Gift",
+    gradient_from: "#0ea5e9",
+    gradient_to: "#06b6d4",
+    link_url: null,
+    sort_order: 0,
+  },
+];
+
+export default function PromoSlider() {
+  const [banners, setBanners] = useState<PromoBanner[]>([]);
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "start" });
+  const [selectedIdx, setSelectedIdx] = useState(0);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabase
+        .from("promo_banners")
+        .select("id, title, subtitle, badge_text, icon, gradient_from, gradient_to, link_url, sort_order")
+        .eq("is_active", true)
+        .order("sort_order");
+      setBanners(data && data.length > 0 ? data : FALLBACK_BANNERS);
+    };
+    load();
+  }, []);
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setSelectedIdx(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    onSelect();
+    emblaApi.on("select", onSelect);
+    return () => { emblaApi.off("select", onSelect); };
+  }, [emblaApi, onSelect]);
+
+  // Auto-play
+  useEffect(() => {
+    if (!emblaApi || banners.length <= 1) return;
+    const iv = setInterval(() => emblaApi.scrollNext(), 4000);
+    return () => clearInterval(iv);
+  }, [emblaApi, banners.length]);
+
+  if (banners.length === 0) return null;
+
+  return (
+    <div className="space-y-2">
+      <div ref={emblaRef} className="overflow-hidden rounded-2xl">
+        <div className="flex">
+          {banners.map((b) => {
+            const IconComp = (icons as any)[b.icon || "Gift"] || icons.Gift;
+            return (
+              <div key={b.id} className="min-w-0 shrink-0 grow-0 basis-full">
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="relative overflow-hidden rounded-2xl p-5"
+                  style={{
+                    background: `linear-gradient(135deg, ${b.gradient_from || "#0ea5e9"}, ${b.gradient_to || "#06b6d4"})`,
+                  }}
+                >
+                  <div className="relative z-10 flex items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      {b.badge_text && (
+                        <span className="inline-block bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full mb-2 backdrop-blur-sm">
+                          {b.badge_text}
+                        </span>
+                      )}
+                      <h3 className="text-white text-sm font-bold leading-tight">{b.title}</h3>
+                      {b.subtitle && (
+                        <p className="text-white/80 text-xs mt-1 leading-snug line-clamp-2">{b.subtitle}</p>
+                      )}
+                    </div>
+                    <div className="w-11 h-11 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
+                      <IconComp className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                  {/* Decorative circles */}
+                  <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full" />
+                  <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-white/10 rounded-full" />
+                </motion.div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Dot indicators */}
+      {banners.length > 1 && (
+        <div className="flex justify-center gap-1.5">
+          {banners.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => emblaApi?.scrollTo(i)}
+              className={cn(
+                "h-1.5 rounded-full transition-all duration-300",
+                i === selectedIdx ? "w-5 bg-primary" : "w-1.5 bg-muted-foreground/30"
+              )}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
