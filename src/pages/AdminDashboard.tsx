@@ -1389,17 +1389,17 @@ export default function AdminDashboard() {
 
                 <Separator />
 
-                {/* Transaction Limits */}
+                {/* Transaction Limits — Inline Editor */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-sm font-semibold text-foreground">Transaction Limits</h4>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-xs h-6 text-primary"
+                      className="text-xs h-6 text-muted-foreground"
                       onClick={() => { setDetailUser(null); setDetailData(null); setActiveTab("limits"); }}
                     >
-                      Manage →
+                      Full Manager →
                     </Button>
                   </div>
                   {(() => {
@@ -1411,57 +1411,181 @@ export default function AdminDashboard() {
                       { key: "addmoney", label: "Add Money" },
                       { key: "cashin", label: "Cash In" },
                     ];
+                    const PERIODS = ["daily", "monthly"] as const;
                     const overrides = detailData.limitOverrides || [];
                     const globals = detailData.globalLimits || [];
-                    const hasAnyOverride = overrides.length > 0;
 
                     const getEffective = (txnType: string, period: string) => {
-                      const ov = overrides.find((o: any) => o.txn_type === txnType && o.period === period);
-                      if (ov?.max_amount != null) return { amount: Number(ov.max_amount), isCustom: true };
+                      const now = new Date();
+                      const ov = overrides.find((o: any) => o.txn_type === txnType && o.period === period && o.is_active !== false && (!o.expires_at || new Date(o.expires_at) >= now));
+                      if (ov?.max_amount != null) return { amount: Number(ov.max_amount), count: Number(ov.max_count ?? 0), isCustom: true, overrideId: ov.id };
                       const gl = globals.find((g: any) => g.txn_type === txnType && g.period === period && g.applies_to === "user");
-                      if (gl?.max_amount != null) return { amount: Number(gl.max_amount), isCustom: false };
-                      return null;
+                      if (gl?.max_amount != null) return { amount: Number(gl.max_amount), count: Number(gl.max_count ?? 0), isCustom: false, overrideId: null };
+                      return { amount: 0, count: 0, isCustom: false, overrideId: null };
+                    };
+
+                    // Editing state is managed via component-level state added below
+                    const [editingLimit, setEditingLimit] = React.useState<{
+                      txnType: string; period: string; oldAmount: number; oldCount: number; newAmount: string; newCount: string; isCustom: boolean; overrideId: string | null;
+                    } | null>(null);
+                    const [savingLimit, setSavingLimit] = React.useState(false);
+
+                    const startEdit = (txnType: string, period: string) => {
+                      const eff = getEffective(txnType, period);
+                      setEditingLimit({
+                        txnType, period,
+                        oldAmount: eff.amount, oldCount: eff.count,
+                        newAmount: String(eff.amount), newCount: String(eff.count),
+                        isCustom: eff.isCustom, overrideId: eff.overrideId,
+                      });
+                    };
+
+                    const saveOverride = async () => {
+                      if (!editingLimit || !detailUser) return;
+                      setSavingLimit(true);
+                      try {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (!session?.user) throw new Error("Not authenticated");
+                        const newAmt = Number(editingLimit.newAmount);
+                        const newCnt = Number(editingLimit.newCount);
+                        if (isNaN(newAmt) || newAmt < 0) throw new Error("Invalid amount");
+
+                        const { error } = await supabase.from("user_limit_overrides").upsert({
+                          target_user_id: detailUser.user_id,
+                          txn_type: editingLimit.txnType,
+                          period: editingLimit.period,
+                          max_amount: newAmt,
+                          max_count: newCnt,
+                          is_active: true,
+                          set_by: session.user.id,
+                          reason: "Set from User Details sheet",
+                        }, { onConflict: "target_user_id,txn_type,period" });
+                        if (error) throw error;
+
+                        // Audit log
+                        supabase.from("audit_logs").insert({
+                          actor_id: session.user.id,
+                          action: "user_limit_override_set",
+                          entity_type: "user_limit_overrides",
+                          entity_id: detailUser.user_id,
+                          details: {
+                            txn_type: editingLimit.txnType, period: editingLimit.period,
+                            previous: { amount: editingLimit.oldAmount, count: editingLimit.oldCount },
+                            new_value: { amount: newAmt, count: newCnt },
+                          },
+                        }).then();
+
+                        // Refresh
+                        const freshData = await fetchUserDetails(detailUser.user_id);
+                        setDetailData(freshData);
+                        setEditingLimit(null);
+                        toast.success("Limit override saved");
+                      } catch (err: any) {
+                        toast.error(err.message || "Failed to save");
+                      } finally {
+                        setSavingLimit(false);
+                      }
+                    };
+
+                    const resetToDefault = async (txnType: string, period: string) => {
+                      try {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (!session?.user) throw new Error("Not authenticated");
+                        const { error } = await supabase.from("user_limit_overrides")
+                          .update({ is_active: false })
+                          .eq("target_user_id", detailUser.user_id)
+                          .eq("txn_type", txnType)
+                          .eq("period", period);
+                        if (error) throw error;
+                        supabase.from("audit_logs").insert({
+                          actor_id: session.user.id,
+                          action: "user_limit_override_reset",
+                          entity_type: "user_limit_overrides",
+                          entity_id: detailUser.user_id,
+                          details: { txn_type: txnType, period },
+                        }).then();
+                        const freshData = await fetchUserDetails(detailUser.user_id);
+                        setDetailData(freshData);
+                        setEditingLimit(null);
+                        toast.success("Reset to global default");
+                      } catch (err: any) {
+                        toast.error(err.message || "Failed to reset");
+                      }
                     };
 
                     return (
-                      <div className="space-y-1.5">
-                        {!hasAnyOverride && (
-                          <p className="text-xs text-muted-foreground mb-2">Using global defaults</p>
-                        )}
-                        <div className="grid grid-cols-[1fr_auto_auto] gap-x-3 gap-y-1 text-xs">
-                          <span className="font-medium text-muted-foreground">Type</span>
-                          <span className="font-medium text-muted-foreground text-right">Daily</span>
-                          <span className="font-medium text-muted-foreground text-right">Monthly</span>
-                          {TXN_TYPES.map(({ key, label }) => {
-                            const daily = getEffective(key, "daily");
-                            const monthly = getEffective(key, "monthly");
+                      <div className="space-y-2">
+                        {TXN_TYPES.map(({ key, label }) =>
+                          PERIODS.map((period) => {
+                            const eff = getEffective(key, period);
+                            const isEditing = editingLimit?.txnType === key && editingLimit?.period === period;
+                            const hasChanged = isEditing && (editingLimit.newAmount !== String(editingLimit.oldAmount) || editingLimit.newCount !== String(editingLimit.oldCount));
+
                             return (
-                              <React.Fragment key={key}>
-                                <span className="text-foreground py-1">{label}</span>
-                                <span className="text-right py-1 flex items-center justify-end gap-1">
-                                  {daily ? (
-                                    <>
-                                      <span className="text-foreground font-medium">৳{daily.amount.toLocaleString()}</span>
-                                      {daily.isCustom && <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-primary/40 text-primary">Custom</Badge>}
-                                    </>
-                                  ) : (
-                                    <span className="text-muted-foreground">—</span>
+                              <div key={`${key}-${period}`} className={`rounded-lg border px-3 py-2 text-xs transition-colors ${isEditing ? "border-primary/50 bg-primary/5" : "border-border/50 bg-muted/20"}`}>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium text-foreground">{label}</span>
+                                    <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 capitalize">{period}</Badge>
+                                    {eff.isCustom && <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-primary/40 text-primary">Custom</Badge>}
+                                  </div>
+                                  {!isEditing && (
+                                    <div className="flex items-center gap-1">
+                                      <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[10px]" onClick={() => startEdit(key, period)}>Edit</Button>
+                                      {eff.isCustom && (
+                                        <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[10px] text-destructive hover:text-destructive" onClick={() => resetToDefault(key, period)}>
+                                          <RotateCcw className="w-3 h-3 mr-0.5" /> Reset
+                                        </Button>
+                                      )}
+                                    </div>
                                   )}
-                                </span>
-                                <span className="text-right py-1 flex items-center justify-end gap-1">
-                                  {monthly ? (
-                                    <>
-                                      <span className="text-foreground font-medium">৳{monthly.amount.toLocaleString()}</span>
-                                      {monthly.isCustom && <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-primary/40 text-primary">Custom</Badge>}
-                                    </>
-                                  ) : (
-                                    <span className="text-muted-foreground">—</span>
-                                  )}
-                                </span>
-                              </React.Fragment>
+                                </div>
+
+                                {isEditing ? (
+                                  <div className="mt-2 space-y-2">
+                                    {/* Amount comparison */}
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-muted-foreground w-16">Amount:</span>
+                                      <span className={`line-through text-muted-foreground ${hasChanged ? "opacity-60" : ""}`}>৳{editingLimit.oldAmount.toLocaleString()}</span>
+                                      <span className="text-muted-foreground">→</span>
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        value={editingLimit.newAmount}
+                                        onChange={(e) => setEditingLimit({ ...editingLimit, newAmount: e.target.value })}
+                                        className="h-7 w-28 text-xs"
+                                      />
+                                    </div>
+                                    {/* Count comparison */}
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-muted-foreground w-16">Max Txn:</span>
+                                      <span className={`line-through text-muted-foreground ${hasChanged ? "opacity-60" : ""}`}>{editingLimit.oldCount}</span>
+                                      <span className="text-muted-foreground">→</span>
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        value={editingLimit.newCount}
+                                        onChange={(e) => setEditingLimit({ ...editingLimit, newCount: e.target.value })}
+                                        className="h-7 w-28 text-xs"
+                                      />
+                                    </div>
+                                    <div className="flex items-center gap-2 pt-1">
+                                      <Button size="sm" className="h-6 text-[10px] px-3" disabled={savingLimit || !hasChanged} onClick={saveOverride}>
+                                        {savingLimit ? "Saving…" : "Save Override"}
+                                      </Button>
+                                      <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => setEditingLimit(null)}>Cancel</Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-3 mt-1">
+                                    <span className="text-muted-foreground">৳{eff.amount.toLocaleString()}</span>
+                                    {eff.count > 0 && <span className="text-muted-foreground">• {eff.count} txns</span>}
+                                  </div>
+                                )}
+                              </div>
                             );
-                          })}
-                        </div>
+                          })
+                        )}
                       </div>
                     );
                   })()}
