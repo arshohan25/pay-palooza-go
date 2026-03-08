@@ -92,8 +92,9 @@ const PinDots = ({ value, onChange, maxLen = 4 }: { value: string; onChange: (v:
         value={value}
         onChange={(e) => {
           const v = e.target.value.replace(/\D/g, "").slice(0, maxLen);
+          if (v.length > value.length) { haptics.light(); playPinTick(); }
           onChange(v);
-          if (v.length === maxLen) haptics.light();
+          if (v.length === maxLen) haptics.medium();
         }}
         className="sr-only"
         autoComplete="off"
@@ -195,19 +196,19 @@ const CheckoutPage = () => {
 
   /* ── Auth ───────────────────────────────────────────────────── */
   const handleLogin = useCallback(async () => {
-    if (phone.length < 11 || pin.length < 4) { setErrorMsg("Enter valid phone and 4-digit PIN"); return; }
-    setErrorMsg(""); setStep("processing");
+    if (phone.length < 11 || pin.length < 4) { setErrorMsg("Enter valid phone and 4-digit PIN"); haptics.error(); return; }
+    setErrorMsg(""); setStep("processing"); haptics.medium();
     try {
       const cleanPhone = phone.replace(/\D/g, "").replace(/^(\+?88)/, "");
       await signIn(cleanPhone, pin);
-      setStep("confirm");
-    } catch { setErrorMsg("Invalid phone or PIN"); setStep("login"); }
+      setStep("confirm"); haptics.success();
+    } catch { setErrorMsg("Invalid phone or PIN"); setStep("login"); haptics.error(); playPaymentError(); }
   }, [phone, pin]);
 
   /* ── Pay ────────────────────────────────────────────────────── */
   const handlePay = useCallback(async () => {
     if (!session || !merchantPhone) return;
-    setStep("processing");
+    setStep("processing"); haptics.medium(); playSlideConfirm();
     try {
       const { data, error } = await supabase.rpc("transfer_money", {
         p_recipient_phone: merchantPhone, p_amount: session.amount, p_fee: 0,
@@ -234,12 +235,14 @@ const CheckoutPage = () => {
       setStep("success");
       fireSuccessConfetti();
       haptics.success();
+      playPaymentSuccess();
+      haptics.success();
 
       if (session.success_url) {
         setTimeout(() => { window.location.href = session.success_url!; }, 3500);
       }
     } catch (err: any) {
-      setErrorMsg(err.message || "Payment failed"); setStep("failed");
+      setErrorMsg(err.message || "Payment failed"); setStep("failed"); haptics.error(); playPaymentError();
       await supabase.from("merchant_payment_sessions").update({ status: "failed", updated_at: new Date().toISOString() }).eq("id", session?.id || "");
     }
   }, [session, merchantPhone, merchantName, phone]);
