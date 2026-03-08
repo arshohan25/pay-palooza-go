@@ -1,50 +1,29 @@
 
 
-## Smart QR Data Extraction & Routing
+## Plan: Add Biller Categories to API Hub
 
-### Problem
-The "Scan & Pay" QR handler on the home page does a naive string check (`startsWith("MRC")`). It doesn't parse structured QR payloads (JSON from user QR codes, URLs, or other formats). If a QR contains a JSON object like `{"walletId":"...","name":"...","app":"EasyPay"}`, the raw JSON string gets passed to SendMoney, which fails validation.
+### What
 
-### Solution
-Create a universal QR parser that extracts meaningful data from any scanned QR, determines the correct flow, and pre-fills the appropriate fields.
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-**1. New utility: `src/lib/qrParser.ts`**
-A parser function that accepts a raw QR string and returns a structured result:
-- Try JSON parse → extract `walletId`, `name`, `app`, `merchantId` fields
-- Check for `MRC-` or `MRC` prefix → merchant flow
-- Check for 11-digit phone number → send money flow
-- Check for `EZP-XXXX-XXXX` wallet ID pattern → send money flow
-- Check for URL patterns (extract query params like `?pay=MRC-XXX` or `?to=0171...`)
-- Fallback: attempt `resolve_transfer_recipient` RPC to see if the raw string matches any user/merchant
-- Return: `{ flow: 'payment' | 'send' | 'unknown', identifier: string, name?: string }`
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-**2. Update `src/pages/Index.tsx` — Scan & Pay handler**
-Replace the simple `startsWith("MRC")` check with the new parser:
-- Parse QR result → get flow type and extracted identifier
-- Route to Payment flow with pre-filled merchant ID, or Send Money with pre-filled phone/wallet ID
-- Show a toast error for `unknown` flow type ("Unrecognized QR code")
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-**3. Update `src/components/SendMoneyFlow.tsx` — `handleQrScan`**
-- Before passing to `detectRecipientType`, run through the parser to extract the actual identifier from JSON or structured payloads
-- Pass the clean identifier (not raw JSON) to validation
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-**4. Update `src/components/PaymentFlow.tsx` — `handleQrScan`**
-- Similarly extract merchant ID from structured payloads before validation
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-### Flow Summary
-```text
-QR Scanned
-  │
-  ├─ JSON with walletId? ──→ Send Money (walletId)
-  ├─ JSON with merchantId? ─→ Payment (merchantId)
-  ├─ Starts with MRC? ─────→ Payment (raw string)
-  ├─ 11-digit number? ─────→ Send Money (phone)
-  ├─ EZP-XXXX-XXXX? ──────→ Send Money (walletId)
-  ├─ URL with params? ─────→ Extract & route
-  └─ Otherwise ────────────→ Try resolve_transfer_recipient
-       ├─ Found? → Route to matching flow
-       └─ Not found? → Toast "Unrecognized QR"
-```
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
