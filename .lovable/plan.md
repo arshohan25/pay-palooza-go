@@ -1,29 +1,18 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Swap Bank Transfer and Refer & Earn Positions
 
-### What
+### Changes in `src/components/QuickActions.tsx`
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+1. **`actionDefs` array (line 32)**: Replace the Refer entry at position 4 with a Bank Transfer entry using `Landmark` icon, blue styling (`rgba(33,150,243,...)`), id `"bank"`, labelKey needs a new key or inline label approach
 
-### Changes
+2. **`moreServices` array (line 40)**: Replace the Bank Transfer entry (first item) with a Refer & Earn entry using `ReferIcon` or a lucide icon, orange gradient
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+3. **`handleAction` (line 100)**: Change `if (id === "refer") return onRefer()` → `if (id === "bank") return onBankTransfer()`
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+4. **`handleMoreService` (line 108)**: Change `if (id === "bank") onBankTransfer()` → `if (id === "refer") onRefer()`
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+5. **i18n label**: Since `actionDefs` uses `labelKey` referencing `t()`, we'll need to use a label key for Bank Transfer. We can use a custom label approach or add a `"bankTransfer"` key. Alternatively, use a direct `label` field with fallback.
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+Everything else stays exactly the same — no other positions change.
 
