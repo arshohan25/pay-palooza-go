@@ -1428,11 +1428,6 @@ export default function AdminDashboard() {
                       return { amount: 0, count: 0, isCustom: false, overrideId: null };
                     };
 
-                    // Editing state is managed via component-level state added below
-                    const [editingLimit, setEditingLimit] = React.useState<{
-                      txnType: string; period: string; oldAmount: number; oldCount: number; newAmount: string; newCount: string; isCustom: boolean; overrideId: string | null;
-                    } | null>(null);
-                    const [savingLimit, setSavingLimit] = React.useState(false);
 
                     const startEdit = (txnType: string, period: string) => {
                       const eff = getEffective(txnType, period);
