@@ -121,6 +121,13 @@ body::-webkit-scrollbar {
     @apply border-border;
   }
 
+  /* Global smooth transitions for interactive elements */
+  button, a, input, select, textarea,
+  [role="button"], [role="tab"], [role="menuitem"],
+  .transition-smooth {
+    transition: all 0.25s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
   html {
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;

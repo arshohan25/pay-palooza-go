@@ -60,8 +60,8 @@ const BottomNav = ({ activeTab = "home", onTabChange }: BottomNavProps) => {
                 key={item.id}
                 whileTap={{ scale: 0.88 }}
                 onClick={() => onTabChange?.(item.id)}
-                className={`relative flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl transition-colors tap-target ${
-                  isActive ? "text-primary" : "text-muted-foreground"
+                className={`relative flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl tap-target transition-all duration-200 ${
+                  isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 }`}
                 aria-label={label}
               >
