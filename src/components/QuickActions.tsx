@@ -1,7 +1,7 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Lock, ChevronUp } from "lucide-react";
+import { Lock, ChevronUp, Sparkles } from "lucide-react";
 import {
   SendMoneyIcon,
   CashOutIcon,
@@ -38,6 +38,11 @@ const FEATURE_MAP: Record<string, string> = {
   loan: "loan",
   insurance: "insurance",
   giftcards: "gift_cards",
+  feature_slot_1: "feature_slot_1",
+  feature_slot_2: "feature_slot_2",
+  feature_slot_3: "feature_slot_3",
+  feature_slot_4: "feature_slot_4",
+  feature_slot_5: "feature_slot_5",
 };
 
 const actionDefs = [
@@ -61,6 +66,19 @@ const moreServices = [
   { id: "giftcards", Icon: GiftCardsIcon, label: "Gift Cards", desc: "Send & redeem gifts", gradient: "from-orange-400 to-red-500", soon: true, featureKey: "gift_cards" },
 ];
 
+// Blank feature slots — only visible when admin enables the toggle
+const SlotIcon = ({ isHovered }: { isHovered?: boolean }) => (
+  <Sparkles className={`w-6 h-6 transition-colors ${isHovered ? "text-primary" : "text-muted-foreground"}`} />
+);
+
+const blankSlots = [
+  { id: "feature_slot_1", Icon: SlotIcon, label: "New Feature 1", desc: "Coming soon", gradient: "from-sky-500 to-blue-600", featureKey: "feature_slot_1", soon: false as boolean | undefined },
+  { id: "feature_slot_2", Icon: SlotIcon, label: "New Feature 2", desc: "Coming soon", gradient: "from-indigo-500 to-violet-600", featureKey: "feature_slot_2", soon: false as boolean | undefined },
+  { id: "feature_slot_3", Icon: SlotIcon, label: "New Feature 3", desc: "Coming soon", gradient: "from-teal-500 to-cyan-600", featureKey: "feature_slot_3", soon: false as boolean | undefined },
+  { id: "feature_slot_4", Icon: SlotIcon, label: "New Feature 4", desc: "Coming soon", gradient: "from-fuchsia-500 to-pink-600", featureKey: "feature_slot_4", soon: false as boolean | undefined },
+  { id: "feature_slot_5", Icon: SlotIcon, label: "New Feature 5", desc: "Coming soon", gradient: "from-lime-500 to-green-600", featureKey: "feature_slot_5", soon: false as boolean | undefined },
+];
+
 interface RippleState { x: number; y: number; id: number; }
 
 interface QuickActionsProps {
@@ -79,12 +97,25 @@ interface QuickActionsProps {
 const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney, onRefer, onShop, onBankTransfer, onSavings }: QuickActionsProps) => {
   const { t } = useI18n();
   const { isLocked } = useFeatureLocks();
-  const { isDisabled: isGloballyDisabled } = useGlobalToggles();
+  const { isDisabled: isGloballyDisabled, toggles } = useGlobalToggles();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [ripples, setRipples] = useState<Record<string, RippleState | null>>({});
   const rippleCounterRef = useRef(0);
   const [expanded, setExpanded] = useState(false);
   const [hoveredMoreId, setHoveredMoreId] = useState<string | null>(null);
+
+  // Merge moreServices with enabled blank slots (blank slots hidden by default, shown only when enabled)
+  const visibleMoreServices = useMemo(() => {
+    const enabledSlots = blankSlots.filter((slot) => {
+      const toggle = toggles.find((t) => t.feature_key === slot.featureKey);
+      return toggle?.is_enabled === true;
+    }).map((slot) => {
+      // Use admin-set label from toggles if available
+      const toggle = toggles.find((t) => t.feature_key === slot.featureKey);
+      return { ...slot, label: toggle?.label || slot.label };
+    });
+    return [...moreServices, ...enabledSlots];
+  }, [toggles]);
 
   const triggerRipple = useCallback((id: string, e: React.MouseEvent | React.TouchEvent) => {
     const el = (e.currentTarget as HTMLElement).querySelector("[data-ripple-container]") as HTMLElement;
@@ -214,7 +245,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                 </button>
               </div>
               <div className="grid grid-cols-4 gap-y-5 gap-x-2 sm:gap-x-3">
-                {moreServices.map((item, i) => {
+                {visibleMoreServices.map((item, i) => {
                   const moreGlobalOff = item.featureKey ? isGloballyDisabled(item.featureKey) : false;
                   return (
                     <motion.button

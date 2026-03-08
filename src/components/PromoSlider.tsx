@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { icons } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { useGlobalToggles } from "@/hooks/use-global-toggles";
 
 interface PromoBanner {
   id: string;
@@ -45,6 +46,16 @@ export default function PromoSlider({ onFeatureOpen }: PromoSliderProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "start" });
   const [selectedIdx, setSelectedIdx] = useState(0);
   const navigate = useNavigate();
+  const { isDisabled } = useGlobalToggles();
+
+  // Filter out banners linked to disabled features
+  const visibleBanners = useMemo(() => {
+    return banners.filter((b) => {
+      if (!b.link_url?.startsWith("feature:")) return true;
+      const featureKey = b.link_url.replace("feature:", "");
+      return !isDisabled(featureKey);
+    });
+  }, [banners, isDisabled]);
 
   useEffect(() => {
     const load = async () => {
@@ -72,10 +83,10 @@ export default function PromoSlider({ onFeatureOpen }: PromoSliderProps) {
 
   // Auto-play
   useEffect(() => {
-    if (!emblaApi || banners.length <= 1) return;
+    if (!emblaApi || visibleBanners.length <= 1) return;
     const iv = setInterval(() => emblaApi.scrollNext(), 4000);
     return () => clearInterval(iv);
-  }, [emblaApi, banners.length]);
+  }, [emblaApi, visibleBanners.length]);
 
   const handleClick = (b: PromoBanner) => {
     if (!b.link_url) return;
@@ -92,13 +103,13 @@ export default function PromoSlider({ onFeatureOpen }: PromoSliderProps) {
     }
   };
 
-  if (banners.length === 0) return null;
+  if (visibleBanners.length === 0) return null;
 
   return (
     <div className="space-y-2">
       <div ref={emblaRef} className="overflow-hidden rounded-2xl">
         <div className="flex">
-          {banners.map((b) => {
+          {visibleBanners.map((b) => {
             const IconComp = (icons as any)[b.icon || "Gift"] || icons.Gift;
             const hasMedia = !!b.media_url;
             return (
@@ -173,9 +184,9 @@ export default function PromoSlider({ onFeatureOpen }: PromoSliderProps) {
       </div>
 
       {/* Dot indicators */}
-      {banners.length > 1 && (
+      {visibleBanners.length > 1 && (
         <div className="flex justify-center gap-1.5">
-          {banners.map((_, i) => (
+          {visibleBanners.map((_, i) => (
             <button
               key={i}
               onClick={() => emblaApi?.scrollTo(i)}
