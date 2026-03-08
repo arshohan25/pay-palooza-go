@@ -407,7 +407,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   };
 
   return (
-    <div className="bg-card rounded-3xl shadow-card border border-border/60 p-4 sm:p-5">
+    <div className={`bg-card rounded-3xl shadow-card border border-border/60 ${compactMode ? "p-3" : "p-4 sm:p-5"}`}>
       <AnimatePresence>
         {isDnDEnabled && isCustomOrder && (
           <motion.div
@@ -428,7 +428,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
       </AnimatePresence>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <SortableContext items={sortableOrder} strategy={rectSortingStrategy}>
-          <div className="grid grid-cols-4 gap-y-5 gap-x-2 sm:gap-x-3">
+          <div className={`grid gap-x-2 sm:gap-x-3 ${compactMode ? "gap-y-3" : "gap-y-5"} ${gridCols === 3 ? "grid-cols-3" : "grid-cols-4"}`}>
             {orderedActions.map((action, index) => {
               const isHov = hoveredId === action.id;
               const ripple = ripples[action.id];
