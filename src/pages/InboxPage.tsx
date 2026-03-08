@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ChevronLeft, Send, Phone, Video, MoreVertical, Plus,
+  ChevronLeft, Send, MoreVertical, Plus,
   Smile, CheckCheck, Check, Wallet, CheckCircle2, Package,
   Mic, Play, Pause, X, UserPlus, ImagePlus,
-  Download, PhoneOff, VideoIcon, MicOff, Volume2,
+  Download,
   Clock, UserCheck, Hourglass, Users, ArrowLeft,
   Shield, UserMinus, Edit3, Info, Lock, Search,
   Pin, PinOff, Copy, Forward, Trash2, MessageSquare,
@@ -14,9 +14,6 @@ import { clearInboxCount } from "@/lib/inboxStore";
 import { toast } from "@/components/ui/sonner";
 import { useChat, type ChatConversation, type ChatMessage } from "@/hooks/use-chat";
 import { useAuth } from "@/hooks/use-auth";
-import { WebRTCManager, type CallSignal } from "@/lib/webrtc";
-import { playRingtone, stopRingtone, playRingbackTone, stopRingbackTone, stopAllCallSounds } from "@/lib/sounds";
-import IncomingCallOverlay from "@/components/IncomingCallOverlay";
 import { useTypingIndicator } from "@/hooks/use-typing-indicator";
 import { useProfile } from "@/hooks/use-profile";
 import { useOnlinePresence } from "@/hooks/use-online-presence";
@@ -268,125 +265,6 @@ const ImageBubble = ({ msg }: { msg: UIMessage }) => {
         <Download size={13} />
       </button>
     </div>
-  );
-};
-
-// ── Calling Overlay ───────────────────────────────────────────────────────────
-interface CallingOverlayProps {
-  contact: UIContact; mode: "audio" | "video"; onEnd: () => void; webrtc: WebRTCManager | null;
-}
-
-const CallingOverlay = ({ contact, mode, onEnd, webrtc }: CallingOverlayProps) => {
-  const [status, setStatus] = useState<"ringing" | "connected">("ringing");
-  const [seconds, setSeconds] = useState(0);
-  const [muted, setMuted] = useState(false);
-  const [speaker, setSpeaker] = useState(true);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const remoteAudioRef = useRef<HTMLAudioElement>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement>(null);
-
-  const onEndRef = useRef(onEnd);
-  onEndRef.current = onEnd;
-
-  useEffect(() => {
-    if (!webrtc) return;
-    let alive = true;
-    webrtc.setOnCallStateChange((state) => {
-      if (!alive) return;
-      if (state === "connected") {
-        stopAllCallSounds();
-        setStatus("connected");
-        timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
-      } else if (state === "ended") {
-        onEndRef.current();
-      }
-    });
-    webrtc.setOnRemoteStream((stream) => {
-      if (!alive) return;
-      if (mode === "video" && remoteVideoRef.current) remoteVideoRef.current.srcObject = stream;
-      else if (remoteAudioRef.current) remoteAudioRef.current.srcObject = stream;
-    });
-    return () => { alive = false; if (timerRef.current) clearInterval(timerRef.current); };
-  }, [webrtc, mode]);
-
-  const formatDuration = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
-
-  const handleEnd = () => {
-    try { webrtc?.endCall(); } catch (e) { console.error("endCall error:", e); }
-    onEndRef.current();
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: "100%" }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: "100%" }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="fixed inset-0 z-[90] flex flex-col items-center justify-between pb-16 pt-24 bg-gradient-to-b from-primary/90 to-primary/60 backdrop-blur-xl"
-    >
-      <audio ref={remoteAudioRef} autoPlay />
-      {mode === "video" && <video ref={remoteVideoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover opacity-30" />}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
-        <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
-      </div>
-      <div className="flex flex-col items-center gap-5 z-10">
-        <motion.div animate={{ scale: status === "ringing" ? [1, 1.05, 1] : 1 }}
-          transition={{ duration: 1.5, repeat: status === "ringing" ? Infinity : 0 }} className="relative">
-          {status === "ringing" && [0, 1, 2].map((i) => (
-            <motion.div key={i} className="absolute inset-0 rounded-full border-2 border-white/30"
-              animate={{ scale: [1, 2.2], opacity: [0.6, 0] }}
-              transition={{ duration: 1.8, repeat: Infinity, delay: i * 0.6, ease: "easeOut" }} />
-          ))}
-          <div className={`w-24 h-24 rounded-full ${contact.gradient} flex items-center justify-center text-white font-bold text-3xl shadow-elevated overflow-hidden`}>
-            {contact.avatarUrl ? <img src={contact.avatarUrl} alt={contact.name} className="w-full h-full object-cover" />
-              : contact.isGroup ? (contact.groupIcon ?? "👥") : contact.initials}
-          </div>
-        </motion.div>
-        <div className="text-center text-white">
-          <h2 className="text-2xl font-extrabold">{contact.name}</h2>
-          <p className="text-white/70 text-sm mt-1 font-medium">
-            {status === "ringing" ? (mode === "video" ? "Video calling…" : "Calling…") : formatDuration(seconds)}
-          </p>
-          {status === "ringing" && (
-            <motion.div className="flex items-center justify-center gap-1 mt-2">
-              {[0, 1, 2].map((i) => (
-                <motion.div key={i} className="w-1.5 h-1.5 rounded-full bg-white/60"
-                  animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                  transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.3 }} />
-              ))}
-            </motion.div>
-          )}
-        </div>
-      </div>
-      <div className="flex flex-col items-center gap-6 z-10 w-full px-12">
-        <div className="flex justify-center gap-8">
-          <button onClick={() => { const m = webrtc?.toggleMute(); setMuted(!!m); }} className="flex flex-col items-center gap-2">
-            <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${muted ? "bg-white/30" : "bg-white/15"}`}>
-              {muted ? <MicOff size={22} className="text-white" /> : <Mic size={22} className="text-white" />}
-            </div>
-            <span className="text-[11px] text-white/70">{muted ? "Unmute" : "Mute"}</span>
-          </button>
-          <button onClick={() => setSpeaker((v) => !v)} className="flex flex-col items-center gap-2">
-            <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${speaker ? "bg-white/30" : "bg-white/15"}`}>
-              <Volume2 size={22} className="text-white" />
-            </div>
-            <span className="text-[11px] text-white/70">Speaker</span>
-          </button>
-          {mode === "video" && (
-            <button onClick={() => webrtc?.toggleCamera()} className="flex flex-col items-center gap-2">
-              <div className="w-14 h-14 rounded-full bg-white/15 flex items-center justify-center">
-                <VideoIcon size={22} className="text-white" />
-              </div>
-              <span className="text-[11px] text-white/70">Camera</span>
-            </button>
-          )}
-        </div>
-        <motion.button whileTap={{ scale: 0.92 }} onClick={handleEnd}
-          className="w-16 h-16 rounded-full bg-destructive flex items-center justify-center shadow-elevated">
-          <PhoneOff size={26} className="text-destructive-foreground" />
-        </motion.button>
-        <p className="text-[11px] text-white/50">Tap to end call</p>
-      </div>
-    </motion.div>
   );
 };
 
@@ -840,9 +718,7 @@ interface ChatViewProps {
   onCopy: (text: string) => void;
   onDelete: (msgId: string) => void;
   onForward: (msgId: string) => void;
-  onCall: (mode: "audio" | "video") => void;
-  webrtc: WebRTCManager | null; callMode: "audio" | "video" | null;
-  onEndCall: () => void; conversationId: string | null;
+  conversationId: string | null;
   userId: string | null; userName: string;
   isPending?: boolean; isInitiator?: boolean;
   onAccept?: () => void; onDecline?: () => void;
@@ -852,7 +728,7 @@ interface ChatViewProps {
 
 const ChatView = ({
   contact, messages, onBack, onSend, onSendVoice, onSendImage,
-  onReact, onCopy, onDelete, onForward, onCall, webrtc, callMode, onEndCall,
+  onReact, onCopy, onDelete, onForward,
   conversationId, userId, userName,
   isPending, isInitiator, onAccept, onDecline, onBlockReport, onSendMoney,
 }: ChatViewProps) => {
@@ -937,18 +813,6 @@ const ChatView = ({
             </p>
           </div>
           <div className="flex items-center gap-1 relative">
-            {!contact.isGroup && (
-              <>
-                <button onClick={() => onCall("audio")}
-                  className="w-9 h-9 rounded-full bg-muted/60 flex items-center justify-center active:scale-95 transition-transform text-foreground">
-                  <Phone size={15} />
-                </button>
-                <button onClick={() => onCall("video")}
-                  className="w-9 h-9 rounded-full bg-muted/60 flex items-center justify-center active:scale-95 transition-transform text-foreground">
-                  <Video size={15} />
-                </button>
-              </>
-            )}
             <button onClick={() => setShowChatMenu((v) => !v)} className="w-9 h-9 rounded-full bg-muted/60 flex items-center justify-center active:scale-95 transition-transform text-foreground">
               {contact.isGroup ? <Info size={14} /> : <MoreVertical size={14} />}
             </button>
@@ -1181,11 +1045,6 @@ const ChatView = ({
 
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
-      {/* Calling overlay */}
-      <AnimatePresence>
-        {callMode && <CallingOverlay contact={contact} mode={callMode} onEnd={onEndCall} webrtc={webrtc} />}
-      </AnimatePresence>
-
       {/* Block & Report Dialog (for accepted chats) */}
       <AnimatePresence>
         {showBlockDialog && !isPending && (
@@ -1241,11 +1100,6 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
   const [pinnedIds, setPinnedIdsState] = useState<string[]>(getPinnedIds);
   const [forwardMsgId, setForwardMsgId] = useState<string | null>(null);
-
-  // WebRTC state
-  const [callMode, setCallMode] = useState<"audio" | "video" | null>(null);
-  const [webrtcManager, setWebrtcManager] = useState<WebRTCManager | null>(null);
-  const [incomingCall, setIncomingCall] = useState<CallSignal | null>(null);
 
   // Reactions (client-side only)
   const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
@@ -1306,43 +1160,6 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
   const onlineContacts = useMemo(() =>
     uiContacts.filter((c) => c.online && !c.isGroup), [uiContacts]);
 
-  // ── WebRTC managers ──────────────────────────────────────────────
-  const webrtcManagersRef = useRef<Map<string, WebRTCManager>>(new Map());
-
-  useEffect(() => {
-    if (!user || chat.conversations.length === 0) return;
-    const currentMap = webrtcManagersRef.current;
-    const activeConvIds = new Set<string>();
-    for (const conv of chat.conversations) {
-      if (conv.type !== "direct") continue;
-      activeConvIds.add(conv.id);
-      if (currentMap.has(conv.id)) continue;
-      const mgr = new WebRTCManager(conv.id, user.id, profileData?.name ?? "Me");
-      mgr.subscribe();
-      mgr.setOnIncomingCall((signal) => {
-        setCallMode((current) => {
-          if (current !== null) { mgr.rejectCall(); return current; }
-          return current; // keep null — callMode set on accept
-        });
-        setIncomingCall(signal);
-        setActiveContactId(conv.id);
-        chat.openConversation(conv.id);
-      });
-      currentMap.set(conv.id, mgr);
-    }
-    for (const [convId, mgr] of currentMap) {
-      if (!activeConvIds.has(convId)) { mgr.destroy(); currentMap.delete(convId); }
-    }
-  }, [user, chat.conversations.length]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    return () => { for (const mgr of webrtcManagersRef.current.values()) mgr.destroy(); webrtcManagersRef.current.clear(); };
-  }, []);
-
-  useEffect(() => {
-    if (activeContactId) setWebrtcManager(webrtcManagersRef.current.get(activeContactId) ?? null);
-    else setWebrtcManager(null);
-  }, [activeContactId]);
 
   const handleReact = useCallback((msgId: string, emoji: string) => {
     setReactions((prev) => {
@@ -1439,48 +1256,6 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
     chat.openConversation(contact.conversationId);
   };
 
-  const handleCall = async (mode: "audio" | "video") => {
-    if (!webrtcManager) return;
-    try {
-      setCallMode(mode);
-      await webrtcManager.startCall(mode);
-      playRingbackTone();
-    } catch (err) {
-      console.error("Call failed:", err);
-      toast.error("Call failed", { description: "Could not access microphone/camera" });
-      setCallMode(null);
-      stopAllCallSounds();
-    }
-  };
-
-  const handleAcceptCall = async () => {
-    if (!incomingCall || !webrtcManager) return;
-    stopAllCallSounds();
-    try {
-      setCallMode(incomingCall.mode);
-      await webrtcManager.answerCall(incomingCall.payload as RTCSessionDescriptionInit, incomingCall.mode);
-      setIncomingCall(null);
-    } catch (err) {
-      console.error("Answer failed:", err);
-      toast.error("Could not answer call");
-      setCallMode(null);
-      setIncomingCall(null);
-    }
-  };
-
-  const handleRejectCall = () => {
-    stopAllCallSounds();
-    webrtcManager?.rejectCall();
-    setIncomingCall(null);
-  };
-
-  const handleEndCall = useCallback(() => {
-    stopAllCallSounds();
-    // Do NOT call webrtcManager.endCall() here — CallingOverlay's handleEnd does it.
-    // This is UI-cleanup only, triggered by onCallStateChange("ended") or the overlay's onEnd.
-    setCallMode(null);
-    setIncomingCall(null);
-  }, []);
 
   const totalUnread = chat.totalUnread;
   const tabCounts = useMemo(() => ({
@@ -1718,10 +1493,6 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
               onCopy={handleCopy}
               onDelete={handleDeleteMessage}
               onForward={(msgId) => setForwardMsgId(msgId)}
-              onCall={handleCall}
-              webrtc={webrtcManager}
-              callMode={callMode}
-              onEndCall={handleEndCall}
               conversationId={activeContactId}
               userId={user?.id ?? null}
               userName={profileData?.name || "Me"}
@@ -1756,13 +1527,6 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
         )}
       </AnimatePresence>
 
-      {/* ── Incoming call overlay ── */}
-      <AnimatePresence>
-        {incomingCall && (
-          <IncomingCallOverlay callerName={incomingCall.senderName} mode={incomingCall.mode}
-            onAccept={handleAcceptCall} onReject={handleRejectCall} />
-        )}
-      </AnimatePresence>
     </>
   );
 }
