@@ -365,14 +365,22 @@ app.post('/webhook', (req, res) => {
             {sessions.map(s => (
               <Card key={s.id} className="p-3">
                 <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Badge className={statusColor[s.status] || statusColor.pending}>
                       {s.status}
                     </Badge>
-                    {s.webhook_delivered && (
-                      <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-[8px]">
-                        <Webhook size={8} className="mr-0.5" />Delivered
-                      </Badge>
+                    {/* Webhook delivery status */}
+                    {s.status === "completed" && (
+                      s.webhook_delivered ? (
+                        <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[8px]">
+                          <CheckCircle2 size={8} className="mr-0.5" />Webhook Sent
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[8px]">
+                          <AlertTriangle size={8} className="mr-0.5" />
+                          {s.webhook_attempts > 0 ? `Failed (${s.webhook_attempts} tries)` : "Pending"}
+                        </Badge>
+                      )
                     )}
                   </div>
                   <span className="text-[10px] text-muted-foreground">{new Date(s.created_at).toLocaleString()}</span>
@@ -382,10 +390,29 @@ app.post('/webhook', (req, res) => {
                     <p className="text-sm font-bold text-foreground">৳{fmt(s.amount)}</p>
                     {s.reference && <p className="text-[10px] text-muted-foreground">Ref: {s.reference}</p>}
                   </div>
-                  {s.customer_phone && (
-                    <span className="text-[10px] text-muted-foreground">{s.customer_phone}</span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {s.customer_phone && (
+                      <span className="text-[10px] text-muted-foreground">{s.customer_phone}</span>
+                    )}
+                    {/* Retry button for completed but undelivered webhooks */}
+                    {s.status === "completed" && !s.webhook_delivered && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 text-[9px] gap-1 px-2"
+                        onClick={() => retryWebhook(s.id)}
+                      >
+                        <RefreshCw size={10} />Retry
+                      </Button>
+                    )}
+                  </div>
                 </div>
+                {/* Next retry info */}
+                {s.status === "completed" && !s.webhook_delivered && s.webhook_next_retry_at && (
+                  <p className="text-[9px] text-muted-foreground mt-1 flex items-center gap-1">
+                    <Clock size={9} />Next auto-retry: {new Date(s.webhook_next_retry_at).toLocaleString()}
+                  </p>
+                )}
               </Card>
             ))}
           </div>
