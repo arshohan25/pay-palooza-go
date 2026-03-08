@@ -269,15 +269,22 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                         style={{ width: 56, height: 56, filter: moreGlobalOff ? "grayscale(1)" : "none", opacity: moreGlobalOff ? 0.5 : 1 }}
                       >
                         <div className={`absolute inset-0 rounded-full bg-gradient-to-b ${item.gradient} opacity-[0.14]`} />
+                        {item.soon && (
+                          <div className={`absolute inset-0 rounded-full bg-gradient-to-b ${item.gradient} opacity-20 animate-pulse`} />
+                        )}
                         <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 blur-[10px] transition-opacity duration-300 -z-10 scale-110">
                           <div className={`w-full h-full bg-gradient-to-b ${item.gradient} opacity-30`} />
                         </div>
                         <item.Icon isHovered={hoveredMoreId === item.id} />
                       </motion.div>
                       {item.soon && (
-                        <div className="absolute -top-1 right-0 z-10">
+                        <motion.div
+                          className="absolute -top-1 right-0 z-10"
+                          animate={{ scale: [1, 1.15, 1] }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        >
                           <span className="text-[8px] font-bold text-muted-foreground" style={{ textShadow: '0 0.5px 2px hsl(var(--background) / 0.8)' }}>Soon</span>
-                        </div>
+                        </motion.div>
                       )}
                       <span className={`text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-all duration-150 px-0.5 ${moreGlobalOff ? "opacity-50 grayscale" : ""}`}>
                         {item.label}

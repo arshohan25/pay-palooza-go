@@ -1,34 +1,29 @@
 
 
-## Plan: Add Pulse/Glow Effect to "Soon" Items
+## Plan: Add Biller Categories to API Hub
 
-### File: `src/components/QuickActions.tsx`
+### What
 
-**1. Add a pulsing glow ring behind the icon circle for "Soon" items (lines 265-276)**
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-Inside the `motion.div` icon container, add a conditional animated div when `item.soon` is true — a gradient-colored ring that pulses using CSS `animate-pulse` with reduced opacity, creating a soft glow effect.
+### Changes
 
-```tsx
-{item.soon && (
-  <div className={`absolute inset-0 rounded-full bg-gradient-to-b ${item.gradient} opacity-20 animate-pulse`} />
-)}
-```
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-This sits behind the icon content and uses the item's existing gradient color for a cohesive look.
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-**2. Add a subtle scale pulse to the "Soon" badge text (lines 277-280)**
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-Replace the static `div` wrapping the "Soon" label with a `motion.div` that has a continuous subtle scale animation:
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-```tsx
-<motion.div
-  className="absolute -top-1 right-0 z-10"
-  animate={{ scale: [1, 1.15, 1] }}
-  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
->
-  <span ...>Soon</span>
-</motion.div>
-```
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-### Single file change, ~10 lines modified.
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
