@@ -117,6 +117,11 @@ export default function AdminMerchantManagement() {
   const [showNewSecret, setShowNewSecret] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
+  // Create Merchant dialog
+  const [showCreateMerchant, setShowCreateMerchant] = useState(false);
+  const [createForm, setCreateForm] = useState({ phone: "", business_name: "", category: "retail", bank_name: "", bank_account_number: "", bank_routing: "" });
+  const [createLoading, setCreateLoading] = useState(false);
+
   const loadMerchants = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase.from("merchants").select("*").order("created_at", { ascending: false }).limit(200);
