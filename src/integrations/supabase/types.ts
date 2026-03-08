@@ -2161,6 +2161,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_public_session_info: { Args: { p_session_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
