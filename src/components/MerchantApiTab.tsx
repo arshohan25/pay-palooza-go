@@ -29,6 +29,8 @@ interface PaymentSession {
   status: string;
   customer_phone: string | null;
   webhook_delivered: boolean;
+  webhook_attempts: number;
+  webhook_next_retry_at: string | null;
   completed_at: string | null;
   expires_at: string;
   created_at: string;
