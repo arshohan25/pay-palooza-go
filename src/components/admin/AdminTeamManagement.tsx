@@ -420,6 +420,11 @@ export default function AdminTeamManagement() {
         <TabsContent value="matrix" className="space-y-4">
           <AccessMatrixView members={members} />
         </TabsContent>
+
+        {/* ═══ DASHBOARD TAB ═══ */}
+        <TabsContent value="dashboard" className="space-y-4">
+          <TeamActivityDashboard />
+        </TabsContent>
       </Tabs>
 
       {/* ═══ ADD MEMBER DIALOG ═══ */}
