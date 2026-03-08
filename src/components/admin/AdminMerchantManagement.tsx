@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import AdminApiRequests from "./AdminApiRequests";
 import { motion } from "framer-motion";
 import {
   Store, Search, Download, Eye, Lock, CheckCircle, XCircle, TrendingUp,
@@ -84,6 +85,7 @@ function exportMerchantsCSV(merchants: any[]) {
 }
 
 export default function AdminMerchantManagement() {
+  const [mainTab, setMainTab] = useState<"merchants" | "api-requests">("merchants");
   const [merchants, setMerchants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -332,6 +334,19 @@ export default function AdminMerchantManagement() {
 
   return (
     <div className="space-y-4">
+      {/* Top-level sub-tabs */}
+      <div className="flex gap-2">
+        <Button variant={mainTab === "merchants" ? "default" : "outline"} size="sm" onClick={() => setMainTab("merchants")}>
+          <Store className="w-4 h-4 mr-1" /> Merchants
+        </Button>
+        <Button variant={mainTab === "api-requests" ? "default" : "outline"} size="sm" onClick={() => setMainTab("api-requests")}>
+          <Key className="w-4 h-4 mr-1" /> API Requests
+        </Button>
+      </div>
+
+      {mainTab === "api-requests" && <AdminApiRequests />}
+
+      {mainTab === "merchants" && <>
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="border-0 shadow-[var(--shadow-card)]">
@@ -889,6 +904,7 @@ export default function AdminMerchantManagement() {
           )}
         </SheetContent>
       </Sheet>
+      </>}
     </div>
   );
 }
