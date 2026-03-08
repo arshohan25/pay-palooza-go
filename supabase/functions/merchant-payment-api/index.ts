@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-api-key, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-api-key, x-app-password, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 function json(data: unknown, status = 200) {
@@ -12,13 +12,43 @@ function json(data: unknown, status = 200) {
   });
 }
 
+function getClientIp(req: Request): string {
+  return (
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
+    req.headers.get("cf-connecting-ip") ||
+    "unknown"
+  );
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const startTime = Date.now();
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
+
+  let keyRow: any = null;
+  let action = "unknown";
+  let statusCode = 200;
+  let errorMessage: string | null = null;
+
+  const logRequest = async () => {
+    if (!keyRow) return;
+    const elapsed = Date.now() - startTime;
+    await supabase.from("merchant_api_logs").insert({
+      merchant_id: keyRow.merchant_id,
+      api_key_id: keyRow.id,
+      action,
+      status_code: statusCode,
+      response_time_ms: elapsed,
+      ip_address: getClientIp(req),
+      user_agent: req.headers.get("user-agent")?.slice(0, 256) || null,
+      error_message: errorMessage,
+    }).then(() => {}, () => {});
+  };
 
   try {
     const apiKey = req.headers.get("x-api-key") || req.headers.get("X-API-Key");
@@ -28,15 +58,53 @@ Deno.serve(async (req) => {
     if (!appPassword) return json({ error: "Missing X-App-Password header" }, 401);
 
     // Validate API key + app password
-    const { data: keyRow, error: keyErr } = await supabase
+    const { data: keyData, error: keyErr } = await supabase
       .from("merchant_api_keys")
-      .select("id, merchant_id, webhook_url, is_active, secret_key, app_password")
+      .select("id, merchant_id, webhook_url, is_active, secret_key, app_password, rate_limit_per_minute, ip_whitelist_enabled")
       .eq("api_key", apiKey)
       .single();
 
-    if (keyErr || !keyRow) return json({ error: "Invalid API key" }, 401);
-    if (!keyRow.is_active) return json({ error: "API key is deactivated" }, 403);
-    if (keyRow.app_password && keyRow.app_password !== appPassword) return json({ error: "Invalid App Password" }, 401);
+    if (keyErr || !keyData) return json({ error: "Invalid API key" }, 401);
+    keyRow = keyData;
+
+    if (!keyRow.is_active) { statusCode = 403; errorMessage = "API key deactivated"; await logRequest(); return json({ error: "API key is deactivated" }, 403); }
+    if (keyRow.app_password && keyRow.app_password !== appPassword) { statusCode = 401; errorMessage = "Invalid app password"; await logRequest(); return json({ error: "Invalid App Password" }, 401); }
+
+    // ═══ IP WHITELIST CHECK ═══
+    if (keyRow.ip_whitelist_enabled) {
+      const clientIp = getClientIp(req);
+      const { data: allowedIps } = await supabase
+        .from("merchant_ip_whitelist")
+        .select("ip_address")
+        .eq("merchant_id", keyRow.merchant_id);
+
+      const whitelist = (allowedIps || []).map((r: any) => r.ip_address);
+      if (whitelist.length > 0 && !whitelist.includes(clientIp)) {
+        statusCode = 403;
+        errorMessage = `IP ${clientIp} not whitelisted`;
+        await logRequest();
+        return json({ error: `IP address ${clientIp} is not whitelisted` }, 403);
+      }
+    }
+
+    // ═══ PER-MINUTE RATE LIMIT ═══
+    const rateLimit = keyRow.rate_limit_per_minute || 30;
+    const oneMinAgo = new Date(Date.now() - 60000).toISOString();
+    const { count: recentCount } = await supabase
+      .from("merchant_api_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("api_key_id", keyRow.id)
+      .gte("created_at", oneMinAgo);
+
+    if ((recentCount ?? 0) >= rateLimit) {
+      statusCode = 429;
+      errorMessage = `Rate limit ${rateLimit}/min exceeded`;
+      await logRequest();
+      return json({
+        error: `Rate limit exceeded. Max ${rateLimit} requests per minute.`,
+        retry_after_seconds: 60,
+      }, 429);
+    }
 
     // Get merchant info
     const { data: merchant } = await supabase
@@ -46,14 +114,15 @@ Deno.serve(async (req) => {
       .single();
 
     if (!merchant || merchant.status !== "active") {
+      statusCode = 403; errorMessage = "Merchant not active"; await logRequest();
       return json({ error: "Merchant account is not active" }, 403);
     }
 
-    // Piggyback: expire stale sessions on every request
+    // Piggyback: expire stale sessions
     await supabase.rpc("expire_stale_payment_sessions").then(() => {}, () => {});
 
     const body = await req.json().catch(() => ({}));
-    const action = body.action || "create_session";
+    action = body.action || "create_session";
 
     // ═══════════════════════════════════════════
     // CREATE SESSION
@@ -62,6 +131,7 @@ Deno.serve(async (req) => {
       const { amount, reference, description, success_url, cancel_url, callback_url, customer_phone, metadata } = body;
 
       if (!amount || typeof amount !== "number" || amount < 1 || amount > 1000000) {
+        statusCode = 400; errorMessage = "Invalid amount"; await logRequest();
         return json({ error: "Amount must be between 1 and 1,000,000" }, 400);
       }
 
@@ -74,6 +144,7 @@ Deno.serve(async (req) => {
         .gte("created_at", oneHourAgo);
 
       if ((count ?? 0) >= 100) {
+        statusCode = 429; errorMessage = "100 sessions/hour exceeded"; await logRequest();
         return json({ error: "Rate limit exceeded. Max 100 sessions per hour." }, 429);
       }
 
@@ -94,11 +165,12 @@ Deno.serve(async (req) => {
         .select("id, amount, currency, reference, status, expires_at, created_at")
         .single();
 
-      if (sessErr) return json({ error: sessErr.message }, 500);
+      if (sessErr) { statusCode = 500; errorMessage = sessErr.message; await logRequest(); return json({ error: sessErr.message }, 500); }
 
       const baseUrl = Deno.env.get("SITE_URL") || `https://${Deno.env.get("SUPABASE_URL")?.replace("https://", "").replace(".supabase.co", "")}-preview.lovable.app`;
       const checkoutUrl = `${baseUrl}/checkout/${session.id}`;
 
+      await logRequest();
       return json({
         success: true,
         session_id: session.id,
@@ -116,7 +188,7 @@ Deno.serve(async (req) => {
     // ═══════════════════════════════════════════
     if (action === "check_status") {
       const { session_id } = body;
-      if (!session_id) return json({ error: "session_id required" }, 400);
+      if (!session_id) { statusCode = 400; errorMessage = "Missing session_id"; await logRequest(); return json({ error: "session_id required" }, 400); }
 
       const { data: session, error } = await supabase
         .from("merchant_payment_sessions")
@@ -125,9 +197,8 @@ Deno.serve(async (req) => {
         .eq("merchant_id", keyRow.merchant_id)
         .single();
 
-      if (error || !session) return json({ error: "Session not found" }, 404);
+      if (error || !session) { statusCode = 404; errorMessage = "Session not found"; await logRequest(); return json({ error: "Session not found" }, 404); }
 
-      // Check expiry
       if (session.status === "pending" && new Date(session.expires_at) < new Date()) {
         await supabase
           .from("merchant_payment_sessions")
@@ -136,6 +207,7 @@ Deno.serve(async (req) => {
         session.status = "expired";
       }
 
+      await logRequest();
       return json({ success: true, session });
     }
 
@@ -154,6 +226,7 @@ Deno.serve(async (req) => {
         .order("created_at", { ascending: false })
         .range(offset, offset + limit - 1);
 
+      await logRequest();
       return json({
         success: true,
         sessions: sessions || [],
@@ -163,9 +236,11 @@ Deno.serve(async (req) => {
       });
     }
 
+    statusCode = 400; errorMessage = `Unknown action: ${action}`; await logRequest();
     return json({ error: `Unknown action: ${action}` }, 400);
   } catch (err) {
     console.error("merchant-payment-api error:", err);
+    statusCode = 500; errorMessage = String(err); await logRequest();
     return json({ error: "Internal server error" }, 500);
   }
 });

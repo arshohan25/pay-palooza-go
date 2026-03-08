@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Key, Copy, CheckCircle2, Globe, Code, Clock, AlertTriangle, RefreshCw, Shield,
-  Webhook, ChevronDown, ChevronUp, Send, Loader2
+  Webhook, ChevronDown, ChevronUp, Send, Loader2, BarChart3, Plus, Trash2, ShieldCheck,
+  Activity, Zap, XCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { BarChart, Bar, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, PieChart, Pie, Cell } from "recharts";
 
 interface ApiKey {
   id: string;
@@ -48,15 +50,42 @@ interface PaymentSession {
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 
+const ANALYTICS_COLORS = ["hsl(var(--primary))", "hsl(var(--destructive))", "hsl(var(--muted-foreground))", "#f59e0b"];
+const PIE_COLORS = ["#10b981", "#ef4444", "#f59e0b", "#6b7280"];
+
+interface ApiLog {
+  action: string;
+  status_code: number;
+  response_time_ms: number;
+  ip_address: string | null;
+  created_at: string;
+  error_message: string | null;
+}
+
+interface IpWhitelistEntry {
+  id: string;
+  ip_address: string;
+  label: string | null;
+  created_at: string;
+}
+
 const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(({ merchantId }, ref) => {
   const { toast } = useToast();
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [requests, setRequests] = useState<ApiRequest[]>([]);
   const [sessions, setSessions] = useState<PaymentSession[]>([]);
+  const [apiLogs, setApiLogs] = useState<ApiLog[]>([]);
+  const [ipWhitelist, setIpWhitelist] = useState<IpWhitelistEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDocs, setShowDocs] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [revealedFields, setRevealedFields] = useState<Set<string>>(new Set());
+  const [analyticsRange, setAnalyticsRange] = useState<"24h" | "7d" | "30d">("7d");
+  const [showAnalytics, setShowAnalytics] = useState(true);
+  const [showIpWhitelist, setShowIpWhitelist] = useState(false);
+  const [newIp, setNewIp] = useState("");
+  const [newIpLabel, setNewIpLabel] = useState("");
+  const [addingIp, setAddingIp] = useState(false);
 
   // Request form
   const [showRequestForm, setShowRequestForm] = useState(false);
@@ -70,17 +99,25 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const [keysRes, reqRes, sessRes] = await Promise.all([
+    const rangeCutoff = analyticsRange === "24h" ? 1 : analyticsRange === "7d" ? 7 : 30;
+    const cutoffDate = new Date(Date.now() - rangeCutoff * 86400000).toISOString();
+
+    const [keysRes, reqRes, sessRes, logsRes, ipRes] = await Promise.all([
       supabase.from("merchant_api_keys").select("*").eq("merchant_id", merchantId).order("created_at", { ascending: false }),
       (supabase as any).from("merchant_api_requests").select("*").eq("merchant_id", merchantId).order("created_at", { ascending: false }),
       supabase.from("merchant_payment_sessions").select("id, amount, currency, reference, status, customer_phone, webhook_delivered, webhook_attempts, webhook_next_retry_at, completed_at, expires_at, created_at")
         .eq("merchant_id", merchantId).order("created_at", { ascending: false }).limit(50),
+      (supabase as any).from("merchant_api_logs").select("action, status_code, response_time_ms, ip_address, created_at, error_message")
+        .eq("merchant_id", merchantId).gte("created_at", cutoffDate).order("created_at", { ascending: false }).limit(1000),
+      (supabase as any).from("merchant_ip_whitelist").select("*").eq("merchant_id", merchantId).order("created_at", { ascending: false }),
     ]);
     setKeys((keysRes.data || []) as ApiKey[]);
     setRequests((reqRes.data || []) as unknown as ApiRequest[]);
     setSessions((sessRes.data || []) as PaymentSession[]);
+    setApiLogs((logsRes.data || []) as ApiLog[]);
+    setIpWhitelist((ipRes.data || []) as IpWhitelistEntry[]);
     setLoading(false);
-  }, [merchantId]);
+  }, [merchantId, analyticsRange]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -147,6 +184,69 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
 
   const hasPendingRequest = requests.some(r => r.status === "pending");
   const hasActiveKey = keys.some(k => k.is_active);
+
+  // ─── Analytics computation ───
+  const analytics = useMemo(() => {
+    const total = apiLogs.length;
+    const successful = apiLogs.filter(l => l.status_code >= 200 && l.status_code < 300).length;
+    const failed = apiLogs.filter(l => l.status_code >= 400).length;
+    const rateLimited = apiLogs.filter(l => l.status_code === 429).length;
+    const avgResponseTime = total > 0 ? Math.round(apiLogs.reduce((s, l) => s + l.response_time_ms, 0) / total) : 0;
+    const successRate = total > 0 ? Math.round((successful / total) * 100) : 0;
+
+    // Daily breakdown
+    const dayMap: Record<string, { date: string; success: number; error: number; total: number; avgMs: number; count: number }> = {};
+    apiLogs.forEach(l => {
+      const day = new Date(l.created_at).toISOString().slice(0, 10);
+      if (!dayMap[day]) dayMap[day] = { date: day, success: 0, error: 0, total: 0, avgMs: 0, count: 0 };
+      dayMap[day].total++;
+      dayMap[day].count++;
+      dayMap[day].avgMs += l.response_time_ms;
+      if (l.status_code >= 200 && l.status_code < 300) dayMap[day].success++;
+      else dayMap[day].error++;
+    });
+    const daily = Object.values(dayMap).map(d => ({ ...d, avgMs: Math.round(d.avgMs / d.count) })).sort((a, b) => a.date.localeCompare(b.date));
+
+    // Action breakdown
+    const actionMap: Record<string, number> = {};
+    apiLogs.forEach(l => { actionMap[l.action] = (actionMap[l.action] || 0) + 1; });
+    const actionBreakdown = Object.entries(actionMap).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+
+    // Top IPs
+    const ipMap: Record<string, number> = {};
+    apiLogs.forEach(l => { if (l.ip_address) ipMap[l.ip_address] = (ipMap[l.ip_address] || 0) + 1; });
+    const topIps = Object.entries(ipMap).map(([ip, count]) => ({ ip, count })).sort((a, b) => b.count - a.count).slice(0, 5);
+
+    return { total, successful, failed, rateLimited, avgResponseTime, successRate, daily, actionBreakdown, topIps };
+  }, [apiLogs]);
+
+  // ─── IP Whitelist management ───
+  const addIpAddress = async () => {
+    if (!newIp.trim()) return;
+    setAddingIp(true);
+    const { error } = await (supabase as any).from("merchant_ip_whitelist").insert({
+      merchant_id: merchantId,
+      ip_address: newIp.trim(),
+      label: newIpLabel.trim() || null,
+    });
+    setAddingIp(false);
+    if (error) { toast({ title: "Failed to add IP", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "IP Address Added" });
+    setNewIp(""); setNewIpLabel("");
+    loadData();
+  };
+
+  const removeIp = async (id: string) => {
+    await (supabase as any).from("merchant_ip_whitelist").delete().eq("id", id);
+    toast({ title: "IP Address Removed" });
+    loadData();
+  };
+
+  const toggleIpWhitelist = async (keyId: string, enabled: boolean) => {
+    await supabase.from("merchant_api_keys").update({ ip_whitelist_enabled: enabled } as any).eq("id", keyId);
+    toast({ title: enabled ? "IP Whitelisting Enabled" : "IP Whitelisting Disabled" });
+    loadData();
+  };
 
   const requestStatusColor: Record<string, string> = {
     pending: "bg-amber-500/10 text-amber-600 border-amber-500/20",
@@ -439,6 +539,190 @@ app.post('/webhook', (req, res) => {
           </Card>
         )}
       </div>
+
+      {/* ═══ API USAGE ANALYTICS ═══ */}
+      {hasActiveKey && (
+        <div>
+          <button onClick={() => setShowAnalytics(!showAnalytics)} className="flex items-center gap-2 w-full text-left mb-2">
+            <BarChart3 size={15} className="text-primary" />
+            <h3 className="text-sm font-bold text-foreground flex-1">API Usage Analytics</h3>
+            {showAnalytics ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+
+          {showAnalytics && (
+            <div className="space-y-3">
+              {/* Range selector */}
+              <div className="flex gap-1">
+                {(["24h", "7d", "30d"] as const).map(r => (
+                  <Button key={r} size="sm" variant={analyticsRange === r ? "default" : "outline"} className="h-7 text-[10px] px-3"
+                    onClick={() => setAnalyticsRange(r)}>{r === "24h" ? "24 Hours" : r === "7d" ? "7 Days" : "30 Days"}</Button>
+                ))}
+              </div>
+
+              {/* Summary cards */}
+              <div className="grid grid-cols-2 gap-2">
+                <Card className="p-3 text-center">
+                  <Activity size={16} className="text-primary mx-auto mb-1" />
+                  <p className="text-lg font-bold text-foreground">{analytics.total}</p>
+                  <p className="text-[9px] text-muted-foreground">Total Requests</p>
+                </Card>
+                <Card className="p-3 text-center">
+                  <CheckCircle2 size={16} className="text-emerald-600 mx-auto mb-1" />
+                  <p className="text-lg font-bold text-foreground">{analytics.successRate}%</p>
+                  <p className="text-[9px] text-muted-foreground">Success Rate</p>
+                </Card>
+                <Card className="p-3 text-center">
+                  <Zap size={16} className="text-primary mx-auto mb-1" />
+                  <p className="text-lg font-bold text-foreground">{analytics.avgResponseTime}ms</p>
+                  <p className="text-[9px] text-muted-foreground">Avg Response</p>
+                </Card>
+                <Card className="p-3 text-center">
+                  <XCircle size={16} className="text-destructive mx-auto mb-1" />
+                  <p className="text-lg font-bold text-foreground">{analytics.failed}</p>
+                  <p className="text-[9px] text-muted-foreground">Errors</p>
+                </Card>
+              </div>
+
+              {/* Requests chart */}
+              {analytics.daily.length > 0 && (
+                <Card className="p-3">
+                  <p className="text-[10px] font-bold text-foreground mb-2">Requests Per Day</p>
+                  <ResponsiveContainer width="100%" height={140}>
+                    <BarChart data={analytics.daily}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="date" tick={{ fontSize: 8 }} tickFormatter={(v: string) => v.slice(5)} />
+                      <YAxis tick={{ fontSize: 8 }} />
+                      <ReTooltip contentStyle={{ fontSize: 10 }} />
+                      <Bar dataKey="success" stackId="a" fill="#10b981" name="Success" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="error" stackId="a" fill="hsl(var(--destructive))" name="Error" radius={[2, 2, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </Card>
+              )}
+
+              {/* Response time chart */}
+              {analytics.daily.length > 0 && (
+                <Card className="p-3">
+                  <p className="text-[10px] font-bold text-foreground mb-2">Avg Response Time (ms)</p>
+                  <ResponsiveContainer width="100%" height={120}>
+                    <LineChart data={analytics.daily}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="date" tick={{ fontSize: 8 }} tickFormatter={(v: string) => v.slice(5)} />
+                      <YAxis tick={{ fontSize: 8 }} />
+                      <ReTooltip contentStyle={{ fontSize: 10 }} />
+                      <Line type="monotone" dataKey="avgMs" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Avg ms" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </Card>
+              )}
+
+              {/* Action breakdown + Top IPs */}
+              <div className="grid grid-cols-2 gap-2">
+                {analytics.actionBreakdown.length > 0 && (
+                  <Card className="p-3">
+                    <p className="text-[10px] font-bold text-foreground mb-2">By Action</p>
+                    <div className="space-y-1">
+                      {analytics.actionBreakdown.map(a => (
+                        <div key={a.name} className="flex items-center justify-between">
+                          <span className="text-[9px] text-muted-foreground font-mono">{a.name}</span>
+                          <Badge variant="outline" className="text-[8px]">{a.value}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
+                {analytics.topIps.length > 0 && (
+                  <Card className="p-3">
+                    <p className="text-[10px] font-bold text-foreground mb-2">Top IPs</p>
+                    <div className="space-y-1">
+                      {analytics.topIps.map(i => (
+                        <div key={i.ip} className="flex items-center justify-between">
+                          <span className="text-[9px] text-muted-foreground font-mono truncate">{i.ip}</span>
+                          <Badge variant="outline" className="text-[8px]">{i.count}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
+              </div>
+
+              {analytics.rateLimited > 0 && (
+                <Card className="p-2 bg-amber-500/5 border-amber-500/20">
+                  <p className="text-[10px] text-amber-600 flex items-center gap-1">
+                    <AlertTriangle size={10} /> {analytics.rateLimited} rate-limited requests in this period
+                  </p>
+                </Card>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══ IP WHITELIST ═══ */}
+      {hasActiveKey && (
+        <div>
+          <button onClick={() => setShowIpWhitelist(!showIpWhitelist)} className="flex items-center gap-2 w-full text-left mb-2">
+            <ShieldCheck size={15} className="text-primary" />
+            <h3 className="text-sm font-bold text-foreground flex-1">IP Whitelisting</h3>
+            {showIpWhitelist ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+
+          {showIpWhitelist && (
+            <Card className="p-4 space-y-3">
+              <p className="text-[10px] text-muted-foreground">
+                When enabled, only requests from whitelisted IP addresses will be accepted. Add your server IPs below.
+              </p>
+
+              {/* Toggle per key */}
+              {keys.filter(k => k.is_active).map(k => (
+                <div key={k.id} className="flex items-center justify-between bg-muted/50 rounded-lg p-2">
+                  <div>
+                    <p className="text-[10px] font-mono text-foreground">{k.api_key.slice(0, 12)}…</p>
+                    <p className="text-[9px] text-muted-foreground">IP Whitelist: {(k as any).ip_whitelist_enabled ? "Enabled" : "Disabled"}</p>
+                  </div>
+                  <Button size="sm" variant={(k as any).ip_whitelist_enabled ? "default" : "outline"} className="h-7 text-[10px]"
+                    onClick={() => toggleIpWhitelist(k.id, !(k as any).ip_whitelist_enabled)}>
+                    {(k as any).ip_whitelist_enabled ? "Disable" : "Enable"}
+                  </Button>
+                </div>
+              ))}
+
+              {/* Whitelist entries */}
+              {ipWhitelist.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-[10px] font-semibold text-foreground">Whitelisted IPs</p>
+                  {ipWhitelist.map(ip => (
+                    <div key={ip.id} className="flex items-center justify-between bg-muted/30 rounded p-2">
+                      <div>
+                        <code className="text-[10px] font-mono text-foreground">{ip.ip_address}</code>
+                        {ip.label && <span className="text-[9px] text-muted-foreground ml-2">{ip.label}</span>}
+                      </div>
+                      <button onClick={() => removeIp(ip.id)} className="text-destructive hover:text-destructive/80">
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add new IP */}
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <label className="text-[9px] text-muted-foreground">IP Address</label>
+                  <Input className="h-7 text-[10px] mt-0.5" placeholder="203.0.113.50" value={newIp} onChange={e => setNewIp(e.target.value)} />
+                </div>
+                <div className="flex-1">
+                  <label className="text-[9px] text-muted-foreground">Label (optional)</label>
+                  <Input className="h-7 text-[10px] mt-0.5" placeholder="Production server" value={newIpLabel} onChange={e => setNewIpLabel(e.target.value)} />
+                </div>
+                <Button size="sm" className="h-7 text-[10px] gap-1" onClick={addIpAddress} disabled={addingIp || !newIp.trim()}>
+                  {addingIp ? <Loader2 size={10} className="animate-spin" /> : <Plus size={10} />}Add
+                </Button>
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* Recent Sessions / API Logs */}
       <div>

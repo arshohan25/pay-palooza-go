@@ -631,8 +631,10 @@ export type Database = {
           app_password: string | null
           created_at: string
           id: string
+          ip_whitelist_enabled: boolean
           is_active: boolean
           merchant_id: string
+          rate_limit_per_minute: number
           secret_key: string
           updated_at: string
           webhook_url: string | null
@@ -642,8 +644,10 @@ export type Database = {
           app_password?: string | null
           created_at?: string
           id?: string
+          ip_whitelist_enabled?: boolean
           is_active?: boolean
           merchant_id: string
+          rate_limit_per_minute?: number
           secret_key: string
           updated_at?: string
           webhook_url?: string | null
@@ -653,8 +657,10 @@ export type Database = {
           app_password?: string | null
           created_at?: string
           id?: string
+          ip_whitelist_enabled?: boolean
           is_active?: boolean
           merchant_id?: string
+          rate_limit_per_minute?: number
           secret_key?: string
           updated_at?: string
           webhook_url?: string | null
@@ -662,6 +668,60 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "merchant_api_keys_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchant_api_logs: {
+        Row: {
+          action: string
+          api_key_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          ip_address: string | null
+          merchant_id: string
+          response_time_ms: number
+          status_code: number
+          user_agent: string | null
+        }
+        Insert: {
+          action?: string
+          api_key_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          merchant_id: string
+          response_time_ms?: number
+          status_code?: number
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          api_key_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          merchant_id?: string
+          response_time_ms?: number
+          status_code?: number
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_api_logs_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_api_keys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchant_api_logs_merchant_id_fkey"
             columns: ["merchant_id"]
             isOneToOne: false
             referencedRelation: "merchants"
@@ -814,6 +874,38 @@ export type Database = {
           sort_order?: number | null
         }
         Relationships: []
+      }
+      merchant_ip_whitelist: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: string
+          label: string | null
+          merchant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address: string
+          label?: string | null
+          merchant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: string
+          label?: string | null
+          merchant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_ip_whitelist_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       merchant_payment_sessions: {
         Row: {
