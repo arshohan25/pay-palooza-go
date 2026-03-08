@@ -1,29 +1,34 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Add Pulse/Glow Effect to "Soon" Items
 
-### What
+### File: `src/components/QuickActions.tsx`
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+**1. Add a pulsing glow ring behind the icon circle for "Soon" items (lines 265-276)**
 
-### Changes
+Inside the `motion.div` icon container, add a conditional animated div when `item.soon` is true — a gradient-colored ring that pulses using CSS `animate-pulse` with reduced opacity, creating a soft glow effect.
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+```tsx
+{item.soon && (
+  <div className={`absolute inset-0 rounded-full bg-gradient-to-b ${item.gradient} opacity-20 animate-pulse`} />
+)}
+```
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+This sits behind the icon content and uses the item's existing gradient color for a cohesive look.
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+**2. Add a subtle scale pulse to the "Soon" badge text (lines 277-280)**
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+Replace the static `div` wrapping the "Soon" label with a `motion.div` that has a continuous subtle scale animation:
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+```tsx
+<motion.div
+  className="absolute -top-1 right-0 z-10"
+  animate={{ scale: [1, 1.15, 1] }}
+  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+>
+  <span ...>Soon</span>
+</motion.div>
+```
 
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+### Single file change, ~10 lines modified.
 
