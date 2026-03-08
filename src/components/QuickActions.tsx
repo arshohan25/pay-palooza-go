@@ -230,7 +230,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                     </motion.div>
                     {item.soon && (
                       <div className="absolute -top-1 right-0 z-10">
-                        <span className="text-[7px] font-bold text-muted-foreground/70">Soon</span>
+                        <span className="text-[8px] font-bold text-muted-foreground" style={{ textShadow: '0 0.5px 2px hsl(var(--background) / 0.8)' }}>Soon</span>
                       </div>
                     )}
                     <span className="text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-colors duration-150 px-0.5">
