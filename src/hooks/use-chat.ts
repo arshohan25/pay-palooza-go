@@ -54,8 +54,15 @@ export interface ChatMessage {
 // ── Hook ─────────────────────────────────────────────────────────────────
 export function useChat() {
   const { user } = useAuth();
-  const [conversations, setConversations] = useState<ChatConversation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [conversations, setConversations] = useState<ChatConversation[]>(() => {
+    try {
+      const cached = localStorage.getItem("mfs_cached_conversations");
+      return cached ? JSON.parse(cached) : [];
+    } catch { return []; }
+  });
+  const [loading, setLoading] = useState(() => {
+    try { return !localStorage.getItem("mfs_cached_conversations"); } catch { return true; }
+  });
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
