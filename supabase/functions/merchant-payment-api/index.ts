@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
     }
 
     // Piggyback: expire stale sessions on every request
-    await supabase.rpc("expire_stale_payment_sessions").catch(() => {});
+    await supabase.rpc("expire_stale_payment_sessions").then(() => {}, () => {});
 
     const body = await req.json().catch(() => ({}));
     const action = body.action || "create_session";
