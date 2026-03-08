@@ -1,15 +1,17 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Clock, XCircle, Store } from "lucide-react";
+import { CheckCircle2, Clock, XCircle, Store, RefreshCw } from "lucide-react";
 import QRCode from "qrcode";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 const fmtTime = (s: number) =>
   `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
-type Status = "loading" | "pending" | "completed" | "expired" | "error";
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+type Status = "loading" | "pending" | "completed" | "expired" | "not_found" | "error";
 
 const DynamicQrPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -21,20 +23,29 @@ const DynamicQrPage = () => {
   const [successUrl, setSuccessUrl] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
   const expiresRef = useRef<number>(0);
 
-  // Load session + generate QR
-  useEffect(() => {
-    if (!sessionId) { setStatus("error"); return; }
-    (async () => {
+  const fetchSession = useCallback(async () => {
+    if (!sessionId || !UUID_RE.test(sessionId)) {
+      setStatus("not_found");
+      return;
+    }
+    setStatus("loading");
+    try {
       const { data: session, error } = await supabase
         .from("merchant_payment_sessions")
         .select("id, amount, currency, reference, description, status, success_url, expires_at, merchant_id, metadata")
         .eq("id", sessionId)
         .maybeSingle();
 
-      if (error || !session) {
+      if (error) {
+        console.error("DynamicQR fetch error:", error.message);
         setStatus("error");
+        return;
+      }
+      if (!session) {
+        setStatus("not_found");
         return;
       }
 
@@ -51,10 +62,8 @@ const DynamicQrPage = () => {
       expiresRef.current = new Date(session.expires_at).getTime();
 
       const metadata = session.metadata as Record<string, unknown> | null;
-      const nameFromMetadata = typeof metadata?.merchant_name === "string" ? metadata.merchant_name : null;
-      if (nameFromMetadata) setMerchantName(nameFromMetadata);
+      if (typeof metadata?.merchant_name === "string") setMerchantName(metadata.merchant_name);
 
-      // Build QR payload
       const qrPayload = JSON.stringify({
         type: "easypay",
         sessionId: session.id,
@@ -65,8 +74,13 @@ const DynamicQrPage = () => {
       const url = await QRCode.toDataURL(qrPayload, { width: 320, margin: 2, color: { dark: "#0f172a", light: "#ffffff" } });
       setQrDataUrl(url);
       setStatus("pending");
-    })();
+    } catch (err) {
+      console.error("DynamicQR unexpected error:", err);
+      setStatus("error");
+    }
   }, [sessionId]);
+
+  useEffect(() => { fetchSession(); }, [fetchSession]);
 
   // Countdown
   useEffect(() => {
@@ -81,7 +95,7 @@ const DynamicQrPage = () => {
     return () => clearInterval(id);
   }, [status]);
 
-  // Realtime subscription for status changes
+  // Realtime subscription
   useEffect(() => {
     if (!sessionId || status !== "pending") return;
     const channel = supabase
@@ -95,10 +109,7 @@ const DynamicQrPage = () => {
         const newStatus = (payload.new as any).status;
         if (newStatus === "completed") {
           setStatus("completed");
-          // Redirect after short delay
-          setTimeout(() => {
-            if (successUrl) window.location.href = successUrl;
-          }, 3000);
+          setTimeout(() => { if (successUrl) window.location.href = successUrl; }, 3000);
         } else if (newStatus === "expired" || newStatus === "failed") {
           setStatus("expired");
         }
@@ -106,6 +117,12 @@ const DynamicQrPage = () => {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [sessionId, status, successUrl]);
+
+  const handleRetry = async () => {
+    setRetrying(true);
+    await fetchSession();
+    setRetrying(false);
+  };
 
   if (status === "loading") {
     return (
@@ -115,13 +132,33 @@ const DynamicQrPage = () => {
     );
   }
 
+  if (status === "not_found") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="text-center space-y-3">
+          <XCircle className="w-12 h-12 text-destructive mx-auto" />
+          <h2 className="text-lg font-bold text-foreground">Session Not Found</h2>
+          <p className="text-sm text-muted-foreground">This payment session does not exist or has been removed.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (status === "error") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <div className="text-center space-y-3">
           <XCircle className="w-12 h-12 text-destructive mx-auto" />
-          <h2 className="text-lg font-bold text-foreground">Invalid Session</h2>
-          <p className="text-sm text-muted-foreground">This payment link is not valid.</p>
+          <h2 className="text-lg font-bold text-foreground">Something Went Wrong</h2>
+          <p className="text-sm text-muted-foreground">Could not load this payment session. Please try again.</p>
+          <button
+            onClick={handleRetry}
+            disabled={retrying}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold mt-2 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${retrying ? "animate-spin" : ""}`} />
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -149,26 +186,20 @@ const DynamicQrPage = () => {
         <AnimatePresence mode="wait">
           {status === "pending" && (
             <motion.div key="pending" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 space-y-5">
-              {/* QR Code */}
               {qrDataUrl && (
                 <div className="bg-white rounded-2xl p-4 mx-auto w-fit shadow-sm">
                   <img src={qrDataUrl} alt="Payment QR Code" className="w-64 h-64" />
                 </div>
               )}
-
               <p className="text-center text-sm text-muted-foreground">
                 Scan with <span className="font-semibold text-foreground">EasyPay</span> app to pay
               </p>
-
-              {/* Timer */}
               <div className="flex items-center justify-center gap-2">
                 <Clock className="w-4 h-4 text-muted-foreground" />
                 <span className={`text-sm font-mono font-bold ${secondsLeft <= 60 ? "text-destructive" : "text-muted-foreground"}`}>
                   {fmtTime(secondsLeft)}
                 </span>
               </div>
-
-              {/* Pulsing waiting indicator */}
               <div className="flex items-center justify-center gap-2">
                 <motion.div
                   className="w-2 h-2 rounded-full bg-primary"
@@ -181,24 +212,13 @@ const DynamicQrPage = () => {
           )}
 
           {status === "completed" && (
-            <motion.div
-              key="completed"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="p-8 text-center space-y-4"
-            >
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.1 }}
-              >
+            <motion.div key="completed" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="p-8 text-center space-y-4">
+              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.1 }}>
                 <CheckCircle2 className="w-16 h-16 text-primary mx-auto" />
               </motion.div>
               <h2 className="text-xl font-bold text-foreground">Payment Received!</h2>
               <p className="text-sm text-muted-foreground">৳{fmt(amount)} paid successfully</p>
-              {successUrl && (
-                <p className="text-xs text-muted-foreground">Redirecting…</p>
-              )}
+              {successUrl && <p className="text-xs text-muted-foreground">Redirecting…</p>}
             </motion.div>
           )}
 
@@ -211,7 +231,6 @@ const DynamicQrPage = () => {
           )}
         </AnimatePresence>
 
-        {/* Footer */}
         <div className="px-6 pb-5 pt-2 text-center">
           <p className="text-[10px] text-muted-foreground/60">Powered by EasyPay</p>
         </div>
