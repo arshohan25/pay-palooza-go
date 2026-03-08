@@ -97,12 +97,25 @@ interface QuickActionsProps {
 const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney, onRefer, onShop, onBankTransfer, onSavings }: QuickActionsProps) => {
   const { t } = useI18n();
   const { isLocked } = useFeatureLocks();
-  const { isDisabled: isGloballyDisabled } = useGlobalToggles();
+  const { isDisabled: isGloballyDisabled, toggles } = useGlobalToggles();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [ripples, setRipples] = useState<Record<string, RippleState | null>>({});
   const rippleCounterRef = useRef(0);
   const [expanded, setExpanded] = useState(false);
   const [hoveredMoreId, setHoveredMoreId] = useState<string | null>(null);
+
+  // Merge moreServices with enabled blank slots (blank slots hidden by default, shown only when enabled)
+  const visibleMoreServices = useMemo(() => {
+    const enabledSlots = blankSlots.filter((slot) => {
+      const toggle = toggles.find((t) => t.feature_key === slot.featureKey);
+      return toggle?.is_enabled === true;
+    }).map((slot) => {
+      // Use admin-set label from toggles if available
+      const toggle = toggles.find((t) => t.feature_key === slot.featureKey);
+      return { ...slot, label: toggle?.label || slot.label };
+    });
+    return [...moreServices, ...enabledSlots];
+  }, [toggles]);
 
   const triggerRipple = useCallback((id: string, e: React.MouseEvent | React.TouchEvent) => {
     const el = (e.currentTarget as HTMLElement).querySelector("[data-ripple-container]") as HTMLElement;
