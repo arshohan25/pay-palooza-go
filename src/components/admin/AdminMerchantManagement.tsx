@@ -469,6 +469,9 @@ export default function AdminMerchantManagement() {
             <Button variant="outline" size="sm" onClick={() => exportMerchantsCSV(filtered)} className="gap-1">
               <Download className="w-3.5 h-3.5" /> Export
             </Button>
+            <Button size="sm" onClick={() => setShowCreateMerchant(true)} className="gap-1">
+              <Plus className="w-3.5 h-3.5" /> Create Merchant
+            </Button>
             <Button variant="outline" size="icon" onClick={loadMerchants} disabled={loading}>
               <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             </Button>
