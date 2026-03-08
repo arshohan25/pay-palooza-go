@@ -713,6 +713,60 @@ export type Database = {
           },
         ]
       }
+      merchant_applications: {
+        Row: {
+          admin_notes: string | null
+          bank_account_number: string | null
+          bank_name: string | null
+          bank_routing: string | null
+          business_name: string
+          category: string
+          created_at: string | null
+          id: string
+          reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          trade_license: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
+          bank_routing?: string | null
+          business_name: string
+          category?: string
+          created_at?: string | null
+          id?: string
+          reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          trade_license?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
+          bank_routing?: string | null
+          business_name?: string
+          category?: string
+          created_at?: string | null
+          id?: string
+          reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          trade_license?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       merchant_payment_sessions: {
         Row: {
           amount: number
