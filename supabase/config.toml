@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.merchant-payment-api]
 verify_jwt = false
+
+[functions.checkout-pay]
+verify_jwt = false
