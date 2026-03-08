@@ -37,10 +37,11 @@ const SETTLEMENT_OPTIONS = ["T+0", "T+1", "T+2", "T+3"];
 
 // ─── Helpers ───
 async function fetchMerchantDetail(merchantId: string, userId: string): Promise<MerchantDetail> {
-  const [merchantRes, profileRes, keysRes, sessionsRes, txnRes] = await Promise.all([
+  const [merchantRes, profileRes, keysRes, reqRes, sessionsRes, txnRes] = await Promise.all([
     supabase.from("merchants").select("*").eq("id", merchantId).maybeSingle(),
     supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
     supabase.from("merchant_api_keys").select("*").eq("merchant_id", merchantId).order("created_at", { ascending: false }),
+    (supabase as any).from("merchant_api_requests").select("*").eq("merchant_id", merchantId).order("created_at", { ascending: false }),
     supabase.from("merchant_payment_sessions").select("*").eq("merchant_id", merchantId).order("created_at", { ascending: false }).limit(50),
     supabase.from("transactions").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(50),
   ]);
@@ -59,6 +60,7 @@ async function fetchMerchantDetail(merchantId: string, userId: string): Promise<
     merchant: merchantRes.data,
     ownerProfile: profileRes.data,
     apiKeys: keysRes.data ?? [],
+    apiRequests: reqRes.data ?? [],
     sessions: sessionsRes.data ?? [],
     transactions: txnRes.data ?? [],
   };
