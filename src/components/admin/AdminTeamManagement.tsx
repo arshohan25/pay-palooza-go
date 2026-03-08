@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import TeamActivityDashboard from "@/components/admin/TeamActivityDashboard";
 import { supabase } from "@/integrations/supabase/client";
+import { teamSignUp, generateUsername, generatePassword } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { UserPlus, Shield, Trash2, Search, Clock, CheckCircle, XCircle, Eye, Pencil, Activity, RefreshCw, UsersRound } from "lucide-react";
+import { UserPlus, Shield, Trash2, Search, Clock, CheckCircle, XCircle, Eye, Pencil, Activity, RefreshCw, UsersRound, Copy, KeyRound } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 type AppRole = "customer" | "agent" | "merchant" | "distributor" | "super_distributor" | "admin" | "compliance" | "finance";
