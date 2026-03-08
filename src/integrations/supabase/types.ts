@@ -716,13 +716,19 @@ export type Database = {
       merchant_applications: {
         Row: {
           admin_notes: string | null
+          bank_account_holder: string | null
           bank_account_number: string | null
+          bank_branch: string | null
           bank_name: string | null
           bank_routing: string | null
+          business_address: string | null
           business_name: string
           category: string
+          contact_email: string | null
+          contact_number: string | null
           created_at: string | null
           id: string
+          owner_name: string | null
           reason: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -733,13 +739,19 @@ export type Database = {
         }
         Insert: {
           admin_notes?: string | null
+          bank_account_holder?: string | null
           bank_account_number?: string | null
+          bank_branch?: string | null
           bank_name?: string | null
           bank_routing?: string | null
+          business_address?: string | null
           business_name: string
           category?: string
+          contact_email?: string | null
+          contact_number?: string | null
           created_at?: string | null
           id?: string
+          owner_name?: string | null
           reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -750,13 +762,19 @@ export type Database = {
         }
         Update: {
           admin_notes?: string | null
+          bank_account_holder?: string | null
           bank_account_number?: string | null
+          bank_branch?: string | null
           bank_name?: string | null
           bank_routing?: string | null
+          business_address?: string | null
           business_name?: string
           category?: string
+          contact_email?: string | null
+          contact_number?: string | null
           created_at?: string | null
           id?: string
+          owner_name?: string | null
           reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null

@@ -1,27 +1,40 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Landmark, Wallet, Ticket, Heart, X } from "lucide-react";
+import { Landmark, Wallet, Ticket, Heart, Store, X } from "lucide-react";
 import { toast } from "sonner";
+import { useUserRoles } from "@/hooks/use-user-roles";
 
 interface MoreSheetProps {
   open: boolean;
   onClose: () => void;
   onBankTransfer: () => void;
   onSavings: () => void;
+  onMerchantApply?: () => void;
 }
 
 const items = [
   { id: "bank", icon: Landmark, label: "Bank Transfer", desc: "Transfer to any bank account", gradient: "bg-gradient-to-b from-blue-500 to-indigo-600" },
   { id: "savings", icon: Wallet, label: "Savings", desc: "Set goals & grow your money", gradient: "bg-gradient-to-b from-emerald-500 to-teal-600" },
+  { id: "merchant_apply", icon: Store, label: "Become a Merchant", desc: "Apply for a merchant account", gradient: "bg-gradient-to-b from-purple-500 to-indigo-600", merchantOnly: true },
   { id: "coupons", icon: Ticket, label: "Coupons & Offers", desc: "Exclusive deals & cashback", gradient: "bg-gradient-to-b from-pink-500 to-rose-600", soon: true },
   { id: "donations", icon: Heart, label: "Donations", desc: "Support causes you care about", gradient: "bg-gradient-to-b from-red-500 to-rose-700", soon: true },
 ];
 
-const MoreSheet = ({ open, onClose, onBankTransfer, onSavings }: MoreSheetProps) => {
-  const handleTap = (id: string) => {
+const MoreSheet = ({ open, onClose, onBankTransfer, onSavings, onMerchantApply }: MoreSheetProps) => {
+  const { roles } = useUserRoles();
+  const isMerchant = roles.includes("merchant");
+
+  const visibleItems = items.filter(item => {
+    if (item.id === "merchant_apply" && isMerchant) return false;
+    return true;
+  });
+
+  const handleTap = (id: string, soon?: boolean) => {
+    if (soon) { toast.info("Coming soon!"); return; }
     onClose();
     setTimeout(() => {
       if (id === "bank") onBankTransfer();
       else if (id === "savings") onSavings();
+      else if (id === "merchant_apply") onMerchantApply?.();
       else toast.info("Coming soon!");
     }, 200);
   };
@@ -52,13 +65,13 @@ const MoreSheet = ({ open, onClose, onBankTransfer, onSavings }: MoreSheetProps)
             </div>
 
             <div className="px-4 pb-8 pt-2 grid grid-cols-2 gap-3">
-              {items.map((item, i) => (
+              {visibleItems.map((item, i) => (
                 <motion.button
                   key={item.id}
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.05 * i, duration: 0.3 }}
-                  onClick={() => handleTap(item.id)}
+                  onClick={() => handleTap(item.id, item.soon)}
                   className={`flex flex-col items-center gap-3 p-5 rounded-2xl bg-card border border-border shadow-card hover:shadow-elevated active:scale-[0.97] transition-all text-center ${item.soon ? "opacity-60" : ""}`}
                 >
                   <div className={`${item.gradient} w-14 h-14 rounded-2xl flex items-center justify-center text-white`}>
