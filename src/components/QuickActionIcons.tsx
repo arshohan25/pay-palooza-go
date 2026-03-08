@@ -16,6 +16,14 @@ export const SendMoneyIcon = ({ isHovered }: IconProps) => (
         <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
         <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
       </filter>
+      <clipPath id="sendCoinClip"><circle cx="42" cy="40" r="7"/></clipPath>
+      <linearGradient id="sendShimmer" x1="0" y1="0" x2="1" y2="0.3">
+        <stop offset="0%" stopColor="white" stopOpacity="0"/>
+        <stop offset="40%" stopColor="white" stopOpacity="0"/>
+        <stop offset="50%" stopColor="white" stopOpacity="0.45"/>
+        <stop offset="60%" stopColor="white" stopOpacity="0"/>
+        <stop offset="100%" stopColor="white" stopOpacity="0"/>
+      </linearGradient>
     </defs>
     {/* Paper plane body */}
     <motion.g
@@ -35,6 +43,15 @@ export const SendMoneyIcon = ({ isHovered }: IconProps) => (
       {/* Taka badge */}
       <circle cx="42" cy="40" r="7" fill="#FFC107" filter="url(#sendCoinGlow)"/>
       <text x="42" y="43.5" textAnchor="middle" fill="#7B3F00" fontSize="8" fontWeight="bold" fontFamily="serif">৳</text>
+      {/* Shimmer sweep */}
+      <motion.rect
+        x="35" y="33" width="14" height="14"
+        fill="url(#sendShimmer)"
+        clipPath="url(#sendCoinClip)"
+        initial={{ x: 28 }}
+        animate={isHovered ? { x: [28, 56] } : { x: 28 }}
+        transition={{ duration: 0.7, ease: "easeInOut" }}
+      />
       {/* Sparkle diamonds */}
       <motion.g
         animate={isHovered ? { opacity: [0, 1, 0], scale: [0.5, 1, 0.5] } : { opacity: 0 }}
@@ -239,6 +256,14 @@ export const ShopIcon = ({ isHovered }: IconProps) => (
         <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="blur"/>
         <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
       </filter>
+      <clipPath id="shopCoinClip"><circle cx="28" cy="35" r="5"/></clipPath>
+      <linearGradient id="shopShimmer" x1="0" y1="0" x2="1" y2="0.3">
+        <stop offset="0%" stopColor="white" stopOpacity="0"/>
+        <stop offset="40%" stopColor="white" stopOpacity="0"/>
+        <stop offset="50%" stopColor="white" stopOpacity="0.5"/>
+        <stop offset="60%" stopColor="white" stopOpacity="0"/>
+        <stop offset="100%" stopColor="white" stopOpacity="0"/>
+      </linearGradient>
     </defs>
     <motion.g
       animate={isHovered ? { rotate: [0, -6, 6, -4, 4, 0] } : { rotate: 0 }}
@@ -257,6 +282,15 @@ export const ShopIcon = ({ isHovered }: IconProps) => (
       />
       <circle cx="28" cy="35" r="5" fill="white" opacity="0.2" filter="url(#shopCoinGlow)"/>
       <text x="28" y="38" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">৳</text>
+      {/* Shimmer sweep */}
+      <motion.rect
+        x="23" y="30" width="10" height="10"
+        fill="url(#shopShimmer)"
+        clipPath="url(#shopCoinClip)"
+        initial={{ x: 18 }}
+        animate={isHovered ? { x: [18, 38] } : { x: 18 }}
+        transition={{ duration: 0.7, ease: "easeInOut" }}
+      />
       {/* Sparkle diamonds */}
       <motion.g
         animate={isHovered ? { opacity: [0, 1, 0], scale: [0.5, 1, 0.5] } : { opacity: 0 }}
@@ -321,6 +355,14 @@ export const BankTransferIcon = ({ isHovered }: IconProps) => (
         <stop offset="0%" stopColor="#42A5F5"/>
         <stop offset="100%" stopColor="#1565C0"/>
       </linearGradient>
+      <clipPath id="bankCoinClip"><circle cx="28" cy="35" r="7"/></clipPath>
+      <linearGradient id="bankShimmer" x1="0" y1="0" x2="1" y2="0.3">
+        <stop offset="0%" stopColor="white" stopOpacity="0"/>
+        <stop offset="40%" stopColor="white" stopOpacity="0"/>
+        <stop offset="50%" stopColor="white" stopOpacity="0.35"/>
+        <stop offset="60%" stopColor="white" stopOpacity="0"/>
+        <stop offset="100%" stopColor="white" stopOpacity="0"/>
+      </linearGradient>
     </defs>
     {/* Roof / pediment */}
     <path d="M28 8 L10 22 L46 22 Z" fill="url(#bankRoofGrad)"/>
@@ -342,6 +384,15 @@ export const BankTransferIcon = ({ isHovered }: IconProps) => (
     />
     {/* Taka symbol */}
     <text x="28" y="38" textAnchor="middle" fill="white" fontSize="9" fontWeight="bold" fontFamily="serif">৳</text>
+    {/* Shimmer sweep */}
+    <motion.rect
+      x="20" y="27" width="16" height="16"
+      fill="url(#bankShimmer)"
+      clipPath="url(#bankCoinClip)"
+      initial={{ x: 14 }}
+      animate={isHovered ? { x: [14, 42] } : { x: 14 }}
+      transition={{ duration: 0.7, ease: "easeInOut" }}
+    />
     {/* Sparkle diamonds */}
     <motion.g
       animate={isHovered ? { opacity: [0, 1, 0], scale: [0.5, 1, 0.5] } : { opacity: 0 }}
@@ -395,6 +446,14 @@ export const SavingsIcon = ({ isHovered }: IconProps) => (
           <feMergeNode in="SourceGraphic"/>
         </feMerge>
       </filter>
+      <clipPath id="savingsCoinClip"><circle cx="12" cy="12" r="11"/></clipPath>
+      <linearGradient id="savingsShimmer" x1="0" y1="0" x2="1" y2="0.3">
+        <stop offset="0%" stopColor="white" stopOpacity="0"/>
+        <stop offset="40%" stopColor="white" stopOpacity="0"/>
+        <stop offset="50%" stopColor="white" stopOpacity="0.4"/>
+        <stop offset="60%" stopColor="white" stopOpacity="0"/>
+        <stop offset="100%" stopColor="white" stopOpacity="0"/>
+      </linearGradient>
     </defs>
     {/* Pot rim */}
     <rect x="16" y="34" width="24" height="4" rx="2" fill="#A1887F"/>
@@ -446,6 +505,15 @@ export const SavingsIcon = ({ isHovered }: IconProps) => (
       <circle cx="12" cy="12" r="11" fill="#FFD54F" filter="url(#coinGlow)"/>
       <circle cx="12" cy="12" r="8.5" fill="#FFC107" opacity="0.6"/>
       <text x="12" y="16.5" textAnchor="middle" fill="#7B3F00" fontSize="11" fontWeight="bold" fontFamily="serif">৳</text>
+      {/* Shimmer sweep */}
+      <motion.rect
+        x="1" y="1" width="22" height="22"
+        fill="url(#savingsShimmer)"
+        clipPath="url(#savingsCoinClip)"
+        initial={{ x: -10 }}
+        animate={isHovered ? { x: [-10, 24] } : { x: -10 }}
+        transition={{ duration: 0.7, ease: "easeInOut" }}
+      />
     </motion.g>
   </svg>
 );
