@@ -1349,6 +1349,42 @@ export type Database = {
           },
         ]
       }
+      transaction_limits: {
+        Row: {
+          applies_to: string
+          id: string
+          is_active: boolean
+          max_amount: number
+          max_count: number
+          period: string
+          txn_type: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          applies_to?: string
+          id?: string
+          is_active?: boolean
+          max_amount?: number
+          max_count?: number
+          period: string
+          txn_type: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          applies_to?: string
+          id?: string
+          is_active?: boolean
+          max_amount?: number
+          max_count?: number
+          period?: string
+          txn_type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number
@@ -1457,6 +1493,51 @@ export type Database = {
           id?: string
           reference?: string | null
           type?: Database["public"]["Enums"]["treasury_ledger_type"]
+        }
+        Relationships: []
+      }
+      user_limit_overrides: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_amount: number | null
+          max_count: number | null
+          period: string
+          reason: string | null
+          set_by: string
+          target_user_id: string
+          txn_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_amount?: number | null
+          max_count?: number | null
+          period: string
+          reason?: string | null
+          set_by: string
+          target_user_id: string
+          txn_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_amount?: number | null
+          max_count?: number | null
+          period?: string
+          reason?: string | null
+          set_by?: string
+          target_user_id?: string
+          txn_type?: string
+          updated_at?: string
         }
         Relationships: []
       }
