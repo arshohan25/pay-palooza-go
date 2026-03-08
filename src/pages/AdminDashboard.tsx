@@ -515,6 +515,11 @@ export default function AdminDashboard() {
               {stats.pendingKyc}
             </span>
           )}
+          {item.id === "toggles" && disabledTogglesCount > 0 && (
+            <span className="ml-auto min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+              {disabledTogglesCount}
+            </span>
+          )}
         </button>
       ))}
     </nav>
