@@ -286,6 +286,55 @@ export default function AdminMerchantManagement() {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
+  // ─── Create Merchant directly ───
+  const handleCreateMerchant = async () => {
+    if (!createForm.phone.trim() || !createForm.business_name.trim()) {
+      toast.error("Phone and business name are required");
+      return;
+    }
+    setCreateLoading(true);
+    try {
+      // Find user by phone
+      const { data: profile } = await supabase.from("profiles").select("user_id, phone").eq("phone", createForm.phone.trim()).maybeSingle();
+      if (!profile) { toast.error("No user found with that phone number"); setCreateLoading(false); return; }
+
+      // Check if already a merchant
+      const { data: existingMerchant } = await supabase.from("merchants").select("id").eq("user_id", profile.user_id).maybeSingle();
+      if (existingMerchant) { toast.error("This user is already a merchant"); setCreateLoading(false); return; }
+
+      // Create merchant
+      const { error: mErr } = await supabase.from("merchants").insert({
+        user_id: profile.user_id,
+        business_name: createForm.business_name.trim(),
+        category: createForm.category as any,
+        status: "active" as any,
+        bank_name: createForm.bank_name || null,
+        bank_account_number: createForm.bank_account_number || null,
+        bank_routing: createForm.bank_routing || null,
+      });
+      if (mErr) { toast.error("Failed to create merchant: " + mErr.message); setCreateLoading(false); return; }
+
+      // Assign merchant role
+      await (supabase as any).from("user_roles").insert({ user_id: profile.user_id, role: "merchant" });
+
+      // Notify user
+      await supabase.from("notifications").insert({
+        user_id: profile.user_id,
+        title: "Merchant Account Created",
+        body: `Your merchant account "${createForm.business_name}" has been created and is active.`,
+        category: "merchant",
+      });
+
+      toast.success("Merchant created successfully");
+      setShowCreateMerchant(false);
+      setCreateForm({ phone: "", business_name: "", category: "retail", bank_name: "", bank_account_number: "", bank_routing: "" });
+      loadMerchants();
+    } catch (err: any) {
+      toast.error("Error: " + (err.message || "Unknown"));
+    }
+    setCreateLoading(false);
+  };
+
   // ─── Approve/Reject API request ───
   const handleApiRequest = async (requestId: string, action: "approved" | "rejected", notes?: string) => {
     const { data: { session } } = await supabase.auth.getSession();
