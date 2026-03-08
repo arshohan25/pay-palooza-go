@@ -42,6 +42,7 @@ import { haptics } from "@/lib/haptics";
 import { useFeatureLocks } from "@/hooks/use-feature-locks";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { useQuickActionOrder } from "@/hooks/use-quick-action-order";
+import { useCustomization } from "@/hooks/use-customization";
 
 const FEATURE_MAP: Record<string, string> = {
   send: "send_money",
@@ -298,6 +299,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   // Sortable order state (persisted to DB)
   const { order: sortableOrder, setOrder: setSortableOrder, resetOrder: resetOrderFn, isCustomOrder } = useQuickActionOrder();
   const isDnDEnabled = typeof window !== "undefined" && localStorage.getItem("mfs_dnd_enabled") === "true";
+  const { iconSizePx, gridCols, compactMode } = useCustomization();
 
   const resetOrder = useCallback(() => {
     resetOrderFn();
