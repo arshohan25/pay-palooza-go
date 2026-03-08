@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, User, Loader2, MessageCircle, ArrowLeft, CheckCheck, Check, Zap, ChevronDown, Plus, Trash2, Edit2, Save, X } from "lucide-react";
+import { Send, Bot, User, Loader2, MessageCircle, ArrowLeft, CheckCheck, Check, Zap, ChevronDown, Plus, Trash2, Edit2, Save, X, UserPlus } from "lucide-react";
+import { useAgentRouting } from "@/components/admin/SupportAgentRouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -22,12 +23,14 @@ interface Conversation {
   updated_at: string;
   admin_last_read_at: string | null;
   user_last_read_at: string | null;
+  assigned_agent_id?: string | null;
   // joined
   user_name?: string;
   user_phone?: string;
   last_message?: string;
   last_message_at?: string;
   unread_count?: number;
+  assigned_agent_name?: string;
 }
 
 interface Message {
@@ -63,6 +66,7 @@ const fmt = (d: string) =>
 export default function AdminSupportDashboard() {
   const { user } = useAuth();
   const { visible, flash } = useRealtimeIndicator();
+  const { routing, assignConversation } = useAgentRouting();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -154,12 +158,17 @@ export default function AdminSupportDashboard() {
 
     // Get user profiles for each conversation
     const userIds = [...new Set(convs.map(c => c.user_id))];
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("user_id, name, phone")
-      .in("user_id", userIds);
+    const agentIds = [...new Set(convs.map((c: any) => c.assigned_agent_id).filter(Boolean))];
 
-    const profileMap = new Map(profiles?.map(p => [p.user_id, p]) ?? []);
+    const [profilesRes, agentProfilesRes] = await Promise.all([
+      supabase.from("profiles").select("user_id, name, phone").in("user_id", userIds),
+      agentIds.length > 0
+        ? supabase.from("team_members").select("user_id, display_name").in("user_id", agentIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    const profileMap = new Map(profilesRes.data?.map(p => [p.user_id, p]) ?? []);
+    const agentMap = new Map((agentProfilesRes.data ?? []).map((a: any) => [a.user_id, a.display_name]));
 
     // Get last message per conversation
     const enriched: Conversation[] = await Promise.all(
@@ -172,7 +181,6 @@ export default function AdminSupportDashboard() {
           .order("created_at", { ascending: false })
           .limit(1);
 
-        // Count unread (messages from user after admin_last_read_at)
         let unreadCount = 0;
         const { count } = await supabase
           .from("support_messages")
@@ -184,11 +192,13 @@ export default function AdminSupportDashboard() {
 
         return {
           ...c,
+          assigned_agent_id: (c as any).assigned_agent_id || null,
           user_name: profile?.name || "Unknown",
           user_phone: profile?.phone || "",
           last_message: lastMsg?.[0]?.content || "",
           last_message_at: lastMsg?.[0]?.created_at || c.created_at,
           unread_count: unreadCount,
+          assigned_agent_name: (c as any).assigned_agent_id ? agentMap.get((c as any).assigned_agent_id) || null : null,
         };
       })
     );
@@ -426,7 +436,21 @@ export default function AdminSupportDashboard() {
                           )}
                         </div>
                       </div>
-                      <p className="text-[9px] text-muted-foreground/60 mt-0.5">{conv.user_phone}</p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <p className="text-[9px] text-muted-foreground/60">{conv.user_phone}</p>
+                        {conv.assigned_agent_name && (
+                          <Badge variant="outline" className="text-[7px] px-1 py-0 ml-auto">👤 {conv.assigned_agent_name}</Badge>
+                        )}
+                        {!conv.assigned_agent_id && conv.status === "open" && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); assignConversation(conv.id); }}
+                            disabled={routing}
+                            className="ml-auto text-[8px] text-primary hover:underline flex items-center gap-0.5"
+                          >
+                            <UserPlus size={10} /> Assign
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </button>

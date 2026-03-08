@@ -1269,6 +1269,7 @@ export type Database = {
       support_conversations: {
         Row: {
           admin_last_read_at: string | null
+          assigned_agent_id: string | null
           created_at: string
           id: string
           rating: number | null
@@ -1280,6 +1281,7 @@ export type Database = {
         }
         Insert: {
           admin_last_read_at?: string | null
+          assigned_agent_id?: string | null
           created_at?: string
           id?: string
           rating?: number | null
@@ -1291,6 +1293,7 @@ export type Database = {
         }
         Update: {
           admin_last_read_at?: string | null
+          assigned_agent_id?: string | null
           created_at?: string
           id?: string
           rating?: number | null

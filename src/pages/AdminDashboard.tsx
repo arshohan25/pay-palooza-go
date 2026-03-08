@@ -263,6 +263,30 @@ export default function AdminDashboard() {
     if (isAdmin) loadData();
   }, [isAdmin, authLoading, navigate, loadData]);
 
+  // Track admin login + update last_active_at
+  const loginTrackedRef = useRef(false);
+  useEffect(() => {
+    if (!isAdmin || loginTrackedRef.current) return;
+    loginTrackedRef.current = true;
+    const trackLogin = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      // Upsert last_active_at
+      await supabase.from("team_members")
+        .update({ last_active_at: new Date().toISOString() } as any)
+        .eq("user_id", session.user.id);
+      // Record admin_login (deduplicated per session via ref)
+      await supabase.from("audit_logs").insert({
+        actor_id: session.user.id,
+        action: "admin_login",
+        entity_type: "session",
+        entity_id: session.user.id,
+        details: { timestamp: new Date().toISOString() },
+      });
+    };
+    trackLogin();
+  }, [isAdmin]);
+
   // Real-time: listen to all key tables for live admin updates
   useEffect(() => {
     if (!isAdmin) return;
