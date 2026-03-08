@@ -12,11 +12,11 @@ interface ProfileData {
  * Listens for "profile-updated" CustomEvent for instant optimistic updates.
  */
 export function useProfile() {
-  const [profile, setProfile] = useState<ProfileData>({
-    name: null,
-    phone: "",
-    avatar_url: null,
-  });
+  const [profile, setProfile] = useState<ProfileData>(() => ({
+    name: localStorage.getItem("mfs_user_name") || null,
+    phone: localStorage.getItem("mfs_registered_phone") || "",
+    avatar_url: localStorage.getItem("mfs_display_photo") || null,
+  }));
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async () => {

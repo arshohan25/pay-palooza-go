@@ -71,15 +71,10 @@ const Index = () => {
   const [showSavings, setShowSavings]     = useState(false);
   const [showMerchantApply, setShowMerchantApply] = useState(false);
   const [showScanPay, setShowScanPay]     = useState(false);
-  const [isLoading, setIsLoading]         = useState(true);
+  const [isLoading, setIsLoading]         = useState(false);
   const [isPulling, setIsPulling]         = useState(false);
   const [refreshKey, setRefreshKey]       = useState(0);
   const mainRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const t = setTimeout(() => setIsLoading(false), 400);
-    return () => clearTimeout(t);
-  }, []);
 
   // ── AsthaPay return redirect handler ──
   useEffect(() => {
