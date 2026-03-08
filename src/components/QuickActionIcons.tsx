@@ -324,41 +324,46 @@ export const MoreIcon = () => (
   </svg>
 );
 
-// Savings / Piggy bank icon — teal
+// Savings / Piggy bank icon — green/yellow
 export const SavingsIcon = ({ isHovered }: IconProps) => (
   <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" overflow="visible">
     <defs>
-      <linearGradient id="piggyGrad" x1="8" y1="16" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#4DB6AC"/>
-        <stop offset="100%" stopColor="#00695C"/>
+      <linearGradient id="piggyGrad" x1="10" y1="18" x2="46" y2="48" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#66BB6A"/>
+        <stop offset="100%" stopColor="#2E7D32"/>
       </linearGradient>
     </defs>
     {/* Piggy body */}
-    <ellipse cx="27" cy="32" rx="17" ry="14" fill="url(#piggyGrad)"/>
+    <ellipse cx="28" cy="33" rx="17" ry="14" fill="url(#piggyGrad)"/>
     {/* Snout */}
-    <ellipse cx="43" cy="34" rx="5" ry="4" fill="#80CBC4"/>
-    <circle cx="42" cy="33" r="1" fill="#00695C"/>
-    <circle cx="44" cy="33" r="1" fill="#00695C"/>
+    <ellipse cx="44" cy="35" rx="5" ry="3.5" fill="#A5D6A7"/>
+    <circle cx="43" cy="34.5" r="1" fill="#1B5E20"/>
+    <circle cx="45" cy="34.5" r="1" fill="#1B5E20"/>
     {/* Ear */}
-    <ellipse cx="23" cy="18" rx="5" ry="4" fill="#80CBC4"/>
-    <ellipse cx="23" cy="18" rx="3" ry="2.5" fill="#4DB6AC"/>
+    <ellipse cx="20" cy="20" rx="5" ry="5" fill="#A5D6A7"/>
+    <ellipse cx="20" cy="20" rx="3" ry="3" fill="#66BB6A"/>
     {/* Eye */}
-    <circle cx="36" cy="26" r="2" fill="white"/>
-    <circle cx="36.5" cy="26.5" r="1" fill="#004D40"/>
+    <circle cx="36" cy="28" r="2.2" fill="white"/>
+    <circle cx="36.6" cy="28.2" r="1" fill="#1B5E20"/>
+    {/* Blush */}
+    <ellipse cx="40" cy="34" rx="3" ry="2" fill="#F48FB1" opacity="0.35"/>
     {/* Coin slot */}
-    <rect x="22" y="17" width="10" height="2.5" rx="1.25" fill="#00695C"/>
+    <rect x="23" y="18" width="10" height="2.5" rx="1.25" fill="#1B5E20"/>
     {/* Legs */}
-    <rect x="18" y="44" width="5" height="5" rx="2" fill="#26A69A"/>
-    <rect x="25" y="44" width="5" height="5" rx="2" fill="#26A69A"/>
-    <rect x="32" y="44" width="5" height="5" rx="2" fill="#26A69A"/>
+    <rect x="18" y="45" width="5" height="5" rx="2" fill="#43A047"/>
+    <rect x="26" y="45" width="5" height="5" rx="2" fill="#43A047"/>
+    <rect x="34" y="45" width="5" height="5" rx="2" fill="#43A047"/>
+    {/* Tail curl */}
+    <path d="M11 30 Q7 28 9 24" stroke="#43A047" strokeWidth="2" strokeLinecap="round" fill="none"/>
     {/* Coin badge — bounces on hover */}
     <motion.g
       animate={isHovered ? { y: [0, -4, 0], rotate: [0, 15, -10, 0] } : { y: 0, rotate: 0 }}
       transition={isHovered ? { duration: 0.55, ease: "easeInOut", repeat: Infinity } : { duration: 0.3 }}
-      style={{ transformBox: "fill-box", transformOrigin: "12px 18px" }}
+      style={{ transformBox: "fill-box", transformOrigin: "14px 14px" }}
     >
-      <circle cx="12" cy="18" r="8" fill="#FFC107"/>
-      <text x="12" y="21.5" textAnchor="middle" fill="#7B3F00" fontSize="8" fontWeight="bold" fontFamily="serif">৳</text>
+      <circle cx="14" cy="14" r="8" fill="#FFD54F"/>
+      <circle cx="14" cy="14" r="6" fill="#FFC107" opacity="0.6"/>
+      <text x="14" y="17.5" textAnchor="middle" fill="#7B3F00" fontSize="8" fontWeight="bold" fontFamily="serif">৳</text>
     </motion.g>
   </svg>
 );
