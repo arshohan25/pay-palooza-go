@@ -27,20 +27,15 @@ const DynamicQrPage = () => {
   useEffect(() => {
     if (!sessionId) { setStatus("error"); return; }
     (async () => {
-      console.log("[DynamicQR] Fetching session:", sessionId);
-      
-      // Use maybeSingle to avoid throwing on 0 rows
       const { data: session, error } = await supabase
         .from("merchant_payment_sessions")
-        .select("id, amount, currency, reference, description, status, success_url, expires_at, merchant_id, merchants(business_name)")
+        .select("id, amount, currency, reference, description, status, success_url, expires_at, merchant_id, metadata")
         .eq("id", sessionId)
         .maybeSingle();
-      
-      console.log("[DynamicQR] Session result:", JSON.stringify({ session, error }));
-      if (error || !session) { 
-        console.error("[DynamicQR] Failed to load session:", error?.message || "not found");
-        setStatus("error"); 
-        return; 
+
+      if (error || !session) {
+        setStatus("error");
+        return;
       }
 
       setAmount(session.amount);
@@ -55,9 +50,9 @@ const DynamicQrPage = () => {
 
       expiresRef.current = new Date(session.expires_at).getTime();
 
-      // Get merchant name from the joined data
-      const merchantData = session.merchants as any;
-      if (merchantData?.business_name) setMerchantName(merchantData.business_name);
+      const metadata = session.metadata as Record<string, unknown> | null;
+      const nameFromMetadata = typeof metadata?.merchant_name === "string" ? metadata.merchant_name : null;
+      if (nameFromMetadata) setMerchantName(nameFromMetadata);
 
       // Build QR payload
       const qrPayload = JSON.stringify({
