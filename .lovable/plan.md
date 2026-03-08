@@ -1,29 +1,27 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Enhance More Services Entrance Animation (Scale from 0)
 
-### What
+The current animation already scales icons from `0.7` → `1`. The change is to make it more dramatic by scaling from `0` and adding a slight spring bounce.
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### File: `src/components/QuickActions.tsx` (lines 253-255)
 
-### Changes
+Update the `motion.button` animation props:
+- Change `initial` scale from `0.7` to `0` for a more dramatic pop-in effect
+- Switch from easing curve to a spring transition for a natural bounce
+- Keep staggered delay per item
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+```tsx
+// Before
+initial={{ opacity: 0, scale: 0.7, y: 12 }}
+animate={{ opacity: 1, scale: 1, y: 0 }}
+transition={{ delay: 0.06 * i, duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+// After
+initial={{ opacity: 0, scale: 0 }}
+animate={{ opacity: 1, scale: 1 }}
+transition={{ type: "spring", stiffness: 400, damping: 22, delay: 0.04 * i }}
+```
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+Single file, 3-line change.
 
