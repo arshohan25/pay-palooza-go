@@ -433,7 +433,12 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     : "linear-gradient(135deg, hsl(0 74% 50%), hsl(0 74% 38%))";
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
+    <motion.div
+      initial={{ y: "100%" }}
+      animate={{ y: 0 }}
+      exit={{ y: "100%" }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
 
       {/* ── Header ── */}
       {step !== "success" && (

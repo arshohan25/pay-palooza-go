@@ -146,7 +146,12 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
   const totalFromBalance = parseFloat(amount) > 0 ? parseFloat((parseFloat(amount) + feeFromBalance).toFixed(2)) : 0;
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
+    <motion.div
+      initial={{ y: "100%" }}
+      animate={{ y: 0 }}
+      exit={{ y: "100%" }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
       {step !== "success" && (
         <motion.div className="bg-gradient-to-b from-blue-500 to-indigo-600 px-4 pt-3 pb-3 text-primary-foreground"
           initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
