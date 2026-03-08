@@ -1,29 +1,19 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Move "Soon" Badge Outside the Circle
 
-### What
+### Change in `src/components/QuickActions.tsx` (lines 230-234)
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+Move the "Soon" badge from inside the circle's overflow area to **outside** the circle by placing it after the `motion.div` (the circle container) instead of inside it. Adjust positioning to sit at the top-right corner outside the circle.
 
-### Changes
+**Current** (inside the circle `motion.div`):
+```tsx
+{item.soon && (
+  <div className="absolute -top-1.5 -right-1.5 z-10">
+    <span className="text-[7px] font-bold text-muted-foreground/70">Soon</span>
+  </div>
+)}
+```
 
-**File: `src/components/admin/AdminApiHub.tsx`**
-
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
-
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+**Fix**: The circle has `overflow-hidden`, so the badge gets clipped. Move the badge **outside** the `motion.div` but still inside the `motion.button` (which has `relative`), and position it relative to the button. Use positioning like `absolute -top-1 right-0 z-10` to sit outside the circle's top-right corner.
 
