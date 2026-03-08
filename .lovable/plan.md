@@ -1,42 +1,38 @@
 
 
-## All Three Features Already Exist — Only pg_cron Scheduling Is Missing
+## Plan: Webhook Delivery Retry Logic
 
-The SDK, analytics dashboard, and expiry function were all implemented in a previous session. The only gap is that **pg_cron** hasn't been configured to automatically invoke the expiry cleanup on a schedule.
+### Current State
+The `merchant-payment-webhook` edge function fires once. If delivery fails (network error or non-2xx), it marks `webhook_delivered = false` and gives up. No retries.
 
-### What's already done
-- **SDK**: `public/sdk/easypay-sdk.js` — fully functional
-- **Analytics**: `src/components/MerchantAnalyticsTab.tsx` — wired into Merchant Dashboard
-- **Expiry function**: `supabase/functions/expire-payment-sessions/index.ts` + `expire_stale_payment_sessions()` DB function + piggyback cleanup in `merchant-payment-api`
+### What We'll Build
 
-### What needs to be added
-**pg_cron job** to auto-invoke the expiry edge function every 3 minutes:
+**1. Add retry tracking columns** (DB migration)
+- `webhook_attempts` (integer, default 0) — count of delivery attempts
+- `webhook_next_retry_at` (timestamptz, nullable) — when to retry next
 
-```sql
--- Enable extensions
-CREATE EXTENSION IF NOT EXISTS pg_cron;
-CREATE EXTENSION IF NOT EXISTS pg_net;
+**2. Update `merchant-payment-webhook` edge function**
+- Add exponential backoff retry logic within the function itself (up to 3 inline retries with 1s, 3s, 9s delays)
+- On final failure, set `webhook_next_retry_at` for async retry pickup
+- Track attempt count in `webhook_attempts`
 
--- Schedule cleanup every 3 minutes
-SELECT cron.schedule(
-  'expire-payment-sessions',
-  '*/3 * * * *',
-  $$
-  SELECT net.http_post(
-    url := 'https://lmgsxyzytssddijjxbzc.supabase.co/functions/v1/expire-payment-sessions',
-    headers := '{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtZ3N4eXp5dHNzZGRpamp4YnpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MTk2MTIsImV4cCI6MjA4NzA5NTYxMn0.E-IM5AMLYeN2DE64NoduoQXVG8DL57T43vjpZ21Ft74"}'::jsonb,
-    body := '{}'::jsonb
-  ) AS request_id;
-  $$
-);
-```
+**3. Create `retry-failed-webhooks` edge function**
+- Queries sessions where `webhook_delivered = false AND webhook_attempts < 5 AND webhook_next_retry_at <= now() AND status IN ('completed','failed')`
+- For each, calls the existing webhook delivery logic
+- Uses exponential backoff schedule: retry at 1min, 5min, 30min, 2hr, 24hr
+- On success: marks `webhook_delivered = true`
+- On final failure (attempt 5): marks as permanently failed in metadata
 
-This will be executed via the insert tool (not migration) since it contains project-specific secrets.
+**4. Schedule via pg_cron**
+- Run `retry-failed-webhooks` every 1 minute to pick up pending retries
 
 ### Files
+
 | File | Action |
 |------|--------|
-| Database (insert tool) | Add pg_cron schedule for session expiry |
-
-No other code changes needed — everything else is already implemented and working.
+| DB migration | Add `webhook_attempts`, `webhook_next_retry_at` columns |
+| `supabase/functions/merchant-payment-webhook/index.ts` | Update to track attempts + set next retry |
+| `supabase/functions/retry-failed-webhooks/index.ts` | New — batch retry processor |
+| `supabase/config.toml` | Add verify_jwt=false for new function |
+| pg_cron (insert tool) | Schedule retry function every minute |
 
