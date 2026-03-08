@@ -1394,10 +1394,15 @@ export type Database = {
           created_by: string | null
           department: string | null
           display_name: string
+          first_login_at: string | null
+          has_changed_password: boolean
+          has_completed_profile: boolean
+          has_logged_in: boolean
           id: string
           is_available: boolean | null
           last_active_at: string | null
           notes: string | null
+          password_changed_at: string | null
           temp_password: string | null
           updated_at: string | null
           user_id: string
@@ -1408,10 +1413,15 @@ export type Database = {
           created_by?: string | null
           department?: string | null
           display_name: string
+          first_login_at?: string | null
+          has_changed_password?: boolean
+          has_completed_profile?: boolean
+          has_logged_in?: boolean
           id?: string
           is_available?: boolean | null
           last_active_at?: string | null
           notes?: string | null
+          password_changed_at?: string | null
           temp_password?: string | null
           updated_at?: string | null
           user_id: string
@@ -1422,10 +1432,15 @@ export type Database = {
           created_by?: string | null
           department?: string | null
           display_name?: string
+          first_login_at?: string | null
+          has_changed_password?: boolean
+          has_completed_profile?: boolean
+          has_logged_in?: boolean
           id?: string
           is_available?: boolean | null
           last_active_at?: string | null
           notes?: string | null
+          password_changed_at?: string | null
           temp_password?: string | null
           updated_at?: string | null
           user_id?: string
