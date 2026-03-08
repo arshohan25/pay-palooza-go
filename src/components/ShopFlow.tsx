@@ -19,6 +19,7 @@ import { useOrderNotifications } from "@/hooks/use-order-notifications";
 import FeatureGuard from "@/components/FeatureGuard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
+import ProductImage from "@/components/ProductImage";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Product {
@@ -288,7 +289,7 @@ const OrderCard = ({ order, onCancel }: { order: Order; onCancel?: (id: string) 
             <div className="px-4 pb-4 space-y-3 border-t border-border/50 pt-3">
               {order.items.map(item => (
                 <div key={item.id} className="flex items-center gap-2.5">
-                  <span className="text-xl">{item.emoji}</span>
+                  <span className="text-xl">{item.image_url ? <img src={item.image_url} alt={item.name} className="w-7 h-7 rounded object-cover inline" /> : item.emoji}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-[12px] font-semibold truncate text-foreground">{item.name}</p>
                     <p className="text-[10.5px] text-muted-foreground">{t("qty")}: {item.qty} · <span className="text-primary">{item.vendor_name}</span></p>
@@ -490,6 +491,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
             id: item.id, name: item.name, price: item.price, qty: item.qty,
             emoji: item.emoji ?? "📦", category: "", vendor_name: item.vendor_name || "Shop",
             merchant_id: item.merchant_id || "", rating: 0, review_count: 0, stock: 0,
+            image_url: item.image_url || null,
           })),
           total: Number(o.total),
           address: {
@@ -646,7 +648,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
         shipping_city: selectedAddress.city,
         shipping_phone: selectedAddress.phone,
         merchant_id: firstMerchantId,
-        items: cart.map(c => ({ id: c.id, name: c.name, price: c.price, qty: c.qty, emoji: c.emoji, vendor_name: c.vendor_name, merchant_id: c.merchant_id })),
+        items: cart.map(c => ({ id: c.id, name: c.name, price: c.price, qty: c.qty, emoji: c.emoji, image_url: c.image_url, vendor_name: c.vendor_name, merchant_id: c.merchant_id })),
         estimated_delivery: estDelivery,
       });
     }
@@ -800,8 +802,8 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                       <motion.div key={p.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                         className="bg-card border border-border/50 rounded-2xl overflow-hidden cursor-pointer group"
                         onClick={() => { setDetail(p); setScreen("detail"); }}>
-                        <div className="relative h-32 flex items-center justify-center bg-muted/30">
-                          <span className="text-5xl group-hover:scale-110 transition-transform duration-200">{p.emoji}</span>
+                        <div className="relative h-32 flex items-center justify-center bg-muted/30 overflow-hidden">
+                          <ProductImage imageUrl={p.image_url} emoji={p.emoji} alt={p.name} emojiSize="text-5xl" />
                           {p.badge && <span className="absolute top-2 left-2 text-[9px] font-bold text-primary-foreground px-2 py-0.5 rounded-full" style={{ background: p.badge_color || "hsl(var(--primary))" }}>{p.badge}</span>}
                           {discount > 0 && !p.badge && <span className="absolute top-2 left-2 text-[9px] font-bold text-destructive-foreground px-1.5 py-0.5 rounded-full bg-destructive">-{discount}%</span>}
                           <motion.button whileTap={{ scale: 0.8 }} onClick={e => { e.stopPropagation(); toggleWishlist(p.id); }}
@@ -850,8 +852,8 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
           {/* ──── DETAIL ──── */}
           {screen === "detail" && detail && (
             <motion.div key={`detail-${detail.id}`} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.22 }} className="px-4 pt-4 space-y-4">
-              <div className="relative rounded-2xl h-52 flex items-center justify-center bg-muted/30">
-                <span className="text-8xl">{detail.emoji}</span>
+              <div className="relative rounded-2xl h-52 flex items-center justify-center bg-muted/30 overflow-hidden">
+                <ProductImage imageUrl={detail.image_url} emoji={detail.emoji} alt={detail.name} emojiSize="text-8xl" />
                 {detail.badge && <span className="absolute top-3 left-3 text-[10px] font-bold text-primary-foreground px-2.5 py-1 rounded-full" style={{ background: detail.badge_color || "hsl(var(--primary))" }}>{detail.badge}</span>}
                 <motion.button whileTap={{ scale: 0.8 }} onClick={() => toggleWishlist(detail.id)}
                   className="absolute top-3 right-3 w-9 h-9 rounded-full bg-background/90 shadow-md flex items-center justify-center">
@@ -957,8 +959,8 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                         <motion.div key={p.id} whileTap={{ scale: 0.97 }}
                           className="bg-card border border-border/50 rounded-2xl overflow-hidden cursor-pointer"
                           onClick={() => setDetail(p)}>
-                          <div className="h-20 flex items-center justify-center bg-muted/30">
-                            <span className="text-3xl">{p.emoji}</span>
+                          <div className="h-20 flex items-center justify-center bg-muted/30 overflow-hidden">
+                            <ProductImage imageUrl={p.image_url} emoji={p.emoji} alt={p.name} emojiSize="text-3xl" />
                           </div>
                           <div className="p-2.5 space-y-0.5">
                             <div className="flex items-center gap-1">
@@ -1002,7 +1004,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                   return (
                     <div key={p.id} className="bg-card border border-border/50 rounded-2xl p-3 flex items-center gap-3 cursor-pointer"
                       onClick={() => { setDetail(p); setScreen("detail"); }}>
-                      <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 text-3xl bg-muted/30">{p.emoji}</div>
+                      <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-muted/30 overflow-hidden"><ProductImage imageUrl={p.image_url} emoji={p.emoji} alt={p.name} emojiSize="text-3xl" /></div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[13px] font-bold text-foreground truncate">{p.name}</p>
                         <p className="text-[11px] text-muted-foreground flex items-center gap-1"><BadgeCheck size={9} className="text-primary" /> {p.vendor_name}</p>
@@ -1038,7 +1040,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                 <>
                   {cart.map(item => (
                     <div key={item.id} className="bg-card rounded-2xl border border-border/50 p-3.5 flex items-center gap-3">
-                      <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 text-3xl bg-muted/30">{item.emoji}</div>
+                      <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-muted/30 overflow-hidden"><ProductImage imageUrl={item.image_url} emoji={item.emoji} alt={item.name} emojiSize="text-3xl" /></div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[12.5px] font-bold text-foreground leading-tight truncate">{item.name}</p>
                         <p className="text-[10px] text-muted-foreground flex items-center gap-1"><BadgeCheck size={8} className="text-primary" /> {item.vendor_name}</p>
@@ -1199,7 +1201,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                 {cart.map(item => (
                   <div key={item.id} className="flex items-center justify-between py-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">{item.emoji}</span>
+                      <span className="text-lg">{item.image_url ? <img src={item.image_url} alt={item.name} className="w-6 h-6 rounded object-cover" /> : item.emoji}</span>
                       <div>
                         <p className="text-[12px] font-semibold text-foreground leading-tight">{item.name}</p>
                         <p className="text-[10px] text-muted-foreground">{t("qty")}: {item.qty} · {item.vendor_name}</p>
