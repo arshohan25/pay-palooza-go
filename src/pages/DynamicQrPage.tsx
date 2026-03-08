@@ -28,13 +28,20 @@ const DynamicQrPage = () => {
     if (!sessionId) { setStatus("error"); return; }
     (async () => {
       console.log("[DynamicQR] Fetching session:", sessionId);
+      
+      // Use maybeSingle to avoid throwing on 0 rows
       const { data: session, error } = await supabase
         .from("merchant_payment_sessions")
-        .select("id, amount, currency, reference, description, status, success_url, expires_at, merchant_id")
+        .select("id, amount, currency, reference, description, status, success_url, expires_at, merchant_id, merchants(business_name)")
         .eq("id", sessionId)
-        .single();
-      console.log("[DynamicQR] Session result:", { session, error });
-      if (error || !session) { setStatus("error"); return; }
+        .maybeSingle();
+      
+      console.log("[DynamicQR] Session result:", JSON.stringify({ session, error }));
+      if (error || !session) { 
+        console.error("[DynamicQR] Failed to load session:", error?.message || "not found");
+        setStatus("error"); 
+        return; 
+      }
 
       setAmount(session.amount);
       setCurrency(session.currency);
@@ -48,8 +55,9 @@ const DynamicQrPage = () => {
 
       expiresRef.current = new Date(session.expires_at).getTime();
 
-      const { data: merch } = await supabase.from("merchants").select("business_name").eq("id", session.merchant_id).single();
-      if (merch) setMerchantName(merch.business_name);
+      // Get merchant name from the joined data
+      const merchantData = session.merchants as any;
+      if (merchantData?.business_name) setMerchantName(merchantData.business_name);
 
       // Build QR payload
       const qrPayload = JSON.stringify({
