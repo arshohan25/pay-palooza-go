@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Key, Copy, CheckCircle2, Globe, Code, Clock, AlertTriangle, RefreshCw, Shield,
   Webhook, ChevronDown, ChevronUp, Send, Loader2, BarChart3, Plus, Trash2, ShieldCheck,
-  Activity, Zap, XCircle
+  Activity, Zap, XCircle, QrCode
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
