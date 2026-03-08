@@ -289,7 +289,7 @@ const OrderCard = ({ order, onCancel }: { order: Order; onCancel?: (id: string) 
             <div className="px-4 pb-4 space-y-3 border-t border-border/50 pt-3">
               {order.items.map(item => (
                 <div key={item.id} className="flex items-center gap-2.5">
-                  <span className="text-xl">{item.emoji}</span>
+                  <span className="text-xl">{item.image_url ? <img src={item.image_url} alt={item.name} className="w-7 h-7 rounded object-cover inline" /> : item.emoji}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-[12px] font-semibold truncate text-foreground">{item.name}</p>
                     <p className="text-[10.5px] text-muted-foreground">{t("qty")}: {item.qty} · <span className="text-primary">{item.vendor_name}</span></p>
@@ -491,6 +491,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
             id: item.id, name: item.name, price: item.price, qty: item.qty,
             emoji: item.emoji ?? "📦", category: "", vendor_name: item.vendor_name || "Shop",
             merchant_id: item.merchant_id || "", rating: 0, review_count: 0, stock: 0,
+            image_url: item.image_url || null,
           })),
           total: Number(o.total),
           address: {
@@ -647,7 +648,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
         shipping_city: selectedAddress.city,
         shipping_phone: selectedAddress.phone,
         merchant_id: firstMerchantId,
-        items: cart.map(c => ({ id: c.id, name: c.name, price: c.price, qty: c.qty, emoji: c.emoji, vendor_name: c.vendor_name, merchant_id: c.merchant_id })),
+        items: cart.map(c => ({ id: c.id, name: c.name, price: c.price, qty: c.qty, emoji: c.emoji, image_url: c.image_url, vendor_name: c.vendor_name, merchant_id: c.merchant_id })),
         estimated_delivery: estDelivery,
       });
     }
