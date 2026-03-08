@@ -29,7 +29,7 @@ const actionDefs = [
   { Icon: SendMoneyIcon, labelKey: "sendMoney" as const, id: "send", bgStyle: "rgba(233,30,140,0.12)", ringStyle: "1px solid rgba(233,30,140,0.25)", rippleColor: "rgba(233,30,140,0.35)" },
   { Icon: CashOutIcon, labelKey: "cashOut" as const, id: "cashout", bgStyle: "rgba(67,160,71,0.12)", ringStyle: "1px solid rgba(67,160,71,0.25)", rippleColor: "rgba(67,160,71,0.35)" },
   { Icon: PaymentIcon, labelKey: "payment" as const, id: "payment", bgStyle: "rgba(156,39,176,0.12)", ringStyle: "1px solid rgba(156,39,176,0.25)", rippleColor: "rgba(156,39,176,0.35)" },
-  { Icon: ReferIcon, labelKey: "referEarn" as const, id: "refer", bgStyle: "rgba(255,87,34,0.12)", ringStyle: "1px solid rgba(255,87,34,0.25)", rippleColor: "rgba(255,87,34,0.35)" },
+  { Icon: ({ isHovered }: { isHovered?: boolean }) => <Landmark size={22} className="text-foreground" />, labelKey: "bankTransfer" as const, id: "bank", bgStyle: "rgba(33,150,243,0.12)", ringStyle: "1px solid rgba(33,150,243,0.25)", rippleColor: "rgba(33,150,243,0.35)" },
   { Icon: RechargeIcon, labelKey: "recharge" as const, id: "recharge", bgStyle: "rgba(0,188,212,0.12)", ringStyle: "1px solid rgba(0,188,212,0.25)", rippleColor: "rgba(0,188,212,0.35)" },
   { Icon: PayBillIcon, labelKey: "payBill" as const, id: "bill", bgStyle: "rgba(255,193,7,0.12)", ringStyle: "1px solid rgba(255,193,7,0.25)", rippleColor: "rgba(255,193,7,0.45)" },
   { Icon: ShopIcon, labelKey: "shop" as const, id: "shop", bgStyle: "rgba(255,112,67,0.12)", ringStyle: "1px solid rgba(255,112,67,0.25)", rippleColor: "rgba(255,112,67,0.35)" },
@@ -37,7 +37,7 @@ const actionDefs = [
 ];
 
 const moreServices = [
-  { id: "bank", icon: Landmark, label: "Bank Transfer", desc: "Transfer to any bank", gradient: "from-blue-500 to-indigo-600" },
+  { id: "refer", icon: Gift, label: "Refer & Earn", desc: "Invite friends & earn", gradient: "from-orange-500 to-red-500" },
   { id: "savings", icon: Wallet, label: "Savings", desc: "Set goals & grow money", gradient: "from-emerald-500 to-teal-600" },
   { id: "coupons", icon: Ticket, label: "Coupons & Offers", desc: "Exclusive deals", gradient: "from-pink-500 to-rose-600", soon: true },
   { id: "donations", icon: Heart, label: "Donations", desc: "Support causes", gradient: "from-red-500 to-rose-700", soon: true },
@@ -97,7 +97,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
     if (id === "addmoney") return onAddMoney();
     if (id === "recharge") return onRecharge();
     if (id === "bill") return onPayBill();
-    if (id === "refer") return onRefer();
+    if (id === "bank") return onBankTransfer();
     if (id === "shop") return onShop();
     if (id === "more") return setExpanded(prev => !prev);
     toast.info(`${label} coming soon!`);
@@ -105,7 +105,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
 
   const handleMoreService = (id: string, soon?: boolean) => {
     if (soon) { toast.info("Coming soon!"); return; }
-    if (id === "bank") onBankTransfer();
+    if (id === "refer") onRefer();
     else if (id === "savings") onSavings();
   };
 
