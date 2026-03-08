@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Lock, ChevronUp, Sparkles, GripVertical } from "lucide-react";
+import { Lock, ChevronUp, Sparkles, GripVertical, RotateCcw } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -288,6 +288,12 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
 
   // Sortable order state
   const [sortableOrder, setSortableOrder] = useState<string[]>(loadSortableOrder);
+  const isCustomOrder = useMemo(() => JSON.stringify(sortableOrder) !== JSON.stringify(DEFAULT_SORTABLE_ORDER), [sortableOrder]);
+
+  const resetOrder = useCallback(() => {
+    setSortableOrder(DEFAULT_SORTABLE_ORDER);
+    toast.success("Quick Actions order restored to default");
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(sortableOrder));
@@ -385,6 +391,24 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
 
   return (
     <div className="bg-card rounded-3xl shadow-card border border-border/60 p-4 sm:p-5">
+      <AnimatePresence>
+        {isCustomOrder && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="flex justify-end mb-2 overflow-hidden"
+          >
+            <button
+              onClick={resetOrder}
+              className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-full bg-muted/60 hover:bg-muted"
+            >
+              <RotateCcw className="w-3 h-3" />
+              Reset order
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={sortableOrder} strategy={rectSortingStrategy}>
           <div className="grid grid-cols-4 gap-y-5 gap-x-2 sm:gap-x-3">
