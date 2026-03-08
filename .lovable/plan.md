@@ -1,29 +1,44 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Add Sparkle/Glow Effect to Savings Coin
 
-### What
+### Change in `src/components/QuickActionIcons.tsx` (lines 330-372)
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+**1. Add a radial glow filter in `<defs>`:**
+- Add a `<filter id="coinGlow">` with `feGaussianBlur` + `feMerge` to create a soft golden glow around the coin
 
-### Changes
+**2. Add sparkle elements around the coin:**
+- 3-4 small star/diamond shapes around the coin that animate with `motion.g` — fade in/out and scale on hover
+- Use `#FFD54F` / `#FFF8E1` colors to match the gold coin
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**3. Apply glow filter to coin circle:**
+- Wrap or apply `filter="url(#coinGlow)"` to the outer coin circle for a subtle ambient glow
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+### Implementation detail:
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+```tsx
+{/* In defs: */}
+<filter id="coinGlow" x="-50%" y="-50%" width="200%" height="200%">
+  <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
+  <feMerge>
+    <feMergeNode in="blur"/>
+    <feMergeNode in="SourceGraphic"/>
+  </feMerge>
+</filter>
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+{/* Glow circle behind coin */}
+<motion.circle cx="12" cy="12" r="13" fill="#FFD54F" opacity={0}
+  animate={isHovered ? { opacity: [0, 0.4, 0] } : { opacity: 0 }}
+  transition={{ duration: 1, repeat: Infinity }}
+/>
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+{/* 3 sparkle diamonds around coin, animated on hover */}
+<motion.g animate={isHovered ? { opacity: [0,1,0], scale: [0.5,1,0.5] } : { opacity: 0 }}>
+  <path d="M3 5 L4 3 L5 5 L4 7 Z" fill="#FFF8E1"/>
+  <path d="M20 4 L21 2 L22 4 L21 6 Z" fill="#FFF8E1"/>
+  <path d="M5 18 L6 16 L7 18 L6 20 Z" fill="#FFF8E1"/>
+</motion.g>
+```
 
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+Single file change, purely visual enhancement.
 
