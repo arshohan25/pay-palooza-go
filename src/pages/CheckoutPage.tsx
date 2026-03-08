@@ -313,6 +313,15 @@ const CheckoutPage = () => {
                   <ArrowLeft size={12} className="mr-1" />Back
                 </Button>
               </Card>
+              {/* Countdown timer on confirm */}
+              {secondsLeft !== null && (
+                <div className={`text-center mt-3 flex items-center justify-center gap-1.5 text-xs font-semibold ${
+                  secondsLeft > 60 ? "text-muted-foreground" : secondsLeft > 30 ? "text-amber-500" : "text-destructive"
+                }`}>
+                  <Clock size={12} />
+                  <span>{fmtTime(secondsLeft)}</span>
+                </div>
+              )}
             </motion.div>
           )}
 
