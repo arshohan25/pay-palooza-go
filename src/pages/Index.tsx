@@ -193,15 +193,7 @@ const Index = () => {
             )}
           </AnimatePresence>
 
-          {isLoading ? (
-            <>
-              <BalanceCardSkeleton />
-              <QuickActionsSkeleton />
-              <TransactionListSkeleton />
-            </>
-          ) : (
-            <>
-              <BalanceCard onAddMoney={() => setShowAddMoney(true)} />
+          <BalanceCard onAddMoney={() => setShowAddMoney(true)} />
 
               {/* KYC prompt banner */}
               {kycStatus !== "verified" && (
@@ -272,8 +264,6 @@ const Index = () => {
                 map[feature]?.();
               }} />
               <TransactionList onSeeAll={() => handleTabChange("history")} refreshKey={refreshKey} />
-            </>
-          )}
         </div>
       );
     }
