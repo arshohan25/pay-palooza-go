@@ -24,15 +24,19 @@ Deno.serve(async (req) => {
     const apiKey = req.headers.get("x-api-key") || req.headers.get("X-API-Key");
     if (!apiKey) return json({ error: "Missing X-API-Key header" }, 401);
 
-    // Validate API key
+    const appPassword = req.headers.get("x-app-password") || req.headers.get("X-App-Password");
+    if (!appPassword) return json({ error: "Missing X-App-Password header" }, 401);
+
+    // Validate API key + app password
     const { data: keyRow, error: keyErr } = await supabase
       .from("merchant_api_keys")
-      .select("id, merchant_id, webhook_url, is_active, secret_key")
+      .select("id, merchant_id, webhook_url, is_active, secret_key, app_password")
       .eq("api_key", apiKey)
       .single();
 
     if (keyErr || !keyRow) return json({ error: "Invalid API key" }, 401);
     if (!keyRow.is_active) return json({ error: "API key is deactivated" }, 403);
+    if (keyRow.app_password && keyRow.app_password !== appPassword) return json({ error: "Invalid App Password" }, 401);
 
     // Get merchant info
     const { data: merchant } = await supabase

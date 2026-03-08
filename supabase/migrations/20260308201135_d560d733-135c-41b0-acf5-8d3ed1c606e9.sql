@@ -1,0 +1,1 @@
+ALTER TABLE public.merchant_api_keys ADD COLUMN app_password text;

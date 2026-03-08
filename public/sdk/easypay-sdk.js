@@ -12,7 +12,7 @@
 (function () {
   "use strict";
 
-  var config = { apiKey: null, endpoint: null, mode: "redirect" };
+  var config = { apiKey: null, appPassword: null, endpoint: null, mode: "redirect" };
 
   var STYLES = [
     ".easypay-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;",
@@ -53,7 +53,7 @@
 
     return fetch(config.endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-API-Key": config.apiKey },
+      headers: { "Content-Type": "application/json", "X-API-Key": config.apiKey, "X-App-Password": config.appPassword || "" },
       body: JSON.stringify({
         action: "create_session",
         amount: opts.amount,
@@ -87,6 +87,7 @@
     init: function (options) {
       if (!options || !options.apiKey) throw new Error("apiKey is required");
       config.apiKey = options.apiKey;
+      config.appPassword = options.appPassword || null;
       config.endpoint = options.endpoint || options.apiEndpoint || null;
       config.mode = options.mode || "redirect"; // "redirect" | "popup"
       if (!config.endpoint) {
@@ -139,7 +140,7 @@
       }
       return fetch(config.endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-API-Key": config.apiKey },
+        headers: { "Content-Type": "application/json", "X-API-Key": config.apiKey, "X-App-Password": config.appPassword || "" },
         body: JSON.stringify({ action: "check_status", session_id: sessionId }),
       })
         .then(function (res) { return res.json(); })
