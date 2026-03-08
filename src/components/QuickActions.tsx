@@ -296,8 +296,8 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   useEffect(() => {
     if (expanded && moreRef.current) {
       setTimeout(() => {
-        moreRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 100);
+        moreRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }, 280);
     }
   }, [expanded]);
   const [hoveredMoreId, setHoveredMoreId] = useState<string | null>(null);
@@ -508,8 +508,8 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
             ref={moreRef}
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
+            exit={{ height: 0, opacity: 0, transition: { duration: 0.2, ease: [0.23, 1, 0.32, 1] } }}
+            transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
             className="overflow-hidden"
           >
             <div className="border-t border-border/40 mt-4 pt-4">
@@ -528,9 +528,9 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                   return (
                     <motion.button
                       key={item.id}
-                      initial={{ opacity: 0, scale: 0, rotate: 0 }}
-                      animate={{ opacity: 1, scale: 1, rotate: [0, 0, -8, 8, -4, 0] }}
-                      transition={{ type: "spring", stiffness: 400, damping: 22, delay: 0.04 * i, rotate: { delay: 0.04 * i + 0.3, duration: 0.4, ease: "easeInOut" } }}
+                      initial={{ opacity: 0, scale: 0.85 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ type: "spring", stiffness: 450, damping: 26, delay: 0.03 * i }}
                       whileTap={{ scale: 0.90 }}
                       onClick={() => {
                         if (didLongPress.current) { didLongPress.current = false; return; }
