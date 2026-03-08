@@ -967,6 +967,55 @@ export default function AdminMerchantManagement() {
         </SheetContent>
       </Sheet>
       </>}
+
+      {/* Create Merchant Dialog */}
+      <Sheet open={showCreateMerchant} onOpenChange={setShowCreateMerchant}>
+        <SheetContent side="bottom" className="rounded-t-3xl h-[75vh] flex flex-col p-0">
+          <SheetHeader className="px-6 pt-5 pb-3">
+            <SheetTitle className="flex items-center gap-2 text-base">
+              <Plus size={18} /> Create Merchant
+            </SheetTitle>
+            <SheetDescription>Directly create a merchant account for an existing user.</SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-6 pb-8 space-y-4">
+            <div>
+              <label className="text-sm font-medium text-foreground">User Phone *</label>
+              <Input value={createForm.phone} onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value }))} placeholder="01XXXXXXXXX" maxLength={15} />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Business Name *</label>
+              <Input value={createForm.business_name} onChange={e => setCreateForm(f => ({ ...f, business_name: e.target.value }))} placeholder="Business name" maxLength={100} />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Category</label>
+              <Select value={createForm.category} onValueChange={v => setCreateForm(f => ({ ...f, category: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map(c => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Bank Name (optional)</label>
+              <Input value={createForm.bank_name} onChange={e => setCreateForm(f => ({ ...f, bank_name: e.target.value }))} placeholder="e.g. Dutch Bangla Bank" maxLength={100} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium text-foreground">Account Number</label>
+                <Input value={createForm.bank_account_number} onChange={e => setCreateForm(f => ({ ...f, bank_account_number: e.target.value }))} maxLength={30} />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Routing</label>
+                <Input value={createForm.bank_routing} onChange={e => setCreateForm(f => ({ ...f, bank_routing: e.target.value }))} maxLength={20} />
+              </div>
+            </div>
+            <Button className="w-full" onClick={handleCreateMerchant} disabled={createLoading || !createForm.phone.trim() || !createForm.business_name.trim()}>
+              {createLoading ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Store className="w-4 h-4 mr-2" />}
+              Create Merchant
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
