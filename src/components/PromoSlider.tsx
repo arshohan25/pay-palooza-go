@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { icons } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { useGlobalToggles } from "@/hooks/use-global-toggles";
 
 interface PromoBanner {
   id: string;
