@@ -1,26 +1,29 @@
 
 
-## Plan: Fix "Soon" Badge — Remove Background, Move to Upper Right of Circle
+## Plan: Add Biller Categories to API Hub
 
-### Change in `src/components/QuickActions.tsx` (lines 230-234)
+### What
 
-Remove the `bg-muted/90 border border-border/60 shadow-sm` background styling from the "Soon" badge and reposition it to the upper-right corner of the circle icon.
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-**Before:**
-```tsx
-<div className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-muted/90 border border-border/60 shadow-sm z-10">
-  <span className="text-[7px] font-semibold text-muted-foreground">Soon</span>
-</div>
-```
+### Changes
 
-**After:**
-```tsx
-<div className="absolute -top-1.5 -right-1.5 z-10">
-  <span className="text-[7px] font-bold text-muted-foreground/70">Soon</span>
-</div>
-```
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-- Removes background fill, border, and shadow
-- Positions badge at upper-right corner of the circle
-- Keeps text small and subtle with muted color
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

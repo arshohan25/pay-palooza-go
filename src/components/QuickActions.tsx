@@ -228,8 +228,8 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                       </div>
                       <item.Icon isHovered={hoveredMoreId === item.id} />
                       {item.soon && (
-                        <div className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-muted/90 border border-border/60 shadow-sm z-10">
-                          <span className="text-[7px] font-semibold text-muted-foreground">Soon</span>
+                        <div className="absolute -top-1.5 -right-1.5 z-10">
+                          <span className="text-[7px] font-bold text-muted-foreground/70">Soon</span>
                         </div>
                       )}
                     </motion.div>
