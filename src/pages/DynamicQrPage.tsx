@@ -13,12 +13,28 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 type Status = "loading" | "pending" | "completed" | "expired" | "not_found" | "error";
 
+interface SessionInfo {
+  id: string;
+  amount: number;
+  currency: string;
+  reference: string | null;
+  description: string | null;
+  status: string;
+  success_url: string | null;
+  expires_at: string;
+  merchant_id: string;
+  metadata: Record<string, unknown> | null;
+  merchant_name: string | null;
+  merchant_category: string | null;
+}
+
 const DynamicQrPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const [status, setStatus] = useState<Status>("loading");
   const [amount, setAmount] = useState(0);
   const [currency, setCurrency] = useState("BDT");
   const [merchantName, setMerchantName] = useState("");
+  const [merchantCategory, setMerchantCategory] = useState("");
   const [reference, setReference] = useState<string | null>(null);
   const [successUrl, setSuccessUrl] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
@@ -33,17 +49,17 @@ const DynamicQrPage = () => {
     }
     setStatus("loading");
     try {
-      const { data: session, error } = await supabase
-        .from("merchant_payment_sessions")
-        .select("id, amount, currency, reference, description, status, success_url, expires_at, merchant_id, metadata")
-        .eq("id", sessionId)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("get_public_session_info", {
+        p_session_id: sessionId,
+      });
 
       if (error) {
         console.error("DynamicQR fetch error:", error.message);
         setStatus("error");
         return;
       }
+
+      const session = data as SessionInfo | null;
       if (!session) {
         setStatus("not_found");
         return;
@@ -54,15 +70,18 @@ const DynamicQrPage = () => {
       setReference(session.reference);
       setSuccessUrl(session.success_url);
 
+      // Merchant name: prefer RPC field, fallback to metadata
+      const name = session.merchant_name
+        || (typeof session.metadata?.merchant_name === "string" ? session.metadata.merchant_name : "");
+      setMerchantName(name);
+      setMerchantCategory(session.merchant_category || "");
+
       if (session.status === "completed") { setStatus("completed"); return; }
       if (session.status === "expired" || session.status === "failed" || new Date(session.expires_at) < new Date()) {
         setStatus("expired"); return;
       }
 
       expiresRef.current = new Date(session.expires_at).getTime();
-
-      const metadata = session.metadata as Record<string, unknown> | null;
-      if (typeof metadata?.merchant_name === "string") setMerchantName(metadata.merchant_name);
 
       const qrPayload = JSON.stringify({
         type: "easypay",
@@ -177,6 +196,7 @@ const DynamicQrPage = () => {
             <Store className="w-7 h-7 text-primary" />
           </div>
           {merchantName && <h1 className="text-lg font-bold text-foreground">{merchantName}</h1>}
+          {merchantCategory && <p className="text-xs text-muted-foreground capitalize">{merchantCategory.replace(/_/g, " ")}</p>}
           <p className="text-3xl font-extrabold text-foreground mt-1">
             ৳{fmt(amount)} <span className="text-sm font-medium text-muted-foreground">{currency}</span>
           </p>
