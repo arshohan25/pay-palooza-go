@@ -1,29 +1,26 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## "More" Button — Full-Screen Overlay Instead of Inline Expand
 
-### What
-
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### What Changes
+When the user taps "More" in QuickActions, instead of expanding the grid inline, it opens a **full-screen modal overlay** that slides up from the bottom to the center of the screen (like a bottom sheet that covers most of the viewport).
 
 ### Changes
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**`src/components/QuickActions.tsx`**
+1. Remove the inline `AnimatePresence` expansion block (lines 489-587) — the "More Services" grid that expands within the card.
+2. Change `handleAction` for `id === "more"`: instead of toggling `expanded`, set `expanded = true` (which will now control the overlay).
+3. Add a **full-screen overlay** rendered via a portal or at the component root level:
+   - Backdrop: `fixed inset-0 z-50 bg-black/40 backdrop-blur-sm`
+   - Content panel: slides up from bottom, positioned centered vertically with `items-center justify-center`, rounded card with the "More Services" grid inside
+   - Animation: `initial={{ y: "100%" }}` → `animate={{ y: 0 }}` with spring transition
+   - Close button in the header + tap-on-backdrop to dismiss
+   - Contains the same `visibleMoreServices` grid (4-column layout) with the existing staggered entrance animations, long-press tooltips, and "Soon" badges
+4. Keep `expanded` state but now it controls overlay visibility instead of inline height
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
-
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+### Visual Result
+- Tapping "More" opens a centered overlay/bottom-sheet covering ~60-70% of the screen
+- The More Services grid appears inside with the same premium styling
+- Tapping backdrop or close button dismisses it
+- Smooth slide-up animation from bottom
 
