@@ -408,7 +408,7 @@ function BulkActionsTab() {
         is_active: true,
         updated_at: new Date().toISOString(),
       };
-      const { error } = await supabase.from("user_limit_overrides" as any).upsert(payload as any, { onConflict: "target_user_id,txn_type,period" });
+      const { error } = await supabase.from("user_limit_overrides").upsert(payload, { onConflict: "target_user_id,txn_type,period" });
       if (error) fail++; else success++;
     }
 
@@ -441,8 +441,8 @@ function BulkActionsTab() {
 
     // Deactivate all overrides for these users
     for (const uid of userIds) {
-      await supabase.from("user_limit_overrides" as any)
-        .update({ is_active: false, updated_at: new Date().toISOString() } as any)
+      await supabase.from("user_limit_overrides")
+        .update({ is_active: false, updated_at: new Date().toISOString() })
         .eq("target_user_id", uid);
     }
 
