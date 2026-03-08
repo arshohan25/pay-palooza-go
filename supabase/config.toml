@@ -53,3 +53,6 @@ verify_jwt = false
 
 [functions.retry-failed-webhooks]
 verify_jwt = false
+
+[functions.merchant-payment-api]
+verify_jwt = false

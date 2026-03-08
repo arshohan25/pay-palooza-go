@@ -161,6 +161,7 @@ Deno.serve(async (req) => {
 
     return json({ error: `Unknown action: ${action}` }, 400);
   } catch (err) {
+    console.error("merchant-payment-api error:", err);
     return json({ error: "Internal server error" }, 500);
   }
 });
