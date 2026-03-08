@@ -1,29 +1,19 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Replace Savings Piggy Bank with a Growing Plant / Sprout Icon
 
-### What
+The piggy bank concept is already used — replace with a **growing sprout/plant in a pot** representing growth and savings.
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### Changes to `src/components/QuickActionIcons.tsx` (lines 326-369)
 
-### Changes
+Replace the entire `SavingsIcon` component with a new illustrated SVG:
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+- **Pot**: Rounded trapezoid in warm terracotta/brown (`#8D6E63` → `#5D4037` gradient)
+- **Soil**: Dark brown arc at top of pot
+- **Stem**: Green curved line growing upward
+- **Leaves**: Two vibrant green leaves (`#4CAF50` → `#1B5E20`) on either side of the stem
+- **Coin badge**: Keep the existing golden Taka coin (large, `r=11`) at top-right — bounces on hover
+- **Hover animation**: The plant/leaves gently sway or scale up slightly
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
-
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+This gives a "money growing" metaphor that's distinct from the piggy bank.
 
