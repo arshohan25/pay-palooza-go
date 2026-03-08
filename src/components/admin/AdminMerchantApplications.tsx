@@ -49,7 +49,7 @@ export default function AdminMerchantApplications() {
 
     if (data) {
       // Fetch applicant profiles
-      const userIds = [...new Set(data.map((a: any) => a.user_id))];
+      const userIds: string[] = [...new Set(data.map((a: any) => a.user_id as string))];
       const { data: profiles } = await supabase
         .from("profiles")
         .select("user_id, name, phone")

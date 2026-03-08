@@ -6,7 +6,7 @@ import {
   Gift, Lock, LogOut, BadgeCheck, AlertCircle,
   BellOff, Pencil, PlayCircle, Globe,
   MessageCircle, Mail, ClipboardList, ShieldBan, GripVertical,
-  Sun, Grid3X3, Minimize2,
+  Sun, Grid3X3, Minimize2, Store,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -21,6 +21,7 @@ import SpendingInsightsPage from "@/pages/SpendingInsightsPage";
 import ReferPage from "@/pages/ReferPage";
 import MyTicketsPage from "@/pages/MyTicketsPage";
 import BlockedUsersPage from "@/components/BlockedUsersPage";
+import MerchantApplicationFlow from "@/components/MerchantApplicationFlow";
 import { generateWalletId } from "@/lib/walletId";
 import { useI18n } from "@/lib/i18n";
 import { useUserRoles } from "@/hooks/use-user-roles";
@@ -139,6 +140,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const [displayPhoto, setDisplayPhotoState] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [showSupport, setShowSupport] = useState(false);
+  const [showMerchantApp, setShowMerchantApp] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
   const { roles } = useUserRoles();
@@ -273,6 +275,9 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
           <MenuRow icon={BadgeCheck} iconClass="gradient-primary" label={t("kycVerification")} sub={t("kycSub")} onClick={() => setShowKyc(true)} />
           <MenuRow icon={Lock}       iconClass="gradient-send"    label={t("changePin")}        sub={t("changePinSub")}    onClick={() => setShowChangePin(true)} />
           <MenuRow icon={Gift}       iconClass="gradient-accent"  label={t("referAFriend")}   sub={t("referSub")} onClick={() => setSubPage("refer")} />
+          {!roles.includes("merchant") && (
+            <MenuRow icon={Store} iconClass="gradient-payment" label="Become a Merchant" sub="Apply for a merchant account" onClick={() => setShowMerchantApp(true)} />
+          )}
         </Section>
 
         {/* ── App Experience ── */}
@@ -434,6 +439,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
           onSaved={handleProfileSaved}
         />
       )}
+      <MerchantApplicationFlow open={showMerchantApp} onOpenChange={setShowMerchantApp} />
 
       {/* Live Chat Sheet */}
       <Sheet open={showSupport} onOpenChange={setShowSupport}>
