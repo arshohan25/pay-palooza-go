@@ -47,6 +47,7 @@ interface TeamMember {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  username?: string | null;
   roles?: AppRole[];
   profile?: { phone: string; name: string | null; avatar_url: string | null };
 }
