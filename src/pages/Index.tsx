@@ -381,16 +381,18 @@ const Index = () => {
       <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
 
       {/* ── Flow overlays ── */}
-      {showSendMoney && <SendMoneyFlow prefilledPhone={sendMoneyPrefilledPhone} onSuccess={(amt) => { sendMoneyOnComplete?.(amt); setSendMoneyOnComplete(undefined); }} onClose={() => { setShowSendMoney(false); setSendMoneyPrefilledPhone(undefined); setSendMoneyOnComplete(undefined); }} />}
-      {showCashOut   && <CashOutFlow   onClose={() => setShowCashOut(false)} />}
-      {showPayment   && <PaymentFlow   onClose={() => setShowPayment(false)} />}
-      {showRecharge  && <MobileRechargeFlow onClose={() => setShowRecharge(false)} />}
-      {showPayBill   && <PayBillFlow   onClose={() => setShowPayBill(false)} />}
-      {showAddMoney  && <AddMoneyFlow  onClose={() => setShowAddMoney(false)} />}
-      {showShop      && <ShopFlow      onClose={() => setShowShop(false)} />}
-      {showBankTransfer && <BankTransferFlow onClose={() => setShowBankTransfer(false)} />}
-      {showSavings   && <SavingsFlow   onClose={() => setShowSavings(false)} />}
-      {showKycFlow   && <KycFlow      onClose={() => setShowKycFlow(false)} />}
+      <AnimatePresence>
+        {showSendMoney && <SendMoneyFlow prefilledPhone={sendMoneyPrefilledPhone} onSuccess={(amt) => { sendMoneyOnComplete?.(amt); setSendMoneyOnComplete(undefined); }} onClose={() => { setShowSendMoney(false); setSendMoneyPrefilledPhone(undefined); setSendMoneyOnComplete(undefined); }} />}
+        {showCashOut   && <CashOutFlow   onClose={() => setShowCashOut(false)} />}
+        {showPayment   && <PaymentFlow   onClose={() => setShowPayment(false)} />}
+        {showRecharge  && <MobileRechargeFlow onClose={() => setShowRecharge(false)} />}
+        {showPayBill   && <PayBillFlow   onClose={() => setShowPayBill(false)} />}
+        {showAddMoney  && <AddMoneyFlow  onClose={() => setShowAddMoney(false)} />}
+        {showShop      && <ShopFlow      onClose={() => setShowShop(false)} />}
+        {showBankTransfer && <BankTransferFlow onClose={() => setShowBankTransfer(false)} />}
+        {showSavings   && <SavingsFlow   onClose={() => setShowSavings(false)} />}
+        {showKycFlow   && <KycFlow      onClose={() => setShowKycFlow(false)} />}
+      </AnimatePresence>
 
 
       {/* Scan & Pay QR flow */}
