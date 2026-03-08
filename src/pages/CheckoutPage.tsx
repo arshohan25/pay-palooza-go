@@ -79,6 +79,20 @@ const CheckoutPage = () => {
     })();
   }, [sessionId]);
 
+  // Countdown timer
+  useEffect(() => {
+    if (!session?.expires_at || (step !== "login" && step !== "confirm")) return;
+    const expires = new Date(session.expires_at).getTime();
+    const tick = () => {
+      const remaining = Math.max(0, Math.floor((expires - Date.now()) / 1000));
+      setSecondsLeft(remaining);
+      if (remaining <= 0) setStep("expired");
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [session?.expires_at, step]);
+
   const handleLogin = useCallback(async () => {
     if (phone.length < 11 || pin.length < 4) {
       setErrorMsg("Enter valid phone and 4-digit PIN");
