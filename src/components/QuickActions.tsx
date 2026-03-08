@@ -127,6 +127,7 @@ interface SortableActionItemProps {
   expanded: boolean;
   longPressId: string | null;
   justDropped: boolean;
+  iconSizePx: number;
   onTriggerRipple: (id: string, e: React.MouseEvent | React.TouchEvent) => void;
   onHandleAction: (id: string, label: string) => void;
   onHoverStart: (id: string) => void;
@@ -138,7 +139,7 @@ interface SortableActionItemProps {
 
 const SortableActionItem = ({
   action, index, isDraggable, isHovered, ripple, label,
-  isFeatureLocked, isGlobalOff, isUnavailable, expanded, longPressId, justDropped,
+  isFeatureLocked, isGlobalOff, isUnavailable, expanded, longPressId, justDropped, iconSizePx,
   onTriggerRipple, onHandleAction, onHoverStart, onHoverEnd,
   onStartLongPress, onCancelLongPress, didLongPressRef,
 }: SortableActionItemProps) => {
