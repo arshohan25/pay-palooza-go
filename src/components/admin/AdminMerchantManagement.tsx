@@ -27,6 +27,7 @@ interface MerchantDetail {
   merchant: any;
   ownerProfile: any;
   apiKeys: any[];
+  apiRequests: any[];
   sessions: any[];
   transactions: any[];
 }
