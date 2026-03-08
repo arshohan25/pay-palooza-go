@@ -269,11 +269,13 @@ export function exportUsersCSV(users: any[]) {
 }
 
 export async function fetchUserDetails(userId: string) {
-  const [profileRes, rolesRes, kycRes, txnRes] = await Promise.all([
+  const [profileRes, rolesRes, kycRes, txnRes, overridesRes, globalLimitsRes] = await Promise.all([
     supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
     supabase.from("user_roles").select("role, created_at").eq("user_id", userId),
     supabase.from("kyc_verifications").select("*").eq("user_id", userId).maybeSingle(),
     supabase.from("transactions").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(10),
+    supabase.from("user_limit_overrides").select("*").eq("target_user_id", userId).eq("is_active", true),
+    supabase.from("transaction_limits").select("*").eq("is_active", true),
   ]);
 
   // Audit log: record admin viewing user profile
@@ -296,5 +298,7 @@ export async function fetchUserDetails(userId: string) {
     roles: rolesRes.data ?? [],
     kyc: kycRes.data,
     transactions: txnRes.data ?? [],
+    limitOverrides: overridesRes.data ?? [],
+    globalLimits: globalLimitsRes.data ?? [],
   };
 }

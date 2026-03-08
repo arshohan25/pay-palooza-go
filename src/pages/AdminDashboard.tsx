@@ -204,7 +204,7 @@ export default function AdminDashboard() {
   const [softDeleting, setSoftDeleting] = useState(false);
   const [detailUser, setDetailUser] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [detailData, setDetailData] = useState<{ profile: any; roles: any[]; kyc: any; transactions: any[] } | null>(null);
+  const [detailData, setDetailData] = useState<{ profile: any; roles: any[]; kyc: any; transactions: any[]; limitOverrides: any[]; globalLimits: any[] } | null>(null);
   const { visible: realtimeVisible, flash: realtimeFlash } = useRealtimeIndicator();
   const { status: wsStatus, lastConnectedAt, reconnectAttempt } = useRealtimeStatus();
   const [disabledTogglesCount, setDisabledTogglesCount] = useState(0);
