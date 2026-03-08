@@ -290,6 +290,16 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   const [ripples, setRipples] = useState<Record<string, RippleState | null>>({});
   const rippleCounterRef = useRef(0);
   const [expanded, setExpanded] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll into view when expanded
+  useEffect(() => {
+    if (expanded && moreRef.current) {
+      setTimeout(() => {
+        moreRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, [expanded]);
   const [hoveredMoreId, setHoveredMoreId] = useState<string | null>(null);
   const [longPressId, setLongPressId] = useState<string | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
