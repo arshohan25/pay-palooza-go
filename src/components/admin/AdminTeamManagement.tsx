@@ -129,74 +129,88 @@ export default function AdminTeamManagement() {
     return () => { supabase.removeChannel(ch); };
   }, [loadMembers]);
 
-  // Search user by phone
-  const searchUser = async () => {
-    if (!addPhone || addPhone.length < 5) return;
-    setAddLooking(true);
-    setFoundUser(null);
-    const norm = addPhone.replace(/\D/g, "").replace(/^88/, "");
-    const { data } = await supabase.from("profiles").select("user_id, name, phone").eq("phone", norm).maybeSingle();
-    if (data) {
-      setFoundUser(data);
-      setAddName(data.name || norm);
-    } else {
-      toast.error("No user found with this phone number");
-    }
-    setAddLooking(false);
+  const resetAddForm = () => {
+    setAddUsername(generateUsername());
+    setAddPassword(generatePassword());
+    setAddName("");
+    setAddNotes("");
+    setAddRole("compliance");
+    setAddDept("general");
+    setCreatedCreds(null);
   };
 
   const addMember = async () => {
-    if (!foundUser) return;
+    if (!addUsername.trim() || !addPassword.trim() || !addName.trim()) {
+      toast.error("Username, password and display name are required");
+      return;
+    }
     setAdding(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      // Check if already a team member
-      const { data: existing } = await supabase.from("team_members").select("id").eq("user_id", foundUser.user_id).maybeSingle();
-      if (existing) { toast.error("User is already a team member"); setAdding(false); return; }
+      const adminSession = session; // save admin session
 
-      // Insert team member
-      const { error: tmErr } = await supabase.from("team_members").insert({
-        user_id: foundUser.user_id,
-        display_name: addName || foundUser.name || foundUser.phone,
-        department: addDept,
-        notes: addNotes || null,
-        created_by: session?.user?.id,
-      });
-      if (tmErr) throw tmErr;
+      // Create auth account for team member
+      const signUpData = await teamSignUp(addUsername.trim(), addPassword, addName.trim());
+      if (!signUpData.user) throw new Error("Failed to create account");
+      const newUserId = signUpData.user.id;
 
-      // Assign role if not already assigned
-      const { data: existingRole } = await supabase.from("user_roles")
-        .select("id").eq("user_id", foundUser.user_id).eq("role", addRole).maybeSingle();
-      if (!existingRole) {
-        await supabase.from("user_roles").insert({ user_id: foundUser.user_id, role: addRole });
+      // Re-authenticate as admin (teamSignUp changes the session)
+      // We need to restore admin session
+      if (adminSession) {
+        await supabase.auth.setSession({
+          access_token: adminSession.access_token,
+          refresh_token: adminSession.refresh_token,
+        });
       }
 
-      // Insert default permissions (all view, no edit/delete)
+      // Create profile with synthetic phone
+      const syntheticPhone = `TEAM-${addUsername.trim()}`;
+      await supabase.from("profiles").insert({
+        user_id: newUserId,
+        phone: syntheticPhone,
+        name: addName.trim(),
+        status: "active",
+      });
+
+      // Insert team member row
+      await supabase.from("team_members").insert({
+        user_id: newUserId,
+        display_name: addName.trim(),
+        department: addDept,
+        notes: addNotes || null,
+        created_by: adminSession?.user?.id,
+        username: addUsername.trim(),
+        temp_password: addPassword,
+      } as any);
+
+      // Assign role
+      await supabase.from("user_roles").insert({ user_id: newUserId, role: addRole });
+
+      // Insert default permissions
       const perms = SECTIONS.map(s => ({
-        user_id: foundUser.user_id,
+        user_id: newUserId,
         section: s,
         can_view: true,
         can_edit: false,
         can_delete: false,
-        granted_by: session?.user?.id,
+        granted_by: adminSession?.user?.id,
       }));
       await supabase.from("team_access_permissions").upsert(perms, { onConflict: "user_id,section" });
 
       // Audit log
       await supabase.from("audit_logs").insert({
-        actor_id: session?.user?.id!,
-        action: "team_member_added",
+        actor_id: adminSession?.user?.id!,
+        action: "team_member_created",
         entity_type: "team",
-        entity_id: foundUser.user_id,
-        details: { display_name: addName, role: addRole, department: addDept },
+        entity_id: newUserId,
+        details: { display_name: addName.trim(), username: addUsername.trim(), role: addRole, department: addDept },
       });
 
-      toast.success("Team member added successfully");
-      setShowAdd(false);
-      setAddPhone(""); setFoundUser(null); setAddName(""); setAddNotes("");
+      toast.success("Team member created successfully");
+      setCreatedCreds({ username: addUsername.trim(), password: addPassword });
       loadMembers();
     } catch (e: any) {
-      toast.error(e.message || "Failed to add team member");
+      toast.error(e.message || "Failed to create team member");
     }
     setAdding(false);
   };
