@@ -140,6 +140,7 @@ interface SortableActionItemProps {
   isUnavailable: boolean;
   expanded: boolean;
   longPressId: string | null;
+  justDropped: boolean;
   onTriggerRipple: (id: string, e: React.MouseEvent | React.TouchEvent) => void;
   onHandleAction: (id: string, label: string) => void;
   onHoverStart: (id: string) => void;
@@ -151,7 +152,7 @@ interface SortableActionItemProps {
 
 const SortableActionItem = ({
   action, index, isDraggable, isHovered, ripple, label,
-  isFeatureLocked, isGlobalOff, isUnavailable, expanded, longPressId,
+  isFeatureLocked, isGlobalOff, isUnavailable, expanded, longPressId, justDropped,
   onTriggerRipple, onHandleAction, onHoverStart, onHoverEnd,
   onStartLongPress, onCancelLongPress, didLongPressRef,
 }: SortableActionItemProps) => {
@@ -193,7 +194,7 @@ const SortableActionItem = ({
   }
 
   return (
-    <div ref={setNodeRef} style={style} className={`relative transition-[scale,opacity] duration-200 ${isOver && isDraggable ? "scale-95 opacity-60" : ""}`}>
+    <div ref={setNodeRef} style={style} className={`relative transition-[scale,opacity] duration-200 ${isOver && isDraggable ? "scale-95 opacity-60" : ""} ${justDropped ? "animate-[drop-bounce_0.4s_ease-out]" : ""}`}>
       <motion.button
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -305,6 +306,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   const [hoveredMoreId, setHoveredMoreId] = useState<string | null>(null);
   const [longPressId, setLongPressId] = useState<string | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [justDroppedId, setJustDroppedId] = useState<string | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didLongPress = useRef(false);
 
@@ -340,10 +342,13 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   }, []);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const draggedId = event.active.id as string;
     setActiveDragId(null);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     haptics.success();
+    setJustDroppedId(draggedId);
+    setTimeout(() => setJustDroppedId(null), 450);
     setSortableOrder(prev => {
       const oldIndex = prev.indexOf(active.id as string);
       const newIndex = prev.indexOf(over.id as string);
