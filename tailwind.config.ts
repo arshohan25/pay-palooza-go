@@ -127,6 +127,11 @@ export default {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-4px)" },
         },
+        shake: {
+          "0%, 100%": { transform: "translateX(0)" },
+          "20%, 60%": { transform: "translateX(-6px)" },
+          "40%, 80%": { transform: "translateX(6px)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -144,6 +149,7 @@ export default {
         "zoom-in": "zoom-in 0.25s cubic-bezier(0.23,1,0.32,1)",
         "zoom-out": "zoom-out 0.25s cubic-bezier(0.23,1,0.32,1)",
         "float-y": "float-y 3s ease-in-out infinite",
+        shake: "shake 0.4s ease-in-out",
       },
     },
   },
