@@ -363,6 +363,173 @@ export const SavingsIcon = ({ isHovered }: IconProps) => (
   </svg>
 );
 
+// Coupons icon — ticket with percentage badge
+export const CouponsIcon = ({ isHovered }: IconProps) => (
+  <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" overflow="visible">
+    <defs>
+      <linearGradient id="couponGrad" x1="8" y1="16" x2="48" y2="42" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#F06292"/>
+        <stop offset="100%" stopColor="#AD1457"/>
+      </linearGradient>
+    </defs>
+    <motion.g
+      animate={isHovered ? { rotate: [0, -4, 4, -2, 0] } : { rotate: 0 }}
+      transition={isHovered ? { duration: 0.5, ease: "easeInOut" } : { duration: 0.3 }}
+      style={{ transformBox: "fill-box", transformOrigin: "28px 28px" }}
+    >
+      {/* Ticket body */}
+      <rect x="8" y="16" width="40" height="26" rx="4" fill="url(#couponGrad)"/>
+      {/* Notch top */}
+      <circle cx="28" cy="16" r="4" fill="hsl(var(--card))"/>
+      {/* Notch bottom */}
+      <circle cx="28" cy="42" r="4" fill="hsl(var(--card))"/>
+      {/* Dotted tear line */}
+      <line x1="28" y1="20" x2="28" y2="38" stroke="white" strokeWidth="1.5" strokeDasharray="3 3" opacity="0.5"/>
+      {/* Left side content */}
+      <rect x="13" y="22" width="10" height="2" rx="1" fill="white" opacity="0.5"/>
+      <rect x="13" y="26" width="8" height="2" rx="1" fill="white" opacity="0.35"/>
+      {/* Percentage badge */}
+      <circle cx="40" cy="22" r="7" fill="#FFC107"/>
+      <text x="40" y="25" textAnchor="middle" fill="#7B3F00" fontSize="8" fontWeight="bold">%</text>
+    </motion.g>
+  </svg>
+);
+
+// Donations icon — heart with hand
+export const DonationsIcon = ({ isHovered }: IconProps) => (
+  <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" overflow="visible">
+    <defs>
+      <linearGradient id="heartGrad" x1="12" y1="10" x2="44" y2="40" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#EF5350"/>
+        <stop offset="100%" stopColor="#B71C1C"/>
+      </linearGradient>
+    </defs>
+    {/* Open hand */}
+    <path d="M20 46 Q16 44 14 40 L14 36 Q14 34 16 34 L40 34 Q42 34 42 36 L42 40 Q40 44 36 46 Z" fill="#FFCCBC" opacity="0.8"/>
+    <path d="M18 38 L38 38" stroke="#FFAB91" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+    {/* Heart */}
+    <motion.g
+      animate={isHovered ? { scale: [1, 1.15, 1, 1.1, 1] } : { scale: 1 }}
+      transition={isHovered ? { duration: 0.6, ease: "easeInOut", repeat: Infinity } : { duration: 0.3 }}
+      style={{ transformBox: "fill-box", transformOrigin: "28px 22px" }}
+    >
+      <path d="M28 32 C20 26 12 20 12 14 C12 8 18 6 22 10 L28 16 L34 10 C38 6 44 8 44 14 C44 20 36 26 28 32 Z" fill="url(#heartGrad)"/>
+      <path d="M28 16 L22 10 C18 6 12 8 12 14 C12 16 13 18 15 20 L28 16 Z" fill="white" opacity="0.2"/>
+    </motion.g>
+  </svg>
+);
+
+// Loan icon — banknote stack with clock badge
+export const LoanIcon = ({ isHovered }: IconProps) => (
+  <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" overflow="visible">
+    <defs>
+      <linearGradient id="loanGrad" x1="8" y1="16" x2="48" y2="46" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#FFA726"/>
+        <stop offset="100%" stopColor="#E65100"/>
+      </linearGradient>
+    </defs>
+    <motion.g
+      animate={isHovered ? { rotate: [0, -3, 3, 0] } : { rotate: 0 }}
+      transition={isHovered ? { duration: 0.5, ease: "easeInOut" } : { duration: 0.3 }}
+      style={{ transformBox: "fill-box", transformOrigin: "28px 32px" }}
+    >
+      {/* Stacked notes */}
+      <rect x="10" y="24" width="36" height="20" rx="3" fill="#FFB74D" opacity="0.5"/>
+      <rect x="12" y="20" width="36" height="20" rx="3" fill="#FFA726" opacity="0.7"/>
+      <rect x="8" y="18" width="36" height="20" rx="3" fill="url(#loanGrad)"/>
+      {/* Taka symbol */}
+      <text x="26" y="32" textAnchor="middle" fill="white" fontSize="11" fontWeight="bold" fontFamily="serif">৳</text>
+      {/* Detail lines */}
+      <rect x="13" y="22" width="8" height="2" rx="1" fill="white" opacity="0.4"/>
+      <rect x="13" y="34" width="12" height="2" rx="1" fill="white" opacity="0.3"/>
+    </motion.g>
+    {/* Clock badge */}
+    <motion.g
+      animate={isHovered ? { scale: [1, 1.15, 1] } : { scale: 1 }}
+      transition={isHovered ? { duration: 0.5, ease: "easeInOut", repeat: Infinity } : { duration: 0.3 }}
+      style={{ transformBox: "fill-box", transformOrigin: "42px 16px" }}
+    >
+      <circle cx="42" cy="16" r="8" fill="#FFC107"/>
+      <circle cx="42" cy="16" r="5.5" fill="white" opacity="0.9"/>
+      <line x1="42" y1="16" x2="42" y2="12.5" stroke="#E65100" strokeWidth="1.5" strokeLinecap="round"/>
+      <line x1="42" y1="16" x2="45" y2="16" stroke="#E65100" strokeWidth="1.5" strokeLinecap="round"/>
+    </motion.g>
+  </svg>
+);
+
+// Insurance icon — shield with checkmark
+export const InsuranceIcon = ({ isHovered }: IconProps) => (
+  <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" overflow="visible">
+    <defs>
+      <linearGradient id="shieldGrad" x1="12" y1="6" x2="44" y2="48" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#B39DDB"/>
+        <stop offset="100%" stopColor="#4527A0"/>
+      </linearGradient>
+    </defs>
+    <motion.g
+      animate={isHovered ? { scale: [1, 1.06, 1] } : { scale: 1 }}
+      transition={isHovered ? { duration: 0.5, ease: "easeInOut", repeat: Infinity } : { duration: 0.3 }}
+      style={{ transformBox: "fill-box", transformOrigin: "28px 28px" }}
+    >
+      {/* Shield */}
+      <path d="M28 6 L12 14 L12 28 C12 38 20 46 28 50 C36 46 44 38 44 28 L44 14 Z" fill="url(#shieldGrad)"/>
+      {/* Inner highlight */}
+      <path d="M28 10 L16 16 L16 28 C16 36 22 42 28 46 C34 42 40 36 40 28 L40 16 Z" fill="white" opacity="0.12"/>
+      {/* Checkmark */}
+      <path d="M20 28 L26 34 L38 20" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+    </motion.g>
+    {/* Glow on hover */}
+    {isHovered && (
+      <motion.path
+        d="M28 6 L12 14 L12 28 C12 38 20 46 28 50 C36 46 44 38 44 28 L44 14 Z"
+        fill="#B39DDB"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 0.15, 0] }}
+        transition={{ duration: 0.5, repeat: Infinity }}
+        style={{ filter: "blur(6px)" }}
+      />
+    )}
+  </svg>
+);
+
+// Gift Cards icon — card with ribbon and star
+export const GiftCardsIcon = ({ isHovered }: IconProps) => (
+  <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" overflow="visible">
+    <defs>
+      <linearGradient id="giftCardGrad" x1="8" y1="14" x2="48" y2="44" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#FF8A65"/>
+        <stop offset="100%" stopColor="#C62828"/>
+      </linearGradient>
+    </defs>
+    <motion.g
+      animate={isHovered ? { rotate: [0, -3, 3, -2, 0] } : { rotate: 0 }}
+      transition={isHovered ? { duration: 0.5, ease: "easeInOut" } : { duration: 0.3 }}
+      style={{ transformBox: "fill-box", transformOrigin: "28px 30px" }}
+    >
+      {/* Card body */}
+      <rect x="8" y="14" width="40" height="30" rx="4" fill="url(#giftCardGrad)"/>
+      {/* Ribbon horizontal */}
+      <rect x="8" y="26" width="40" height="5" rx="1" fill="#FF3D00" opacity="0.6"/>
+      {/* Ribbon vertical */}
+      <rect x="25" y="14" width="6" height="30" rx="1" fill="#FF3D00" opacity="0.5"/>
+      {/* Bow */}
+      <path d="M28 26 Q22 20 18 22 Q16 24 20 26 Z" fill="#FF5722"/>
+      <path d="M28 26 Q34 20 38 22 Q40 24 36 26 Z" fill="#FF5722"/>
+      {/* Magnetic stripe */}
+      <rect x="8" y="18" width="40" height="4" rx="1" fill="white" opacity="0.12"/>
+    </motion.g>
+    {/* Star badge */}
+    <motion.g
+      animate={isHovered ? { rotate: [0, 15, -15, 0], scale: [1, 1.1, 1] } : { rotate: 0, scale: 1 }}
+      transition={isHovered ? { duration: 0.5, ease: "easeInOut" } : { duration: 0.3 }}
+      style={{ transformBox: "fill-box", transformOrigin: "44px 14px" }}
+    >
+      <circle cx="44" cy="14" r="7" fill="#FFC107"/>
+      <path d="M44 8.5 L45.2 11.5 L48.5 11.5 L45.8 13.5 L46.8 16.5 L44 14.5 L41.2 16.5 L42.2 13.5 L39.5 11.5 L42.8 11.5 Z" fill="white" opacity="0.9"/>
+    </motion.g>
+  </svg>
+);
+
 // ── Transaction Icons ─────────────────────────────────────────────────────────
 
 export const TxSendIcon = () => (

@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Lock, Wallet, Ticket, Heart, Banknote, ShieldCheck, Gift, ChevronUp } from "lucide-react";
+import { Lock, ChevronUp } from "lucide-react";
 import {
   SendMoneyIcon,
   CashOutIcon,
@@ -11,6 +11,13 @@ import {
   PayBillIcon,
   ShopIcon,
   MoreIcon,
+  ReferIcon,
+  SavingsIcon,
+  CouponsIcon,
+  DonationsIcon,
+  LoanIcon,
+  InsuranceIcon,
+  GiftCardsIcon,
 } from "./QuickActionIcons";
 import { useI18n } from "@/lib/i18n";
 import { useFeatureLocks } from "@/hooks/use-feature-locks";
@@ -37,13 +44,13 @@ const actionDefs = [
 ];
 
 const moreServices = [
-  { id: "refer", icon: Gift, label: "Refer & Earn", desc: "Invite friends & earn", gradient: "from-orange-500 to-red-500" },
-  { id: "savings", icon: Wallet, label: "Savings", desc: "Set goals & grow money", gradient: "from-emerald-500 to-teal-600" },
-  { id: "coupons", icon: Ticket, label: "Coupons & Offers", desc: "Exclusive deals", gradient: "from-pink-500 to-rose-600", soon: true },
-  { id: "donations", icon: Heart, label: "Donations", desc: "Support causes", gradient: "from-red-500 to-rose-700", soon: true },
-  { id: "loan", icon: Banknote, label: "Loan", desc: "Quick personal loans", gradient: "from-amber-500 to-orange-600", soon: true },
-  { id: "insurance", icon: ShieldCheck, label: "Insurance", desc: "Protect what matters", gradient: "from-violet-500 to-purple-600", soon: true },
-  { id: "giftcards", icon: Gift, label: "Gift Cards", desc: "Send & redeem gifts", gradient: "from-orange-400 to-red-500", soon: true },
+  { id: "refer", Icon: ReferIcon, label: "Refer & Earn", desc: "Invite friends & earn", gradient: "from-orange-500 to-red-500" },
+  { id: "savings", Icon: SavingsIcon, label: "Savings", desc: "Set goals & grow money", gradient: "from-emerald-500 to-teal-600" },
+  { id: "coupons", Icon: CouponsIcon, label: "Coupons & Offers", desc: "Exclusive deals", gradient: "from-pink-500 to-rose-600", soon: true },
+  { id: "donations", Icon: DonationsIcon, label: "Donations", desc: "Support causes", gradient: "from-red-500 to-rose-700", soon: true },
+  { id: "loan", Icon: LoanIcon, label: "Loan", desc: "Quick personal loans", gradient: "from-amber-500 to-orange-600", soon: true },
+  { id: "insurance", Icon: InsuranceIcon, label: "Insurance", desc: "Protect what matters", gradient: "from-violet-500 to-purple-600", soon: true },
+  { id: "giftcards", Icon: GiftCardsIcon, label: "Gift Cards", desc: "Send & redeem gifts", gradient: "from-orange-400 to-red-500", soon: true },
 ];
 
 interface RippleState { x: number; y: number; id: number; }
@@ -69,6 +76,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   const [ripples, setRipples] = useState<Record<string, RippleState | null>>({});
   const rippleCounterRef = useRef(0);
   const [expanded, setExpanded] = useState(false);
+  const [hoveredMoreId, setHoveredMoreId] = useState<string | null>(null);
 
   const triggerRipple = useCallback((id: string, e: React.MouseEvent | React.TouchEvent) => {
     const el = (e.currentTarget as HTMLElement).querySelector("[data-ripple-container]") as HTMLElement;
@@ -203,8 +211,9 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.04 * i, duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
                     whileTap={{ scale: 0.90 }}
-                    whileHover={{ scale: 1.05 }}
                     onClick={() => handleMoreService(item.id, item.soon)}
+                    onMouseEnter={() => setHoveredMoreId(item.id)}
+                    onMouseLeave={() => setHoveredMoreId(null)}
                     className={`flex flex-col items-center gap-2.5 group outline-none relative ${item.soon ? "opacity-60" : ""}`}
                   >
                     <motion.div
@@ -217,13 +226,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                       <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 blur-[10px] transition-opacity duration-300 -z-10 scale-110">
                         <div className={`w-full h-full bg-gradient-to-b ${item.gradient} opacity-30`} />
                       </div>
-                      <motion.div
-                        className="relative z-10"
-                        whileHover={{ rotate: [0, -8, 8, -4, 0] }}
-                        transition={{ duration: 0.5, ease: "easeInOut" }}
-                      >
-                        <item.icon size={22} className="text-foreground" />
-                      </motion.div>
+                      <item.Icon isHovered={hoveredMoreId === item.id} />
                       {item.soon && (
                         <motion.div
                           className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-destructive/80 flex items-center justify-center shadow-lg z-10 ring-2 ring-background"
