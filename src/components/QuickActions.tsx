@@ -11,6 +11,7 @@ import {
   useSensors,
   DragEndEvent,
   DragStartEvent,
+  DragOverlay,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -161,6 +162,7 @@ const SortableActionItem = ({
     transform,
     transition,
     isDragging,
+    isOver,
   } = useSortable({
     id: action.id,
     disabled: !isDraggable,
@@ -173,8 +175,25 @@ const SortableActionItem = ({
     scale: isDragging ? 1.12 : 1,
   };
 
+  // Ghost placeholder when this slot is the drop target
+  if (isDragging) {
+    return (
+      <div ref={setNodeRef} style={style} className="relative">
+        <div className="flex flex-col items-center gap-2.5">
+          <div
+            className="rounded-full border-2 border-dashed border-primary/40 bg-primary/5 animate-pulse"
+            style={{ width: 56, height: 56 }}
+          />
+          <span className="text-[10px] font-semibold text-transparent select-none px-0.5">
+            {label}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div ref={setNodeRef} style={style} className={`relative transition-[scale,opacity] duration-200 ${isDragging ? "opacity-80 drop-shadow-lg" : ""}`}>
+    <div ref={setNodeRef} style={style} className={`relative transition-[scale,opacity] duration-200 ${isOver && isDraggable ? "scale-95 opacity-60" : ""}`}>
       <motion.button
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -285,6 +304,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   const [expanded, setExpanded] = useState(false);
   const [hoveredMoreId, setHoveredMoreId] = useState<string | null>(null);
   const [longPressId, setLongPressId] = useState<string | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didLongPress = useRef(false);
 
@@ -314,11 +334,13 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
   );
 
-  const handleDragStart = useCallback((_event: DragStartEvent) => {
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveDragId(event.active.id as string);
     haptics.medium();
   }, []);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
+    setActiveDragId(null);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     haptics.success();
@@ -456,6 +478,26 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
             })}
           </div>
         </SortableContext>
+        <DragOverlay dropAnimation={{ duration: 200, easing: "ease" }}>
+          {activeDragId ? (() => {
+            const action = allActionDefs.find(a => a.id === activeDragId);
+            if (!action) return null;
+            const label = t(action.labelKey);
+            return (
+              <div className="flex flex-col items-center gap-2.5 drop-shadow-xl">
+                <div
+                  className="relative flex items-center justify-center rounded-full shadow-lg ring-2 ring-primary/30 overflow-hidden"
+                  style={{ width: 56, height: 56, background: action.bgStyle }}
+                >
+                  {action.id === "more" ? <MoreIcon /> : <action.Icon />}
+                </div>
+                <span className="text-[10px] sm:text-[10.5px] font-semibold text-foreground leading-tight text-center px-0.5">
+                  {label}
+                </span>
+              </div>
+            );
+          })() : null}
+        </DragOverlay>
       </DndContext>
 
       {/* Inline expanded More services */}
