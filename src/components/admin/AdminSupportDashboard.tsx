@@ -66,6 +66,7 @@ const fmt = (d: string) =>
 export default function AdminSupportDashboard() {
   const { user } = useAuth();
   const { visible, flash } = useRealtimeIndicator();
+  const { routing, assignConversation } = useAgentRouting();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
