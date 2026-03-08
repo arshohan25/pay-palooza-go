@@ -52,6 +52,7 @@ import AdminApiHub from "@/components/admin/AdminApiHub";
 import AdminBillerConfig from "@/components/admin/AdminBillerConfig";
 import AdminAuditLogViewer from "@/components/admin/AdminAuditLogViewer";
 import AdminBannerManager from "@/components/admin/AdminBannerManager";
+import AdminLimitManager from "@/components/admin/AdminLimitManager";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -171,6 +172,7 @@ const NAV_ITEMS = [
   { id: "auditlog", label: "Audit Log", icon: Eye },
   { id: "apihub", label: "API Hub", icon: Plug },
   { id: "banners", label: "Banners", icon: Image },
+  { id: "limits", label: "Limits", icon: Scale },
 ];
 
 export default function AdminDashboard() {
@@ -1139,6 +1141,9 @@ export default function AdminDashboard() {
 
         {/* ═══ BANNER MANAGEMENT ═══ */}
         {activeTab === "banners" && <AdminBannerManager />}
+
+        {/* ═══ LIMIT MANAGEMENT ═══ */}
+        {activeTab === "limits" && <AdminLimitManager />}
       </main>
 
       {/* User Lock Dialog - accessible from any user/agent/merchant row */}
