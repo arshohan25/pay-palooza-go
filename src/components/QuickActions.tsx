@@ -471,6 +471,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                   isUnavailable={isUnavailable}
                   expanded={expanded}
                   longPressId={longPressId}
+                  justDropped={justDroppedId === action.id}
                   onTriggerRipple={triggerRipple}
                   onHandleAction={handleAction}
                   onHoverStart={(id) => setHoveredId(id)}
