@@ -625,6 +625,128 @@ export type Database = {
         }
         Relationships: []
       }
+      merchant_api_keys: {
+        Row: {
+          api_key: string
+          created_at: string
+          id: string
+          is_active: boolean
+          merchant_id: string
+          secret_key: string
+          updated_at: string
+          webhook_url: string | null
+        }
+        Insert: {
+          api_key: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          merchant_id: string
+          secret_key: string
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Update: {
+          api_key?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          merchant_id?: string
+          secret_key?: string
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_api_keys_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchant_payment_sessions: {
+        Row: {
+          amount: number
+          api_key_id: string
+          callback_url: string | null
+          cancel_url: string | null
+          completed_at: string | null
+          created_at: string
+          currency: string
+          customer_phone: string | null
+          description: string | null
+          expires_at: string
+          id: string
+          merchant_id: string
+          metadata: Json | null
+          payer_user_id: string | null
+          reference: string | null
+          status: string
+          success_url: string | null
+          updated_at: string
+          webhook_delivered: boolean
+        }
+        Insert: {
+          amount: number
+          api_key_id: string
+          callback_url?: string | null
+          cancel_url?: string | null
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          customer_phone?: string | null
+          description?: string | null
+          expires_at?: string
+          id?: string
+          merchant_id: string
+          metadata?: Json | null
+          payer_user_id?: string | null
+          reference?: string | null
+          status?: string
+          success_url?: string | null
+          updated_at?: string
+          webhook_delivered?: boolean
+        }
+        Update: {
+          amount?: number
+          api_key_id?: string
+          callback_url?: string | null
+          cancel_url?: string | null
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          customer_phone?: string | null
+          description?: string | null
+          expires_at?: string
+          id?: string
+          merchant_id?: string
+          metadata?: Json | null
+          payer_user_id?: string | null
+          reference?: string | null
+          status?: string
+          success_url?: string | null
+          updated_at?: string
+          webhook_delivered?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_payment_sessions_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_api_keys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchant_payment_sessions_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchants: {
         Row: {
           bank_account_number: string | null

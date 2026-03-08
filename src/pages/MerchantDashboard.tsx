@@ -26,9 +26,10 @@ import { verifyPin } from "@/lib/verifyPin";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import { haptics } from "@/lib/haptics";
 import DailyLimitBadge from "@/components/DailyLimitBadge";
+import MerchantApiTab from "@/components/MerchantApiTab";
 
 /* ─── Types ─── */
-type MerchTab = "overview" | "qr" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics";
+type MerchTab = "overview" | "qr" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api";
 
 interface MerchantInfo {
   id: string;
@@ -70,6 +71,7 @@ const mainTabs: { id: MerchTab; icon: typeof QrCode; label: string }[] = [
 const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: string }[] = [
   { id: "analytics",    icon: PieChart,     label: "Analytics",        desc: "Insights, revenue & customers" },
   { id: "transactions", icon: ArrowUpDown,  label: "History",          desc: "View all transactions" },
+  { id: "api",          icon: Globe,        label: "API Integration",  desc: "API keys, webhooks & docs" },
   { id: "paylinks",     icon: Link,         label: "Pay Links",        desc: "Create & share payment links" },
   { id: "settlements",  icon: BanknoteIcon, label: "Settlement",       desc: "Bank payouts & schedule" },
   { id: "mdr",          icon: Percent,      label: "Fees & Charges",   desc: "MDR rates & fee breakdown" },
@@ -391,6 +393,7 @@ const MerchantDashboard = () => {
             {activeTab === "transactions" && <TxnTab txns={paymentTxns} />}
             {activeTab === "settlements"  && <SettlementTab merchant={merchant} paymentTxns={paymentTxns} />}
             {activeTab === "mdr"          && <MDRTab merchant={merchant} paymentTxns={paymentTxns} />}
+            {activeTab === "api"          && merchant && <MerchantApiTab merchantId={merchant.id} />}
           </motion.div>
         </AnimatePresence>
       </div>
