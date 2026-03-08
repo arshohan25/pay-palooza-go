@@ -27,11 +27,13 @@ const DynamicQrPage = () => {
   useEffect(() => {
     if (!sessionId) { setStatus("error"); return; }
     (async () => {
+      console.log("[DynamicQR] Fetching session:", sessionId);
       const { data: session, error } = await supabase
         .from("merchant_payment_sessions")
         .select("id, amount, currency, reference, description, status, success_url, expires_at, merchant_id")
         .eq("id", sessionId)
         .single();
+      console.log("[DynamicQR] Session result:", { session, error });
       if (error || !session) { setStatus("error"); return; }
 
       setAmount(session.amount);
