@@ -161,6 +161,7 @@ const SortableActionItem = ({
     transform,
     transition,
     isDragging,
+    isOver,
   } = useSortable({
     id: action.id,
     disabled: !isDraggable,
@@ -173,8 +174,25 @@ const SortableActionItem = ({
     scale: isDragging ? 1.12 : 1,
   };
 
+  // Ghost placeholder when this slot is the drop target
+  if (isDragging) {
+    return (
+      <div ref={setNodeRef} style={style} className="relative">
+        <div className="flex flex-col items-center gap-2.5">
+          <div
+            className="rounded-full border-2 border-dashed border-primary/40 bg-primary/5 animate-pulse"
+            style={{ width: 56, height: 56 }}
+          />
+          <span className="text-[10px] font-semibold text-transparent select-none px-0.5">
+            {label}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div ref={setNodeRef} style={style} className={`relative transition-[scale,opacity] duration-200 ${isDragging ? "opacity-80 drop-shadow-lg" : ""}`}>
+    <div ref={setNodeRef} style={style} className={`relative transition-[scale,opacity] duration-200 ${isOver && isDraggable ? "scale-95 opacity-60" : ""}`}>
       <motion.button
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
