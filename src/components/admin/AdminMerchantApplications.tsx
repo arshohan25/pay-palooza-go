@@ -53,7 +53,7 @@ export default function AdminMerchantApplications() {
       const { data: profiles } = await supabase
         .from("profiles")
         .select("user_id, name, phone")
-        .in("user_id", userIds);
+        .in("user_id", userIds as string[]);
 
       const profileMap = new Map((profiles ?? []).map(p => [p.user_id, p]));
       const enriched = data.map((a: any) => ({
