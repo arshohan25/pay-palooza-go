@@ -10,6 +10,8 @@ import { Card } from "@/components/ui/card";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
+const isValidUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+const fmtTime = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
 type SessionData = {
   id: string;
@@ -37,10 +39,10 @@ const CheckoutPage = () => {
   const [phone, setPhone] = useState("");
   const [pin, setPin] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
-
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   // Load session
   useEffect(() => {
-    if (!sessionId) { setStep("error"); return; }
+    if (!sessionId || !isValidUUID(sessionId)) { setStep("error"); return; }
 
     (async () => {
       const { data, error } = await supabase
@@ -76,6 +78,20 @@ const CheckoutPage = () => {
       setStep("login");
     })();
   }, [sessionId]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!session?.expires_at || (step !== "login" && step !== "confirm")) return;
+    const expires = new Date(session.expires_at).getTime();
+    const tick = () => {
+      const remaining = Math.max(0, Math.floor((expires - Date.now()) / 1000));
+      setSecondsLeft(remaining);
+      if (remaining <= 0) setStep("expired");
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [session?.expires_at, step]);
 
   const handleLogin = useCallback(async () => {
     if (phone.length < 11 || pin.length < 4) {
@@ -264,11 +280,15 @@ const CheckoutPage = () => {
                 <Button variant="ghost" onClick={handleCancel} className="w-full text-xs">Cancel</Button>
               </Card>
 
-              {/* Expiry */}
-              <p className="text-[10px] text-muted-foreground text-center mt-3 flex items-center justify-center gap-1">
-                <Clock size={10} />
-                Expires at {new Date(session.expires_at).toLocaleTimeString()}
-              </p>
+              {/* Countdown timer */}
+              {secondsLeft !== null && (
+                <div className={`text-center mt-3 flex items-center justify-center gap-1.5 text-xs font-semibold ${
+                  secondsLeft > 60 ? "text-muted-foreground" : secondsLeft > 30 ? "text-amber-500" : "text-destructive"
+                }`}>
+                  <Clock size={12} />
+                  <span>{fmtTime(secondsLeft)}</span>
+                </div>
+              )}
             </motion.div>
           )}
 
