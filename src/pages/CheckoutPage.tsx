@@ -322,6 +322,7 @@ const CheckoutPage = () => {
                   <span>{fmtTime(secondsLeft)}</span>
                 </div>
               )}
+            </motion.div>
           )}
 
           {/* PROCESSING */}
