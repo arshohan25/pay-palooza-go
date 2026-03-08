@@ -13,7 +13,7 @@ import {
   Bell, Settings, HelpCircle, Landmark, BadgeCheck, Link, Share2,
   ExternalLink, Plus, Trash2, Check, Send, Banknote, Timer,
   ArrowRightLeft, Repeat, HandCoins, CalendarClock, CircleDollarSign, ScanLine,
-  Lock, Delete, Menu, X, AlertTriangle, ChevronDown, Info
+  Lock, Delete, Menu, X, AlertTriangle, ChevronDown, Info, Package
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
