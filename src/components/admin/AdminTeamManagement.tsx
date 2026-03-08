@@ -518,6 +518,31 @@ export default function AdminTeamManagement() {
                   </Button>
                 </div>
               </div>
+              {emailSent && addEmail.trim() ? (
+                <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg px-3 py-2">
+                  <CheckCircle className="w-4 h-4 shrink-0" />
+                  <span>Credentials emailed to <strong>{addEmail.trim()}</strong></span>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Email to send credentials (optional)"
+                    value={addEmail}
+                    onChange={e => setAddEmail(e.target.value)}
+                    type="email"
+                    className="flex-1"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!addEmail.trim() || sendingEmail}
+                    onClick={() => sendCredentialsEmail(addEmail.trim(), createdCreds.username, createdCreds.password)}
+                  >
+                    <Send className="w-3 h-3 mr-1" />
+                    {sendingEmail ? "Sending..." : "Send"}
+                  </Button>
+                </div>
+              )}
               <p className="text-xs text-muted-foreground text-center">⚠️ Save these credentials now. The password won't be shown again.</p>
             </div>
           ) : (
@@ -545,6 +570,13 @@ export default function AdminTeamManagement() {
               <div>
                 <Label>Display Name</Label>
                 <Input value={addName} onChange={e => setAddName(e.target.value)} className="mt-1" placeholder="John Doe" />
+              </div>
+              <div>
+                <Label>Email <span className="text-muted-foreground font-normal">(optional — to send credentials)</span></Label>
+                <div className="flex gap-1 mt-1">
+                  <Mail className="w-4 h-4 mt-2.5 text-muted-foreground shrink-0" />
+                  <Input value={addEmail} onChange={e => setAddEmail(e.target.value)} type="email" placeholder="member@company.com" />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
