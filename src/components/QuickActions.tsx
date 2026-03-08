@@ -30,6 +30,9 @@ const FEATURE_MAP: Record<string, string> = {
   recharge: "mobile_recharge",
   bill: "pay_bill",
   shop: "payment",
+  bank: "bank_transfer",
+  refer: "refer",
+  savings: "savings",
 };
 
 const actionDefs = [
@@ -44,8 +47,8 @@ const actionDefs = [
 ];
 
 const moreServices = [
-  { id: "refer", Icon: ReferIcon, label: "Refer & Earn", desc: "Invite friends & earn", gradient: "from-orange-500 to-red-500" },
-  { id: "savings", Icon: SavingsIcon, label: "Savings", desc: "Set goals & grow money", gradient: "from-emerald-500 to-teal-600" },
+  { id: "refer", Icon: ReferIcon, label: "Refer & Earn", desc: "Invite friends & earn", gradient: "from-orange-500 to-red-500", featureKey: "refer" },
+  { id: "savings", Icon: SavingsIcon, label: "Savings", desc: "Set goals & grow money", gradient: "from-emerald-500 to-teal-600", featureKey: "savings" },
   { id: "coupons", Icon: CouponsIcon, label: "Coupons & Offers", desc: "Exclusive deals", gradient: "from-pink-500 to-rose-600", soon: true },
   { id: "donations", Icon: DonationsIcon, label: "Donations", desc: "Support causes", gradient: "from-red-500 to-rose-700", soon: true },
   { id: "loan", Icon: LoanIcon, label: "Loan", desc: "Quick personal loans", gradient: "from-amber-500 to-orange-600", soon: true },
@@ -147,8 +150,8 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                 data-ripple-container
                 whileHover={{ scale: 1.06, y: -2 }}
                 transition={{ type: "spring", stiffness: 380, damping: 22 }}
-                className="relative flex items-center justify-center rounded-full shadow-sm group-hover:shadow-md transition-shadow duration-200 overflow-hidden"
-                style={{ width: 56, height: 56, background: action.bgStyle, outline: action.ringStyle }}
+                className="relative flex items-center justify-center rounded-full shadow-sm group-hover:shadow-md transition-all duration-200 overflow-hidden"
+                style={{ width: 56, height: 56, background: action.bgStyle, outline: action.ringStyle, filter: isGlobalOff ? "grayscale(1)" : "none", opacity: isGlobalOff ? 0.5 : 1 }}
               >
                 <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 blur-[10px] transition-opacity duration-300 -z-10 scale-110" style={{ background: action.bgStyle }} />
                 <AnimatePresence>
@@ -178,7 +181,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                   </div>
                 )}
               </motion.div>
-              <span className="text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-colors duration-150 px-0.5">
+              <span className={`text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-all duration-150 px-0.5 ${isGlobalOff ? "opacity-50 grayscale" : ""}`}>
                 {label}
               </span>
             </motion.button>
@@ -204,40 +207,46 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                 </button>
               </div>
               <div className="grid grid-cols-4 gap-y-5 gap-x-2 sm:gap-x-3">
-                {moreServices.map((item, i) => (
-                  <motion.button
-                    key={item.id}
-                    initial={{ opacity: 0, scale: 0.7, y: 12 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ delay: 0.06 * i, duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
-                    whileTap={{ scale: 0.90 }}
-                    onClick={() => handleMoreService(item.id, item.soon)}
-                    onMouseEnter={() => setHoveredMoreId(item.id)}
-                    onMouseLeave={() => setHoveredMoreId(null)}
-                    className="flex flex-col items-center gap-2.5 group outline-none relative"
-                  >
-                    <motion.div
-                      whileHover={{ scale: 1.06, y: -2 }}
-                      transition={{ type: "spring", stiffness: 380, damping: 22 }}
-                      className="relative flex items-center justify-center rounded-full shadow-sm group-hover:shadow-md transition-shadow duration-200 overflow-hidden"
-                      style={{ width: 56, height: 56 }}
+                {moreServices.map((item, i) => {
+                  const moreGlobalOff = item.featureKey ? isGloballyDisabled(item.featureKey) : false;
+                  return (
+                    <motion.button
+                      key={item.id}
+                      initial={{ opacity: 0, scale: 0.7, y: 12 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      transition={{ delay: 0.06 * i, duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
+                      whileTap={{ scale: 0.90 }}
+                      onClick={() => {
+                        if (moreGlobalOff) { toast.error(`${item.label} is currently unavailable.`); return; }
+                        handleMoreService(item.id, item.soon);
+                      }}
+                      onMouseEnter={() => setHoveredMoreId(item.id)}
+                      onMouseLeave={() => setHoveredMoreId(null)}
+                      className="flex flex-col items-center gap-2.5 group outline-none relative"
                     >
-                      <div className={`absolute inset-0 rounded-full bg-gradient-to-b ${item.gradient} opacity-[0.14]`} />
-                      <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 blur-[10px] transition-opacity duration-300 -z-10 scale-110">
-                        <div className={`w-full h-full bg-gradient-to-b ${item.gradient} opacity-30`} />
-                      </div>
-                      <item.Icon isHovered={hoveredMoreId === item.id} />
-                    </motion.div>
-                    {item.soon && (
-                      <div className="absolute -top-1 right-0 z-10">
-                        <span className="text-[8px] font-bold text-muted-foreground" style={{ textShadow: '0 0.5px 2px hsl(var(--background) / 0.8)' }}>Soon</span>
-                      </div>
-                    )}
-                    <span className="text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-colors duration-150 px-0.5">
-                      {item.label}
-                    </span>
-                  </motion.button>
-                ))}
+                      <motion.div
+                        whileHover={{ scale: 1.06, y: -2 }}
+                        transition={{ type: "spring", stiffness: 380, damping: 22 }}
+                        className="relative flex items-center justify-center rounded-full shadow-sm group-hover:shadow-md transition-all duration-200 overflow-hidden"
+                        style={{ width: 56, height: 56, filter: moreGlobalOff ? "grayscale(1)" : "none", opacity: moreGlobalOff ? 0.5 : 1 }}
+                      >
+                        <div className={`absolute inset-0 rounded-full bg-gradient-to-b ${item.gradient} opacity-[0.14]`} />
+                        <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 blur-[10px] transition-opacity duration-300 -z-10 scale-110">
+                          <div className={`w-full h-full bg-gradient-to-b ${item.gradient} opacity-30`} />
+                        </div>
+                        <item.Icon isHovered={hoveredMoreId === item.id} />
+                      </motion.div>
+                      {item.soon && (
+                        <div className="absolute -top-1 right-0 z-10">
+                          <span className="text-[8px] font-bold text-muted-foreground" style={{ textShadow: '0 0.5px 2px hsl(var(--background) / 0.8)' }}>Soon</span>
+                        </div>
+                      )}
+                      <span className={`text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-all duration-150 px-0.5 ${moreGlobalOff ? "opacity-50 grayscale" : ""}`}>
+                        {item.label}
+                      </span>
+                    </motion.button>
+                  );
+                })}
               </div>
             </div>
           </motion.div>

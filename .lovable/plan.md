@@ -1,49 +1,29 @@
 
 
-## Plan: Grayscale Icons for Disabled Features + Extended Toggle Coverage
+## Plan: Add Biller Categories to API Hub
 
-### What Changes
+### What
 
-When an admin turns OFF a feature toggle, the corresponding quick action icon on the home screen will visually change to **grayscale (black and white)** with reduced opacity, clearly showing users the feature is unavailable.
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-Additionally, extend the `FEATURE_MAP` in `QuickActions.tsx` to cover all main features so every quick action can be individually toggled.
+### Changes
 
-### 1. Extend Feature Mapping (`src/components/QuickActions.tsx`)
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-Update `FEATURE_MAP` to cover all quick actions including those currently missing:
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-```
-bank → bank_transfer
-refer → refer
-savings → savings
-```
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-Also extend `moreServices` items with feature keys so they can also be toggled.
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-### 2. Apply Grayscale Filter When Disabled (`src/components/QuickActions.tsx`)
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-For each action button, when `isGlobalOff` is true:
-- Apply CSS `filter: grayscale(1)` to the icon container, turning colors to black and white
-- Reduce opacity to ~50%
-- Keep the lock badge for user-specific locks, but use grayscale for global toggles
+3. Add the new category icons to the `categoryIcons` map.
 
-Changes to the icon container `motion.div`:
-```tsx
-style={{
-  width: 56, height: 56,
-  background: action.bgStyle,
-  outline: action.ringStyle,
-  filter: isGlobalOff ? "grayscale(1)" : "none",
-  opacity: isGlobalOff ? 0.5 : 1,
-}}
-```
-
-Also apply the same grayscale treatment to the label text when disabled.
-
-### 3. Apply to "More Services" Section
-
-For `moreServices` items, add a feature key mapping and apply the same grayscale effect when a feature is globally disabled.
-
-### Files Modified
-- `src/components/QuickActions.tsx` — extend `FEATURE_MAP`, apply `grayscale(1)` filter + opacity when globally disabled
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
