@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import AdminApiRequests from "./AdminApiRequests";
+import AdminMerchantApplications from "./AdminMerchantApplications";
 import { motion } from "framer-motion";
 import {
   Store, Search, Download, Eye, Lock, CheckCircle, XCircle, TrendingUp,
@@ -85,7 +86,7 @@ function exportMerchantsCSV(merchants: any[]) {
 }
 
 export default function AdminMerchantManagement() {
-  const [mainTab, setMainTab] = useState<"merchants" | "api-requests">("merchants");
+  const [mainTab, setMainTab] = useState<"merchants" | "api-requests" | "applications">("merchants");
   const [merchants, setMerchants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -342,9 +343,13 @@ export default function AdminMerchantManagement() {
         <Button variant={mainTab === "api-requests" ? "default" : "outline"} size="sm" onClick={() => setMainTab("api-requests")}>
           <Key className="w-4 h-4 mr-1" /> API Requests
         </Button>
+        <Button variant={mainTab === "applications" ? "default" : "outline"} size="sm" onClick={() => setMainTab("applications")}>
+          <FileText className="w-4 h-4 mr-1" /> Applications
+        </Button>
       </div>
 
       {mainTab === "api-requests" && <AdminApiRequests />}
+      {mainTab === "applications" && <AdminMerchantApplications />}
 
       {mainTab === "merchants" && <>
       {/* Summary Cards */}
