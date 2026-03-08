@@ -196,7 +196,11 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
     return { exists: false };
   };
 
-  const handleQrScan = async (result: string) => {
+  const handleQrScan = async (rawResult: string) => {
+    // Extract clean merchant ID from structured QR payloads
+    const { parseQrData } = await import("@/lib/qrParser");
+    const parsed = parseQrData(rawResult);
+    const result = parsed.flow === "payment" ? parsed.identifier : rawResult;
     setMerchantIdInput(result);
     setValidating(true);
     setError("");

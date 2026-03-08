@@ -391,7 +391,11 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     goTo("amount");
   };
 
-  const handleQrScan = async (result: string) => {
+  const handleQrScan = async (rawResult: string) => {
+    // Extract clean identifier from structured QR payloads (JSON, URL, etc.)
+    const { parseQrData } = await import("@/lib/qrParser");
+    const parsed = parseQrData(rawResult);
+    const result = parsed.flow !== "unknown" ? parsed.identifier : rawResult;
     const type = detectRecipientType(result);
     setInputVal(result);
     setInputType(type);

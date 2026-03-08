@@ -38,6 +38,7 @@ import OnboardingSlides, { hasSeenOnboarding, markOnboardingDone } from "@/compo
 import TxnToast from "@/components/TxnToast";
 import KycFlow from "@/components/KycFlow";
 import { useKycStatus } from "@/hooks/use-kyc-status";
+import { parseQrData } from "@/lib/qrParser";
 
 const Index = () => {
   const { isAuthenticated, loading: authLoading, signOut, user } = useAuth();
@@ -381,13 +382,42 @@ const Index = () => {
         open={showScanPay}
         onClose={() => setShowScanPay(false)}
         title="Scan & Pay"
-        onScan={(result) => {
+        onScan={async (result) => {
           setShowScanPay(false);
-          if (result.startsWith("MRC-") || result.startsWith("MRC")) {
+          const parsed = parseQrData(result);
+
+          if (parsed.flow === "payment") {
             setShowPayment(true);
-          } else {
-            setSendMoneyPrefilledPhone(result);
+          } else if (parsed.flow === "send") {
+            setSendMoneyPrefilledPhone(parsed.identifier);
             setShowSendMoney(true);
+          } else {
+            // Unknown — try RPC fallback
+            try {
+              const { data } = await supabase.rpc("resolve_transfer_recipient", {
+                p_identifier: parsed.identifier,
+                p_flow: "send",
+              });
+              const res = data as any;
+              if (res?.found) {
+                setSendMoneyPrefilledPhone(res.canonical_phone || parsed.identifier);
+                setShowSendMoney(true);
+              } else {
+                // Try payment flow
+                const { data: payData } = await supabase.rpc("resolve_transfer_recipient", {
+                  p_identifier: parsed.identifier,
+                  p_flow: "payment",
+                });
+                const payRes = payData as any;
+                if (payRes?.found) {
+                  setShowPayment(true);
+                } else {
+                  toast.error("Unrecognized QR code. Please try a valid EasyPay QR.");
+                }
+              }
+            } catch {
+              toast.error("Could not process QR code. Please try again.");
+            }
           }
         }}
       />
