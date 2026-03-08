@@ -95,7 +95,7 @@ export default function MerchantLimitsTab() {
     if (expandedId === merchant.id) { setExpandedId(null); return; }
     setExpandedId(merchant.id);
     setLoadingLimits(true);
-    const { data } = await supabase.from("user_limit_overrides" as any).select("id, txn_type, period, max_amount, max_count, reason, expires_at")
+    const { data } = await supabase.from("user_limit_overrides").select("id, txn_type, period, max_amount, max_count, reason, expires_at")
       .eq("target_user_id", merchant.user_id).eq("is_active", true);
     setOverrides((data as any[]) ?? []);
     setLoadingLimits(false);
@@ -131,21 +131,21 @@ export default function MerchantLimitsTab() {
       is_active: true,
       updated_at: new Date().toISOString(),
     };
-    const { error } = await supabase.from("user_limit_overrides" as any).upsert(payload as any, { onConflict: "target_user_id,txn_type,period" });
+    const { error } = await supabase.from("user_limit_overrides").upsert(payload, { onConflict: "target_user_id,txn_type,period" });
     if (error) toast.error("Failed: " + error.message);
     else { toast.success("Override saved"); setShowDialog(false); await expandMerchant(dialogMerchant); }
     setSaving(false);
   };
 
   const removeOverride = async (overrideId: string, merchant: MerchantWithProfile) => {
-    await supabase.from("user_limit_overrides" as any).update({ is_active: false, updated_at: new Date().toISOString() } as any).eq("id", overrideId);
+    await supabase.from("user_limit_overrides").update({ is_active: false, updated_at: new Date().toISOString() }).eq("id", overrideId);
     toast.success("Override removed");
     await expandMerchant(merchant);
   };
 
   const resetAllOverrides = async (merchant: MerchantWithProfile) => {
-    await supabase.from("user_limit_overrides" as any)
-      .update({ is_active: false, updated_at: new Date().toISOString() } as any)
+    await supabase.from("user_limit_overrides")
+      .update({ is_active: false, updated_at: new Date().toISOString() })
       .eq("target_user_id", merchant.user_id);
     toast.success("All overrides reset to defaults");
     await expandMerchant(merchant);
