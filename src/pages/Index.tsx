@@ -174,6 +174,7 @@ const Index = () => {
   usePullToRefresh({ onRefresh: triggerRefresh, threshold: 70 });
 
   const mainContent = () => {
+    const content = (() => {
     if (activeTab === "home") {
       return (
         <div className="space-y-5">
@@ -306,6 +307,21 @@ const Index = () => {
         <p className="text-lg font-semibold capitalize">{activeTab}</p>
         <p className="text-sm">Coming soon</p>
       </div>
+    );
+    })();
+
+    return (
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -12 }}
+          transition={{ duration: 0.25, ease: "easeInOut" }}
+        >
+          {content}
+        </motion.div>
+      </AnimatePresence>
     );
   };
 
