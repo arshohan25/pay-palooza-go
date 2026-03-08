@@ -94,7 +94,7 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
 
   const submitRequest = async () => {
     setSubmitting(true);
-    const { error } = await supabase.from("merchant_api_requests").insert({
+    const { error } = await (supabase as any).from("merchant_api_requests").insert({
       merchant_id: merchantId,
       webhook_url: requestWebhook || null,
       reason: requestReason || null,
