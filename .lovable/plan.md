@@ -1,29 +1,21 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Plan: Keep More Menu Expanded Until Explicitly Closed
 
-### What
-
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### Problem
+The expanded "More Services" section collapses whenever a service item is tapped (line 555 in `QuickActions.tsx`). The user wants it to stay open until they explicitly click the "More" button again or refresh the app.
 
 ### Changes
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**File: `src/components/QuickActions.tsx`**
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+1. **Remove auto-collapse on service tap** (line 555): Remove `setExpanded(false)` from the `onClick` handler of more service items. Instead, just call the action directly without collapsing.
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+2. **Keep the close (X) button functional** (line 536): This already calls `setExpanded(false)` — keep it as-is so users can still collapse via the X button.
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+3. **Keep the "More" button toggle** (line 418): Already toggles — keep as-is.
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+### Result
+- Tapping a more service item triggers its action but the section stays expanded
+- The section only collapses when: clicking "More" button again, clicking the X button, or refreshing
 
