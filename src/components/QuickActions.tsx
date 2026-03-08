@@ -6,7 +6,6 @@ import {
   SendMoneyIcon,
   CashOutIcon,
   PaymentIcon,
-  ReferIcon,
   RechargeIcon,
   PayBillIcon,
   ShopIcon,
@@ -29,7 +28,6 @@ const actionDefs = [
   { Icon: SendMoneyIcon, labelKey: "sendMoney" as const, id: "send", bgStyle: "rgba(233,30,140,0.12)", ringStyle: "1px solid rgba(233,30,140,0.25)", rippleColor: "rgba(233,30,140,0.35)" },
   { Icon: CashOutIcon, labelKey: "cashOut" as const, id: "cashout", bgStyle: "rgba(67,160,71,0.12)", ringStyle: "1px solid rgba(67,160,71,0.25)", rippleColor: "rgba(67,160,71,0.35)" },
   { Icon: PaymentIcon, labelKey: "payment" as const, id: "payment", bgStyle: "rgba(156,39,176,0.12)", ringStyle: "1px solid rgba(156,39,176,0.25)", rippleColor: "rgba(156,39,176,0.35)" },
-  { Icon: ReferIcon, labelKey: "referEarn" as const, id: "refer", bgStyle: "rgba(255,87,34,0.12)", ringStyle: "1px solid rgba(255,87,34,0.25)", rippleColor: "rgba(255,87,34,0.35)" },
   { Icon: RechargeIcon, labelKey: "recharge" as const, id: "recharge", bgStyle: "rgba(0,188,212,0.12)", ringStyle: "1px solid rgba(0,188,212,0.25)", rippleColor: "rgba(0,188,212,0.35)" },
   { Icon: PayBillIcon, labelKey: "payBill" as const, id: "bill", bgStyle: "rgba(255,193,7,0.12)", ringStyle: "1px solid rgba(255,193,7,0.25)", rippleColor: "rgba(255,193,7,0.45)" },
   { Icon: ShopIcon, labelKey: "shop" as const, id: "shop", bgStyle: "rgba(255,112,67,0.12)", ringStyle: "1px solid rgba(255,112,67,0.25)", rippleColor: "rgba(255,112,67,0.35)" },
@@ -37,13 +35,13 @@ const actionDefs = [
 ];
 
 const moreServices = [
-  { id: "bank", icon: Landmark, label: "Bank Transfer", desc: "Transfer to any bank", gradient: "from-blue-500 to-indigo-600" },
-  { id: "savings", icon: Wallet, label: "Savings", desc: "Set goals & grow money", gradient: "from-emerald-500 to-teal-600" },
-  { id: "coupons", icon: Ticket, label: "Coupons & Offers", desc: "Exclusive deals", gradient: "from-pink-500 to-rose-600", soon: true },
-  { id: "donations", icon: Heart, label: "Donations", desc: "Support causes", gradient: "from-red-500 to-rose-700", soon: true },
-  { id: "loan", icon: Banknote, label: "Loan", desc: "Quick personal loans", gradient: "from-amber-500 to-orange-600", soon: true },
-  { id: "insurance", icon: ShieldCheck, label: "Insurance", desc: "Protect what matters", gradient: "from-violet-500 to-purple-600", soon: true },
-  { id: "giftcards", icon: Gift, label: "Gift Cards", desc: "Send & redeem gifts", gradient: "from-orange-400 to-red-500", soon: true },
+  { id: "bank", icon: Landmark, label: "Bank Transfer", gradient: "from-blue-500 to-indigo-600", glowColor: "rgba(99,102,241,0.4)" },
+  { id: "savings", icon: Wallet, label: "Savings", gradient: "from-emerald-500 to-teal-600", glowColor: "rgba(16,185,129,0.4)" },
+  { id: "refer", icon: Gift, label: "Refer & Earn", gradient: "from-orange-400 to-red-500", glowColor: "rgba(249,115,22,0.4)" },
+  { id: "coupons", icon: Ticket, label: "Coupons", gradient: "from-pink-500 to-rose-600", soon: true, glowColor: "rgba(236,72,153,0.4)" },
+  { id: "donations", icon: Heart, label: "Donations", gradient: "from-red-500 to-rose-700", soon: true, glowColor: "rgba(239,68,68,0.4)" },
+  { id: "loan", icon: Banknote, label: "Loan", gradient: "from-amber-500 to-orange-600", soon: true, glowColor: "rgba(245,158,11,0.4)" },
+  { id: "insurance", icon: ShieldCheck, label: "Insurance", gradient: "from-violet-500 to-purple-600", soon: true, glowColor: "rgba(139,92,246,0.4)" },
 ];
 
 interface RippleState { x: number; y: number; id: number; }
@@ -97,7 +95,6 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
     if (id === "addmoney") return onAddMoney();
     if (id === "recharge") return onRecharge();
     if (id === "bill") return onPayBill();
-    if (id === "refer") return onRefer();
     if (id === "shop") return onShop();
     if (id === "more") return setExpanded(prev => !prev);
     toast.info(`${label} coming soon!`);
@@ -107,6 +104,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
     if (soon) { toast.info("Coming soon!"); return; }
     if (id === "bank") onBankTransfer();
     else if (id === "savings") onSavings();
+    else if (id === "refer") onRefer();
   };
 
   return (
@@ -199,32 +197,36 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                 {moreServices.map((item, i) => (
                   <motion.button
                     key={item.id}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.04 * i, duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
-                    whileTap={{ scale: 0.90 }}
-                    whileHover={{ scale: 1.05 }}
+                    initial={{ opacity: 0, y: 16, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ delay: 0.05 * i, duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
+                    whileTap={{ scale: 0.88 }}
+                    whileHover={{ scale: 1.08 }}
                     onClick={() => handleMoreService(item.id, item.soon)}
-                    className={`flex flex-col items-center gap-2.5 group outline-none relative ${item.soon ? "opacity-60" : ""}`}
+                    className={`flex flex-col items-center gap-2.5 group outline-none relative ${item.soon ? "opacity-55" : ""}`}
                   >
                     <motion.div
-                      whileHover={{ scale: 1.06, y: -2 }}
-                      transition={{ type: "spring", stiffness: 380, damping: 22 }}
-                      className="relative flex items-center justify-center rounded-full shadow-sm group-hover:shadow-md transition-shadow duration-200 overflow-hidden"
+                      whileHover={{ scale: 1.1, y: -3, boxShadow: `0 8px 24px -4px ${item.glowColor}` }}
+                      transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                      className="relative flex items-center justify-center rounded-full shadow-sm transition-all duration-300 overflow-hidden"
                       style={{ width: 56, height: 56 }}
                     >
-                      <div className={`absolute inset-0 rounded-full bg-gradient-to-b ${item.gradient} opacity-[0.14]`} />
-                      <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 blur-[10px] transition-opacity duration-300 -z-10 scale-110">
-                        <div className={`w-full h-full bg-gradient-to-b ${item.gradient} opacity-30`} />
-                      </div>
-                      <item.icon size={22} className="text-foreground relative z-10" />
+                      <div className={`absolute inset-0 rounded-full bg-gradient-to-b ${item.gradient} opacity-[0.14] group-hover:opacity-[0.22] transition-opacity duration-300`} />
+                      <div
+                        className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 blur-[12px] transition-opacity duration-400 -z-10 scale-125"
+                        style={{ background: item.glowColor }}
+                      />
+                      <item.icon size={22} className="text-foreground relative z-10 transition-transform duration-200 group-hover:scale-110" />
                       {item.soon && (
-                        <div className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-muted flex items-center justify-center shadow-md z-10">
+                        <motion.div
+                          className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-muted flex items-center justify-center shadow-md z-10 border border-border/40"
+                          whileHover={{ scale: 1.2 }}
+                        >
                           <span className="text-[7px] font-bold text-muted-foreground">Soon</span>
-                        </div>
+                        </motion.div>
                       )}
                     </motion.div>
-                    <span className="text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-colors duration-150 px-0.5">
+                    <span className="text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground group-hover:text-foreground leading-tight text-center transition-colors duration-200 px-0.5">
                       {item.label}
                     </span>
                   </motion.button>
