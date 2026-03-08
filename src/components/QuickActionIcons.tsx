@@ -329,19 +329,19 @@ export const SavingsIcon = ({ isHovered }: IconProps) => (
   <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" overflow="visible">
     <defs>
       <linearGradient id="piggyGrad" x1="10" y1="18" x2="46" y2="48" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#66BB6A"/>
-        <stop offset="100%" stopColor="#2E7D32"/>
+        <stop offset="0%" stopColor="#4CAF50"/>
+        <stop offset="100%" stopColor="#1B5E20"/>
       </linearGradient>
     </defs>
     {/* Piggy body */}
     <ellipse cx="28" cy="33" rx="17" ry="14" fill="url(#piggyGrad)"/>
     {/* Snout */}
-    <ellipse cx="44" cy="35" rx="5" ry="3.5" fill="#A5D6A7"/>
+    <ellipse cx="44" cy="35" rx="5" ry="3.5" fill="#81C784"/>
     <circle cx="43" cy="34.5" r="1" fill="#1B5E20"/>
     <circle cx="45" cy="34.5" r="1" fill="#1B5E20"/>
     {/* Ear */}
-    <ellipse cx="20" cy="20" rx="5" ry="5" fill="#A5D6A7"/>
-    <ellipse cx="20" cy="20" rx="3" ry="3" fill="#66BB6A"/>
+    <ellipse cx="20" cy="20" rx="5" ry="5" fill="#81C784"/>
+    <ellipse cx="20" cy="20" rx="3" ry="3" fill="#4CAF50"/>
     {/* Eye */}
     <circle cx="36" cy="28" r="2.2" fill="white"/>
     <circle cx="36.6" cy="28.2" r="1" fill="#1B5E20"/>
@@ -350,20 +350,20 @@ export const SavingsIcon = ({ isHovered }: IconProps) => (
     {/* Coin slot */}
     <rect x="23" y="18" width="10" height="2.5" rx="1.25" fill="#1B5E20"/>
     {/* Legs */}
-    <rect x="18" y="45" width="5" height="5" rx="2" fill="#43A047"/>
-    <rect x="26" y="45" width="5" height="5" rx="2" fill="#43A047"/>
-    <rect x="34" y="45" width="5" height="5" rx="2" fill="#43A047"/>
+    <rect x="18" y="45" width="5" height="5" rx="2" fill="#388E3C"/>
+    <rect x="26" y="45" width="5" height="5" rx="2" fill="#388E3C"/>
+    <rect x="34" y="45" width="5" height="5" rx="2" fill="#388E3C"/>
     {/* Tail curl */}
-    <path d="M11 30 Q7 28 9 24" stroke="#43A047" strokeWidth="2" strokeLinecap="round" fill="none"/>
+    <path d="M11 30 Q7 28 9 24" stroke="#388E3C" strokeWidth="2" strokeLinecap="round" fill="none"/>
     {/* Coin badge — bounces on hover */}
     <motion.g
       animate={isHovered ? { y: [0, -4, 0], rotate: [0, 15, -10, 0] } : { y: 0, rotate: 0 }}
       transition={isHovered ? { duration: 0.55, ease: "easeInOut", repeat: Infinity } : { duration: 0.3 }}
-      style={{ transformBox: "fill-box", transformOrigin: "14px 14px" }}
+      style={{ transformBox: "fill-box", transformOrigin: "12px 12px" }}
     >
-      <circle cx="14" cy="14" r="8" fill="#FFD54F"/>
-      <circle cx="14" cy="14" r="6" fill="#FFC107" opacity="0.6"/>
-      <text x="14" y="17.5" textAnchor="middle" fill="#7B3F00" fontSize="8" fontWeight="bold" fontFamily="serif">৳</text>
+      <circle cx="12" cy="12" r="11" fill="#FFD54F"/>
+      <circle cx="12" cy="12" r="8.5" fill="#FFC107" opacity="0.6"/>
+      <text x="12" y="16.5" textAnchor="middle" fill="#7B3F00" fontSize="11" fontWeight="bold" fontFamily="serif">৳</text>
     </motion.g>
   </svg>
 );
