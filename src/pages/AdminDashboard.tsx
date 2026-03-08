@@ -1512,6 +1512,15 @@ export default function AdminDashboard() {
                       }
                     };
 
+                    // Compute usage for this user
+                    const userTxns = detailData.transactions || [];
+                    const now = new Date();
+                    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+                    // We need ALL completed txns this month – detailData.transactions is limited to 10
+                    // Use detailUsage state instead (fetched when opening user details)
+
                     return (
                       <div className="space-y-2">
                         {TXN_TYPES.map(({ key, label }) =>
@@ -1519,6 +1528,15 @@ export default function AdminDashboard() {
                             const eff = getEffective(key, period);
                             const isEditing = editingLimit?.txnType === key && editingLimit?.period === period;
                             const hasChanged = isEditing && (editingLimit.newAmount !== String(editingLimit.oldAmount) || editingLimit.newCount !== String(editingLimit.oldCount));
+
+                            // Usage data
+                            const usageBucket = detailUsage?.[period === "daily" ? "daily" : "monthly"]?.[key];
+                            const usedAmount = usageBucket?.usedAmount ?? 0;
+                            const usedCount = usageBucket?.usedCount ?? 0;
+                            const amtPct = eff.amount > 0 ? Math.min(100, Math.round((usedAmount / eff.amount) * 100)) : 0;
+                            const cntPct = eff.count > 0 ? Math.min(100, Math.round((usedCount / eff.count) * 100)) : 0;
+                            const maxPct = Math.max(amtPct, cntPct);
+                            const barColor = maxPct >= 85 ? "bg-destructive" : maxPct >= 60 ? "bg-yellow-500" : "bg-emerald-500";
 
                             return (
                               <div key={`${key}-${period}`} className={`rounded-lg border px-3 py-2 text-xs transition-colors ${isEditing ? "border-primary/50 bg-primary/5" : "border-border/50 bg-muted/20"}`}>
@@ -1542,31 +1560,21 @@ export default function AdminDashboard() {
 
                                 {isEditing ? (
                                   <div className="mt-2 space-y-2">
-                                    {/* Amount comparison */}
                                     <div className="flex items-center gap-2">
                                       <span className="text-muted-foreground w-16">Amount:</span>
                                       <span className={`line-through text-muted-foreground ${hasChanged ? "opacity-60" : ""}`}>৳{editingLimit.oldAmount.toLocaleString()}</span>
                                       <span className="text-muted-foreground">→</span>
-                                      <Input
-                                        type="number"
-                                        min={0}
-                                        value={editingLimit.newAmount}
+                                      <Input type="number" min={0} value={editingLimit.newAmount}
                                         onChange={(e) => setEditingLimit({ ...editingLimit, newAmount: e.target.value })}
-                                        className="h-7 w-28 text-xs"
-                                      />
+                                        className="h-7 w-28 text-xs" />
                                     </div>
-                                    {/* Count comparison */}
                                     <div className="flex items-center gap-2">
                                       <span className="text-muted-foreground w-16">Max Txn:</span>
                                       <span className={`line-through text-muted-foreground ${hasChanged ? "opacity-60" : ""}`}>{editingLimit.oldCount}</span>
                                       <span className="text-muted-foreground">→</span>
-                                      <Input
-                                        type="number"
-                                        min={0}
-                                        value={editingLimit.newCount}
+                                      <Input type="number" min={0} value={editingLimit.newCount}
                                         onChange={(e) => setEditingLimit({ ...editingLimit, newCount: e.target.value })}
-                                        className="h-7 w-28 text-xs"
-                                      />
+                                        className="h-7 w-28 text-xs" />
                                     </div>
                                     <div className="flex items-center gap-2 pt-1">
                                       <Button size="sm" className="h-6 text-[10px] px-3" disabled={savingLimit || !hasChanged} onClick={saveOverride}>
@@ -1576,9 +1584,23 @@ export default function AdminDashboard() {
                                     </div>
                                   </div>
                                 ) : (
-                                  <div className="flex items-center gap-3 mt-1">
-                                    <span className="text-muted-foreground">৳{eff.amount.toLocaleString()}</span>
-                                    {eff.count > 0 && <span className="text-muted-foreground">• {eff.count} txns</span>}
+                                  <div className="mt-1 space-y-1">
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-muted-foreground">৳{eff.amount.toLocaleString()}</span>
+                                      {eff.count > 0 && <span className="text-muted-foreground">• {eff.count} txns</span>}
+                                    </div>
+                                    {/* Usage progress bar */}
+                                    {eff.amount > 0 && (
+                                      <div className="space-y-0.5">
+                                        <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
+                                          <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${amtPct}%` }} />
+                                        </div>
+                                        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                                          <span>৳{usedAmount.toLocaleString()} / ৳{eff.amount.toLocaleString()} ({amtPct}%)</span>
+                                          {eff.count > 0 && <span>{usedCount} / {eff.count} txns</span>}
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>
