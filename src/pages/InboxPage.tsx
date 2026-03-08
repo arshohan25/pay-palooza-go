@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ChevronLeft, Send, Phone, Video, MoreVertical, Plus,
+  ChevronLeft, Send, MoreVertical, Plus,
   Smile, CheckCheck, Check, Wallet, CheckCircle2, Package,
   Mic, Play, Pause, X, UserPlus, ImagePlus,
-  Download, PhoneOff, VideoIcon, MicOff, Volume2,
+  Download,
   Clock, UserCheck, Hourglass, Users, ArrowLeft,
   Shield, UserMinus, Edit3, Info, Lock, Search,
   Pin, PinOff, Copy, Forward, Trash2, MessageSquare,
@@ -14,9 +14,6 @@ import { clearInboxCount } from "@/lib/inboxStore";
 import { toast } from "@/components/ui/sonner";
 import { useChat, type ChatConversation, type ChatMessage } from "@/hooks/use-chat";
 import { useAuth } from "@/hooks/use-auth";
-import { WebRTCManager, type CallSignal } from "@/lib/webrtc";
-import { playRingtone, stopRingtone, playRingbackTone, stopRingbackTone, stopAllCallSounds } from "@/lib/sounds";
-import IncomingCallOverlay from "@/components/IncomingCallOverlay";
 import { useTypingIndicator } from "@/hooks/use-typing-indicator";
 import { useProfile } from "@/hooks/use-profile";
 import { useOnlinePresence } from "@/hooks/use-online-presence";
@@ -840,9 +837,7 @@ interface ChatViewProps {
   onCopy: (text: string) => void;
   onDelete: (msgId: string) => void;
   onForward: (msgId: string) => void;
-  onCall: (mode: "audio" | "video") => void;
-  webrtc: WebRTCManager | null; callMode: "audio" | "video" | null;
-  onEndCall: () => void; conversationId: string | null;
+  conversationId: string | null;
   userId: string | null; userName: string;
   isPending?: boolean; isInitiator?: boolean;
   onAccept?: () => void; onDecline?: () => void;
@@ -852,7 +847,7 @@ interface ChatViewProps {
 
 const ChatView = ({
   contact, messages, onBack, onSend, onSendVoice, onSendImage,
-  onReact, onCopy, onDelete, onForward, onCall, webrtc, callMode, onEndCall,
+  onReact, onCopy, onDelete, onForward,
   conversationId, userId, userName,
   isPending, isInitiator, onAccept, onDecline, onBlockReport, onSendMoney,
 }: ChatViewProps) => {
@@ -937,18 +932,6 @@ const ChatView = ({
             </p>
           </div>
           <div className="flex items-center gap-1 relative">
-            {!contact.isGroup && (
-              <>
-                <button onClick={() => onCall("audio")}
-                  className="w-9 h-9 rounded-full bg-muted/60 flex items-center justify-center active:scale-95 transition-transform text-foreground">
-                  <Phone size={15} />
-                </button>
-                <button onClick={() => onCall("video")}
-                  className="w-9 h-9 rounded-full bg-muted/60 flex items-center justify-center active:scale-95 transition-transform text-foreground">
-                  <Video size={15} />
-                </button>
-              </>
-            )}
             <button onClick={() => setShowChatMenu((v) => !v)} className="w-9 h-9 rounded-full bg-muted/60 flex items-center justify-center active:scale-95 transition-transform text-foreground">
               {contact.isGroup ? <Info size={14} /> : <MoreVertical size={14} />}
             </button>
@@ -1181,11 +1164,6 @@ const ChatView = ({
 
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
-      {/* Calling overlay */}
-      <AnimatePresence>
-        {callMode && <CallingOverlay contact={contact} mode={callMode} onEnd={onEndCall} webrtc={webrtc} />}
-      </AnimatePresence>
-
       {/* Block & Report Dialog (for accepted chats) */}
       <AnimatePresence>
         {showBlockDialog && !isPending && (
@@ -1241,11 +1219,6 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
   const [pinnedIds, setPinnedIdsState] = useState<string[]>(getPinnedIds);
   const [forwardMsgId, setForwardMsgId] = useState<string | null>(null);
-
-  // WebRTC state
-  const [callMode, setCallMode] = useState<"audio" | "video" | null>(null);
-  const [webrtcManager, setWebrtcManager] = useState<WebRTCManager | null>(null);
-  const [incomingCall, setIncomingCall] = useState<CallSignal | null>(null);
 
   // Reactions (client-side only)
   const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
@@ -1718,10 +1691,6 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
               onCopy={handleCopy}
               onDelete={handleDeleteMessage}
               onForward={(msgId) => setForwardMsgId(msgId)}
-              onCall={handleCall}
-              webrtc={webrtcManager}
-              callMode={callMode}
-              onEndCall={handleEndCall}
               conversationId={activeContactId}
               userId={user?.id ?? null}
               userName={profileData?.name || "Me"}
@@ -1756,13 +1725,6 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
         )}
       </AnimatePresence>
 
-      {/* ── Incoming call overlay ── */}
-      <AnimatePresence>
-        {incomingCall && (
-          <IncomingCallOverlay callerName={incomingCall.senderName} mode={incomingCall.mode}
-            onAccept={handleAcceptCall} onReject={handleRejectCall} />
-        )}
-      </AnimatePresence>
     </>
   );
 }
