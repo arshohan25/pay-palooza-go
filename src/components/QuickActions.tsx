@@ -416,7 +416,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
           </motion.div>
         )}
       </AnimatePresence>
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <SortableContext items={sortableOrder} strategy={rectSortingStrategy}>
           <div className="grid grid-cols-4 gap-y-5 gap-x-2 sm:gap-x-3">
             {orderedActions.map((action, index) => {
