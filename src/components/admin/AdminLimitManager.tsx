@@ -9,6 +9,7 @@ import { Loader2, Save, Search, Trash2, RotateCcw, Users, Store, UserCheck, Hist
 import MerchantLimitsTab from "./MerchantLimitsTab";
 import LimitAuditTab from "./LimitAuditTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
