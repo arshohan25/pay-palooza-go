@@ -1,29 +1,29 @@
 
 
-## Show User Limits in Admin User Details Sheet
+## Plan: Add Biller Categories to API Hub
 
-### Problem
-The User Details sheet in AdminDashboard shows profile, roles, KYC, and transactions — but has no section for the user's transaction limits or any active limit overrides. Admins can't see what limits apply to a specific user without navigating to the Limit Manager tab separately.
+### What
+
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-**`src/pages/AdminDashboard.tsx`**
-1. In the `fetchDetailUser` function (or wherever `detailData` is populated), add a query to fetch:
-   - Active `user_limit_overrides` for the user (`target_user_id = user.user_id, is_active = true`)
-   - The global `transaction_limits` defaults (already fetched or can be fetched once)
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-2. Add a new "Transaction Limits" section in the User Details sheet (between KYC and Recent Transactions), displaying:
-   - A table/list of all txn types (send, cashout, etc.) showing effective daily/monthly limits
-   - Badge indicator when a user-specific override is active (e.g., "Custom" badge)
-   - The override amount vs global default, so admin can see at a glance
-   - A quick link/button to navigate to the User Overrides tab with this user pre-selected
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-3. Store the fetched overrides in `detailData.limitOverrides` alongside existing fields.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-### UI Layout
-Each limit row will show:
-- Transaction type label
-- Daily: effective amount (with "Custom" badge if override exists)
-- Monthly: effective amount (with "Custom" badge if override exists)
-- If no overrides exist, show "Using global defaults" message
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

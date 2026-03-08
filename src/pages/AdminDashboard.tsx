@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -204,7 +204,7 @@ export default function AdminDashboard() {
   const [softDeleting, setSoftDeleting] = useState(false);
   const [detailUser, setDetailUser] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [detailData, setDetailData] = useState<{ profile: any; roles: any[]; kyc: any; transactions: any[] } | null>(null);
+  const [detailData, setDetailData] = useState<{ profile: any; roles: any[]; kyc: any; transactions: any[]; limitOverrides: any[]; globalLimits: any[] } | null>(null);
   const { visible: realtimeVisible, flash: realtimeFlash } = useRealtimeIndicator();
   const { status: wsStatus, lastConnectedAt, reconnectAttempt } = useRealtimeStatus();
   const [disabledTogglesCount, setDisabledTogglesCount] = useState(0);
@@ -1385,6 +1385,86 @@ export default function AdminDashboard() {
                       <span className={`pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg transition-transform ${detailData.profile?.kyc_exempt ? "translate-x-5" : "translate-x-0"}`} />
                     </button>
                   </div>
+                </div>
+
+                <Separator />
+
+                {/* Transaction Limits */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-semibold text-foreground">Transaction Limits</h4>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs h-6 text-primary"
+                      onClick={() => { setDetailUser(null); setDetailData(null); setActiveTab("limits"); }}
+                    >
+                      Manage →
+                    </Button>
+                  </div>
+                  {(() => {
+                    const TXN_TYPES = [
+                      { key: "send", label: "Send Money" },
+                      { key: "cashout", label: "Cash Out" },
+                      { key: "banktransfer", label: "Bank Transfer" },
+                      { key: "recharge", label: "Recharge" },
+                      { key: "addmoney", label: "Add Money" },
+                      { key: "cashin", label: "Cash In" },
+                    ];
+                    const overrides = detailData.limitOverrides || [];
+                    const globals = detailData.globalLimits || [];
+                    const hasAnyOverride = overrides.length > 0;
+
+                    const getEffective = (txnType: string, period: string) => {
+                      const ov = overrides.find((o: any) => o.txn_type === txnType && o.period === period);
+                      if (ov?.max_amount != null) return { amount: Number(ov.max_amount), isCustom: true };
+                      const gl = globals.find((g: any) => g.txn_type === txnType && g.period === period && g.applies_to === "user");
+                      if (gl?.max_amount != null) return { amount: Number(gl.max_amount), isCustom: false };
+                      return null;
+                    };
+
+                    return (
+                      <div className="space-y-1.5">
+                        {!hasAnyOverride && (
+                          <p className="text-xs text-muted-foreground mb-2">Using global defaults</p>
+                        )}
+                        <div className="grid grid-cols-[1fr_auto_auto] gap-x-3 gap-y-1 text-xs">
+                          <span className="font-medium text-muted-foreground">Type</span>
+                          <span className="font-medium text-muted-foreground text-right">Daily</span>
+                          <span className="font-medium text-muted-foreground text-right">Monthly</span>
+                          {TXN_TYPES.map(({ key, label }) => {
+                            const daily = getEffective(key, "daily");
+                            const monthly = getEffective(key, "monthly");
+                            return (
+                              <React.Fragment key={key}>
+                                <span className="text-foreground py-1">{label}</span>
+                                <span className="text-right py-1 flex items-center justify-end gap-1">
+                                  {daily ? (
+                                    <>
+                                      <span className="text-foreground font-medium">৳{daily.amount.toLocaleString()}</span>
+                                      {daily.isCustom && <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-primary/40 text-primary">Custom</Badge>}
+                                    </>
+                                  ) : (
+                                    <span className="text-muted-foreground">—</span>
+                                  )}
+                                </span>
+                                <span className="text-right py-1 flex items-center justify-end gap-1">
+                                  {monthly ? (
+                                    <>
+                                      <span className="text-foreground font-medium">৳{monthly.amount.toLocaleString()}</span>
+                                      {monthly.isCustom && <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-primary/40 text-primary">Custom</Badge>}
+                                    </>
+                                  ) : (
+                                    <span className="text-muted-foreground">—</span>
+                                  )}
+                                </span>
+                              </React.Fragment>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <Separator />
