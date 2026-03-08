@@ -628,6 +628,7 @@ export type Database = {
       merchant_api_keys: {
         Row: {
           api_key: string
+          app_password: string | null
           created_at: string
           id: string
           is_active: boolean
@@ -638,6 +639,7 @@ export type Database = {
         }
         Insert: {
           api_key: string
+          app_password?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -648,6 +650,7 @@ export type Database = {
         }
         Update: {
           api_key?: string
+          app_password?: string | null
           created_at?: string
           id?: string
           is_active?: boolean

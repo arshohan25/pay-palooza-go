@@ -15,6 +15,7 @@ interface ApiKey {
   id: string;
   api_key: string;
   secret_key: string;
+  app_password: string | null;
   webhook_url: string | null;
   is_active: boolean;
   created_at: string;
@@ -55,6 +56,7 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
   const [loading, setLoading] = useState(true);
   const [showDocs, setShowDocs] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [revealedFields, setRevealedFields] = useState<Set<string>>(new Set());
 
   // Request form
   const [showRequestForm, setShowRequestForm] = useState(false);
@@ -222,41 +224,88 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
         {/* Active API Keys (read-only) */}
         {keys.length > 0 && (
           <div className="space-y-2">
-            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">Your API Keys</p>
-            {keys.map(k => (
-              <Card key={k.id} className="p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <Badge className={k.is_active ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-muted text-muted-foreground"}>
-                    {k.is_active ? "Active" : "Revoked"}
-                  </Badge>
-                  <span className="text-[10px] text-muted-foreground">{new Date(k.created_at).toLocaleDateString()}</span>
-                </div>
+            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">Your API Credentials</p>
+            {keys.map(k => {
+              const toggleReveal = (field: string) => setRevealedFields(prev => {
+                const next = new Set(prev);
+                next.has(field) ? next.delete(field) : next.add(field);
+                return next;
+              });
+              const maskValue = (val: string, field: string) => revealedFields.has(field) ? val : val.slice(0, 4) + "••••••••" + val.slice(-4);
 
-                <div className="flex items-center gap-2 mb-2 bg-muted/50 rounded-lg p-2">
-                  <code className="text-[10px] font-mono flex-1 truncate">{k.api_key}</code>
-                  <button onClick={() => copyText(k.api_key, k.id)}>
-                    {copiedField === k.id ? <CheckCircle2 size={13} className="text-emerald-600" /> : <Copy size={13} className="text-muted-foreground" />}
-                  </button>
-                </div>
+              return (
+                <Card key={k.id} className="p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Badge className={k.is_active ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-muted text-muted-foreground"}>
+                      {k.is_active ? "Active" : "Revoked"}
+                    </Badge>
+                    <span className="text-[10px] text-muted-foreground">{new Date(k.created_at).toLocaleDateString()}</span>
+                  </div>
 
-                <div className="flex items-center gap-2">
-                  <Globe size={12} className="text-muted-foreground shrink-0" />
-                  {editingKeyId === k.id ? (
-                    <div className="flex items-center gap-1 flex-1">
-                      <Input className="h-7 text-[10px]" placeholder="https://yoursite.com/webhook" value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)} />
-                      <Button size="sm" className="h-7 text-[10px]" onClick={() => updateWebhook(k.id)}>Save</Button>
+                  {/* API Key */}
+                  <div>
+                    <p className="text-[9px] text-muted-foreground font-semibold uppercase mb-1">API Key</p>
+                    <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-2">
+                      <Key size={12} className="text-muted-foreground shrink-0" />
+                      <code className="text-[10px] font-mono flex-1 truncate">{k.api_key}</code>
+                      <button onClick={() => copyText(k.api_key, `apikey-${k.id}`)}>
+                        {copiedField === `apikey-${k.id}` ? <CheckCircle2 size={13} className="text-emerald-600" /> : <Copy size={13} className="text-muted-foreground" />}
+                      </button>
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-1 flex-1 min-w-0">
-                      <span className="text-[10px] text-muted-foreground truncate">{k.webhook_url || "No webhook configured"}</span>
-                      {k.is_active && (
-                        <button onClick={() => { setEditingKeyId(k.id); setWebhookUrl(k.webhook_url || ""); }} className="text-[10px] text-primary font-medium shrink-0">Edit</button>
-                      )}
+                  </div>
+
+                  {/* App Password */}
+                  {k.app_password && (
+                    <div>
+                      <p className="text-[9px] text-muted-foreground font-semibold uppercase mb-1">App Password</p>
+                      <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-2">
+                        <Shield size={12} className="text-muted-foreground shrink-0" />
+                        <code className="text-[10px] font-mono flex-1 truncate">{maskValue(k.app_password, `apppw-${k.id}`)}</code>
+                        <button onClick={() => toggleReveal(`apppw-${k.id}`)} className="text-muted-foreground hover:text-foreground">
+                          {revealedFields.has(`apppw-${k.id}`) ? <Shield size={13} /> : <Shield size={13} />}
+                        </button>
+                        <button onClick={() => copyText(k.app_password!, `apppw-copy-${k.id}`)}>
+                          {copiedField === `apppw-copy-${k.id}` ? <CheckCircle2 size={13} className="text-emerald-600" /> : <Copy size={13} className="text-muted-foreground" />}
+                        </button>
+                      </div>
                     </div>
                   )}
-                </div>
-              </Card>
-            ))}
+
+                  {/* Secret Key */}
+                  <div>
+                    <p className="text-[9px] text-muted-foreground font-semibold uppercase mb-1">Secret Key <span className="text-[8px] font-normal">(for webhook verification)</span></p>
+                    <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-2">
+                      <Key size={12} className="text-muted-foreground shrink-0" />
+                      <code className="text-[10px] font-mono flex-1 truncate">{maskValue(k.secret_key, `secret-${k.id}`)}</code>
+                      <button onClick={() => toggleReveal(`secret-${k.id}`)} className="text-muted-foreground hover:text-foreground">
+                        {revealedFields.has(`secret-${k.id}`) ? <Shield size={13} /> : <Shield size={13} />}
+                      </button>
+                      <button onClick={() => copyText(k.secret_key, `secret-copy-${k.id}`)}>
+                        {copiedField === `secret-copy-${k.id}` ? <CheckCircle2 size={13} className="text-emerald-600" /> : <Copy size={13} className="text-muted-foreground" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Webhook URL */}
+                  <div className="flex items-center gap-2">
+                    <Globe size={12} className="text-muted-foreground shrink-0" />
+                    {editingKeyId === k.id ? (
+                      <div className="flex items-center gap-1 flex-1">
+                        <Input className="h-7 text-[10px]" placeholder="https://yoursite.com/webhook" value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)} />
+                        <Button size="sm" className="h-7 text-[10px]" onClick={() => updateWebhook(k.id)}>Save</Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 flex-1 min-w-0">
+                        <span className="text-[10px] text-muted-foreground truncate">{k.webhook_url || "No webhook configured"}</span>
+                        {k.is_active && (
+                          <button onClick={() => { setEditingKeyId(k.id); setWebhookUrl(k.webhook_url || ""); }} className="text-[10px] text-primary font-medium shrink-0">Edit</button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         )}
 
@@ -294,7 +343,8 @@ const MerchantApiTab = React.forwardRef<HTMLDivElement, { merchantId: string }>(
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'X-API-Key': 'your_api_key_here'
+    'X-API-Key': 'your_api_key_here',
+    'X-App-Password': 'your_app_password_here'
   },
   body: JSON.stringify({
     action: 'create_session',
@@ -315,7 +365,8 @@ window.location.href = checkout_url;`}</pre>
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'X-API-Key': 'your_api_key_here'
+    'X-API-Key': 'your_api_key_here',
+    'X-App-Password': 'your_app_password_here'
   },
   body: JSON.stringify({
     action: 'check_status',
@@ -365,6 +416,7 @@ app.post('/webhook', (req, res) => {
 <script>
   EasyPay.init({
     apiKey: 'your_api_key_here',
+    appPassword: 'your_app_password_here',
     endpoint: '${apiEndpoint}'
   });
 
