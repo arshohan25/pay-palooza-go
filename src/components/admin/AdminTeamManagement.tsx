@@ -372,7 +372,7 @@ export default function AdminTeamManagement() {
             </div>
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={() => loadMembers()}><RefreshCw className="w-4 h-4 mr-1" />Refresh</Button>
-              <Button size="sm" onClick={() => { setShowAdd(true); setAddPhone(""); setFoundUser(null); setAddName(""); setAddNotes(""); }}>
+              <Button size="sm" onClick={() => { setShowAdd(true); resetAddForm(); }}>
                 <UserPlus className="w-4 h-4 mr-1" />Add Member
               </Button>
             </div>
