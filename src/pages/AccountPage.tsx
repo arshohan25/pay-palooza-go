@@ -6,6 +6,7 @@ import {
   Gift, Lock, LogOut, BadgeCheck, AlertCircle,
   BellOff, Pencil, PlayCircle, Globe,
   MessageCircle, Mail, ClipboardList, ShieldBan, GripVertical,
+  Sun, Grid3X3, Minimize2,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -23,6 +24,7 @@ import BlockedUsersPage from "@/components/BlockedUsersPage";
 import { generateWalletId } from "@/lib/walletId";
 import { useI18n } from "@/lib/i18n";
 import { useUserRoles } from "@/hooks/use-user-roles";
+import { useCustomization } from "@/hooks/use-customization";
 import { supabase } from "@/integrations/supabase/client";
 
 const ROLE_STYLES: Record<string, { label: string; bg: string; text: string }> = {
