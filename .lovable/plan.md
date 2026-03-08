@@ -1,41 +1,29 @@
 
 
-## Plan: Add Shimmer Sweep to "Soon" Icons
+## Plan: Add Biller Categories to API Hub
 
-### File: `src/components/QuickActions.tsx`
+### What
 
-Add a shimmer overlay div inside the icon container for `item.soon` items — a diagonal white gradient that sweeps left-to-right infinitely using a CSS animation.
-
-### File: `src/index.css`
-
-Add a `@keyframes shimmer-sweep` animation that translates a narrow white gradient band from -100% to 200% across the element.
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-**`src/index.css`** — Add keyframes:
-```css
-@keyframes shimmer-sweep {
-  0% { transform: translateX(-100%) rotate(-20deg); }
-  100% { transform: translateX(200%) rotate(-20deg); }
-}
-```
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-**`src/components/QuickActions.tsx`** — After the existing pulse div (line 274), add a shimmer overlay for `item.soon`:
-```tsx
-{item.soon && (
-  <div
-    className="absolute inset-0 rounded-full overflow-hidden pointer-events-none"
-  >
-    <div
-      className="absolute inset-0"
-      style={{
-        background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.25) 50%, transparent 60%)",
-        animation: "shimmer-sweep 2.5s ease-in-out infinite",
-      }}
-    />
-  </div>
-)}
-```
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-Two files, ~10 lines total.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

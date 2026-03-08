@@ -251,6 +251,10 @@ body::-webkit-scrollbar {
   from { background-position: -200% center; }
   to   { background-position: 200% center; }
 }
+@keyframes shimmer-sweep {
+  0%   { transform: translateX(-100%) rotate(-20deg); }
+  100% { transform: translateX(200%) rotate(-20deg); }
+}
 
 /* ── Hide scrollbars globally for flow screens ─────────────────────────────── */
 .scrollbar-none {

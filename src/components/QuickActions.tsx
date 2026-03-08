@@ -272,6 +272,17 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                         {item.soon && (
                           <div className={`absolute inset-0 rounded-full bg-gradient-to-b ${item.gradient} opacity-20 animate-pulse`} />
                         )}
+                        {item.soon && (
+                          <div className="absolute inset-0 rounded-full overflow-hidden pointer-events-none">
+                            <div
+                              className="absolute inset-0"
+                              style={{
+                                background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.25) 50%, transparent 60%)",
+                                animation: "shimmer-sweep 2.5s ease-in-out infinite",
+                              }}
+                            />
+                          </div>
+                        )}
                         <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 blur-[10px] transition-opacity duration-300 -z-10 scale-110">
                           <div className={`w-full h-full bg-gradient-to-b ${item.gradient} opacity-30`} />
                         </div>
