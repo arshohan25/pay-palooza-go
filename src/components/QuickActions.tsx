@@ -245,7 +245,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
                 </button>
               </div>
               <div className="grid grid-cols-4 gap-y-5 gap-x-2 sm:gap-x-3">
-                {moreServices.map((item, i) => {
+                {visibleMoreServices.map((item, i) => {
                   const moreGlobalOff = item.featureKey ? isGloballyDisabled(item.featureKey) : false;
                   return (
                     <motion.button
