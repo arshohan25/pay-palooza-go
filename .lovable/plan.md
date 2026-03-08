@@ -1,26 +1,29 @@
 
 
-## Add Drag-and-Drop Toggle in Settings
+## Plan: Add Biller Categories to API Hub
 
-### What Changes
-Drag-and-drop reordering of Quick Actions will be **disabled by default**. Users must enable it via a new toggle in the Account/Settings page under "App Experience". The preference is persisted in `localStorage`.
+### What
+
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-**1. `src/pages/AccountPage.tsx`**
-- Add a new `ToggleRow` in the "App Experience" section (after the Language row):
-  - Icon: `GripVertical` (from lucide-react)
-  - Label: "Rearrange Quick Actions"
-  - Sub: "Enable drag & drop to customize icon order"
-  - State stored in `localStorage` key `mfs_dnd_enabled`, default `false`
-  - On toggle, show toast confirmation
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-**2. `src/components/QuickActions.tsx`**
-- Read `localStorage.getItem("mfs_dnd_enabled") === "true"` to determine if DnD is active
-- When DnD is disabled:
-  - Set all items as `isDraggable={false}` (no grip handles, no drag sensors)
-  - Hide the "Reset order" button
-- When DnD is enabled: current behavior (fixed first 3, rest sortable)
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-This is a simple localStorage-based toggle — no database changes needed.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
