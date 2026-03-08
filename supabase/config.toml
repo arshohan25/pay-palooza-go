@@ -47,3 +47,9 @@ verify_jwt = false
 
 [functions.send-team-credentials]
 verify_jwt = false
+
+[functions.merchant-payment-webhook]
+verify_jwt = false
+
+[functions.retry-failed-webhooks]
+verify_jwt = false
