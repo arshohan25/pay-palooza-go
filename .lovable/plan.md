@@ -1,24 +1,29 @@
 
 
-## Plan: Bulk Toggle + Disabled Counter Badge
+## Plan: Add Biller Categories to API Hub
 
-### 1. Add bulk enable/disable buttons to `AdminGlobalToggles` (`src/components/admin/AdminGlobalToggles.tsx`)
+### What
 
-- Compute `disabledCount` and `enabledCount` from toggles array
-- Add a disabled counter badge next to the title (e.g., red badge showing "3 disabled")
-- Add two bulk action buttons in the header area: "Enable All" and "Disable All"
-  - Each updates all rows in `global_feature_toggles` by iterating and setting `is_enabled` to `true`/`false`
-  - Show confirmation via AlertDialog before bulk operations
-  - Buttons are disabled when all are already in that state
-- Use `Promise.all` with individual updates per row (Supabase doesn't support bulk update without filter easily, but we can use `.neq("is_enabled", targetValue)` to only update needed rows)
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-### 2. Add disabled counter badge on the admin tab button (`src/pages/AdminDashboard.tsx`)
+### Changes
 
-- Fetch disabled toggle count from `global_feature_toggles` where `is_enabled = false`
-- Show a small red badge on the "Toggles" tab with the count of disabled features
-- Subscribe to realtime changes to keep the count updated
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-### Files Modified
-- `src/components/admin/AdminGlobalToggles.tsx` — bulk enable/disable buttons, inline disabled counter badge
-- `src/pages/AdminDashboard.tsx` — disabled count badge on the "Toggles" tab
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

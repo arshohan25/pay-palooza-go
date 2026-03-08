@@ -203,6 +203,21 @@ export default function AdminDashboard() {
   const [detailData, setDetailData] = useState<{ profile: any; roles: any[]; kyc: any; transactions: any[] } | null>(null);
   const { visible: realtimeVisible, flash: realtimeFlash } = useRealtimeIndicator();
   const { status: wsStatus, lastConnectedAt, reconnectAttempt } = useRealtimeStatus();
+  const [disabledTogglesCount, setDisabledTogglesCount] = useState(0);
+
+  // Fetch disabled toggles count
+  useEffect(() => {
+    if (!isAdmin) return;
+    const fetchCount = async () => {
+      const { count } = await supabase.from("global_feature_toggles").select("id", { count: "exact", head: true }).eq("is_enabled", false);
+      setDisabledTogglesCount(count ?? 0);
+    };
+    fetchCount();
+    const ch = supabase.channel("admin-toggle-count")
+      .on("postgres_changes", { event: "*", schema: "public", table: "global_feature_toggles" }, () => fetchCount())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [isAdmin]);
   const openUserDetail = async (user: any) => {
     setDetailUser(user);
     setDetailLoading(true);
@@ -498,6 +513,11 @@ export default function AdminDashboard() {
           {item.id === "kyc" && stats.pendingKyc > 0 && (
             <span className="ml-auto min-w-[16px] h-4 px-1 bg-orange-500 text-white text-[9px] font-bold rounded-full inline-flex items-center justify-center">
               {stats.pendingKyc}
+            </span>
+          )}
+          {item.id === "toggles" && disabledTogglesCount > 0 && (
+            <span className="ml-auto min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+              {disabledTogglesCount}
             </span>
           )}
         </button>

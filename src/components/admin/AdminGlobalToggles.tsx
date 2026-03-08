@@ -4,12 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { toast } from "sonner";
-import { ToggleRight, ToggleLeft, Loader2, Plus, Pencil, Trash2, Save, X } from "lucide-react";
+import { ToggleRight, ToggleLeft, Loader2, Plus, Pencil, Trash2, Save, X, Power, PowerOff } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -38,6 +39,11 @@ export default function AdminGlobalToggles() {
   const [editDesc, setEditDesc] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleteToggle, setDeleteToggle] = useState<FeatureToggle | null>(null);
+  const [bulkAction, setBulkAction] = useState<"enable" | "disable" | null>(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
+
+  const disabledCount = toggles.filter(t => !t.is_enabled).length;
+  const enabledCount = toggles.filter(t => t.is_enabled).length;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -116,6 +122,20 @@ export default function AdminGlobalToggles() {
     setDeleteToggle(null);
   };
 
+  const confirmBulk = async () => {
+    if (!bulkAction) return;
+    setBulkLoading(true);
+    const targetValue = bulkAction === "enable";
+    const { error } = await supabase
+      .from("global_feature_toggles")
+      .update({ is_enabled: targetValue } as any)
+      .neq("is_enabled", targetValue);
+    if (error) toast.error(`Failed to ${bulkAction} all`);
+    else toast.success(`All features ${targetValue ? "enabled" : "disabled"}`);
+    setBulkLoading(false);
+    setBulkAction(null);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-16">
@@ -126,15 +146,30 @@ export default function AdminGlobalToggles() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h3 className="text-lg font-bold text-foreground">Global Feature Toggles</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-bold text-foreground">Global Feature Toggles</h3>
+            {disabledCount > 0 && (
+              <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                {disabledCount} disabled
+              </Badge>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground">Enable or disable features globally for all users</p>
           <RealtimeUpdateIndicator visible={visible} />
         </div>
-        <Button onClick={openAdd} className="gap-1.5">
-          <Plus className="w-4 h-4" /> Add Toggle
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setBulkAction("enable")} disabled={enabledCount === toggles.length || toggles.length === 0} className="gap-1.5">
+            <Power className="w-3.5 h-3.5" /> Enable All
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setBulkAction("disable")} disabled={disabledCount === toggles.length || toggles.length === 0} className="gap-1.5 text-destructive hover:text-destructive">
+            <PowerOff className="w-3.5 h-3.5" /> Disable All
+          </Button>
+          <Button onClick={openAdd} className="gap-1.5" size="sm">
+            <Plus className="w-4 h-4" /> Add Toggle
+          </Button>
+        </div>
       </div>
 
       <Card className="border-0 shadow-[var(--shadow-card)]">
@@ -221,6 +256,29 @@ export default function AdminGlobalToggles() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Confirmation */}
+      <AlertDialog open={!!bulkAction} onOpenChange={(o) => { if (!o) setBulkAction(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{bulkAction === "enable" ? "Enable" : "Disable"} all features?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will {bulkAction === "enable" ? "enable" : "disable"} all {bulkAction === "enable" ? disabledCount : enabledCount} feature toggles at once.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmBulk}
+              disabled={bulkLoading}
+              className={bulkAction === "disable" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+            >
+              {bulkLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
+              {bulkAction === "enable" ? "Enable All" : "Disable All"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
