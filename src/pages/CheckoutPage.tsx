@@ -39,8 +39,7 @@ const CheckoutPage = () => {
   const [phone, setPhone] = useState("");
   const [pin, setPin] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
-
-  // Load session
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   useEffect(() => {
     if (!sessionId) { setStep("error"); return; }
 
