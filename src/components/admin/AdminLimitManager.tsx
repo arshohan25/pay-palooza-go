@@ -426,33 +426,72 @@ function BulkActionsTab() {
   const [reason, setReason] = useState("");
   const [processing, setProcessing] = useState(false);
 
-  const applyBulk = async () => {
-    setProcessing(true);
-    const { data: { session } } = await supabase.auth.getSession();
+  // Multi-user selection state
+  const [userSearch, setUserSearch] = useState("");
+  const [userSearchResults, setUserSearchResults] = useState<any[]>([]);
+  const [searchingUsers, setSearchingUsers] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
+  const [applyMode, setApplyMode] = useState<"all" | "selected">("all");
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-    let userIds: string[] = [];
+  const searchUsers = async () => {
+    if (!userSearch.trim()) return;
+    setSearchingUsers(true);
+    const q = userSearch.trim();
+    let query = supabase.from("profiles").select("user_id, name, phone, status");
+    if (targetRole === "merchant") {
+      const { data: merchants } = await supabase.from("merchants").select("user_id").eq("status", "active");
+      const mIds = (merchants ?? []).map(m => m.user_id);
+      if (mIds.length) query = query.in("user_id", mIds);
+      else { setUserSearchResults([]); setSearchingUsers(false); return; }
+    } else if (targetRole === "agent") {
+      const { data: agents } = await supabase.from("agents").select("user_id").eq("status", "active");
+      const aIds = (agents ?? []).map(a => a.user_id);
+      if (aIds.length) query = query.in("user_id", aIds);
+      else { setUserSearchResults([]); setSearchingUsers(false); return; }
+    }
+    const { data } = await query.or(`phone.ilike.%${q}%,name.ilike.%${q}%`).eq("status", "active").limit(15);
+    setUserSearchResults((data ?? []).filter(u => !selectedUsers.some(s => s.user_id === u.user_id)));
+    setSearchingUsers(false);
+  };
+
+  const addUser = (user: any) => {
+    setSelectedUsers(prev => [...prev, user]);
+    setUserSearchResults(prev => prev.filter(u => u.user_id !== user.user_id));
+  };
+
+  const removeUser = (userId: string) => {
+    setSelectedUsers(prev => prev.filter(u => u.user_id !== userId));
+  };
+
+  const getTargetUserIds = async (): Promise<string[]> => {
+    if (applyMode === "selected") return selectedUsers.map(u => u.user_id);
     if (targetRole === "user") {
       const { data } = await supabase.from("profiles").select("user_id").eq("status", "active");
-      userIds = (data ?? []).map(p => p.user_id);
+      return (data ?? []).map(p => p.user_id);
     } else if (targetRole === "merchant") {
       const { data } = await supabase.from("merchants").select("user_id").eq("status", "active");
-      userIds = (data ?? []).map(m => m.user_id);
+      return (data ?? []).map(m => m.user_id);
     } else {
       const { data } = await supabase.from("agents").select("user_id").eq("status", "active");
-      userIds = (data ?? []).map(a => a.user_id);
+      return (data ?? []).map(a => a.user_id);
     }
+  };
+
+  const applyBulk = async () => {
+    setConfirmOpen(false);
+    setProcessing(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    const userIds = await getTargetUserIds();
 
     let success = 0, fail = 0;
     for (const uid of userIds) {
       const payload = {
-        target_user_id: uid,
-        txn_type: txnType,
-        period,
+        target_user_id: uid, txn_type: txnType, period,
         max_amount: maxAmount ? Number(maxAmount) : null,
         max_count: maxCount ? Number(maxCount) : null,
         reason: reason || `Bulk ${targetRole} limit update`,
-        set_by: session?.user?.id!,
-        is_active: true,
+        set_by: session?.user?.id!, is_active: true,
         updated_at: new Date().toISOString(),
       };
       const { error } = await supabase.from("user_limit_overrides").upsert(payload, { onConflict: "target_user_id,txn_type,period" });
@@ -460,61 +499,101 @@ function BulkActionsTab() {
     }
 
     toast.success(`Applied to ${success} ${targetRole}s${fail ? `, ${fail} failed` : ""}`);
-
     await supabase.from("audit_logs").insert({
       actor_id: session?.user?.id!,
-      action: "bulk_limit_override",
-      entity_type: "limits",
-      details: { target_role: targetRole, txn_type: txnType, period, max_amount: maxAmount, max_count: maxCount, affected: success },
+      action: "bulk_limit_override", entity_type: "limits",
+      details: { target_role: targetRole, txn_type: txnType, period, max_amount: maxAmount, max_count: maxCount, affected: success, mode: applyMode, selected_count: applyMode === "selected" ? selectedUsers.length : undefined },
     });
-
     setProcessing(false);
   };
 
   const resetBulk = async () => {
     setProcessing(true);
-    let userIds: string[] = [];
-    if (targetRole === "user") {
-      const { data } = await supabase.from("profiles").select("user_id");
-      userIds = (data ?? []).map(p => p.user_id);
-    } else if (targetRole === "merchant") {
-      const { data } = await supabase.from("merchants").select("user_id");
-      userIds = (data ?? []).map(m => m.user_id);
-    } else {
-      const { data } = await supabase.from("agents").select("user_id");
-      userIds = (data ?? []).map(a => a.user_id);
-    }
-
+    const userIds = await getTargetUserIds();
     for (const uid of userIds) {
       await supabase.from("user_limit_overrides")
         .update({ is_active: false, updated_at: new Date().toISOString() })
         .eq("target_user_id", uid);
     }
-
     const { data: { session } } = await supabase.auth.getSession();
     await supabase.from("audit_logs").insert({
       actor_id: session?.user?.id!,
-      action: "bulk_limit_reset",
-      entity_type: "limits",
-      details: { target_role: targetRole, affected: userIds.length },
+      action: "bulk_limit_reset", entity_type: "limits",
+      details: { target_role: targetRole, affected: userIds.length, mode: applyMode },
     });
-
-    toast.success(`Reset all overrides for ${userIds.length} ${targetRole}s`);
+    toast.success(`Reset overrides for ${userIds.length} ${targetRole}s`);
     setProcessing(false);
   };
+
+  const targetLabel = applyMode === "selected" ? `${selectedUsers.length} Selected` : `All ${ROLE_LABELS[targetRole]}s`;
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader><CardTitle className="text-base">Bulk Apply Limit Override</CardTitle></CardHeader>
         <CardContent className="space-y-4">
+          {/* Role filter */}
           <div className="flex gap-2 flex-wrap">
             {(["user", "merchant", "agent"] as const).map(role => (
-              <Button key={role} variant={targetRole === role ? "default" : "outline"} size="sm" onClick={() => setTargetRole(role)}>
+              <Button key={role} variant={targetRole === role ? "default" : "outline"} size="sm" onClick={() => { setTargetRole(role); setSelectedUsers([]); setUserSearchResults([]); }}>
                 {ROLE_LABELS[role]}s
               </Button>
             ))}
           </div>
+
+          {/* Apply mode toggle */}
+          <div className="flex gap-2">
+            <Button variant={applyMode === "all" ? "default" : "outline"} size="sm" onClick={() => setApplyMode("all")}>
+              <Users className="w-3.5 h-3.5 mr-1" /> Apply to All
+            </Button>
+            <Button variant={applyMode === "selected" ? "default" : "outline"} size="sm" onClick={() => setApplyMode("selected")}>
+              <UserCheck className="w-3.5 h-3.5 mr-1" /> Select Users
+            </Button>
+          </div>
+
+          {/* User search + selection */}
+          {applyMode === "selected" && (
+            <div className="space-y-3 p-3 rounded-lg border border-dashed border-border">
+              <div className="flex gap-2">
+                <Input placeholder={`Search ${ROLE_LABELS[targetRole]}s by name/phone…`} value={userSearch}
+                  onChange={e => setUserSearch(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && searchUsers()} className="flex-1 h-9" />
+                <Button size="sm" onClick={searchUsers} disabled={searchingUsers} className="h-9">
+                  {searchingUsers ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                </Button>
+              </div>
+
+              {/* Search results */}
+              {userSearchResults.length > 0 && (
+                <div className="max-h-40 overflow-y-auto space-y-1 rounded-md border border-border bg-background p-1">
+                  {userSearchResults.map(u => (
+                    <button key={u.user_id} onClick={() => addUser(u)}
+                      className="w-full text-left px-2 py-1.5 rounded text-sm hover:bg-muted/50 flex items-center justify-between">
+                      <span>{u.name || "Unnamed"} <span className="text-muted-foreground text-xs">({u.phone})</span></span>
+                      <Badge variant="outline" className="text-[10px]">+ Add</Badge>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Selected chips */}
+              {selectedUsers.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedUsers.map(u => (
+                    <Badge key={u.user_id} variant="secondary" className="text-xs gap-1 pr-1">
+                      {u.name || u.phone}
+                      <button onClick={() => removeUser(u.user_id)} className="ml-0.5 rounded-full hover:bg-muted p-0.5">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              {selectedUsers.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">Search and select specific users above</p>}
+            </div>
+          )}
+
+          {/* Limit config form */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Transaction Type</Label>
@@ -539,14 +618,37 @@ function BulkActionsTab() {
             <div><Label>Max Transactions</Label><Input type="number" value={maxCount} onChange={e => setMaxCount(e.target.value)} /></div>
           </div>
           <div><Label>Reason</Label><Input value={reason} onChange={e => setReason(e.target.value)} placeholder="Reason for bulk change" /></div>
-          <div className="flex gap-2">
-            <Button onClick={applyBulk} disabled={processing}>
-              {processing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}Apply to All {ROLE_LABELS[targetRole]}s
-            </Button>
-            <Button variant="outline" onClick={resetBulk} disabled={processing}>
-              <RotateCcw className="w-4 h-4 mr-1" />Reset All {ROLE_LABELS[targetRole]} Overrides
-            </Button>
-          </div>
+
+          {/* Confirmation + actions */}
+          {confirmOpen && (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
+              <p className="text-sm font-medium text-foreground">
+                Apply <span className="text-primary">{TXN_LABELS[txnType]} {period}</span> limit to <span className="font-bold">{targetLabel}</span>?
+              </p>
+              {maxAmount && <p className="text-xs text-muted-foreground">Max Amount: ৳{Number(maxAmount).toLocaleString()}</p>}
+              {maxCount && <p className="text-xs text-muted-foreground">Max Txns: {maxCount}</p>}
+              <div className="flex gap-2 pt-1">
+                <Button size="sm" onClick={applyBulk} disabled={processing}>
+                  {processing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}Confirm
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setConfirmOpen(false)}>Cancel</Button>
+              </div>
+            </div>
+          )}
+
+          {!confirmOpen && (
+            <div className="flex gap-2">
+              <Button onClick={() => {
+                if (applyMode === "selected" && selectedUsers.length === 0) { toast.error("Select at least one user"); return; }
+                setConfirmOpen(true);
+              }} disabled={processing}>
+                Apply to {targetLabel}
+              </Button>
+              <Button variant="outline" onClick={resetBulk} disabled={processing}>
+                <RotateCcw className="w-4 h-4 mr-1" />Reset {targetLabel} Overrides
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
