@@ -438,6 +438,19 @@ export default function AdminTeamManagement() {
                           {(member.roles || []).map(r => (
                             <Badge key={r} className={`text-xs ${ROLE_COLORS[r] || "bg-muted text-muted-foreground"}`}>{r}</Badge>
                           ))}
+                          {(() => {
+                            const done = [
+                              (member as any).has_logged_in,
+                              (member as any).has_changed_password,
+                              (member as any).has_completed_profile,
+                            ].filter(Boolean).length;
+                            if (done >= 3) return null;
+                            return (
+                              <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-700">
+                                Onboarding: {done}/3
+                              </Badge>
+                            );
+                          })()}
                         </div>
                         {member.last_active_at && (
                           <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
