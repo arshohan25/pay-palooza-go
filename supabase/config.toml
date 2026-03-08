@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.manage-gateway-config]
 verify_jwt = false
+
+[functions.send-team-credentials]
+verify_jwt = false

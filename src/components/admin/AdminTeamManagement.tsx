@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { UserPlus, Shield, Trash2, Search, Clock, CheckCircle, XCircle, Eye, Pencil, Activity, RefreshCw, UsersRound, Copy, KeyRound } from "lucide-react";
+import { UserPlus, Shield, Trash2, Search, Clock, CheckCircle, XCircle, Eye, Pencil, Activity, RefreshCw, UsersRound, Copy, KeyRound, Mail, Send } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 type AppRole = "customer" | "agent" | "merchant" | "distributor" | "super_distributor" | "admin" | "compliance" | "finance";
@@ -74,7 +74,10 @@ export default function AdminTeamManagement() {
   const [addName, setAddName] = useState("");
   const [addNotes, setAddNotes] = useState("");
   const [adding, setAdding] = useState(false);
+  const [addEmail, setAddEmail] = useState("");
   const [createdCreds, setCreatedCreds] = useState<{ username: string; password: string } | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   // Edit / permissions state
   const [editMember, setEditMember] = useState<TeamMember | null>(null);
@@ -134,9 +137,34 @@ export default function AdminTeamManagement() {
     setAddPassword(generatePassword());
     setAddName("");
     setAddNotes("");
+    setAddEmail("");
     setAddRole("compliance");
     setAddDept("general");
     setCreatedCreds(null);
+    setEmailSent(false);
+  };
+
+  const sendCredentialsEmail = async (email: string, username: string, password: string) => {
+    setSendingEmail(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-team-credentials", {
+        body: {
+          email,
+          displayName: addName.trim(),
+          username,
+          password,
+          loginUrl: `${window.location.origin}/team-login`,
+          role: addRole,
+          department: addDept,
+        },
+      });
+      if (error) throw error;
+      setEmailSent(true);
+      toast.success(`Credentials sent to ${email}`);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to send email");
+    }
+    setSendingEmail(false);
   };
 
   const addMember = async () => {
@@ -208,6 +236,12 @@ export default function AdminTeamManagement() {
 
       toast.success("Team member created successfully");
       setCreatedCreds({ username: addUsername.trim(), password: addPassword });
+
+      // Auto-send credentials email if email was provided
+      if (addEmail.trim()) {
+        await sendCredentialsEmail(addEmail.trim(), addUsername.trim(), addPassword);
+      }
+
       loadMembers();
     } catch (e: any) {
       toast.error(e.message || "Failed to create team member");
@@ -484,6 +518,31 @@ export default function AdminTeamManagement() {
                   </Button>
                 </div>
               </div>
+              {emailSent && addEmail.trim() ? (
+                <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg px-3 py-2">
+                  <CheckCircle className="w-4 h-4 shrink-0" />
+                  <span>Credentials emailed to <strong>{addEmail.trim()}</strong></span>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Email to send credentials (optional)"
+                    value={addEmail}
+                    onChange={e => setAddEmail(e.target.value)}
+                    type="email"
+                    className="flex-1"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!addEmail.trim() || sendingEmail}
+                    onClick={() => sendCredentialsEmail(addEmail.trim(), createdCreds.username, createdCreds.password)}
+                  >
+                    <Send className="w-3 h-3 mr-1" />
+                    {sendingEmail ? "Sending..." : "Send"}
+                  </Button>
+                </div>
+              )}
               <p className="text-xs text-muted-foreground text-center">⚠️ Save these credentials now. The password won't be shown again.</p>
             </div>
           ) : (
@@ -511,6 +570,13 @@ export default function AdminTeamManagement() {
               <div>
                 <Label>Display Name</Label>
                 <Input value={addName} onChange={e => setAddName(e.target.value)} className="mt-1" placeholder="John Doe" />
+              </div>
+              <div>
+                <Label>Email <span className="text-muted-foreground font-normal">(optional — to send credentials)</span></Label>
+                <div className="flex gap-1 mt-1">
+                  <Mail className="w-4 h-4 mt-2.5 text-muted-foreground shrink-0" />
+                  <Input value={addEmail} onChange={e => setAddEmail(e.target.value)} type="email" placeholder="member@company.com" />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
