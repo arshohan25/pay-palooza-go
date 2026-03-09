@@ -1,9 +1,9 @@
-import { useState, useRef, useMemo, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, Camera, QrCode, ShieldCheck, BarChart3, Gauge, Settings,
-  Home, LogOut, ChevronRight, Building2, Upload, TrendingUp,
-  Users, Activity, ArrowDownToLine, Banknote, Receipt, ArrowRightLeft,
+  X, Camera, QrCode, ShieldCheck, BarChart3, Settings,
+  Home, LogOut, ChevronRight, Building2, Upload,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
