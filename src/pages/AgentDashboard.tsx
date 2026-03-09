@@ -452,11 +452,11 @@ const AgentDashboard = () => {
             ) : (
               <div className="divide-y divide-border/50">
                 {recentTxns.slice(0, 8).map(tx => {
-                  const isCredit = tx.type === "cashin";
+                  const isCredit = tx.type === "cashout";
                   const txIcon = (() => {
                     switch (tx.type) {
-                      case "cashin": return { Icon: ArrowDownToLine, cls: "bg-primary/10 text-primary" };
-                      case "cashout": return { Icon: ArrowUpFromLine, cls: "bg-destructive/10 text-destructive" };
+                      case "cashin": return { Icon: ArrowUpFromLine, cls: "bg-destructive/10 text-destructive" };
+                      case "cashout": return { Icon: ArrowDownToLine, cls: "bg-primary/10 text-primary" };
                       case "banktransfer": return { Icon: Landmark, cls: "bg-accent/10 text-accent" };
                       case "paybill": return { Icon: FileText, cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400" };
                       default: return { Icon: ArrowDownToLine, cls: "bg-muted text-muted-foreground" };
