@@ -1,9 +1,11 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Clock, XCircle, Store, RefreshCw } from "lucide-react";
+import { CheckCircle2, Clock, XCircle, Store, RefreshCw, Wallet } from "lucide-react";
 import QRCode from "qrcode";
+import DynamicQrPaySheet from "@/components/DynamicQrPaySheet";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 const fmtTime = (s: number) =>
