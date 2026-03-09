@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Share2, Copy, CheckCheck, X, Download } from "lucide-react";
 import { haptics } from "@/lib/haptics";
@@ -17,6 +17,15 @@ interface ShareReceiptSheetProps {
   onClose: () => void;
   receipt: ReceiptData;
 }
+
+const AnimatedIcon = forwardRef<HTMLSpanElement, { children: React.ReactNode; className?: string }>(
+  ({ children, className }, ref) => (
+    <span ref={ref} className={className}>{children}</span>
+  )
+);
+AnimatedIcon.displayName = "AnimatedIcon";
+
+const MotionIcon = motion.create(AnimatedIcon);
 
 const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) => {
   const { t } = useI18n();
@@ -183,7 +192,7 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
                     className="ml-2 shrink-0 w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <AnimatePresence mode="wait" initial={false}>
-                      <motion.span
+                      <MotionIcon
                         key={copiedId ? "check" : "copy"}
                         initial={{ scale: 0.6, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
@@ -191,7 +200,7 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
                         transition={{ duration: 0.15 }}
                       >
                         {copiedId ? <CheckCheck size={13} className="text-primary" /> : <Copy size={13} />}
-                      </motion.span>
+                      </MotionIcon>
                     </AnimatePresence>
                   </motion.button>
                 </div>
@@ -208,7 +217,7 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
                   className="flex flex-col items-center justify-center gap-1.5 h-14 rounded-2xl bg-muted border border-border text-[11px] font-semibold text-foreground hover:bg-muted/80 transition-colors"
                 >
                   <AnimatePresence mode="wait" initial={false}>
-                    <motion.span
+                    <MotionIcon
                       key={copied ? "check" : "copy"}
                       initial={{ scale: 0.7, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
@@ -221,7 +230,7 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
                       ) : (
                         <><Copy size={16} /><span>{t("copy")}</span></>
                       )}
-                    </motion.span>
+                    </MotionIcon>
                   </AnimatePresence>
                 </motion.button>
 
@@ -232,7 +241,7 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
                   className="flex flex-col items-center justify-center gap-1.5 h-14 rounded-2xl bg-muted border border-border text-[11px] font-semibold text-foreground hover:bg-muted/80 transition-colors disabled:opacity-60"
                 >
                   <AnimatePresence mode="wait" initial={false}>
-                    <motion.span
+                    <MotionIcon
                       key={downloading ? "loading" : "idle"}
                       initial={{ scale: 0.7, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
@@ -245,7 +254,7 @@ const ShareReceiptSheet = ({ open, onClose, receipt }: ShareReceiptSheetProps) =
                       ) : (
                         <><Download size={16} /><span>{t("savePng")}</span></>
                       )}
-                    </motion.span>
+                    </MotionIcon>
                   </AnimatePresence>
                 </motion.button>
 
