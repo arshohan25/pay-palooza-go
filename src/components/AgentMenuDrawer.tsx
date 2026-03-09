@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Camera, QrCode, ShieldCheck, BarChart3, Settings,
-  Home, LogOut, ChevronRight, Building2, Upload,
+  Home, LogOut, ChevronRight, Building2, Upload, Activity,
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
