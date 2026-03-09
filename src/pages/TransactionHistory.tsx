@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import {
   Search, X, CalendarIcon, SlidersHorizontal,
-  CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw, Share2, Coins, TrendingUp, BadgeDollarSign,
+  CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw, Share2, Coins, TrendingUp, BadgeDollarSign, ChevronDown,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -246,6 +246,21 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
         </div>
       </div>
 
+      {/* ── Fee breakdown summary (non-agent only) ────────────────────── */}
+      {!agentView && totalFees > 0 && (() => {
+        const feeByType: Record<string, number> = {};
+        filtered.forEach((tx) => {
+          if (tx.fee > 0) {
+            const label = CATEGORIES.find((c) => c.id === tx.category)?.label ?? tx.category;
+            feeByType[label] = (feeByType[label] || 0) + tx.fee;
+          }
+        });
+        const entries = Object.entries(feeByType).sort((a, b) => b[1] - a[1]);
+        return (
+          <FeeBreakdownSummary entries={entries} totalFees={totalFees} />
+        );
+      })()}
+
       {/* ── Search bar ──────────────────────────────────────────────────── */}
       <div className="mb-2">
         <div className="relative">
@@ -454,7 +469,12 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     {agentView && tx.commission > 0 && (
                       <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">Commission: ৳{tx.commission.toLocaleString()}{AGENT_COMMISSION_RATES[tx.category] ? ` (${AGENT_COMMISSION_RATES[tx.category]}%)` : ""}</p>
                     )}
-                    <p className="text-[10.5px] text-muted-foreground/60 mt-0.5">{relativeDate(tx.date)}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-[10.5px] text-muted-foreground/60">{relativeDate(tx.date)}</p>
+                      {!agentView && tx.fee > 0 && (
+                        <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">Fee: ৳{tx.fee.toLocaleString()}</span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Amount */}
@@ -604,28 +624,48 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     </div>
                   ))}
 
-                  {/* Amount highlight + share */}
-                  <div className={`mt-4 rounded-2xl p-4 ${isCredit ? "bg-primary/10" : "bg-muted/60"}`}>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[13px] font-semibold text-muted-foreground">Total Amount</span>
-                      <span className={`text-[20px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
-                        {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString()}
-                      </span>
-                    </div>
-                    {agentView ? (
-                      selectedTx.commission > 0 && (
+                  {/* Amount highlight + fee breakdown */}
+                  {agentView ? (
+                    <div className={`mt-4 rounded-2xl p-4 ${isCredit ? "bg-primary/10" : "bg-muted/60"}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[13px] font-semibold text-muted-foreground">Total Amount</span>
+                        <span className={`text-[20px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
+                          {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString()}
+                        </span>
+                      </div>
+                      {selectedTx.commission > 0 && (
                         <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 text-right font-medium">
                           +৳{selectedTx.commission.toLocaleString()} commission{AGENT_COMMISSION_RATES[selectedTx.category] ? ` @ ${AGENT_COMMISSION_RATES[selectedTx.category]}%` : ""}
                         </p>
-                      )
-                    ) : (
-                      selectedTx.fee > 0 && (
-                        <p className="text-[11px] text-muted-foreground mt-1 text-right">
-                          ৳{Math.abs(selectedTx.amount).toLocaleString()} + ৳{selectedTx.fee.toLocaleString()} fee (from balance)
-                        </p>
-                      )
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  ) : selectedTx.fee > 0 ? (
+                    <div className="mt-4 rounded-2xl p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40">
+                      <div className="flex items-center justify-between text-[12.5px]">
+                        <span className="text-muted-foreground font-medium">Principal</span>
+                        <span className="font-semibold text-foreground">৳{Math.abs(selectedTx.amount).toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[12.5px] mt-1.5">
+                        <span className="text-amber-600 dark:text-amber-400 font-medium">Fee (from balance)</span>
+                        <span className="font-semibold text-amber-600 dark:text-amber-400">৳{selectedTx.fee.toLocaleString()}</span>
+                      </div>
+                      <div className="h-px bg-amber-200/60 dark:bg-amber-800/40 my-2" />
+                      <div className="flex items-center justify-between">
+                        <span className="text-[13px] font-bold text-foreground">Total Deducted</span>
+                        <span className="text-[18px] font-bold text-foreground">৳{(Math.abs(selectedTx.amount) + selectedTx.fee).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={`mt-4 rounded-2xl p-4 ${isCredit ? "bg-primary/10" : "bg-muted/60"}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[13px] font-semibold text-muted-foreground">Total Amount</span>
+                        <span className={`text-[20px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
+                          {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-primary mt-1 text-right font-medium">No fee charged</p>
+                    </div>
+                  )}
 
                   {/* Share button */}
                   <motion.button
@@ -666,8 +706,13 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                 { label: "Category", value: catLabel },
                 { label: "Description", value: selectedTx.detail },
                 ...(agentView
-                  ? (selectedTx.commission > 0 ? [{ label: "Commission", value: `+৳${selectedTx.commission.toLocaleString()}${AGENT_COMMISSION_RATES[selectedTx.category] ? ` @ ${AGENT_COMMISSION_RATES[selectedTx.category]}%` : ""}` }] : [])
-                  : (selectedTx.fee > 0 ? [{ label: "Fee", value: `৳${selectedTx.fee.toLocaleString()}` }] : [])
+                   ? (selectedTx.commission > 0 ? [{ label: "Commission", value: `+৳${selectedTx.commission.toLocaleString()}${AGENT_COMMISSION_RATES[selectedTx.category] ? ` @ ${AGENT_COMMISSION_RATES[selectedTx.category]}%` : ""}` }] : [])
+                   : (selectedTx.fee > 0
+                     ? [
+                         { label: "Fee", value: `৳${selectedTx.fee.toLocaleString()} (from balance)` },
+                         { label: "Total Deducted", value: `৳${(Math.abs(selectedTx.amount) + selectedTx.fee).toLocaleString()}` },
+                       ]
+                     : [{ label: "Fee", value: "Free" }])
                 ),
                 { label: "Date & Time", value: format(txDate, "dd MMM yyyy, h:mm a") },
               ],
@@ -675,6 +720,51 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           />
         );
       })()}
+    </div>
+  );
+};
+
+// ─── Fee Breakdown Summary (collapsible) ──────────────────────────────────
+const FeeBreakdownSummary = ({ entries, totalFees }: { entries: [string, number][]; totalFees: number }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mb-2">
+      <motion.button
+        whileTap={{ scale: 0.98 }}
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 text-left"
+      >
+        <div className="flex items-center gap-2">
+          <Coins size={14} className="text-amber-600 dark:text-amber-400" />
+          <span className="text-[12px] font-semibold text-foreground">Fee Breakdown</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[12px] font-bold text-amber-600 dark:text-amber-400">৳{totalFees.toLocaleString()}</span>
+          <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
+            <ChevronDown size={14} className="text-muted-foreground" />
+          </motion.div>
+        </div>
+      </motion.button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pt-2 pb-1 space-y-1">
+              {entries.map(([label, amount]) => (
+                <div key={label} className="flex items-center justify-between">
+                  <span className="text-[11px] text-muted-foreground">{label}</span>
+                  <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">৳{amount.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
