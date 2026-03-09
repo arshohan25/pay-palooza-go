@@ -18,7 +18,7 @@ const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 const AgentB2B = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [transferType, setTransferType] = useState<"agent" | "distributor">("agent");
+  const [transferType, setTransferType] = useState<"agent" | "distributor">("distributor");
   const [phone, setPhone] = useState("");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
