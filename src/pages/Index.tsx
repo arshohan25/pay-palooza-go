@@ -64,6 +64,7 @@ const Index = () => {
   const [sendMoneyOnComplete, setSendMoneyOnComplete] = useState<((amount: number) => void) | undefined>(undefined);
   const [showCashOut, setShowCashOut]     = useState(false);
   const [showPayment, setShowPayment]     = useState(false);
+  const [paymentPrefilledMerchant, setPaymentPrefilledMerchant] = useState<string | undefined>(undefined);
   const [showRecharge, setShowRecharge]   = useState(false);
   const [showPayBill, setShowPayBill]     = useState(false);
   const [showAddMoney, setShowAddMoney]   = useState(false);
@@ -373,7 +374,7 @@ const Index = () => {
       <AnimatePresence>
         {showSendMoney && <SendMoneyFlow prefilledPhone={sendMoneyPrefilledPhone} onSuccess={(amt) => { sendMoneyOnComplete?.(amt); setSendMoneyOnComplete(undefined); }} onClose={() => { setShowSendMoney(false); setSendMoneyPrefilledPhone(undefined); setSendMoneyOnComplete(undefined); }} />}
         {showCashOut   && <CashOutFlow   onClose={() => setShowCashOut(false)} />}
-        {showPayment   && <PaymentFlow   onClose={() => setShowPayment(false)} onDynamicQr={(session) => { setShowPayment(false); setDynamicQrSession(session); }} />}
+        {showPayment   && <PaymentFlow   prefilledMerchantId={paymentPrefilledMerchant} onClose={() => { setShowPayment(false); setPaymentPrefilledMerchant(undefined); }} onDynamicQr={(session) => { setShowPayment(false); setPaymentPrefilledMerchant(undefined); setDynamicQrSession(session); }} />}
         {showRecharge  && <MobileRechargeFlow onClose={() => setShowRecharge(false)} />}
         {showPayBill   && <PayBillFlow   onClose={() => setShowPayBill(false)} />}
         {showAddMoney  && <AddMoneyFlow  onClose={() => setShowAddMoney(false)} />}
@@ -402,6 +403,7 @@ const Index = () => {
               ref: parsed.ref,
             });
           } else if (parsed.flow === "payment") {
+            setPaymentPrefilledMerchant(parsed.identifier);
             setShowPayment(true);
           } else if (parsed.flow === "send") {
             setSendMoneyPrefilledPhone(parsed.identifier);
@@ -425,6 +427,7 @@ const Index = () => {
                 });
                 const payRes = payData as any;
                 if (payRes?.found) {
+                  setPaymentPrefilledMerchant(parsed.identifier);
                   setShowPayment(true);
                 } else {
                   toast.error("Unrecognized QR code. Please try a valid EasyPay QR.");

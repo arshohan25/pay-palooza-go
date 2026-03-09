@@ -1,33 +1,29 @@
 
 
-## Fix: QR scan should auto-resolve recipient and skip to amount entry
+## Plan: Add Biller Categories to API Hub
 
-### Problem
-When scanning a QR code from the main "Scan & Pay" button:
-- **Payment flow**: `Index.tsx` calls `setShowPayment(true)` but never passes the scanned merchant identifier to `PaymentFlow`. The flow opens at the "merchant" step, requiring manual entry.
-- **Send Money flow**: `prefilledPhone` is set in the input field, but the flow still starts at "recipient" step. The user must manually tap "Send to this number" to validate and proceed.
+### What
 
-### Fix
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-**1. `src/components/PaymentFlow.tsx`**
-- Add `prefilledMerchantId?: string` prop
-- Add a `useEffect` that, when `prefilledMerchantId` is provided, auto-validates it via `validateMerchantExists` RPC and jumps to "amount" step on success (same logic as `handleQrScan` but triggered on mount)
+### Changes
 
-**2. `src/pages/Index.tsx`**
-- Store scanned merchant identifier in state: `paymentPrefilledMerchant`
-- In the QR `onScan` handler, when `parsed.flow === "payment"`, set `paymentPrefilledMerchant` to `parsed.identifier` before opening PaymentFlow
-- In the RPC fallback payment case, do the same
-- Pass it as `prefilledMerchantId` prop to `<PaymentFlow />`
-- Clear it on close
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-**3. `src/components/SendMoneyFlow.tsx`**
-- Add a `useEffect` that, when `prefilledPhone` is provided on mount, auto-runs `validateRecipientExists` and if found, sets recipient + jumps to "amount" step (same as `handleSelectContact` logic)
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-### Files Changed
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-| File | Change |
-|------|--------|
-| `PaymentFlow.tsx` | Add `prefilledMerchantId` prop + auto-resolve on mount |
-| `SendMoneyFlow.tsx` | Auto-resolve `prefilledPhone` on mount and skip to amount |
-| `Index.tsx` | Pass scanned merchant ID to PaymentFlow |
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

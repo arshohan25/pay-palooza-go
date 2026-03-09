@@ -190,6 +190,40 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     }
   }, [step]);
 
+  // Auto-resolve prefilled phone (from QR scan) and skip to amount
+  const prefilledResolved = useRef(false);
+  useEffect(() => {
+    if (!prefilledPhone || prefilledResolved.current) return;
+    prefilledResolved.current = true;
+    const autoResolve = async () => {
+      setValidating(true);
+      setError("");
+      const result = await validateRecipientExists(prefilledPhone);
+      setValidating(false);
+      if (!result.exists) {
+        setError("This number is not registered on EasyPay.");
+        return;
+      }
+      setResolvedPhone(result.phone || prefilledPhone);
+      const normalizedPhone = normalizePhone(prefilledPhone);
+      const found = recentContacts.find((c) => normalizePhone(c.phone) === normalizedPhone);
+      if (found) {
+        setRecipient({ ...found, name: result.name || found.name });
+      } else {
+        setRecipient({
+          id: "prefilled",
+          name: result.name || normalizedPhone,
+          phone: result.phone || normalizedPhone,
+          initials: normalizedPhone.slice(-2),
+          gradient: "gradient-send",
+        });
+      }
+      setInputType("phone");
+      goTo("amount");
+    };
+    autoResolve();
+  }, [prefilledPhone]);
+
   // Auto-load phone contacts if permission was previously granted
   useEffect(() => {
     if (getCachedStatus("contacts") === "granted") {
