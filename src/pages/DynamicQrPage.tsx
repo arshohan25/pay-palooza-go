@@ -234,6 +234,15 @@ const DynamicQrPage = () => {
                 />
                 <span className="text-xs text-muted-foreground">Waiting for payment…</span>
               </div>
+              {isAuthenticated && (
+                <button
+                  onClick={() => setShowPaySheet(true)}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm"
+                >
+                  <Wallet className="w-4 h-4" />
+                  Pay with EasyPay
+                </button>
+              )}
             </motion.div>
           )}
 
