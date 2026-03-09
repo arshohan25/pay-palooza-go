@@ -1,0 +1,16 @@
+{
+  "name": "EasyPay Agent",
+  "short_name": "EP Agent",
+  "description": "EasyPay Agent – Cash-in, cash-out, bill pay, and customer onboarding.",
+  "start_url": "/agent",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f3f4f8",
+  "theme_color": "#1faa7c",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icons/role-agent.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/role-agent.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "categories": ["finance", "business"]
+}
