@@ -471,9 +471,6 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     )}
                     <div className="flex items-center gap-2 mt-0.5">
                       <p className="text-[10.5px] text-muted-foreground/60">{relativeDate(tx.date)}</p>
-                      {!agentView && tx.fee > 0 && (
-                        <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">Fee: ৳{tx.fee.toLocaleString()}</span>
-                      )}
                     </div>
                   </div>
 
