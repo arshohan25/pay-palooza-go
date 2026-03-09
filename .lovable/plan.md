@@ -1,29 +1,27 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Merchant Dashboard: Rename, Fee Display & Transaction Details
 
-### What
+### Changes in `src/pages/MerchantDashboard.tsx`
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+**1. Rename "Recent Payments" → "Recent Activity" & "{count} total" → "See All" (lines 753-754)**
+- Change heading text to "Recent Activity"
+- Replace `{paymentTxns.length} total` span with a clickable "See All" button that navigates to the transactions tab (`setActiveTab("transactions")`)
 
-### Changes
+**2. Add fee info to TxnTab transaction rows (lines 1240-1262)**
+- Show fee as small amber text below the date when `tx.fee > 0` (e.g. `Fee: ৳{fee}`)
+- Add a fee tooltip icon on the row similar to the main transaction history
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**3. Add transaction detail sheet to TxnTab**
+- Add a `selectedTx` state to `TxnTab`
+- Make each row clickable to open a detail bottom sheet
+- Detail sheet shows: amount, customer name, reference, date/time, fee breakdown (Principal + Fee = Total), status
+- For transactions with fees: show the detailed breakdown card (Principal, Fee, Total Deducted) matching the style from the main TransactionHistory
+- Include copy-to-clipboard for the transaction reference
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
-
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+| Area | Change |
+|------|--------|
+| Overview section (line 753-754) | "Recent Activity" + "See All" button |
+| TxnTab rows (line 1240-1262) | Fee display per row |
+| TxnTab (new) | Transaction detail bottom sheet with fee breakdown |
 
