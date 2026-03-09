@@ -1,39 +1,29 @@
 
 
-## Fix Agent Menu Drawer — Z-index and Close Issues
+## Plan: Add Biller Categories to API Hub
 
-### Problems Found During Testing
-1. **Sheets/modals open behind the drawer** — The drawer uses `z-[70]`/`z-[71]`, but Sheet and UserQrModal render at lower z-index, so they're hidden behind the drawer.
-2. **Backdrop click doesn't close the drawer** — The backdrop overlay click handler doesn't fire.
-3. **X close button doesn't work** — The close button appears non-functional.
+### What
 
-### Fix Plan
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-**`src/components/AgentMenuDrawer.tsx`**
+### Changes
 
-1. **Close drawer before opening sheets**: When a menu item that opens a sheet/modal is clicked, call `onClose()` first (to close the drawer), then open the sheet/modal. This avoids z-index conflicts entirely.
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-2. **Fix close button**: Ensure the X button's `onClick={onClose}` fires correctly by adding `e.stopPropagation()` if needed.
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-3. **Fix backdrop close**: The backdrop `onClick={onClose}` should work — verify it's not being blocked by event propagation from the drawer panel. Add `e.stopPropagation()` on the drawer panel to prevent clicks inside from reaching the backdrop incorrectly, and ensure the backdrop div is truly behind the drawer content.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-### Implementation Detail
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-For menu items that open sheets (Edit Avatar, Share QR, Customer KYC, Analytics):
-```tsx
-// Instead of just opening the sheet:
-{ icon: Camera, label: "Edit Avatar", action: () => setAvatarSheetOpen(true) }
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-// Close drawer first, use setTimeout to let animation complete:
-{ icon: Camera, label: "Edit Avatar", action: () => { onClose(); setTimeout(() => setAvatarSheetOpen(true), 300); } }
-```
+3. Add the new category icons to the `categoryIcons` map.
 
-For the close button condition in `menuItems.map` — currently the click handler has a conditional `onClose()` call that skips closing for sheet-opening items. This should be removed since we'll handle closing inside each action.
-
-For the backdrop — ensure the motion.div backdrop receives clicks properly.
-
-### Files changed
-| File | Change |
-|------|--------|
-| `AgentMenuDrawer.tsx` | Close drawer before opening sheets/modals; fix backdrop and X button close handlers |
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

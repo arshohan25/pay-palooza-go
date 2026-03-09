@@ -153,13 +153,18 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
     recharge: "Recharge", paybill: "Bill Pay", addmoney: "Add Money",
   };
 
+  const openAfterClose = (fn: () => void) => {
+    onClose();
+    setTimeout(fn, 300);
+  };
+
   const menuItems = [
-    { icon: Camera, label: "Edit Avatar", action: () => setAvatarSheetOpen(true) },
-    { icon: QrCode, label: "Share QR", action: () => setQrOpen(true) },
-    { icon: ShieldCheck, label: "Customer KYC", action: () => setKycSheetOpen(true) },
-    { icon: BarChart3, label: "Analytics", action: () => { setAnalyticsSheetOpen(true); loadAllTxns(); } },
-    { icon: Gauge, label: "Transaction Limits", action: () => navigate("/limits") },
-    { icon: Settings, label: "Settings", action: () => toast.info("Settings coming soon") },
+    { icon: Camera, label: "Edit Avatar", action: () => openAfterClose(() => setAvatarSheetOpen(true)) },
+    { icon: QrCode, label: "Share QR", action: () => openAfterClose(() => setQrOpen(true)) },
+    { icon: ShieldCheck, label: "Customer KYC", action: () => openAfterClose(() => setKycSheetOpen(true)) },
+    { icon: BarChart3, label: "Analytics", action: () => openAfterClose(() => { setAnalyticsSheetOpen(true); loadAllTxns(); }) },
+    { icon: Gauge, label: "Transaction Limits", action: () => { onClose(); navigate("/limits"); } },
+    { icon: Settings, label: "Settings", action: () => { onClose(); toast.info("Settings coming soon"); } },
   ];
 
   const bottomItems = [
@@ -185,6 +190,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 340, damping: 34 }}
               className="fixed top-0 left-0 bottom-0 w-[85vw] max-w-sm z-[71] bg-card shadow-float overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="px-5 py-5 space-y-5">
                 {/* Close */}
@@ -228,7 +234,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
                   {menuItems.map(item => (
                     <button
                       key={item.label}
-                      onClick={() => { item.action(); if (item.label !== "Edit Avatar" && item.label !== "Share QR" && item.label !== "Customer KYC" && item.label !== "Analytics") onClose(); }}
+                      onClick={() => item.action()}
                       className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-muted/60 transition-colors group"
                     >
                       <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
