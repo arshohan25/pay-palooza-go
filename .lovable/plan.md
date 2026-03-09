@@ -1,29 +1,46 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Redesign Agent Analytics Page — Modern Minimalist with Month Navigation
 
-### What
+### What Changes
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+**Rewrite `src/pages/AgentAnalyticsPage.tsx`** with these improvements:
 
-### Changes
+1. **Period Selector Redesign**: Replace the 5-tab bar with 3 clean tabs: **Daily**, **Weekly**, **Monthly**. For Monthly, add left/right `ChevronLeft`/`ChevronRight` arrows to navigate between months (e.g. "← March 2026 →"). Daily shows today, Weekly shows current week.
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+2. **Agent-only transaction types**: Keep `cashin`, `cashout`, `b2b`, `banktransfer`, `paybill`. Remove `receive` (not an agent operation). Keep the existing `TYPE_META` mapping but cleaned up.
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+3. **Summary Cards** — Same 3-card grid (Transactions, Volume, Commission) but cleaner: remove icons, use subtle color accents, lighter shadows.
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+4. **Transaction Trend** (AreaChart) — Volume + Commission lines, no grid lines for minimalism, softer gradient fills, rounded tooltip.
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+5. **Commission by Type** (horizontal BarChart) — Same logic, cleaner styling with no grid, rounded bars.
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+6. **Peak Hours** (BarChart) — Simplified, no grid lines, subtle bar color.
 
-3. Add the new category icons to the `categoryIcons` map.
+7. **Transaction Breakdown** — Type distribution cards, minimal design with thin left color accent instead of icon boxes.
 
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+### Key Implementation Detail
+
+```tsx
+// Month navigation state
+const [monthOffset, setMonthOffset] = useState(0); // 0 = current month, -1 = last month, etc.
+const [view, setView] = useState<"daily" | "weekly" | "monthly">("daily");
+
+// For monthly view, compute target month from offset
+const targetMonth = addMonths(new Date(), monthOffset);
+const monthLabel = format(targetMonth, "MMMM yyyy");
+
+// Filter logic per view
+// daily: isToday(d)
+// weekly: d >= startOfWeek(now) && d <= now
+// monthly: isWithinInterval(d, { start: startOfMonth(targetMonth), end: endOfMonth(targetMonth) })
+```
+
+Month arrows only visible when view is "monthly". Left arrow decrements `monthOffset`, right arrow increments (capped at 0 for current month).
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/pages/AgentAnalyticsPage.tsx` | Full rewrite with daily/weekly/monthly tabs, month navigation arrows, minimalist styling, agent-only types |
 
