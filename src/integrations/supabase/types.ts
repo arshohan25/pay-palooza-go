@@ -1004,6 +1004,7 @@ export type Database = {
           emoji: string
           id: string
           image_url: string | null
+          images: string[] | null
           is_active: boolean
           merchant_id: string
           name: string
@@ -1013,6 +1014,7 @@ export type Database = {
           review_count: number
           stock: number
           updated_at: string
+          video_url: string | null
         }
         Insert: {
           badge?: string | null
@@ -1023,6 +1025,7 @@ export type Database = {
           emoji?: string
           id?: string
           image_url?: string | null
+          images?: string[] | null
           is_active?: boolean
           merchant_id: string
           name: string
@@ -1032,6 +1035,7 @@ export type Database = {
           review_count?: number
           stock?: number
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
           badge?: string | null
@@ -1042,6 +1046,7 @@ export type Database = {
           emoji?: string
           id?: string
           image_url?: string | null
+          images?: string[] | null
           is_active?: boolean
           merchant_id?: string
           name?: string
@@ -1051,6 +1056,7 @@ export type Database = {
           review_count?: number
           stock?: number
           updated_at?: string
+          video_url?: string | null
         }
         Relationships: [
           {
@@ -2252,6 +2258,7 @@ export type Database = {
           emoji: string
           id: string
           image_url: string
+          images: string[]
           is_active: boolean
           merchant_id: string
           name: string
@@ -2262,6 +2269,7 @@ export type Database = {
           stock: number
           updated_at: string
           vendor_name: string
+          video_url: string
         }[]
       }
       has_role: {
