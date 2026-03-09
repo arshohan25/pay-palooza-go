@@ -3,11 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, Check, ArrowLeft, Smartphone, Shield, BarChart3, Users, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
+import { getInstallPrompt, onPromptAvailable, isAppInstalled, clearPrompt } from "@/lib/installPromptStore";
 
 const ROLE_CONFIG: Record<string, {
   name: string;
@@ -74,7 +70,7 @@ const ROLE_CONFIG: Record<string, {
 const RoleInstallPage = () => {
   const { role } = useParams<{ role: string }>();
   const navigate = useNavigate();
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [hasPrompt, setHasPrompt] = useState(!!getInstallPrompt());
   const [installed, setInstalled] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
 
@@ -87,28 +83,27 @@ const RoleInstallPage = () => {
     const oldHref = existing?.getAttribute("href");
     if (existing) existing.setAttribute("href", config.manifest);
     return () => {
-      // Restore original manifest on unmount
       if (existing && oldHref) existing.setAttribute("href", oldHref);
     };
   }, [config]);
 
   useEffect(() => {
-    setIsStandalone(window.matchMedia("(display-mode: standalone)").matches);
+    setIsStandalone(isAppInstalled());
 
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-    };
-    window.addEventListener("beforeinstallprompt", handler);
+    const unsub = onPromptAvailable(() => setHasPrompt(true));
     window.addEventListener("appinstalled", () => setInstalled(true));
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    return unsub;
   }, []);
 
   const handleInstall = async () => {
-    if (!deferredPrompt) return;
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") setInstalled(true);
+    const prompt = getInstallPrompt();
+    if (!prompt) return;
+    await prompt.prompt();
+    const { outcome } = await prompt.userChoice;
+    if (outcome === "accepted") {
+      setInstalled(true);
+      clearPrompt();
+    }
   };
 
   if (!config) {
@@ -139,7 +134,6 @@ const RoleInstallPage = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
       <div className={`bg-gradient-to-br ${config.color} text-white px-6 pt-12 pb-10 relative overflow-hidden`}>
         <button onClick={() => navigate("/install")} className="absolute top-4 left-4 p-2 rounded-xl bg-white/20 backdrop-blur-sm">
           <ArrowLeft size={18} />
@@ -157,9 +151,7 @@ const RoleInstallPage = () => {
         </div>
       </div>
 
-      {/* Content */}
       <div className="flex-1 px-6 py-6 -mt-4 bg-background rounded-t-3xl relative z-10">
-        {/* Features */}
         <div className="mb-8">
           <h2 className="text-sm font-bold text-foreground mb-3">What's included</h2>
           <div className="grid grid-cols-2 gap-2">
@@ -172,22 +164,16 @@ const RoleInstallPage = () => {
           </div>
         </div>
 
-        {/* Install section */}
         <AnimatePresence mode="wait">
           {installed || isStandalone ? (
-            <motion.div
-              key="installed"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-8"
-            >
+            <motion.div key="installed" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center py-8">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
                 <Check size={28} className="text-primary" />
               </div>
               <p className="font-bold text-foreground">App Installed!</p>
               <p className="text-sm text-muted-foreground mt-1">Check your home screen</p>
             </motion.div>
-          ) : deferredPrompt ? (
+          ) : hasPrompt ? (
             <motion.div key="installable" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <Button
                 onClick={handleInstall}
@@ -198,12 +184,7 @@ const RoleInstallPage = () => {
               </Button>
             </motion.div>
           ) : (
-            <motion.div
-              key="manual"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center space-y-3"
-            >
+            <motion.div key="manual" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center space-y-3">
               <div className="p-4 rounded-2xl bg-muted/50 border border-border">
                 <Icon size={24} className="text-primary mx-auto mb-2" />
                 <p className="text-sm font-semibold text-foreground">Install Manually</p>
