@@ -380,6 +380,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [detail, setDetail] = useState<Product | null>(null);
+  const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [orderNum, setOrderNum] = useState("");
   const [lastOrderTotal, setLastOrderTotal] = useState(0);
   const [lastPayMethod, setLastPayMethod] = useState<PaymentMethod>("wallet");
