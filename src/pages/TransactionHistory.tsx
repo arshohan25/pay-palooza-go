@@ -91,6 +91,12 @@ interface TransactionHistoryProps { onClose?: () => void; onRefresh?: () => void
 const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, customLabels }: TransactionHistoryProps) => {
   const { t } = useI18n();
   const { transactions: dbTxns, loading: txLoading, refetch } = useTransactions();
+  const visibleCategories = useMemo(() =>
+    filterTypes
+      ? CATEGORIES.filter((c) => c.id === "all" || filterTypes.includes(c.id))
+      : CATEGORIES,
+    [filterTypes]
+  );
   const [activeTab, setActiveTab] = useState<TxCategory>("all");
   const [search, setSearch]       = useState("");
   const [dateFrom, setDateFrom]   = useState<Date | undefined>();
