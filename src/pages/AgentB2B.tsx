@@ -193,17 +193,37 @@ const AgentB2B = () => {
                   </button>
                 ))}
               </div>
-              <div>
-                <Label className="text-xs font-semibold">{transferType === "agent" ? "Agent" : "Distributor"} Phone</Label>
-                <div className="relative mt-1">
-                  <Input type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g, "")); setResolvedName(""); }} onBlur={() => phoneValidation.setTouched(true)} maxLength={11} className={`rounded-xl h-11 pr-11 ${phoneValidation.inputClassName}`} />
-                  <button type="button" onClick={() => setShowQr(true)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors">
-                    <ScanLine size={16} />
-                  </button>
+              {transferType === "distributor" ? (
+                <div>
+                  <Label className="text-xs font-semibold">Linked Distributor</Label>
+                  {loadingDistributor ? (
+                    <div className="mt-1 p-3 bg-muted rounded-xl animate-pulse h-14" />
+                  ) : distributorInfo ? (
+                    <div className="mt-1 p-3 bg-muted/60 rounded-xl border border-border/40">
+                      <p className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                        🏢 {distributorInfo.businessName}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{distributorInfo.phone}</p>
+                    </div>
+                  ) : (
+                    <div className="mt-1 p-3 bg-destructive/5 rounded-xl border border-destructive/20">
+                      <p className="text-xs text-destructive font-medium">No distributor linked to your agent account.</p>
+                    </div>
+                  )}
                 </div>
-                {resolvedName && <p className="text-xs text-primary font-semibold mt-1 flex items-center gap-1"><CheckCircle2 size={12} /> {resolvedName}</p>}
-                {phoneValidation.showError && <p className="text-[10px] text-destructive font-medium mt-1 animate-fade-in">{phoneValidation.errorMessage}</p>}
-              </div>
+              ) : (
+                <div>
+                  <Label className="text-xs font-semibold">Agent Phone</Label>
+                  <div className="relative mt-1">
+                    <Input type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g, "")); setResolvedName(""); }} onBlur={() => phoneValidation.setTouched(true)} maxLength={11} className={`rounded-xl h-11 pr-11 ${phoneValidation.inputClassName}`} />
+                    <button type="button" onClick={() => setShowQr(true)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors">
+                      <ScanLine size={16} />
+                    </button>
+                  </div>
+                  {resolvedName && <p className="text-xs text-primary font-semibold mt-1 flex items-center gap-1"><CheckCircle2 size={12} /> {resolvedName}</p>}
+                  {phoneValidation.showError && <p className="text-[10px] text-destructive font-medium mt-1 animate-fade-in">{phoneValidation.errorMessage}</p>}
+                </div>
+              )}
               <div>
                 <Label className="text-xs font-semibold">Amount (৳)</Label>
                 <Input type="text" inputMode="numeric" placeholder="Enter amount" value={amount} onChange={e => setAmount(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-11 mt-1" />
