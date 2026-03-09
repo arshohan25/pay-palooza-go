@@ -25,8 +25,8 @@ import {
 type TxCategory = "all" | "send" | "receive" | "cashout" | "cashin" | "banktransfer" | "payment" | "recharge" | "paybill" | "addmoney";
 
 const AGENT_COMMISSION_RATES: Record<string, number> = {
-  cashin: 0.485,
-  cashout: 0.485,
+  cashin: 0.49,
+  cashout: 0.49,
   paybill: 0.0201,
 };
 
@@ -120,14 +120,20 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
         const isCredit = agentView
           ? t.type === "cashout"
           : t.type === "addmoney" || t.type === "receive" || t.type === "cashin";
+        const agentName = agentView
+          ? (t.type === "cashout" ? "CashOut Received" : t.type === "cashin" ? "Cash In Sent" : undefined)
+          : undefined;
+        const agentDetail = agentView
+          ? (t.type === "cashout" ? "CashOut Received" : t.type === "cashin" ? "Cash In Sent" : undefined)
+          : undefined;
         return {
           id: t.id,
           short_id: t.short_id || t.id.slice(0, 12).toUpperCase(),
           category: t.type as Exclude<TxCategory, "all">,
-          name: isCashback
+          name: agentName || (isCashback
             ? (t.description?.replace("Drive Cashback: ", "") || "Cashback")
-            : (t.recipient_name || t.description || label),
-          detail: isCashback ? "Drive Cashback" : (t.description || label),
+            : (t.recipient_name || t.description || label)),
+          detail: agentDetail || (isCashback ? "Drive Cashback" : (t.description || label)),
           date: t.created_at,
           amount: isCredit ? t.amount : -t.amount,
           fee: t.fee,

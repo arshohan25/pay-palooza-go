@@ -14,7 +14,7 @@ import QrScannerModal from "@/components/QrScannerModal";
 import { parseQrData } from "@/lib/qrParser";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
-const COMMISSION_RATE = 0.00499;
+const COMMISSION_RATE = 0.0049;
 
 const AgentCashIn = () => {
   const navigate = useNavigate();
