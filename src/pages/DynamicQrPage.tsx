@@ -80,6 +80,7 @@ const DynamicQrPage = () => {
         || (typeof session.metadata?.merchant_name === "string" ? session.metadata.merchant_name : "");
       setMerchantName(name);
       setMerchantCategory(session.merchant_category || "");
+      setMerchantId(session.merchant_id);
 
       if (session.status === "completed") { setStatus("completed"); return; }
       if (session.status === "expired" || session.status === "failed" || new Date(session.expires_at) < new Date()) {
