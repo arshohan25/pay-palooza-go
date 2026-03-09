@@ -3,19 +3,23 @@ import { cn } from "@/lib/utils";
 
 interface ProductImageProps {
   imageUrl?: string | null;
+  images?: string[];
   emoji: string;
   alt?: string;
   className?: string;
   emojiSize?: string;
 }
 
-const ProductImage = ({ imageUrl, emoji, alt = "Product", className, emojiSize = "text-5xl" }: ProductImageProps) => {
+const ProductImage = ({ imageUrl, images, emoji, alt = "Product", className, emojiSize = "text-5xl" }: ProductImageProps) => {
   const [failed, setFailed] = useState(false);
 
-  if (imageUrl && !failed) {
+  // Prefer first item from images array, fallback to legacy imageUrl
+  const primaryUrl = (images && images.length > 0) ? images[0] : imageUrl;
+
+  if (primaryUrl && !failed) {
     return (
       <img
-        src={imageUrl}
+        src={primaryUrl}
         alt={alt}
         onError={() => setFailed(true)}
         className={cn("w-full h-full object-cover", className)}

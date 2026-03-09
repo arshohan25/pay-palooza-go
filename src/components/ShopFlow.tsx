@@ -38,6 +38,8 @@ interface Product {
   vendor_name: string;
   stock: number;
   image_url?: string | null;
+  images?: string[];
+  video_url?: string | null;
 }
 
 interface CartItem extends Product { qty: number; }
@@ -112,6 +114,16 @@ type Screen = "browse" | "detail" | "cart" | "checkout" | "success" | "orders" |
 type PaymentMethod = "wallet" | "card";
 
 const SHOP_GRADIENT = "linear-gradient(135deg, hsl(var(--primary)), hsl(350 65% 38%))";
+
+// ── Video Embed Helper ─────────────────────────────────────────────────────────
+const getVideoEmbed = (url: string | null | undefined): { type: string; id: string } | null => {
+  if (!url) return null;
+  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (ytMatch) return { type: 'youtube', id: ytMatch[1] };
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch) return { type: 'vimeo', id: vimeoMatch[1] };
+  return null;
+};
 
 // ── Order Status Config ────────────────────────────────────────────────────────
 const STATUS_CONFIG: Record<Order["status"], { label: string; color: string; icon: React.ElementType }> = {
@@ -378,6 +390,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [detail, setDetail] = useState<Product | null>(null);
+  const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [orderNum, setOrderNum] = useState("");
   const [lastOrderTotal, setLastOrderTotal] = useState(0);
   const [lastPayMethod, setLastPayMethod] = useState<PaymentMethod>("wallet");
@@ -407,6 +420,8 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
         vendor_name: p.vendor_name || "Shop",
         stock: p.stock,
         image_url: p.image_url,
+        images: p.images || [],
+        video_url: p.video_url,
       })));
     }
     setProductsLoading(false);
@@ -801,9 +816,9 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                     return (
                       <motion.div key={p.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                         className="bg-card border border-border/50 rounded-2xl overflow-hidden cursor-pointer group"
-                        onClick={() => { setDetail(p); setScreen("detail"); }}>
+                        onClick={() => { setDetail(p); setScreen("detail"); setActiveImageIdx(0); }}>
                         <div className="relative h-32 flex items-center justify-center bg-muted/30 overflow-hidden">
-                          <ProductImage imageUrl={p.image_url} emoji={p.emoji} alt={p.name} emojiSize="text-5xl" />
+                          <ProductImage imageUrl={p.image_url} images={p.images} emoji={p.emoji} alt={p.name} emojiSize="text-5xl" />
                           {p.badge && <span className="absolute top-2 left-2 text-[9px] font-bold text-primary-foreground px-2 py-0.5 rounded-full" style={{ background: p.badge_color || "hsl(var(--primary))" }}>{p.badge}</span>}
                           {discount > 0 && !p.badge && <span className="absolute top-2 left-2 text-[9px] font-bold text-destructive-foreground px-1.5 py-0.5 rounded-full bg-destructive">-{discount}%</span>}
                           <motion.button whileTap={{ scale: 0.8 }} onClick={e => { e.stopPropagation(); toggleWishlist(p.id); }}
@@ -850,16 +865,86 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
           )}
 
           {/* ──── DETAIL ──── */}
-          {screen === "detail" && detail && (
+          {screen === "detail" && detail && (() => {
+            const allImages = detail.images && detail.images.length > 0
+              ? detail.images
+              : detail.image_url
+                ? [detail.image_url]
+                : [];
+            const videoEmbed = getVideoEmbed(detail.video_url);
+            const safeIdx = Math.min(activeImageIdx, Math.max(0, allImages.length - 1));
+            return (
             <motion.div key={`detail-${detail.id}`} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.22 }} className="px-4 pt-4 space-y-4">
-              <div className="relative rounded-2xl h-52 flex items-center justify-center bg-muted/30 overflow-hidden">
-                <ProductImage imageUrl={detail.image_url} emoji={detail.emoji} alt={detail.name} emojiSize="text-8xl" />
-                {detail.badge && <span className="absolute top-3 left-3 text-[10px] font-bold text-primary-foreground px-2.5 py-1 rounded-full" style={{ background: detail.badge_color || "hsl(var(--primary))" }}>{detail.badge}</span>}
-                <motion.button whileTap={{ scale: 0.8 }} onClick={() => toggleWishlist(detail.id)}
-                  className="absolute top-3 right-3 w-9 h-9 rounded-full bg-background/90 shadow-md flex items-center justify-center">
-                  <Heart size={17} className={wishlist.has(detail.id) ? "fill-destructive text-destructive" : "text-muted-foreground"} />
-                </motion.button>
+              {/* Image Carousel */}
+              <div className="relative rounded-2xl overflow-hidden">
+                <div className="relative h-56 flex items-center justify-center bg-muted/30">
+                  {allImages.length > 0 ? (
+                    <img 
+                      src={allImages[activeImageIdx]} 
+                      alt={detail.name} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.src = ''; e.currentTarget.className = 'hidden'; }}
+                    />
+                  ) : (
+                    <span className="text-8xl">{detail.emoji}</span>
+                  )}
+                  {detail.badge && <span className="absolute top-3 left-3 text-[10px] font-bold text-primary-foreground px-2.5 py-1 rounded-full" style={{ background: detail.badge_color || "hsl(var(--primary))" }}>{detail.badge}</span>}
+                  <motion.button whileTap={{ scale: 0.8 }} onClick={() => toggleWishlist(detail.id)}
+                    className="absolute top-3 right-3 w-9 h-9 rounded-full bg-background/90 shadow-md flex items-center justify-center">
+                    <Heart size={17} className={wishlist.has(detail.id) ? "fill-destructive text-destructive" : "text-muted-foreground"} />
+                  </motion.button>
+                </div>
+                {/* Carousel dots */}
+                {allImages.length > 1 && (
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                    {allImages.map((_, idx) => (
+                      <button 
+                        key={idx} 
+                        onClick={() => setActiveImageIdx(idx)}
+                        className={`w-2 h-2 rounded-full transition-all ${idx === activeImageIdx ? 'bg-primary w-4' : 'bg-background/60'}`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
+              {/* Thumbnail strip */}
+              {allImages.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {allImages.map((img, idx) => (
+                    <button 
+                      key={idx}
+                      onClick={() => setActiveImageIdx(idx)}
+                      className={`w-14 h-14 rounded-xl overflow-hidden shrink-0 border-2 transition-all ${idx === activeImageIdx ? 'border-primary' : 'border-transparent'}`}
+                    >
+                      <img src={img} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Video Embed */}
+              {videoEmbed && (
+                <div className="rounded-2xl overflow-hidden bg-black aspect-video">
+                  {videoEmbed.type === 'youtube' && (
+                    <iframe 
+                      src={`https://www.youtube.com/embed/${videoEmbed.id}`}
+                      title="Product video"
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  )}
+                  {videoEmbed.type === 'vimeo' && (
+                    <iframe 
+                      src={`https://player.vimeo.com/video/${videoEmbed.id}`}
+                      title="Product video"
+                      className="w-full h-full"
+                      allow="autoplay; fullscreen; picture-in-picture"
+                      allowFullScreen
+                    />
+                  )}
+                </div>
+              )}
 
               <div className="bg-card rounded-2xl border border-border/60 p-4 space-y-3">
                 {/* Vendor badge */}
@@ -958,9 +1043,9 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                       return (
                         <motion.div key={p.id} whileTap={{ scale: 0.97 }}
                           className="bg-card border border-border/50 rounded-2xl overflow-hidden cursor-pointer"
-                          onClick={() => setDetail(p)}>
+                          onClick={() => { setDetail(p); setActiveImageIdx(0); }}>
                           <div className="h-20 flex items-center justify-center bg-muted/30 overflow-hidden">
-                            <ProductImage imageUrl={p.image_url} emoji={p.emoji} alt={p.name} emojiSize="text-3xl" />
+                            <ProductImage imageUrl={p.image_url} images={p.images} emoji={p.emoji} alt={p.name} emojiSize="text-3xl" />
                           </div>
                           <div className="p-2.5 space-y-0.5">
                             <div className="flex items-center gap-1">
@@ -984,7 +1069,8 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                 </div>
               )}
             </motion.div>
-          )}
+          );
+          })()}
 
           {/* ──── WISHLIST ──── */}
           {screen === "wishlist" && (
@@ -1003,8 +1089,8 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                   const inCart = cart.find(c => c.id === p.id);
                   return (
                     <div key={p.id} className="bg-card border border-border/50 rounded-2xl p-3 flex items-center gap-3 cursor-pointer"
-                      onClick={() => { setDetail(p); setScreen("detail"); }}>
-                      <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-muted/30 overflow-hidden"><ProductImage imageUrl={p.image_url} emoji={p.emoji} alt={p.name} emojiSize="text-3xl" /></div>
+                      onClick={() => { setDetail(p); setScreen("detail"); setActiveImageIdx(0); }}>
+                      <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-muted/30 overflow-hidden"><ProductImage imageUrl={p.image_url} images={p.images} emoji={p.emoji} alt={p.name} emojiSize="text-3xl" /></div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[13px] font-bold text-foreground truncate">{p.name}</p>
                         <p className="text-[11px] text-muted-foreground flex items-center gap-1"><BadgeCheck size={9} className="text-primary" /> {p.vendor_name}</p>
