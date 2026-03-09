@@ -6,7 +6,7 @@ import {
   Lock, Star, Zap, Globe, Fingerprint,
 } from "lucide-react";
 import { haptics } from "@/lib/haptics";
-import { signUp, signIn, phoneToEmail } from "@/lib/auth";
+import { signUp, signIn, phoneToEmail, isPhoneRegistered } from "@/lib/auth";
 import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
 import { isWeakPin } from "@/lib/pinValidation";
 import { supabase } from "@/integrations/supabase/client";
