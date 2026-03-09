@@ -1,29 +1,35 @@
 
 
-## Plan: Add Biller Categories to API Hub
-
-### What
-
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+## Add Fee Section to Transaction History
 
 ### Changes
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**`src/pages/TransactionHistory.tsx`**
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+1. **Fee breakdown summary card** (after the hero header, before search bar ~line 248):
+   - Collapsible card showing total fees grouped by transaction type (e.g. "Send: ৳15, Cash Out: ৳120, Bank Transfer: ৳50")
+   - Only shows when `!agentView` and `totalFees > 0`
+   - Toggle with a "Fee Breakdown" button/accordion
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+2. **Fee per transaction row** (~line 444-458):
+   - Show fee amount inline below the date for non-agent view when `tx.fee > 0`
+   - Small amber text: `Fee: ৳{fee}` next to existing detail line
+   - Keep the existing tooltip icon as well
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+3. **Detailed fee card in detail sheet** (~line 607-628):
+   - Replace the simple "Total Amount" box with a detailed breakdown card:
+     - Principal: ৳{amount}
+     - Fee: ৳{fee} (source label: "from balance" / "from amount")
+     - Total Deducted: ৳{amount + fee}
+   - For credit transactions (no fee), keep current simple display
+   - For agent view, keep commission display as-is
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+4. **Share receipt fee row** (~line 664-670):
+   - Include fee breakdown in receipt: `৳{amount} + ৳{fee} fee`
 
-3. Add the new category icons to the `categoryIcons` map.
+### Summary
 
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+| File | Change |
+|------|--------|
+| `src/pages/TransactionHistory.tsx` | Add fee breakdown summary, inline fee on rows, expanded fee card in detail sheet, fee in receipt |
 
