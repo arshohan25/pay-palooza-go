@@ -1,29 +1,32 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Remove Percentage Display from Commission, Show Only Flat Amount
 
-### What
+The user wants to:
+1. Remove the percentage rate (e.g., `(0.485%)`) from commission displays — show only the flat earned amount
+2. Ensure commission is accurately calculated as `amount × 0.00485` for cash in/out and `amount × 0.000201` for bill pay
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### Changes in `src/pages/TransactionHistory.tsx`
 
-### Changes
+**1. Inline commission text (line 485)**
+- Change from: `Commission: ৳{commission} (0.485%)`
+- To: `Commission: ৳{commission}` — remove the percentage suffix
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**2. Tooltip content (line 503)**
+- Same removal of percentage from tooltip text
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+**3. Detail sheet row (line 614)**
+- Remove `@ 0.485%` from the commission earned row value
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+**4. Detail sheet breakdown card (line 648)**
+- Remove `(0.485%)` from "Commission Earned" label
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+**5. Mobile detail rows (line 735)**
+- Remove `@ 0.485%` from commission label
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+**6. Accurate commission calculation**
+- Currently commission comes from the DB (`t.commission`). If the stored value is inaccurate, recalculate client-side using `AGENT_COMMISSION_RATES` as: `Math.round(Math.abs(amount) * rate * 100) / 100`
+- Will verify that displayed values match `amount × 0.00485` for cashin/cashout
 
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+All ~6 locations where `AGENT_COMMISSION_RATES[...]` is interpolated into display strings will have the percentage reference removed.
 
