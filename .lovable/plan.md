@@ -1,39 +1,29 @@
 
 
-## Add recipient name resolution after QR scan in agent flows
+## Plan: Add Biller Categories to API Hub
 
-### Problem
-- **AgentCashIn** and **AgentB2B**: QR scan extracts the phone number but doesn't resolve or display the recipient's name. The user sees only the raw number.
-- **CashOutFlow**: Already has full QR→validate→show name→skip to amount. No changes needed.
-- **AgentBillPay**: Scans account/meter numbers, not user identifiers — name resolution doesn't apply here.
+### What
+
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-**1. `src/pages/AgentCashIn.tsx`**
-- Add `resolvedName` state
-- After QR scan extracts the phone, call `resolve_transfer_recipient` RPC with `p_flow: "send"` to get the recipient name
-- Display the resolved name below the phone input (e.g., a small green badge: "✓ Customer Name")
-- Clear `resolvedName` when phone input changes manually
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-**2. `src/pages/AgentB2B.tsx`**
-- Same pattern: add `resolvedName` state
-- After QR scan, resolve via RPC and show the name below the phone input
-- Clear on manual phone edit
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-### UI Pattern (both pages)
-```tsx
-// After phone input, show resolved name
-{resolvedName && (
-  <p className="text-xs text-primary font-semibold mt-1 flex items-center gap-1">
-    <CheckCircle2 size={12} /> {resolvedName}
-  </p>
-)}
-```
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-### Files Changed
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-| File | Change |
-|------|--------|
-| `AgentCashIn.tsx` | Resolve recipient name after QR scan, display below phone input |
-| `AgentB2B.tsx` | Resolve recipient name after QR scan, display below phone input |
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
