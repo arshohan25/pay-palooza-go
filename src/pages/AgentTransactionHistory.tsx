@@ -80,7 +80,7 @@ const AgentTransactionHistory = () => {
         >
           <div className="flex items-center justify-between mb-3">
             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Earnings Summary</p>
-            <p className="text-[10px] text-muted-foreground font-medium"><p className="text-[10px] text-muted-foreground font-medium">Cash In/Out: 0.49% · Bill Pay: 0.019%</p></p>
+            <p className="text-[10px] text-muted-foreground font-medium"><span className="text-[10px] text-muted-foreground font-medium">Cash In/Out: 0.49% · Bill Pay: 0.019%</span></p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             {statItems.map(({ icon: Icon, label, value, accent }) => (

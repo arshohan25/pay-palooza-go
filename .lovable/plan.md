@@ -1,18 +1,29 @@
 
 
-## Fix nested `<p>` tag in AgentTransactionHistory.tsx
+## Plan: Add Biller Categories to API Hub
 
-**File:** `src/pages/AgentTransactionHistory.tsx` (line 83)
+### What
 
-Change the inner `<p>` to a `<span>` to fix invalid HTML nesting:
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-```tsx
-// Before:
-<p className="..."><p className="...">Cash In/Out: 0.49% · Bill Pay: 0.019%</p></p>
+### Changes
 
-// After:
-<p className="..."><span className="...">Cash In/Out: 0.49% · Bill Pay: 0.019%</span></p>
-```
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-Single line change, no other files affected.
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
