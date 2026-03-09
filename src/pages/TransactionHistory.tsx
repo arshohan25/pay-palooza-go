@@ -27,7 +27,7 @@ type TxCategory = "all" | "send" | "receive" | "cashout" | "cashin" | "banktrans
 const AGENT_COMMISSION_RATES: Record<string, number> = {
   cashin: 0.49,
   cashout: 0.49,
-  paybill: 0.0201,
+  paybill: 0.019,
 };
 
 interface Transaction {
