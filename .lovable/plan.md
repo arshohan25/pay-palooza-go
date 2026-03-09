@@ -1,35 +1,29 @@
+
+
 ## Add QR Scanning to Agent Flows
 
 ### Problem
-
 Agent pages (Cash In, B2B, Bank Transfer, Bill Pay) lack QR scanning. When an agent scans a customer's or another agent's QR code, it should auto-fill the phone number and focus the amount field — consistent with how the main wallet flows work.
 
 ### Changes
 
-**1. `src/pages/AgentCashIn.tsx**`
-
+**1. `src/pages/AgentCashIn.tsx`**
 - Import `QrScannerModal` and `parseQrData`
 - Add a QR scan icon button next to the "Customer Phone" input
 - Add `showQr` state and `QrScannerModal` component
 - On scan: parse QR → extract phone → set phone state → if amount is empty, focus amount input
 
-**2. `src/pages/AgentB2B.tsx**`
-
+**2. `src/pages/AgentB2B.tsx`**
 - Same pattern: add QR scan button next to the phone input
 - On scan: parse QR → extract phone → auto-fill
 
-**3. `src/pages/AgentBankTransfer.tsx**`
-
+**3. `src/pages/AgentBankTransfer.tsx`**
 - Add QR scan button next to the account/phone input if applicable
 
-**4. `src/pages/AgentBillPay.tsx**`
-
+**4. `src/pages/AgentBillPay.tsx`**
 - Add QR scan button next to account number input if applicable
 
-**5.**  User cash out also follow the same process
-
 ### Implementation Pattern (same for each page)
-
 ```tsx
 import QrScannerModal from "@/components/QrScannerModal";
 import { parseQrData } from "@/lib/qrParser";
@@ -60,10 +54,10 @@ const [showQr, setShowQr] = useState(false);
 />
 ```
 
+| File | Change |
+|------|--------|
+| `AgentCashIn.tsx` | Add QR scan button + modal for customer phone |
+| `AgentB2B.tsx` | Add QR scan button + modal for agent/distributor phone |
+| `AgentBankTransfer.tsx` | Add QR scan button if phone-based input exists |
+| `AgentBillPay.tsx` | Add QR scan button if account input exists |
 
-| File                    | Change                                                 |
-| ----------------------- | ------------------------------------------------------ |
-| `AgentCashIn.tsx`       | Add QR scan button + modal for customer phone          |
-| `AgentB2B.tsx`          | Add QR scan button + modal for agent/distributor phone |
-| `AgentBankTransfer.tsx` | Add QR scan button if phone-based input exists         |
-| `AgentBillPay.tsx`      | Add QR scan button if account input exists             |
