@@ -816,9 +816,9 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                     return (
                       <motion.div key={p.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                         className="bg-card border border-border/50 rounded-2xl overflow-hidden cursor-pointer group"
-                        onClick={() => { setDetail(p); setScreen("detail"); }}>
+                        onClick={() => { setDetail(p); setScreen("detail"); setActiveImageIdx(0); }}>
                         <div className="relative h-32 flex items-center justify-center bg-muted/30 overflow-hidden">
-                          <ProductImage imageUrl={p.image_url} emoji={p.emoji} alt={p.name} emojiSize="text-5xl" />
+                          <ProductImage imageUrl={p.image_url} images={p.images} emoji={p.emoji} alt={p.name} emojiSize="text-5xl" />
                           {p.badge && <span className="absolute top-2 left-2 text-[9px] font-bold text-primary-foreground px-2 py-0.5 rounded-full" style={{ background: p.badge_color || "hsl(var(--primary))" }}>{p.badge}</span>}
                           {discount > 0 && !p.badge && <span className="absolute top-2 left-2 text-[9px] font-bold text-destructive-foreground px-1.5 py-0.5 rounded-full bg-destructive">-{discount}%</span>}
                           <motion.button whileTap={{ scale: 0.8 }} onClick={e => { e.stopPropagation(); toggleWishlist(p.id); }}
