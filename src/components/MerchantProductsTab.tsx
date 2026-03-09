@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import {
   Plus, Pencil, Trash2, Eye, EyeOff, Search, ToggleLeft, ToggleRight,
-  ImagePlus, X, Loader2,
+  ImagePlus, X, Loader2, Video, Play,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,8 @@ interface Product {
   category: string;
   emoji: string;
   image_url: string | null;
+  images: string[];
+  video_url: string | null;
   stock: number;
   is_active: boolean;
   badge: string | null;
@@ -41,6 +43,24 @@ const BADGES = [
   { label: "SALE", value: "SALE", color: "#FF9800" },
   { label: "TOP PICK", value: "TOP PICK", color: "#00BCD4" },
 ];
+const MAX_IMAGES = 4;
+
+// Video URL helpers
+const getYouTubeId = (url: string): string | null => {
+  const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return match ? match[1] : null;
+};
+
+const getVimeoId = (url: string): string | null => {
+  const match = url.match(/vimeo\.com\/(\d+)/);
+  return match ? match[1] : null;
+};
+
+const getVideoThumbnail = (url: string): string | null => {
+  const ytId = getYouTubeId(url);
+  if (ytId) return `https://img.youtube.com/vi/${ytId}/mqdefault.jpg`;
+  return null;
+};
 
 interface Props {
   merchantId: string;
@@ -55,23 +75,25 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
   const [editing, setEditing] = useState<Product | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingSlot, setUploadingSlot] = useState<number | null>(null);
+  const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const [form, setForm] = useState({
     name: "", description: "", price: "", original_price: "",
     category: "General", emoji: "📦", stock: "0",
-    badge: "", badge_color: "", is_active: true, image_url: "" as string | null,
+    badge: "", badge_color: "", is_active: true,
+    images: [] as string[],
+    video_url: "",
   });
 
   const resetForm = () => {
     setForm({
       name: "", description: "", price: "", original_price: "",
       category: "General", emoji: "📦", stock: "0",
-      badge: "", badge_color: "", is_active: true, image_url: null,
+      badge: "", badge_color: "", is_active: true,
+      images: [],
+      video_url: "",
     });
-    setImagePreview(null);
   };
 
   const loadProducts = useCallback(async () => {
@@ -81,7 +103,12 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
       .select("*")
       .eq("merchant_id", merchantId)
       .order("created_at", { ascending: false });
-    if (!error) setProducts(data ?? []);
+    if (!error) {
+      setProducts((data ?? []).map((p: any) => ({
+        ...p,
+        images: p.images || [],
+      })));
+    }
     setLoading(false);
   }, [merchantId]);
 
@@ -102,23 +129,20 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
     const path = `${merchantId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
-    setUploading(true);
     const { error } = await supabase.storage
       .from("product-images")
       .upload(path, file, { contentType: file.type, upsert: false });
 
     if (error) {
       toast({ title: "Upload failed", description: error.message, variant: "destructive" });
-      setUploading(false);
       return null;
     }
 
     const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
-    setUploading(false);
     return urlData.publicUrl;
   };
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>, slotIndex: number) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -131,25 +155,32 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
       return;
     }
 
-    // Show preview immediately
-    const reader = new FileReader();
-    reader.onload = () => setImagePreview(reader.result as string);
-    reader.readAsDataURL(file);
-
+    setUploadingSlot(slotIndex);
     const url = await uploadImage(file);
     if (url) {
-      setForm(f => ({ ...f, image_url: url }));
-    } else {
-      setImagePreview(null);
+      setForm(f => {
+        const newImages = [...f.images];
+        if (slotIndex < newImages.length) {
+          newImages[slotIndex] = url;
+        } else {
+          newImages.push(url);
+        }
+        return { ...f, images: newImages };
+      });
     }
+    setUploadingSlot(null);
 
     // Reset input
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (fileInputRefs.current[slotIndex]) {
+      fileInputRefs.current[slotIndex]!.value = "";
+    }
   };
 
-  const removeImage = () => {
-    setForm(f => ({ ...f, image_url: null }));
-    setImagePreview(null);
+  const removeImage = (index: number) => {
+    setForm(f => ({
+      ...f,
+      images: f.images.filter((_, i) => i !== index),
+    }));
   };
 
   const openAdd = () => { resetForm(); setEditing(null); setShowSheet(true); };
@@ -160,9 +191,9 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
       price: String(p.price), original_price: p.original_price ? String(p.original_price) : "",
       category: p.category, emoji: p.emoji, stock: String(p.stock),
       badge: p.badge || "", badge_color: p.badge_color || "", is_active: p.is_active,
-      image_url: p.image_url || null,
+      images: p.images || [],
+      video_url: p.video_url || "",
     });
-    setImagePreview(p.image_url || null);
     setShowSheet(true);
   };
 
@@ -182,7 +213,9 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
       badge: form.badge || null,
       badge_color: form.badge_color || null,
       is_active: form.is_active,
-      image_url: form.image_url || null,
+      image_url: form.images[0] || null, // Primary image for backwards compat
+      images: form.images,
+      video_url: form.video_url.trim() || null,
       updated_at: new Date().toISOString(),
     };
 
@@ -230,7 +263,8 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
     p.category.toLowerCase().includes(search.toLowerCase())
   );
 
-  const currentImageSrc = imagePreview || form.image_url;
+  const videoThumbnail = form.video_url ? getVideoThumbnail(form.video_url) : null;
+  const hasValidVideo = form.video_url && (getYouTubeId(form.video_url) || getVimeoId(form.video_url));
 
   return (
     <div className="space-y-4">
@@ -286,7 +320,9 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
         </div>
       ) : (
         <div className="space-y-2.5">
-          {filtered.map((p, i) => (
+          {filtered.map((p, i) => {
+            const primaryImage = p.images?.[0] || p.image_url;
+            return (
             <motion.div
               key={p.id}
               initial={{ opacity: 0, y: 8 }}
@@ -294,11 +330,16 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
               transition={{ delay: i * 0.03 }}
               className={`bg-card border rounded-2xl p-3.5 flex items-center gap-3 transition-opacity ${!p.is_active ? "opacity-60 border-border/40" : "border-border/60"}`}
             >
-              <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center shrink-0 overflow-hidden">
-                {p.image_url ? (
-                  <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
+              <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center shrink-0 overflow-hidden relative">
+                {primaryImage ? (
+                  <img src={primaryImage} alt={p.name} className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-2xl">{p.emoji}</span>
+                )}
+                {p.images && p.images.length > 1 && (
+                  <span className="absolute bottom-0.5 right-0.5 text-[8px] font-bold bg-background/80 px-1 rounded">
+                    +{p.images.length - 1}
+                  </span>
                 )}
               </div>
               <div className="flex-1 min-w-0">
@@ -308,6 +349,7 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
                     <span className="text-[8px] font-bold text-white px-1.5 py-0.5 rounded-full shrink-0"
                       style={{ background: p.badge_color || "#9C27B0" }}>{p.badge}</span>
                   )}
+                  {p.video_url && <Video size={10} className="text-primary shrink-0" />}
                 </div>
                 <div className="flex items-center gap-2 mt-0.5">
                   <span className="text-[12px] font-bold text-primary">৳{Number(p.price).toLocaleString()}</span>
@@ -342,7 +384,7 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
                 </button>
               </div>
             </motion.div>
-          ))}
+          );})}
         </div>
       )}
 
@@ -353,56 +395,93 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
             <SheetTitle>{editing ? "Edit Product" : "Add Product"}</SheetTitle>
           </SheetHeader>
           <div className="space-y-4 pt-4 pb-8">
-            {/* Product Image Upload */}
+            {/* Multi-Image Upload Grid */}
             <div>
-              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Product Photo</label>
-              <div className="mt-1.5">
-                {currentImageSrc ? (
-                  <div className="relative w-full h-40 rounded-2xl overflow-hidden border border-border/60 bg-muted">
-                    <img src={currentImageSrc} alt="Product" className="w-full h-full object-cover" />
-                    {uploading && (
-                      <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
-                        <Loader2 size={24} className="animate-spin text-primary" />
-                      </div>
-                    )}
-                    <button
-                      onClick={removeImage}
-                      className="absolute top-2 right-2 w-7 h-7 rounded-full bg-background/90 shadow-md flex items-center justify-center"
-                    >
-                      <X size={14} className="text-foreground" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="w-full h-32 rounded-2xl border-2 border-dashed border-border/80 bg-muted/30 flex flex-col items-center justify-center gap-2 transition-colors hover:border-primary/40 hover:bg-primary/5"
-                  >
-                    {uploading ? (
-                      <Loader2 size={24} className="animate-spin text-primary" />
-                    ) : (
-                      <>
-                        <ImagePlus size={28} className="text-muted-foreground" />
-                        <span className="text-[12px] font-medium text-muted-foreground">Tap to upload photo</span>
-                        <span className="text-[10px] text-muted-foreground/70">JPG, PNG · Max 5MB</span>
-                      </>
-                    )}
-                  </button>
-                )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleFileSelect}
-                />
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+                Product Photos (up to {MAX_IMAGES})
+              </label>
+              <div className="grid grid-cols-4 gap-2 mt-1.5">
+                {Array.from({ length: MAX_IMAGES }).map((_, idx) => {
+                  const imageUrl = form.images[idx];
+                  const isUploading = uploadingSlot === idx;
+                  
+                  return (
+                    <div key={idx} className="relative aspect-square">
+                      {imageUrl ? (
+                        <div className="relative w-full h-full rounded-xl overflow-hidden border border-border/60 bg-muted">
+                          <img src={imageUrl} alt={`Product ${idx + 1}`} className="w-full h-full object-cover" />
+                          {idx === 0 && (
+                            <span className="absolute top-1 left-1 text-[8px] font-bold bg-primary text-primary-foreground px-1.5 py-0.5 rounded">
+                              Primary
+                            </span>
+                          )}
+                          <button
+                            onClick={() => removeImage(idx)}
+                            className="absolute top-1 right-1 w-5 h-5 rounded-full bg-background/90 shadow-sm flex items-center justify-center"
+                          >
+                            <X size={10} className="text-foreground" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => fileInputRefs.current[idx]?.click()}
+                          disabled={isUploading || (idx > 0 && !form.images[idx - 1])}
+                          className="w-full h-full rounded-xl border-2 border-dashed border-border/80 bg-muted/30 flex flex-col items-center justify-center gap-1 transition-colors hover:border-primary/40 hover:bg-primary/5 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {isUploading ? (
+                            <Loader2 size={16} className="animate-spin text-primary" />
+                          ) : (
+                            <>
+                              <ImagePlus size={16} className="text-muted-foreground" />
+                              <span className="text-[9px] text-muted-foreground">{idx === 0 ? "Primary" : `#${idx + 1}`}</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                      <input
+                        ref={el => fileInputRefs.current[idx] = el}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={e => handleFileSelect(e, idx)}
+                      />
+                    </div>
+                  );
+                })}
               </div>
+              <p className="text-[10px] text-muted-foreground mt-1.5">First image will be shown in product cards. Max 5MB each.</p>
+            </div>
+
+            {/* Video URL Input */}
+            <div>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                <Video size={12} /> Product Video (optional)
+              </label>
+              <Input
+                value={form.video_url}
+                onChange={e => setForm(f => ({ ...f, video_url: e.target.value }))}
+                placeholder="Paste YouTube or Vimeo link..."
+                className="mt-1.5 rounded-xl"
+              />
+              {videoThumbnail && hasValidVideo && (
+                <div className="mt-2 relative rounded-xl overflow-hidden aspect-video bg-muted">
+                  <img src={videoThumbnail} alt="Video thumbnail" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                    <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                      <Play size={18} className="text-foreground ml-0.5" />
+                    </div>
+                  </div>
+                </div>
+              )}
+              {form.video_url && !hasValidVideo && (
+                <p className="text-[10px] text-destructive mt-1">Invalid video URL. Supports YouTube & Vimeo.</p>
+              )}
             </div>
 
             {/* Emoji picker */}
             <div>
               <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
-                Emoji Icon {currentImageSrc && <span className="text-muted-foreground/60">(fallback)</span>}
+                Emoji Icon {form.images.length > 0 && <span className="text-muted-foreground/60">(fallback)</span>}
               </label>
               <div className="flex gap-2 flex-wrap mt-1.5">
                 {EMOJIS.map(e => (
@@ -481,8 +560,8 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
               </button>
             </div>
 
-            <Button onClick={handleSave} disabled={saving || uploading} className="w-full h-12 rounded-xl text-[14px] font-bold">
-              {saving ? "Saving..." : uploading ? "Uploading..." : editing ? "Update Product" : "Add Product"}
+            <Button onClick={handleSave} disabled={saving || uploadingSlot !== null} className="w-full h-12 rounded-xl text-[14px] font-bold">
+              {saving ? "Saving..." : uploadingSlot !== null ? "Uploading..." : editing ? "Update Product" : "Add Product"}
             </Button>
           </div>
         </SheetContent>

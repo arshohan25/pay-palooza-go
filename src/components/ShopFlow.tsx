@@ -38,6 +38,8 @@ interface Product {
   vendor_name: string;
   stock: number;
   image_url?: string | null;
+  images?: string[];
+  video_url?: string | null;
 }
 
 interface CartItem extends Product { qty: number; }
@@ -407,6 +409,8 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
         vendor_name: p.vendor_name || "Shop",
         stock: p.stock,
         image_url: p.image_url,
+        images: p.images || [],
+        video_url: p.video_url,
       })));
     }
     setProductsLoading(false);
@@ -850,16 +854,100 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
           )}
 
           {/* ──── DETAIL ──── */}
-          {screen === "detail" && detail && (
+          {screen === "detail" && detail && (() => {
+            // Combine images array with legacy image_url for backwards compat
+            const allImages = detail.images && detail.images.length > 0 
+              ? detail.images 
+              : detail.image_url 
+                ? [detail.image_url] 
+                : [];
+            const [activeImageIdx, setActiveImageIdx] = useState(0);
+            
+            // Extract YouTube/Vimeo video ID
+            const getVideoEmbed = (url: string | null | undefined) => {
+              if (!url) return null;
+              // YouTube formats
+              const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+              if (ytMatch) return { type: 'youtube', id: ytMatch[1] };
+              // Vimeo
+              const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+              if (vimeoMatch) return { type: 'vimeo', id: vimeoMatch[1] };
+              return null;
+            };
+            const videoEmbed = getVideoEmbed(detail.video_url);
+
+            return (
             <motion.div key={`detail-${detail.id}`} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.22 }} className="px-4 pt-4 space-y-4">
-              <div className="relative rounded-2xl h-52 flex items-center justify-center bg-muted/30 overflow-hidden">
-                <ProductImage imageUrl={detail.image_url} emoji={detail.emoji} alt={detail.name} emojiSize="text-8xl" />
-                {detail.badge && <span className="absolute top-3 left-3 text-[10px] font-bold text-primary-foreground px-2.5 py-1 rounded-full" style={{ background: detail.badge_color || "hsl(var(--primary))" }}>{detail.badge}</span>}
-                <motion.button whileTap={{ scale: 0.8 }} onClick={() => toggleWishlist(detail.id)}
-                  className="absolute top-3 right-3 w-9 h-9 rounded-full bg-background/90 shadow-md flex items-center justify-center">
-                  <Heart size={17} className={wishlist.has(detail.id) ? "fill-destructive text-destructive" : "text-muted-foreground"} />
-                </motion.button>
+              {/* Image Carousel */}
+              <div className="relative rounded-2xl overflow-hidden">
+                <div className="relative h-56 flex items-center justify-center bg-muted/30">
+                  {allImages.length > 0 ? (
+                    <img 
+                      src={allImages[activeImageIdx]} 
+                      alt={detail.name} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.src = ''; e.currentTarget.className = 'hidden'; }}
+                    />
+                  ) : (
+                    <span className="text-8xl">{detail.emoji}</span>
+                  )}
+                  {detail.badge && <span className="absolute top-3 left-3 text-[10px] font-bold text-primary-foreground px-2.5 py-1 rounded-full" style={{ background: detail.badge_color || "hsl(var(--primary))" }}>{detail.badge}</span>}
+                  <motion.button whileTap={{ scale: 0.8 }} onClick={() => toggleWishlist(detail.id)}
+                    className="absolute top-3 right-3 w-9 h-9 rounded-full bg-background/90 shadow-md flex items-center justify-center">
+                    <Heart size={17} className={wishlist.has(detail.id) ? "fill-destructive text-destructive" : "text-muted-foreground"} />
+                  </motion.button>
+                </div>
+                {/* Carousel dots */}
+                {allImages.length > 1 && (
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                    {allImages.map((_, idx) => (
+                      <button 
+                        key={idx} 
+                        onClick={() => setActiveImageIdx(idx)}
+                        className={`w-2 h-2 rounded-full transition-all ${idx === activeImageIdx ? 'bg-primary w-4' : 'bg-background/60'}`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
+              {/* Thumbnail strip */}
+              {allImages.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {allImages.map((img, idx) => (
+                    <button 
+                      key={idx}
+                      onClick={() => setActiveImageIdx(idx)}
+                      className={`w-14 h-14 rounded-xl overflow-hidden shrink-0 border-2 transition-all ${idx === activeImageIdx ? 'border-primary' : 'border-transparent'}`}
+                    >
+                      <img src={img} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Video Embed */}
+              {videoEmbed && (
+                <div className="rounded-2xl overflow-hidden bg-black aspect-video">
+                  {videoEmbed.type === 'youtube' && (
+                    <iframe 
+                      src={`https://www.youtube.com/embed/${videoEmbed.id}`}
+                      title="Product video"
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  )}
+                  {videoEmbed.type === 'vimeo' && (
+                    <iframe 
+                      src={`https://player.vimeo.com/video/${videoEmbed.id}`}
+                      title="Product video"
+                      className="w-full h-full"
+                      allow="autoplay; fullscreen; picture-in-picture"
+                      allowFullScreen
+                    />
+                  )}
+                </div>
+              )}
 
               <div className="bg-card rounded-2xl border border-border/60 p-4 space-y-3">
                 {/* Vendor badge */}
@@ -984,6 +1072,8 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                 </div>
               )}
             </motion.div>
+          );
+          })()}
           )}
 
           {/* ──── WISHLIST ──── */}
