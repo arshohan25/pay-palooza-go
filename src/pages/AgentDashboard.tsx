@@ -1,14 +1,14 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowDownToLine, Wallet, TrendingUp, UserPlus, Receipt,
+  ArrowDownToLine, ArrowUpFromLine, Wallet, TrendingUp, UserPlus, Receipt,
   ArrowLeft, Menu, RefreshCw, Users, BarChart3, Activity,
   Building2, Bell, ArrowRightLeft, Share2, X, Eye, EyeOff,
   ChevronRight, Banknote, Shield, Clock, History,
   MessageCircleQuestion, CircleDollarSign, Headphones,
-  ChevronDown, Phone, Mail,
+  ChevronDown, Phone, Mail, Landmark, FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -388,8 +388,8 @@ const AgentDashboard = () => {
               <Banknote size={18} className="text-primary-foreground" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-foreground">0.499% Commission</p>
-              <p className="text-[10px] text-muted-foreground">On every Cash In & Cash Out</p>
+              <p className="text-xs font-bold text-foreground">Agent Commission</p>
+              <p className="text-[10px] text-muted-foreground">0.49% Cash In/Out · 0.019% Bill Pay</p>
             </div>
             <div className="text-right shrink-0">
               <p className="text-sm font-extrabold text-primary">৳{fmt(agentInfo?.commission_earned ?? 0)}</p>
@@ -452,14 +452,24 @@ const AgentDashboard = () => {
             ) : (
               <div className="divide-y divide-border/50">
                 {recentTxns.slice(0, 8).map(tx => {
-                   const isCredit = tx.type === "cashin";
+                  const isCredit = tx.type === "cashin";
+                  const txIcon = (() => {
+                    switch (tx.type) {
+                      case "cashin": return { Icon: ArrowDownToLine, cls: "bg-primary/10 text-primary" };
+                      case "cashout": return { Icon: ArrowUpFromLine, cls: "bg-destructive/10 text-destructive" };
+                      case "banktransfer": return { Icon: Landmark, cls: "bg-accent/10 text-accent" };
+                      case "paybill": return { Icon: FileText, cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400" };
+                      default: return { Icon: ArrowDownToLine, cls: "bg-muted text-muted-foreground" };
+                    }
+                  })();
+                  const typeLabels: Record<string, string> = { cashin: "Cash In", cashout: "Cash Out", banktransfer: "Bank Transfer", paybill: "Bill Pay" };
                   return (
                     <button key={tx.id} onClick={() => setSelectedTxn(tx)} className="flex items-center gap-3 px-4 py-3 w-full text-left press-effect hover:bg-muted/20 transition-colors">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isCredit ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"}`}>
-                        <ArrowDownToLine size={15} className={isCredit ? "" : "rotate-180"} />
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${txIcon.cls}`}>
+                        <txIcon.Icon size={15} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-foreground capitalize truncate">{tx.type}</p>
+                        <p className="text-xs font-bold text-foreground truncate">{typeLabels[tx.type] || tx.type}</p>
                         <p className="text-[10px] text-muted-foreground">{tx.recipient_phone || "—"}</p>
                       </div>
                       <div className="text-right shrink-0">
@@ -573,7 +583,7 @@ const AgentDashboard = () => {
                 {[
                   { q: "How to request more float?", a: "Tap 'Float Req' from Quick Actions and enter the amount. Your distributor will be notified." },
                   { q: "Cash In transaction failed?", a: "Check your balance and retry. If the issue persists, contact your distributor with the transaction ID." },
-                  { q: "How is commission calculated?", a: "You earn 0.499% on every Cash In and Cash Out transaction, credited instantly." },
+                  { q: "How is commission calculated?", a: "You earn 0.49% on Cash In/Out and 0.019% on Bill Pay transactions, credited instantly." },
                   { q: "How to register a new customer?", a: "Tap 'Register' and fill in the customer's phone, name, and NID details." },
                   { q: "Bank transfer not reflecting?", a: "Bank transfers may take 1-2 business days. Check History for status updates." },
                 ].map((faq, i) => (
@@ -608,11 +618,12 @@ const AgentDashboard = () => {
 };
 
 /* ── Transaction Detail Modal ── */
-const TxnDetailModal = ({ tx, onClose, onShare }: { tx: any; onClose: () => void; onShare: (tx: any) => void }) => {
+
+const TxnDetailModal = React.forwardRef<HTMLDivElement, { tx: any; onClose: () => void; onShare: (tx: any) => void }>(({ tx, onClose, onShare }, ref) => {
   const typeLabels: Record<string, string> = { send: "Send Money", receive: "Received", cashout: "Cash Out", cashin: "Cash In", banktransfer: "Bank Transfer", payment: "Payment", recharge: "Recharge", paybill: "Bill Pay", addmoney: "Add Money" };
   const isCredit = tx.type === "receive" || tx.type === "addmoney";
   return (
-    <>
+    <div ref={ref}>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <motion.div initial={{ y: "100%", opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }} transition={{ type: "spring", stiffness: 340, damping: 34 }} className="fixed bottom-0 left-0 right-0 z-[81] bg-card rounded-t-3xl shadow-float max-h-[80vh] overflow-y-auto">
         <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 rounded-full bg-muted-foreground/25" /></div>
@@ -655,15 +666,25 @@ const TxnDetailModal = ({ tx, onClose, onShare }: { tx: any; onClose: () => void
           </div>
         </div>
       </motion.div>
-    </>
+    </div>
   );
-};
+});
+TxnDetailModal.displayName = "TxnDetailModal";
 
 /* ── Notification Panel ── */
-const NotificationPanel = ({ notifications, systemAlerts, onClose, onViewTxn }: { notifications: any[]; systemAlerts: { id: string; text: string; time: string }[]; onClose: () => void; onViewTxn: (tx: any) => void }) => {
+const NotificationPanel = React.forwardRef<HTMLDivElement, { notifications: any[]; systemAlerts: { id: string; text: string; time: string }[]; onClose: () => void; onViewTxn: (tx: any) => void }>(({ notifications, systemAlerts, onClose, onViewTxn }, ref) => {
   const typeLabels: Record<string, string> = { send: "Send Money", receive: "Received", cashout: "Cash Out", cashin: "Cash In", banktransfer: "Bank Transfer", payment: "Payment" };
+  const getTxnIcon = (type: string) => {
+    switch (type) {
+      case "cashin": case "receive": return { Icon: ArrowDownToLine, cls: "bg-primary/10 text-primary" };
+      case "cashout": return { Icon: ArrowUpFromLine, cls: "bg-destructive/10 text-destructive" };
+      case "banktransfer": return { Icon: Landmark, cls: "bg-accent/10 text-accent" };
+      case "paybill": return { Icon: FileText, cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400" };
+      default: return { Icon: ArrowDownToLine, cls: "bg-muted text-muted-foreground" };
+    }
+  };
   return (
-    <>
+    <div ref={ref}>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", stiffness: 340, damping: 34 }} className="fixed top-0 right-0 bottom-0 w-[85vw] max-w-sm z-[71] bg-card shadow-float overflow-y-auto">
         <div className="px-5 py-5 space-y-4">
@@ -690,29 +711,33 @@ const NotificationPanel = ({ notifications, systemAlerts, onClose, onViewTxn }: 
                 <p className="text-xs">No new notifications</p>
               </div>
             ) : (
-              notifications.slice(0, 20).map(n => (
-                <Card key={n.id} className="p-3 border-0 shadow-card rounded-xl cursor-pointer press-effect hover:bg-muted/30 transition-colors" onClick={() => onViewTxn(n)}>
-                  <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${n.type === "cashin" || n.type === "receive" ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"}`}>
-                      <ArrowDownToLine size={15} className={n.type === "cashin" || n.type === "receive" ? "" : "rotate-180"} />
+              notifications.slice(0, 20).map(n => {
+                const { Icon: NIcon, cls } = getTxnIcon(n.type);
+                return (
+                  <Card key={n.id} className="p-3 border-0 shadow-card rounded-xl cursor-pointer press-effect hover:bg-muted/30 transition-colors" onClick={() => onViewTxn(n)}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${cls}`}>
+                        <NIcon size={15} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-foreground">{typeLabels[n.type] || n.type}</p>
+                        <p className="text-[10px] text-muted-foreground">{n.phone || n.name || "—"}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className={`text-xs font-extrabold ${n.type === "receive" || n.type === "cashin" ? "text-primary" : "text-foreground"}`}>৳{fmt(n.amount)}</p>
+                        <p className="text-[9px] text-muted-foreground">{new Date(n.time).toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" })}</p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-foreground">{typeLabels[n.type] || n.type}</p>
-                      <p className="text-[10px] text-muted-foreground">{n.phone || n.name || "—"}</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className={`text-xs font-extrabold ${n.type === "receive" || n.type === "cashin" ? "text-primary" : "text-foreground"}`}>৳{fmt(n.amount)}</p>
-                      <p className="text-[9px] text-muted-foreground">{new Date(n.time).toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" })}</p>
-                    </div>
-                  </div>
-                </Card>
-              ))
+                  </Card>
+                );
+              })
             )}
           </div>
         </div>
       </motion.div>
-    </>
+    </div>
   );
-};
+});
+NotificationPanel.displayName = "NotificationPanel";
 
 export default AgentDashboard;

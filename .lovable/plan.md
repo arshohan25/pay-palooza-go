@@ -1,24 +1,29 @@
 
 
-## Fix Recent Activity — Agent Dashboard
+## Plan: Add Biller Categories to API Hub
 
-### Issues Found
+### What
 
-1. **React ref warning on TxnDetailModal**: `AnimatePresence` tries to pass a ref to `TxnDetailModal` and `NotificationPanel`, but they are plain function components. This causes the console error: *"Function components cannot be given refs."* This can cause exit animations to break silently.
-
-2. **Transaction type display is too generic**: Every transaction shows the same `ArrowDownToLine` icon regardless of type (cashin, cashout, banktransfer, paybill). Only `cashin` is treated as credit — `paybill` and `banktransfer` show as debits but use the same rotated icon.
-
-3. **FAQ commission text outdated**: Line 576 says "0.499%" but the correct rate is now "0.49% (Cash In/Out) and 0.019% (Bill Pay)".
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-**File: `src/pages/AgentDashboard.tsx`**
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-1. **Wrap `TxnDetailModal` with `React.forwardRef`** to fix the AnimatePresence ref warning. Same for `NotificationPanel`.
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-2. **Improve Recent Activity icons per transaction type**: Use distinct icons/colors for cashin, cashout, banktransfer, paybill instead of a single `ArrowDownToLine`.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-3. **Update FAQ commission text** from "0.499%" to "0.49% on Cash In/Out, 0.019% on Bill Pay".
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-Single file change, no database modifications needed.
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
