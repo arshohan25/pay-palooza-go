@@ -261,6 +261,21 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
         );
       })()}
 
+      {/* ── Commission breakdown summary (agent view only) ─────────────── */}
+      {agentView && totalCommission > 0 && (() => {
+        const commByType: Record<string, number> = {};
+        filtered.forEach((tx) => {
+          if (tx.commission > 0) {
+            const label = CATEGORIES.find((c) => c.id === tx.category)?.label ?? tx.category;
+            commByType[label] = (commByType[label] || 0) + tx.commission;
+          }
+        });
+        const entries = Object.entries(commByType).sort((a, b) => b[1] - a[1]);
+        return (
+          <CommissionBreakdownSummary entries={entries} totalCommission={totalCommission} />
+        );
+      })()}
+
       {/* ── Search bar ──────────────────────────────────────────────────── */}
       <div className="mb-2">
         <div className="relative">
@@ -621,8 +636,26 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     </div>
                   ))}
 
-                  {/* Amount highlight + fee breakdown */}
-                  {agentView ? (
+                  {/* Amount highlight + fee/commission breakdown */}
+                  {agentView && selectedTx.commission > 0 ? (
+                    <div className="mt-4 rounded-2xl p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40">
+                      <div className="flex items-center justify-between text-[12.5px]">
+                        <span className="text-muted-foreground font-medium">Transaction Amount</span>
+                        <span className="font-semibold text-foreground">৳{Math.abs(selectedTx.amount).toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[12.5px] mt-1.5">
+                        <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                          Commission Earned{AGENT_COMMISSION_RATES[selectedTx.category] ? ` (${AGENT_COMMISSION_RATES[selectedTx.category]}%)` : ""}
+                        </span>
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">+৳{selectedTx.commission.toLocaleString()}</span>
+                      </div>
+                      <div className="h-px bg-emerald-200/60 dark:bg-emerald-800/40 my-2" />
+                      <div className="flex items-center justify-between">
+                        <span className="text-[13px] font-bold text-foreground">Net Earned</span>
+                        <span className="text-[18px] font-bold text-emerald-600 dark:text-emerald-400">+৳{selectedTx.commission.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  ) : agentView ? (
                     <div className={`mt-4 rounded-2xl p-4 ${isCredit ? "bg-primary/10" : "bg-muted/60"}`}>
                       <div className="flex items-center justify-between">
                         <span className="text-[13px] font-semibold text-muted-foreground">Total Amount</span>
@@ -630,11 +663,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                           {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString()}
                         </span>
                       </div>
-                      {selectedTx.commission > 0 && (
-                        <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 text-right font-medium">
-                          +৳{selectedTx.commission.toLocaleString()} commission{AGENT_COMMISSION_RATES[selectedTx.category] ? ` @ ${AGENT_COMMISSION_RATES[selectedTx.category]}%` : ""}
-                        </p>
-                      )}
+                      <p className="text-[11px] text-muted-foreground mt-1 text-right font-medium">No commission</p>
                     </div>
                   ) : selectedTx.fee > 0 ? (
                     <div className="mt-4 rounded-2xl p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40">
@@ -756,6 +785,51 @@ const FeeBreakdownSummary = ({ entries, totalFees }: { entries: [string, number]
                 <div key={label} className="flex items-center justify-between">
                   <span className="text-[11px] text-muted-foreground">{label}</span>
                   <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">৳{amount.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// ─── Commission Breakdown Summary (collapsible, agent view) ───────────────
+const CommissionBreakdownSummary = ({ entries, totalCommission }: { entries: [string, number][]; totalCommission: number }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mb-2">
+      <motion.button
+        whileTap={{ scale: 0.98 }}
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40 text-left"
+      >
+        <div className="flex items-center gap-2">
+          <TrendingUp size={14} className="text-emerald-600 dark:text-emerald-400" />
+          <span className="text-[12px] font-semibold text-foreground">Commission Breakdown</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[12px] font-bold text-emerald-600 dark:text-emerald-400">৳{totalCommission.toLocaleString()}</span>
+          <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
+            <ChevronDown size={14} className="text-muted-foreground" />
+          </motion.div>
+        </div>
+      </motion.button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pt-2 pb-1 space-y-1">
+              {entries.map(([label, amount]) => (
+                <div key={label} className="flex items-center justify-between">
+                  <span className="text-[11px] text-muted-foreground">{label}</span>
+                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">+৳{amount.toLocaleString()}</span>
                 </div>
               ))}
             </div>
