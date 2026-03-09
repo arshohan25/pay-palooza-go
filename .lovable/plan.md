@@ -1,28 +1,29 @@
 
 
-## Fix: Dynamic QR scanned inside PaymentFlow routes incorrectly
+## Plan: Add Biller Categories to API Hub
 
-### Problem
-When a user opens the QR scanner from **within PaymentFlow** (the Payment page's QR icon), and scans a dynamic payment QR (`type: "easypay"` with `sessionId`), the `handleQrScan` in `PaymentFlow.tsx` doesn't recognize the `dynamic_payment` flow. It just treats the raw JSON string as a merchant ID, which fails validation and shows the "Merchant not found" error.
+### What
 
-The dynamic QR handling only exists in `Index.tsx`'s scan handler, not in `PaymentFlow.tsx`.
-
-### Fix
-
-**File: `src/components/PaymentFlow.tsx`**
-
-Update `PaymentFlow` to:
-1. Accept an optional `onDynamicQr` callback prop for routing dynamic payment QR scans back to the parent
-2. In `handleQrScan`, check if `parsed.flow === "dynamic_payment"` — if so, call `onDynamicQr` with the session data and close PaymentFlow
-
-**File: `src/pages/Index.tsx`**
-
-Pass the `onDynamicQr` callback to `PaymentFlow` that sets `dynamicQrSession` state (same logic already used in the Scan & Pay handler).
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-| File | Change |
-|------|--------|
-| `src/components/PaymentFlow.tsx` | Add `onDynamicQr?` prop, handle `dynamic_payment` flow in `handleQrScan` |
-| `src/pages/Index.tsx` | Pass `onDynamicQr` callback to `PaymentFlow` |
+**File: `src/components/admin/AdminApiHub.tsx`**
+
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

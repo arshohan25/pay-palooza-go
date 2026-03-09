@@ -373,7 +373,7 @@ const Index = () => {
       <AnimatePresence>
         {showSendMoney && <SendMoneyFlow prefilledPhone={sendMoneyPrefilledPhone} onSuccess={(amt) => { sendMoneyOnComplete?.(amt); setSendMoneyOnComplete(undefined); }} onClose={() => { setShowSendMoney(false); setSendMoneyPrefilledPhone(undefined); setSendMoneyOnComplete(undefined); }} />}
         {showCashOut   && <CashOutFlow   onClose={() => setShowCashOut(false)} />}
-        {showPayment   && <PaymentFlow   onClose={() => setShowPayment(false)} />}
+        {showPayment   && <PaymentFlow   onClose={() => setShowPayment(false)} onDynamicQr={(session) => { setShowPayment(false); setDynamicQrSession(session); }} />}
         {showRecharge  && <MobileRechargeFlow onClose={() => setShowRecharge(false)} />}
         {showPayBill   && <PayBillFlow   onClose={() => setShowPayBill(false)} />}
         {showAddMoney  && <AddMoneyFlow  onClose={() => setShowAddMoney(false)} />}
