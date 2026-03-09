@@ -25,6 +25,7 @@ const AgentCashIn = () => {
   const [step, setStep] = useState<"form" | "confirm" | "done">("form");
   const [processing, setProcessing] = useState(false);
   const [showQr, setShowQr] = useState(false);
+  const [resolvedName, setResolvedName] = useState("");
   const phoneValidation = usePhoneValidation(phone);
   const commission = Number(amount) > 0 ? Math.round(Number(amount) * COMMISSION_RATE * 100) / 100 : 0;
 
