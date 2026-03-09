@@ -1,28 +1,30 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Activity, TrendingUp, Banknote, Clock, ArrowDownToLine, Building2, Receipt, ArrowRightLeft, Users } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, ArrowDownToLine, Banknote, ArrowRightLeft, Building2, Receipt } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, CartesianGrid,
+  ResponsiveContainer,
 } from "recharts";
-import { format, subDays, startOfMonth, endOfMonth, subMonths, isWithinInterval, parseISO } from "date-fns";
+import {
+  format, isToday, startOfWeek, endOfWeek, startOfMonth, endOfMonth,
+  isWithinInterval, parseISO, addMonths,
+} from "date-fns";
 
-const AGENT_TYPES = ["cashin", "cashout", "receive", "b2b", "banktransfer", "paybill"];
+const AGENT_TYPES = ["cashin", "cashout", "b2b", "banktransfer", "paybill"];
 
-const TYPE_META: Record<string, { label: string; icon: any; color: string }> = {
-  cashin:       { label: "Cash In",        icon: ArrowDownToLine, color: "hsl(var(--primary))" },
-  cashout:      { label: "Cash Out",       icon: Banknote,        color: "hsl(var(--accent))" },
-  receive:      { label: "Received",       icon: ArrowDownToLine, color: "hsl(142 71% 45%)" },
-  b2b:          { label: "B2B Transfer",   icon: ArrowRightLeft,  color: "hsl(262 83% 58%)" },
-  banktransfer: { label: "Bank Transfer",  icon: Building2,       color: "hsl(221 83% 53%)" },
-  paybill:      { label: "Bill Pay",       icon: Receipt,         color: "hsl(25 95% 53%)" },
+const TYPE_META: Record<string, { label: string; icon: any; accent: string }> = {
+  cashin:       { label: "Cash In",       icon: ArrowDownToLine, accent: "hsl(var(--primary))" },
+  cashout:      { label: "Cash Out",      icon: Banknote,        accent: "hsl(var(--accent))" },
+  b2b:          { label: "B2B Transfer",  icon: ArrowRightLeft,  accent: "hsl(262 83% 58%)" },
+  banktransfer: { label: "Bank Transfer", icon: Building2,       accent: "hsl(221 83% 53%)" },
+  paybill:      { label: "Bill Pay",      icon: Receipt,         accent: "hsl(25 95% 53%)" },
 };
 
-type TimePeriod = "7d" | "30d" | "thisMonth" | "prevMonth" | "all";
+type View = "daily" | "weekly" | "monthly";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(Math.round(n));
 
@@ -31,14 +33,15 @@ const AgentAnalyticsPage = () => {
   const { user } = useAuth();
   const [txns, setTxns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<TimePeriod>("30d");
+  const [view, setView] = useState<View>("daily");
+  const [monthOffset, setMonthOffset] = useState(0);
 
   const loadTxns = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     const { data } = await supabase
       .from("transactions")
-      .select("type, amount, commission, fee, created_at, status")
+      .select("type, amount, commission, created_at, status")
       .eq("user_id", user.id)
       .eq("status", "completed")
       .order("created_at", { ascending: false })
@@ -49,32 +52,27 @@ const AgentAnalyticsPage = () => {
 
   useEffect(() => { loadTxns(); }, [loadTxns]);
 
-  // Filter by period
+  const targetMonth = addMonths(new Date(), monthOffset);
+
   const filtered = useMemo(() => {
     const now = new Date();
     return txns.filter(t => {
       const d = parseISO(t.created_at);
-      switch (period) {
-        case "7d": return d >= subDays(now, 7);
-        case "30d": return d >= subDays(now, 30);
-        case "thisMonth": return isWithinInterval(d, { start: startOfMonth(now), end: now });
-        case "prevMonth": {
-          const prev = subMonths(now, 1);
-          return isWithinInterval(d, { start: startOfMonth(prev), end: endOfMonth(prev) });
-        }
+      switch (view) {
+        case "daily": return isToday(d);
+        case "weekly": return isWithinInterval(d, { start: startOfWeek(now, { weekStartsOn: 6 }), end: endOfWeek(now, { weekStartsOn: 6 }) });
+        case "monthly": return isWithinInterval(d, { start: startOfMonth(targetMonth), end: endOfMonth(targetMonth) });
         default: return true;
       }
     });
-  }, [txns, period]);
+  }, [txns, view, targetMonth]);
 
-  // Summary
   const summary = useMemo(() => ({
     count: filtered.length,
     volume: filtered.reduce((s, t) => s + Number(t.amount || 0), 0),
     commission: filtered.reduce((s, t) => s + Number(t.commission || 0), 0),
   }), [filtered]);
 
-  // Trend data grouped by day
   const trendData = useMemo(() => {
     const map: Record<string, { date: string; volume: number; commission: number }> = {};
     for (const t of filtered) {
@@ -86,7 +84,6 @@ const AgentAnalyticsPage = () => {
     return Object.values(map).reverse();
   }, [filtered]);
 
-  // Commission by type
   const commissionByType = useMemo(() => {
     const map: Record<string, number> = {};
     for (const t of filtered) {
@@ -97,22 +94,17 @@ const AgentAnalyticsPage = () => {
       .map(([type, commission]) => ({
         type: TYPE_META[type]?.label || type,
         commission,
-        fill: TYPE_META[type]?.color || "hsl(var(--primary))",
+        fill: TYPE_META[type]?.accent || "hsl(var(--primary))",
       }))
       .sort((a, b) => b.commission - a.commission);
   }, [filtered]);
 
-  // Peak hours
   const peakHours = useMemo(() => {
-    const hours = Array.from({ length: 24 }, (_, i) => ({ hour: `${i}:00`, count: 0 }));
-    for (const t of filtered) {
-      const h = parseISO(t.created_at).getHours();
-      hours[h].count++;
-    }
+    const hours = Array.from({ length: 24 }, (_, i) => ({ hour: `${i}`, count: 0 }));
+    for (const t of filtered) hours[parseISO(t.created_at).getHours()].count++;
     return hours;
   }, [filtered]);
 
-  // Type distribution
   const typeDistribution = useMemo(() => {
     const map: Record<string, { count: number; volume: number; commission: number }> = {};
     for (const t of filtered) {
@@ -124,109 +116,109 @@ const AgentAnalyticsPage = () => {
     return Object.entries(map).sort((a, b) => b[1].volume - a[1].volume);
   }, [filtered]);
 
-  const periods: { key: TimePeriod; label: string }[] = [
-    { key: "7d", label: "7 Days" },
-    { key: "30d", label: "30 Days" },
-    { key: "thisMonth", label: "This Month" },
-    { key: "prevMonth", label: "Prev Month" },
-    { key: "all", label: "All Time" },
+  const views: { key: View; label: string }[] = [
+    { key: "daily", label: "Daily" },
+    { key: "weekly", label: "Weekly" },
+    { key: "monthly", label: "Monthly" },
   ];
+
+  const tooltipStyle = { borderRadius: 10, fontSize: 11, border: "none", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" };
 
   return (
     <div className="min-h-screen bg-background pb-8">
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border/50 px-4 py-3">
+      <div className="sticky top-0 z-20 bg-background border-b border-border/40 px-4 py-3">
         <div className="flex items-center gap-3 max-w-lg mx-auto">
           <Button variant="ghost" size="icon" className="shrink-0 rounded-xl" onClick={() => navigate("/agent")}>
             <ArrowLeft size={18} />
           </Button>
-          <h1 className="text-base font-extrabold text-foreground">Agent Analytics</h1>
+          <h1 className="text-sm font-bold text-foreground tracking-tight">Analytics</h1>
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 pt-4 space-y-5">
-        {/* Period tabs */}
-        <div className="flex gap-1 p-1 bg-muted/60 rounded-xl overflow-x-auto no-scrollbar">
-          {periods.map(p => (
+      <div className="max-w-lg mx-auto px-4 pt-4 space-y-4">
+        {/* View tabs */}
+        <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg">
+          {views.map(v => (
             <button
-              key={p.key}
-              onClick={() => setPeriod(p.key)}
-              className={`flex-1 min-w-fit py-2 px-3 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                period === p.key ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+              key={v.key}
+              onClick={() => { setView(v.key); setMonthOffset(0); }}
+              className={`flex-1 py-2 rounded-md text-xs font-semibold transition-all ${
+                view === v.key ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"
               }`}
             >
-              {p.label}
+              {v.label}
             </button>
           ))}
         </div>
 
-        {/* Summary cards */}
+        {/* Month navigation */}
+        {view === "monthly" && (
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setMonthOffset(o => o - 1)}>
+              <ChevronLeft size={16} />
+            </Button>
+            <span className="text-xs font-semibold text-foreground">{format(targetMonth, "MMMM yyyy")}</span>
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" disabled={monthOffset >= 0} onClick={() => setMonthOffset(o => o + 1)}>
+              <ChevronRight size={16} />
+            </Button>
+          </div>
+        )}
+
+        {/* Summary */}
         <div className="grid grid-cols-3 gap-2">
-          <Card className="p-3 border-0 shadow-card rounded-xl text-center">
-            <Activity size={16} className="mx-auto text-primary mb-1" />
-            <p className="text-lg font-extrabold text-foreground">{loading ? "—" : summary.count}</p>
-            <p className="text-[9px] text-muted-foreground font-semibold">Transactions</p>
-          </Card>
-          <Card className="p-3 border-0 shadow-card rounded-xl text-center">
-            <TrendingUp size={16} className="mx-auto text-accent mb-1" />
-            <p className="text-sm font-extrabold text-foreground">{loading ? "—" : `৳${fmt(summary.volume)}`}</p>
-            <p className="text-[9px] text-muted-foreground font-semibold">Volume</p>
-          </Card>
-          <Card className="p-3 border-0 shadow-card rounded-xl text-center">
-            <Banknote size={16} className="mx-auto text-primary mb-1" />
-            <p className="text-sm font-extrabold text-primary">{loading ? "—" : `৳${fmt(summary.commission)}`}</p>
-            <p className="text-[9px] text-muted-foreground font-semibold">Commission</p>
-          </Card>
+          {[
+            { label: "Transactions", value: loading ? "—" : String(summary.count) },
+            { label: "Volume", value: loading ? "—" : `৳${fmt(summary.volume)}` },
+            { label: "Commission", value: loading ? "—" : `৳${fmt(summary.commission)}`, highlight: true },
+          ].map(c => (
+            <Card key={c.label} className="p-3 border-0 shadow-sm rounded-xl text-center">
+              <p className={`text-sm font-bold ${c.highlight ? "text-primary" : "text-foreground"}`}>{c.value}</p>
+              <p className="text-[9px] text-muted-foreground font-medium mt-0.5">{c.label}</p>
+            </Card>
+          ))}
         </div>
 
-        {/* Transaction Trend */}
-        <Card className="p-4 border-0 shadow-card rounded-2xl">
-          <h3 className="text-xs font-bold text-foreground mb-3">Transaction Trend</h3>
+        {/* Trend */}
+        <Card className="p-4 border-0 shadow-sm rounded-2xl">
+          <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-3">Trend</h3>
           {trendData.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-8">No data for this period</p>
+            <p className="text-xs text-muted-foreground text-center py-8">No data</p>
           ) : (
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={180}>
               <AreaChart data={trendData}>
                 <defs>
-                  <linearGradient id="volGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  <linearGradient id="vG" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
+                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                   </linearGradient>
-                  <linearGradient id="comGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--accent))" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(var(--accent))" stopOpacity={0} />
+                  <linearGradient id="cG" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--accent))" stopOpacity={0.2} />
+                    <stop offset="100%" stopColor="hsl(var(--accent))" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" tick={{ fontSize: 9 }} stroke="hsl(var(--muted-foreground))" />
-                <YAxis tick={{ fontSize: 9 }} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip
-                  contentStyle={{ borderRadius: 12, fontSize: 11, border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
-                  formatter={(v: number) => [`৳${fmt(v)}`, ""]}
-                />
-                <Area type="monotone" dataKey="volume" stroke="hsl(var(--primary))" fill="url(#volGrad)" strokeWidth={2} name="Volume" />
-                <Area type="monotone" dataKey="commission" stroke="hsl(var(--accent))" fill="url(#comGrad)" strokeWidth={2} name="Commission" />
+                <XAxis dataKey="date" tick={{ fontSize: 9 }} stroke="hsl(var(--muted-foreground))" axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 9 }} stroke="hsl(var(--muted-foreground))" axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`৳${fmt(v)}`, ""]} />
+                <Area type="monotone" dataKey="volume" stroke="hsl(var(--primary))" fill="url(#vG)" strokeWidth={2} name="Volume" />
+                <Area type="monotone" dataKey="commission" stroke="hsl(var(--accent))" fill="url(#cG)" strokeWidth={2} name="Commission" />
               </AreaChart>
             </ResponsiveContainer>
           )}
         </Card>
 
-        {/* Commission Breakdown */}
-        <Card className="p-4 border-0 shadow-card rounded-2xl">
-          <h3 className="text-xs font-bold text-foreground mb-3">Commission by Type</h3>
+        {/* Commission by Type */}
+        <Card className="p-4 border-0 shadow-sm rounded-2xl">
+          <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-3">Commission by Type</h3>
           {commissionByType.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-8">No commission data</p>
           ) : (
-            <ResponsiveContainer width="100%" height={Math.max(120, commissionByType.length * 40)}>
-              <BarChart data={commissionByType} layout="vertical" margin={{ left: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis type="number" tick={{ fontSize: 9 }} stroke="hsl(var(--muted-foreground))" />
-                <YAxis dataKey="type" type="category" tick={{ fontSize: 10 }} width={90} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip
-                  contentStyle={{ borderRadius: 12, fontSize: 11, border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
-                  formatter={(v: number) => [`৳${fmt(v)}`, "Commission"]}
-                />
-                <Bar dataKey="commission" radius={[0, 6, 6, 0]} barSize={20}>
+            <ResponsiveContainer width="100%" height={Math.max(100, commissionByType.length * 36)}>
+              <BarChart data={commissionByType} layout="vertical" margin={{ left: 4 }}>
+                <XAxis type="number" tick={{ fontSize: 9 }} stroke="hsl(var(--muted-foreground))" axisLine={false} tickLine={false} />
+                <YAxis dataKey="type" type="category" tick={{ fontSize: 10 }} width={85} stroke="hsl(var(--muted-foreground))" axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`৳${fmt(v)}`, "Commission"]} />
+                <Bar dataKey="commission" radius={[0, 6, 6, 0]} barSize={16}>
                   {commissionByType.map((entry, idx) => (
                     <rect key={idx} fill={entry.fill} />
                   ))}
@@ -237,46 +229,38 @@ const AgentAnalyticsPage = () => {
         </Card>
 
         {/* Peak Hours */}
-        <Card className="p-4 border-0 shadow-card rounded-2xl">
-          <h3 className="text-xs font-bold text-foreground mb-1">Peak Hours</h3>
-          <p className="text-[10px] text-muted-foreground mb-3">When you're busiest</p>
-          <ResponsiveContainer width="100%" height={160}>
+        <Card className="p-4 border-0 shadow-sm rounded-2xl">
+          <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-3">Peak Hours</h3>
+          <ResponsiveContainer width="100%" height={140}>
             <BarChart data={peakHours}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="hour" tick={{ fontSize: 8 }} interval={2} stroke="hsl(var(--muted-foreground))" />
-              <YAxis tick={{ fontSize: 9 }} stroke="hsl(var(--muted-foreground))" />
-              <Tooltip contentStyle={{ borderRadius: 12, fontSize: 11, border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }} />
-              <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} barSize={12} name="Transactions" />
+              <XAxis dataKey="hour" tick={{ fontSize: 8 }} interval={2} stroke="hsl(var(--muted-foreground))" axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 9 }} stroke="hsl(var(--muted-foreground))" axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Bar dataKey="count" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} barSize={10} name="Txns" />
             </BarChart>
           </ResponsiveContainer>
         </Card>
 
-        {/* Type Distribution */}
+        {/* Breakdown */}
         <div>
-          <h3 className="text-xs font-bold text-foreground mb-2">Transaction Breakdown</h3>
-          <div className="space-y-2">
+          <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Breakdown</h3>
+          <div className="space-y-1.5">
             {typeDistribution.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-6">No transactions in this period</p>
+              <p className="text-xs text-muted-foreground text-center py-6">No transactions</p>
             ) : (
               typeDistribution.map(([type, data]) => {
                 const meta = TYPE_META[type];
-                const Icon = meta?.icon || Activity;
                 return (
-                  <Card key={type} className="p-3 border-0 shadow-card rounded-xl">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <Icon size={14} className="text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-foreground">{meta?.label || type}</p>
-                        <p className="text-[10px] text-muted-foreground">{data.count} transactions</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-xs font-extrabold text-foreground">৳{fmt(data.volume)}</p>
-                        {data.commission > 0 && (
-                          <p className="text-[10px] font-semibold text-primary">+৳{fmt(data.commission)}</p>
-                        )}
-                      </div>
+                  <Card key={type} className="p-3 border-0 shadow-sm rounded-xl flex items-center gap-3 overflow-hidden" style={{ borderLeft: `3px solid ${meta?.accent || "hsl(var(--primary))"}` }}>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-foreground">{meta?.label || type}</p>
+                      <p className="text-[10px] text-muted-foreground">{data.count} txns</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-xs font-bold text-foreground">৳{fmt(data.volume)}</p>
+                      {data.commission > 0 && (
+                        <p className="text-[10px] font-medium text-primary">+৳{fmt(data.commission)}</p>
+                      )}
                     </div>
                   </Card>
                 );
