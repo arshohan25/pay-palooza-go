@@ -1,0 +1,16 @@
+{
+  "name": "EasyPay Super Distributor",
+  "short_name": "EP SuperDist",
+  "description": "EasyPay Super Distributor – Manage distributors, float, and commission networks.",
+  "start_url": "/super-distributor",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f3f4f8",
+  "theme_color": "#1faa7c",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icons/role-super-distributor.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/role-super-distributor.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "categories": ["finance", "business"]
+}

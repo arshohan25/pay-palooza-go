@@ -1,0 +1,16 @@
+{
+  "name": "EasyPay Admin",
+  "short_name": "EP Admin",
+  "description": "EasyPay Admin Dashboard – Manage users, transactions, fraud alerts and platform settings.",
+  "start_url": "/admin",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f3f4f8",
+  "theme_color": "#1faa7c",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icons/role-admin.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/role-admin.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "categories": ["finance", "business"]
+}

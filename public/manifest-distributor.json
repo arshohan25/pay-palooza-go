@@ -1,0 +1,16 @@
+{
+  "name": "EasyPay Distributor",
+  "short_name": "EP Distributor",
+  "description": "EasyPay Distributor – Create agents, manage float, and track commissions.",
+  "start_url": "/distributor",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f3f4f8",
+  "theme_color": "#1faa7c",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icons/role-distributor.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/role-distributor.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "categories": ["finance", "business"]
+}
