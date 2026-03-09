@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, ArrowRightLeft, CheckCircle2, Home } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, CheckCircle2, Home, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import { supabase } from "@/integrations/supabase/client";
 import { usePhoneValidation } from "@/hooks/use-phone-validation";
+import QrScannerModal from "@/components/QrScannerModal";
+import { parseQrData } from "@/lib/qrParser";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 
@@ -23,6 +25,7 @@ const AgentB2B = () => {
   const [pin, setPin] = useState("");
   const [step, setStep] = useState<"form" | "confirm" | "done">("form");
   const [processing, setProcessing] = useState(false);
+  const [showQr, setShowQr] = useState(false);
   const phoneValidation = usePhoneValidation(phone);
   const fee = Number(amount) > 100 ? 3 : 0;
 
@@ -138,7 +141,12 @@ const AgentB2B = () => {
               </div>
               <div>
                 <Label className="text-xs font-semibold">{transferType === "agent" ? "Agent" : "Distributor"} Phone</Label>
-                <Input type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ""))} onBlur={() => phoneValidation.setTouched(true)} maxLength={11} className={`rounded-xl h-11 mt-1 ${phoneValidation.inputClassName}`} />
+                <div className="relative mt-1">
+                  <Input type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ""))} onBlur={() => phoneValidation.setTouched(true)} maxLength={11} className={`rounded-xl h-11 pr-11 ${phoneValidation.inputClassName}`} />
+                  <button type="button" onClick={() => setShowQr(true)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors">
+                    <ScanLine size={16} />
+                  </button>
+                </div>
                 {phoneValidation.showError && <p className="text-[10px] text-destructive font-medium mt-1 animate-fade-in">{phoneValidation.errorMessage}</p>}
               </div>
               <div>
@@ -160,6 +168,17 @@ const AgentB2B = () => {
           </motion.div>
         )}
       </div>
+      <QrScannerModal
+        open={showQr}
+        onClose={() => setShowQr(false)}
+        title={`Scan ${transferType === "agent" ? "Agent" : "Distributor"} QR`}
+        onScan={(result) => {
+          setShowQr(false);
+          const parsed = parseQrData(result);
+          const extracted = parsed.identifier?.replace(/\D/g, "").slice(0, 11) || result.replace(/\D/g, "").slice(0, 11);
+          setPhone(extracted);
+        }}
+      />
     </div>
   );
 };

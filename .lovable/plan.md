@@ -1,63 +1,29 @@
 
 
-## Add QR Scanning to Agent Flows
+## Plan: Add Biller Categories to API Hub
 
-### Problem
-Agent pages (Cash In, B2B, Bank Transfer, Bill Pay) lack QR scanning. When an agent scans a customer's or another agent's QR code, it should auto-fill the phone number and focus the amount field — consistent with how the main wallet flows work.
+### What
+
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-**1. `src/pages/AgentCashIn.tsx`**
-- Import `QrScannerModal` and `parseQrData`
-- Add a QR scan icon button next to the "Customer Phone" input
-- Add `showQr` state and `QrScannerModal` component
-- On scan: parse QR → extract phone → set phone state → if amount is empty, focus amount input
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-**2. `src/pages/AgentB2B.tsx`**
-- Same pattern: add QR scan button next to the phone input
-- On scan: parse QR → extract phone → auto-fill
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-**3. `src/pages/AgentBankTransfer.tsx`**
-- Add QR scan button next to the account/phone input if applicable
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-**4. `src/pages/AgentBillPay.tsx`**
-- Add QR scan button next to account number input if applicable
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-### Implementation Pattern (same for each page)
-```tsx
-import QrScannerModal from "@/components/QrScannerModal";
-import { parseQrData } from "@/lib/qrParser";
-import { ScanLine } from "lucide-react";
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-// State
-const [showQr, setShowQr] = useState(false);
+3. Add the new category icons to the `categoryIcons` map.
 
-// Next to phone input — add scan button
-<div className="relative">
-  <Input ... />
-  <button onClick={() => setShowQr(true)} className="absolute right-2 top-1/2 -translate-y-1/2">
-    <ScanLine size={18} />
-  </button>
-</div>
-
-// At bottom of component
-<QrScannerModal
-  open={showQr}
-  onClose={() => setShowQr(false)}
-  title="Scan Customer QR"
-  onScan={(result) => {
-    setShowQr(false);
-    const parsed = parseQrData(result);
-    const extracted = parsed.identifier || result.replace(/\D/g, "").slice(0, 11);
-    setPhone(extracted);
-  }}
-/>
-```
-
-| File | Change |
-|------|--------|
-| `AgentCashIn.tsx` | Add QR scan button + modal for customer phone |
-| `AgentB2B.tsx` | Add QR scan button + modal for agent/distributor phone |
-| `AgentBankTransfer.tsx` | Add QR scan button if phone-based input exists |
-| `AgentBillPay.tsx` | Add QR scan button if account input exists |
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

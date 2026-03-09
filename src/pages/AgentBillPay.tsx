@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Receipt, CheckCircle2, Home } from "lucide-react";
+import { ArrowLeft, Receipt, CheckCircle2, Home, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import SlideToConfirm from "@/components/SlideToConfirm";
 
 import { supabase } from "@/integrations/supabase/client";
 import { verifyPin } from "@/lib/verifyPin";
+import QrScannerModal from "@/components/QrScannerModal";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 
@@ -32,6 +33,7 @@ const AgentBillPay = () => {
   const [pin, setPin] = useState("");
   const [step, setStep] = useState<"select" | "form" | "done">("select");
   const [processing, setProcessing] = useState(false);
+  const [showQr, setShowQr] = useState(false);
 
   const handlePay = async () => {
     if (processing) return;
@@ -103,7 +105,12 @@ const AgentBillPay = () => {
               </div>
               <div>
                 <Label className="text-xs font-semibold">Account / Meter No</Label>
-                <Input placeholder="Enter account number" value={accountNo} onChange={e => setAccountNo(e.target.value)} className="rounded-xl h-11 mt-1" />
+                <div className="relative mt-1">
+                  <Input placeholder="Enter account number" value={accountNo} onChange={e => setAccountNo(e.target.value)} className="rounded-xl h-11 pr-11" />
+                  <button type="button" onClick={() => setShowQr(true)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors">
+                    <ScanLine size={16} />
+                  </button>
+                </div>
               </div>
               <div>
                 <Label className="text-xs font-semibold">Amount (৳)</Label>
@@ -136,6 +143,15 @@ const AgentBillPay = () => {
           </motion.div>
         )}
       </div>
+      <QrScannerModal
+        open={showQr}
+        onClose={() => setShowQr(false)}
+        title="Scan Account QR"
+        onScan={(result) => {
+          setShowQr(false);
+          setAccountNo(result.trim());
+        }}
+      />
     </div>
   );
 };
