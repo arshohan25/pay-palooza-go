@@ -56,6 +56,8 @@ const App = () => (
               <Route path="/checkout/:sessionId" element={<CheckoutPage />} />
               <Route path="/pay/qr/:sessionId" element={<DynamicQrPage />} />
               <Route path="/team-login" element={<TeamLoginPage />} />
+              <Route path="/install" element={<RoleInstallPage />} />
+              <Route path="/install/:role" element={<RoleInstallPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
