@@ -97,9 +97,9 @@ const PinInput = ({ pin, onChange, error }: PinInputProps) => (
 );
 
 // ─── PaymentFlow ──────────────────────────────────────────────────────────────
-interface PaymentFlowProps { onClose: () => void; onDynamicQr?: (session: { sessionId: string; merchantId?: string; amount?: number; ref?: string | null }) => void; }
+interface PaymentFlowProps { onClose: () => void; onDynamicQr?: (session: { sessionId: string; merchantId?: string; amount?: number; ref?: string | null }) => void; prefilledMerchantId?: string; }
 
-const PaymentFlow = ({ onClose, onDynamicQr }: PaymentFlowProps) => {
+const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowProps) => {
   const { t } = useI18n();
   const [step, setStep]           = useState<Step>("merchant");
   const [direction, setDirection] = useState(1);
@@ -115,6 +115,28 @@ const PaymentFlow = ({ onClose, onDynamicQr }: PaymentFlowProps) => {
   const txnTime = useRef(new Date());
   const genId = () => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; };
   const txnId   = useRef(genId());
+
+  // Auto-resolve prefilled merchant ID (from QR scan)
+  const prefilledResolved = useRef(false);
+  useEffect(() => {
+    if (!prefilledMerchantId || prefilledResolved.current) return;
+    prefilledResolved.current = true;
+    const autoResolve = async () => {
+      setMerchantIdInput(prefilledMerchantId);
+      setValidating(true);
+      setError("");
+      const validation = await validateMerchantExists(prefilledMerchantId);
+      setValidating(false);
+      if (!validation.exists) {
+        setError("Merchant not found. Please enter a valid Merchant ID or phone.");
+        return;
+      }
+      setResolvedMerchantPhone(validation.phone || "");
+      setMerchant({ id: "prefilled", name: validation.name || "Merchant", merchantId: prefilledMerchantId, category: "Payment", initials: "MR", gradient: "gradient-payment" });
+      goTo("amount");
+    };
+    autoResolve();
+  }, [prefilledMerchantId]);
 
   // Fetch recent payment recipients from real transactions
   const GRADIENTS = ["gradient-payment", "gradient-addmoney", "gradient-accent", "gradient-cashout", "gradient-send"];
