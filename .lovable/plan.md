@@ -1,30 +1,29 @@
 
 
-## Fix: Agent Dashboard showing user transactions in Recent Activity
+## Plan: Add Biller Categories to API Hub
 
-### Problem
-The Agent Dashboard (`src/pages/AgentDashboard.tsx`, line 110) fetches **all** transaction types for the user — no filter applied. This means user-level transactions (Payment, Send, Addmoney) appear in the agent's "Recent Activity" section, as shown in the screenshot.
+### What
 
-### Fix
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-**`src/pages/AgentDashboard.tsx`**
+### Changes
 
-1. **Filter the transaction query** (line 110) to only fetch agent-relevant types:
-```tsx
-supabase.from("transactions")
-  .select("*")
-  .eq("user_id", user.id)
-  .in("type", ["cashin", "cashout", "banktransfer", "paybill"])
-  .order("created_at", { ascending: false })
-  .limit(20)
-```
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-2. **Fix the `isCredit` check** (line 455) — for agent types, `cashin` is a credit (customer depositing), not `receive`/`addmoney`:
-```tsx
-const isCredit = tx.type === "cashin";
-```
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-| File | Change |
-|------|--------|
-| `src/pages/AgentDashboard.tsx` | Add `.in("type", [...])` filter to query + fix isCredit logic |
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
