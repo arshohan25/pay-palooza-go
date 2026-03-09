@@ -1071,7 +1071,6 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
             </motion.div>
           );
           })()}
-          )}
 
           {/* ──── WISHLIST ──── */}
           {screen === "wishlist" && (
