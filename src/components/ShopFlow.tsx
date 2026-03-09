@@ -115,6 +115,16 @@ type PaymentMethod = "wallet" | "card";
 
 const SHOP_GRADIENT = "linear-gradient(135deg, hsl(var(--primary)), hsl(350 65% 38%))";
 
+// ── Video Embed Helper ─────────────────────────────────────────────────────────
+const getVideoEmbed = (url: string | null | undefined): { type: string; id: string } | null => {
+  if (!url) return null;
+  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (ytMatch) return { type: 'youtube', id: ytMatch[1] };
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch) return { type: 'vimeo', id: vimeoMatch[1] };
+  return null;
+};
+
 // ── Order Status Config ────────────────────────────────────────────────────────
 const STATUS_CONFIG: Record<Order["status"], { label: string; color: string; icon: React.ElementType }> = {
   processing:       { label: "Processing",       color: "hsl(36 100% 50%)", icon: Clock },
@@ -856,27 +866,13 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
 
           {/* ──── DETAIL ──── */}
           {screen === "detail" && detail && (() => {
-            // Combine images array with legacy image_url for backwards compat
-            const allImages = detail.images && detail.images.length > 0 
-              ? detail.images 
-              : detail.image_url 
-                ? [detail.image_url] 
+            const allImages = detail.images && detail.images.length > 0
+              ? detail.images
+              : detail.image_url
+                ? [detail.image_url]
                 : [];
-            const [activeImageIdx, setActiveImageIdx] = useState(0);
-            
-            // Extract YouTube/Vimeo video ID
-            const getVideoEmbed = (url: string | null | undefined) => {
-              if (!url) return null;
-              // YouTube formats
-              const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-              if (ytMatch) return { type: 'youtube', id: ytMatch[1] };
-              // Vimeo
-              const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-              if (vimeoMatch) return { type: 'vimeo', id: vimeoMatch[1] };
-              return null;
-            };
             const videoEmbed = getVideoEmbed(detail.video_url);
-
+            const safeIdx = Math.min(activeImageIdx, Math.max(0, allImages.length - 1));
             return (
             <motion.div key={`detail-${detail.id}`} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.22 }} className="px-4 pt-4 space-y-4">
               {/* Image Carousel */}
