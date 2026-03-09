@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowDownToLine, CheckCircle2, Home, HandCoins, ScanLine } from "lucide-react";
@@ -28,6 +28,22 @@ const AgentCashIn = () => {
   const [resolvedName, setResolvedName] = useState("");
   const phoneValidation = usePhoneValidation(phone);
   const commission = Number(amount) > 0 ? Math.round(Number(amount) * COMMISSION_RATE * 100) / 100 : 0;
+
+  useEffect(() => {
+    if (phone.length === 11 && phone.startsWith("01")) {
+      const resolve = async () => {
+        try {
+          const { data } = await supabase.rpc("resolve_transfer_recipient", {
+            p_identifier: phone, p_flow: "send"
+          });
+          const res = data as any;
+          if (res?.found) setResolvedName(res.recipient_name);
+          else setResolvedName("");
+        } catch { setResolvedName(""); }
+      };
+      resolve();
+    }
+  }, [phone]);
 
   const handleConfirm = async () => {
     if (processing) return;
