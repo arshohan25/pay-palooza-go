@@ -1,24 +1,29 @@
 
 
-## Fix: Duplicate `transfer_money` Function Overload
+## Plan: Add Biller Categories to API Hub
 
-### Problem
-The database has **two** `transfer_money` functions with nearly identical signatures. PostgreSQL cannot choose between them when called, causing "Could not choose the best candidate function" errors on every payment/transfer.
+### What
 
-- **Version 1** (8 params): `p_recipient_phone, p_amount, p_fee, p_type, p_description, p_reference, p_recipient_name, p_recipient_type`
-- **Version 2** (9 params): Same + `p_commission` (with default 0)
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-### Fix
-Run a single migration to **drop the old 8-param version**, keeping only the 9-param version which already defaults `p_commission` to 0, so all existing call sites work unchanged.
+### Changes
 
-```sql
-DROP FUNCTION IF EXISTS public.transfer_money(text, numeric, numeric, txn_type, text, text, text, txn_type);
-```
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-### Files Changed
-| File | Action |
-|------|--------|
-| Migration SQL | Drop the 8-param overload |
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-No code file changes needed — all callers either already pass `p_commission` or rely on the default.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
