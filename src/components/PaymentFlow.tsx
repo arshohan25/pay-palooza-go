@@ -97,9 +97,9 @@ const PinInput = ({ pin, onChange, error }: PinInputProps) => (
 );
 
 // ─── PaymentFlow ──────────────────────────────────────────────────────────────
-interface PaymentFlowProps { onClose: () => void; }
+interface PaymentFlowProps { onClose: () => void; onDynamicQr?: (session: { sessionId: string; merchantId?: string; amount?: number; ref?: string | null }) => void; }
 
-const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
+const PaymentFlow = ({ onClose, onDynamicQr }: PaymentFlowProps) => {
   const { t } = useI18n();
   const [step, setStep]           = useState<Step>("merchant");
   const [direction, setDirection] = useState(1);
@@ -200,6 +200,19 @@ const PaymentFlow = ({ onClose }: PaymentFlowProps) => {
     // Extract clean merchant ID from structured QR payloads
     const { parseQrData } = await import("@/lib/qrParser");
     const parsed = parseQrData(rawResult);
+
+    // Route dynamic payment QR back to parent
+    if (parsed.flow === "dynamic_payment" && parsed.sessionId && onDynamicQr) {
+      onDynamicQr({
+        sessionId: parsed.sessionId,
+        merchantId: parsed.identifier,
+        amount: parsed.amount,
+        ref: parsed.ref,
+      });
+      onClose();
+      return;
+    }
+
     const result = parsed.flow === "payment" ? parsed.identifier : rawResult;
     setMerchantIdInput(result);
     setValidating(true);
