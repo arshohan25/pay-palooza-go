@@ -78,7 +78,10 @@ const AgentTransactionHistory = () => {
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
           className="bg-card border border-border/60 rounded-2xl p-4 mb-4 shadow-card"
         >
-          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">Earnings Summary</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Earnings Summary</p>
+            <p className="text-[10px] text-muted-foreground font-medium">Cash In/Out: 0.485% · Bill Pay: 0.0201%</p>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             {statItems.map(({ icon: Icon, label, value, accent }) => (
               <div key={label} className="flex items-center gap-2.5">
