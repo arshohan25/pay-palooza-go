@@ -1,29 +1,42 @@
+## Dedicated Agent Analytics Page + Menu Cleanup
 
+### Overview
 
-## Plan: Add Biller Categories to API Hub
+Create a full-page `/agent/analytics` route with interactive charts (recharts) showing transaction trends, commission breakdown, and peak hours. Remove irrelevant transaction types and the "Transaction Limits" menu item.
 
-### What
+### New File: `src/pages/AgentAnalyticsPage.tsx`
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+A dedicated page that fetches up to 1000 completed transactions for the agent, then renders:
 
-### Changes
+1. **Summary Cards** — Total transactions, volume, commission (filterable by Daily/Weekly/Monthly/All-time tabs)
+2. **Transaction Trend Chart** (AreaChart) — Groups transactions by day, showing volume and commission over time. Tabs switch between 7-day, 30-day, This Month, Previous Month and all-time views.
+3. **Commission Breakdown by Type** (BarChart) — Horizontal bars showing commission earned per type: Cash In, Cash Out, Received, B2B, Bank Transfer, Bill Pay, Customer Registration.
+4. **Peak Hours Analysis** (BarChart) — Groups transactions by hour of day (0-23) to show when the agent is busiest.
+5. **Transaction Type Distribution** — Cards showing count/volume/commission per relevant type.
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**Relevant types only**: `cashin`, `cashout`, `commission`, `b2b`, `banktransfer`, `paybill`. Explicitly filter out `addmoney`, `send`, `payment`, `recharge`.
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+### Changes to `AgentMenuDrawer.tsx`
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+1. **Remove "Transaction Limits"** menu item entirely
+2. **Change "Analytics" action** to navigate to `/agent/analytics` instead of opening the bottom sheet
+3. **Remove the analytics sheet** code (state, useMemo, Sheet JSX) — no longer needed since we have a dedicated page
+4. **Clean up** `typeIcons`/`typeLabels` to only include agent-relevant types
+5. Fee Not applicable for agents, agent will get commission as per rules
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+### Changes to `App.tsx`
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+Add route:
 
-3. Add the new category icons to the `categoryIcons` map.
+```tsx
+<Route path="/agent/analytics" element={<RoleGuard roles={["agent", "admin"]}><AgentAnalyticsPage /></RoleGuard>} />
+```
 
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+### Technical Details
 
+- Uses `recharts` (already installed): `AreaChart`, `BarChart`, `Bar`, `XAxis`, `YAxis`, `Tooltip`, `ResponsiveContainer`
+- Fetches transactions from Supabase filtered by `user_id` and `status = 'completed'`
+- Groups by date using `date-fns` (already installed) for trend charts
+- Peak hours computed by extracting hour from `created_at`
+- Page header with back arrow navigating to `/agent`
+- Mobile-first responsive layout matching existing dashboard design tokens
