@@ -1,29 +1,29 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Fix Agent Transaction Credit/Debit Logic
 
-### What
+From the **agent's perspective**:
+- **Cash Out** = customer withdraws → agent gives cash, receives balance → **credit (+)**
+- **Cash In** = customer deposits → agent takes cash, sends balance → **debit (−)**
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### Changes in `src/pages/AgentDashboard.tsx`
 
-### Changes
+**Line 455**: Flip credit logic
+```tsx
+// Before
+const isCredit = tx.type === "cashin";
+// After
+const isCredit = tx.type === "cashout";
+```
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**Lines 457-461**: Swap icon styles to match new semantics
+- `cashout` → green/primary (money in for agent)
+- `cashin` → red/destructive (money out for agent)
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+```tsx
+case "cashin": return { Icon: ArrowUpFromLine, cls: "bg-destructive/10 text-destructive" };
+case "cashout": return { Icon: ArrowDownToLine, cls: "bg-primary/10 text-primary" };
+```
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+Single file, 3-line change.
 
