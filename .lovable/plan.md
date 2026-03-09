@@ -1,47 +1,29 @@
 
 
-## Auto-resolve recipient name on manual phone entry in agent flows
+## Plan: Add Biller Categories to API Hub
 
-### Problem
-Currently, recipient name resolution only happens after QR scan. When an agent manually types an 11-digit phone number, no name lookup occurs — the agent sees only the raw number with no confirmation of who they're sending to.
+### What
+
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-**1. `src/pages/AgentCashIn.tsx`**
-- Add a `useEffect` that watches `phone` state
-- When `phone.length === 11 && phone.startsWith("01")`, call `resolve_transfer_recipient` RPC with `p_flow: "send"`
-- Set `resolvedName` on success, clear on failure
-- Debounce not needed since it only fires at exactly 11 digits
-- Also resolve on `onBlur` if phone is valid and name not yet resolved
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-**2. `src/pages/AgentB2B.tsx`**
-- Same pattern: `useEffect` on phone length reaching 11 valid digits
-- Call `resolve_transfer_recipient` with `p_flow: "send"` and display resolved name
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-### Implementation pattern (both files)
-```tsx
-useEffect(() => {
-  if (phone.length === 11 && phone.startsWith("01")) {
-    const resolve = async () => {
-      try {
-        const { data } = await supabase.rpc("resolve_transfer_recipient", {
-          p_identifier: phone, p_flow: "send"
-        });
-        const res = data as any;
-        if (res?.found) setResolvedName(res.recipient_name);
-        else setResolvedName("");
-      } catch { setResolvedName(""); }
-    };
-    resolve();
-  }
-}, [phone]);
-```
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-The existing `onChange` handler already clears `resolvedName` on every keystroke, so stale names are naturally cleared. The `useEffect` triggers the lookup only when the phone reaches a valid 11-digit format.
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-### Files changed
-| File | Change |
-|------|--------|
-| `AgentCashIn.tsx` | Add `useEffect` to auto-resolve name when 11 digits entered |
-| `AgentB2B.tsx` | Add `useEffect` to auto-resolve name when 11 digits entered |
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
