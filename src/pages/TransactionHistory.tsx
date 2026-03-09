@@ -165,6 +165,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
   const totalIn  = filtered.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
   const totalOut = filtered.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
   const totalFees = filtered.reduce((s, t) => s + (t.fee || 0), 0);
+  const totalCommission = filtered.reduce((s, t) => s + (t.commission || 0), 0);
 
   return (
     <div className="flex flex-col w-full">
@@ -221,7 +222,9 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           {[
             { label: t("moneyIn"),  value: `+৳${totalIn.toLocaleString()}`,  color: "text-green-300" },
             { label: t("moneyOut"), value: `-৳${totalOut.toLocaleString()}`, color: "text-rose-300"  },
-            { label: "Fees",        value: `৳${totalFees.toLocaleString()}`, color: "text-amber-300" },
+            agentView
+              ? { label: "Commission", value: `৳${totalCommission.toLocaleString()}`, color: "text-emerald-300" }
+              : { label: "Fees",       value: `৳${totalFees.toLocaleString()}`,       color: "text-amber-300" },
             { label: t("count"),    value: String(filtered.length),          color: "text-white"     },
           ].map(({ label, value, color }) => (
             <div key={label} className="glass-hero rounded-2xl px-2 py-2.5 text-center min-w-0 overflow-hidden">
@@ -446,17 +449,32 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                   {/* Amount */}
                   <div className="shrink-0 text-right max-w-[90px]">
                     <div className="flex items-center justify-end gap-1">
-                      {tx.fee > 0 && (
-                        <TooltipProvider delayDuration={0}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <BadgeDollarSign size={12} className="text-amber-500/70 dark:text-amber-400/70 cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent side="left" className="text-xs">
-                              Fee: ৳{tx.fee.toLocaleString()}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                      {agentView ? (
+                        tx.commission > 0 && (
+                          <TooltipProvider delayDuration={0}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <TrendingUp size={12} className="text-emerald-500/70 dark:text-emerald-400/70 cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent side="left" className="text-xs">
+                                Commission: ৳{tx.commission.toLocaleString()}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )
+                      ) : (
+                        tx.fee > 0 && (
+                          <TooltipProvider delayDuration={0}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <BadgeDollarSign size={12} className="text-amber-500/70 dark:text-amber-400/70 cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent side="left" className="text-xs">
+                                Fee: ৳{tx.fee.toLocaleString()}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )
                       )}
                       <span className={`text-[13px] font-bold ${isCB ? "text-amber-600 dark:text-amber-400" : isCredit ? "text-primary" : "text-foreground"}`}>
                         {isCredit ? "+" : "−"}৳{Math.abs(tx.amount).toLocaleString()}
@@ -549,8 +567,10 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     { icon: User,     label: "Name / Party",   value: selectedTx.name,                        copy: false },
                     { icon: Tag,      label: "Category",       value: catLabel,                               copy: false },
                     { icon: FileText, label: "Description",    value: selectedTx.detail,                     copy: false },
-                    ...(selectedTx.fee > 0 ? [{ icon: Coins, label: "Charge / Fee", value: `৳${selectedTx.fee.toLocaleString()}`, copy: false }] : []),
-                    ...(agentView && selectedTx.commission > 0 ? [{ icon: TrendingUp, label: "Commission Earned", value: `৳${selectedTx.commission.toLocaleString()}`, copy: false }] : []),
+                    ...(agentView
+                      ? (selectedTx.commission > 0 ? [{ icon: TrendingUp, label: "Commission Earned", value: `+৳${selectedTx.commission.toLocaleString()}`, copy: false }] : [])
+                      : (selectedTx.fee > 0 ? [{ icon: Coins, label: "Charge / Fee", value: `৳${selectedTx.fee.toLocaleString()}`, copy: false }] : [])
+                    ),
                     { icon: Clock,    label: "Date & Time",    value: format(txDate, "dd MMM yyyy, h:mm a"), copy: false },
                   ].map(({ icon: RowIcon, label, value, copy }) => (
                     <div key={label} className="flex items-start gap-3 py-2.5 border-b border-border/50 last:border-0">
@@ -581,10 +601,18 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                         {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString()}
                       </span>
                     </div>
-                    {selectedTx.fee > 0 && (
-                      <p className="text-[11px] text-muted-foreground mt-1 text-right">
-                        ৳{Math.abs(selectedTx.amount).toLocaleString()} + ৳{selectedTx.fee.toLocaleString()} fee (from balance)
-                      </p>
+                    {agentView ? (
+                      selectedTx.commission > 0 && (
+                        <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 text-right font-medium">
+                          +৳{selectedTx.commission.toLocaleString()} commission earned
+                        </p>
+                      )
+                    ) : (
+                      selectedTx.fee > 0 && (
+                        <p className="text-[11px] text-muted-foreground mt-1 text-right">
+                          ৳{Math.abs(selectedTx.amount).toLocaleString()} + ৳{selectedTx.fee.toLocaleString()} fee (from balance)
+                        </p>
+                      )
                     )}
                   </div>
 
@@ -626,8 +654,10 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                 { label: "Party", value: selectedTx.name },
                 { label: "Category", value: catLabel },
                 { label: "Description", value: selectedTx.detail },
-                ...(selectedTx.fee > 0 ? [{ label: "Fee", value: `৳${selectedTx.fee.toLocaleString()}` }] : []),
-                ...(agentView && selectedTx.commission > 0 ? [{ label: "Commission", value: `৳${selectedTx.commission.toLocaleString()}` }] : []),
+                ...(agentView
+                  ? (selectedTx.commission > 0 ? [{ label: "Commission", value: `+৳${selectedTx.commission.toLocaleString()}` }] : [])
+                  : (selectedTx.fee > 0 ? [{ label: "Fee", value: `৳${selectedTx.fee.toLocaleString()}` }] : [])
+                ),
                 { label: "Date & Time", value: format(txDate, "dd MMM yyyy, h:mm a") },
               ],
             }}
