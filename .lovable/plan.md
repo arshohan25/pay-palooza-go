@@ -1,29 +1,30 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Recalculate Agent Commission for Existing Transactions
 
-### What
+### Current State
+There are **10 cashin/cashout transactions** with incorrect commission values:
+- Some have `commission = 0` (cashin transactions never had commission set)
+- Some have inflated values like `৳50` on `৳5,000` (1% instead of 0.49%)
+- Current total: **৳280** → Correct total should be: **৳490**
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### Plan
 
-### Changes
+**Single database UPDATE** using the data insert tool:
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+```sql
+UPDATE transactions
+SET commission = ROUND(ABS(amount) * 0.0049, 2)
+WHERE type IN ('cashin', 'cashout');
+```
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+This will recalculate all 10 records to use the correct **0.49%** rate. For example:
+- ৳5,000 → ৳24.50 (was ৳50)
+- ৳10,000 → ৳49.00 (was ৳0)
+- ৳15,000 → ৳73.50 (was ৳150)
+- ৳20,000 → ৳98.00 (was ৳0)
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+No code changes needed — this is a data-only fix.
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+**Files to edit:** None (database data update only)
 
