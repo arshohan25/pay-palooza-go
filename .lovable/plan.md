@@ -1,29 +1,40 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Fix: Dynamic QR scanned from user wallet not working
 
-### What
+### Problem Analysis
+When a user scans a dynamic payment QR from the home page (user wallet), two scenarios can fail:
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+1. **URL-based QR**: If the QR contains a URL like `https://.../pay/qr/{sessionId}` or `https://.../checkout/{sessionId}` (e.g. from the merchant's `qr_page_url`), `parseQrData` doesn't recognize it and falls through to `flow: "unknown"`. The RPC fallback also fails, showing "Unrecognized QR code."
 
-### Changes
+2. **Direct navigation**: If the user's phone camera (not the in-app scanner) scans the QR, Chrome opens the `/pay/qr/{sessionId}` page — which only shows a QR to scan but has no "Pay Now" button for authenticated users.
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+### Fix
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+**1. Update `src/lib/qrParser.ts`** — Add URL pattern matching for EasyPay payment URLs
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+In the URL parsing section (step 5), detect paths like `/pay/qr/{uuid}` and `/checkout/{uuid}` and extract the session ID to return `flow: "dynamic_payment"`:
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+```typescript
+// Inside the URL try block, before existing query param checks:
+const pathMatch = url.pathname.match(/\/(?:pay\/qr|checkout)\/([0-9a-f-]{36})/i);
+if (pathMatch) {
+  return { flow: "dynamic_payment", identifier: "", sessionId: pathMatch[1] };
+}
+```
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+**2. Update `src/pages/DynamicQrPage.tsx`** — Add "Pay Now" button for authenticated users
 
-3. Add the new category icons to the `categoryIcons` map.
+When the user is logged in and the session is pending, show a "Pay Now" button below the QR code that opens the `DynamicQrPaySheet` (or navigates to `/checkout/{sessionId}`). This handles the case where the user lands on the QR page directly via their phone camera.
 
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+- Check auth state with `supabase.auth.getUser()`
+- If authenticated, show a "Pay with EasyPay" button
+- On click, render the `DynamicQrPaySheet` inline or redirect to `/checkout/{sessionId}`
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `src/lib/qrParser.ts` | Recognize `/pay/qr/{uuid}` and `/checkout/{uuid}` URLs as `dynamic_payment` flow |
+| `src/pages/DynamicQrPage.tsx` | Add "Pay Now" button for authenticated users viewing the QR page |
 
