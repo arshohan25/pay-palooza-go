@@ -270,6 +270,17 @@ const DynamicQrPage = () => {
           <p className="text-[10px] text-muted-foreground/60">Powered by EasyPay</p>
         </div>
       </motion.div>
+
+      {sessionId && (
+        <DynamicQrPaySheet
+          open={showPaySheet}
+          onClose={() => { setShowPaySheet(false); fetchSession(); }}
+          sessionId={sessionId}
+          merchantId={merchantId}
+          amount={amount}
+          ref_={reference}
+        />
+      )}
     </div>
   );
 };
