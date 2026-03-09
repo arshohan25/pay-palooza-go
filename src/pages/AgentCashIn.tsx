@@ -182,7 +182,8 @@ const AgentCashIn = () => {
           setPhone(extracted);
           try {
             const { data } = await supabase.rpc("resolve_transfer_recipient", { p_identifier: extracted, p_flow: "send" });
-            if (data?.found) setResolvedName(data.recipient_name);
+            const res = data as any;
+            if (res?.found) setResolvedName(res.recipient_name);
           } catch {}
         }}
       />
