@@ -32,16 +32,19 @@ interface SessionInfo {
 
 const DynamicQrPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
+  const { isAuthenticated } = useAuth();
   const [status, setStatus] = useState<Status>("loading");
   const [amount, setAmount] = useState(0);
   const [currency, setCurrency] = useState("BDT");
   const [merchantName, setMerchantName] = useState("");
   const [merchantCategory, setMerchantCategory] = useState("");
+  const [merchantId, setMerchantId] = useState("");
   const [reference, setReference] = useState<string | null>(null);
   const [successUrl, setSuccessUrl] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
+  const [showPaySheet, setShowPaySheet] = useState(false);
   const expiresRef = useRef<number>(0);
 
   const fetchSession = useCallback(async () => {
