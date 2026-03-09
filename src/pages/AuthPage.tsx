@@ -359,8 +359,12 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const isValidPhone = (p: string) => /^01[3-9]\d{8}$/.test(p);
 
   // ── Register: Phone → OTP → PIN → Name ────────────────────────────────────
-  const handleRegisterPhone = () => {
+  const handleRegisterPhone = async () => {
     if (!isValidPhone(phone)) { setError(t.validPhone); return; }
+    try {
+      const registered = await isPhoneRegistered(phone);
+      if (registered) { setError("This number is already registered. Please log in."); return; }
+    } catch { /* allow to proceed if check fails */ }
     goTo("register_otp");
   };
 

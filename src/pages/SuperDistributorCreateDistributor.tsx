@@ -53,6 +53,10 @@ const SuperDistributorCreateDistributor = () => {
     try {
       // 1. Build email from phone
       const cleaned = phone.replace(/\D/g, "").replace(/^(\+?88)/, "");
+
+      // Check if phone already registered
+      const { data: existing } = await supabase.from("profiles").select("id").eq("phone", cleaned).maybeSingle();
+      if (existing) { toast({ title: "Already Registered", description: "This number already has an account.", variant: "destructive" }); setProcessing(false); return; }
       const email = `${cleaned}@easypay.local`;
 
       // 2. Create auth account for distributor
