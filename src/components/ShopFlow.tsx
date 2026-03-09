@@ -1043,9 +1043,9 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                       return (
                         <motion.div key={p.id} whileTap={{ scale: 0.97 }}
                           className="bg-card border border-border/50 rounded-2xl overflow-hidden cursor-pointer"
-                          onClick={() => setDetail(p)}>
+                          onClick={() => { setDetail(p); setActiveImageIdx(0); }}>
                           <div className="h-20 flex items-center justify-center bg-muted/30 overflow-hidden">
-                            <ProductImage imageUrl={p.image_url} emoji={p.emoji} alt={p.name} emojiSize="text-3xl" />
+                            <ProductImage imageUrl={p.image_url} images={p.images} emoji={p.emoji} alt={p.name} emojiSize="text-3xl" />
                           </div>
                           <div className="p-2.5 space-y-0.5">
                             <div className="flex items-center gap-1">
@@ -1089,8 +1089,8 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                   const inCart = cart.find(c => c.id === p.id);
                   return (
                     <div key={p.id} className="bg-card border border-border/50 rounded-2xl p-3 flex items-center gap-3 cursor-pointer"
-                      onClick={() => { setDetail(p); setScreen("detail"); }}>
-                      <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-muted/30 overflow-hidden"><ProductImage imageUrl={p.image_url} emoji={p.emoji} alt={p.name} emojiSize="text-3xl" /></div>
+                      onClick={() => { setDetail(p); setScreen("detail"); setActiveImageIdx(0); }}>
+                      <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-muted/30 overflow-hidden"><ProductImage imageUrl={p.image_url} images={p.images} emoji={p.emoji} alt={p.name} emojiSize="text-3xl" /></div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[13px] font-bold text-foreground truncate">{p.name}</p>
                         <p className="text-[11px] text-muted-foreground flex items-center gap-1"><BadgeCheck size={9} className="text-primary" /> {p.vendor_name}</p>
