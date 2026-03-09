@@ -1,17 +1,29 @@
 
 
-## Enforce One Account Per Phone Number
+## Plan: Add Biller Categories to API Hub
 
-### Problem
-The signup flow in `AuthPage.tsx` does not check if a phone number is already registered before calling `signUp()`. The `isPhoneRegistered()` function exists in `src/lib/auth.ts` but is never used. Same issue in `AgentRegister.tsx` and `SuperDistributorCreateDistributor.tsx`.
+### What
+
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-**1. `src/pages/AuthPage.tsx`** — In `handleRegisterPhone()` (line 362), before navigating to OTP step, call `isPhoneRegistered(phone)`. If true, show error "Already registered. Please log in." and block progression.
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-**2. `src/pages/AgentRegister.tsx`** — In `handleRegister()`, before creating the account, check if the phone is already in the `profiles` table. If yes, show toast "This number is already registered."
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-**3. `src/pages/SuperDistributorCreateDistributor.tsx`** — In `handleCreate()`, same check before `signUp`. Show error if phone already exists.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-All three files use the same pattern: query `profiles` table by phone before attempting account creation.
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
