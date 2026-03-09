@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowDownToLine, Wallet, TrendingUp, UserPlus, Receipt,
-  ArrowLeft, RefreshCw, Users, BarChart3, Activity,
+  ArrowLeft, Menu, RefreshCw, Users, BarChart3, Activity,
   Building2, Bell, ArrowRightLeft, Share2, X, Eye, EyeOff,
   ChevronRight, Banknote, Shield, Clock, History,
   MessageCircleQuestion, CircleDollarSign, Headphones,
@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import ShareReceiptSheet, { ReceiptData } from "@/components/ShareReceiptSheet";
+import AgentMenuDrawer from "@/components/AgentMenuDrawer";
 import { useNavigate } from "react-router-dom";
 import { haptics } from "@/lib/haptics";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -65,6 +66,9 @@ const AgentDashboard = () => {
   const [floatAmount, setFloatAmount] = useState("");
   const [floatNote, setFloatNote] = useState("");
   const [floatSubmitting, setFloatSubmitting] = useState(false);
+
+  // Menu drawer
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Notifications
   const [notifOpen, setNotifOpen] = useState(false);
@@ -243,8 +247,8 @@ const AgentDashboard = () => {
           <div className="relative max-w-xl mx-auto">
             {/* Top bar */}
             <div className="flex items-center justify-between mb-5">
-              <button onClick={() => navigate("/")} className="tap-target text-primary-foreground/80 hover:text-primary-foreground transition-colors">
-                <ArrowLeft size={20} />
+              <button onClick={() => setMenuOpen(true)} className="tap-target text-primary-foreground/80 hover:text-primary-foreground transition-colors">
+                <Menu size={20} />
               </button>
               <div className="flex items-center gap-2">
                 <motion.button
@@ -495,6 +499,9 @@ const AgentDashboard = () => {
       </AnimatePresence>
 
       {receiptData && <ShareReceiptSheet open={receiptOpen} onClose={() => setReceiptOpen(false)} receipt={receiptData} />}
+
+      {/* ── Agent Menu Drawer ── */}
+      <AgentMenuDrawer open={menuOpen} onClose={() => setMenuOpen(false)} agentInfo={agentInfo} recentTxns={recentTxns} />
 
       {/* ── Float Request Sheet ── */}
       <Sheet open={floatSheetOpen} onOpenChange={setFloatSheetOpen}>
