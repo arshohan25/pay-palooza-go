@@ -28,9 +28,46 @@ const AgentB2B = () => {
   const [showQr, setShowQr] = useState(false);
   const [resolvedName, setResolvedName] = useState("");
   const phoneValidation = usePhoneValidation(phone);
+  const [distributorInfo, setDistributorInfo] = useState<{ phone: string; name: string; businessName: string } | null>(null);
+  const [loadingDistributor, setLoadingDistributor] = useState(false);
 
+  // Fetch linked distributor on mount
   useEffect(() => {
-    if (phone.length === 11 && phone.startsWith("01")) {
+    const fetchDistributor = async () => {
+      setLoadingDistributor(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data: agent } = await supabase.from("agents").select("distributor_id").eq("user_id", user.id).maybeSingle();
+        if (agent?.distributor_id) {
+          const { data: dist } = await supabase.from("distributors").select("user_id, business_name").eq("id", agent.distributor_id).maybeSingle();
+          if (dist) {
+            const { data: profile } = await supabase.from("profiles").select("phone, name").eq("user_id", dist.user_id).maybeSingle();
+            if (profile) {
+              setDistributorInfo({ phone: profile.phone, name: profile.name || dist.business_name, businessName: dist.business_name });
+            }
+          }
+        }
+      } catch { /* ignore */ }
+      setLoadingDistributor(false);
+    };
+    fetchDistributor();
+  }, []);
+
+  // Auto-fill when switching to distributor mode
+  useEffect(() => {
+    if (transferType === "distributor" && distributorInfo) {
+      setPhone(distributorInfo.phone);
+      setResolvedName(distributorInfo.name);
+    } else if (transferType === "agent") {
+      setPhone("");
+      setResolvedName("");
+    }
+  }, [transferType, distributorInfo]);
+
+  // Resolve name for agent-to-agent manual entry
+  useEffect(() => {
+    if (transferType === "agent" && phone.length === 11 && phone.startsWith("01")) {
       const resolve = async () => {
         try {
           const { data } = await supabase.rpc("resolve_transfer_recipient", {
@@ -43,7 +80,7 @@ const AgentB2B = () => {
       };
       resolve();
     }
-  }, [phone]);
+  }, [phone, transferType]);
   const fee = Number(amount) > 100 ? 3 : 0;
 
   const handleConfirm = async () => {
