@@ -1,32 +1,29 @@
 
 
-## Fix Bill Pay Commission & Recalculate Transactions
+## Plan: Add Biller Categories to API Hub
 
-### Current State
-- **Cash In/Out**: fee_config already has `agent_commission = 0.49` — correct. Transaction commissions already recalculated correctly at 0.49%.
-- **Bill Pay (paybill)**: fee_config has `agent_commission = 0.0000` — wrong. Should be `0.019`. One paybill transaction has commission=৳8 on ৳2,500 (0.32%) — should be ৳0.48 (0.019%).
+### What
+
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-**1. Database data updates (insert tool):**
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-```sql
--- Fix fee_config: set paybill agent_commission to 0.019
-UPDATE fee_config SET agent_commission = 0.019 WHERE txn_type = 'paybill';
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
--- Recalculate all paybill transaction commissions at 0.019%
-UPDATE transactions SET commission = ROUND(ABS(amount) * 0.00019, 2) WHERE type = 'paybill';
-```
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-**2. Code update — `src/pages/AgentTransactionHistory.tsx`:**
-- Update the label from `"Bill Pay: 0.0201%"` to `"Bill Pay: 0.019%"`
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-**3. Code update — `src/pages/TransactionHistory.tsx`:**
-- Update `AGENT_COMMISSION_RATES` to add/fix `paybill: 0.019`
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-| Target | Current | New |
-|--------|---------|-----|
-| fee_config (paybill) | 0.0000 | 0.019 |
-| Transaction ৳2,500 paybill | ৳8.00 | ৳0.48 |
-| UI label | 0.0201% | 0.019% |
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
