@@ -1,30 +1,32 @@
 
 
-## Recalculate Agent Commission for Existing Transactions
+## Fix Bill Pay Commission & Recalculate Transactions
 
 ### Current State
-There are **10 cashin/cashout transactions** with incorrect commission values:
-- Some have `commission = 0` (cashin transactions never had commission set)
-- Some have inflated values like `৳50` on `৳5,000` (1% instead of 0.49%)
-- Current total: **৳280** → Correct total should be: **৳490**
+- **Cash In/Out**: fee_config already has `agent_commission = 0.49` — correct. Transaction commissions already recalculated correctly at 0.49%.
+- **Bill Pay (paybill)**: fee_config has `agent_commission = 0.0000` — wrong. Should be `0.019`. One paybill transaction has commission=৳8 on ৳2,500 (0.32%) — should be ৳0.48 (0.019%).
 
-### Plan
+### Changes
 
-**Single database UPDATE** using the data insert tool:
+**1. Database data updates (insert tool):**
 
 ```sql
-UPDATE transactions
-SET commission = ROUND(ABS(amount) * 0.0049, 2)
-WHERE type IN ('cashin', 'cashout');
+-- Fix fee_config: set paybill agent_commission to 0.019
+UPDATE fee_config SET agent_commission = 0.019 WHERE txn_type = 'paybill';
+
+-- Recalculate all paybill transaction commissions at 0.019%
+UPDATE transactions SET commission = ROUND(ABS(amount) * 0.00019, 2) WHERE type = 'paybill';
 ```
 
-This will recalculate all 10 records to use the correct **0.49%** rate. For example:
-- ৳5,000 → ৳24.50 (was ৳50)
-- ৳10,000 → ৳49.00 (was ৳0)
-- ৳15,000 → ৳73.50 (was ৳150)
-- ৳20,000 → ৳98.00 (was ৳0)
+**2. Code update — `src/pages/AgentTransactionHistory.tsx`:**
+- Update the label from `"Bill Pay: 0.0201%"` to `"Bill Pay: 0.019%"`
 
-No code changes needed — this is a data-only fix.
+**3. Code update — `src/pages/TransactionHistory.tsx`:**
+- Update `AGENT_COMMISSION_RATES` to add/fix `paybill: 0.019`
 
-**Files to edit:** None (database data update only)
+| Target | Current | New |
+|--------|---------|-----|
+| fee_config (paybill) | 0.0000 | 0.019 |
+| Transaction ৳2,500 paybill | ৳8.00 | ৳0.48 |
+| UI label | 0.0201% | 0.019% |
 
