@@ -1,9 +1,11 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Clock, XCircle, Store, RefreshCw } from "lucide-react";
+import { CheckCircle2, Clock, XCircle, Store, RefreshCw, Wallet } from "lucide-react";
 import QRCode from "qrcode";
+import DynamicQrPaySheet from "@/components/DynamicQrPaySheet";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 const fmtTime = (s: number) =>
@@ -30,16 +32,19 @@ interface SessionInfo {
 
 const DynamicQrPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
+  const { isAuthenticated } = useAuth();
   const [status, setStatus] = useState<Status>("loading");
   const [amount, setAmount] = useState(0);
   const [currency, setCurrency] = useState("BDT");
   const [merchantName, setMerchantName] = useState("");
   const [merchantCategory, setMerchantCategory] = useState("");
+  const [merchantId, setMerchantId] = useState("");
   const [reference, setReference] = useState<string | null>(null);
   const [successUrl, setSuccessUrl] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
+  const [showPaySheet, setShowPaySheet] = useState(false);
   const expiresRef = useRef<number>(0);
 
   const fetchSession = useCallback(async () => {
@@ -75,6 +80,7 @@ const DynamicQrPage = () => {
         || (typeof session.metadata?.merchant_name === "string" ? session.metadata.merchant_name : "");
       setMerchantName(name);
       setMerchantCategory(session.merchant_category || "");
+      setMerchantId(session.merchant_id);
 
       if (session.status === "completed") { setStatus("completed"); return; }
       if (session.status === "expired" || session.status === "failed" || new Date(session.expires_at) < new Date()) {
@@ -228,6 +234,15 @@ const DynamicQrPage = () => {
                 />
                 <span className="text-xs text-muted-foreground">Waiting for payment…</span>
               </div>
+              {isAuthenticated && (
+                <button
+                  onClick={() => setShowPaySheet(true)}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm"
+                >
+                  <Wallet className="w-4 h-4" />
+                  Pay with EasyPay
+                </button>
+              )}
             </motion.div>
           )}
 
@@ -255,6 +270,17 @@ const DynamicQrPage = () => {
           <p className="text-[10px] text-muted-foreground/60">Powered by EasyPay</p>
         </div>
       </motion.div>
+
+      {sessionId && (
+        <DynamicQrPaySheet
+          open={showPaySheet}
+          onClose={() => { setShowPaySheet(false); fetchSession(); }}
+          sessionId={sessionId}
+          merchantId={merchantId}
+          amount={amount}
+          ref_={reference}
+        />
+      )}
     </div>
   );
 };
