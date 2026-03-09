@@ -25,6 +25,7 @@ import CheckoutPage from "./pages/CheckoutPage";
 import DynamicQrPage from "./pages/DynamicQrPage";
 import NotFound from "./pages/NotFound";
 import TeamLoginPage from "./pages/TeamLoginPage";
+import RoleInstallPage from "./pages/RoleInstallPage";
 
 const queryClient = new QueryClient();
 
