@@ -24,6 +24,12 @@ import {
 // ─── Types ───────────────────────────────────────────────────────────────────
 type TxCategory = "all" | "send" | "receive" | "cashout" | "cashin" | "banktransfer" | "payment" | "recharge" | "paybill" | "addmoney";
 
+const AGENT_COMMISSION_RATES: Record<string, number> = {
+  cashin: 0.485,
+  cashout: 0.485,
+  paybill: 0.0201,
+};
+
 interface Transaction {
   id: string;
   short_id: string;
@@ -440,7 +446,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     </div>
                     <p className="text-[11px] text-muted-foreground truncate mt-0.5">{tx.detail}</p>
                     {agentView && tx.commission > 0 && (
-                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">Commission: ৳{tx.commission.toLocaleString()}</p>
+                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">Commission: ৳{tx.commission.toLocaleString()}{AGENT_COMMISSION_RATES[tx.category] ? ` (${AGENT_COMMISSION_RATES[tx.category]}%)` : ""}</p>
                     )}
                     <p className="text-[10.5px] text-muted-foreground/60 mt-0.5">{relativeDate(tx.date)}</p>
                   </div>
@@ -456,7 +462,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                                 <TrendingUp size={12} className="text-emerald-500/70 dark:text-emerald-400/70 cursor-help" />
                               </TooltipTrigger>
                               <TooltipContent side="left" className="text-xs">
-                                Commission: ৳{tx.commission.toLocaleString()}
+                                Commission: ৳{tx.commission.toLocaleString()}{AGENT_COMMISSION_RATES[tx.category] ? ` (${AGENT_COMMISSION_RATES[tx.category]}%)` : ""}
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -567,7 +573,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     { icon: Tag,      label: "Category",       value: catLabel,                               copy: false },
                     { icon: FileText, label: "Description",    value: selectedTx.detail,                     copy: false },
                     ...(agentView
-                      ? (selectedTx.commission > 0 ? [{ icon: TrendingUp, label: "Commission Earned", value: `+৳${selectedTx.commission.toLocaleString()}`, copy: false }] : [])
+                      ? (selectedTx.commission > 0 ? [{ icon: TrendingUp, label: "Commission Earned", value: `+৳${selectedTx.commission.toLocaleString()}${AGENT_COMMISSION_RATES[selectedTx.category] ? ` @ ${AGENT_COMMISSION_RATES[selectedTx.category]}%` : ""}`, copy: false }] : [])
                       : (selectedTx.fee > 0 ? [{ icon: Coins, label: "Charge / Fee", value: `৳${selectedTx.fee.toLocaleString()}`, copy: false }] : [])
                     ),
                     { icon: Clock,    label: "Date & Time",    value: format(txDate, "dd MMM yyyy, h:mm a"), copy: false },
@@ -603,7 +609,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     {agentView ? (
                       selectedTx.commission > 0 && (
                         <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 text-right font-medium">
-                          +৳{selectedTx.commission.toLocaleString()} commission earned
+                          +৳{selectedTx.commission.toLocaleString()} commission{AGENT_COMMISSION_RATES[selectedTx.category] ? ` @ ${AGENT_COMMISSION_RATES[selectedTx.category]}%` : ""}
                         </p>
                       )
                     ) : (
@@ -654,7 +660,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                 { label: "Category", value: catLabel },
                 { label: "Description", value: selectedTx.detail },
                 ...(agentView
-                  ? (selectedTx.commission > 0 ? [{ label: "Commission", value: `+৳${selectedTx.commission.toLocaleString()}` }] : [])
+                  ? (selectedTx.commission > 0 ? [{ label: "Commission", value: `+৳${selectedTx.commission.toLocaleString()}${AGENT_COMMISSION_RATES[selectedTx.category] ? ` @ ${AGENT_COMMISSION_RATES[selectedTx.category]}%` : ""}` }] : [])
                   : (selectedTx.fee > 0 ? [{ label: "Fee", value: `৳${selectedTx.fee.toLocaleString()}` }] : [])
                 ),
                 { label: "Date & Time", value: format(txDate, "dd MMM yyyy, h:mm a") },
