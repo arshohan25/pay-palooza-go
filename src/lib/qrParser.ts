@@ -88,9 +88,16 @@ export function parseQrData(raw: string): QrParseResult {
     return { flow: "send", identifier: normalised };
   }
 
-  // 5️⃣ URL with query params
+  // 5️⃣ URL with query params or path-based session
   try {
     const url = new URL(trimmed);
+
+    // Path-based dynamic payment: /pay/qr/{uuid} or /checkout/{uuid}
+    const pathMatch = url.pathname.match(/\/(?:pay\/qr|checkout)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+    if (pathMatch) {
+      return { flow: "dynamic_payment", identifier: "", sessionId: pathMatch[1] };
+    }
+
     const pay = url.searchParams.get("pay") || url.searchParams.get("merchant");
     if (pay && MRC_RE.test(pay)) {
       return { flow: "payment", identifier: pay };
