@@ -28,9 +28,46 @@ const AgentB2B = () => {
   const [showQr, setShowQr] = useState(false);
   const [resolvedName, setResolvedName] = useState("");
   const phoneValidation = usePhoneValidation(phone);
+  const [distributorInfo, setDistributorInfo] = useState<{ phone: string; name: string; businessName: string } | null>(null);
+  const [loadingDistributor, setLoadingDistributor] = useState(false);
 
+  // Fetch linked distributor on mount
   useEffect(() => {
-    if (phone.length === 11 && phone.startsWith("01")) {
+    const fetchDistributor = async () => {
+      setLoadingDistributor(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data: agent } = await supabase.from("agents").select("distributor_id").eq("user_id", user.id).maybeSingle();
+        if (agent?.distributor_id) {
+          const { data: dist } = await supabase.from("distributors").select("user_id, business_name").eq("id", agent.distributor_id).maybeSingle();
+          if (dist) {
+            const { data: profile } = await supabase.from("profiles").select("phone, name").eq("user_id", dist.user_id).maybeSingle();
+            if (profile) {
+              setDistributorInfo({ phone: profile.phone, name: profile.name || dist.business_name, businessName: dist.business_name });
+            }
+          }
+        }
+      } catch { /* ignore */ }
+      setLoadingDistributor(false);
+    };
+    fetchDistributor();
+  }, []);
+
+  // Auto-fill when switching to distributor mode
+  useEffect(() => {
+    if (transferType === "distributor" && distributorInfo) {
+      setPhone(distributorInfo.phone);
+      setResolvedName(distributorInfo.name);
+    } else if (transferType === "agent") {
+      setPhone("");
+      setResolvedName("");
+    }
+  }, [transferType, distributorInfo]);
+
+  // Resolve name for agent-to-agent manual entry
+  useEffect(() => {
+    if (transferType === "agent" && phone.length === 11 && phone.startsWith("01")) {
       const resolve = async () => {
         try {
           const { data } = await supabase.rpc("resolve_transfer_recipient", {
@@ -43,7 +80,7 @@ const AgentB2B = () => {
       };
       resolve();
     }
-  }, [phone]);
+  }, [phone, transferType]);
   const fee = Number(amount) > 100 ? 3 : 0;
 
   const handleConfirm = async () => {
@@ -156,17 +193,37 @@ const AgentB2B = () => {
                   </button>
                 ))}
               </div>
-              <div>
-                <Label className="text-xs font-semibold">{transferType === "agent" ? "Agent" : "Distributor"} Phone</Label>
-                <div className="relative mt-1">
-                  <Input type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g, "")); setResolvedName(""); }} onBlur={() => phoneValidation.setTouched(true)} maxLength={11} className={`rounded-xl h-11 pr-11 ${phoneValidation.inputClassName}`} />
-                  <button type="button" onClick={() => setShowQr(true)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors">
-                    <ScanLine size={16} />
-                  </button>
+              {transferType === "distributor" ? (
+                <div>
+                  <Label className="text-xs font-semibold">Linked Distributor</Label>
+                  {loadingDistributor ? (
+                    <div className="mt-1 p-3 bg-muted rounded-xl animate-pulse h-14" />
+                  ) : distributorInfo ? (
+                    <div className="mt-1 p-3 bg-muted/60 rounded-xl border border-border/40">
+                      <p className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                        🏢 {distributorInfo.businessName}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{distributorInfo.phone}</p>
+                    </div>
+                  ) : (
+                    <div className="mt-1 p-3 bg-destructive/5 rounded-xl border border-destructive/20">
+                      <p className="text-xs text-destructive font-medium">No distributor linked to your agent account.</p>
+                    </div>
+                  )}
                 </div>
-                {resolvedName && <p className="text-xs text-primary font-semibold mt-1 flex items-center gap-1"><CheckCircle2 size={12} /> {resolvedName}</p>}
-                {phoneValidation.showError && <p className="text-[10px] text-destructive font-medium mt-1 animate-fade-in">{phoneValidation.errorMessage}</p>}
-              </div>
+              ) : (
+                <div>
+                  <Label className="text-xs font-semibold">Agent Phone</Label>
+                  <div className="relative mt-1">
+                    <Input type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={phone} onChange={e => { setPhone(e.target.value.replace(/\D/g, "")); setResolvedName(""); }} onBlur={() => phoneValidation.setTouched(true)} maxLength={11} className={`rounded-xl h-11 pr-11 ${phoneValidation.inputClassName}`} />
+                    <button type="button" onClick={() => setShowQr(true)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors">
+                      <ScanLine size={16} />
+                    </button>
+                  </div>
+                  {resolvedName && <p className="text-xs text-primary font-semibold mt-1 flex items-center gap-1"><CheckCircle2 size={12} /> {resolvedName}</p>}
+                  {phoneValidation.showError && <p className="text-[10px] text-destructive font-medium mt-1 animate-fade-in">{phoneValidation.errorMessage}</p>}
+                </div>
+              )}
               <div>
                 <Label className="text-xs font-semibold">Amount (৳)</Label>
                 <Input type="text" inputMode="numeric" placeholder="Enter amount" value={amount} onChange={e => setAmount(e.target.value.replace(/\D/g, ""))} className="rounded-xl h-11 mt-1" />
@@ -181,7 +238,7 @@ const AgentB2B = () => {
                   <button key={a} onClick={() => setAmount(String(a))} className="px-3 py-2 rounded-xl text-xs font-bold bg-muted text-muted-foreground press-effect hover:bg-primary/10 hover:text-primary transition-colors">৳{fmt(a)}</button>
                 ))}
               </div>
-              <Button onClick={() => { if (phoneValidation.triggerShake()) return; setStep("confirm"); }} disabled={!phoneValidation.isValid || !amount || Number(amount) < 10} className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold">Continue</Button>
+              <Button onClick={() => { if (transferType === "agent" && phoneValidation.triggerShake()) return; setStep("confirm"); }} disabled={(transferType === "agent" ? !phoneValidation.isValid : !distributorInfo) || !amount || Number(amount) < 10} className="w-full gradient-primary text-primary-foreground rounded-xl h-11 text-sm font-bold">Continue</Button>
             </Card>
           </motion.div>
         )}
