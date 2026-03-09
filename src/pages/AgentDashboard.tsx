@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowDownToLine, Wallet, TrendingUp, UserPlus, Receipt,
-  Menu, RefreshCw, Users, BarChart3, Activity,
+  ArrowLeft, Menu, RefreshCw, Users, BarChart3, Activity,
   Building2, Bell, ArrowRightLeft, Share2, X, Eye, EyeOff,
   ChevronRight, Banknote, Shield, Clock, History,
   MessageCircleQuestion, CircleDollarSign, Headphones,
