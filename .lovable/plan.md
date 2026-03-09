@@ -1,25 +1,29 @@
 
 
-## Add Commission Section to Transaction History & Detail Card
+## Plan: Add Biller Categories to API Hub
 
-### Changes in `src/pages/TransactionHistory.tsx`
+### What
 
-**1. Commission Breakdown Summary (agent view)**
-- Add a `CommissionBreakdownSummary` component (similar to `FeeBreakdownSummary`) that shows when `agentView && totalCommission > 0`
-- Collapsible card in emerald styling showing commission grouped by transaction type (e.g., "Cash In: ৳50, Cash Out: ৳120, Bill Pay: ৳5")
-- Placed at line ~249, right after the hero header, mirroring where `FeeBreakdownSummary` appears for non-agent views
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-**2. Enhanced Detail Card for Agent View (~lines 625-638)**
-- Replace the simple "Total Amount" box with a detailed breakdown card matching the fee breakdown style:
-  - Transaction Amount: ৳{amount}
-  - Commission Earned: +৳{commission} @ {rate}%
-  - Styled in emerald instead of amber
-- Keep the existing simple display for transactions with no commission
+### Changes
 
-### Summary
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-| Area | Change |
-|------|--------|
-| After hero header | New `CommissionBreakdownSummary` for agent view |
-| Detail sheet amount card | Detailed commission breakdown card (emerald styling) |
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
