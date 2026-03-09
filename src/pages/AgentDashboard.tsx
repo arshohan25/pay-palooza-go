@@ -618,7 +618,7 @@ const AgentDashboard = () => {
 };
 
 /* ── Transaction Detail Modal ── */
-import React from "react";
+
 const TxnDetailModal = React.forwardRef<HTMLDivElement, { tx: any; onClose: () => void; onShare: (tx: any) => void }>(({ tx, onClose, onShare }, ref) => {
   const typeLabels: Record<string, string> = { send: "Send Money", receive: "Received", cashout: "Cash Out", cashin: "Cash In", banktransfer: "Bank Transfer", payment: "Payment", recharge: "Recharge", paybill: "Bill Pay", addmoney: "Add Money" };
   const isCredit = tx.type === "receive" || tx.type === "addmoney";
