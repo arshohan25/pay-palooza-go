@@ -482,7 +482,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     </div>
                     <p className="text-[11px] text-muted-foreground truncate mt-0.5">{tx.detail}</p>
                     {agentView && tx.commission > 0 && (
-                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">Commission: ৳{tx.commission.toLocaleString()}{AGENT_COMMISSION_RATES[tx.category] ? ` (${AGENT_COMMISSION_RATES[tx.category]}%)` : ""}</p>
+                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">Commission: ৳{tx.commission.toLocaleString()}</p>
                     )}
                     <div className="flex items-center gap-2 mt-0.5">
                       <p className="text-[10.5px] text-muted-foreground/60">{relativeDate(tx.date)}</p>
@@ -500,7 +500,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                                 <TrendingUp size={12} className="text-emerald-500/70 dark:text-emerald-400/70 cursor-help" />
                               </TooltipTrigger>
                               <TooltipContent side="left" className="text-xs">
-                                Commission: ৳{tx.commission.toLocaleString()}{AGENT_COMMISSION_RATES[tx.category] ? ` (${AGENT_COMMISSION_RATES[tx.category]}%)` : ""}
+                                Commission: ৳{tx.commission.toLocaleString()}
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -611,7 +611,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     { icon: Tag,      label: "Category",       value: catLabel,                               copy: false },
                     { icon: FileText, label: "Description",    value: selectedTx.detail,                     copy: false },
                     ...(agentView
-                      ? (selectedTx.commission > 0 ? [{ icon: TrendingUp, label: "Commission Earned", value: `+৳${selectedTx.commission.toLocaleString()}${AGENT_COMMISSION_RATES[selectedTx.category] ? ` @ ${AGENT_COMMISSION_RATES[selectedTx.category]}%` : ""}`, copy: false }] : [])
+                      ? (selectedTx.commission > 0 ? [{ icon: TrendingUp, label: "Commission Earned", value: `+৳${selectedTx.commission.toLocaleString()}`, copy: false }] : [])
                       : (selectedTx.fee > 0 ? [{ icon: Coins, label: "Charge / Fee", value: `৳${selectedTx.fee.toLocaleString()}`, copy: false }] : [])
                     ),
                     { icon: Clock,    label: "Date & Time",    value: format(txDate, "dd MMM yyyy, h:mm a"), copy: false },
@@ -645,7 +645,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                       </div>
                       <div className="flex items-center justify-between text-[12.5px] mt-1.5">
                         <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                          Commission Earned{AGENT_COMMISSION_RATES[selectedTx.category] ? ` (${AGENT_COMMISSION_RATES[selectedTx.category]}%)` : ""}
+                          Commission Earned
                         </span>
                         <span className="font-semibold text-emerald-600 dark:text-emerald-400">+৳{selectedTx.commission.toLocaleString()}</span>
                       </div>
@@ -732,7 +732,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                 { label: "Category", value: catLabel },
                 { label: "Description", value: selectedTx.detail },
                 ...(agentView
-                   ? (selectedTx.commission > 0 ? [{ label: "Commission", value: `+৳${selectedTx.commission.toLocaleString()}${AGENT_COMMISSION_RATES[selectedTx.category] ? ` @ ${AGENT_COMMISSION_RATES[selectedTx.category]}%` : ""}` }] : [])
+                   ? (selectedTx.commission > 0 ? [{ label: "Commission", value: `+৳${selectedTx.commission.toLocaleString()}` }] : [])
                    : (selectedTx.fee > 0
                      ? [
                          { label: "Fee", value: `৳${selectedTx.fee.toLocaleString()} (from balance)` },
