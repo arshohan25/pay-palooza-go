@@ -15,6 +15,7 @@ import AgentRegister from "./pages/AgentRegister";
 import AgentBillPay from "./pages/AgentBillPay";
 import AgentTransactionHistory from "./pages/AgentTransactionHistory";
 import AgentBankTransfer from "./pages/AgentBankTransfer";
+import AgentAnalyticsPage from "./pages/AgentAnalyticsPage";
 import DistributorDashboard from "./pages/DistributorDashboard";
 import DistributorCreateAgent from "./pages/DistributorCreateAgent";
 import SuperDistributorDashboard from "./pages/SuperDistributorDashboard";
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/agent/billpay" element={<RoleGuard roles={["agent", "admin"]}><AgentBillPay /></RoleGuard>} />
               <Route path="/agent/history" element={<RoleGuard roles={["agent", "admin"]}><AgentTransactionHistory /></RoleGuard>} />
               <Route path="/agent/bank" element={<RoleGuard roles={["agent", "admin"]}><AgentBankTransfer /></RoleGuard>} />
+              <Route path="/agent/analytics" element={<RoleGuard roles={["agent", "admin"]}><AgentAnalyticsPage /></RoleGuard>} />
               <Route path="/distributor" element={<RoleGuard roles={["distributor", "admin"]}><DistributorDashboard /></RoleGuard>} />
               <Route path="/distributor/create-agent" element={<RoleGuard roles={["distributor", "admin"]}><DistributorCreateAgent /></RoleGuard>} />
               <Route path="/super-distributor" element={<RoleGuard roles={["super_distributor", "admin"]}><SuperDistributorDashboard /></RoleGuard>} />
