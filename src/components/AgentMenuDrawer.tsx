@@ -1,9 +1,9 @@
-import { useState, useRef, useMemo, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, Camera, QrCode, ShieldCheck, BarChart3, Gauge, Settings,
-  Home, LogOut, ChevronRight, Building2, Upload, TrendingUp,
-  Users, Activity, ArrowDownToLine, Banknote, Receipt, ArrowRightLeft,
+  X, Camera, QrCode, ShieldCheck, BarChart3, Settings,
+  Home, LogOut, ChevronRight, Building2, Upload, Activity,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -39,27 +39,11 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
 
   const [qrOpen, setQrOpen] = useState(false);
   const [avatarSheetOpen, setAvatarSheetOpen] = useState(false);
-  const [analyticsSheetOpen, setAnalyticsSheetOpen] = useState(false);
   const [kycSheetOpen, setKycSheetOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [analyticsTab, setAnalyticsTab] = useState<"daily" | "monthly" | "alltime">("daily");
-  const [allTxns, setAllTxns] = useState<any[]>([]);
-  const [allTxnsLoaded, setAllTxnsLoaded] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const loadAllTxns = useCallback(async () => {
-    if (!user || allTxnsLoaded) return;
-    const { data } = await supabase
-      .from("transactions")
-      .select("type, amount, commission, created_at, status")
-      .eq("user_id", user.id)
-      .eq("status", "completed")
-      .order("created_at", { ascending: false })
-      .limit(1000);
-    setAllTxns(data ?? []);
-    setAllTxnsLoaded(true);
-  }, [user, allTxnsLoaded]);
 
   // Avatar upload
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -107,51 +91,6 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
     setUploading(false);
   };
 
-  // Analytics calculations
-  const analytics = useMemo(() => {
-    const source = analyticsTab === "daily" ? recentTxns : allTxns;
-    const now = new Date();
-    const todayStr = now.toDateString();
-    const thisMonth = now.getMonth();
-    const thisYear = now.getFullYear();
-
-    let filtered = source;
-    if (analyticsTab === "daily") {
-      filtered = source.filter(t => new Date(t.created_at).toDateString() === todayStr);
-    } else if (analyticsTab === "monthly") {
-      filtered = source.filter(t => {
-        const d = new Date(t.created_at);
-        return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
-      });
-    }
-
-    const totalVolume = filtered.reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
-    const totalCommission = filtered.reduce((s: number, t: any) => s + Number(t.commission || 0), 0);
-    const count = filtered.length;
-
-    // Breakdown by type
-    const byType: Record<string, { count: number; volume: number; commission: number }> = {};
-    for (const t of filtered) {
-      if (!byType[t.type]) byType[t.type] = { count: 0, volume: 0, commission: 0 };
-      byType[t.type].count++;
-      byType[t.type].volume += Number(t.amount || 0);
-      byType[t.type].commission += Number(t.commission || 0);
-    }
-
-    return { totalVolume, totalCommission, count, byType };
-  }, [analyticsTab, recentTxns, allTxns]);
-
-  const typeIcons: Record<string, any> = {
-    cashin: ArrowDownToLine, send: TrendingUp, receive: ArrowDownToLine,
-    cashout: Banknote, banktransfer: Building2, payment: Receipt,
-    recharge: Activity, paybill: Receipt, addmoney: ArrowDownToLine,
-    b2b: ArrowRightLeft,
-  };
-  const typeLabels: Record<string, string> = {
-    send: "Send Money", receive: "Received", cashout: "Cash Out",
-    cashin: "Cash In", banktransfer: "Bank Transfer", payment: "Payment",
-    recharge: "Recharge", paybill: "Bill Pay", addmoney: "Add Money",
-  };
 
   const openAfterClose = (fn: () => void) => {
     onClose();
@@ -162,8 +101,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
     { icon: Camera, label: "Edit Avatar", action: () => openAfterClose(() => setAvatarSheetOpen(true)) },
     { icon: QrCode, label: "Share QR", action: () => openAfterClose(() => setQrOpen(true)) },
     { icon: ShieldCheck, label: "Customer KYC", action: () => openAfterClose(() => setKycSheetOpen(true)) },
-    { icon: BarChart3, label: "Analytics", action: () => openAfterClose(() => { setAnalyticsSheetOpen(true); loadAllTxns(); }) },
-    { icon: Gauge, label: "Transaction Limits", action: () => { onClose(); navigate("/limits"); } },
+    { icon: BarChart3, label: "Analytics", action: () => { onClose(); navigate("/agent/analytics"); } },
     { icon: Settings, label: "Settings", action: () => { onClose(); toast.info("Settings coming soon"); } },
   ];
 
@@ -315,80 +253,6 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
               >
                 {uploading ? "Uploading..." : "Save Avatar"}
               </Button>
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      {/* Analytics Sheet */}
-      <Sheet open={analyticsSheetOpen} onOpenChange={setAnalyticsSheetOpen}>
-        <SheetContent side="bottom" className="rounded-t-3xl px-5 pb-8 max-h-[85vh] overflow-y-auto">
-          <SheetHeader className="mb-4">
-            <SheetTitle className="text-base font-extrabold">Analytics</SheetTitle>
-          </SheetHeader>
-
-          {/* Tab switcher */}
-          <div className="flex gap-1 p-1 bg-muted/60 rounded-xl mb-4">
-            {(["daily", "monthly", "alltime"] as const).map(tab => (
-              <button
-                key={tab}
-                onClick={() => setAnalyticsTab(tab)}
-                className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${analyticsTab === tab ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                {tab === "daily" ? "Today" : tab === "monthly" ? "This Month" : "All Time"}
-              </button>
-            ))}
-          </div>
-
-          {/* Summary cards */}
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            <Card className="p-3 border-0 shadow-card rounded-xl text-center">
-              <Activity size={16} className="mx-auto text-primary mb-1" />
-              <p className="text-lg font-extrabold text-foreground">{analytics.count}</p>
-              <p className="text-[9px] text-muted-foreground font-semibold">Transactions</p>
-            </Card>
-            <Card className="p-3 border-0 shadow-card rounded-xl text-center">
-              <TrendingUp size={16} className="mx-auto text-accent mb-1" />
-              <p className="text-sm font-extrabold text-foreground">৳{fmt(analytics.totalVolume)}</p>
-              <p className="text-[9px] text-muted-foreground font-semibold">Volume</p>
-            </Card>
-            <Card className="p-3 border-0 shadow-card rounded-xl text-center">
-              <Banknote size={16} className="mx-auto text-primary mb-1" />
-              <p className="text-sm font-extrabold text-primary">৳{fmt(analytics.totalCommission)}</p>
-              <p className="text-[9px] text-muted-foreground font-semibold">Commission</p>
-            </Card>
-          </div>
-
-          {/* Breakdown by type */}
-          <h4 className="text-xs font-bold text-foreground mb-2">Breakdown by Type</h4>
-          <div className="space-y-2">
-            {Object.entries(analytics.byType).length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-6">No transactions in this period</p>
-            ) : (
-              Object.entries(analytics.byType)
-                .sort((a, b) => b[1].volume - a[1].volume)
-                .map(([type, data]) => {
-                  const Icon = typeIcons[type] || Activity;
-                  return (
-                    <Card key={type} className="p-3 border-0 shadow-card rounded-xl">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <Icon size={14} className="text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-foreground">{typeLabels[type] || type}</p>
-                          <p className="text-[10px] text-muted-foreground">{data.count} transactions</p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-xs font-extrabold text-foreground">৳{fmt(data.volume)}</p>
-                          {data.commission > 0 && (
-                            <p className="text-[10px] font-semibold text-primary">+৳{fmt(data.commission)}</p>
-                          )}
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })
             )}
           </div>
         </SheetContent>
