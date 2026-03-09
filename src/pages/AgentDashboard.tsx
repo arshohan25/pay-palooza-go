@@ -107,7 +107,7 @@ const AgentDashboard = () => {
       supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "agent"),
       supabase.from("profiles").select("balance").eq("user_id", user.id).single(),
       supabase.from("agents").select("*").eq("user_id", user.id).single(),
-      supabase.from("transactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+      supabase.from("transactions").select("*").eq("user_id", user.id).in("type", ["cashin", "cashout", "banktransfer", "paybill"]).order("created_at", { ascending: false }).limit(20),
     ]);
     setIsAgent((roleRes.data?.length ?? 0) > 0);
     setBalance(profileRes.data?.balance ?? 0);
@@ -452,7 +452,7 @@ const AgentDashboard = () => {
             ) : (
               <div className="divide-y divide-border/50">
                 {recentTxns.slice(0, 8).map(tx => {
-                  const isCredit = tx.type === "receive" || tx.type === "addmoney";
+                   const isCredit = tx.type === "cashin";
                   return (
                     <button key={tx.id} onClick={() => setSelectedTxn(tx)} className="flex items-center gap-3 px-4 py-3 w-full text-left press-effect hover:bg-muted/20 transition-colors">
                       <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isCredit ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"}`}>
