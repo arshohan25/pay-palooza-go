@@ -157,6 +157,7 @@ export default function AdminNotificationSender() {
       setImageUrl("");
       setActionUrl("");
       setActionLabel("");
+      setLinkedFeature("");
       loadHistory();
     } catch (err: any) {
       toast.error(err.message || "Failed to send notification");
