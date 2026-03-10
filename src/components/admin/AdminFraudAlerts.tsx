@@ -247,7 +247,7 @@ export default function AdminFraudAlerts() {
             {openCount} open · {investigatingCount} investigating · {alerts.length} total
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
           {["all", "open", "investigating", "resolved", "false_positive"].map(s => (
             <Button
               key={s}
@@ -335,7 +335,7 @@ export default function AdminFraudAlerts() {
                       >
                         <div className="px-4 pb-4 space-y-4 border-t border-border/50 pt-3">
                           {/* Detail grid */}
-                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                             {/* Device */}
                             <DetailItem
                               icon={Smartphone}

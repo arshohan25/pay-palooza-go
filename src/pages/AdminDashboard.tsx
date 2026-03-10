@@ -843,7 +843,8 @@ export default function AdminDashboard() {
                 )}
 
                 <CardContent className="p-0">
-                  <div className="overflow-x-auto">
+                  {/* Desktop table */}
+                  <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-border text-muted-foreground">
@@ -855,7 +856,7 @@ export default function AdminDashboard() {
                           </th>
                           <th className="text-left px-4 py-3 font-medium">Name</th>
                           <th className="text-left px-4 py-3 font-medium">Phone</th>
-                          <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Balance</th>
+                          <th className="text-left px-4 py-3 font-medium">Balance</th>
                           <th className="text-left px-4 py-3 font-medium">Status</th>
                           <th className="text-left px-4 py-3 font-medium">Action</th>
                         </tr>
@@ -874,7 +875,7 @@ export default function AdminDashboard() {
                               </td>
                               <td className="px-4 py-3 font-medium text-foreground">{user.name || "—"}</td>
                               <td className="px-4 py-3 text-muted-foreground">{user.phone}</td>
-                              <td className="px-4 py-3 font-semibold text-foreground hidden md:table-cell">৳{parseFloat(user.balance).toLocaleString()}</td>
+                              <td className="px-4 py-3 font-semibold text-foreground">৳{parseFloat(user.balance).toLocaleString()}</td>
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-1.5">
                                   <Badge
@@ -897,86 +898,28 @@ export default function AdminDashboard() {
                                   </Button>
                                   {isDeactivated ? (
                                     <>
-                                      <Button
-                                        size="sm"
-                                        variant="default"
-                                        className="text-xs h-7 gap-1"
-                                        onClick={() => handleReactivate(user.user_id, user.name || user.phone)}
-                                      >
+                                      <Button size="sm" variant="default" className="text-xs h-7 gap-1" onClick={() => handleReactivate(user.user_id, user.name || user.phone)}>
                                         <CheckCircle className="w-3 h-3" /> Reactivate
                                       </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="destructive"
-                                        className="text-xs h-7 gap-1"
-                                        onClick={() => setDeleteTarget({
-                                          userId: user.user_id,
-                                          name: user.name || "",
-                                          phone: user.phone,
-                                        })}
-                                      >
+                                      <Button size="sm" variant="destructive" className="text-xs h-7 gap-1" onClick={() => setDeleteTarget({ userId: user.user_id, name: user.name || "", phone: user.phone })}>
                                         <Trash2 className="w-3 h-3" /> Delete Now
                                       </Button>
                                     </>
                                   ) : (
                                     <>
-                                      <Button
-                                        size="sm"
-                                        variant={user.status === "suspended" ? "default" : "destructive"}
-                                        className="text-xs h-7"
-                                        onClick={async () => {
-                                          try {
-                                            const ns = await toggleUserStatus(user.user_id, user.status || "active");
-                                            setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status: ns } : u));
-                                            toast.success(`User ${ns}`);
-                                          } catch { toast.error("Failed to update status"); }
-                                        }}
-                                      >
+                                      <Button size="sm" variant={user.status === "suspended" ? "default" : "destructive"} className="text-xs h-7" onClick={async () => { try { const ns = await toggleUserStatus(user.user_id, user.status || "active"); setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status: ns } : u)); toast.success(`User ${ns}`); } catch { toast.error("Failed to update status"); } }}>
                                         {user.status === "suspended" ? "Activate" : "Suspend"}
                                       </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="text-xs h-7 gap-1"
-                                        onClick={() => setSoftDeleteTarget({
-                                          userId: user.user_id,
-                                          name: user.name || "",
-                                          phone: user.phone,
-                                        })}
-                                      >
+                                      <Button size="sm" variant="outline" className="text-xs h-7 gap-1" onClick={() => setSoftDeleteTarget({ userId: user.user_id, name: user.name || "", phone: user.phone })}>
                                         <UserX className="w-3 h-3" /> Deactivate
                                       </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="text-xs h-7 gap-1"
-                                        onClick={() => setLockTarget({ userId: user.user_id, label: `${user.name || "User"} (${user.phone})` })}
-                                      >
+                                      <Button size="sm" variant="outline" className="text-xs h-7 gap-1" onClick={() => setLockTarget({ userId: user.user_id, label: `${user.name || "User"} (${user.phone})` })}>
                                         <Lock className="w-3 h-3" /> Lock
                                       </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="destructive"
-                                        className="text-xs h-7 gap-1"
-                                        onClick={() => setChargebackTarget({
-                                          userId: user.user_id,
-                                          name: user.name || null,
-                                          phone: user.phone,
-                                          balance: parseFloat(user.balance) || 0,
-                                        })}
-                                      >
+                                      <Button size="sm" variant="destructive" className="text-xs h-7 gap-1" onClick={() => setChargebackTarget({ userId: user.user_id, name: user.name || null, phone: user.phone, balance: parseFloat(user.balance) || 0 })}>
                                         <RotateCcw className="w-3 h-3" /> Chargeback
                                       </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="destructive"
-                                        className="text-xs h-7 gap-1"
-                                        onClick={() => setDeleteTarget({
-                                          userId: user.user_id,
-                                          name: user.name || "",
-                                          phone: user.phone,
-                                        })}
-                                      >
+                                      <Button size="sm" variant="destructive" className="text-xs h-7 gap-1" onClick={() => setDeleteTarget({ userId: user.user_id, name: user.name || "", phone: user.phone })}>
                                         <Trash2 className="w-3 h-3" /> Hard Delete
                                       </Button>
                                     </>
@@ -989,6 +932,70 @@ export default function AdminDashboard() {
                       </tbody>
                     </table>
                   </div>
+
+                  {/* Mobile card layout */}
+                  <div className="md:hidden divide-y divide-border/50">
+                    {filteredUsers.map((user: any) => {
+                      const isDeactivated = user.status === "deactivated";
+                      const graceDays = getGracePeriodDays(user.scheduled_deletion_at);
+                      return (
+                        <div key={user.id} className="p-4 space-y-3">
+                          <div className="flex items-start gap-3">
+                            <Checkbox
+                              checked={selectedUserIds.has(user.user_id)}
+                              onCheckedChange={() => toggleSelectUser(user.user_id)}
+                              className="mt-1"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="font-semibold text-foreground text-sm truncate">{user.name || "—"}</p>
+                                <Badge
+                                  variant={user.status === "suspended" ? "destructive" : isDeactivated ? "outline" : "secondary"}
+                                  className={`text-[10px] shrink-0 ${isDeactivated ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border-orange-300 dark:border-orange-700" : ""}`}
+                                >
+                                  {user.status || "active"}
+                                  {isDeactivated && graceDays !== null && ` · ${graceDays}d`}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground">{user.phone}</p>
+                              <p className="text-sm font-semibold text-foreground mt-1">৳{parseFloat(user.balance).toLocaleString()}</p>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5 pl-7">
+                            <Button size="sm" variant="outline" className="text-xs h-7 gap-1" onClick={() => openUserDetail(user)}>
+                              <Eye className="w-3 h-3" /> View
+                            </Button>
+                            {isDeactivated ? (
+                              <>
+                                <Button size="sm" variant="default" className="text-xs h-7 gap-1" onClick={() => handleReactivate(user.user_id, user.name || user.phone)}>
+                                  <CheckCircle className="w-3 h-3" /> Reactivate
+                                </Button>
+                                <Button size="sm" variant="destructive" className="text-xs h-7 gap-1" onClick={() => setDeleteTarget({ userId: user.user_id, name: user.name || "", phone: user.phone })}>
+                                  <Trash2 className="w-3 h-3" /> Delete
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <Button size="sm" variant={user.status === "suspended" ? "default" : "destructive"} className="text-xs h-7" onClick={async () => { try { const ns = await toggleUserStatus(user.user_id, user.status || "active"); setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status: ns } : u)); toast.success(`User ${ns}`); } catch { toast.error("Failed to update status"); } }}>
+                                  {user.status === "suspended" ? "Activate" : "Suspend"}
+                                </Button>
+                                <Button size="sm" variant="outline" className="text-xs h-7 gap-1" onClick={() => setSoftDeleteTarget({ userId: user.user_id, name: user.name || "", phone: user.phone })}>
+                                  <UserX className="w-3 h-3" />
+                                </Button>
+                                <Button size="sm" variant="outline" className="text-xs h-7 gap-1" onClick={() => setLockTarget({ userId: user.user_id, label: `${user.name || "User"} (${user.phone})` })}>
+                                  <Lock className="w-3 h-3" />
+                                </Button>
+                                <Button size="sm" variant="destructive" className="text-xs h-7 gap-1" onClick={() => setDeleteTarget({ userId: user.user_id, name: user.name || "", phone: user.phone })}>
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
                   {filteredUsers.length === 0 && (
                     <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
                       <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">

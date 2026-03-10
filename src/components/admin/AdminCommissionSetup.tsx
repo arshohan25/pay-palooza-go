@@ -92,16 +92,16 @@ export default function AdminCommissionSetup() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
           { label: "Agent Avg Rate", value: rows.length ? (totalAgent / rows.length).toFixed(2) + "%" : "—", color: "text-emerald-600" },
           { label: "Distributor Avg Rate", value: rows.length ? (totalDist / rows.length).toFixed(2) + "%" : "—", color: "text-blue-600" },
           { label: "Platform Avg Rate", value: rows.length ? (totalPlat / rows.length).toFixed(2) + "%" : "—", color: "text-purple-600" },
         ].map(s => (
           <Card key={s.label} className="border-0 shadow-[var(--shadow-card)]">
-            <CardContent className="p-4 text-center">
+            <CardContent className="p-3 sm:p-4 text-center sm:text-center flex sm:block items-center justify-between">
               <p className="text-xs text-muted-foreground">{s.label}</p>
-              <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+              <p className={`text-lg sm:text-xl font-bold ${s.color}`}>{s.value}</p>
             </CardContent>
           </Card>
         ))}
@@ -109,7 +109,8 @@ export default function AdminCommissionSetup() {
 
       <Card className="border-0 shadow-[var(--shadow-card)]">
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          {/* Desktop table */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-muted-foreground">
@@ -145,6 +146,40 @@ export default function AdminCommissionSetup() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile card layout */}
+          <div className="sm:hidden divide-y divide-border/50">
+            {rows.map(r => (
+              <div key={r.id} className="p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <Badge variant="secondary" className="text-xs capitalize">{r.txn_type}</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={r.is_active ? "default" : "secondary"} className="text-[10px]">
+                      {r.is_active ? "Active" : "Inactive"}
+                    </Badge>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(r)}>
+                      <Pencil className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <p className="text-muted-foreground">Agent</p>
+                    <p className="font-semibold text-emerald-600">{r.agent_commission ?? 0}%</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Distributor</p>
+                    <p className="font-semibold text-blue-600">{r.distributor_commission ?? 0}%</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Platform</p>
+                    <p className="font-semibold text-purple-600">{r.platform_share ?? 0}%</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
           {!loading && rows.length === 0 && (
             <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
               <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
