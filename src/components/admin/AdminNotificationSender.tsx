@@ -40,6 +40,22 @@ const AREAS = [
   "All Areas", "Dhaka", "Chittagong", "Khulna", "Rajshahi", "Barishal", "Cumilla",
 ];
 
+const FEATURES = [
+  { value: "", label: "None" },
+  { value: "/send-money", label: "Send Money" },
+  { value: "/cash-out", label: "Cash Out" },
+  { value: "/add-money", label: "Add Money" },
+  { value: "/mobile-recharge", label: "Mobile Recharge" },
+  { value: "/pay-bill", label: "Pay Bill" },
+  { value: "/bank-transfer", label: "Bank Transfer" },
+  { value: "/shop", label: "Shop" },
+  { value: "/savings", label: "Savings" },
+  { value: "/refer", label: "Refer & Earn" },
+  { value: "/spending-insights", label: "Spending Insights" },
+  { value: "/dynamic-qr", label: "Dynamic QR" },
+  { value: "/merchant-apply", label: "Merchant Application" },
+];
+
 interface AdminNotif {
   id: string;
   title: string;
