@@ -98,11 +98,11 @@ function GlobalDefaultsTab() {
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
             <tr>
-              <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Type</th>
-              <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Period</th>
-              <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Max Amount (৳)</th>
-              <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Max Txns</th>
-              <th className="px-3 py-2"></th>
+              <th className="text-left px-2 md:px-3 py-2 font-semibold text-muted-foreground text-xs md:text-sm">Type</th>
+              <th className="text-left px-2 md:px-3 py-2 font-semibold text-muted-foreground text-xs md:text-sm hidden sm:table-cell">Period</th>
+              <th className="text-left px-2 md:px-3 py-2 font-semibold text-muted-foreground text-xs md:text-sm">Max Amt (৳)</th>
+              <th className="text-left px-2 md:px-3 py-2 font-semibold text-muted-foreground text-xs md:text-sm">Max Txn</th>
+              <th className="px-2 md:px-3 py-2"></th>
             </tr>
           </thead>
           <tbody>
