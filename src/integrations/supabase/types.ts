@@ -41,6 +41,48 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_notifications: {
+        Row: {
+          admin_id: string
+          body: string
+          category: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          sent_count: number | null
+          target_area: string | null
+          target_roles: string[] | null
+          target_user: string | null
+          title: string
+        }
+        Insert: {
+          admin_id: string
+          body: string
+          category?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          sent_count?: number | null
+          target_area?: string | null
+          target_roles?: string[] | null
+          target_user?: string | null
+          title: string
+        }
+        Update: {
+          admin_id?: string
+          body?: string
+          category?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          sent_count?: number | null
+          target_area?: string | null
+          target_roles?: string[] | null
+          target_user?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       agents: {
         Row: {
           activated_at: string | null
