@@ -63,6 +63,7 @@ export default function AdminNotificationSender() {
   const [imageUrl, setImageUrl] = useState("");
   const [actionUrl, setActionUrl] = useState("");
   const [actionLabel, setActionLabel] = useState("");
+  const [linkedFeature, setLinkedFeature] = useState("");
   const [sending, setSending] = useState(false);
   const [history, setHistory] = useState<AdminNotif[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
