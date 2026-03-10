@@ -252,6 +252,7 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
             </>
           )}
         </DialogContent>
+        </DialogPortal>
       </Dialog>
     </>
   );
