@@ -71,11 +71,11 @@ const calcCashback = (pack: Pack | null, amount?: number): number => {
 
 // ─── Operator definitions ────────────────────────────────────────────────────
 const OPERATORS: OperatorDef[] = [
-  { name: "Grameenphone", short: "GP", brandColor: "#00A651", brandColorDark: "#007A3C", prefixes: ["017", "013"] },
+  { name: "Grameenphone", short: "GP", brandColor: "#2FB5EA", brandColorDark: "#1A8FC0", prefixes: ["017", "013"] },
   { name: "Robi",         short: "RB", brandColor: "#E40046", brandColorDark: "#A8003A", prefixes: ["018"] },
-  { name: "Banglalink",   short: "BL", brandColor: "#F47920", brandColorDark: "#C05A10", prefixes: ["019", "014"] },
-  { name: "Teletalk",     short: "TT", brandColor: "#004B98", brandColorDark: "#003674", prefixes: ["015"] },
-  { name: "Airtel",       short: "AT", brandColor: "#E40073", brandColorDark: "#A80055", prefixes: ["016"] },
+  { name: "Banglalink",   short: "BL", brandColor: "#E87A1E", brandColorDark: "#C05A10", prefixes: ["019", "014"] },
+  { name: "Teletalk",     short: "TT", brandColor: "#7BB31A", brandColorDark: "#5A8A10", prefixes: ["015"] },
+  { name: "Airtel",       short: "AT", brandColor: "#ED1C24", brandColorDark: "#B5151B", prefixes: ["016"] },
 ];
 
 const detectOperator = (phone: string): OperatorDef | null => {
