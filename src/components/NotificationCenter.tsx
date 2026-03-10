@@ -183,7 +183,9 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
 
       {/* ── Detail Popup Card — z-index above panel ── */}
       <Dialog open={!!detailNotif} onOpenChange={(o) => { if (!o) setDetailNotif(null); }}>
-        <DialogContent className="max-w-sm rounded-2xl p-0 overflow-hidden z-[100]">
+        <DialogPortal>
+          <DialogOverlay className="z-[90]" />
+          <DialogContent className="max-w-sm rounded-2xl p-0 overflow-hidden z-[100] fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%]">
           {detailNotif && (
             <>
               {hasImage && (
