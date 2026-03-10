@@ -12,6 +12,13 @@ import { formatDistanceToNow } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogOverlay, DialogPortal } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+
+// Flow-based features that are opened via custom event on the Index page
+const FLOW_FEATURES = new Set([
+  "send-money", "cash-out", "add-money", "mobile-recharge", "pay-bill",
+  "payment", "bank-transfer", "shop", "savings", "merchant-apply", "scan-pay", "kyc",
+]);
 
 function getIcon(cat: string): { icon: LucideIcon; iconClass: string } {
   switch (cat) {
