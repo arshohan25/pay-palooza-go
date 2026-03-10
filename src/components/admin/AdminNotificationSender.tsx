@@ -40,6 +40,22 @@ const AREAS = [
   "All Areas", "Dhaka", "Chittagong", "Khulna", "Rajshahi", "Barishal", "Cumilla",
 ];
 
+const FEATURES = [
+  { value: "", label: "None" },
+  { value: "/send-money", label: "Send Money" },
+  { value: "/cash-out", label: "Cash Out" },
+  { value: "/add-money", label: "Add Money" },
+  { value: "/mobile-recharge", label: "Mobile Recharge" },
+  { value: "/pay-bill", label: "Pay Bill" },
+  { value: "/bank-transfer", label: "Bank Transfer" },
+  { value: "/shop", label: "Shop" },
+  { value: "/savings", label: "Savings" },
+  { value: "/refer", label: "Refer & Earn" },
+  { value: "/spending-insights", label: "Spending Insights" },
+  { value: "/dynamic-qr", label: "Dynamic QR" },
+  { value: "/merchant-apply", label: "Merchant Application" },
+];
+
 interface AdminNotif {
   id: string;
   title: string;
@@ -63,6 +79,7 @@ export default function AdminNotificationSender() {
   const [imageUrl, setImageUrl] = useState("");
   const [actionUrl, setActionUrl] = useState("");
   const [actionLabel, setActionLabel] = useState("");
+  const [linkedFeature, setLinkedFeature] = useState("");
   const [sending, setSending] = useState(false);
   const [history, setHistory] = useState<AdminNotif[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -109,6 +126,8 @@ export default function AdminNotificationSender() {
       if (imageUrl) metadata.image_url = imageUrl;
       if (actionUrl) metadata.action_url = actionUrl;
       if (actionLabel) metadata.action_label = actionLabel;
+      if (linkedFeature && linkedFeature !== "none") metadata.action_url = linkedFeature;
+      if (linkedFeature && linkedFeature !== "none" && !actionLabel) metadata.action_label = FEATURES.find(f => f.value === linkedFeature)?.label || "Open";
 
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-admin-notification`,
@@ -138,6 +157,7 @@ export default function AdminNotificationSender() {
       setImageUrl("");
       setActionUrl("");
       setActionLabel("");
+      setLinkedFeature("");
       loadHistory();
     } catch (err: any) {
       toast.error(err.message || "Failed to send notification");
@@ -267,7 +287,20 @@ export default function AdminNotificationSender() {
                 <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground flex items-center gap-1"><Link2 size={12} /> Action URL</Label>
+                <Label className="text-xs text-muted-foreground flex items-center gap-1"><Link2 size={12} /> Link to Feature</Label>
+                <Select value={linkedFeature} onValueChange={setLinkedFeature}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a feature..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FEATURES.map((f) => (
+                      <SelectItem key={f.value || "none"} value={f.value || "none"}>{f.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground flex items-center gap-1"><Link2 size={12} /> Or Custom URL</Label>
                 <Input value={actionUrl} onChange={(e) => setActionUrl(e.target.value)} placeholder="https://..." />
               </div>
               <div className="space-y-1">

@@ -3,25 +3,15 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, ArrowDownLeft, ArrowUpRight, Tag, ShieldAlert,
-  CheckCheck, Trash2, Bell, BellOff, Receipt, type LucideIcon,
-  Gift, Copy, ExternalLink,
+  CheckCheck, Trash2, Bell, BellOff, type LucideIcon,
+  Gift, Copy, ExternalLink, Coins, Megaphone,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useNotifications, type DbNotification } from "@/hooks/use-notifications";
 import { formatDistanceToNow } from "date-fns";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogOverlay, DialogPortal } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-
-// ── Category mapping ──────────────────────────────────────────────────────────
-type NGroup = "transaction" | "promo" | "system";
-const GROUP_ORDER: NGroup[] = ["transaction", "promo", "system"];
-
-function mapCategory(cat: string): NGroup {
-  if (["transaction", "payment", "transfer"].includes(cat)) return "transaction";
-  if (["promo", "promotion", "offer", "coupon", "cashback"].includes(cat)) return "promo";
-  return "system";
-}
 
 function getIcon(cat: string): { icon: LucideIcon; iconClass: string } {
   switch (cat) {
@@ -32,10 +22,15 @@ function getIcon(cat: string): { icon: LucideIcon; iconClass: string } {
       return { icon: ArrowUpRight, iconClass: "text-destructive bg-destructive/10" };
     case "promo":
     case "promotion":
+      return { icon: Megaphone, iconClass: "text-purple-600 bg-purple-100 dark:text-purple-300 dark:bg-purple-900/30" };
     case "offer":
+      return { icon: Tag, iconClass: "text-emerald-600 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-900/30" };
     case "coupon":
+      return { icon: Gift, iconClass: "text-amber-600 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/30" };
     case "cashback":
-      return { icon: Tag, iconClass: "text-accent bg-accent/10" };
+      return { icon: Coins, iconClass: "text-green-600 bg-green-100 dark:text-green-300 dark:bg-green-900/30" };
+    case "update":
+      return { icon: CheckCheck, iconClass: "text-blue-600 bg-blue-100 dark:text-blue-300 dark:bg-blue-900/30" };
     case "kyc":
       return { icon: CheckCheck, iconClass: "text-primary bg-primary/10" };
     case "security":
@@ -45,9 +40,8 @@ function getIcon(cat: string): { icon: LucideIcon; iconClass: string } {
   }
 }
 
-const RICH_CATEGORIES = ["promo", "promotion", "offer", "coupon", "cashback"];
+const RICH_CATEGORIES = ["promo", "promotion", "offer", "coupon", "cashback", "update"];
 
-// ── Component ─────────────────────────────────────────────────────────────────
 interface NotificationCenterProps {
   open: boolean;
   onClose: () => void;
@@ -58,15 +52,13 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
   const { notifications, unreadCount, markRead, markAllRead, dismiss, clearAll } = useNotifications();
   const [detailNotif, setDetailNotif] = useState<DbNotification | null>(null);
 
-  // Group notifications
-  const grouped = GROUP_ORDER.reduce<Record<NGroup, DbNotification[]>>((acc, g) => {
-    acc[g] = notifications.filter((n) => mapCategory(n.category) === g);
-    return acc;
-  }, { transaction: [], promo: [], system: [] });
+  // Sort by created_at descending — latest first
+  const sorted = [...notifications].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
 
   const handleNotifClick = (n: DbNotification) => {
     markRead(n.id);
-    // Open detail popup for rich notifications
     if (RICH_CATEGORIES.includes(n.category)) {
       setDetailNotif(n);
     }
@@ -130,10 +122,10 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                 </div>
               </div>
 
-              {/* Body */}
+              {/* Body — flat chronological list, latest first */}
               <div className="flex-1 overflow-y-auto">
-                <AnimatePresence>
-                  {notifications.length === 0 ? (
+                <AnimatePresence initial={false}>
+                  {sorted.length === 0 ? (
                     <motion.div key="empty" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                       className="flex flex-col items-center justify-center h-full gap-3 py-20">
                       <div className="w-16 h-16 rounded-3xl bg-muted flex items-center justify-center">
@@ -143,52 +135,44 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                       <p className="text-xs text-muted-foreground">{t("noNotificationsRightNow")}</p>
                     </motion.div>
                   ) : (
-                    GROUP_ORDER.filter((g) => grouped[g].length > 0).map((group) => (
-                      <div key={group}>
-                        <div className="px-5 py-2 bg-muted/40 border-b border-border/40">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-                            {t(group === "transaction" ? "ncTransactions" : group === "promo" ? "ncPromotions" : "ncSystem")}
-                          </p>
-                        </div>
-                        <AnimatePresence initial={false}>
-                          {grouped[group].map((n) => {
-                            const { icon: Icon, iconClass } = getIcon(n.category);
-                            const timeAgo = formatDistanceToNow(new Date(n.created_at), { addSuffix: true });
-                            const isRich = RICH_CATEGORIES.includes(n.category);
-                            return (
-                              <motion.div key={n.id} layout
-                                initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 40, height: 0, marginBottom: 0 }}
-                                transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
-                                onClick={() => handleNotifClick(n)}
-                                className={`relative flex items-start gap-3 px-5 py-3.5 border-b border-border/40 cursor-pointer transition-colors hover:bg-muted/40 ${!n.read ? "bg-primary/[0.03]" : ""}`}
-                              >
-                                {!n.read && <span className="absolute left-2.5 top-4 w-1.5 h-1.5 rounded-full bg-primary" />}
-                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${iconClass}`}>
-                                  <Icon size={16} strokeWidth={2.2} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className={`text-[13px] leading-snug ${!n.read ? "font-bold text-foreground" : "font-semibold text-foreground/80"}`}>{n.title}</p>
-                                  <p className="text-[11.5px] text-muted-foreground mt-0.5 leading-snug">{n.body}</p>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <p className="text-[10px] text-muted-foreground/60">{timeAgo}</p>
-                                    {isRich && (
-                                      <span className="text-[9px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">
-                                        Tap for details
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                                <button onClick={(e) => { e.stopPropagation(); dismiss(n.id); }}
-                                  className="shrink-0 w-6 h-6 rounded-lg flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted transition-colors mt-0.5">
-                                  <X size={12} />
-                                </button>
-                              </motion.div>
-                            );
-                          })}
-                        </AnimatePresence>
-                      </div>
-                    ))
+                    sorted.map((n) => {
+                      const { icon: Icon, iconClass } = getIcon(n.category);
+                      const timeAgo = formatDistanceToNow(new Date(n.created_at), { addSuffix: true });
+                      const isRich = RICH_CATEGORIES.includes(n.category);
+                      return (
+                        <motion.div key={n.id} layout
+                          initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 40, height: 0, marginBottom: 0 }}
+                          transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
+                          onClick={() => handleNotifClick(n)}
+                          className={`relative flex items-start gap-3 px-5 py-3.5 border-b border-border/40 cursor-pointer transition-colors hover:bg-muted/40 ${!n.read ? "bg-primary/[0.03]" : ""}`}
+                        >
+                          {!n.read && <span className="absolute left-2.5 top-4 w-1.5 h-1.5 rounded-full bg-primary" />}
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${iconClass}`}>
+                            <Icon size={16} strokeWidth={2.2} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-[13px] leading-snug ${!n.read ? "font-bold text-foreground" : "font-semibold text-foreground/80"}`}>{n.title}</p>
+                            <p className="text-[11.5px] text-muted-foreground mt-0.5 leading-snug line-clamp-2">{n.body}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-md ${iconClass}`}>
+                                {n.category}
+                              </span>
+                              <p className="text-[10px] text-muted-foreground/60">{timeAgo}</p>
+                              {isRich && (
+                                <span className="text-[9px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">
+                                  Tap for details
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <button onClick={(e) => { e.stopPropagation(); dismiss(n.id); }}
+                            className="shrink-0 w-6 h-6 rounded-lg flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted transition-colors mt-0.5">
+                            <X size={12} />
+                          </button>
+                        </motion.div>
+                      );
+                    })
                   )}
                 </AnimatePresence>
               </div>
@@ -197,12 +181,13 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
         )}
       </AnimatePresence>
 
-      {/* ── Detail Popup Card ────────────────────────────────── */}
+      {/* ── Detail Popup Card — z-index above panel ── */}
       <Dialog open={!!detailNotif} onOpenChange={(o) => { if (!o) setDetailNotif(null); }}>
-        <DialogContent className="max-w-sm rounded-2xl p-0 overflow-hidden">
+        <DialogPortal>
+          <DialogOverlay className="z-[90]" />
+          <DialogContent className="max-w-sm rounded-2xl p-0 overflow-hidden z-[100] fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%]">
           {detailNotif && (
             <>
-              {/* Image banner */}
               {hasImage && (
                 <div className="w-full h-40 bg-muted overflow-hidden">
                   <img
@@ -220,6 +205,8 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
                       detailNotif.category === "coupon" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" :
                       detailNotif.category === "cashback" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" :
+                      detailNotif.category === "offer" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" :
+                      detailNotif.category === "update" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" :
                       "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
                     }`}>
                       {detailNotif.category}
@@ -234,7 +221,6 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                   </DialogDescription>
                 </DialogHeader>
 
-                {/* Coupon code */}
                 {hasCoupon && (
                   <div className="flex items-center gap-2 p-3 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5">
                     <Gift size={18} className="text-primary shrink-0" />
@@ -253,7 +239,6 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                   </div>
                 )}
 
-                {/* Action button */}
                 {hasAction && (
                   <Button
                     className="w-full gap-2"
@@ -267,6 +252,7 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
             </>
           )}
         </DialogContent>
+        </DialogPortal>
       </Dialog>
     </>
   );
