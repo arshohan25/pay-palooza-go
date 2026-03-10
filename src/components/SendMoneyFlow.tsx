@@ -568,7 +568,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
       className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
       {/* ─── Header ─── */}
       {step !== "success" && (
-        <div className="bg-primary px-4 pt-3 pb-3">
+        <div className="gradient-send px-4 pt-3 pb-3">
           <div className="flex items-center gap-3">
             <button
               onClick={goBack}
@@ -617,14 +617,14 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                       placeholder="Name or Number or Wallet ID"
                       value={inputVal}
                       onChange={(e) => handleInputChange(e.target.value)}
-                      className="w-full pl-10 pr-11 h-12 text-sm bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground/60 transition-all"
+                      className="w-full pl-10 pr-11 h-12 text-sm bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-[hsl(330_80%_55%)]/50 placeholder:text-muted-foreground/60 transition-all"
                       autoFocus
                     />
                     <button
                       onClick={() => setShowScanner(true)}
                       className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-accent/50 active:scale-95 transition-all"
                     >
-                      <QrCode size={18} className="text-primary" />
+                      <QrCode size={18} className="text-[hsl(330_80%_55%)]" />
                     </button>
                   </div>
                   {error && (
@@ -635,9 +635,9 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
                 {/* Send to this number — appears when valid number detected */}
                 {manualRecipientType && inputVal.trim() && (
-                  <div className="mx-4 mb-3 flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/5 border border-primary/20">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <Send size={16} className="text-primary" />
+                  <div className="mx-4 mb-3 flex items-center gap-3 px-4 py-3 rounded-xl bg-[hsl(330_80%_55%)]/5 border border-[hsl(330_80%_55%)]/20">
+                    <div className="w-10 h-10 rounded-full bg-[hsl(330_80%_55%)]/10 flex items-center justify-center shrink-0">
+                      <Send size={16} className="text-[hsl(330_80%_55%)]" />
                     </div>
                     <div className="flex-1 text-left">
                       <p className="text-sm font-semibold text-foreground">Send to {inputVal.trim()}</p>
@@ -709,7 +709,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 {/* Continue button — fixed at bottom */}
                 <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-4 py-4 bg-background/95 backdrop-blur-sm border-t border-border">
                   <Button
-                    className="w-full h-12 text-base font-semibold rounded-xl"
+                    className="w-full h-12 text-base font-semibold rounded-xl gradient-send border-0 text-white"
                     disabled={!manualRecipientType}
                     onClick={handleManualSend}
                   >
