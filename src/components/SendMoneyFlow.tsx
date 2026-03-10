@@ -592,7 +592,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
       {/* ─── Animated step content ─── */}
       <div className="flex-1 overflow-hidden relative">
-        <AnimatePresence custom={direction} mode="popLayout">
+        <AnimatePresence custom={direction} mode="wait">
           <motion.div
             key={step}
             custom={direction}

@@ -174,7 +174,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
       )}
 
       <div className="flex-1 overflow-hidden relative">
-        <AnimatePresence custom={direction} mode="popLayout">
+        <AnimatePresence custom={direction} mode="wait">
           <motion.div key={step} custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit"
             transition={{ type: "spring", stiffness: 320, damping: 32 }} className="absolute inset-0 overflow-y-auto scrollbar-none">
 
