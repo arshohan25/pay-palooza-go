@@ -383,11 +383,11 @@ export default function AdminTeamManagement() {
   return (
     <div className="space-y-4">
       <Tabs defaultValue="members">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
-          <TabsTrigger value="members" className="text-xs sm:text-sm">Members</TabsTrigger>
-          <TabsTrigger value="matrix" className="text-xs sm:text-sm">Access</TabsTrigger>
-          <TabsTrigger value="dashboard" className="text-xs sm:text-sm">Dashboard</TabsTrigger>
-          <TabsTrigger value="activity" className="text-xs sm:text-sm">Activity</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="members">Members</TabsTrigger>
+          <TabsTrigger value="matrix">Access Matrix</TabsTrigger>
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="activity">Activity Log</TabsTrigger>
         </TabsList>
 
         {/* ═══ MEMBERS TAB ═══ */}
@@ -461,15 +461,15 @@ export default function AdminTeamManagement() {
                           </p>
                         )}
                       </div>
-                      <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
+                      <div className="flex items-center gap-1 shrink-0">
                         <Switch checked={member.is_available} onCheckedChange={() => toggleAvailability(member)} />
-                        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(member)} title="Permissions">
+                        <Button size="icon" variant="ghost" onClick={() => openEdit(member)} title="Permissions">
                           <Shield className="w-4 h-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openActivity(member)} title="Activity">
+                        <Button size="icon" variant="ghost" onClick={() => openActivity(member)} title="Activity">
                           <Activity className="w-4 h-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setRemoveMember(member)} title="Remove">
+                        <Button size="icon" variant="ghost" onClick={() => setRemoveMember(member)} title="Remove" className="text-destructive hover:text-destructive">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -643,7 +643,7 @@ export default function AdminTeamManagement() {
 
       {/* ═══ EDIT PERMISSIONS DIALOG ═══ */}
       <Dialog open={!!editMember} onOpenChange={o => { if (!o) setEditMember(null); }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[80vh]">
+        <DialogContent className="max-w-2xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle>Permissions — {editMember?.display_name}</DialogTitle>
             <DialogDescription>Configure which admin sections this team member can access.</DialogDescription>

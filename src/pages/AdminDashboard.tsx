@@ -111,13 +111,13 @@ const StatCard = ({ icon: Icon, label, value, color, onClick }: { icon: any; lab
       className={`border-0 shadow-[var(--shadow-card)] transition-colors ${onClick ? "cursor-pointer hover:bg-muted/40" : ""}`}
       onClick={onClick}
     >
-      <CardContent className="p-3 md:p-4 flex items-center gap-3 md:gap-4">
-        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
-          <Icon className="w-5 h-5 md:w-6 md:h-6 text-primary-foreground" />
+      <CardContent className="p-4 flex items-center gap-4">
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
+          <Icon className="w-6 h-6 text-primary-foreground" />
         </div>
-        <div className="min-w-0">
-          <p className="text-xs md:text-sm text-muted-foreground truncate">{label}</p>
-          <p className="text-lg md:text-2xl font-bold text-foreground">{typeof value === "number" ? value.toLocaleString() : value}</p>
+        <div>
+          <p className="text-sm text-muted-foreground">{label}</p>
+          <p className="text-2xl font-bold text-foreground">{typeof value === "number" ? value.toLocaleString() : value}</p>
         </div>
       </CardContent>
     </Card>
@@ -731,7 +731,7 @@ export default function AdminDashboard() {
         {activeTab === "overview" && (
           <div className="space-y-6">
             <TeamOnboardingChecklist />
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               <StatCard icon={Users} label="Total Users" value={stats.totalUsers} color="bg-primary" onClick={() => setActiveTab("users")} />
               <StatCard icon={ArrowLeftRight} label="Transactions" value={stats.totalTransactions} color="bg-blue-500" onClick={() => setActiveTab("transactions")} />
               <StatCard icon={UserCheck} label="Agents" value={stats.totalAgents} color="bg-emerald-500" onClick={() => setActiveTab("users")} />
@@ -891,7 +891,7 @@ export default function AdminDashboard() {
                                 </div>
                               </td>
                               <td className="px-4 py-3">
-                                <div className="flex items-center gap-1 flex-wrap max-w-[280px] md:max-w-none">
+                                <div className="flex items-center gap-1.5 flex-wrap">
                                   <Button size="sm" variant="outline" className="text-xs h-7 gap-1" onClick={() => openUserDetail(user)}>
                                     <Eye className="w-3 h-3" /> View
                                   </Button>

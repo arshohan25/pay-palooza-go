@@ -98,11 +98,11 @@ function GlobalDefaultsTab() {
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
             <tr>
-              <th className="text-left px-2 md:px-3 py-2 font-semibold text-muted-foreground text-xs md:text-sm">Type</th>
-              <th className="text-left px-2 md:px-3 py-2 font-semibold text-muted-foreground text-xs md:text-sm hidden sm:table-cell">Period</th>
-              <th className="text-left px-2 md:px-3 py-2 font-semibold text-muted-foreground text-xs md:text-sm">Max Amt (৳)</th>
-              <th className="text-left px-2 md:px-3 py-2 font-semibold text-muted-foreground text-xs md:text-sm">Max Txn</th>
-              <th className="px-2 md:px-3 py-2"></th>
+              <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Type</th>
+              <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Period</th>
+              <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Max Amount (৳)</th>
+              <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Max Txns</th>
+              <th className="px-3 py-2"></th>
             </tr>
           </thead>
           <tbody>
@@ -111,23 +111,19 @@ function GlobalDefaultsTab() {
               const isDirty = Object.keys(edit).length > 0;
               return (
                 <tr key={row.id} className="border-t border-border/50 hover:bg-muted/20">
-                  <td className="px-2 md:px-3 py-2.5 font-medium text-xs md:text-sm">
-                    <span className="hidden sm:inline">{TXN_LABELS[row.txn_type] || row.txn_type}</span>
-                    <span className="sm:hidden">{row.txn_type}</span>
-                    <Badge variant="outline" className="capitalize text-[10px] ml-1 sm:hidden">{row.period}</Badge>
-                  </td>
-                  <td className="px-2 md:px-3 py-2.5 hidden sm:table-cell"><Badge variant="outline" className="capitalize text-xs">{row.period}</Badge></td>
-                  <td className="px-2 md:px-3 py-2.5">
-                    <Input type="number" className="h-7 md:h-8 w-20 md:w-28 text-xs" value={edit.max_amount ?? row.max_amount}
+                  <td className="px-3 py-2.5 font-medium">{TXN_LABELS[row.txn_type] || row.txn_type}</td>
+                  <td className="px-3 py-2.5"><Badge variant="outline" className="capitalize text-xs">{row.period}</Badge></td>
+                  <td className="px-3 py-2.5">
+                    <Input type="number" className="h-8 w-28" value={edit.max_amount ?? row.max_amount}
                       onChange={e => handleEdit(row.id, "max_amount", e.target.value)} />
                   </td>
-                  <td className="px-2 md:px-3 py-2.5">
-                    <Input type="number" className="h-7 md:h-8 w-16 md:w-20 text-xs" value={edit.max_count ?? row.max_count}
+                  <td className="px-3 py-2.5">
+                    <Input type="number" className="h-8 w-20" value={edit.max_count ?? row.max_count}
                       onChange={e => handleEdit(row.id, "max_count", e.target.value)} />
                   </td>
-                  <td className="px-2 md:px-3 py-2.5">
+                  <td className="px-3 py-2.5">
                     {isDirty && (
-                      <Button size="sm" variant="default" className="h-7 w-7 p-0" onClick={() => handleSave(row)} disabled={saving === row.id}>
+                      <Button size="sm" variant="default" onClick={() => handleSave(row)} disabled={saving === row.id}>
                         {saving === row.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
                       </Button>
                     )}
