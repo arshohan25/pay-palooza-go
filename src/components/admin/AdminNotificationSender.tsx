@@ -287,7 +287,20 @@ export default function AdminNotificationSender() {
                 <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground flex items-center gap-1"><Link2 size={12} /> Action URL</Label>
+                <Label className="text-xs text-muted-foreground flex items-center gap-1"><Link2 size={12} /> Link to Feature</Label>
+                <Select value={linkedFeature} onValueChange={setLinkedFeature}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a feature..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FEATURES.map((f) => (
+                      <SelectItem key={f.value || "none"} value={f.value || "none"}>{f.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground flex items-center gap-1"><Link2 size={12} /> Or Custom URL</Label>
                 <Input value={actionUrl} onChange={(e) => setActionUrl(e.target.value)} placeholder="https://..." />
               </div>
               <div className="space-y-1">
