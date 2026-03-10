@@ -200,12 +200,14 @@ export default function AdminRechargeApiConnect() {
                     className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden shrink-0"
                     style={{ background: OPERATOR_COLORS[cfg.operator] ?? "hsl(var(--primary))" }}
                   >
-                    <img
-                      src={OPERATOR_LOGOS[cfg.operator]}
-                      alt={cfg.operator}
-                      className="w-[65%] h-[65%] object-contain"
-                      onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
-                    />
+                    <div className="w-[80%] h-[80%] rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <img
+                        src={OPERATOR_LOGOS[cfg.operator]}
+                        alt={cfg.operator}
+                        className="w-[75%] h-[75%] object-contain"
+                        onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
+                      />
+                    </div>
                   </div>
                   <div>
                     <span className="block text-sm font-bold">{cfg.display_name}</span>
