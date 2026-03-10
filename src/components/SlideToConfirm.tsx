@@ -53,10 +53,11 @@ const SlideToConfirm = forwardRef<HTMLDivElement, SlideToConfirmProps>(({
 
   // Reset slider when disabled flips back (e.g. wrong PIN clears pin state)
   useEffect(() => {
-    if (disabled && !confirmed) {
+    if (disabled) {
+      setConfirmed(false);
       animate(x, 0, { type: "spring", stiffness: 380, damping: 28 });
     }
-  }, [disabled, confirmed, x]);
+  }, [disabled, x]);
 
   // Fire attention bounce + icon pulse 200ms after PIN complete
   useEffect(() => {
