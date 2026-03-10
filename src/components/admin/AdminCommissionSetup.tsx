@@ -112,13 +112,13 @@ export default function AdminCommissionSetup() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-muted-foreground">
-                  <th className="text-left px-4 py-3 font-medium">Txn Type</th>
-                  <th className="text-left px-4 py-3 font-medium">Agent %</th>
-                  <th className="text-left px-4 py-3 font-medium">Distributor %</th>
-                  <th className="text-left px-4 py-3 font-medium">Platform %</th>
-                  <th className="text-left px-4 py-3 font-medium">Status</th>
-                  <th className="text-left px-4 py-3 font-medium">Edit</th>
+                 <tr className="border-b border-border text-muted-foreground">
+                  <th className="text-left px-3 md:px-4 py-3 font-medium">Type</th>
+                  <th className="text-left px-3 md:px-4 py-3 font-medium">Agent</th>
+                  <th className="text-left px-3 md:px-4 py-3 font-medium hidden sm:table-cell">Dist.</th>
+                  <th className="text-left px-3 md:px-4 py-3 font-medium hidden sm:table-cell">Platform</th>
+                  <th className="text-left px-3 md:px-4 py-3 font-medium hidden md:table-cell">Status</th>
+                  <th className="text-left px-3 md:px-4 py-3 font-medium">Edit</th>
                 </tr>
               </thead>
               <tbody>
