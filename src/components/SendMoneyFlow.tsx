@@ -568,7 +568,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
       className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
       {/* ─── Header ─── */}
       {step !== "success" && (
-        <div className="bg-primary px-4 pt-3 pb-3">
+        <div className="gradient-send px-4 pt-3 pb-3">
           <div className="flex items-center gap-3">
             <button
               onClick={goBack}
