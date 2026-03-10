@@ -113,22 +113,23 @@ const OperatorLogo = ({ op, size = "md" }: { op: OperatorDef; size?: "xs" | "sm"
       className={`${sizes[size]} rounded-2xl flex flex-col items-center justify-center font-black shadow-lg overflow-hidden shrink-0`}
       style={{ background: `linear-gradient(135deg, ${op.brandColor}, ${op.brandColorDark})` }}
     >
-      <img
-        src={logos[op.short]}
-        alt={op.name}
-        className="w-[65%] h-[65%] object-contain drop-shadow-md"
-        onError={(e) => {
-          // Fallback to text if image fails
-          const parent = (e.target as HTMLElement).parentElement;
-          if (parent) {
-            (e.target as HTMLElement).style.display = "none";
-            const span = document.createElement("span");
-            span.className = "text-white font-black";
-            span.textContent = op.short;
-            parent.appendChild(span);
-          }
-        }}
-      />
+      <div className="w-[70%] h-[70%] rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+        <img
+          src={logos[op.short]}
+          alt={op.name}
+          className="w-[80%] h-[80%] object-contain drop-shadow-md"
+          onError={(e) => {
+            const parent = (e.target as HTMLElement).parentElement;
+            if (parent) {
+              (e.target as HTMLElement).style.display = "none";
+              const span = document.createElement("span");
+              span.className = "text-white font-black";
+              span.textContent = op.short;
+              parent.appendChild(span);
+            }
+          }}
+        />
+      </div>
     </div>
   );
 };
