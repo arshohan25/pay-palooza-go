@@ -624,7 +624,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                       onClick={() => setShowScanner(true)}
                       className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-accent/50 active:scale-95 transition-all"
                     >
-                      <QrCode size={18} className="text-primary" />
+                      <QrCode size={18} className="text-[hsl(330_80%_55%)]" />
                     </button>
                   </div>
                   {error && (
