@@ -461,15 +461,15 @@ export default function AdminTeamManagement() {
                           </p>
                         )}
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
                         <Switch checked={member.is_available} onCheckedChange={() => toggleAvailability(member)} />
-                        <Button size="icon" variant="ghost" onClick={() => openEdit(member)} title="Permissions">
+                        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(member)} title="Permissions">
                           <Shield className="w-4 h-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" onClick={() => openActivity(member)} title="Activity">
+                        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openActivity(member)} title="Activity">
                           <Activity className="w-4 h-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" onClick={() => setRemoveMember(member)} title="Remove" className="text-destructive hover:text-destructive">
+                        <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setRemoveMember(member)} title="Remove">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>

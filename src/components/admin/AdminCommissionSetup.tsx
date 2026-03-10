@@ -124,18 +124,18 @@ export default function AdminCommissionSetup() {
               <tbody>
                 {rows.map(r => (
                   <tr key={r.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3">
+                    <td className="px-3 md:px-4 py-3">
                       <Badge variant="secondary" className="text-xs capitalize">{r.txn_type}</Badge>
                     </td>
-                    <td className="px-4 py-3 font-semibold text-emerald-600">{r.agent_commission ?? 0}%</td>
-                    <td className="px-4 py-3 font-semibold text-blue-600">{r.distributor_commission ?? 0}%</td>
-                    <td className="px-4 py-3 font-semibold text-purple-600">{r.platform_share ?? 0}%</td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 md:px-4 py-3 font-semibold text-emerald-600">{r.agent_commission ?? 0}%</td>
+                    <td className="px-3 md:px-4 py-3 font-semibold text-blue-600 hidden sm:table-cell">{r.distributor_commission ?? 0}%</td>
+                    <td className="px-3 md:px-4 py-3 font-semibold text-purple-600 hidden sm:table-cell">{r.platform_share ?? 0}%</td>
+                    <td className="px-3 md:px-4 py-3 hidden md:table-cell">
                       <Badge variant={r.is_active ? "default" : "secondary"} className="text-xs">
                         {r.is_active ? "Active" : "Inactive"}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 md:px-4 py-3">
                       <Button variant="ghost" size="icon" onClick={() => openEdit(r)}>
                         <Pencil className="w-4 h-4" />
                       </Button>

@@ -111,13 +111,13 @@ const StatCard = ({ icon: Icon, label, value, color, onClick }: { icon: any; lab
       className={`border-0 shadow-[var(--shadow-card)] transition-colors ${onClick ? "cursor-pointer hover:bg-muted/40" : ""}`}
       onClick={onClick}
     >
-      <CardContent className="p-4 flex items-center gap-4">
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
-          <Icon className="w-6 h-6 text-primary-foreground" />
+      <CardContent className="p-3 md:p-4 flex items-center gap-3 md:gap-4">
+        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
+          <Icon className="w-5 h-5 md:w-6 md:h-6 text-primary-foreground" />
         </div>
-        <div>
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="text-2xl font-bold text-foreground">{typeof value === "number" ? value.toLocaleString() : value}</p>
+        <div className="min-w-0">
+          <p className="text-xs md:text-sm text-muted-foreground truncate">{label}</p>
+          <p className="text-lg md:text-2xl font-bold text-foreground">{typeof value === "number" ? value.toLocaleString() : value}</p>
         </div>
       </CardContent>
     </Card>
