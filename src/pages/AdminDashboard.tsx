@@ -731,7 +731,7 @@ export default function AdminDashboard() {
         {activeTab === "overview" && (
           <div className="space-y-6">
             <TeamOnboardingChecklist />
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
               <StatCard icon={Users} label="Total Users" value={stats.totalUsers} color="bg-primary" onClick={() => setActiveTab("users")} />
               <StatCard icon={ArrowLeftRight} label="Transactions" value={stats.totalTransactions} color="bg-blue-500" onClick={() => setActiveTab("transactions")} />
               <StatCard icon={UserCheck} label="Agents" value={stats.totalAgents} color="bg-emerald-500" onClick={() => setActiveTab("users")} />
