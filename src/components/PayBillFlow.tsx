@@ -405,6 +405,7 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
                     value={accountNo}
                     maxLength={billType.accountMaxLength}
                     onChange={(e) => { setAccountNo(e.target.value); setError(""); }}
+                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") e.currentTarget.blur(); }}
                     className="h-12 text-base bg-card border-border font-mono tracking-wider"
                   />
                   {error && (
