@@ -38,11 +38,11 @@ const OPERATOR_LOGOS: Record<string, string> = {
 };
 
 const OPERATOR_COLORS: Record<string, string> = {
-  Grameenphone: "#00A651",
+  Grameenphone: "#2FB5EA",
   Robi: "#E40046",
-  Banglalink: "#F47920",
-  Teletalk: "#004B98",
-  Airtel: "#E40073",
+  Banglalink: "#E87A1E",
+  Teletalk: "#7BB31A",
+  Airtel: "#ED1C24",
 };
 
 const DEFAULT_CREDENTIAL_FIELDS: Record<string, string[]> = {
