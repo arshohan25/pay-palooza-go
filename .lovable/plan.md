@@ -1,29 +1,30 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Fix Receipt Icon Color to Match Home Icon — Send Money Flow
 
-### What
+### Problem
+The Send Money success receipt uses `gradient-addmoney` (blue) for its icon circle, but the home screen Send Money icon uses a pink/rose gradient (#F06292 → #AD1457). This is the only flow with a mismatch.
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+All other flows already match:
+- Cash Out → green (`gradient-cashout`) ✅
+- Payment → purple (`gradient-payment`) ✅
+- Bank Transfer → blue ✅
+- Add Money → blue (`gradient-addmoney`) ✅
+- Mobile Recharge → operator brand color ✅
+- Pay Bill → bill type gradient ✅
 
-### Changes
+### Change
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**File: `src/components/SendMoneyFlow.tsx` (line 958)**
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+Change the success icon circle class from `gradient-addmoney` to `gradient-send`:
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+```
+- className="w-24 h-24 gradient-addmoney rounded-full ..."
++ className="w-24 h-24 gradient-send rounded-full ..."
+```
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+This aligns with the existing CSS utility `.gradient-send` which is defined as `linear-gradient(135deg, hsl(330 80% 55%), hsl(340 75% 45%))` — matching the pink/rose palette of the Send Money home icon (#F06292 → #AD1457).
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+Single one-line change. No other flows need updating.
 
