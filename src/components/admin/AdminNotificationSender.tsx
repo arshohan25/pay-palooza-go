@@ -126,6 +126,8 @@ export default function AdminNotificationSender() {
       if (imageUrl) metadata.image_url = imageUrl;
       if (actionUrl) metadata.action_url = actionUrl;
       if (actionLabel) metadata.action_label = actionLabel;
+      if (linkedFeature) metadata.action_url = linkedFeature;
+      if (linkedFeature && !actionLabel) metadata.action_label = FEATURES.find(f => f.value === linkedFeature)?.label || "Open";
 
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-admin-notification`,
