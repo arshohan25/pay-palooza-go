@@ -405,6 +405,7 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
                     value={accountNo}
                     maxLength={billType.accountMaxLength}
                     onChange={(e) => { setAccountNo(e.target.value); setError(""); }}
+                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") e.currentTarget.blur(); }}
                     className="h-12 text-base bg-card border-border font-mono tracking-wider"
                   />
                   {error && (
@@ -465,6 +466,7 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
                           placeholder="0"
                           value={billAmount}
                           onChange={(e) => { const v = e.target.value; if (v === "" || /^\d*\.?\d*$/.test(v)) { setBillAmount(v); setError(""); } }}
+                          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
                           className="w-full pl-10 pr-4 h-16 text-3xl font-bold text-foreground bg-card border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
                       </div>
