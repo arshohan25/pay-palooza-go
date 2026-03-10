@@ -92,7 +92,7 @@ export default function AdminCommissionSetup() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
           { label: "Agent Avg Rate", value: rows.length ? (totalAgent / rows.length).toFixed(2) + "%" : "—", color: "text-emerald-600" },
           { label: "Distributor Avg Rate", value: rows.length ? (totalDist / rows.length).toFixed(2) + "%" : "—", color: "text-blue-600" },
