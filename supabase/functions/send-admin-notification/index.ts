@@ -59,6 +59,9 @@ Deno.serve(async (req) => {
     const { title, body, category, target_roles, target_area, target_user, metadata } =
       await req.json();
 
+    // target_user activity filter values:
+    // high_txn, low_txn, inactive, txn_10+, txn_20+, txn_50+, txn_80+, txn_100+
+
     if (!title || !body) {
       return new Response(JSON.stringify({ error: "Title and body are required" }), {
         status: 400,
