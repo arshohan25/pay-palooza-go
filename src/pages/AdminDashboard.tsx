@@ -54,6 +54,7 @@ import AdminAuditLogViewer from "@/components/admin/AdminAuditLogViewer";
 import AdminBannerManager from "@/components/admin/AdminBannerManager";
 import AdminLimitManager from "@/components/admin/AdminLimitManager";
 import AdminTeamManagement from "@/components/admin/AdminTeamManagement";
+import AdminNotificationSender from "@/components/admin/AdminNotificationSender";
 import TeamOnboardingChecklist from "@/components/admin/TeamOnboardingChecklist";
 import AdminMerchantManagement from "@/components/admin/AdminMerchantManagement";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
