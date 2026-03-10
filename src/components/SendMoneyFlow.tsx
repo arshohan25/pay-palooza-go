@@ -617,7 +617,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                       placeholder="Name or Number or Wallet ID"
                       value={inputVal}
                       onChange={(e) => handleInputChange(e.target.value)}
-                      className="w-full pl-10 pr-11 h-12 text-sm bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground/60 transition-all"
+                      className="w-full pl-10 pr-11 h-12 text-sm bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-[hsl(330_80%_55%)]/50 placeholder:text-muted-foreground/60 transition-all"
                       autoFocus
                     />
                     <button
