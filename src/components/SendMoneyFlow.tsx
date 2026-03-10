@@ -955,7 +955,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   initial={{ scale: 0, rotate: -15 }}
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.1 }}
-                  className="w-24 h-24 gradient-addmoney rounded-full flex items-center justify-center shadow-glow"
+                  className="w-24 h-24 gradient-send rounded-full flex items-center justify-center shadow-glow"
                 >
                   <CheckCircle2 size={52} className="text-white" />
                 </motion.div>
