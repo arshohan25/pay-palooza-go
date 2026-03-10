@@ -643,7 +643,7 @@ export default function AdminTeamManagement() {
 
       {/* ═══ EDIT PERMISSIONS DIALOG ═══ */}
       <Dialog open={!!editMember} onOpenChange={o => { if (!o) setEditMember(null); }}>
-        <DialogContent className="max-w-2xl max-h-[80vh]">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle>Permissions — {editMember?.display_name}</DialogTitle>
             <DialogDescription>Configure which admin sections this team member can access.</DialogDescription>
