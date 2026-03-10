@@ -247,7 +247,7 @@ export default function AdminFraudAlerts() {
             {openCount} open · {investigatingCount} investigating · {alerts.length} total
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
           {["all", "open", "investigating", "resolved", "false_positive"].map(s => (
             <Button
               key={s}
