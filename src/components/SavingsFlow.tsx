@@ -240,6 +240,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     placeholder="0.00"
                     value={amount}
                     onChange={(e) => { setAmount(e.target.value); setError(""); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
                     className="w-full pl-10 pr-4 py-3 text-[22px] font-bold bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/40"
                   />
                 </div>

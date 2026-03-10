@@ -257,6 +257,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                     <span className="absolute left-4 text-2xl font-bold text-muted-foreground">৳</span>
                     <input type="text" inputMode="decimal" placeholder="0" value={amount}
                       onChange={(e) => { const v = e.target.value; if (v === "" || /^\d*\.?\d*$/.test(v)) { setAmount(v); setError(""); } }}
+                      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
                       className="w-full pl-10 pr-4 h-16 text-3xl font-bold text-foreground bg-card border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                   </div>
                   {error && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {error}</p>}

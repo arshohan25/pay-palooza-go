@@ -923,6 +923,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                           setError("");
                         }
                       }}
+                      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
                       className="w-full h-16 pl-9 pr-4 text-2xl font-extrabold bg-card border-2 border-border rounded-2xl focus:outline-none transition-colors text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       style={{ borderColor: customAmountNum >= 10 ? operator.brandColor : undefined }}
                     />
