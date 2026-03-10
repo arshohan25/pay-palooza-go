@@ -57,7 +57,7 @@ interface NotificationCenterProps {
 export default function NotificationCenter({ open, onClose }: NotificationCenterProps) {
   const { t } = useI18n();
   const { notifications, unreadCount, markRead, markAllRead, dismiss, clearAll } = useNotifications();
-  const [detailNotif, setDetailNotif] = useState<DbNotification | null>(null);
+  const navigate = useNavigate();
 
   // Sort by created_at descending — latest first
   const sorted = [...notifications].sort(
