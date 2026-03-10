@@ -709,7 +709,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                 {/* Continue button — fixed at bottom */}
                 <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-4 py-4 bg-background/95 backdrop-blur-sm border-t border-border">
                   <Button
-                    className="w-full h-12 text-base font-semibold rounded-xl"
+                    className="w-full h-12 text-base font-semibold rounded-xl gradient-send border-0 text-white"
                     disabled={!manualRecipientType}
                     onClick={handleManualSend}
                   >
