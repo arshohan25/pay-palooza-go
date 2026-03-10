@@ -418,7 +418,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
         name: result.name || (type === "walletId" ? `Wallet ${val}` : normalizePhone(val)),
         phone: result.phone || normalizePhone(val),
         initials,
-        gradient: "gradient-primary",
+        gradient: "gradient-send",
       });
     }
     setInputType(type);
