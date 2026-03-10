@@ -92,16 +92,16 @@ export default function AdminCommissionSetup() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
           { label: "Agent Avg Rate", value: rows.length ? (totalAgent / rows.length).toFixed(2) + "%" : "—", color: "text-emerald-600" },
           { label: "Distributor Avg Rate", value: rows.length ? (totalDist / rows.length).toFixed(2) + "%" : "—", color: "text-blue-600" },
           { label: "Platform Avg Rate", value: rows.length ? (totalPlat / rows.length).toFixed(2) + "%" : "—", color: "text-purple-600" },
         ].map(s => (
           <Card key={s.label} className="border-0 shadow-[var(--shadow-card)]">
-            <CardContent className="p-4 text-center">
+            <CardContent className="p-3 sm:p-4 text-center sm:text-center flex sm:block items-center justify-between">
               <p className="text-xs text-muted-foreground">{s.label}</p>
-              <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+              <p className={`text-lg sm:text-xl font-bold ${s.color}`}>{s.value}</p>
             </CardContent>
           </Card>
         ))}
