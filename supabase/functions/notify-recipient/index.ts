@@ -73,7 +73,6 @@ Deno.serve(async (req) => {
       maximumFractionDigits: 2,
     });
 
-    const txnType = type === "cashin" ? "Cash In" : "received";
     const senderInfo = sender_name || sender_phone || "Unknown";
     const balanceStr = balance_after
       ? ` Balance: ৳${Number(balance_after).toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.`
@@ -84,7 +83,42 @@ Deno.serve(async (req) => {
       ? ` ${new Date(created_at).toLocaleString("en-BD", { dateStyle: "short", timeStyle: "short" })}`
       : "";
 
-    const smsBody = `EasyPay: You have ${txnType} ৳${formattedAmount} from ${senderInfo}.${balanceStr}${txnIdStr}${refStr}${dateStr} Check your wallet.`;
+    // Build type-appropriate SMS body
+    let smsBody: string;
+    switch (type) {
+      case "send":
+        smsBody = `EasyPay: You sent ৳${formattedAmount} to ${senderInfo}.${balanceStr}${txnIdStr}${refStr}${dateStr}`;
+        break;
+      case "receive":
+        smsBody = `EasyPay: You have received ৳${formattedAmount} from ${senderInfo}.${balanceStr}${txnIdStr}${refStr}${dateStr}`;
+        break;
+      case "cashout":
+        smsBody = `EasyPay: Cash out of ৳${formattedAmount} completed.${balanceStr}${txnIdStr}${refStr}${dateStr}`;
+        break;
+      case "cashin":
+        smsBody = `EasyPay: Cash in of ৳${formattedAmount} received from ${senderInfo}.${balanceStr}${txnIdStr}${refStr}${dateStr}`;
+        break;
+      case "payment":
+        smsBody = `EasyPay: Payment of ৳${formattedAmount} to ${senderInfo}.${balanceStr}${txnIdStr}${refStr}${dateStr}`;
+        break;
+      case "recharge":
+        smsBody = `EasyPay: Recharge of ৳${formattedAmount} completed.${balanceStr}${txnIdStr}${refStr}${dateStr}`;
+        break;
+      case "paybill":
+        smsBody = `EasyPay: Bill payment of ৳${formattedAmount} completed.${balanceStr}${txnIdStr}${refStr}${dateStr}`;
+        break;
+      case "banktransfer":
+        smsBody = `EasyPay: Bank transfer of ৳${formattedAmount} completed.${balanceStr}${txnIdStr}${refStr}${dateStr}`;
+        break;
+      case "addmoney":
+        smsBody = `EasyPay: ৳${formattedAmount} added to your wallet.${balanceStr}${txnIdStr}${refStr}${dateStr}`;
+        break;
+      case "chargeback":
+        smsBody = `EasyPay: ৳${formattedAmount} deducted (chargeback).${balanceStr}${txnIdStr}${refStr}${dateStr}`;
+        break;
+      default:
+        smsBody = `EasyPay: Transaction of ৳${formattedAmount} processed.${balanceStr}${txnIdStr}${refStr}${dateStr}`;
+    }
 
     const formData = new URLSearchParams();
     formData.append("To", phone);
