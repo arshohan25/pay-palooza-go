@@ -1212,6 +1212,9 @@ export default function AdminDashboard() {
 
         {/* ═══ TEAM MANAGEMENT ═══ */}
         {activeTab === "team" && <AdminTeamManagement />}
+
+        {/* ═══ NOTIFICATIONS ═══ */}
+        {activeTab === "notify" && <AdminNotificationSender />}
       </main>
 
       {/* User Lock Dialog - accessible from any user/agent/merchant row */}
