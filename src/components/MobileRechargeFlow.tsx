@@ -110,8 +110,7 @@ const OperatorLogo = ({ op, size = "md" }: { op: OperatorDef; size?: "xs" | "sm"
 
   return (
     <div
-      className={`${sizes[size]} rounded-2xl flex flex-col items-center justify-center font-black shadow-lg overflow-hidden shrink-0`}
-      style={{ background: `linear-gradient(135deg, ${op.brandColor}, ${op.brandColorDark})` }}
+      className={`${sizes[size]} rounded-2xl flex flex-col items-center justify-center font-black shadow-lg overflow-hidden shrink-0 bg-card border border-border`}
     >
       <img
         src={logos[op.short]}

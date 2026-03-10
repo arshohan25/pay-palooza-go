@@ -196,9 +196,8 @@ export default function AdminRechargeApiConnect() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden shrink-0"
-                    style={{ background: OPERATOR_COLORS[cfg.operator] ?? "hsl(var(--primary))" }}
+                   <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden shrink-0 bg-card border border-border"
                   >
                     <img
                       src={OPERATOR_LOGOS[cfg.operator]}
