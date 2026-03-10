@@ -7,7 +7,7 @@ import {
   TrendingUp, Activity, Search, RefreshCw, LogOut,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings, FileText,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
-  Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck, Image,
+  Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck, Image, Bell,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,6 +54,7 @@ import AdminAuditLogViewer from "@/components/admin/AdminAuditLogViewer";
 import AdminBannerManager from "@/components/admin/AdminBannerManager";
 import AdminLimitManager from "@/components/admin/AdminLimitManager";
 import AdminTeamManagement from "@/components/admin/AdminTeamManagement";
+import AdminNotificationSender from "@/components/admin/AdminNotificationSender";
 import TeamOnboardingChecklist from "@/components/admin/TeamOnboardingChecklist";
 import AdminMerchantManagement from "@/components/admin/AdminMerchantManagement";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
@@ -178,6 +179,7 @@ const NAV_ITEMS = [
   { id: "banners", label: "Banners", icon: Image },
   { id: "limits", label: "Limits", icon: Scale },
   { id: "team", label: "Team", icon: Users },
+  { id: "notify", label: "Notify", icon: Bell },
 ];
 
 export default function AdminDashboard() {
@@ -1210,6 +1212,9 @@ export default function AdminDashboard() {
 
         {/* ═══ TEAM MANAGEMENT ═══ */}
         {activeTab === "team" && <AdminTeamManagement />}
+
+        {/* ═══ NOTIFICATIONS ═══ */}
+        {activeTab === "notify" && <AdminNotificationSender />}
       </main>
 
       {/* User Lock Dialog - accessible from any user/agent/merchant row */}
