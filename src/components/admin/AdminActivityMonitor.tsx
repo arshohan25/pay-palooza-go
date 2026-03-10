@@ -316,7 +316,7 @@ export default function AdminActivityMonitor() {
                                         onClick={async (e) => {
                                           e.stopPropagation();
                                           const { data: profile } = await supabase.from("profiles").select("balance").eq("user_id", txn.user_id).single();
-                                          setChargebackTarget({ userId: txn.user_id, name: sender?.name || null, phone: sender?.phone || "", balance: parseFloat(profile?.balance || "0"), transactionId: txn.id, transactionAmount: txn.amount });
+                                          setChargebackTarget({ userId: txn.user_id, name: sender?.name || null, phone: sender?.phone || "", balance: parseFloat(String(profile?.balance ?? "0")), transactionId: txn.id, transactionAmount: txn.amount });
                                         }}
                                       >
                                         <RotateCcw className="w-3 h-3" /> Chargeback
