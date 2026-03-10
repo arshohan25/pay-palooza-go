@@ -187,6 +187,7 @@ const Index = () => {
     return () => window.removeEventListener("open-feature", handler);
   }, []);
 
+  const triggerRefresh = useCallback(() => {
     if (isPulling) return;
     setIsPulling(true);
     fetchBalance();
