@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, forwardRef } from "react";
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from "framer-motion";
 import { ChevronRight, CheckCircle2, ArrowRight, type LucideIcon } from "lucide-react";
 import { haptics } from "@/lib/haptics";
@@ -18,14 +18,14 @@ const THUMB = 48;
 const PADDING = 4;
 const TRACK_H = THUMB + PADDING * 2; // 56px total
 
-const SlideToConfirm = ({
+const SlideToConfirm = forwardRef<HTMLDivElement, SlideToConfirmProps>(({
   onConfirm,
   label = "Slide to Confirm",
   gradient = "gradient-primary",
   disabled = false,
   pinComplete = false,
   icon: Icon = ArrowRight,
-}: SlideToConfirmProps) => {
+}, ref) => {
   const trackRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLDivElement>(null);
   const [confirmed, setConfirmed] = useState(false);
@@ -102,7 +102,12 @@ const SlideToConfirm = ({
 
   return (
     <div
-      ref={trackRef}
+      ref={(node) => {
+        // Merge refs: internal trackRef + forwarded ref
+        (trackRef as any).current = node;
+        if (typeof ref === "function") ref(node);
+        else if (ref) (ref as any).current = node;
+      }}
       className={`relative rounded-2xl overflow-hidden select-none ${
         disabled ? "opacity-40 pointer-events-none" : ""
       }`}
@@ -182,5 +187,7 @@ const SlideToConfirm = ({
       </motion.div>
     </div>
   );
-};
+});
+
+SlideToConfirm.displayName = "SlideToConfirm";
 export default SlideToConfirm;
