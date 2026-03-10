@@ -250,7 +250,19 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                 {hasAction && (
                   <Button
                     className="w-full gap-2"
-                    onClick={() => window.open(meta.action_url, "_blank")}
+                    onClick={() => {
+                      const url = meta.action_url as string;
+                      setDetailNotif(null);
+                      onClose();
+                      if (FLOW_FEATURES.has(url)) {
+                        // Dispatch custom event for Index page flow-based features
+                        window.dispatchEvent(new CustomEvent("open-feature", { detail: url }));
+                      } else if (url.startsWith("/")) {
+                        navigate(url);
+                      } else {
+                        window.open(url, "_blank");
+                      }
+                    }}
                   >
                     <ExternalLink size={14} />
                     {meta.action_label || "Learn More"}
