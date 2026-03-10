@@ -160,6 +160,33 @@ const Index = () => {
     return () => { supabase.removeChannel(channel); };
   }, [user, isAuthenticated, signOut]);
 
+  // Listen for "open-feature" events from notification center
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const feature = (e as CustomEvent).detail as string;
+      const featureMap: Record<string, () => void> = {
+        "send-money": () => setShowSendMoney(true),
+        "cash-out": () => setShowCashOut(true),
+        "add-money": () => setShowAddMoney(true),
+        "mobile-recharge": () => setShowRecharge(true),
+        "pay-bill": () => setShowPayBill(true),
+        "payment": () => setShowPayment(true),
+        "bank-transfer": () => setShowBankTransfer(true),
+        "shop": () => setShowShop(true),
+        "savings": () => setShowSavings(true),
+        "merchant-apply": () => setShowMerchantApply(true),
+        "scan-pay": () => setShowScanPay(true),
+        "kyc": () => setShowKycFlow(true),
+      };
+      if (featureMap[feature]) {
+        setActiveTab("home");
+        featureMap[feature]();
+      }
+    };
+    window.addEventListener("open-feature", handler);
+    return () => window.removeEventListener("open-feature", handler);
+  }, []);
+
   const triggerRefresh = useCallback(() => {
     if (isPulling) return;
     setIsPulling(true);

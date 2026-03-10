@@ -12,6 +12,13 @@ import { formatDistanceToNow } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogOverlay, DialogPortal } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+
+// Flow-based features that are opened via custom event on the Index page
+const FLOW_FEATURES = new Set([
+  "send-money", "cash-out", "add-money", "mobile-recharge", "pay-bill",
+  "payment", "bank-transfer", "shop", "savings", "merchant-apply", "scan-pay", "kyc",
+]);
 
 function getIcon(cat: string): { icon: LucideIcon; iconClass: string } {
   switch (cat) {
@@ -51,6 +58,7 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
   const { t } = useI18n();
   const { notifications, unreadCount, markRead, markAllRead, dismiss, clearAll } = useNotifications();
   const [detailNotif, setDetailNotif] = useState<DbNotification | null>(null);
+  const navigate = useNavigate();
 
   // Sort by created_at descending — latest first
   const sorted = [...notifications].sort(
@@ -242,7 +250,19 @@ export default function NotificationCenter({ open, onClose }: NotificationCenter
                 {hasAction && (
                   <Button
                     className="w-full gap-2"
-                    onClick={() => window.open(meta.action_url, "_blank")}
+                    onClick={() => {
+                      const url = meta.action_url as string;
+                      setDetailNotif(null);
+                      onClose();
+                      if (FLOW_FEATURES.has(url)) {
+                        // Dispatch custom event for Index page flow-based features
+                        window.dispatchEvent(new CustomEvent("open-feature", { detail: url }));
+                      } else if (url.startsWith("/")) {
+                        navigate(url);
+                      } else {
+                        window.open(url, "_blank");
+                      }
+                    }}
                   >
                     <ExternalLink size={14} />
                     {meta.action_label || "Learn More"}
