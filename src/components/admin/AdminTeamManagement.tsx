@@ -383,11 +383,11 @@ export default function AdminTeamManagement() {
   return (
     <div className="space-y-4">
       <Tabs defaultValue="members">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="members">Members</TabsTrigger>
-          <TabsTrigger value="matrix">Access Matrix</TabsTrigger>
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="activity">Activity Log</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+          <TabsTrigger value="members" className="text-xs sm:text-sm">Members</TabsTrigger>
+          <TabsTrigger value="matrix" className="text-xs sm:text-sm">Access</TabsTrigger>
+          <TabsTrigger value="dashboard" className="text-xs sm:text-sm">Dashboard</TabsTrigger>
+          <TabsTrigger value="activity" className="text-xs sm:text-sm">Activity</TabsTrigger>
         </TabsList>
 
         {/* ═══ MEMBERS TAB ═══ */}
