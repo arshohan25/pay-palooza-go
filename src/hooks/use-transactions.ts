@@ -102,11 +102,6 @@ export function useTransactions(limit?: number, refreshKey?: number) {
             if (!knownIds.current.has(newTxn.id)) {
               knownIds.current.add(newTxn.id);
               haptics.notify();
-              showTxnToast({
-                type: TXN_LABELS[newTxn.type] ?? newTxn.type,
-                amount: `৳${newTxn.amount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
-                gradient: TXN_GRADIENTS[newTxn.type] ?? "bg-gradient-to-b from-gray-500 to-gray-600",
-              });
             }
             fetchTxns();
           }
