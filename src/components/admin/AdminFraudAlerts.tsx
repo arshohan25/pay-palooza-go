@@ -335,7 +335,7 @@ export default function AdminFraudAlerts() {
                       >
                         <div className="px-4 pb-4 space-y-4 border-t border-border/50 pt-3">
                           {/* Detail grid */}
-                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                             {/* Device */}
                             <DetailItem
                               icon={Smartphone}
