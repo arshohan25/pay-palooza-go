@@ -15,7 +15,6 @@ const playKycChime = (type: "success" | "error") => {
     gain.connect(ctx.destination);
 
     if (type === "success") {
-      // Ascending 3-note celebratory chime
       const notes = [660, 880, 1100];
       notes.forEach((freq, i) => {
         const osc = ctx.createOscillator();
@@ -28,7 +27,6 @@ const playKycChime = (type: "success" | "error") => {
       gain.gain.setValueAtTime(0.15, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
     } else {
-      // Descending 2-note gentle alert
       const notes = [440, 330];
       notes.forEach((freq, i) => {
         const osc = ctx.createOscillator();
@@ -63,6 +61,7 @@ export function useKycStatus() {
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const prevStatusRef = useRef<KycStatus | null>(null);
+  const initialLoadDone = useRef(false);
 
   // Request browser notification permission on mount
   useEffect(() => {
@@ -71,7 +70,7 @@ export function useKycStatus() {
     }
   }, []);
 
-  const fetchStatus = useCallback(async () => {
+  const fetchStatus = useCallback(async (silent = false) => {
     if (authLoading) {
       // Auth still resolving — stay in loading state
       setLoading(true);
@@ -80,9 +79,13 @@ export function useKycStatus() {
     if (!user) {
       setStatus("none");
       setLoading(false);
+      initialLoadDone.current = false;
       return;
     }
-    setLoading(true);
+    // Only set loading=true for the initial fetch, not background refreshes
+    if (!silent && !initialLoadDone.current) {
+      setLoading(true);
+    }
 
     // Check if user is KYC-exempt first
     const { data: profile } = await supabase
@@ -95,6 +98,7 @@ export function useKycStatus() {
       setStatus("verified");
       setRejectionReason(null);
       setLoading(false);
+      initialLoadDone.current = true;
       return;
     }
 
@@ -124,6 +128,7 @@ export function useKycStatus() {
       setRejectionReason(null);
     }
     setLoading(false);
+    initialLoadDone.current = true;
   }, [user, authLoading]);
 
   // Detect pending → verified / rejected transitions
@@ -151,7 +156,7 @@ export function useKycStatus() {
     fetchStatus();
   }, [fetchStatus]);
 
-  // Realtime: listen for both KYC record updates and profile exemption toggles
+  // Realtime: listen for KYC record updates and profile kyc_exempt changes only
   useEffect(() => {
     if (!user) return;
 
@@ -163,15 +168,18 @@ export function useKycStatus() {
         table: "kyc_verifications",
         filter: `user_id=eq.${user.id}`,
       }, () => {
-        fetchStatus();
+        fetchStatus(true); // silent — don't set loading
       })
       .on("postgres_changes", {
         event: "UPDATE",
         schema: "public",
         table: "profiles",
         filter: `user_id=eq.${user.id}`,
-      }, () => {
-        fetchStatus();
+      }, (payload: any) => {
+        // Only refetch if kyc_exempt changed, not on balance updates
+        if (payload.old?.kyc_exempt !== payload.new?.kyc_exempt) {
+          fetchStatus(true); // silent
+        }
       })
       .subscribe();
 
