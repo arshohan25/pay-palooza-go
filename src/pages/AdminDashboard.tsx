@@ -891,7 +891,7 @@ export default function AdminDashboard() {
                                 </div>
                               </td>
                               <td className="px-4 py-3">
-                                <div className="flex items-center gap-1.5 flex-wrap">
+                                <div className="flex items-center gap-1 flex-wrap max-w-[280px] md:max-w-none">
                                   <Button size="sm" variant="outline" className="text-xs h-7 gap-1" onClick={() => openUserDetail(user)}>
                                     <Eye className="w-3 h-3" /> View
                                   </Button>
