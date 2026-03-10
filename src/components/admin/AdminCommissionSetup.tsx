@@ -92,7 +92,7 @@ export default function AdminCommissionSetup() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
           { label: "Agent Avg Rate", value: rows.length ? (totalAgent / rows.length).toFixed(2) + "%" : "—", color: "text-emerald-600" },
           { label: "Distributor Avg Rate", value: rows.length ? (totalDist / rows.length).toFixed(2) + "%" : "—", color: "text-blue-600" },
@@ -112,30 +112,30 @@ export default function AdminCommissionSetup() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-muted-foreground">
-                  <th className="text-left px-4 py-3 font-medium">Txn Type</th>
-                  <th className="text-left px-4 py-3 font-medium">Agent %</th>
-                  <th className="text-left px-4 py-3 font-medium">Distributor %</th>
-                  <th className="text-left px-4 py-3 font-medium">Platform %</th>
-                  <th className="text-left px-4 py-3 font-medium">Status</th>
-                  <th className="text-left px-4 py-3 font-medium">Edit</th>
+                 <tr className="border-b border-border text-muted-foreground">
+                  <th className="text-left px-3 md:px-4 py-3 font-medium">Type</th>
+                  <th className="text-left px-3 md:px-4 py-3 font-medium">Agent</th>
+                  <th className="text-left px-3 md:px-4 py-3 font-medium hidden sm:table-cell">Dist.</th>
+                  <th className="text-left px-3 md:px-4 py-3 font-medium hidden sm:table-cell">Platform</th>
+                  <th className="text-left px-3 md:px-4 py-3 font-medium hidden md:table-cell">Status</th>
+                  <th className="text-left px-3 md:px-4 py-3 font-medium">Edit</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map(r => (
                   <tr key={r.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3">
+                    <td className="px-3 md:px-4 py-3">
                       <Badge variant="secondary" className="text-xs capitalize">{r.txn_type}</Badge>
                     </td>
-                    <td className="px-4 py-3 font-semibold text-emerald-600">{r.agent_commission ?? 0}%</td>
-                    <td className="px-4 py-3 font-semibold text-blue-600">{r.distributor_commission ?? 0}%</td>
-                    <td className="px-4 py-3 font-semibold text-purple-600">{r.platform_share ?? 0}%</td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 md:px-4 py-3 font-semibold text-emerald-600">{r.agent_commission ?? 0}%</td>
+                    <td className="px-3 md:px-4 py-3 font-semibold text-blue-600 hidden sm:table-cell">{r.distributor_commission ?? 0}%</td>
+                    <td className="px-3 md:px-4 py-3 font-semibold text-purple-600 hidden sm:table-cell">{r.platform_share ?? 0}%</td>
+                    <td className="px-3 md:px-4 py-3 hidden md:table-cell">
                       <Badge variant={r.is_active ? "default" : "secondary"} className="text-xs">
                         {r.is_active ? "Active" : "Inactive"}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 md:px-4 py-3">
                       <Button variant="ghost" size="icon" onClick={() => openEdit(r)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
