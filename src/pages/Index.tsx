@@ -372,16 +372,16 @@ const Index = () => {
 
       {/* ── Flow overlays ── */}
       <AnimatePresence>
-        {showSendMoney && <SendMoneyFlow prefilledPhone={sendMoneyPrefilledPhone} onSuccess={(amt) => { sendMoneyOnComplete?.(amt); setSendMoneyOnComplete(undefined); }} onClose={() => { setShowSendMoney(false); setSendMoneyPrefilledPhone(undefined); setSendMoneyOnComplete(undefined); }} />}
-        {showCashOut   && <CashOutFlow   onClose={() => setShowCashOut(false)} />}
-        {showPayment   && <PaymentFlow   prefilledMerchantId={paymentPrefilledMerchant} onClose={() => { setShowPayment(false); setPaymentPrefilledMerchant(undefined); }} onDynamicQr={(session) => { setShowPayment(false); setPaymentPrefilledMerchant(undefined); setDynamicQrSession(session); }} />}
-        {showRecharge  && <MobileRechargeFlow onClose={() => setShowRecharge(false)} />}
-        {showPayBill   && <PayBillFlow   onClose={() => setShowPayBill(false)} />}
-        {showAddMoney  && <AddMoneyFlow  onClose={() => setShowAddMoney(false)} />}
-        {showShop      && <ShopFlow      onClose={() => setShowShop(false)} />}
-        {showBankTransfer && <BankTransferFlow onClose={() => setShowBankTransfer(false)} />}
-        {showSavings   && <SavingsFlow   onClose={() => setShowSavings(false)} />}
-        {showKycFlow   && <KycFlow      onClose={() => setShowKycFlow(false)} />}
+        {showSendMoney && <SendMoneyFlow key="send-money-flow" prefilledPhone={sendMoneyPrefilledPhone} onSuccess={(amt) => { sendMoneyOnComplete?.(amt); setSendMoneyOnComplete(undefined); }} onClose={() => { setShowSendMoney(false); setSendMoneyPrefilledPhone(undefined); setSendMoneyOnComplete(undefined); }} />}
+        {showCashOut   && <CashOutFlow key="cash-out-flow" onClose={() => setShowCashOut(false)} />}
+        {showPayment   && <PaymentFlow key="payment-flow" prefilledMerchantId={paymentPrefilledMerchant} onClose={() => { setShowPayment(false); setPaymentPrefilledMerchant(undefined); }} onDynamicQr={(session) => { setShowPayment(false); setPaymentPrefilledMerchant(undefined); setDynamicQrSession(session); }} />}
+        {showRecharge  && <MobileRechargeFlow key="recharge-flow" onClose={() => setShowRecharge(false)} />}
+        {showPayBill   && <PayBillFlow key="paybill-flow" onClose={() => setShowPayBill(false)} />}
+        {showAddMoney  && <AddMoneyFlow key="addmoney-flow" onClose={() => setShowAddMoney(false)} />}
+        {showShop      && <ShopFlow key="shop-flow" onClose={() => setShowShop(false)} />}
+        {showBankTransfer && <BankTransferFlow key="bank-transfer-flow" onClose={() => setShowBankTransfer(false)} />}
+        {showSavings   && <SavingsFlow key="savings-flow" onClose={() => setShowSavings(false)} />}
+        {showKycFlow   && <KycFlow key="kyc-flow" onClose={() => setShowKycFlow(false)} />}
       </AnimatePresence>
       <MerchantApplicationFlow open={showMerchantApply} onOpenChange={setShowMerchantApply} />
 

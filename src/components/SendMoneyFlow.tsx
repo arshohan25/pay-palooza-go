@@ -497,19 +497,25 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     const cashOutExtra = addCashOutCharge ? calcCashOutFee(amtVal) : 0;
     const actualSendAmount = parseFloat((amtVal + cashOutExtra).toFixed(2));
     const feeVal = calcFee("send", actualSendAmount);
-    await transferMoney({
-      recipientPhone: (resolvedPhone || recipient?.phone) ?? "",
-      amount: actualSendAmount,
-      fee: feeVal,
-      type: "send",
-      recipientName: recipient?.name,
-      reference: txnId.current,
-      description: (addCashOutCharge ? "[+Cash Out Charge] " : "") + (note || ""),
-    });
-    onSuccess?.(actualSendAmount);
-    showTxnToast({ type: "Send Money", amount: `৳${actualSendAmount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-send" });
-    setDirection(1);
-    setStep("success");
+    try {
+      await transferMoney({
+        recipientPhone: (resolvedPhone || recipient?.phone) ?? "",
+        amount: actualSendAmount,
+        fee: feeVal,
+        type: "send",
+        recipientName: recipient?.name,
+        reference: txnId.current,
+        description: (addCashOutCharge ? "[+Cash Out Charge] " : "") + (note || ""),
+      });
+      onSuccess?.(actualSendAmount);
+      showTxnToast({ type: "Send Money", amount: `৳${actualSendAmount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-send" });
+      setDirection(1);
+      setStep("success");
+    } catch (err: any) {
+      setError(err?.message || "Transaction failed. Please try again.");
+      setProcessing(false);
+      return;
+    }
   };
 
   const BALANCE = getBalance();
