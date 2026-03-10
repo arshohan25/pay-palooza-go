@@ -635,9 +635,9 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
                 {/* Send to this number — appears when valid number detected */}
                 {manualRecipientType && inputVal.trim() && (
-                  <div className="mx-4 mb-3 flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/5 border border-primary/20">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <Send size={16} className="text-primary" />
+                  <div className="mx-4 mb-3 flex items-center gap-3 px-4 py-3 rounded-xl bg-[hsl(330_80%_55%)]/5 border border-[hsl(330_80%_55%)]/20">
+                    <div className="w-10 h-10 rounded-full bg-[hsl(330_80%_55%)]/10 flex items-center justify-center shrink-0">
+                      <Send size={16} className="text-[hsl(330_80%_55%)]" />
                     </div>
                     <div className="flex-1 text-left">
                       <p className="text-sm font-semibold text-foreground">Send to {inputVal.trim()}</p>
