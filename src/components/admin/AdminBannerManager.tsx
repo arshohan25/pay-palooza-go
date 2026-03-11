@@ -221,11 +221,11 @@ export default function AdminBannerManager() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold flex items-center gap-2">
-          <Image className="w-5 h-5" /> Promo Banners
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-base sm:text-lg font-bold flex items-center gap-2 min-w-0">
+          <Image className="w-5 h-5 shrink-0" /> <span className="truncate">Promo Banners</span>
         </h2>
-        <Button size="sm" onClick={openAdd}><Plus className="w-4 h-4 mr-1" /> Add Banner</Button>
+        <Button size="sm" onClick={openAdd} className="shrink-0 h-7 px-2 text-xs"><Plus className="w-3.5 h-3.5 mr-1" /> Add</Button>
       </div>
 
       {loading ? (
@@ -257,24 +257,24 @@ export default function AdminBannerManager() {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center justify-between gap-1.5">
                         <p className="text-sm font-semibold truncate">{b.title}</p>
-                        <Switch checked={b.is_active} onCheckedChange={() => toggleActive(b)} className="shrink-0" />
+                        <Switch checked={b.is_active} onCheckedChange={() => toggleActive(b)} className="shrink-0 scale-90" />
                       </div>
                       <p className="text-xs text-muted-foreground truncate">{b.subtitle || "No subtitle"}</p>
-                      <div className="flex items-center justify-between mt-1.5">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <Badge variant={b.is_active ? "default" : "secondary"} className="text-[9px] shrink-0">{b.is_active ? "On" : "Off"}</Badge>
+                      <div className="flex items-center justify-between mt-1.5 gap-1">
+                        <div className="flex items-center gap-1 min-w-0 overflow-hidden">
+                          <Badge variant={b.is_active ? "default" : "secondary"} className="text-[9px] shrink-0 px-1">{b.is_active ? "On" : "Off"}</Badge>
                           {b.link_url && (
-                            <Badge variant="outline" className="text-[9px] shrink-0 gap-0.5 max-w-[120px] truncate">
+                            <Badge variant="outline" className="text-[9px] shrink-0 gap-0.5 max-w-[100px] truncate px-1">
                               <Link2 className="w-2.5 h-2.5 shrink-0" />
                               <span className="truncate">{getLinkLabel(b.link_url)}</span>
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center gap-0.5 shrink-0">
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(b)}><Pencil className="w-3.5 h-3.5" /></Button>
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setDeleteId(b.id)}><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
+                        <div className="flex items-center shrink-0">
+                          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => openEdit(b)}><Pencil className="w-3 h-3" /></Button>
+                          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setDeleteId(b.id)}><Trash2 className="w-3 h-3 text-destructive" /></Button>
                         </div>
                       </div>
                     </div>
