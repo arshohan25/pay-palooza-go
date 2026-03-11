@@ -593,7 +593,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const handleBack = () => {
     setError("");
     if (mode === "register_phone" || mode === "login_phone") { goTo("landing", -1); return; }
-    if (mode === "register_otp")  { setOtp(""); goTo("register_phone", -1); return; }
+    
     if (mode === "register_pin")  {
       if (confirmStage) { setConfirmStage(false); setConfirmPin(""); return; }
       setPin(""); setConfirmPin(""); goTo("register_otp", -1); return;
