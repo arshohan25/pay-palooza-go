@@ -39,6 +39,14 @@ interface OnboardingSlidesProps {
 }
 
 export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
+  // If no slides, auto-skip onboarding
+  useEffect(() => {
+    if (SLIDES.length === 0) {
+      markOnboardingDone();
+      onDone();
+    }
+  }, [onDone]);
+
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(1);
   const [isHeld, setIsHeld] = useState(false);
