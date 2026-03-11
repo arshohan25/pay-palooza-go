@@ -1,32 +1,29 @@
 
 
-## Replace Name Step with KYC Flow After Registration
+## Plan: Add Biller Categories to API Hub
 
-**What changes**: After confirming the PIN during registration, instead of showing the name entry screen, the app will create the account immediately and then open the KYC flow so new users can verify their identity right away.
+### What
 
-### Changes in `src/pages/AuthPage.tsx`
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-1. **Import KycFlow** at the top of the file
+### Changes
 
-2. **Add state** for showing KYC flow: `const [showKycAfterRegister, setShowKycAfterRegister] = useState(false);`
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-3. **Change PIN confirm handler** (line 386): After PIN confirmation, instead of `goTo("register_name")`, immediately create the account (call `signUp` with phone + pin, no name), then on success show KYC flow overlay
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-4. **Remove or skip `register_name` mode** from the registration flow — the `register_name` UI block and `handleRegisterName` logic get merged into a new `handlePostPinSignup` function that:
-   - Calls `signUp(phone, pin)` (no name)
-   - Validates device fingerprint
-   - On success, sets `showKycAfterRegister = true` instead of going to "success"
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-5. **Render KycFlow** when `showKycAfterRegister` is true, with an `onClose` that navigates to "success" and calls `onAuthenticated`
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-6. **Update step indicator** — registration becomes 3 steps (phone → OTP → PIN) instead of 4
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-### Flow Summary
+3. Add the new category icons to the `categoryIcons` map.
 
-```text
-Before: Phone → OTP → PIN → Name → Success
-After:  Phone → OTP → PIN → Account Created → KYC Flow → Success
-```
-
-The referral code input currently on the name screen will be moved into the PIN confirmation step or removed (users can add it later). The name can be collected during KYC (the KYC flow already captures full name from NID).
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

@@ -11,6 +11,7 @@ import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
 import { isWeakPin } from "@/lib/pinValidation";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/easypay-logo.png";
+import KycFlow from "@/components/KycFlow";
 
 // ─── Storage keys (only for UX preferences, NOT auth) ─────────────────────────
 const LANG_KEY       = "mfs_ui_lang";
@@ -146,13 +147,13 @@ type Lang = "en" | "bn";
 
 type Mode =
   | "landing"
-  | "register_phone" | "register_otp" | "register_pin" | "register_name"
+  | "register_phone" | "register_otp" | "register_pin"
   | "login_phone" | "login_pin"
   | "forgot_otp" | "forgot_pin"
   | "success";
 
 // ─── Step progress ────────────────────────────────────────────────────────────
-const REGISTER_STEPS = ["Phone", "OTP", "PIN", "Name"];
+const REGISTER_STEPS = ["Phone", "OTP", "PIN"];
 const LOGIN_STEPS    = ["Phone", "PIN"];
 
 function StepBar({ steps, current }: { steps: string[]; current: number }) {
@@ -344,6 +345,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const [userName, setUserName]     = useState("");
   const [referralCodeInput, setReferralCodeInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showKycAfterRegister, setShowKycAfterRegister] = useState(false);
   const [forgotOtpCode, setForgotOtpCode] = useState("");
   const [forgotOtpSending, setForgotOtpSending] = useState(false);
   const [serverOtp, setServerOtp] = useState(""); // DEV: stores OTP returned from server
@@ -375,7 +377,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     setPin(""); setConfirmPin(""); setConfirmStage(false); goTo("register_pin");
   }, [otp, goTo, t]);
 
-  const handleRegisterPin = useCallback((currentPin: string, currentConfirm: string, stage: boolean) => {
+  const handleRegisterPin = useCallback(async (currentPin: string, currentConfirm: string, stage: boolean) => {
     if (!stage) {
       if (currentPin.length < 4) { setError(t.enter4Digits); return; }
       if (isWeakPin(currentPin)) { setError(t.pinTooWeak); return; }
@@ -383,30 +385,26 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     } else {
       if (currentConfirm.length < 4) { setError(t.reenterPinErr); return; }
       if (currentPin !== currentConfirm) { setError(t.pinsDontMatch); haptics.error(); setConfirmPin(""); return; }
-      haptics.success(); setConfirmStage(false); goTo("register_name");
+      haptics.success(); setConfirmStage(false);
+      // Create account immediately, then launch KYC
+      await handlePostPinSignup();
     }
   }, [goTo, t]);
 
-  // ── Register: Create account with Supabase Auth ────────────────────────────
-  const handleRegisterName = async () => {
-    const trimmed = userName.trim();
+  // ── Register: Create account with Supabase Auth, then show KYC ─────────────
+  const handlePostPinSignup = async () => {
     setIsSubmitting(true);
     setError("");
     try {
-      // Device fingerprint validation
       const fp = await getDeviceFingerprint();
-      
-      // First create the account
-      const result = await signUp(phone, pin, trimmed || undefined, referralCodeInput.trim() || undefined);
-      
+      const result = await signUp(phone, pin, undefined, referralCodeInput.trim() || undefined);
+
       if (result.user) {
-        // Validate device (non-blocking for signup but records the fingerprint)
         try {
           const res = await supabase.functions.invoke("validate-device", {
             body: { device_fingerprint: fp, user_id: result.user.id },
           });
           if (res.data && !res.data.allowed) {
-            // Device already has an account — sign out and show error
             await supabase.auth.signOut();
             setError(res.data.error || "This device already has an account.");
             haptics.error();
@@ -414,18 +412,15 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
             return;
           }
         } catch {
-          // Device validation failed but don't block signup
           console.warn("Device validation failed, continuing...");
         }
       }
 
-      // Store phone locally for returning-user UX
       localStorage.setItem(DEVICE_KEY, phone);
       localStorage.setItem("mfs_registered_phone", phone);
-      if (trimmed) localStorage.setItem("mfs_user_name", trimmed);
       haptics.success();
-      goTo("success");
-      setTimeout(onAuthenticated, 1500);
+      // Show KYC flow instead of success
+      setShowKycAfterRegister(true);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t.authError;
       if (msg.includes("already been registered") || msg.includes("already registered")) {
@@ -655,7 +650,6 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
       if (confirmStage) { setConfirmStage(false); setConfirmPin(""); return; }
       setPin(""); setConfirmPin(""); goTo("register_otp", -1); return;
     }
-    if (mode === "register_name") { goTo("register_pin", -1); return; }
     if (mode === "login_pin")     { setPin(""); goTo("login_phone", -1); return; }
     if (mode === "forgot_otp")    { setOtp(""); goTo("login_pin", -1); return; }
     if (mode === "forgot_pin")    {
@@ -664,7 +658,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     }
   };
 
-  const registerStep = { register_phone: 0, register_otp: 1, register_pin: 2, register_name: 3 }[mode as string] ?? -1;
+  const registerStep = { register_phone: 0, register_otp: 1, register_pin: 2 }[mode as string] ?? -1;
   const loginStep    = { login_phone: 0, login_pin: 1 }[mode as string] ?? -1;
   const showBack     = mode !== "landing" && mode !== "success";
 
@@ -1007,57 +1001,22 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                       );
                     })()}
 
-                    {/* ── NAME ENTRY ── */}
-                    {mode === "register_name" && (
-                      <div className="space-y-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/15 flex items-center justify-center">
-                            <UserRound size={22} className="text-primary" />
-                          </div>
-                          <div>
-                            <h2 className="text-2xl font-black text-foreground tracking-tight">{t.yourName}</h2>
-                            <p className="text-sm text-muted-foreground">{t.nameHint}</p>
-                          </div>
-                        </div>
-                        <NameInput value={userName} onChange={setUserName} />
-                        <p className="text-[11px] text-muted-foreground px-1">{t.nameOptional}</p>
-                        
-                        {/* Referral Code Input */}
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-semibold text-muted-foreground px-1">Referral Code (optional)</label>
-                          <input
-                            type="text"
-                            placeholder="e.g. EZP-ABCD-1234"
-                            value={referralCodeInput}
-                            onChange={(e) => setReferralCodeInput(e.target.value.toUpperCase())}
-                            maxLength={13}
-                            className="w-full h-14 px-5 text-base font-bold tracking-wider bg-card border-2 border-border rounded-2xl focus:outline-none focus:border-accent focus:shadow-[0_0_16px_hsl(var(--accent)/0.2)] transition-all placeholder:font-normal placeholder:text-muted-foreground/30 placeholder:tracking-normal shadow-card font-mono"
-                          />
-                        </div>
-
-                        {error && (
-                          <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-                            className="text-xs text-destructive flex items-center gap-1.5 px-1">
-                            <AlertCircle size={12} /> {error}
-                          </motion.p>
-                        )}
-                        <motion.button whileTap={{ scale: 0.97 }}
-                          className="w-full h-14 gradient-hero text-white font-bold text-[15px] rounded-2xl shadow-glow flex items-center justify-center gap-2 disabled:opacity-60"
-                          onClick={handleRegisterName} disabled={isSubmitting}>
-                          {isSubmitting ? (
-                            <>{t.signingUp}</>
-                          ) : (
-                            <><CheckCircle2 size={17} /> {userName.trim() ? t.createWallet : t.skipCreate}</>
-                          )}
-                        </motion.button>
-                      </div>
-                    )}
-
                   </motion.div>
                 </AnimatePresence>
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ══════════════════════ KYC AFTER REGISTER ══════════════════════ */}
+      {showKycAfterRegister && (
+        <div className="fixed inset-0 z-[110] bg-background">
+          <KycFlow onClose={() => {
+            setShowKycAfterRegister(false);
+            goTo("success");
+            setTimeout(onAuthenticated, 1500);
+          }} />
         </div>
       )}
     </div>
