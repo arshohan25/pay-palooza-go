@@ -98,7 +98,7 @@ const T = {
     noAccount: "একাউন্ট নেই?", createOneFree: "বিনামূল্যে তৈরি করুন",
     supportedNet: "সাপোর্টেড",
     verifyNumber: "নম্বর যাচাই করুন", resetPin: "পিন রিসেট করুন",
-    codeSent: "কোড পাঠানো হয়েছে", demoMode: "ডেমো মোড — ওটিপি ব্যবহার করুন",
+    codeSent: "কোড পাঠানো হয়েছে",
     resendOtp: "ওটিপি পুনরায় পাঠান", verify: "যাচাই করুন",
     setPin: "পিন সেট করুন", newPin: "নতুন পিন", confirmPin: "পিন নিশ্চিত করুন",
     choosePinHint: "আপনার ওয়ালেটের জন্য একটি নিরাপদ ৪-সংখ্যার পিন দিন",
