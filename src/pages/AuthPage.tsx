@@ -579,35 +579,6 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     }
   }, [goTo, t, phone, returningPhone, forgotOtpCode, onAuthenticated]);
 
-  // ── Keypad handlers ────────────────────────────────────────────────────────
-  const handleOtpKey = (k: string, onComplete: (val: string) => void) => {
-    setOtp(prev => {
-      const next = (prev + k).slice(0, 6);
-      setError("");
-      if (next.length === 6) setTimeout(() => onComplete(next), 260);
-      return next;
-    });
-  };
-
-  const handlePinKey = (
-    k: string, currentPin: string, currentConfirm: string, stage: boolean,
-    onComplete: (p: string, c: string, s: boolean) => void,
-  ) => {
-    if (!stage) {
-      const next = (currentPin + k).slice(0, 4);
-      setPin(next); setError("");
-      if (next.length === 4) setTimeout(() => onComplete(next, currentConfirm, false), 260);
-    } else {
-      const next = (currentConfirm + k).slice(0, 4);
-      setConfirmPin(next); setError("");
-      if (next.length === 4) setTimeout(() => onComplete(currentPin, next, true), 260);
-    }
-  };
-
-  const handlePinDelete = (stage: boolean) => {
-    if (!stage) setPin(p => p.slice(0, -1));
-    else setConfirmPin(p => p.slice(0, -1));
-  };
 
   // ── Back ───────────────────────────────────────────────────────────────────
   const handleBack = () => {
