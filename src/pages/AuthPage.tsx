@@ -740,9 +740,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 <h2 className="text-2xl font-black">{t.enterPin}</h2>
                 <p className="text-sm text-white/50">{t.trustedDevice}</p>
               </div>
-              <div onTouchStart={(e) => e.preventDefault()}>
-                <PinCircles pin={pin} error={!!error} dark />
-              </div>
+              <PinCircles pin={pin} error={!!error} dark />
               {error && (
                 <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
                   className="text-xs text-destructive/80 flex items-center gap-1.5">
@@ -752,17 +750,22 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
               {isSubmitting && (
                 <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-white/60">{t.signingIn}</motion.p>
               )}
-              <NumPad variant="dark"
-                onKey={(k) => {
+              <input
+                type="password"
+                inputMode="numeric"
+                autoFocus
+                maxLength={4}
+                value={pin}
+                onChange={(e) => {
                   if (isSubmitting) return;
-                  setPin(prev => {
-                    const next = (prev + k).slice(0, 4);
-                    setError("");
-                    if (next.length === 4) setTimeout(() => handleLoginPin(next), 260);
-                    return next;
-                  });
+                  const val = e.target.value.replace(/\D/g, "").slice(0, 4);
+                  setPin(val);
+                  setError("");
+                  if (val.length === 4) setTimeout(() => handleLoginPin(val), 260);
                 }}
-                onDelete={() => setPin(p => p.slice(0, -1))} />
+                className="w-48 h-14 text-center text-2xl font-black tracking-[0.8em] bg-white/10 border border-white/20 rounded-2xl text-white focus:outline-none focus:border-white/40 placeholder:text-white/20"
+                placeholder="····"
+              />
               <div className="flex items-center gap-6">
                 <button onClick={() => { setPin(""); setOtp(""); handleForgotSendOtp(); }}
                   className="text-sm text-white/50 hover:text-white/80 transition-colors">{forgotOtpSending ? "Sending…" : t.forgotPin}</button>
