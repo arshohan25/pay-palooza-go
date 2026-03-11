@@ -238,10 +238,10 @@ export default function AdminReferralManagement() {
       </div>
 
       <Tabs defaultValue="referrals" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="referrals" className="gap-1.5"><Gift className="w-4 h-4" /> Referrals ({referrals.length})</TabsTrigger>
-          <TabsTrigger value="rewards" className="gap-1.5"><Award className="w-4 h-4" /> Rewards ({rewards.length})</TabsTrigger>
-          <TabsTrigger value="devices" className="gap-1.5"><Smartphone className="w-4 h-4" /> Devices ({devices.length})</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-3">
+          <TabsTrigger value="referrals" className="gap-1 text-xs sm:text-sm"><Gift className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Referrals</span> ({referrals.length})</TabsTrigger>
+          <TabsTrigger value="rewards" className="gap-1 text-xs sm:text-sm"><Award className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Rewards</span> ({rewards.length})</TabsTrigger>
+          <TabsTrigger value="devices" className="gap-1 text-xs sm:text-sm"><Smartphone className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Devices</span> ({devices.length})</TabsTrigger>
         </TabsList>
 
         {/* ═══ REFERRALS TAB ═══ */}
