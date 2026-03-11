@@ -890,6 +890,39 @@ export type Database = {
         }
         Relationships: []
       }
+      merchant_apply_config: {
+        Row: {
+          allowed_areas: string[]
+          allowed_roles: string[]
+          allowed_user_ids: string[]
+          blocked_user_ids: string[]
+          id: string
+          mode: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          allowed_areas?: string[]
+          allowed_roles?: string[]
+          allowed_user_ids?: string[]
+          blocked_user_ids?: string[]
+          id?: string
+          mode?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          allowed_areas?: string[]
+          allowed_roles?: string[]
+          allowed_user_ids?: string[]
+          blocked_user_ids?: string[]
+          id?: string
+          mode?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       merchant_categories: {
         Row: {
           created_at: string | null
