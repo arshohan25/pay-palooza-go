@@ -11,75 +11,9 @@ export const hasSeenOnboarding = () =>
 export const markOnboardingDone = () =>
   localStorage.setItem(ONBOARDING_KEY, "1");
 
-// ── Slide definitions ──────────────────────────────────────────────────────────
-const SLIDES = [
-  {
-    id: "send",
-    gradient: "linear-gradient(145deg, hsl(330 80% 55%), hsl(340 75% 38%) 60%, hsl(350 70% 30%))",
-    accentLight: "hsl(330 80% 70%)",
-    icon: (
-      <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
-        <rect x="16" y="8" width="48" height="64" rx="10" fill="white" fillOpacity="0.18" stroke="white" strokeOpacity="0.5" strokeWidth="2"/>
-        <rect x="22" y="18" width="36" height="44" rx="5" fill="white" fillOpacity="0.12"/>
-        <circle cx="40" cy="40" r="14" fill="white" fillOpacity="0.25"/>
-        <path d="M34 40h12M43 36l4 4-4 4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <circle cx="62" cy="22" r="10" fill="white" fillOpacity="0.22" stroke="white" strokeOpacity="0.4" strokeWidth="1.5"/>
-        <text x="62" y="26.5" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold">৳</text>
-        <circle cx="18" cy="62" r="6" fill="white" fillOpacity="0.18"/>
-        <path d="M18 57v10M13 62h10" stroke="white" strokeOpacity="0.6" strokeWidth="1.5" strokeLinecap="round"/>
-      </svg>
-    ),
-    title: "Send Money Instantly",
-    subtitle: "Transfer to any mobile number in Bangladesh in seconds — day or night, zero delays.",
-    pills: ["01700…", "৳500", "✓ Sent"],
-    pillColors: ["rgba(255,255,255,0.15)", "rgba(255,255,255,0.2)", "rgba(255,255,255,0.28)"],
-    badgeLabel: "⚡ Instant Transfer",
-  },
-  {
-    id: "bills",
-    gradient: "linear-gradient(145deg, hsl(217 80% 52%), hsl(226 75% 38%) 60%, hsl(240 65% 28%))",
-    accentLight: "hsl(217 80% 72%)",
-    icon: (
-      <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
-        <rect x="14" y="10" width="42" height="56" rx="8" fill="white" fillOpacity="0.18" stroke="white" strokeOpacity="0.5" strokeWidth="2"/>
-        <rect x="22" y="22" width="26" height="3" rx="1.5" fill="white" fillOpacity="0.5"/>
-        <rect x="22" y="30" width="20" height="3" rx="1.5" fill="white" fillOpacity="0.35"/>
-        <rect x="22" y="38" width="24" height="3" rx="1.5" fill="white" fillOpacity="0.35"/>
-        <circle cx="58" cy="58" r="16" fill="white" fillOpacity="0.22" stroke="white" strokeOpacity="0.4" strokeWidth="2"/>
-        <path d="M50 58l5 5 9-9" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <circle cx="62" cy="20" r="8" fill="white" fillOpacity="0.18"/>
-        <path d="M63 14l-4 7h4l-4 7" stroke="white" strokeOpacity="0.8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
-    ),
-    title: "Pay Bills with Ease",
-    subtitle: "Electricity, gas, water, internet — pay any utility bill from your wallet in one tap.",
-    pills: ["Electric", "Internet", "Gas"],
-    pillColors: ["rgba(255,255,255,0.15)", "rgba(255,255,255,0.2)", "rgba(255,255,255,0.15)"],
-    badgeLabel: "🏦 50+ Billers",
-  },
-  {
-    id: "cashback",
-    gradient: "linear-gradient(145deg, hsl(36 95% 52%), hsl(28 90% 42%) 60%, hsl(20 80% 32%))",
-    accentLight: "hsl(36 95% 72%)",
-    icon: (
-      <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
-        <ellipse cx="40" cy="56" rx="22" ry="7" fill="white" fillOpacity="0.18" stroke="white" strokeOpacity="0.4" strokeWidth="1.5"/>
-        <ellipse cx="40" cy="50" rx="22" ry="7" fill="white" fillOpacity="0.2" stroke="white" strokeOpacity="0.45" strokeWidth="1.5"/>
-        <ellipse cx="40" cy="44" rx="22" ry="7" fill="white" fillOpacity="0.25" stroke="white" strokeOpacity="0.55" strokeWidth="2"/>
-        <text x="40" y="48.5" textAnchor="middle" fill="white" fontSize="11" fontWeight="bold">৳</text>
-        <path d="M40 36V16M32 24l8-8 8 8" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <circle cx="16" cy="20" r="4" fill="white" fillOpacity="0.22"/>
-        <circle cx="64" cy="18" r="5" fill="white" fillOpacity="0.22"/>
-        <circle cx="70" cy="36" r="3" fill="white" fillOpacity="0.18"/>
-      </svg>
-    ),
-    title: "Earn Cashback & Rewards",
-    subtitle: "Get Drive commission on mobile recharges, cashback on payments, and exclusive loyalty rewards.",
-    pills: ["Drive ৳", "Cashback", "Rewards"],
-    pillColors: ["rgba(255,255,255,0.2)", "rgba(255,255,255,0.15)", "rgba(255,255,255,0.22)"],
-    badgeLabel: "🎁 Drive Rewards",
-  },
-] as const;
+// Slides are now empty — onboarding content should be managed from the backend.
+// When no slides exist, the component auto-skips.
+const SLIDES: { id: string; gradient: string; accentLight: string; icon: React.ReactNode; title: string; subtitle: string; pills: string[]; pillColors: string[]; badgeLabel: string }[] = [];
 
 // ── Floating orb component for zigzag parallax ─────────────────────────────────
 const FloatingOrb = ({ mouseX, mouseY, depth, size, top, left, opacity }: {
