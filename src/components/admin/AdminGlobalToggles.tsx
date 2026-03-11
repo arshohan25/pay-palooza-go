@@ -194,46 +194,46 @@ export default function AdminGlobalToggles() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="space-y-3">
         <div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-lg font-bold text-foreground">Global Feature Toggles</h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-base sm:text-lg font-bold text-foreground">Global Feature Toggles</h3>
             {disabledCount > 0 && (
               <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
-                {disabledCount} disabled
+                {disabledCount} off
               </Badge>
             )}
           </div>
-          <p className="text-sm text-muted-foreground">Enable or disable features globally for all users</p>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Enable or disable features globally</p>
           <RealtimeUpdateIndicator visible={visible} />
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="outline" size="sm" onClick={() => setBulkAction("enable")} disabled={enabledCount === toggles.length || toggles.length === 0} className="gap-1.5 text-xs">
-            <Power className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Enable</span> All
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <Button variant="outline" size="sm" onClick={() => setBulkAction("enable")} disabled={enabledCount === toggles.length || toggles.length === 0} className="gap-1 text-[11px] h-7 px-2">
+            <Power className="w-3 h-3" /> All On
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setBulkAction("disable")} disabled={disabledCount === toggles.length || toggles.length === 0} className="gap-1.5 text-destructive hover:text-destructive text-xs">
-            <PowerOff className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Disable</span> All
+          <Button variant="outline" size="sm" onClick={() => setBulkAction("disable")} disabled={disabledCount === toggles.length || toggles.length === 0} className="gap-1 text-destructive hover:text-destructive text-[11px] h-7 px-2">
+            <PowerOff className="w-3 h-3" /> All Off
           </Button>
-          <Button onClick={openAdd} className="gap-1.5" size="sm">
-            <Plus className="w-4 h-4" /> Add
+          <Button onClick={openAdd} className="gap-1 h-7 px-2 text-[11px]" size="sm">
+            <Plus className="w-3.5 h-3.5" /> Add
           </Button>
         </div>
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="w-full grid grid-cols-2 mb-4">
-          <TabsTrigger value="general" className="gap-1.5">
-            <Settings2 className="w-3.5 h-3.5" />
-            General
+        <TabsList className="w-full grid grid-cols-2 mb-4 h-9">
+          <TabsTrigger value="general" className="gap-1 text-xs px-2">
+            <Settings2 className="w-3 h-3 shrink-0" />
+            <span className="truncate">General</span>
             {generalDisabledCount > 0 && (
-              <Badge variant="destructive" className="text-[10px] px-1.5 py-0 ml-1">{generalDisabledCount}</Badge>
+              <Badge variant="destructive" className="text-[9px] px-1 py-0 ml-0.5 shrink-0">{generalDisabledCount}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="account" className="gap-1.5">
-            <UserCog className="w-3.5 h-3.5" />
-            Account Features
+          <TabsTrigger value="account" className="gap-1 text-xs px-2">
+            <UserCog className="w-3 h-3 shrink-0" />
+            <span className="truncate">Account</span>
             {accountDisabledCount > 0 && (
-              <Badge variant="destructive" className="text-[10px] px-1.5 py-0 ml-1">{accountDisabledCount}</Badge>
+              <Badge variant="destructive" className="text-[9px] px-1 py-0 ml-0.5 shrink-0">{accountDisabledCount}</Badge>
             )}
           </TabsTrigger>
         </TabsList>

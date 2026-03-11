@@ -221,11 +221,11 @@ export default function AdminBannerManager() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold flex items-center gap-2">
-          <Image className="w-5 h-5" /> Promo Banners
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-base sm:text-lg font-bold flex items-center gap-2 min-w-0">
+          <Image className="w-5 h-5 shrink-0" /> <span className="truncate">Promo Banners</span>
         </h2>
-        <Button size="sm" onClick={openAdd}><Plus className="w-4 h-4 mr-1" /> Add Banner</Button>
+        <Button size="sm" onClick={openAdd} className="shrink-0 h-7 px-2 text-xs"><Plus className="w-3.5 h-3.5 mr-1" /> Add</Button>
       </div>
 
       {loading ? (
