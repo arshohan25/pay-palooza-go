@@ -155,7 +155,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const { roles } = useUserRoles();
   const { displayName, avatar_url } = useProfile();
   const { isDisabled } = useGlobalToggles();
-  const { canApply: canMerchantApply } = useMerchantApplyAccess();
+  const { canApply: canMerchantApply, loading: merchantApplyLoading } = useMerchantApplyAccess();
   const {
     theme: currentTheme, cycleTheme, themeLabel,
     iconSize, iconSizeLabel, cycleIconSize,
