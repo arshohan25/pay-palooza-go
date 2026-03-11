@@ -401,7 +401,8 @@ export default function AdminOrderManagement() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-muted-foreground">
@@ -414,10 +415,10 @@ export default function AdminOrderManagement() {
                   </th>
                   <th className="text-left px-4 py-3 font-medium">Order #</th>
                   <th className="text-left px-4 py-3 font-medium">Customer</th>
-                  <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Items</th>
+                  <th className="text-left px-4 py-3 font-medium">Items</th>
                   <th className="text-left px-4 py-3 font-medium">Total</th>
                   <th className="text-left px-4 py-3 font-medium">Status</th>
-                  <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">Date</th>
+                  <th className="text-left px-4 py-3 font-medium">Date</th>
                   <th className="text-left px-4 py-3 font-medium">Actions</th>
                 </tr>
               </thead>
@@ -431,63 +432,38 @@ export default function AdminOrderManagement() {
                           <Checkbox
                             checked={selectedIds.has(order.id)}
                             onCheckedChange={() => toggleSelect(order.id)}
-                            aria-label={`Select order ${order.order_num}`}
                           />
                         ) : <span className="w-4 h-4 block" />}
                       </td>
-                      <td className="px-4 py-3 font-mono font-semibold text-foreground text-xs">
-                        {order.order_num}
-                      </td>
+                      <td className="px-4 py-3 font-mono font-semibold text-foreground text-xs">{order.order_num}</td>
                       <td className="px-4 py-3">
                         <p className="font-medium text-foreground text-xs">{order.profile_name}</p>
                         <p className="text-[10px] text-muted-foreground">{order.profile_phone}</p>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground hidden md:table-cell text-xs">
-                        {order.items.length} item{order.items.length !== 1 ? "s" : ""}
-                      </td>
+                      <td className="px-4 py-3 text-muted-foreground text-xs">{order.items.length} item{order.items.length !== 1 ? "s" : ""}</td>
                       <td className="px-4 py-3 font-semibold text-foreground">৳{fmt(order.total)}</td>
                       <td className="px-4 py-3">
-                        <Badge variant="secondary" className={`text-xs ${cfg.color}`}>
-                          {cfg.label}
-                        </Badge>
+                        <Badge variant="secondary" className={`text-xs ${cfg.color}`}>{cfg.label}</Badge>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground text-xs hidden lg:table-cell">
-                        {new Date(order.created_at).toLocaleString("en-BD", {
-                          month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
-                        })}
+                      <td className="px-4 py-3 text-muted-foreground text-xs">
+                        {new Date(order.created_at).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-xs h-7 gap-1"
-                            onClick={() => setSelectedOrder(order)}
-                          >
+                          <Button size="sm" variant="outline" className="text-xs h-7 gap-1" onClick={() => setSelectedOrder(order)}>
                             <Eye className="w-3 h-3" /> View
                           </Button>
                           {order.status !== "delivered" && order.status !== "cancelled" && (
                             <>
-                              <Select
-                                value={order.status}
-                                onValueChange={(v) => updateOrderStatus(order.id, v)}
-                                disabled={updatingId === order.id}
-                              >
-                                <SelectTrigger className="h-7 text-xs w-32">
-                                  <SelectValue />
-                                </SelectTrigger>
+                              <Select value={order.status} onValueChange={(v) => updateOrderStatus(order.id, v)} disabled={updatingId === order.id}>
+                                <SelectTrigger className="h-7 text-xs w-32"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                   {STATUS_OPTIONS.filter(s => s !== "cancelled").map(s => (
                                     <SelectItem key={s} value={s}>{STATUS_CONFIG[s].label}</SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs h-7 gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
-                                onClick={() => setCancelTarget(order)}
-                              >
+                              <Button size="sm" variant="outline" className="text-xs h-7 gap-1 border-destructive/40 text-destructive hover:bg-destructive/10" onClick={() => setCancelTarget(order)}>
                                 <Ban className="w-3 h-3" /> Cancel
                               </Button>
                             </>
@@ -500,6 +476,60 @@ export default function AdminOrderManagement() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden divide-y divide-border/50">
+            {filtered.map((order) => {
+              const cfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.processing;
+              return (
+                <div key={order.id} className={`p-3.5 space-y-2.5 ${selectedIds.has(order.id) ? "bg-primary/5" : ""}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {order.status !== "delivered" && order.status !== "cancelled" && (
+                        <Checkbox checked={selectedIds.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} />
+                      )}
+                      <span className="font-mono font-semibold text-foreground text-xs">{order.order_num}</span>
+                    </div>
+                    <Badge variant="secondary" className={`text-[10px] ${cfg.color}`}>{cfg.label}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-foreground">{order.profile_name}</p>
+                      <p className="text-[10px] text-muted-foreground">{order.profile_phone}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-foreground">৳{fmt(order.total)}</p>
+                      <p className="text-[10px] text-muted-foreground">{order.items.length} item{order.items.length !== 1 ? "s" : ""}</p>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    {new Date(order.created_at).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    <Button size="sm" variant="outline" className="text-xs h-7 gap-1" onClick={() => setSelectedOrder(order)}>
+                      <Eye className="w-3 h-3" /> View
+                    </Button>
+                    {order.status !== "delivered" && order.status !== "cancelled" && (
+                      <>
+                        <Select value={order.status} onValueChange={(v) => updateOrderStatus(order.id, v)} disabled={updatingId === order.id}>
+                          <SelectTrigger className="h-7 text-xs w-28"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {STATUS_OPTIONS.filter(s => s !== "cancelled").map(s => (
+                              <SelectItem key={s} value={s}>{STATUS_CONFIG[s].label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button size="sm" variant="outline" className="text-xs h-7 gap-1 border-destructive/40 text-destructive hover:bg-destructive/10" onClick={() => setCancelTarget(order)}>
+                          <Ban className="w-3 h-3" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
           {filtered.length === 0 && (
             <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-12 text-center">
               <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">

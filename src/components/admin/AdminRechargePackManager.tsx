@@ -92,20 +92,19 @@ function SortablePackRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-2 px-4 py-3 hover:bg-muted/30 transition-colors ${!pack.is_active ? "opacity-50" : ""}`}
+      className={`flex items-start sm:items-center gap-2 px-3 sm:px-4 py-3 hover:bg-muted/30 transition-colors ${!pack.is_active ? "opacity-50" : ""}`}
     >
-      {/* Drag handle */}
       <button
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing touch-none p-0.5 text-muted-foreground hover:text-foreground"
+        className="cursor-grab active:cursor-grabbing touch-none p-0.5 text-muted-foreground hover:text-foreground mt-1 sm:mt-0"
         aria-label="Drag to reorder"
       >
         <GripVertical className="w-4 h-4" />
       </button>
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <p className="text-sm font-medium text-foreground">{pack.name}</p>
           <Badge variant="outline" className="text-[10px]">{pack.operator}</Badge>
           {pack.type === "drive" ? (
@@ -122,8 +121,22 @@ function SortablePackRow({
           ৳{pack.price} · {pack.validity}
           {pack.cashback > 0 && ` · Cashback ৳${pack.cashback}`}
         </p>
+        {/* Mobile actions */}
+        <div className="flex items-center gap-1 mt-1.5 sm:hidden">
+          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => onDuplicate(pack)} title="Duplicate">
+            <Copy className="w-3 h-3" />
+          </Button>
+          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => onEdit(pack)}>
+            <Pencil className="w-3 h-3" />
+          </Button>
+          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => onDelete(pack)}>
+            <Trash2 className="w-3 h-3" />
+          </Button>
+          <Switch checked={pack.is_active} onCheckedChange={() => onToggle(pack)} className="scale-75" />
+        </div>
       </div>
-      <div className="flex items-center gap-1 shrink-0">
+      {/* Desktop actions */}
+      <div className="hidden sm:flex items-center gap-1 shrink-0">
         <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onDuplicate(pack)} title="Duplicate">
           <Copy className="w-3.5 h-3.5" />
         </Button>

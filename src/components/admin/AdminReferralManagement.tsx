@@ -467,7 +467,7 @@ export default function AdminReferralManagement() {
         <TabsContent value="devices">
           <Card className="border-0 shadow-[var(--shadow-card)]">
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -489,6 +489,19 @@ export default function AdminReferralManagement() {
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+              {/* Mobile cards */}
+              <div className="md:hidden divide-y divide-border/50">
+                {filteredDevices.map(d => (
+                  <div key={d.id} className="p-3.5 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-foreground">{d.user_name || "—"}</p>
+                      <p className="text-[10px] text-muted-foreground">{format(new Date(d.created_at), "MMM d, yyyy")}</p>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">{d.user_phone}</p>
+                    <p className="font-mono text-[10px] text-muted-foreground/60 truncate">{d.device_fingerprint}</p>
+                  </div>
+                ))}
               </div>
               {filteredDevices.length === 0 && (
                 <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">

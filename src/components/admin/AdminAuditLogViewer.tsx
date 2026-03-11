@@ -260,8 +260,8 @@ export default function AdminAuditLogViewer() {
           )}
         </div>
 
-        {/* Table */}
-        <div className="rounded-md border">
+        {/* Desktop Table */}
+        <div className="hidden md:block rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -302,6 +302,33 @@ export default function AdminAuditLogViewer() {
               )}
             </TableBody>
           </Table>
+        </div>
+
+        {/* Mobile cards */}
+        <div className="md:hidden space-y-2">
+          {logs.length === 0 && !loading ? (
+            <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="flex flex-col items-center justify-center py-8 text-center">
+              <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+                <FileText className="w-7 h-7 text-muted-foreground" />
+              </motion.div>
+              <p className="text-sm font-semibold text-foreground">No audit log entries found</p>
+              <p className="text-xs text-muted-foreground mt-1">Audit logs will appear here</p>
+            </motion.div>
+          ) : (
+            logs.map(log => (
+              <Card key={log.id} className="border border-border/50">
+                <CardContent className="p-3 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    {renderActionBadge(log.action)}
+                    <span className="text-[10px] text-muted-foreground">{format(new Date(log.created_at), "MMM d, HH:mm")}</span>
+                  </div>
+                  <p className="text-xs font-medium text-foreground">{getAdminLabel(log.actor_id)}</p>
+                  <div className="text-xs text-muted-foreground">{renderTarget(log)}</div>
+                  <p className="text-[10px] text-muted-foreground/70 truncate">{renderDetails(log)}</p>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
 
         {hasMore && logs.length > 0 && (

@@ -203,15 +203,15 @@ export default function AdminGlobalToggles() {
           <p className="text-sm text-muted-foreground">Enable or disable features globally for all users</p>
           <RealtimeUpdateIndicator visible={visible} />
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setBulkAction("enable")} disabled={enabledCount === toggles.length || toggles.length === 0} className="gap-1.5">
-            <Power className="w-3.5 h-3.5" /> Enable All
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={() => setBulkAction("enable")} disabled={enabledCount === toggles.length || toggles.length === 0} className="gap-1.5 text-xs">
+            <Power className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Enable</span> All
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setBulkAction("disable")} disabled={disabledCount === toggles.length || toggles.length === 0} className="gap-1.5 text-destructive hover:text-destructive">
-            <PowerOff className="w-3.5 h-3.5" /> Disable All
+          <Button variant="outline" size="sm" onClick={() => setBulkAction("disable")} disabled={disabledCount === toggles.length || toggles.length === 0} className="gap-1.5 text-destructive hover:text-destructive text-xs">
+            <PowerOff className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Disable</span> All
           </Button>
           <Button onClick={openAdd} className="gap-1.5" size="sm">
-            <Plus className="w-4 h-4" /> Add Toggle
+            <Plus className="w-4 h-4" /> Add
           </Button>
         </div>
       </div>
