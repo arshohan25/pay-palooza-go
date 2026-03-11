@@ -966,9 +966,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                               </motion.div>
                             </AnimatePresence>
                           </div>
-                          <div onTouchStart={(e) => e.preventDefault()}>
-                            <PinCircles pin={currentVal} error={!!error} />
-                          </div>
+                          <PinCircles pin={currentVal} error={!!error} />
                           {error && (
                             <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
                               className="text-xs text-destructive flex items-center justify-center gap-1.5">
@@ -985,7 +983,28 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                               className="text-sm text-primary font-semibold text-center">{t.resettingPin}</motion.p>
                           )}
-                          <NumPad onKey={(k) => { if (isSubmitting) return; handlePinKey(k, pin, confirmPin, confirmStage, onComplete); }} onDelete={() => handlePinDelete(confirmStage)} />
+                          <input
+                            type="password"
+                            inputMode="numeric"
+                            autoFocus
+                            maxLength={4}
+                            value={currentVal}
+                            onChange={(e) => {
+                              if (isSubmitting) return;
+                              const val = e.target.value.replace(/\D/g, "").slice(0, 4);
+                              if (!confirmStage) {
+                                setPin(val);
+                                setError("");
+                                if (val.length === 4) setTimeout(() => onComplete(val, confirmPin, false), 260);
+                              } else {
+                                setConfirmPin(val);
+                                setError("");
+                                if (val.length === 4) setTimeout(() => onComplete(pin, val, true), 260);
+                              }
+                            }}
+                            className="w-48 mx-auto h-14 text-center text-2xl font-black tracking-[0.8em] bg-card border-2 border-border rounded-2xl text-foreground focus:outline-none focus:border-primary focus:shadow-glow placeholder:text-muted-foreground/20"
+                            placeholder="····"
+                          />
                         </div>
                       );
                     })()}
