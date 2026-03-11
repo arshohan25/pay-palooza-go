@@ -236,8 +236,8 @@ export default function AdminBannerManager() {
         <div className="space-y-2">
           {banners.map((b) => {
             return (
-              <Card key={b.id} className="overflow-hidden">
-                <div className="p-3">
+              <Card key={b.id} className="w-full max-w-full overflow-hidden">
+                <div className="p-2 sm:p-3">
                   <div className="flex items-start gap-2.5">
                     <GripVertical className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
                     {b.media_url ? (
