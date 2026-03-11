@@ -596,7 +596,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     
     if (mode === "register_pin")  {
       if (confirmStage) { setConfirmStage(false); setConfirmPin(""); return; }
-      setPin(""); setConfirmPin(""); goTo("register_otp", -1); return;
+      setPin(""); setConfirmPin(""); goTo("register_phone", -1); return;
     }
     if (mode === "login_pin")     { setPin(""); goTo("login_phone", -1); return; }
     if (mode === "forgot_otp")    { setOtp(""); goTo("login_pin", -1); return; }
