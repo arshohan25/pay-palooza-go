@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check phone is registered (for pin_reset and payment purposes)
+    // Check phone is registered (skip for registration since user doesn't exist yet)
     if (validPurpose === "pin_reset" || validPurpose === "payment") {
       const { data: profile } = await supabaseAdmin
         .from("profiles")
@@ -89,8 +89,6 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         message: "OTP sent successfully.",
-        // DEV ONLY: return code for testing. Remove in production!
-        dev_otp: code,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

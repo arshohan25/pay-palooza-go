@@ -17,7 +17,7 @@ import KycFlow from "@/components/KycFlow";
 const LANG_KEY       = "mfs_ui_lang";
 const DEVICE_KEY     = "mfs_device_phone"; // stores last-used phone for returning user UX
 
-const DEMO_OTP = "123456";
+
 
 // ─── Translations ──────────────────────────────────────────────────────────────
 const T = {
@@ -38,7 +38,7 @@ const T = {
     noAccount: "Don't have an account?", createOneFree: "Create one free",
     supportedNet: "Supported",
     verifyNumber: "Verify Number", resetPin: "Reset PIN",
-    codeSent: "Code sent to", demoMode: "Demo mode — use OTP",
+    codeSent: "Code sent to",
     resendOtp: "Resend OTP", verify: "Verify",
     setPin: "Set Your PIN", newPin: "New PIN", confirmPin: "Confirm PIN",
     choosePinHint: "Choose a secure 4-digit PIN for your wallet",
@@ -58,7 +58,7 @@ const T = {
     available247: "24/7 Available", zeroFees: "Zero Fees",
     pinTooWeak: "PIN too weak. Avoid sequential/repeated digits.",
     pinsDontMatch: "PINs don't match. Try again.",
-    incorrectPin: "Incorrect PIN. Try again.", incorrectOtp: "Incorrect OTP. Demo: 123456",
+    incorrectPin: "Incorrect PIN. Try again.", incorrectOtp: "Incorrect OTP. Please try again.",
     validPhone: "Enter a valid 11-digit Bangladeshi mobile number.",
     alreadyRegisteredErr: "Already registered. Please log in.",
     notRegistered: "Number not registered. Create an account.",
@@ -98,7 +98,7 @@ const T = {
     noAccount: "একাউন্ট নেই?", createOneFree: "বিনামূল্যে তৈরি করুন",
     supportedNet: "সাপোর্টেড",
     verifyNumber: "নম্বর যাচাই করুন", resetPin: "পিন রিসেট করুন",
-    codeSent: "কোড পাঠানো হয়েছে", demoMode: "ডেমো মোড — ওটিপি ব্যবহার করুন",
+    codeSent: "কোড পাঠানো হয়েছে",
     resendOtp: "ওটিপি পুনরায় পাঠান", verify: "যাচাই করুন",
     setPin: "পিন সেট করুন", newPin: "নতুন পিন", confirmPin: "পিন নিশ্চিত করুন",
     choosePinHint: "আপনার ওয়ালেটের জন্য একটি নিরাপদ ৪-সংখ্যার পিন দিন",
@@ -118,7 +118,7 @@ const T = {
     available247: "২৪/৭ উপলব্ধ", zeroFees: "শূন্য চার্জ",
     pinTooWeak: "পিন দুর্বল। ক্রমিক/একই সংখ্যা এড়িয়ে চলুন।",
     pinsDontMatch: "পিন মিলছে না। আবার চেষ্টা করুন।",
-    incorrectPin: "ভুল পিন। আবার চেষ্টা করুন।", incorrectOtp: "ভুল ওটিপি। ডেমো: ১২৩৪৫৬",
+    incorrectPin: "ভুল পিন। আবার চেষ্টা করুন।", incorrectOtp: "ভুল ওটিপি। আবার চেষ্টা করুন।",
     validPhone: "একটি বৈধ ১১-সংখ্যার মোবাইল নম্বর দিন।",
     alreadyRegisteredErr: "ইতিমধ্যে নিবন্ধিত। লগইন করুন।",
     notRegistered: "নম্বর নিবন্ধিত নয়। একাউন্ট তৈরি করুন।",
@@ -316,7 +316,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const [showKycAfterRegister, setShowKycAfterRegister] = useState(false);
   const [forgotOtpCode, setForgotOtpCode] = useState("");
   const [forgotOtpSending, setForgotOtpSending] = useState(false);
-  const [serverOtp, setServerOtp] = useState(""); // DEV: stores OTP returned from server
+  const [registerOtpSending, setRegisterOtpSending] = useState(false);
 
   // Check if returning user (has phone stored locally for UX only)
   const returningPhone = localStorage.getItem(DEVICE_KEY) ?? "";
@@ -335,15 +335,41 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
       const registered = await isPhoneRegistered(phone);
       if (registered) { setError("This number is already registered. Please log in."); return; }
     } catch { /* allow to proceed if check fails */ }
-    goTo("register_otp");
+    // Send OTP for registration
+    setRegisterOtpSending(true); setError("");
+    try {
+      const res = await supabase.functions.invoke("send-otp", {
+        body: { phone, purpose: "registration" },
+      });
+      if (res.error) {
+        setError(res.data?.error || "Failed to send OTP.");
+        setRegisterOtpSending(false);
+        return;
+      }
+      setOtp(""); goTo("register_otp");
+    } catch {
+      setError("Failed to send OTP. Try again.");
+    } finally {
+      setRegisterOtpSending(false);
+    }
   };
 
-  const handleRegisterOtp = useCallback((val?: string) => {
+  const handleRegisterOtp = useCallback(async (val?: string) => {
     const v = val ?? otp;
     if (v.length < 6) { setError(t.enterOtp); return; }
-    if (v !== DEMO_OTP) { setError(t.incorrectOtp); haptics.error(); return; }
-    setPin(""); setConfirmPin(""); setConfirmStage(false); goTo("register_pin");
-  }, [otp, goTo, t]);
+    // Verify OTP server-side
+    try {
+      const res = await supabase.functions.invoke("verify-otp", {
+        body: { phone, code: v, purpose: "registration" },
+      });
+      if (res.error || res.data?.error) {
+        setError(res.data?.error || t.incorrectOtp); haptics.error(); return;
+      }
+      setPin(""); setConfirmPin(""); setConfirmStage(false); goTo("register_pin");
+    } catch {
+      setError(t.incorrectOtp); haptics.error();
+    }
+  }, [otp, phone, goTo, t]);
 
   const handleRegisterPin = useCallback(async (currentPin: string, currentConfirm: string, stage: boolean) => {
     if (!stage) {
@@ -520,8 +546,6 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
       if (res.error) {
         setError(res.data?.error || "Failed to send OTP.");
       } else {
-        // DEV: store OTP for display
-        setServerOtp(res.data?.dev_otp || "");
         setOtp(""); goTo("forgot_otp");
       }
     } catch {
@@ -875,15 +899,6 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                               <AlertCircle size={12} /> {error}
                             </motion.p>
                           )}
-                          <div className="flex items-center gap-2 p-3 rounded-xl bg-accent/8 border border-accent/20">
-                            <span className="text-sm">💡</span>
-                            <p className="text-[11px] text-muted-foreground">
-                              {mode === "forgot_otp" && serverOtp
-                                ? <>{t.demoMode} <strong className="text-foreground font-black text-sm">{serverOtp}</strong></>
-                                : <>{t.demoMode} <strong className="text-foreground font-black text-sm">123456</strong></>
-                              }
-                            </p>
-                          </div>
                           <input
                             type="tel"
                             inputMode="numeric"

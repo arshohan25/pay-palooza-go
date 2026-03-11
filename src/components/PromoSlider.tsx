@@ -25,21 +25,6 @@ interface PromoSliderProps {
   onFeatureOpen?: (feature: string) => void;
 }
 
-const FALLBACK_BANNERS: PromoBanner[] = [
-  {
-    id: "fallback-1",
-    title: "Invite Friends & Earn ৳50",
-    subtitle: "Share your referral code and earn rewards when friends join EasyPay",
-    badge_text: "Limited Offer",
-    icon: "Gift",
-    gradient_from: "#0ea5e9",
-    gradient_to: "#06b6d4",
-    link_url: "feature:refer",
-    media_url: null,
-    media_type: null,
-    sort_order: 0,
-  },
-];
 
 export default function PromoSlider({ onFeatureOpen }: PromoSliderProps) {
   const [banners, setBanners] = useState<PromoBanner[]>([]);
@@ -64,7 +49,7 @@ export default function PromoSlider({ onFeatureOpen }: PromoSliderProps) {
         .select("id, title, subtitle, badge_text, icon, gradient_from, gradient_to, link_url, media_url, media_type, sort_order")
         .eq("is_active", true)
         .order("sort_order");
-      setBanners(data && data.length > 0 ? (data as PromoBanner[]) : FALLBACK_BANNERS);
+      setBanners(data && data.length > 0 ? (data as PromoBanner[]) : []);
     };
     load();
   }, []);

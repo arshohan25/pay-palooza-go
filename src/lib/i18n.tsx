@@ -56,11 +56,6 @@ const translations = {
   txAddMoney: { en: "Add Money", bn: "টাকা যোগ" },
   txBankTransfer: { en: "Bank Transfer", bn: "ব্যাংক ট্রান্সফার" },
 
-  // PromoCard
-  limitedOffer: { en: "Limited offer", bn: "সীমিত অফার" },
-  promoCashback: { en: "5% Cashback on Mobile Recharge", bn: "মোবাইল রিচার্জে ৫% ক্যাশব্যাক" },
-  promoValid: { en: "Valid until Feb 28 · Min ৳100", bn: "ফেব্রুয়ারি ২৮ পর্যন্ত · সর্বনিম্ন ৳১০০" },
-
   // SideNav
   mobileFinancialService: { en: "Mobile Financial Service", bn: "মোবাইল ফাইন্যান্সিয়াল সার্ভিস" },
 
