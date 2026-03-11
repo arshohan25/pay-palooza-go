@@ -15,15 +15,8 @@ const items = [
   { id: "donations", icon: Heart, label: "Donations", desc: "Support causes you care about", gradient: "bg-gradient-to-b from-red-500 to-rose-700", soon: true },
 ];
 
-const MoreSheet = ({ open, onClose, onBankTransfer, onSavings, onMerchantApply }: MoreSheetProps) => {
-  const { roles } = useUserRoles();
-  const isMerchant = roles.includes("merchant");
-  const { canApply: canMerchantApply } = useMerchantApplyAccess();
-
-  const visibleItems = items.filter(item => {
-    if (item.id === "merchant_apply" && (isMerchant || !canMerchantApply)) return false;
-    return true;
-  });
+const MoreSheet = ({ open, onClose, onBankTransfer, onSavings }: MoreSheetProps) => {
+  const visibleItems = items;
 
   const handleTap = (id: string, soon?: boolean) => {
     if (soon) { toast.info("Coming soon!"); return; }
