@@ -773,9 +773,9 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 <h2 className="text-2xl font-black">{t.enterPin}</h2>
                 <p className="text-sm text-white/50">{t.trustedDevice}</p>
               </div>
-              <PinCircles pin={pin} error={!!error} dark />
-              {/* Hidden input to prevent system keyboard */}
-              <input readOnly inputMode="none" tabIndex={-1} className="absolute opacity-0 w-0 h-0 pointer-events-none" aria-hidden="true" />
+              <div onTouchStart={(e) => e.preventDefault()}>
+                <PinCircles pin={pin} error={!!error} dark />
+              </div>
               {error && (
                 <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
                   className="text-xs text-destructive/80 flex items-center gap-1.5">
