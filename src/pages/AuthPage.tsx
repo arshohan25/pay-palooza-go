@@ -147,7 +147,7 @@ type Lang = "en" | "bn";
 
 type Mode =
   | "landing"
-  | "register_phone" | "register_otp" | "register_pin"
+  | "register_phone" | "register_pin"
   | "login_phone" | "login_pin"
   | "forgot_otp" | "forgot_pin"
   | "success";
