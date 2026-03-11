@@ -238,10 +238,10 @@ export default function AdminReferralManagement() {
       </div>
 
       <Tabs defaultValue="referrals" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="referrals" className="gap-1.5"><Gift className="w-4 h-4" /> Referrals ({referrals.length})</TabsTrigger>
-          <TabsTrigger value="rewards" className="gap-1.5"><Award className="w-4 h-4" /> Rewards ({rewards.length})</TabsTrigger>
-          <TabsTrigger value="devices" className="gap-1.5"><Smartphone className="w-4 h-4" /> Devices ({devices.length})</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-3">
+          <TabsTrigger value="referrals" className="gap-1 text-xs sm:text-sm"><Gift className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Referrals</span> ({referrals.length})</TabsTrigger>
+          <TabsTrigger value="rewards" className="gap-1 text-xs sm:text-sm"><Award className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Rewards</span> ({rewards.length})</TabsTrigger>
+          <TabsTrigger value="devices" className="gap-1 text-xs sm:text-sm"><Smartphone className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Devices</span> ({devices.length})</TabsTrigger>
         </TabsList>
 
         {/* ═══ REFERRALS TAB ═══ */}
@@ -254,7 +254,8 @@ export default function AdminReferralManagement() {
 
           <Card className="border-0 shadow-[var(--shadow-card)]">
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -309,11 +310,7 @@ export default function AdminReferralManagement() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => handleResetAll(r.id)}
-                                  className="text-destructive focus:text-destructive"
-                                  disabled={!r.milestone_1_paid && !r.milestone_2_paid && !r.milestone_3_paid}
-                                >
+                                <DropdownMenuItem onClick={() => handleResetAll(r.id)} className="text-destructive focus:text-destructive" disabled={!r.milestone_1_paid && !r.milestone_2_paid && !r.milestone_3_paid}>
                                   <RotateCcw className="w-4 h-4 mr-2" /> Reset All Milestones
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -325,6 +322,58 @@ export default function AdminReferralManagement() {
                   </TableBody>
                 </Table>
               </div>
+
+              {/* Mobile cards */}
+              <div className="md:hidden divide-y divide-border/50">
+                {filteredReferrals.map(r => {
+                  const isBusy = busyRows.has(r.id);
+                  return (
+                    <div key={r.id} className={`p-3.5 space-y-2.5 ${isBusy ? "opacity-60" : ""}`}>
+                      <div className="flex items-center justify-between">
+                        <Badge variant="secondary" className={`text-[10px] ${STATUS_COLORS[r.status] ?? ""}`}>{r.status}</Badge>
+                        <span className="font-mono text-[10px] text-muted-foreground">{r.referral_code}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Referrer</p>
+                          <p className="font-medium text-foreground">{r.referrer_name || "—"}</p>
+                          <p className="text-muted-foreground text-[10px]">{r.referrer_phone}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Referee</p>
+                          <p className="font-medium text-foreground">{r.referee_name || "—"}</p>
+                          <p className="text-muted-foreground text-[10px]">{r.referee_phone}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-muted-foreground">Milestones:</span>
+                          <MilestoneButton paid={r.milestone_1_paid} disabled={isBusy} onClick={() => handleToggleMilestone(r.id, 1, r.milestone_1_paid)} />
+                          <MilestoneButton paid={r.milestone_2_paid} disabled={isBusy} onClick={() => handleToggleMilestone(r.id, 2, r.milestone_2_paid)} />
+                          <MilestoneButton paid={r.milestone_3_paid} disabled={isBusy} onClick={() => handleToggleMilestone(r.id, 3, r.milestone_3_paid)} />
+                        </div>
+                        <span className="text-xs font-semibold">৳{r.total_rewarded}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground">{format(new Date(r.created_at), "MMM d, yyyy")}</span>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isBusy}>
+                              <MoreHorizontal className="w-3.5 h-3.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleResetAll(r.id)} className="text-destructive focus:text-destructive" disabled={!r.milestone_1_paid && !r.milestone_2_paid && !r.milestone_3_paid}>
+                              <RotateCcw className="w-4 h-4 mr-2" /> Reset All
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
               {filteredReferrals.length === 0 && (
                 <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
                   <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
@@ -358,7 +407,7 @@ export default function AdminReferralManagement() {
 
           <Card className="border-0 shadow-[var(--shadow-card)]">
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -385,6 +434,22 @@ export default function AdminReferralManagement() {
                   </TableBody>
                 </Table>
               </div>
+              {/* Mobile cards */}
+              <div className="md:hidden divide-y divide-border/50">
+                {rewards.map(r => (
+                  <div key={r.id} className="p-3.5 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-foreground">{r.referrer_name || "—"}</p>
+                      <p className="text-[10px] text-muted-foreground">{r.referrer_phone}</p>
+                      <Badge variant="outline" className="text-[10px] mt-1">{MILESTONE_LABELS[r.milestone] ?? r.milestone}</Badge>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-foreground">৳{r.amount}</p>
+                      <p className="text-[10px] text-muted-foreground">{format(new Date(r.created_at), "MMM d")}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
               {rewards.length === 0 && (
                 <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
                   <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
@@ -402,7 +467,7 @@ export default function AdminReferralManagement() {
         <TabsContent value="devices">
           <Card className="border-0 shadow-[var(--shadow-card)]">
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -424,6 +489,19 @@ export default function AdminReferralManagement() {
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+              {/* Mobile cards */}
+              <div className="md:hidden divide-y divide-border/50">
+                {filteredDevices.map(d => (
+                  <div key={d.id} className="p-3.5 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-foreground">{d.user_name || "—"}</p>
+                      <p className="text-[10px] text-muted-foreground">{format(new Date(d.created_at), "MMM d, yyyy")}</p>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">{d.user_phone}</p>
+                    <p className="font-mono text-[10px] text-muted-foreground/60 truncate">{d.device_fingerprint}</p>
+                  </div>
+                ))}
               </div>
               {filteredDevices.length === 0 && (
                 <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">

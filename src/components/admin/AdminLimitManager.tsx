@@ -94,7 +94,8 @@ function GlobalDefaultsTab() {
         ))}
       </div>
 
-      <div className="rounded-xl border border-border overflow-hidden">
+      {/* Desktop table */}
+      <div className="hidden md:block rounded-xl border border-border overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
             <tr>
@@ -136,6 +137,43 @@ function GlobalDefaultsTab() {
             )}
           </tbody>
         </table>
+      </div>
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-2">
+        {filtered.map(row => {
+          const edit = edits[row.id] ?? {};
+          const isDirty = Object.keys(edit).length > 0;
+          return (
+            <Card key={row.id} className="border border-border/50">
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-foreground">{TXN_LABELS[row.txn_type] || row.txn_type}</span>
+                  <Badge variant="outline" className="capitalize text-[10px]">{row.period}</Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-muted-foreground">Max Amount (৳)</label>
+                    <Input type="number" className="h-8 text-xs" value={edit.max_amount ?? row.max_amount}
+                      onChange={e => handleEdit(row.id, "max_amount", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground">Max Txns</label>
+                    <Input type="number" className="h-8 text-xs" value={edit.max_count ?? row.max_count}
+                      onChange={e => handleEdit(row.id, "max_count", e.target.value)} />
+                  </div>
+                </div>
+                {isDirty && (
+                  <Button size="sm" variant="default" className="w-full h-8 text-xs" onClick={() => handleSave(row)} disabled={saving === row.id}>
+                    {saving === row.id ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Save className="w-3 h-3 mr-1" />} Save
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+        {filtered.length === 0 && (
+          <p className="px-3 py-8 text-center text-muted-foreground text-sm">No limits configured for {ROLE_LABELS[roleFilter]}s</p>
+        )}
       </div>
     </div>
   );
@@ -663,12 +701,12 @@ export default function AdminLimitManager() {
     <div className="space-y-4">
       <h2 className="text-lg font-bold text-foreground">Transaction Limit Management</h2>
       <Tabs defaultValue="global" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="global">Global Defaults</TabsTrigger>
-          <TabsTrigger value="overrides">User Overrides</TabsTrigger>
-          <TabsTrigger value="merchant"><Store className="w-3.5 h-3.5 mr-1 inline" />Merchant</TabsTrigger>
-          <TabsTrigger value="bulk">Bulk Actions</TabsTrigger>
-          <TabsTrigger value="audit"><History className="w-3.5 h-3.5 mr-1 inline" />Audit Trail</TabsTrigger>
+        <TabsList className="w-full flex overflow-x-auto scrollbar-none">
+          <TabsTrigger value="global" className="text-xs sm:text-sm flex-1 min-w-0">Global</TabsTrigger>
+          <TabsTrigger value="overrides" className="text-xs sm:text-sm flex-1 min-w-0">Overrides</TabsTrigger>
+          <TabsTrigger value="merchant" className="text-xs sm:text-sm flex-1 min-w-0"><Store className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Merchant</TabsTrigger>
+          <TabsTrigger value="bulk" className="text-xs sm:text-sm flex-1 min-w-0">Bulk</TabsTrigger>
+          <TabsTrigger value="audit" className="text-xs sm:text-sm flex-1 min-w-0"><History className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Audit</TabsTrigger>
         </TabsList>
         <TabsContent value="global"><GlobalDefaultsTab /></TabsContent>
         <TabsContent value="overrides"><UserOverridesTab /></TabsContent>

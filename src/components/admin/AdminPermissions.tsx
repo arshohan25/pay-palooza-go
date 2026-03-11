@@ -140,16 +140,17 @@ export default function AdminPermissions() {
       {/* Table */}
       <Card className="border-0 shadow-[var(--shadow-card)]">
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          {/* Desktop */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-muted-foreground">
                   <th className="text-left px-4 py-3 font-medium">Name</th>
                   <th className="text-left px-4 py-3 font-medium">Phone</th>
                   {PERM_TYPES.map(p => (
-                    <th key={p} className={`text-left px-4 py-3 font-medium capitalize ${p === "sms_read" ? "hidden md:table-cell" : ""}`}>{p.replace("_", " ")}</th>
+                    <th key={p} className="text-left px-4 py-3 font-medium capitalize">{p.replace("_", " ")}</th>
                   ))}
-                  <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Last Updated</th>
+                  <th className="text-left px-4 py-3 font-medium">Last Updated</th>
                 </tr>
               </thead>
               <tbody>
@@ -161,22 +162,46 @@ export default function AdminPermissions() {
                       const s = u.permissions[p];
                       const badge = STATUS_BADGE[s] || STATUS_BADGE.prompt;
                       return (
-                        <td key={p} className={`px-4 py-3 ${p === "sms_read" ? "hidden md:table-cell" : ""}`}>
-                          {s === "--" ? (
-                            <span className="text-xs text-muted-foreground">—</span>
-                          ) : (
-                            <Badge variant="secondary" className={`text-xs ${badge.className}`}>{badge.label}</Badge>
-                          )}
+                        <td key={p} className="px-4 py-3">
+                          {s === "--" ? <span className="text-xs text-muted-foreground">—</span> : <Badge variant="secondary" className={`text-xs ${badge.className}`}>{badge.label}</Badge>}
                         </td>
                       );
                     })}
-                    <td className="px-4 py-3 text-xs text-muted-foreground hidden md:table-cell">
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
                       {u.updated_at ? new Date(u.updated_at).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+          {/* Mobile cards */}
+          <div className="md:hidden divide-y divide-border/50">
+            {filtered.map(u => (
+              <div key={u.user_id} className="p-3.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-foreground">{u.name || "—"}</p>
+                  <p className="text-[10px] text-muted-foreground">{u.phone}</p>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {PERM_TYPES.map(p => {
+                    const s = u.permissions[p];
+                    if (s === "--") return null;
+                    const badge = STATUS_BADGE[s] || STATUS_BADGE.prompt;
+                    return (
+                      <Badge key={p} variant="secondary" className={`text-[10px] ${badge.className}`}>
+                        {p.replace("_", " ")}: {badge.label}
+                      </Badge>
+                    );
+                  })}
+                </div>
+                {u.updated_at && (
+                  <p className="text-[10px] text-muted-foreground">
+                    Updated: {new Date(u.updated_at).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                )}
+              </div>
+            ))}
           </div>
           {filtered.length === 0 && (
             <p className="text-center text-muted-foreground py-8 text-sm">
