@@ -178,38 +178,6 @@ function StepBar({ steps, current }: { steps: string[]; current: number }) {
   );
 }
 
-// ─── Circular Numeric Keypad (UPI style) ──────────────────────────────────────
-const KEYS = ["1","2","3","4","5","6","7","8","9","","0","⌫"];
-
-function NumPad({ onKey, onDelete, variant = "light" }: { onKey: (k: string) => void; onDelete: () => void; variant?: "light" | "dark" }) {
-  const isDark = variant === "dark";
-  return (
-    <div className="grid grid-cols-3 gap-3 max-w-[280px] mx-auto">
-      {KEYS.map((k, idx) => {
-        if (k === "") return <div key={idx} />;
-        const isDel = k === "⌫";
-        return (
-          <motion.button
-            key={k + idx}
-            whileTap={{ scale: 0.85, backgroundColor: isDark ? "rgba(255,255,255,0.15)" : "hsl(var(--primary) / 0.12)" }}
-            onClick={() => { haptics.light(); isDel ? onDelete() : onKey(k); }}
-            className={`w-[72px] h-[72px] mx-auto rounded-full text-xl font-bold flex items-center justify-center select-none transition-all duration-150
-              ${isDel
-                ? isDark
-                  ? "bg-white/10 text-white/70 active:bg-red-500/20 active:text-red-300"
-                  : "bg-muted text-muted-foreground active:bg-destructive/10 active:text-destructive"
-                : isDark
-                  ? "bg-white/8 text-white border border-white/10 hover:bg-white/12"
-                  : "bg-card text-foreground border border-border shadow-card hover:shadow-elevated"
-              }`}
-          >
-            {isDel ? <Delete size={20} /> : k}
-          </motion.button>
-        );
-      })}
-    </div>
-  );
-}
 
 // ─── OTP Boxes ────────────────────────────────────────────────────────────────
 function OtpBoxes({ value, error }: { value: string; error: boolean }) {
