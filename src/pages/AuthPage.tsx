@@ -546,8 +546,6 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
       if (res.error) {
         setError(res.data?.error || "Failed to send OTP.");
       } else {
-        // DEV: store OTP for display
-        setServerOtp(res.data?.dev_otp || "");
         setOtp(""); goTo("forgot_otp");
       }
     } catch {
