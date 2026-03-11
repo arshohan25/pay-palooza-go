@@ -1,34 +1,24 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Landmark, Wallet, Ticket, Heart, Store, X } from "lucide-react";
+import { Landmark, Wallet, Ticket, Heart, X } from "lucide-react";
 import { toast } from "sonner";
-import { useUserRoles } from "@/hooks/use-user-roles";
-import { useMerchantApplyAccess } from "@/hooks/use-merchant-apply-access";
 
 interface MoreSheetProps {
   open: boolean;
   onClose: () => void;
   onBankTransfer: () => void;
   onSavings: () => void;
-  onMerchantApply?: () => void;
 }
 
 const items = [
   { id: "bank", icon: Landmark, label: "Bank Transfer", desc: "Transfer to any bank account", gradient: "bg-gradient-to-b from-blue-500 to-indigo-600" },
   { id: "savings", icon: Wallet, label: "Savings", desc: "Set goals & grow your money", gradient: "bg-gradient-to-b from-emerald-500 to-teal-600" },
-  { id: "merchant_apply", icon: Store, label: "Become a Merchant", desc: "Apply for a merchant account", gradient: "bg-gradient-to-b from-purple-500 to-indigo-600", merchantOnly: true },
+  
   { id: "coupons", icon: Ticket, label: "Coupons & Offers", desc: "Exclusive deals & cashback", gradient: "bg-gradient-to-b from-pink-500 to-rose-600", soon: true },
   { id: "donations", icon: Heart, label: "Donations", desc: "Support causes you care about", gradient: "bg-gradient-to-b from-red-500 to-rose-700", soon: true },
 ];
 
-const MoreSheet = ({ open, onClose, onBankTransfer, onSavings, onMerchantApply }: MoreSheetProps) => {
-  const { roles } = useUserRoles();
-  const isMerchant = roles.includes("merchant");
-  const { canApply: canMerchantApply } = useMerchantApplyAccess();
-
-  const visibleItems = items.filter(item => {
-    if (item.id === "merchant_apply" && (isMerchant || !canMerchantApply)) return false;
-    return true;
-  });
+const MoreSheet = ({ open, onClose, onBankTransfer, onSavings }: MoreSheetProps) => {
+  const visibleItems = items;
 
   const handleTap = (id: string, soon?: boolean) => {
     if (soon) { toast.info("Coming soon!"); return; }
@@ -36,7 +26,6 @@ const MoreSheet = ({ open, onClose, onBankTransfer, onSavings, onMerchantApply }
     setTimeout(() => {
       if (id === "bank") onBankTransfer();
       else if (id === "savings") onSavings();
-      else if (id === "merchant_apply") onMerchantApply?.();
       else toast.info("Coming soon!");
     }, 200);
   };

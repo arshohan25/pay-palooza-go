@@ -274,7 +274,6 @@ const Index = () => {
                 onShop={() => setShowShop(true)}
                 onBankTransfer={() => setShowBankTransfer(true)}
                 onSavings={() => setShowSavings(true)}
-                onMerchantApply={() => setShowMerchantApply(true)}
               />
               
               <PromoSlider onFeatureOpen={(feature) => {

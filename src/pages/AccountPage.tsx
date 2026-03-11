@@ -28,6 +28,7 @@ import { useUserRoles } from "@/hooks/use-user-roles";
 import { useCustomization } from "@/hooks/use-customization";
 import { supabase } from "@/integrations/supabase/client";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
+import { useMerchantApplyAccess } from "@/hooks/use-merchant-apply-access";
 
 const ROLE_STYLES: Record<string, { label: string; bg: string; text: string }> = {
   customer:          { label: "Customer",          bg: "bg-primary/10",      text: "text-primary" },
@@ -154,6 +155,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const { roles } = useUserRoles();
   const { displayName, avatar_url } = useProfile();
   const { isDisabled } = useGlobalToggles();
+  const { canApply: canMerchantApply } = useMerchantApplyAccess();
   const {
     theme: currentTheme, cycleTheme, themeLabel,
     iconSize, iconSizeLabel, cycleIconSize,
@@ -284,7 +286,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
           {!isDisabled("account_kyc") && <MenuRow icon={BadgeCheck} iconClass="gradient-primary" label={t("kycVerification")} sub={t("kycSub")} onClick={() => setShowKyc(true)} />}
           {!isDisabled("account_change_pin") && <MenuRow icon={Lock}       iconClass="gradient-send"    label={t("changePin")}        sub={t("changePinSub")}    onClick={() => setShowChangePin(true)} />}
           {!isDisabled("account_refer") && <MenuRow icon={Gift}       iconClass="gradient-accent"  label={t("referAFriend")}   sub={t("referSub")} onClick={() => setSubPage("refer")} />}
-          {!isDisabled("account_become_merchant") && !roles.includes("merchant") && (
+          {!isDisabled("account_become_merchant") && !roles.includes("merchant") && canMerchantApply && (
             <MenuRow icon={Store} iconClass="gradient-payment" label="Become a Merchant" sub="Apply for a merchant account" onClick={() => setShowMerchantApp(true)} />
           )}
         </Section>
