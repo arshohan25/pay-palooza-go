@@ -272,14 +272,14 @@ function PhoneInput({ value, onChange, error, autoFocus = false }: { value: stri
   useEffect(() => { if (autoFocus) setTimeout(() => ref.current?.focus(), 100); }, [autoFocus]);
   return (
     <div className="space-y-2">
-      <div className={`flex items-center h-16 bg-card border-2 rounded-2xl overflow-hidden transition-all shadow-card ${error ? "border-destructive" : "border-border focus-within:border-primary focus-within:shadow-glow"}`}>
+      <div className={`flex items-center h-16 bg-card border-2 rounded-2xl transition-all shadow-card ${error ? "border-destructive" : "border-border focus-within:border-primary focus-within:shadow-glow"}`}>
         <div className="flex items-center gap-2 pl-4 pr-3 border-r border-border h-full shrink-0 min-w-0">
           <span className="text-xl leading-none shrink-0">🇧🇩</span>
           <span className="text-sm font-black text-foreground shrink-0">+88</span>
         </div>
         <input ref={ref} type="tel" inputMode="numeric" placeholder="01XXXXXXXXX" value={value}
           onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 11))}
-          className="flex-1 h-full px-4 text-lg font-bold bg-transparent focus:outline-none placeholder:text-muted-foreground/30 placeholder:font-normal" />
+          className="flex-1 min-w-0 h-full px-4 text-lg font-bold bg-transparent focus:outline-none placeholder:text-muted-foreground/30 placeholder:font-normal" />
         {value.length === 11 && (
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="pr-3 shrink-0">
             <CheckCircle2 size={20} className="text-primary" />

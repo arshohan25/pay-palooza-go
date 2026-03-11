@@ -1,23 +1,29 @@
 
 
-## Fix: Checkmark icon not showing in phone input
+## Plan: Add Biller Categories to API Hub
 
-**Problem**: The phone input container uses `overflow-hidden` which clips the checkmark icon on the right side. The input with `flex-1` and `px-4` expands to fill all available space, pushing the icon into the clipped overflow area.
+### What
 
-**Fix in `src/pages/AuthPage.tsx`**:
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-1. Remove `overflow-hidden` from the container div (line 275) — the `rounded-2xl` with `border-2` already contains the visual boundary
-2. Give the input `min-w-0` instead of relying on overflow-hidden to constrain it — this is the proper flexbox way to prevent a flex child from overflowing
+### Changes
 
-**Line 275** — remove `overflow-hidden`:
-```tsx
-<div className={`flex items-center h-16 bg-card border-2 rounded-2xl transition-all shadow-card ${error ? "border-destructive" : "border-border focus-within:border-primary focus-within:shadow-glow"}`}>
-```
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-**Line 282** — add `min-w-0` to input:
-```tsx
-className="flex-1 min-w-0 h-full px-4 text-lg font-bold bg-transparent focus:outline-none placeholder:text-muted-foreground/30 placeholder:font-normal"
-```
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-This ensures the input shrinks properly within the flex container, leaving room for the checkmark icon to render.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
