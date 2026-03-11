@@ -1,8 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Landmark, Wallet, Ticket, Heart, Store, X } from "lucide-react";
+import { Landmark, Wallet, Ticket, Heart, X } from "lucide-react";
 import { toast } from "sonner";
-import { useUserRoles } from "@/hooks/use-user-roles";
-import { useMerchantApplyAccess } from "@/hooks/use-merchant-apply-access";
 
 interface MoreSheetProps {
   open: boolean;
