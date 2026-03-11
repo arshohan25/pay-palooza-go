@@ -342,16 +342,10 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const handleRegisterOtp = useCallback(async (val?: string) => {
     const v = val ?? otp;
     if (v.length < 6) { setError(t.enterOtp); return; }
-    // Verify OTP server-side
-    try {
-      const res = await supabase.functions.invoke("verify-otp", {
-        body: { phone, code: v, purpose: "registration" },
-      });
-      if (res.error || res.data?.error) {
-        setError(res.data?.error || t.incorrectOtp); haptics.error(); return;
-      }
+    // Default OTP check (no SMS provider integrated yet)
+    if (v === "123456") {
       setPin(""); setConfirmPin(""); setConfirmStage(false); goTo("register_pin");
-    } catch {
+    } else {
       setError(t.incorrectOtp); haptics.error();
     }
   }, [otp, phone, goTo, t]);

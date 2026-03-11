@@ -74,7 +74,7 @@ export async function teamSignIn(username: string, password: string) {
 }
 
 /** Pad PIN to meet Supabase's 6-char minimum password requirement */
-export const pinToPassword = (pin: string) => `${pin}EP`;
+export const pinToPassword = (pin: string) => `${pin}EPAY`;
 
 /** Sign up a new user with phone + PIN */
 export async function signUp(phone: string, pin: string, name?: string, referralCode?: string) {
