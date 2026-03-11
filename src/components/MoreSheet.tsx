@@ -23,9 +23,10 @@ const items = [
 const MoreSheet = ({ open, onClose, onBankTransfer, onSavings, onMerchantApply }: MoreSheetProps) => {
   const { roles } = useUserRoles();
   const isMerchant = roles.includes("merchant");
+  const { canApply: canMerchantApply } = useMerchantApplyAccess();
 
   const visibleItems = items.filter(item => {
-    if (item.id === "merchant_apply" && isMerchant) return false;
+    if (item.id === "merchant_apply" && (isMerchant || !canMerchantApply)) return false;
     return true;
   });
 
