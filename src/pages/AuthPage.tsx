@@ -1001,52 +1001,6 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                       );
                     })()}
 
-                    {/* ── NAME ENTRY ── */}
-                    {mode === "register_name" && (
-                      <div className="space-y-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/15 flex items-center justify-center">
-                            <UserRound size={22} className="text-primary" />
-                          </div>
-                          <div>
-                            <h2 className="text-2xl font-black text-foreground tracking-tight">{t.yourName}</h2>
-                            <p className="text-sm text-muted-foreground">{t.nameHint}</p>
-                          </div>
-                        </div>
-                        <NameInput value={userName} onChange={setUserName} />
-                        <p className="text-[11px] text-muted-foreground px-1">{t.nameOptional}</p>
-                        
-                        {/* Referral Code Input */}
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-semibold text-muted-foreground px-1">Referral Code (optional)</label>
-                          <input
-                            type="text"
-                            placeholder="e.g. EZP-ABCD-1234"
-                            value={referralCodeInput}
-                            onChange={(e) => setReferralCodeInput(e.target.value.toUpperCase())}
-                            maxLength={13}
-                            className="w-full h-14 px-5 text-base font-bold tracking-wider bg-card border-2 border-border rounded-2xl focus:outline-none focus:border-accent focus:shadow-[0_0_16px_hsl(var(--accent)/0.2)] transition-all placeholder:font-normal placeholder:text-muted-foreground/30 placeholder:tracking-normal shadow-card font-mono"
-                          />
-                        </div>
-
-                        {error && (
-                          <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-                            className="text-xs text-destructive flex items-center gap-1.5 px-1">
-                            <AlertCircle size={12} /> {error}
-                          </motion.p>
-                        )}
-                        <motion.button whileTap={{ scale: 0.97 }}
-                          className="w-full h-14 gradient-hero text-white font-bold text-[15px] rounded-2xl shadow-glow flex items-center justify-center gap-2 disabled:opacity-60"
-                          onClick={handleRegisterName} disabled={isSubmitting}>
-                          {isSubmitting ? (
-                            <>{t.signingUp}</>
-                          ) : (
-                            <><CheckCircle2 size={17} /> {userName.trim() ? t.createWallet : t.skipCreate}</>
-                          )}
-                        </motion.button>
-                      </div>
-                    )}
-
                   </motion.div>
                 </AnimatePresence>
               </div>
