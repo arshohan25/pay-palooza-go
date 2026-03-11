@@ -440,8 +440,16 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   };
 
   // ── Login: Phone → PIN (server-validated) ──────────────────────────────────
-  const handleLoginPhone = () => {
+  const handleLoginPhone = async () => {
     if (!isValidPhone(phone)) { setError(t.validPhone); return; }
+    try {
+      const registered = await isPhoneRegistered(phone);
+      if (!registered) {
+        goTo("register_phone");
+        setError(t.notRegistered);
+        return;
+      }
+    } catch { /* proceed to login if check fails */ }
     goTo("login_pin");
   };
 
