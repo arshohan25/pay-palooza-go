@@ -724,7 +724,7 @@ export default function AdminDashboard() {
         </Sheet>
 
         {/* Main content */}
-        <main className="flex-1 p-4 md:p-8 overflow-auto min-h-0 pb-8">
+        <main className="flex-1 px-2 py-4 sm:px-4 md:p-8 overflow-auto min-h-0 pb-8">
           <RealtimeUpdateIndicator visible={realtimeVisible} />
 
         {/* ═══ OVERVIEW ═══ */}
