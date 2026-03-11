@@ -1,29 +1,45 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Remove All Mock/Static Data
 
-### What
-
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### Summary
+Remove hardcoded demo data from the app: the fake OTP, the demo mode hints, fallback promo banners, the unused PromoCard component, and make registration use the real server-side OTP flow (same as forgot-PIN already does).
 
 ### Changes
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**1. `src/pages/AuthPage.tsx` — Replace DEMO_OTP with real OTP verification**
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+- Delete `const DEMO_OTP = "123456"`
+- Update `handleRegisterPhone` to call the `send-otp` edge function (with `purpose: "registration"`) before navigating to `register_otp`, just like `handleForgotSendOtp` does
+- Update `handleRegisterOtp` to store the entered OTP and verify it server-side against `otp_codes` table (via the `send-otp` function's stored codes) instead of comparing to `DEMO_OTP`
+- Remove the "Demo mode — use OTP 123456" hint box from the OTP screen UI (both register and forgot flows)
+- Remove `serverOtp` state and the `demoMode` translation usage
+- Remove `demoMode` translation keys from the `T` object (en + bn)
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+**2. `supabase/functions/send-otp/index.ts` — Support registration purpose**
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+- Allow `purpose: "registration"` (currently only "pin_reset" and "payment" check for registered phone — registration should skip that check since the user isn't registered yet)
+- Remove `dev_otp: code` from the response (production cleanup)
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+**3. `src/components/PromoSlider.tsx` — Remove fallback banners**
 
-3. Add the new category icons to the `categoryIcons` map.
+- Delete `FALLBACK_BANNERS` array
+- When no DB banners exist, show nothing (empty state) instead of hardcoded banners
 
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+**4. `src/components/PromoCard.tsx` — Delete file**
+
+- Unused component with hardcoded promo content
+
+**5. `src/lib/i18n.tsx` — Remove PromoCard translations**
+
+- Remove `limitedOffer`, `promoCashback`, `promoValid` translation keys
+
+**6. `src/components/OnboardingSlides.tsx` — Remove static slide data**
+
+- Remove the hardcoded `SLIDES` array content
+- Either fetch slides from DB or remove the onboarding feature entirely (slides are purely presentational marketing content)
+
+### OTP Verification Approach
+
+For registration OTP verification, we'll create a new edge function `verify-otp` (or add verification to `send-otp`) that checks the entered code against the `otp_codes` table, similar to how `reset-pin` and `checkout-pay` already do it. This keeps the pattern consistent.
 
