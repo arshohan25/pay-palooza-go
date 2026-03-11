@@ -328,30 +328,15 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
 
   const isValidPhone = (p: string) => /^01[3-9]\d{8}$/.test(p);
 
-  // ── Register: Phone → OTP → PIN → Name ────────────────────────────────────
+  // ── Register: Phone → PIN ───────────────────────────────────────────────
   const handleRegisterPhone = async () => {
     if (!isValidPhone(phone)) { setError(t.validPhone); return; }
     try {
       const registered = await isPhoneRegistered(phone);
       if (registered) { setError("This number is already registered. Please log in."); return; }
     } catch { /* allow to proceed if check fails */ }
-    // Send OTP for registration
-    setRegisterOtpSending(true); setError("");
-    try {
-      const res = await supabase.functions.invoke("send-otp", {
-        body: { phone, purpose: "registration" },
-      });
-      if (res.error) {
-        setError(res.data?.error || "Failed to send OTP.");
-        setRegisterOtpSending(false);
-        return;
-      }
-      setOtp(""); goTo("register_otp");
-    } catch {
-      setError("Failed to send OTP. Try again.");
-    } finally {
-      setRegisterOtpSending(false);
-    }
+    setPin(""); setConfirmPin(""); setConfirmStage(false);
+    goTo("register_pin");
   };
 
   const handleRegisterOtp = useCallback(async (val?: string) => {
