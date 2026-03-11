@@ -345,6 +345,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const [userName, setUserName]     = useState("");
   const [referralCodeInput, setReferralCodeInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showKycAfterRegister, setShowKycAfterRegister] = useState(false);
   const [forgotOtpCode, setForgotOtpCode] = useState("");
   const [forgotOtpSending, setForgotOtpSending] = useState(false);
   const [serverOtp, setServerOtp] = useState(""); // DEV: stores OTP returned from server
