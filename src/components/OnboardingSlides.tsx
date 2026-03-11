@@ -156,6 +156,8 @@ export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
     };
   }, []);
 
+  if (SLIDES.length === 0) return null;
+
   const slide = SLIDES[current];
   const isLast = current === SLIDES.length - 1;
 
