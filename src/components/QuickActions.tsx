@@ -89,9 +89,6 @@ const allActionDefs: ActionDef[] = [
 
 const FIXED_IDS = new Set(["send", "cashout", "payment"]);
 
-const MerchantApplyIcon = ({ isHovered }: { isHovered?: boolean }) => (
-  <Store className={`w-6 h-6 transition-colors ${isHovered ? "text-purple-600" : "text-purple-500"}`} />
-);
 
 const moreServices = [
   { id: "refer", Icon: ReferIcon, label: "Refer & Earn", desc: "Invite friends & earn", gradient: "from-orange-500 to-red-500", featureKey: "refer" },
