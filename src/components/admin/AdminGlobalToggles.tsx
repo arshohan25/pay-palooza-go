@@ -154,23 +154,27 @@ export default function AdminGlobalToggles() {
       <CardContent className="p-0">
         <div className="divide-y divide-border">
           {items.map(t => (
-            <div key={t.id} className="flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors">
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <ToggleRight className={`w-5 h-5 shrink-0 ${t.is_enabled ? "text-emerald-500" : "text-muted-foreground"}`} />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-foreground">{t.label}</p>
-                  {t.description && <p className="text-xs text-muted-foreground truncate">{t.description}</p>}
-                  <p className="text-[10px] font-mono text-muted-foreground/60">{t.feature_key}</p>
+            <div key={t.id} className="px-3 sm:px-4 py-3 hover:bg-muted/30 transition-colors">
+              <div className="flex items-start gap-2.5">
+                <ToggleRight className={`w-5 h-5 shrink-0 mt-0.5 ${t.is_enabled ? "text-emerald-500" : "text-muted-foreground"}`} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium text-foreground truncate">{t.label}</p>
+                    <Switch checked={t.is_enabled} onCheckedChange={() => toggleFeature(t)} className="shrink-0" />
+                  </div>
+                  {t.description && <p className="text-xs text-muted-foreground truncate mt-0.5">{t.description}</p>}
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-[10px] font-mono text-muted-foreground/60">{t.feature_key}</p>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openEdit(t)}>
+                        <Pencil className="w-3 h-3" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => setDeleteToggle(t)}>
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openEdit(t)}>
-                  <Pencil className="w-3.5 h-3.5" />
-                </Button>
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => setDeleteToggle(t)}>
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
-                <Switch checked={t.is_enabled} onCheckedChange={() => toggleFeature(t)} />
               </div>
             </div>
           ))}

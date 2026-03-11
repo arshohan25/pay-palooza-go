@@ -235,52 +235,49 @@ export default function AdminBannerManager() {
       ) : (
         <div className="space-y-2">
           {banners.map((b) => {
-            const IconComp = (icons as any)[b.icon || "Gift"] || icons.Gift;
             return (
               <Card key={b.id} className="overflow-hidden">
-                <div className="flex items-start gap-2 sm:gap-3 p-3">
-                  <GripVertical className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
-                  {b.media_url ? (
-                    <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0">
-                      {b.media_type === "video" ? (
-                        <video src={b.media_url} muted className="w-full h-full object-cover" />
-                      ) : (
-                        <img src={b.media_url} alt="" className="w-full h-full object-cover" />
-                      )}
-                    </div>
-                  ) : (
-                    <div
-                      className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ background: `linear-gradient(135deg, ${b.gradient_from}, ${b.gradient_to})` }}
-                    >
-                      {(() => { const IC = (icons as any)[b.icon || "Gift"] || icons.Gift; return <IC className="w-5 h-5 text-white" />; })()}
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">{b.title}</p>
-                    <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="p-3">
+                  <div className="flex items-start gap-2.5">
+                    <GripVertical className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
+                    {b.media_url ? (
+                      <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0">
+                        {b.media_type === "video" ? (
+                          <video src={b.media_url} muted className="w-full h-full object-cover" />
+                        ) : (
+                          <img src={b.media_url} alt="" className="w-full h-full object-cover" />
+                        )}
+                      </div>
+                    ) : (
+                      <div
+                        className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                        style={{ background: `linear-gradient(135deg, ${b.gradient_from}, ${b.gradient_to})` }}
+                      >
+                        {(() => { const IC = (icons as any)[b.icon || "Gift"] || icons.Gift; return <IC className="w-5 h-5 text-white" />; })()}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold truncate">{b.title}</p>
+                        <Switch checked={b.is_active} onCheckedChange={() => toggleActive(b)} className="shrink-0" />
+                      </div>
                       <p className="text-xs text-muted-foreground truncate">{b.subtitle || "No subtitle"}</p>
-                      {b.link_url && (
-                        <Badge variant="outline" className="text-[9px] shrink-0 gap-0.5">
-                          <Link2 className="w-2.5 h-2.5" />
-                          {getLinkLabel(b.link_url)}
-                        </Badge>
-                      )}
+                      <div className="flex items-center justify-between mt-1.5">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Badge variant={b.is_active ? "default" : "secondary"} className="text-[9px] shrink-0">{b.is_active ? "On" : "Off"}</Badge>
+                          {b.link_url && (
+                            <Badge variant="outline" className="text-[9px] shrink-0 gap-0.5 max-w-[120px] truncate">
+                              <Link2 className="w-2.5 h-2.5 shrink-0" />
+                              <span className="truncate">{getLinkLabel(b.link_url)}</span>
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(b)}><Pencil className="w-3.5 h-3.5" /></Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setDeleteId(b.id)}><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
+                        </div>
+                      </div>
                     </div>
-                    {/* Mobile action row */}
-                    <div className="flex items-center gap-1.5 mt-1.5 sm:hidden">
-                      <Badge variant={b.is_active ? "default" : "secondary"} className="text-[9px]">{b.is_active ? "On" : "Off"}</Badge>
-                      <Switch checked={b.is_active} onCheckedChange={() => toggleActive(b)} className="scale-75" />
-                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(b)}><Pencil className="w-3.5 h-3.5" /></Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setDeleteId(b.id)}><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
-                    </div>
-                  </div>
-                  {/* Desktop actions */}
-                  <div className="hidden sm:flex items-center gap-1 shrink-0">
-                    <Badge variant={b.is_active ? "default" : "secondary"} className="text-[10px]">{b.is_active ? "Active" : "Inactive"}</Badge>
-                    <Switch checked={b.is_active} onCheckedChange={() => toggleActive(b)} />
-                    <Button size="icon" variant="ghost" onClick={() => openEdit(b)}><Pencil className="w-4 h-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => setDeleteId(b.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
                   </div>
                 </div>
               </Card>
