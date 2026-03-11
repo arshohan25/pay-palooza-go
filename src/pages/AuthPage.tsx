@@ -899,15 +899,6 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                               <AlertCircle size={12} /> {error}
                             </motion.p>
                           )}
-                          <div className="flex items-center gap-2 p-3 rounded-xl bg-accent/8 border border-accent/20">
-                            <span className="text-sm">💡</span>
-                            <p className="text-[11px] text-muted-foreground">
-                              {mode === "forgot_otp" && serverOtp
-                                ? <>{t.demoMode} <strong className="text-foreground font-black text-sm">{serverOtp}</strong></>
-                                : <>{t.demoMode} <strong className="text-foreground font-black text-sm">123456</strong></>
-                              }
-                            </p>
-                          </div>
                           <input
                             type="tel"
                             inputMode="numeric"
