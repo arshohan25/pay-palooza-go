@@ -191,12 +191,12 @@ export default function AdminAuditLogViewer() {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Filters */}
-        <div className="flex flex-wrap gap-3 items-end">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3 items-end">
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">From</label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className={cn("w-[150px] justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
+                <Button variant="outline" size="sm" className={cn("w-full sm:w-[150px] justify-start text-left font-normal text-xs", !dateFrom && "text-muted-foreground")}>
                   <CalendarIcon className="w-3.5 h-3.5 mr-1.5" />
                   {dateFrom ? format(dateFrom, "MMM d, yyyy") : "Start date"}
                 </Button>
@@ -211,7 +211,7 @@ export default function AdminAuditLogViewer() {
             <label className="text-xs text-muted-foreground">To</label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className={cn("w-[150px] justify-start text-left font-normal", !dateTo && "text-muted-foreground")}>
+                <Button variant="outline" size="sm" className={cn("w-full sm:w-[150px] justify-start text-left font-normal text-xs", !dateTo && "text-muted-foreground")}>
                   <CalendarIcon className="w-3.5 h-3.5 mr-1.5" />
                   {dateTo ? format(dateTo, "MMM d, yyyy") : "End date"}
                 </Button>
@@ -225,7 +225,7 @@ export default function AdminAuditLogViewer() {
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">Category</label>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-[180px] h-9 text-sm">
+              <SelectTrigger className="w-full sm:w-[150px] h-9 text-xs">
                 <SelectValue placeholder="All categories" />
               </SelectTrigger>
               <SelectContent>
@@ -241,7 +241,7 @@ export default function AdminAuditLogViewer() {
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">Admin</label>
             <Select value={adminFilter} onValueChange={setAdminFilter}>
-              <SelectTrigger className="w-[180px] h-9 text-sm">
+              <SelectTrigger className="w-full sm:w-[150px] h-9 text-xs">
                 <SelectValue placeholder="All admins" />
               </SelectTrigger>
               <SelectContent>
@@ -254,7 +254,7 @@ export default function AdminAuditLogViewer() {
           </div>
 
           {(dateFrom || dateTo || adminFilter !== "all" || categoryFilter !== "all") && (
-            <Button variant="ghost" size="sm" onClick={() => { setDateFrom(undefined); setDateTo(undefined); setAdminFilter("all"); setCategoryFilter("all"); }}>
+            <Button variant="ghost" size="sm" onClick={() => { setDateFrom(undefined); setDateTo(undefined); setAdminFilter("all"); setCategoryFilter("all"); }} className="col-span-2 sm:col-span-1">
               Clear
             </Button>
           )}
