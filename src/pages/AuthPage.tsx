@@ -897,9 +897,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                               {t.codeSent} <span className="font-bold text-foreground">+88 {phone || returningPhone}</span>
                             </p>
                           </div>
-                          <div onTouchStart={(e) => e.preventDefault()}>
-                            <OtpBoxes value={otp} error={!!error} />
-                          </div>
+                          <OtpBoxes value={otp} error={!!error} />
                           {error && (
                             <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
                               className="text-xs text-destructive flex items-center justify-center gap-1.5">
@@ -915,7 +913,21 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                               }
                             </p>
                           </div>
-                          <NumPad onKey={(k) => handleOtpKey(k, onComplete)} onDelete={() => { setOtp(p => p.slice(0, -1)); setError(""); }} />
+                          <input
+                            type="tel"
+                            inputMode="numeric"
+                            autoFocus
+                            maxLength={6}
+                            value={otp}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+                              setOtp(val);
+                              setError("");
+                              if (val.length === 6) setTimeout(() => onComplete(val), 260);
+                            }}
+                            className="w-full h-14 text-center text-2xl font-black tracking-[0.6em] bg-card border-2 border-border rounded-2xl text-foreground focus:outline-none focus:border-primary focus:shadow-glow placeholder:text-muted-foreground/20"
+                            placeholder="000000"
+                          />
                           <div className="flex items-center justify-between pt-1">
                             <button className="flex items-center gap-1.5 text-sm text-muted-foreground"
                               onClick={() => { setOtp(""); setError(""); if (mode === "forgot_otp") handleForgotSendOtp(); }}>
