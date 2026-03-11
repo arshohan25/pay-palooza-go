@@ -612,7 +612,7 @@ export default function AdminDashboard() {
       </aside>
 
       {/* ═══ Main column ═══ */}
-      <div className={`flex-1 flex flex-col md:ml-56 transition-[margin] duration-300 ${showActivityFeed && !isMobile ? "md:mr-72" : ""}`}>
+      <div className={`flex-1 flex flex-col md:ml-56 overflow-x-hidden transition-[margin] duration-300 ${showActivityFeed && !isMobile ? "md:mr-72" : ""}`}>
         {/* Top header */}
         <header className="sticky top-0 z-30 bg-card border-b border-border">
           <div className="flex items-center justify-between px-4 md:px-6 py-3">
@@ -724,7 +724,7 @@ export default function AdminDashboard() {
         </Sheet>
 
         {/* Main content */}
-        <main className="flex-1 p-4 md:p-8 overflow-auto min-h-0 pb-8">
+        <main className="flex-1 px-2 py-4 sm:px-4 md:p-8 overflow-auto min-h-0 pb-8">
           <RealtimeUpdateIndicator visible={realtimeVisible} />
 
         {/* ═══ OVERVIEW ═══ */}
