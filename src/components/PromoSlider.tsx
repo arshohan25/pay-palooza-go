@@ -49,7 +49,7 @@ export default function PromoSlider({ onFeatureOpen }: PromoSliderProps) {
         .select("id, title, subtitle, badge_text, icon, gradient_from, gradient_to, link_url, media_url, media_type, sort_order")
         .eq("is_active", true)
         .order("sort_order");
-      setBanners(data && data.length > 0 ? (data as PromoBanner[]) : FALLBACK_BANNERS);
+      setBanners(data && data.length > 0 ? (data as PromoBanner[]) : []);
     };
     load();
   }, []);
