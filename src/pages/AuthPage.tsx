@@ -11,6 +11,7 @@ import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
 import { isWeakPin } from "@/lib/pinValidation";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/easypay-logo.png";
+import KycFlow from "@/components/KycFlow";
 
 // ─── Storage keys (only for UX preferences, NOT auth) ─────────────────────────
 const LANG_KEY       = "mfs_ui_lang";
