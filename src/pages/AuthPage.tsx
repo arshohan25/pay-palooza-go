@@ -147,13 +147,13 @@ type Lang = "en" | "bn";
 
 type Mode =
   | "landing"
-  | "register_phone" | "register_otp" | "register_pin" | "register_name"
+  | "register_phone" | "register_otp" | "register_pin"
   | "login_phone" | "login_pin"
   | "forgot_otp" | "forgot_pin"
   | "success";
 
 // ─── Step progress ────────────────────────────────────────────────────────────
-const REGISTER_STEPS = ["Phone", "OTP", "PIN", "Name"];
+const REGISTER_STEPS = ["Phone", "OTP", "PIN"];
 const LOGIN_STEPS    = ["Phone", "PIN"];
 
 function StepBar({ steps, current }: { steps: string[]; current: number }) {
