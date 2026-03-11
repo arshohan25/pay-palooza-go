@@ -153,7 +153,7 @@ type Mode =
   | "success";
 
 // ─── Step progress ────────────────────────────────────────────────────────────
-const REGISTER_STEPS = ["Phone", "OTP", "PIN"];
+const REGISTER_STEPS = ["Phone", "PIN"];
 const LOGIN_STEPS    = ["Phone", "PIN"];
 
 function StepBar({ steps, current }: { steps: string[]; current: number }) {
