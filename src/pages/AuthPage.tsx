@@ -385,30 +385,26 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     } else {
       if (currentConfirm.length < 4) { setError(t.reenterPinErr); return; }
       if (currentPin !== currentConfirm) { setError(t.pinsDontMatch); haptics.error(); setConfirmPin(""); return; }
-      haptics.success(); setConfirmStage(false); goTo("register_name");
+      haptics.success(); setConfirmStage(false);
+      // Create account immediately, then launch KYC
+      await handlePostPinSignup();
     }
   }, [goTo, t]);
 
-  // ── Register: Create account with Supabase Auth ────────────────────────────
-  const handleRegisterName = async () => {
-    const trimmed = userName.trim();
+  // ── Register: Create account with Supabase Auth, then show KYC ─────────────
+  const handlePostPinSignup = async () => {
     setIsSubmitting(true);
     setError("");
     try {
-      // Device fingerprint validation
       const fp = await getDeviceFingerprint();
-      
-      // First create the account
-      const result = await signUp(phone, pin, trimmed || undefined, referralCodeInput.trim() || undefined);
-      
+      const result = await signUp(phone, pin, undefined, referralCodeInput.trim() || undefined);
+
       if (result.user) {
-        // Validate device (non-blocking for signup but records the fingerprint)
         try {
           const res = await supabase.functions.invoke("validate-device", {
             body: { device_fingerprint: fp, user_id: result.user.id },
           });
           if (res.data && !res.data.allowed) {
-            // Device already has an account — sign out and show error
             await supabase.auth.signOut();
             setError(res.data.error || "This device already has an account.");
             haptics.error();
@@ -416,18 +412,15 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
             return;
           }
         } catch {
-          // Device validation failed but don't block signup
           console.warn("Device validation failed, continuing...");
         }
       }
 
-      // Store phone locally for returning-user UX
       localStorage.setItem(DEVICE_KEY, phone);
       localStorage.setItem("mfs_registered_phone", phone);
-      if (trimmed) localStorage.setItem("mfs_user_name", trimmed);
       haptics.success();
-      goTo("success");
-      setTimeout(onAuthenticated, 1500);
+      // Show KYC flow instead of success
+      setShowKycAfterRegister(true);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t.authError;
       if (msg.includes("already been registered") || msg.includes("already registered")) {
