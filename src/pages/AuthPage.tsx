@@ -862,8 +862,8 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                     )}
 
                     {/* ── OTP VERIFY ── */}
-                    {(mode === "register_otp" || mode === "forgot_otp") && (() => {
-                      const onComplete = mode === "register_otp" ? handleRegisterOtp : handleForgotOtp;
+                    {(mode === "forgot_otp") && (() => {
+                      const onComplete = handleForgotOtp;
                       return (
                         <div className="space-y-5">
                           <div className="space-y-1">
