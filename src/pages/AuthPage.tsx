@@ -147,13 +147,13 @@ type Lang = "en" | "bn";
 
 type Mode =
   | "landing"
-  | "register_phone" | "register_otp" | "register_pin"
+  | "register_phone" | "register_pin"
   | "login_phone" | "login_pin"
   | "forgot_otp" | "forgot_pin"
   | "success";
 
 // ─── Step progress ────────────────────────────────────────────────────────────
-const REGISTER_STEPS = ["Phone", "OTP", "PIN"];
+const REGISTER_STEPS = ["Phone", "PIN"];
 const LOGIN_STEPS    = ["Phone", "PIN"];
 
 function StepBar({ steps, current }: { steps: string[]; current: number }) {
@@ -316,7 +316,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const [showKycAfterRegister, setShowKycAfterRegister] = useState(false);
   const [forgotOtpCode, setForgotOtpCode] = useState("");
   const [forgotOtpSending, setForgotOtpSending] = useState(false);
-  const [registerOtpSending, setRegisterOtpSending] = useState(false);
+  
 
   // Check if returning user (has phone stored locally for UX only)
   const returningPhone = localStorage.getItem(DEVICE_KEY) ?? "";
@@ -328,48 +328,16 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
 
   const isValidPhone = (p: string) => /^01[3-9]\d{8}$/.test(p);
 
-  // ── Register: Phone → OTP → PIN → Name ────────────────────────────────────
+  // ── Register: Phone → PIN ───────────────────────────────────────────────
   const handleRegisterPhone = async () => {
     if (!isValidPhone(phone)) { setError(t.validPhone); return; }
     try {
       const registered = await isPhoneRegistered(phone);
       if (registered) { setError("This number is already registered. Please log in."); return; }
     } catch { /* allow to proceed if check fails */ }
-    // Send OTP for registration
-    setRegisterOtpSending(true); setError("");
-    try {
-      const res = await supabase.functions.invoke("send-otp", {
-        body: { phone, purpose: "registration" },
-      });
-      if (res.error) {
-        setError(res.data?.error || "Failed to send OTP.");
-        setRegisterOtpSending(false);
-        return;
-      }
-      setOtp(""); goTo("register_otp");
-    } catch {
-      setError("Failed to send OTP. Try again.");
-    } finally {
-      setRegisterOtpSending(false);
-    }
+    setPin(""); setConfirmPin(""); setConfirmStage(false);
+    goTo("register_pin");
   };
-
-  const handleRegisterOtp = useCallback(async (val?: string) => {
-    const v = val ?? otp;
-    if (v.length < 6) { setError(t.enterOtp); return; }
-    // Verify OTP server-side
-    try {
-      const res = await supabase.functions.invoke("verify-otp", {
-        body: { phone, code: v, purpose: "registration" },
-      });
-      if (res.error || res.data?.error) {
-        setError(res.data?.error || t.incorrectOtp); haptics.error(); return;
-      }
-      setPin(""); setConfirmPin(""); setConfirmStage(false); goTo("register_pin");
-    } catch {
-      setError(t.incorrectOtp); haptics.error();
-    }
-  }, [otp, phone, goTo, t]);
 
   const handleRegisterPin = useCallback(async (currentPin: string, currentConfirm: string, stage: boolean) => {
     if (!stage) {
@@ -608,10 +576,10 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const handleBack = () => {
     setError("");
     if (mode === "register_phone" || mode === "login_phone") { goTo("landing", -1); return; }
-    if (mode === "register_otp")  { setOtp(""); goTo("register_phone", -1); return; }
+    
     if (mode === "register_pin")  {
       if (confirmStage) { setConfirmStage(false); setConfirmPin(""); return; }
-      setPin(""); setConfirmPin(""); goTo("register_otp", -1); return;
+      setPin(""); setConfirmPin(""); goTo("register_phone", -1); return;
     }
     if (mode === "login_pin")     { setPin(""); goTo("login_phone", -1); return; }
     if (mode === "forgot_otp")    { setOtp(""); goTo("login_pin", -1); return; }
@@ -621,7 +589,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     }
   };
 
-  const registerStep = { register_phone: 0, register_otp: 1, register_pin: 2 }[mode as string] ?? -1;
+  const registerStep = { register_phone: 0, register_pin: 1 }[mode as string] ?? -1;
   const loginStep    = { login_phone: 0, login_pin: 1 }[mode as string] ?? -1;
   const showBack     = mode !== "landing" && mode !== "success";
 
@@ -877,8 +845,8 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                     )}
 
                     {/* ── OTP VERIFY ── */}
-                    {(mode === "register_otp" || mode === "forgot_otp") && (() => {
-                      const onComplete = mode === "register_otp" ? handleRegisterOtp : handleForgotOtp;
+                    {(mode === "forgot_otp") && (() => {
+                      const onComplete = handleForgotOtp;
                       return (
                         <div className="space-y-5">
                           <div className="space-y-1">
