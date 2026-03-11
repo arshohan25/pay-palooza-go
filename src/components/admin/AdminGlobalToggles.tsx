@@ -183,8 +183,8 @@ export default function AdminGlobalToggles() {
             <p className="text-xs text-muted-foreground mt-1">Add a toggle to get started</p>
           </motion.div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 
   return (
