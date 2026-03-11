@@ -1,29 +1,15 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Fix: Add margin to the right of checkmark icon
 
-### What
+**File**: `src/pages/AuthPage.tsx`
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+**Change**: Add `mr-2` (margin-right) to the checkmark icon wrapper to create space from the container edge.
 
-### Changes
+**Line 284**:
+```tsx
+<motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="pr-3 mr-2 shrink-0">
+```
 
-**File: `src/components/admin/AdminApiHub.tsx`**
-
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
-
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+This adds 8px of margin to the right of the checkmark icon.
 
