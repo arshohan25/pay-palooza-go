@@ -1,32 +1,29 @@
-## Fix: PIN Still Requiring 6+ Characters
 
-### Root Cause
 
-The Supabase Auth backend is returning a 422 error on signup with the password `1234EPAY` (8 chars). This means the project's auth configuration likely has a minimum password length set higher than 8, OR there's another validation rejecting the signup.
+## Plan: Add Biller Categories to API Hub
 
-### Solution
+### What
 
-Two-pronged fix to ensure this works regardless of the backend's minimum password length setting:
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-**1. Increase PIN padding significantly in `src/lib/auth.ts**`
+### Changes
 
-Change `pinToPassword` from `${pin}EPAY` to a longer, safer padding that will pass any reasonable minimum password length (e.g., 12+ chars):
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-```typescript
-export const pinToPassword = (pin: string) => `EP${pin}SECUREWALLETPIN`;
-// e.g., "1234" → "EP1234SECUREWALLETPIN" (21 chars)
-```
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-This ensures the password passes even if the minimum is set to 10, 12, or higher. Since all auth flows (`signUp`, `signIn`, `changePin`, `verifyPin`) use the same `pinToPassword` function, this change is consistent everywhere.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-**2. Attempt to configure auth minimum password length to 4**
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-Use the available tools to try setting the minimum password length to 4 as a belt-and-suspenders approach.
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-### Files Changed
+3. Add the new category icons to the `categoryIcons` map.
 
-- `src/lib/auth.ts` — Update `pinToPassword` padding
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
-### Important Note
-
-Existing users who signed up with the old padding (`EP` or `EPAY`) will not be able to log in after this change. If there are existing users, we may need a migration strategy. Since this appears to be early development with no real users yet, this should be safe.
