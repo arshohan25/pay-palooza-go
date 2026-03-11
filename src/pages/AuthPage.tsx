@@ -316,7 +316,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const [showKycAfterRegister, setShowKycAfterRegister] = useState(false);
   const [forgotOtpCode, setForgotOtpCode] = useState("");
   const [forgotOtpSending, setForgotOtpSending] = useState(false);
-  const [serverOtp, setServerOtp] = useState(""); // DEV: stores OTP returned from server
+  const [registerOtpSending, setRegisterOtpSending] = useState(false);
 
   // Check if returning user (has phone stored locally for UX only)
   const returningPhone = localStorage.getItem(DEVICE_KEY) ?? "";
