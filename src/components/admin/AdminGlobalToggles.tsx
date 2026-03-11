@@ -150,30 +150,29 @@ export default function AdminGlobalToggles() {
   }
 
   const renderToggleList = (items: FeatureToggle[]) => (
-    <Card className="border-0 shadow-[var(--shadow-card)] w-full overflow-hidden">
-      <CardContent className="p-0">
-        <div className="divide-y divide-border">
-          {items.map(t => (
-            <div key={t.id} className="px-2 sm:px-4 py-2.5 hover:bg-muted/30 transition-colors">
-              <div className="flex items-center gap-1.5 w-full">
-                <ToggleRight className={`w-3.5 h-3.5 shrink-0 ${t.is_enabled ? "text-emerald-500" : "text-muted-foreground"}`} />
-                <p className="text-sm font-medium text-foreground truncate flex-1 min-w-0">{t.label}</p>
-                <Switch checked={t.is_enabled} onCheckedChange={() => toggleFeature(t)} className="shrink-0 scale-[0.85] origin-right" />
-              </div>
-              {t.description && <p className="text-xs text-muted-foreground truncate mt-0.5 pl-5">{t.description}</p>}
-              <div className="flex items-center justify-between mt-1 pl-5">
-                <p className="text-[10px] font-mono text-muted-foreground/60 truncate flex-1 min-w-0">{t.feature_key}</p>
-                <div className="flex items-center shrink-0">
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openEdit(t)}>
-                    <Pencil className="w-3 h-3" />
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => setDeleteToggle(t)}>
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
-                </div>
+    <div className="w-full rounded-lg bg-card shadow-[var(--shadow-card)]">
+      <div className="divide-y divide-border">
+        {items.map(t => (
+          <div key={t.id} className="px-2 sm:px-4 py-2.5 hover:bg-muted/30 transition-colors">
+            <div className="flex items-center gap-1.5">
+              <ToggleRight className={`w-3.5 h-3.5 shrink-0 ${t.is_enabled ? "text-emerald-500" : "text-muted-foreground"}`} />
+              <p className="text-sm font-medium text-foreground truncate flex-1 min-w-0">{t.label}</p>
+              <Switch checked={t.is_enabled} onCheckedChange={() => toggleFeature(t)} className="shrink-0" />
+            </div>
+            {t.description && <p className="text-xs text-muted-foreground truncate mt-0.5 pl-5">{t.description}</p>}
+            <div className="flex items-center justify-between mt-1 pl-5">
+              <p className="text-[10px] font-mono text-muted-foreground/60 truncate flex-1 min-w-0">{t.feature_key}</p>
+              <div className="flex items-center shrink-0">
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openEdit(t)}>
+                  <Pencil className="w-3 h-3" />
+                </Button>
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => setDeleteToggle(t)}>
+                  <Trash2 className="w-3 h-3" />
+                </Button>
               </div>
             </div>
-          ))}
+          </div>
+        ))}
         </div>
         {items.length === 0 && (
           <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
