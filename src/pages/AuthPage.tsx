@@ -1008,6 +1008,17 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
           </div>
         </div>
       )}
+
+      {/* ══════════════════════ KYC AFTER REGISTER ══════════════════════ */}
+      {showKycAfterRegister && (
+        <div className="fixed inset-0 z-[110] bg-background">
+          <KycFlow onClose={() => {
+            setShowKycAfterRegister(false);
+            goTo("success");
+            setTimeout(onAuthenticated, 1500);
+          }} />
+        </div>
+      )}
     </div>
   );
 }
