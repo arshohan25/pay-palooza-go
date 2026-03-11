@@ -407,7 +407,7 @@ export default function AdminReferralManagement() {
 
           <Card className="border-0 shadow-[var(--shadow-card)]">
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -433,6 +433,22 @@ export default function AdminReferralManagement() {
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+              {/* Mobile cards */}
+              <div className="md:hidden divide-y divide-border/50">
+                {rewards.map(r => (
+                  <div key={r.id} className="p-3.5 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-foreground">{r.referrer_name || "—"}</p>
+                      <p className="text-[10px] text-muted-foreground">{r.referrer_phone}</p>
+                      <Badge variant="outline" className="text-[10px] mt-1">{MILESTONE_LABELS[r.milestone] ?? r.milestone}</Badge>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-foreground">৳{r.amount}</p>
+                      <p className="text-[10px] text-muted-foreground">{format(new Date(r.created_at), "MMM d")}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
               {rewards.length === 0 && (
                 <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
