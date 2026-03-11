@@ -606,7 +606,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     }
   };
 
-  const registerStep = { register_phone: 0, register_otp: 1, register_pin: 2 }[mode as string] ?? -1;
+  const registerStep = { register_phone: 0, register_pin: 1 }[mode as string] ?? -1;
   const loginStep    = { login_phone: 0, login_pin: 1 }[mode as string] ?? -1;
   const showBack     = mode !== "landing" && mode !== "success";
 
