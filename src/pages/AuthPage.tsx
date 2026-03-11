@@ -335,38 +335,17 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
       const registered = await isPhoneRegistered(phone);
       if (registered) { setError("This number is already registered. Please log in."); return; }
     } catch { /* allow to proceed if check fails */ }
-    // Send OTP for registration
-    setRegisterOtpSending(true); setError("");
-    try {
-      const res = await supabase.functions.invoke("send-otp", {
-        body: { phone, purpose: "registration" },
-      });
-      if (res.error) {
-        setError(res.data?.error || "Failed to send OTP.");
-        setRegisterOtpSending(false);
-        return;
-      }
-      setOtp(""); goTo("register_otp");
-    } catch {
-      setError("Failed to send OTP. Try again.");
-    } finally {
-      setRegisterOtpSending(false);
-    }
+    // Skip real OTP — go directly to OTP screen with default code 123456
+    setOtp(""); goTo("register_otp");
   };
 
   const handleRegisterOtp = useCallback(async (val?: string) => {
     const v = val ?? otp;
     if (v.length < 6) { setError(t.enterOtp); return; }
-    // Verify OTP server-side
-    try {
-      const res = await supabase.functions.invoke("verify-otp", {
-        body: { phone, code: v, purpose: "registration" },
-      });
-      if (res.error || res.data?.error) {
-        setError(res.data?.error || t.incorrectOtp); haptics.error(); return;
-      }
+    // Default OTP check (no SMS provider integrated yet)
+    if (v === "123456") {
       setPin(""); setConfirmPin(""); setConfirmStage(false); goTo("register_pin");
-    } catch {
+    } else {
       setError(t.incorrectOtp); haptics.error();
     }
   }, [otp, phone, goTo, t]);
