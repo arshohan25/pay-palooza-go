@@ -28,6 +28,7 @@ import { useUserRoles } from "@/hooks/use-user-roles";
 import { useCustomization } from "@/hooks/use-customization";
 import { supabase } from "@/integrations/supabase/client";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
+import { useMerchantApplyAccess } from "@/hooks/use-merchant-apply-access";
 
 const ROLE_STYLES: Record<string, { label: string; bg: string; text: string }> = {
   customer:          { label: "Customer",          bg: "bg-primary/10",      text: "text-primary" },
