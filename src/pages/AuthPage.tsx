@@ -927,9 +927,9 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                               {t.codeSent} <span className="font-bold text-foreground">+88 {phone || returningPhone}</span>
                             </p>
                           </div>
-                          <OtpBoxes value={otp} error={!!error} />
-                          {/* Hidden input to prevent system keyboard */}
-                          <input readOnly inputMode="none" tabIndex={-1} className="absolute opacity-0 w-0 h-0 pointer-events-none" aria-hidden="true" />
+                          <div onTouchStart={(e) => e.preventDefault()}>
+                            <OtpBoxes value={otp} error={!!error} />
+                          </div>
                           {error && (
                             <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
                               className="text-xs text-destructive flex items-center justify-center gap-1.5">
