@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Copy, CheckCheck, Share2, Download } from "lucide-react";
+import { toast } from "sonner";
 import QRCode from "qrcode";
 import { Button } from "@/components/ui/button";
 import { haptics } from "@/lib/haptics";
@@ -47,9 +48,16 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
   const handleShare = async () => {
     haptics.medium();
     const text = `💳 My EasyPay Wallet ID: ${walletId}\n👤 ${userName}\n\nScan my QR code to send money instantly!`;
-    if (navigator.share) {
-      try { await navigator.share({ title: "My EasyPay Wallet", text }); } catch { /* dismissed */ }
-    } else { handleCopy(); }
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "My EasyPay Wallet", text });
+        return;
+      }
+    } catch (err: any) {
+      if (err?.name === "AbortError") return;
+    }
+    handleCopy();
+    toast.success("Wallet ID copied to clipboard");
   };
 
   const handleDownload = async () => {
