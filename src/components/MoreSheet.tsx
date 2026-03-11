@@ -15,7 +15,7 @@ interface MoreSheetProps {
 const items = [
   { id: "bank", icon: Landmark, label: "Bank Transfer", desc: "Transfer to any bank account", gradient: "bg-gradient-to-b from-blue-500 to-indigo-600" },
   { id: "savings", icon: Wallet, label: "Savings", desc: "Set goals & grow your money", gradient: "bg-gradient-to-b from-emerald-500 to-teal-600" },
-  { id: "merchant_apply", icon: Store, label: "Become a Merchant", desc: "Apply for a merchant account", gradient: "bg-gradient-to-b from-purple-500 to-indigo-600", merchantOnly: true },
+  
   { id: "coupons", icon: Ticket, label: "Coupons & Offers", desc: "Exclusive deals & cashback", gradient: "bg-gradient-to-b from-pink-500 to-rose-600", soon: true },
   { id: "donations", icon: Heart, label: "Donations", desc: "Support causes you care about", gradient: "bg-gradient-to-b from-red-500 to-rose-700", soon: true },
 ];

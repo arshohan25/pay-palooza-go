@@ -284,7 +284,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
           {!isDisabled("account_kyc") && <MenuRow icon={BadgeCheck} iconClass="gradient-primary" label={t("kycVerification")} sub={t("kycSub")} onClick={() => setShowKyc(true)} />}
           {!isDisabled("account_change_pin") && <MenuRow icon={Lock}       iconClass="gradient-send"    label={t("changePin")}        sub={t("changePinSub")}    onClick={() => setShowChangePin(true)} />}
           {!isDisabled("account_refer") && <MenuRow icon={Gift}       iconClass="gradient-accent"  label={t("referAFriend")}   sub={t("referSub")} onClick={() => setSubPage("refer")} />}
-          {!isDisabled("account_become_merchant") && !roles.includes("merchant") && (
+          {!isDisabled("account_become_merchant") && !roles.includes("merchant") && canMerchantApply && (
             <MenuRow icon={Store} iconClass="gradient-payment" label="Become a Merchant" sub="Apply for a merchant account" onClick={() => setShowMerchantApp(true)} />
           )}
         </Section>
