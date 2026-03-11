@@ -5,6 +5,8 @@ import { toast } from "sonner";
 interface MoreSheetProps {
   open: boolean;
   onClose: () => void;
+  onBankTransfer: () => void;
+  onSavings: () => void;
 }
 
 const items = [
