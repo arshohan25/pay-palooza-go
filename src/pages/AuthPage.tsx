@@ -377,7 +377,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     setPin(""); setConfirmPin(""); setConfirmStage(false); goTo("register_pin");
   }, [otp, goTo, t]);
 
-  const handleRegisterPin = useCallback((currentPin: string, currentConfirm: string, stage: boolean) => {
+  const handleRegisterPin = useCallback(async (currentPin: string, currentConfirm: string, stage: boolean) => {
     if (!stage) {
       if (currentPin.length < 4) { setError(t.enter4Digits); return; }
       if (isWeakPin(currentPin)) { setError(t.pinTooWeak); return; }
