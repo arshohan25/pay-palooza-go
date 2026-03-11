@@ -1,29 +1,38 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Hide system keyboard during OTP and PIN entry
 
-### What
+**Problem**: The OTP and PIN screens use a custom numeric keypad (`NumPad`) for input, but when users tap on the visual display boxes (OtpBoxes/PinCircles), the browser's default behavior may trigger the system keyboard. We need to prevent this.
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+**Solution**: Add hidden input fields with `inputMode="none"` that programmatically receive input without displaying the keyboard, while maintaining the custom keypad UX.
 
-### Changes
+### Changes in `src/pages/AuthPage.tsx`
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+1. **OTP Screen (`register_otp`, `forgot_otp`)**:
+   - Add a hidden `<input>` with `inputMode="none"` and `tabIndex={-1}`
+   - Auto-focus this input on screen entry
+   - Map input value to `setOtp()`
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+2. **PIN Screen (`register_pin`, `forgot_pin`)**:
+   - Add a hidden `<input>` with `inputMode="none"` 
+   - Auto-focus on screen entry
+   - Map input to the same `handlePinKey` logic used by NumPad
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+3. **Login PIN Screen (`login_pin`)**:
+   - Add a hidden `<input>` with `inputMode="none"`
+   - Auto-focus on screen entry
+   - Map input to `handleLoginPin()`
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+### Implementation details
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+The hidden input will:
+- Be positioned off-screen (`position: absolute; opacity: 0; pointer-events: none`)
+- Use `inputMode="none"` to prevent keyboard display
+- Capture numeric keypresses via `onChange`
+- Have `autoFocus` so it receives focus immediately
 
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+This allows users to:
+- Use the custom circular keypad
+- Use physical keyboard (optional fallback)
+- Never see the system keyboard
 
