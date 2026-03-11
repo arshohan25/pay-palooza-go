@@ -982,6 +982,8 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                             </AnimatePresence>
                           </div>
                           <PinCircles pin={currentVal} error={!!error} />
+                          {/* Hidden input to prevent system keyboard */}
+                          <input readOnly inputMode="none" tabIndex={-1} className="absolute opacity-0 w-0 h-0 pointer-events-none" aria-hidden="true" />
                           {error && (
                             <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
                               className="text-xs text-destructive flex items-center justify-center gap-1.5">
