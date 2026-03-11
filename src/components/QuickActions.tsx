@@ -414,21 +414,13 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
     toast.info(`${label} coming soon!`);
   };
 
-  const { roles } = useUserRoles();
-  const isMerchant = roles.includes("merchant");
-  const { canApply: canMerchantApply } = useMerchantApplyAccess();
-
   const handleMoreService = (id: string, soon?: boolean) => {
     if (soon) { toast.info("Coming soon!"); return; }
     if (id === "refer") onRefer();
     else if (id === "savings") onSavings();
-    else if (id === "merchant_apply") onMerchantApply?.();
   };
 
-  // Filter out "Become a Merchant" if user already is merchant or targeting says no
-  const filteredMoreServices = visibleMoreServices.filter(
-    (item) => !(item.id === "merchant_apply" && (isMerchant || !canMerchantApply))
-  );
+  const filteredMoreServices = visibleMoreServices;
 
   return (
     <div className={`bg-card rounded-3xl shadow-card border border-border/60 ${compactMode ? "p-3" : "p-4 sm:p-5"}`}>
