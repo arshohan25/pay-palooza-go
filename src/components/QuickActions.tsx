@@ -282,7 +282,7 @@ interface QuickActionsProps {
   onShop: () => void;
   onBankTransfer: () => void;
   onSavings: () => void;
-  onMerchantApply?: () => void;
+  
 }
 
 const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney, onRefer, onShop, onBankTransfer, onSavings, onMerchantApply }: QuickActionsProps) => {
