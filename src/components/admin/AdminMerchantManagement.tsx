@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import AdminApiRequests from "./AdminApiRequests";
 import AdminMerchantApplications from "./AdminMerchantApplications";
+import MerchantApplyTargeting from "./MerchantApplyTargeting";
 import { motion } from "framer-motion";
 import {
   Store, Search, Download, Eye, Lock, CheckCircle, XCircle, TrendingUp,
