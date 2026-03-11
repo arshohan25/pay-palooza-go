@@ -187,7 +187,7 @@ export default function AdminGlobalToggles() {
   );
 
   return (
-    <div className="w-full max-w-full overflow-hidden space-y-6">
+    <div className="w-full space-y-6">
       <div className="space-y-3">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
