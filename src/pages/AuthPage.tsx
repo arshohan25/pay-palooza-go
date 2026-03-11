@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, AlertCircle, Eye, EyeOff, ArrowRight, RefreshCw,
-  Shield, CheckCircle2, UserRound, Delete, Smartphone,
+  Shield, CheckCircle2, UserRound, Smartphone,
   Lock, Star, Zap, Globe, Fingerprint,
 } from "lucide-react";
 import { haptics } from "@/lib/haptics";
@@ -178,38 +178,6 @@ function StepBar({ steps, current }: { steps: string[]; current: number }) {
   );
 }
 
-// ─── Circular Numeric Keypad (UPI style) ──────────────────────────────────────
-const KEYS = ["1","2","3","4","5","6","7","8","9","","0","⌫"];
-
-function NumPad({ onKey, onDelete, variant = "light" }: { onKey: (k: string) => void; onDelete: () => void; variant?: "light" | "dark" }) {
-  const isDark = variant === "dark";
-  return (
-    <div className="grid grid-cols-3 gap-3 max-w-[280px] mx-auto">
-      {KEYS.map((k, idx) => {
-        if (k === "") return <div key={idx} />;
-        const isDel = k === "⌫";
-        return (
-          <motion.button
-            key={k + idx}
-            whileTap={{ scale: 0.85, backgroundColor: isDark ? "rgba(255,255,255,0.15)" : "hsl(var(--primary) / 0.12)" }}
-            onClick={() => { haptics.light(); isDel ? onDelete() : onKey(k); }}
-            className={`w-[72px] h-[72px] mx-auto rounded-full text-xl font-bold flex items-center justify-center select-none transition-all duration-150
-              ${isDel
-                ? isDark
-                  ? "bg-white/10 text-white/70 active:bg-red-500/20 active:text-red-300"
-                  : "bg-muted text-muted-foreground active:bg-destructive/10 active:text-destructive"
-                : isDark
-                  ? "bg-white/8 text-white border border-white/10 hover:bg-white/12"
-                  : "bg-card text-foreground border border-border shadow-card hover:shadow-elevated"
-              }`}
-          >
-            {isDel ? <Delete size={20} /> : k}
-          </motion.button>
-        );
-      })}
-    </div>
-  );
-}
 
 // ─── OTP Boxes ────────────────────────────────────────────────────────────────
 function OtpBoxes({ value, error }: { value: string; error: boolean }) {
@@ -355,7 +323,6 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const isNewUser = !returningPhone;
 
   const goTo = useCallback((next: Mode, dir = 1) => {
-    (document.activeElement as HTMLElement)?.blur?.();
     setDir(dir); setMode(next); setError(""); haptics.medium();
   }, []);
 
@@ -612,35 +579,6 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     }
   }, [goTo, t, phone, returningPhone, forgotOtpCode, onAuthenticated]);
 
-  // ── Keypad handlers ────────────────────────────────────────────────────────
-  const handleOtpKey = (k: string, onComplete: (val: string) => void) => {
-    setOtp(prev => {
-      const next = (prev + k).slice(0, 6);
-      setError("");
-      if (next.length === 6) setTimeout(() => onComplete(next), 260);
-      return next;
-    });
-  };
-
-  const handlePinKey = (
-    k: string, currentPin: string, currentConfirm: string, stage: boolean,
-    onComplete: (p: string, c: string, s: boolean) => void,
-  ) => {
-    if (!stage) {
-      const next = (currentPin + k).slice(0, 4);
-      setPin(next); setError("");
-      if (next.length === 4) setTimeout(() => onComplete(next, currentConfirm, false), 260);
-    } else {
-      const next = (currentConfirm + k).slice(0, 4);
-      setConfirmPin(next); setError("");
-      if (next.length === 4) setTimeout(() => onComplete(currentPin, next, true), 260);
-    }
-  };
-
-  const handlePinDelete = (stage: boolean) => {
-    if (!stage) setPin(p => p.slice(0, -1));
-    else setConfirmPin(p => p.slice(0, -1));
-  };
 
   // ── Back ───────────────────────────────────────────────────────────────────
   const handleBack = () => {
@@ -773,9 +711,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 <h2 className="text-2xl font-black">{t.enterPin}</h2>
                 <p className="text-sm text-white/50">{t.trustedDevice}</p>
               </div>
-              <div onTouchStart={(e) => e.preventDefault()}>
-                <PinCircles pin={pin} error={!!error} dark />
-              </div>
+              <PinCircles pin={pin} error={!!error} dark />
               {error && (
                 <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
                   className="text-xs text-destructive/80 flex items-center gap-1.5">
@@ -785,17 +721,22 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
               {isSubmitting && (
                 <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-white/60">{t.signingIn}</motion.p>
               )}
-              <NumPad variant="dark"
-                onKey={(k) => {
+              <input
+                type="password"
+                inputMode="numeric"
+                autoFocus
+                maxLength={4}
+                value={pin}
+                onChange={(e) => {
                   if (isSubmitting) return;
-                  setPin(prev => {
-                    const next = (prev + k).slice(0, 4);
-                    setError("");
-                    if (next.length === 4) setTimeout(() => handleLoginPin(next), 260);
-                    return next;
-                  });
+                  const val = e.target.value.replace(/\D/g, "").slice(0, 4);
+                  setPin(val);
+                  setError("");
+                  if (val.length === 4) setTimeout(() => handleLoginPin(val), 260);
                 }}
-                onDelete={() => setPin(p => p.slice(0, -1))} />
+                className="w-48 h-14 text-center text-2xl font-black tracking-[0.8em] bg-white/10 border border-white/20 rounded-2xl text-white focus:outline-none focus:border-white/40 placeholder:text-white/20"
+                placeholder="····"
+              />
               <div className="flex items-center gap-6">
                 <button onClick={() => { setPin(""); setOtp(""); handleForgotSendOtp(); }}
                   className="text-sm text-white/50 hover:text-white/80 transition-colors">{forgotOtpSending ? "Sending…" : t.forgotPin}</button>
@@ -927,9 +868,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                               {t.codeSent} <span className="font-bold text-foreground">+88 {phone || returningPhone}</span>
                             </p>
                           </div>
-                          <div onTouchStart={(e) => e.preventDefault()}>
-                            <OtpBoxes value={otp} error={!!error} />
-                          </div>
+                          <OtpBoxes value={otp} error={!!error} />
                           {error && (
                             <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
                               className="text-xs text-destructive flex items-center justify-center gap-1.5">
@@ -945,7 +884,21 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                               }
                             </p>
                           </div>
-                          <NumPad onKey={(k) => handleOtpKey(k, onComplete)} onDelete={() => { setOtp(p => p.slice(0, -1)); setError(""); }} />
+                          <input
+                            type="tel"
+                            inputMode="numeric"
+                            autoFocus
+                            maxLength={6}
+                            value={otp}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+                              setOtp(val);
+                              setError("");
+                              if (val.length === 6) setTimeout(() => onComplete(val), 260);
+                            }}
+                            className="w-full h-14 text-center text-2xl font-black tracking-[0.6em] bg-card border-2 border-border rounded-2xl text-foreground focus:outline-none focus:border-primary focus:shadow-glow placeholder:text-muted-foreground/20"
+                            placeholder="000000"
+                          />
                           <div className="flex items-center justify-between pt-1">
                             <button className="flex items-center gap-1.5 text-sm text-muted-foreground"
                               onClick={() => { setOtp(""); setError(""); if (mode === "forgot_otp") handleForgotSendOtp(); }}>
@@ -984,9 +937,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                               </motion.div>
                             </AnimatePresence>
                           </div>
-                          <div onTouchStart={(e) => e.preventDefault()}>
-                            <PinCircles pin={currentVal} error={!!error} />
-                          </div>
+                          <PinCircles pin={currentVal} error={!!error} />
                           {error && (
                             <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
                               className="text-xs text-destructive flex items-center justify-center gap-1.5">
@@ -1003,7 +954,28 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                               className="text-sm text-primary font-semibold text-center">{t.resettingPin}</motion.p>
                           )}
-                          <NumPad onKey={(k) => { if (isSubmitting) return; handlePinKey(k, pin, confirmPin, confirmStage, onComplete); }} onDelete={() => handlePinDelete(confirmStage)} />
+                          <input
+                            type="password"
+                            inputMode="numeric"
+                            autoFocus
+                            maxLength={4}
+                            value={currentVal}
+                            onChange={(e) => {
+                              if (isSubmitting) return;
+                              const val = e.target.value.replace(/\D/g, "").slice(0, 4);
+                              if (!confirmStage) {
+                                setPin(val);
+                                setError("");
+                                if (val.length === 4) setTimeout(() => onComplete(val, confirmPin, false), 260);
+                              } else {
+                                setConfirmPin(val);
+                                setError("");
+                                if (val.length === 4) setTimeout(() => onComplete(pin, val, true), 260);
+                              }
+                            }}
+                            className="w-48 mx-auto h-14 text-center text-2xl font-black tracking-[0.8em] bg-card border-2 border-border rounded-2xl text-foreground focus:outline-none focus:border-primary focus:shadow-glow placeholder:text-muted-foreground/20"
+                            placeholder="····"
+                          />
                         </div>
                       );
                     })()}
