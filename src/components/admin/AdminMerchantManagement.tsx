@@ -89,7 +89,7 @@ function exportMerchantsCSV(merchants: any[]) {
 
 export default function AdminMerchantManagement() {
   const { categories: dbCategories, addCategory, getLabelForName } = useMerchantCategories();
-  const [mainTab, setMainTab] = useState<"merchants" | "api-requests" | "applications">("merchants");
+  const [mainTab, setMainTab] = useState<"merchants" | "api-requests" | "applications" | "targeting">("merchants");
   const [merchants, setMerchants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
