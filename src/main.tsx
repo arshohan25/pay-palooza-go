@@ -7,5 +7,15 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
+// Global: pressing Enter on any input blurs it (dismisses mobile keyboard)
+document.addEventListener("keydown", (e) => {
+  if (
+    e.key === "Enter" &&
+    e.target instanceof HTMLInputElement &&
+    e.target.type !== "submit"
+  ) {
+    e.target.blur();
+  }
+});
 
 createRoot(document.getElementById("root")!).render(<App />);
