@@ -1,29 +1,38 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Fix: Share Button Not Working in WalletShareSheet
 
-### What
+**Problem**: The share button calls `navigator.share()` but silently swallows all errors in the catch block. On many mobile browsers (especially in webview/iframe contexts), `navigator.share` exists but throws a `NotAllowedError`. The user gets no feedback when it fails.
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+**Root cause**: The catch block is empty — `catch { /* dismissed */ }` — so failures are invisible.
 
-### Changes
+### Changes in `src/components/WalletShareSheet.tsx`
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+1. **Improve `handleShare`**: Add proper error handling with fallback chain:
+   - Try `navigator.share()` first
+   - If it throws (not just user dismissal), fall back to `navigator.clipboard.writeText()`
+   - Show a toast notification confirming what happened (shared vs copied to clipboard)
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+2. **Add toast import** for user feedback via `sonner`.
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+```tsx
+const handleShare = async () => {
+  haptics.medium();
+  const text = `💳 My EasyPay Wallet ID: ${walletId}\n👤 ${userName}\n\nScan my QR code to send money instantly!`;
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: "My EasyPay Wallet", text });
+      return;
+    }
+  } catch (err: any) {
+    // Only fall through if it's NOT a user cancellation
+    if (err?.name === "AbortError") return;
+  }
+  // Fallback: copy to clipboard
+  handleCopy();
+  toast.success("Wallet ID copied to clipboard");
+};
+```
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+This ensures the share button always does something visible — either opens the native share sheet or copies the wallet ID with confirmation feedback.
 
