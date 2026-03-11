@@ -339,23 +339,6 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
     goTo("register_pin");
   };
 
-  const handleRegisterOtp = useCallback(async (val?: string) => {
-    const v = val ?? otp;
-    if (v.length < 6) { setError(t.enterOtp); return; }
-    // Verify OTP server-side
-    try {
-      const res = await supabase.functions.invoke("verify-otp", {
-        body: { phone, code: v, purpose: "registration" },
-      });
-      if (res.error || res.data?.error) {
-        setError(res.data?.error || t.incorrectOtp); haptics.error(); return;
-      }
-      setPin(""); setConfirmPin(""); setConfirmStage(false); goTo("register_pin");
-    } catch {
-      setError(t.incorrectOtp); haptics.error();
-    }
-  }, [otp, phone, goTo, t]);
-
   const handleRegisterPin = useCallback(async (currentPin: string, currentConfirm: string, stage: boolean) => {
     if (!stage) {
       if (currentPin.length < 4) { setError(t.enter4Digits); return; }
