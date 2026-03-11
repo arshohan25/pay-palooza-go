@@ -17,7 +17,7 @@ import KycFlow from "@/components/KycFlow";
 const LANG_KEY       = "mfs_ui_lang";
 const DEVICE_KEY     = "mfs_device_phone"; // stores last-used phone for returning user UX
 
-const DEMO_OTP = "123456";
+
 
 // ─── Translations ──────────────────────────────────────────────────────────────
 const T = {
