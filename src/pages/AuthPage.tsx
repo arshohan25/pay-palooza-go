@@ -323,7 +323,6 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const isNewUser = !returningPhone;
 
   const goTo = useCallback((next: Mode, dir = 1) => {
-    (document.activeElement as HTMLElement)?.blur?.();
     setDir(dir); setMode(next); setError(""); haptics.medium();
   }, []);
 
