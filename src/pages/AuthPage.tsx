@@ -58,7 +58,7 @@ const T = {
     available247: "24/7 Available", zeroFees: "Zero Fees",
     pinTooWeak: "PIN too weak. Avoid sequential/repeated digits.",
     pinsDontMatch: "PINs don't match. Try again.",
-    incorrectPin: "Incorrect PIN. Try again.", incorrectOtp: "Incorrect OTP. Demo: 123456",
+    incorrectPin: "Incorrect PIN. Try again.", incorrectOtp: "Incorrect OTP. Please try again.",
     validPhone: "Enter a valid 11-digit Bangladeshi mobile number.",
     alreadyRegisteredErr: "Already registered. Please log in.",
     notRegistered: "Number not registered. Create an account.",
