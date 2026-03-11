@@ -663,12 +663,12 @@ export default function AdminLimitManager() {
     <div className="space-y-4">
       <h2 className="text-lg font-bold text-foreground">Transaction Limit Management</h2>
       <Tabs defaultValue="global" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="global">Global Defaults</TabsTrigger>
-          <TabsTrigger value="overrides">User Overrides</TabsTrigger>
-          <TabsTrigger value="merchant"><Store className="w-3.5 h-3.5 mr-1 inline" />Merchant</TabsTrigger>
-          <TabsTrigger value="bulk">Bulk Actions</TabsTrigger>
-          <TabsTrigger value="audit"><History className="w-3.5 h-3.5 mr-1 inline" />Audit Trail</TabsTrigger>
+        <TabsList className="w-full flex overflow-x-auto scrollbar-none">
+          <TabsTrigger value="global" className="text-xs sm:text-sm flex-1 min-w-0">Global</TabsTrigger>
+          <TabsTrigger value="overrides" className="text-xs sm:text-sm flex-1 min-w-0">Overrides</TabsTrigger>
+          <TabsTrigger value="merchant" className="text-xs sm:text-sm flex-1 min-w-0"><Store className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Merchant</TabsTrigger>
+          <TabsTrigger value="bulk" className="text-xs sm:text-sm flex-1 min-w-0">Bulk</TabsTrigger>
+          <TabsTrigger value="audit" className="text-xs sm:text-sm flex-1 min-w-0"><History className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Audit</TabsTrigger>
         </TabsList>
         <TabsContent value="global"><GlobalDefaultsTab /></TabsContent>
         <TabsContent value="overrides"><UserOverridesTab /></TabsContent>
