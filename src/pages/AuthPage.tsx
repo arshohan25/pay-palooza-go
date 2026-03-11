@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, AlertCircle, Eye, EyeOff, ArrowRight, RefreshCw,
-  Shield, CheckCircle2, UserRound, Delete, Smartphone,
+  Shield, CheckCircle2, UserRound, Smartphone,
   Lock, Star, Zap, Globe, Fingerprint,
 } from "lucide-react";
 import { haptics } from "@/lib/haptics";
