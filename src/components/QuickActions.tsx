@@ -37,9 +37,6 @@ import {
   InsuranceIcon,
   GiftCardsIcon,
 } from "./QuickActionIcons";
-import { Store } from "lucide-react";
-import { useUserRoles } from "@/hooks/use-user-roles";
-import { useMerchantApplyAccess } from "@/hooks/use-merchant-apply-access";
 import { useI18n } from "@/lib/i18n";
 import { haptics } from "@/lib/haptics";
 import { useFeatureLocks } from "@/hooks/use-feature-locks";
