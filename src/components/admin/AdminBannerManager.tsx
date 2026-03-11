@@ -220,7 +220,7 @@ export default function AdminBannerManager() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="w-full max-w-full overflow-hidden space-y-4">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-base sm:text-lg font-bold flex items-center gap-2 min-w-0">
           <Image className="w-5 h-5 shrink-0" /> <span className="truncate">Promo Banners</span>
@@ -236,8 +236,8 @@ export default function AdminBannerManager() {
         <div className="space-y-2">
           {banners.map((b) => {
             return (
-              <Card key={b.id} className="overflow-hidden">
-                <div className="p-3">
+              <Card key={b.id} className="w-full max-w-full overflow-hidden">
+                <div className="p-2 sm:p-3">
                   <div className="flex items-start gap-2.5">
                     <GripVertical className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
                     {b.media_url ? (
