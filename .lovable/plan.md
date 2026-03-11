@@ -1,21 +1,29 @@
 
 
-## Fix: Checkmark icon clipped on phone input
+## Plan: Add Biller Categories to API Hub
 
-**Problem**: The phone input container (line 275) has `overflow-hidden` and the checkmark icon wrapper only has `pr-4`, causing it to get clipped at the right edge on smaller screens.
+### What
 
-**Fix in `src/pages/AuthPage.tsx`**:
-- Add `shrink-0` to the checkmark `motion.div` (line 284) so it doesn't get compressed by the flex layout
-- Ensure the checkmark has adequate right padding
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-Change line 284 from:
-```tsx
-<motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="pr-4">
-```
-to:
-```tsx
-<motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="pr-3 shrink-0">
-```
+### Changes
 
-This ensures the checkmark icon never gets squeezed or clipped by the flex container.
+**File: `src/components/admin/AdminApiHub.tsx`**
+
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
