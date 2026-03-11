@@ -38,7 +38,7 @@ const T = {
     noAccount: "Don't have an account?", createOneFree: "Create one free",
     supportedNet: "Supported",
     verifyNumber: "Verify Number", resetPin: "Reset PIN",
-    codeSent: "Code sent to", demoMode: "Demo mode — use OTP",
+    codeSent: "Code sent to",
     resendOtp: "Resend OTP", verify: "Verify",
     setPin: "Set Your PIN", newPin: "New PIN", confirmPin: "Confirm PIN",
     choosePinHint: "Choose a secure 4-digit PIN for your wallet",
