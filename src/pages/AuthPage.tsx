@@ -281,7 +281,7 @@ function PhoneInput({ value, onChange, error, autoFocus = false }: { value: stri
           onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 11))}
           className="flex-1 h-full px-4 text-lg font-bold bg-transparent focus:outline-none placeholder:text-muted-foreground/30 placeholder:font-normal" />
         {value.length === 11 && (
-          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="pr-4">
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="pr-3 shrink-0">
             <CheckCircle2 size={20} className="text-primary" />
           </motion.div>
         )}
