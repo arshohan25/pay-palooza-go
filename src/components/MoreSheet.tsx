@@ -24,7 +24,6 @@ const MoreSheet = ({ open, onClose, onBankTransfer, onSavings }: MoreSheetProps)
     setTimeout(() => {
       if (id === "bank") onBankTransfer();
       else if (id === "savings") onSavings();
-      else if (id === "merchant_apply") onMerchantApply?.();
       else toast.info("Coming soon!");
     }, 200);
   };
