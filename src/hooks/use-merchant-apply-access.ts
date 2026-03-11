@@ -57,9 +57,13 @@ export function useMerchantApplyAccess() {
           return;
         }
 
-        // Role check
+        // Role check — users with no explicit roles are treated as "customer"
         if (hasRoleFilter) {
-          const roleMatch = roles.some(r => (config.allowed_roles as string[]).includes(r));
+          const effectiveRoles = roles.length > 0 ? roles : ["customer"];
+          const allowedRoles = config.allowed_roles as string[];
+          const roleMatch = effectiveRoles.some((r: string) =>
+            allowedRoles.includes(r) || (r === "customer" && allowedRoles.includes("user"))
+          );
           if (roleMatch) passes = true;
         }
 
