@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Landmark, Wallet, Ticket, Heart, Store, X } from "lucide-react";
 import { toast } from "sonner";
 import { useUserRoles } from "@/hooks/use-user-roles";
+import { useMerchantApplyAccess } from "@/hooks/use-merchant-apply-access";
 
 interface MoreSheetProps {
   open: boolean;
@@ -22,9 +23,10 @@ const items = [
 const MoreSheet = ({ open, onClose, onBankTransfer, onSavings, onMerchantApply }: MoreSheetProps) => {
   const { roles } = useUserRoles();
   const isMerchant = roles.includes("merchant");
+  const { canApply: canMerchantApply } = useMerchantApplyAccess();
 
   const visibleItems = items.filter(item => {
-    if (item.id === "merchant_apply" && isMerchant) return false;
+    if (item.id === "merchant_apply" && (isMerchant || !canMerchantApply)) return false;
     return true;
   });
 

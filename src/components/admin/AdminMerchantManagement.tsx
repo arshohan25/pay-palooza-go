@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import AdminApiRequests from "./AdminApiRequests";
 import AdminMerchantApplications from "./AdminMerchantApplications";
+import MerchantApplyTargeting from "./MerchantApplyTargeting";
 import { motion } from "framer-motion";
 import {
   Store, Search, Download, Eye, Lock, CheckCircle, XCircle, TrendingUp,
@@ -88,7 +89,7 @@ function exportMerchantsCSV(merchants: any[]) {
 
 export default function AdminMerchantManagement() {
   const { categories: dbCategories, addCategory, getLabelForName } = useMerchantCategories();
-  const [mainTab, setMainTab] = useState<"merchants" | "api-requests" | "applications">("merchants");
+  const [mainTab, setMainTab] = useState<"merchants" | "api-requests" | "applications" | "targeting">("merchants");
   const [merchants, setMerchants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -394,7 +395,7 @@ export default function AdminMerchantManagement() {
   return (
     <div className="space-y-4">
       {/* Top-level sub-tabs */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <Button variant={mainTab === "merchants" ? "default" : "outline"} size="sm" onClick={() => setMainTab("merchants")}>
           <Store className="w-4 h-4 mr-1" /> Merchants
         </Button>
@@ -404,10 +405,14 @@ export default function AdminMerchantManagement() {
         <Button variant={mainTab === "applications" ? "default" : "outline"} size="sm" onClick={() => setMainTab("applications")}>
           <FileText className="w-4 h-4 mr-1" /> Applications
         </Button>
+        <Button variant={mainTab === "targeting" ? "default" : "outline"} size="sm" onClick={() => setMainTab("targeting")}>
+          <Filter className="w-4 h-4 mr-1" /> Targeting
+        </Button>
       </div>
 
       {mainTab === "api-requests" && <AdminApiRequests />}
       {mainTab === "applications" && <AdminMerchantApplications />}
+      {mainTab === "targeting" && <MerchantApplyTargeting />}
 
       {mainTab === "merchants" && <>
       {/* Summary Cards */}
