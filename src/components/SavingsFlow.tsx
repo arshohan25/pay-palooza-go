@@ -216,12 +216,15 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       else if (autoFreq === "weekly") nextRun.setDate(nextRun.getDate() + 7);
       else nextRun.setMonth(nextRun.getMonth() + 1);
 
+      const endsAt = calcEndsAt(autoDuration);
       const { error: insertErr } = await supabase.from("savings_auto_save").insert({
         user_id: user.id,
         goal_id: autoGoalId === "general" ? null : autoGoalId,
         frequency: autoFreq,
         amount: amt,
         next_run_at: nextRun.toISOString(),
+        duration: autoDuration,
+        ends_at: endsAt,
       } as any);
       if (insertErr) throw insertErr;
       toast.success("Auto-save schedule created!");
