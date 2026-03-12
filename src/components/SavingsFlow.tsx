@@ -59,7 +59,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
 
   useEffect(() => {
     const unsub = onBalanceChange(setBalance);
-    return unsub;
+    return () => { unsub(); };
   }, []);
 
   const loadGoals = useCallback(async () => {
