@@ -218,6 +218,35 @@ export default function AdminDashboard() {
   const { visible: realtimeVisible, flash: realtimeFlash } = useRealtimeIndicator();
   const { status: wsStatus, lastConnectedAt, reconnectAttempt } = useRealtimeStatus();
   const [disabledTogglesCount, setDisabledTogglesCount] = useState(0);
+  const [resetPinTarget, setResetPinTarget] = useState<{ userId: string; name: string; phone: string } | null>(null);
+  const [tempPin, setTempPin] = useState("");
+  const [resettingPin, setResettingPin] = useState(false);
+
+  const generateTempPin = () => {
+    const digits = "0123456789";
+    let pin = "";
+    for (let i = 0; i < 4; i++) pin += digits[Math.floor(Math.random() * 10)];
+    return pin;
+  };
+
+  const handleResetPin = async () => {
+    if (!resetPinTarget || !tempPin) return;
+    setResettingPin(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke("admin-reset-pin", {
+        body: { targetUserId: resetPinTarget.userId, tempPin },
+      });
+      if (res.error) throw new Error(res.error.message || "Failed to reset PIN");
+      if (res.data?.error) throw new Error(res.data.error);
+      toast.success(`PIN reset to ${tempPin} for ${resetPinTarget.name || resetPinTarget.phone}`, { duration: 10000 });
+      setResetPinTarget(null);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to reset PIN");
+    } finally {
+      setResettingPin(false);
+    }
+  };
   
 
   // Fetch disabled toggles count
@@ -1285,6 +1314,50 @@ export default function AdminDashboard() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Reset PIN Confirmation Dialog */}
+      <AlertDialog open={!!resetPinTarget} onOpenChange={(v) => { if (!v) setResetPinTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset User PIN</AlertDialogTitle>
+            <AlertDialogDescription>
+              Set a temporary PIN for <strong>{resetPinTarget?.name || resetPinTarget?.phone}</strong> ({resetPinTarget?.phone}). Share this PIN with the user securely — they should change it after logging in.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-foreground">Temporary PIN</label>
+              <Input
+                type="tel"
+                inputMode="numeric"
+                maxLength={4}
+                value={tempPin}
+                onChange={(e) => setTempPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                className="text-center text-2xl tracking-[0.5em] font-mono"
+                placeholder="0000"
+              />
+              <p className="text-xs text-muted-foreground">Must be exactly 4 digits</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs"
+              onClick={() => setTempPin(generateTempPin())}
+            >
+              <RefreshCw className="w-3 h-3 mr-1" /> Generate New
+            </Button>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={resettingPin}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleResetPin}
+              disabled={resettingPin || tempPin.length !== 4}
+            >
+              {resettingPin ? "Resetting…" : "Reset PIN"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* User Detail Drawer */}
       <Sheet open={!!detailUser} onOpenChange={(v) => { if (!v) { setDetailUser(null); setDetailData(null); } }}>
         <SheetContent side="right" className="w-full sm:max-w-lg p-0 flex flex-col">
@@ -1434,6 +1507,29 @@ export default function AdminDashboard() {
                       <span className={`pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg transition-transform ${detailData.profile?.kyc_exempt ? "translate-x-5" : "translate-x-0"}`} />
                     </button>
                   </div>
+                </div>
+
+                <Separator />
+
+                {/* Reset PIN */}
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground mb-2">Account Security</h4>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 text-xs"
+                    onClick={() => {
+                      setResetPinTarget({
+                        userId: detailUser.user_id,
+                        name: detailData.profile?.name || "",
+                        phone: detailData.profile?.phone || "",
+                      });
+                      setTempPin(generateTempPin());
+                    }}
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    Reset PIN
+                  </Button>
                 </div>
 
                 <Separator />
