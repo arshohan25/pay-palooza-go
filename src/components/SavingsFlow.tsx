@@ -527,6 +527,23 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 </div>
 
                 <div className="space-y-1.5">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Duration</p>
+                  <Select value={autoDuration} onValueChange={setAutoDuration}>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DURATION_OPTIONS.map(d => (
+                        <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground">
+                    Ends on: {new Date(calcEndsAt(autoDuration)).toLocaleDateString("en-BD", { year: "numeric", month: "short", day: "numeric" })}
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Link to Goal</p>
                   <Select value={autoGoalId} onValueChange={setAutoGoalId}>
                     <SelectTrigger className="rounded-xl">
