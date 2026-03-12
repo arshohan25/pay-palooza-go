@@ -19,6 +19,7 @@ interface Conversation {
   updated_at: string;
   rating: number | null;
   user_last_read_at: string | null;
+  complaint_number: string | null;
 }
 
 interface UnreadCounts {

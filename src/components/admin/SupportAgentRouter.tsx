@@ -12,7 +12,6 @@ export function useAgentRouting() {
   const [routing, setRouting] = useState(false);
 
   const getAvailableAgents = useCallback(async (): Promise<AvailableAgent[]> => {
-    // Get support-department available team members
     const { data: agents } = await supabase
       .from("team_members")
       .select("user_id, display_name")
@@ -21,7 +20,6 @@ export function useAgentRouting() {
 
     if (!agents || agents.length === 0) return [];
 
-    // Count open assigned conversations per agent
     const { data: convs } = await supabase
       .from("support_conversations")
       .select("assigned_agent_id")
@@ -69,7 +67,6 @@ export function useAgentRouting() {
 
       if (error) throw error;
 
-      // Audit log
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         await supabase.from("audit_logs").insert({
@@ -91,5 +88,35 @@ export function useAgentRouting() {
     }
   }, [getLeastBusyAgent]);
 
-  return { routing, getAvailableAgents, getLeastBusyAgent, assignConversation };
+  /** Auto-assign a new conversation to the least-busy agent (silent, no toast on failure) */
+  const autoAssignNewConversation = useCallback(async (conversationId: string): Promise<boolean> => {
+    try {
+      const best = await getLeastBusyAgent();
+      if (!best) return false;
+
+      const { error } = await supabase
+        .from("support_conversations")
+        .update({ assigned_agent_id: best.user_id } as any)
+        .eq("id", conversationId);
+
+      if (error) return false;
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await supabase.from("audit_logs").insert({
+          actor_id: session.user.id,
+          action: "support_conversation_auto_assigned",
+          entity_type: "support_conversation",
+          entity_id: conversationId,
+          details: { assigned_to: best.user_id, agent_name: best.display_name },
+        });
+      }
+
+      return true;
+    } catch {
+      return false;
+    }
+  }, [getLeastBusyAgent]);
+
+  return { routing, getAvailableAgents, getLeastBusyAgent, assignConversation, autoAssignNewConversation };
 }
