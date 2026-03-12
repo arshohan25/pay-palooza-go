@@ -1467,6 +1467,29 @@ export default function AdminDashboard() {
 
                 <Separator />
 
+                {/* Reset PIN */}
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground mb-2">Account Security</h4>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 text-xs"
+                    onClick={() => {
+                      setResetPinTarget({
+                        userId: detailUser.user_id,
+                        name: detailData.profile?.name || "",
+                        phone: detailData.profile?.phone || "",
+                      });
+                      setTempPin(generateTempPin());
+                    }}
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    Reset PIN
+                  </Button>
+                </div>
+
+                <Separator />
+
                 {/* Transaction Limits — Inline Editor */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
