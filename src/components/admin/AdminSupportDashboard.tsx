@@ -3,15 +3,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, User, Loader2, MessageCircle, ArrowLeft, CheckCheck, Check, Zap, ChevronDown, Plus, Trash2, Edit2, Save, X, UserPlus, Star, RotateCcw, CheckCircle2, Mail } from "lucide-react";
+import { Send, Bot, User, Loader2, MessageCircle, ArrowLeft, CheckCheck, Check, Zap, ChevronDown, Plus, Trash2, Edit2, Save, X, UserPlus, Star, RotateCcw, CheckCircle2, Mail, AlertTriangle } from "lucide-react";
 import { useAgentRouting } from "@/components/admin/SupportAgentRouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
@@ -26,6 +30,7 @@ interface Conversation {
   user_last_read_at: string | null;
   assigned_agent_id?: string | null;
   rating?: number | null;
+  complaint_number?: string | null;
   // joined
   user_name?: string;
   user_phone?: string;
@@ -85,10 +90,19 @@ const statusColor = (status: string) => {
   }
 };
 
+const generateComplaintNumber = () => {
+  const now = new Date();
+  const date = now.toISOString().slice(0, 10).replace(/-/g, "");
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let suffix = "";
+  for (let i = 0; i < 4; i++) suffix += chars[Math.floor(Math.random() * chars.length)];
+  return `CMP-${date}-${suffix}`;
+};
+
 export default function AdminSupportDashboard() {
   const { user } = useAuth();
   const { visible, flash } = useRealtimeIndicator();
-  const { routing, assignConversation } = useAgentRouting();
+  const { routing, assignConversation, autoAssignNewConversation } = useAgentRouting();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -108,6 +122,13 @@ export default function AdminSupportDashboard() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Escalation dialog state
+  const [showEscalateDialog, setShowEscalateDialog] = useState(false);
+  const [escalateSubject, setEscalateSubject] = useState("");
+  const [escalateDesc, setEscalateDesc] = useState("");
+  const [escalatePriority, setEscalatePriority] = useState("medium");
+  const [escalating, setEscalating] = useState(false);
 
   // Load canned replies from DB + defaults
   const loadCannedReplies = useCallback(async () => {
@@ -214,6 +235,7 @@ export default function AdminSupportDashboard() {
           ...c,
           assigned_agent_id: (c as any).assigned_agent_id || null,
           rating: (c as any).rating || null,
+          complaint_number: (c as any).complaint_number || null,
           user_name: profile?.name || "Unknown",
           user_phone: profile?.phone || "",
           user_email: (profile as any)?.email || "",
@@ -231,11 +253,18 @@ export default function AdminSupportDashboard() {
 
   useEffect(() => { loadConversations(); }, [loadConversations]);
 
-  // Realtime: new conversations or updates
+  // Realtime: new conversations or updates — auto-assign unassigned open tickets
   useEffect(() => {
     const channel = supabase
       .channel("admin-support-convs")
-      .on("postgres_changes", { event: "*", schema: "public", table: "support_conversations" }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_conversations" }, (payload) => {
+        // Auto-assign new open tickets without an agent
+        if (payload.eventType === "INSERT") {
+          const newConv = payload.new as any;
+          if (newConv.status === "open" && !newConv.assigned_agent_id) {
+            autoAssignNewConversation(newConv.id);
+          }
+        }
         loadConversations();
         flash();
       })
@@ -245,7 +274,7 @@ export default function AdminSupportDashboard() {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [loadConversations]);
+  }, [loadConversations, autoAssignNewConversation]);
 
   // Load messages for selected conversation
   const selectConversation = useCallback(async (conv: Conversation) => {
@@ -386,6 +415,79 @@ export default function AdminSupportDashboard() {
     toast.success(`Ticket ${newStatus}`);
   };
 
+  // Escalate to technical team
+  const handleEscalate = async () => {
+    if (!selectedConv || !user || !escalateSubject.trim()) return;
+    setEscalating(true);
+
+    const complaintNumber = generateComplaintNumber();
+
+    try {
+      // Insert complaint record
+      const { error: complaintError } = await supabase
+        .from("support_complaints" as any)
+        .insert({
+          complaint_number: complaintNumber,
+          conversation_id: selectedConv.id,
+          raised_by: user.id,
+          subject: escalateSubject.trim(),
+          description: escalateDesc.trim(),
+          priority: escalatePriority,
+          status: "open",
+        });
+
+      if (complaintError) throw complaintError;
+
+      // Update conversation with complaint number
+      await supabase
+        .from("support_conversations")
+        .update({ complaint_number: complaintNumber, updated_at: new Date().toISOString() } as any)
+        .eq("id", selectedConv.id);
+
+      // Send system message in chat
+      await supabase
+        .from("support_messages")
+        .insert({
+          conversation_id: selectedConv.id,
+          sender_id: user.id,
+          sender_role: "admin",
+          content: `⚠️ Complaint ${complaintNumber} has been raised to the technical team.\n\nPriority: ${escalatePriority.toUpperCase()}\nSubject: ${escalateSubject.trim()}\n\nOur technical team will investigate and update you soon.`,
+        });
+
+      // Update local state
+      setSelectedConv(prev => prev ? { ...prev, complaint_number: complaintNumber } : null);
+      setConversations(prev => prev.map(c => c.id === selectedConv.id ? { ...c, complaint_number: complaintNumber } : c));
+
+      // Audit log
+      await supabase.from("audit_logs").insert({
+        actor_id: user.id,
+        action: "support_complaint_raised",
+        entity_type: "support_complaint",
+        entity_id: selectedConv.id,
+        details: { complaint_number: complaintNumber, priority: escalatePriority, subject: escalateSubject.trim() },
+      });
+
+      toast.success(`Complaint ${complaintNumber} raised successfully`);
+      setShowEscalateDialog(false);
+      setEscalateSubject("");
+      setEscalateDesc("");
+      setEscalatePriority("medium");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to raise complaint");
+    } finally {
+      setEscalating(false);
+    }
+  };
+
+  const openEscalateDialog = () => {
+    if (selectedConv) {
+      setEscalateSubject(selectedConv.subject || "");
+      setEscalateDesc("");
+      setEscalatePriority("medium");
+      setShowEscalateDialog(true);
+    }
+  };
+
   // Filter conversations by status
   const filteredConversations = conversations.filter(c => {
     if (statusFilter === "all") return true;
@@ -471,6 +573,12 @@ export default function AdminSupportDashboard() {
                       {conv.subject && conv.subject !== "General Support" && (
                         <p className="text-[10px] font-medium text-foreground/70 truncate mt-0.5">
                           📋 {conv.subject}
+                        </p>
+                      )}
+                      {/* Complaint number badge */}
+                      {conv.complaint_number && (
+                        <p className="text-[9px] font-semibold text-amber-600 mt-0.5">
+                          🔧 {conv.complaint_number}
                         </p>
                       )}
                       <div className="flex items-center justify-between mt-0.5">
@@ -562,9 +670,23 @@ export default function AdminSupportDashboard() {
                 {selectedConv.subject && selectedConv.subject !== "General Support" && (
                   <p className="text-[9px] text-primary/70 font-medium mt-0.5">📋 {selectedConv.subject}</p>
                 )}
+                {selectedConv.complaint_number && (
+                  <p className="text-[9px] text-amber-600 font-semibold mt-0.5">🔧 {selectedConv.complaint_number}</p>
+                )}
               </div>
               {/* Action buttons based on status */}
               <div className="flex items-center gap-1.5 shrink-0">
+                {/* Escalate button — available for open/resolved tickets without a complaint */}
+                {(selectedConv.status === "open" || selectedConv.status === "resolved") && !selectedConv.complaint_number && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-[10px] h-7 rounded-lg gap-1 border-amber-500/30 text-amber-600 hover:bg-amber-50"
+                    onClick={openEscalateDialog}
+                  >
+                    <AlertTriangle size={12} /> Escalate
+                  </Button>
+                )}
                 {selectedConv.status === "open" && (
                   <>
                     <Button
@@ -640,7 +762,7 @@ export default function AdminSupportDashboard() {
                           {isAdmin ? <Bot size={12} className="text-primary" /> : <User size={12} className="text-muted-foreground" />}
                         </div>
                         <div className={`rounded-2xl px-3 py-2 max-w-[70%] ${isAdmin ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted/60 text-foreground rounded-bl-md"}`}>
-                          <p className="text-xs leading-relaxed break-words">{msg.content}</p>
+                          <p className="text-xs leading-relaxed break-words whitespace-pre-line">{msg.content}</p>
                           <div className={`flex items-center gap-1 mt-0.5 ${isAdmin ? "justify-end" : ""}`}>
                             <p className={`text-[9px] ${isAdmin ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
                               {new Date(msg.created_at).toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" })}
@@ -851,6 +973,65 @@ export default function AdminSupportDashboard() {
           </div>
         )}
       </div>
+
+      {/* Escalation Dialog */}
+      <AlertDialog open={showEscalateDialog} onOpenChange={setShowEscalateDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-sm">
+              <AlertTriangle size={16} className="text-amber-500" />
+              Escalate to Technical Team
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs">
+              Raise a complaint for technical investigation. The user will receive a complaint number to track progress.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Subject</Label>
+              <Input
+                value={escalateSubject}
+                onChange={e => setEscalateSubject(e.target.value)}
+                placeholder="Complaint subject..."
+                className="h-9 text-xs"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Description</Label>
+              <Textarea
+                value={escalateDesc}
+                onChange={e => setEscalateDesc(e.target.value)}
+                placeholder="Describe the technical issue for the team..."
+                rows={3}
+                className="text-xs"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Priority</Label>
+              <RadioGroup value={escalatePriority} onValueChange={setEscalatePriority} className="flex gap-3">
+                {["low", "medium", "high", "critical"].map(p => (
+                  <div key={p} className="flex items-center gap-1.5">
+                    <RadioGroupItem value={p} id={`priority-${p}`} />
+                    <Label htmlFor={`priority-${p}`} className="text-xs capitalize cursor-pointer">{p}</Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="text-xs h-8">Cancel</AlertDialogCancel>
+            <Button
+              size="sm"
+              className="h-8 text-xs gap-1 bg-amber-500 hover:bg-amber-600 text-white"
+              disabled={!escalateSubject.trim() || escalating}
+              onClick={handleEscalate}
+            >
+              {escalating ? <Loader2 size={12} className="animate-spin" /> : <AlertTriangle size={12} />}
+              Raise Complaint
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

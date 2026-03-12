@@ -1,59 +1,29 @@
 
 
-## Auto-Assign & Complaint Escalation System
+## Plan: Add Biller Categories to API Hub
 
-### What We're Building
+### What
 
-1. **Auto-assign**: When a user creates a new support ticket, automatically assign it to the least-busy available support agent (no manual "Assign" click needed).
-2. **Escalate to Technical Team**: Support agents can raise a complaint/escalation to the technical team from within a ticket, generating a unique complaint number (e.g., `CMP-20260312-A1B2`).
-3. **User sees complaint number**: The complaint number is shown on the user's ticket page so they can track the escalation.
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-### Database Changes
+### Changes
 
-**New table: `support_complaints`**
-- `id` (uuid, PK)
-- `complaint_number` (text, unique) — auto-generated like `CMP-YYYYMMDD-XXXX`
-- `conversation_id` (uuid, FK → support_conversations)
-- `raised_by` (uuid) — support agent who escalated
-- `assigned_to` (uuid, nullable) — technical team member
-- `subject` (text)
-- `description` (text)
-- `priority` (text: low/medium/high/critical, default 'medium')
-- `status` (text: open/in_progress/resolved, default 'open')
-- `resolution_notes` (text, nullable)
-- `created_at` / `updated_at` (timestamptz)
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-RLS: Admins can read/write. Users can read their own (via conversation_id → user_id join).
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-**Add column to `support_conversations`**: `complaint_number` (text, nullable) — denormalized for quick display on user tickets.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-### Auto-Assign Logic
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-**`src/components/admin/SupportAgentRouter.tsx`** — Add `autoAssignNewConversation()` function.
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-**Trigger point**: In `AdminSupportDashboard.tsx`, when the realtime listener detects a new `support_conversations` INSERT with status `open` and no `assigned_agent_id`, automatically call `assignConversation(convId)` to route to the least-busy agent.
-
-### Complaint Escalation UI
-
-**`src/components/admin/AdminSupportDashboard.tsx`**:
-- Add "Escalate" button in chat header (next to Resolve/Close), with `AlertTriangle` icon
-- Opens an AlertDialog with:
-  - Pre-filled subject from ticket
-  - Description textarea for the agent to explain the issue
-  - Priority selector (Low/Medium/High/Critical)
-- On submit: inserts into `support_complaints`, updates `support_conversations.complaint_number`, sends a system message in the chat like "⚠️ Complaint CMP-20260312-A1B2 raised to technical team"
-- Toast with complaint number
-
-### User-Facing Complaint Number
-
-**`src/pages/MyTicketsPage.tsx`**:
-- Show complaint number badge on tickets that have one (fetched from `support_conversations.complaint_number`)
-- Display as a small badge like `🔧 CMP-20260312-A1B2` below the subject
+3. Add the new category icons to the `categoryIcons` map.
 
 ### Files
-
-1. **Migration SQL** — `support_complaints` table + `complaint_number` column on `support_conversations`
-2. **`src/components/admin/SupportAgentRouter.tsx`** — Add auto-assign helper
-3. **`src/components/admin/AdminSupportDashboard.tsx`** — Auto-assign on new ticket detection + Escalate button/dialog
-4. **`src/pages/MyTicketsPage.tsx`** — Show complaint number on user tickets
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
