@@ -218,6 +218,35 @@ export default function AdminDashboard() {
   const { visible: realtimeVisible, flash: realtimeFlash } = useRealtimeIndicator();
   const { status: wsStatus, lastConnectedAt, reconnectAttempt } = useRealtimeStatus();
   const [disabledTogglesCount, setDisabledTogglesCount] = useState(0);
+  const [resetPinTarget, setResetPinTarget] = useState<{ userId: string; name: string; phone: string } | null>(null);
+  const [tempPin, setTempPin] = useState("");
+  const [resettingPin, setResettingPin] = useState(false);
+
+  const generateTempPin = () => {
+    const digits = "0123456789";
+    let pin = "";
+    for (let i = 0; i < 4; i++) pin += digits[Math.floor(Math.random() * 10)];
+    return pin;
+  };
+
+  const handleResetPin = async () => {
+    if (!resetPinTarget || !tempPin) return;
+    setResettingPin(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke("admin-reset-pin", {
+        body: { targetUserId: resetPinTarget.userId, tempPin },
+      });
+      if (res.error) throw new Error(res.error.message || "Failed to reset PIN");
+      if (res.data?.error) throw new Error(res.data.error);
+      toast.success(`PIN reset to ${tempPin} for ${resetPinTarget.name || resetPinTarget.phone}`, { duration: 10000 });
+      setResetPinTarget(null);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to reset PIN");
+    } finally {
+      setResettingPin(false);
+    }
+  };
   
 
   // Fetch disabled toggles count
