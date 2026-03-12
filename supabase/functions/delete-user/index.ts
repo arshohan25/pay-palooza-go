@@ -5,6 +5,74 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function archiveUserData(adminClient: any, userId: string, deletedBy: string, balanceRecovered: number) {
+  // Snapshot all user data before deletion
+  const [
+    profileRes, txnRes, rolesRes, kycRes, notiRes,
+    supportConvRes, supportMsgRes, referralsRes, referralRewardsRes,
+    agentsRes, merchantsRes, distributorsRes, ordersRes,
+    deviceRes, savedBanksRes, permissionsRes, featureLocksRes
+  ] = await Promise.all([
+    adminClient.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
+    adminClient.from("transactions").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+    adminClient.from("user_roles").select("*").eq("user_id", userId),
+    adminClient.from("kyc_verifications").select("*").eq("user_id", userId).maybeSingle(),
+    adminClient.from("notifications").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(500),
+    adminClient.from("support_conversations").select("*").eq("user_id", userId),
+    adminClient.from("support_messages").select("*").eq("sender_id", userId),
+    adminClient.from("referrals").select("*").or(`referrer_id.eq.${userId},referee_id.eq.${userId}`),
+    adminClient.from("referral_rewards").select("*").eq("referrer_id", userId),
+    adminClient.from("agents").select("*").eq("user_id", userId),
+    adminClient.from("merchants").select("*").eq("user_id", userId),
+    adminClient.from("distributors").select("*").eq("user_id", userId),
+    adminClient.from("orders").select("*").eq("user_id", userId),
+    adminClient.from("device_registrations").select("*").eq("user_id", userId),
+    adminClient.from("saved_bank_accounts").select("*").eq("user_id", userId),
+    adminClient.from("user_permissions").select("*").eq("user_id", userId),
+    adminClient.from("feature_locks").select("*").eq("target_user_id", userId),
+  ]);
+
+  const profile = profileRes.data;
+
+  const { error: archiveError } = await adminClient.from("deleted_users").insert({
+    user_id: userId,
+    name: profile?.name || null,
+    phone: profile?.phone || null,
+    avatar_url: profile?.avatar_url || null,
+    balance_at_deletion: profile?.balance || 0,
+    profile_data: profile || {},
+    transactions: txnRes.data || [],
+    roles: rolesRes.data || [],
+    kyc_data: kycRes.data || {},
+    notifications: notiRes.data || [],
+    support_conversations: {
+      conversations: supportConvRes.data || [],
+      messages: supportMsgRes.data || [],
+    },
+    referrals: {
+      referrals: referralsRes.data || [],
+      rewards: referralRewardsRes.data || [],
+    },
+    other_data: {
+      agents: agentsRes.data || [],
+      merchants: merchantsRes.data || [],
+      distributors: distributorsRes.data || [],
+      orders: ordersRes.data || [],
+      devices: deviceRes.data || [],
+      saved_banks: savedBanksRes.data || [],
+      permissions: permissionsRes.data || [],
+      feature_locks: featureLocksRes.data || [],
+    },
+    deleted_by: deletedBy,
+    balance_recovered: balanceRecovered,
+  });
+
+  if (archiveError) {
+    console.error("Failed to archive user data:", archiveError);
+    throw new Error("Failed to archive user data: " + archiveError.message);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -82,7 +150,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Grace period check: if deactivated and not yet past scheduled deletion, require force flag
+    // Grace period check
     if (
       targetProfile.status === "deactivated" &&
       targetProfile.scheduled_deletion_at &&
@@ -155,6 +223,9 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Archive user data to trash before deleting
+    await archiveUserData(adminClient, target_user_id, caller.id, balanceRecovered);
+
     // Delete from all public tables (order matters for FK constraints)
     const tablesToClean = [
       { table: "referral_rewards", column: "referrer_id" },
@@ -195,6 +266,7 @@ Deno.serve(async (req) => {
         deleted_user_phone: targetProfile.phone,
         deleted_user_balance: targetProfile.balance,
         balance_recovered: balanceRecovered,
+        archived_to_trash: true,
       },
     });
 
@@ -215,6 +287,7 @@ Deno.serve(async (req) => {
         phone: targetProfile.phone,
       },
       balance_recovered: balanceRecovered,
+      archived: true,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

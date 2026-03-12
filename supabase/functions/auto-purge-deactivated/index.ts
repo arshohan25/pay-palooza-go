@@ -5,6 +5,74 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function archiveUserData(adminClient: any, userId: string, deletedBy: string, balanceRecovered: number) {
+  const [
+    profileRes, txnRes, rolesRes, kycRes, notiRes,
+    supportConvRes, supportMsgRes, referralsRes, referralRewardsRes,
+    agentsRes, merchantsRes, distributorsRes, ordersRes,
+    deviceRes, savedBanksRes, permissionsRes, featureLocksRes
+  ] = await Promise.all([
+    adminClient.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
+    adminClient.from("transactions").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+    adminClient.from("user_roles").select("*").eq("user_id", userId),
+    adminClient.from("kyc_verifications").select("*").eq("user_id", userId).maybeSingle(),
+    adminClient.from("notifications").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(500),
+    adminClient.from("support_conversations").select("*").eq("user_id", userId),
+    adminClient.from("support_messages").select("*").eq("sender_id", userId),
+    adminClient.from("referrals").select("*").or(`referrer_id.eq.${userId},referee_id.eq.${userId}`),
+    adminClient.from("referral_rewards").select("*").eq("referrer_id", userId),
+    adminClient.from("agents").select("*").eq("user_id", userId),
+    adminClient.from("merchants").select("*").eq("user_id", userId),
+    adminClient.from("distributors").select("*").eq("user_id", userId),
+    adminClient.from("orders").select("*").eq("user_id", userId),
+    adminClient.from("device_registrations").select("*").eq("user_id", userId),
+    adminClient.from("saved_bank_accounts").select("*").eq("user_id", userId),
+    adminClient.from("user_permissions").select("*").eq("user_id", userId),
+    adminClient.from("feature_locks").select("*").eq("target_user_id", userId),
+  ]);
+
+  const profile = profileRes.data;
+
+  const { error: archiveError } = await adminClient.from("deleted_users").insert({
+    user_id: userId,
+    name: profile?.name || null,
+    phone: profile?.phone || null,
+    avatar_url: profile?.avatar_url || null,
+    balance_at_deletion: profile?.balance || 0,
+    profile_data: profile || {},
+    transactions: txnRes.data || [],
+    roles: rolesRes.data || [],
+    kyc_data: kycRes.data || {},
+    notifications: notiRes.data || [],
+    support_conversations: {
+      conversations: supportConvRes.data || [],
+      messages: supportMsgRes.data || [],
+    },
+    referrals: {
+      referrals: referralsRes.data || [],
+      rewards: referralRewardsRes.data || [],
+    },
+    other_data: {
+      agents: agentsRes.data || [],
+      merchants: merchantsRes.data || [],
+      distributors: distributorsRes.data || [],
+      orders: ordersRes.data || [],
+      devices: deviceRes.data || [],
+      saved_banks: savedBanksRes.data || [],
+      permissions: permissionsRes.data || [],
+      feature_locks: featureLocksRes.data || [],
+    },
+    deleted_by: deletedBy,
+    deletion_reason: "Auto-purge: grace period expired",
+    balance_recovered: balanceRecovered,
+  });
+
+  if (archiveError) {
+    console.error("Failed to archive user data:", archiveError);
+    // Don't throw — log and continue with purge
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -76,6 +144,7 @@ Deno.serve(async (req) => {
     for (const user of expiredUsers) {
       try {
         // Credit remaining balance to treasury before cleanup
+        let balanceRecovered = 0;
         if (user.balance > 0) {
           const { data: treasury } = await adminClient
             .from("platform_treasury")
@@ -103,6 +172,7 @@ Deno.serve(async (req) => {
               reference: "AUTO-PURGE-" + user.user_id.substring(0, 8),
             });
 
+            balanceRecovered = user.balance;
             console.log(`Recovered ৳${user.balance} from purged user ${user.user_id}`);
 
             // Notify all admins about balance recovery
@@ -126,6 +196,9 @@ Deno.serve(async (req) => {
           }
         }
 
+        // Archive user data to trash before deleting
+        await archiveUserData(adminClient, user.user_id, user.user_id, balanceRecovered);
+
         // Cascading delete from all public tables
         for (const { table, column } of tablesToClean) {
           await adminClient.from(table).delete().eq(column, user.user_id);
@@ -133,7 +206,7 @@ Deno.serve(async (req) => {
 
         // Audit log
         await adminClient.from("audit_logs").insert({
-          actor_id: user.user_id, // self-reference since it's automated
+          actor_id: user.user_id,
           action: "auto_purge_user",
           entity_type: "user",
           entity_id: user.user_id,
@@ -143,6 +216,7 @@ Deno.serve(async (req) => {
             purged_user_balance: user.balance,
             balance_recovered: user.balance > 0 ? user.balance : 0,
             reason: "Grace period expired",
+            archived_to_trash: true,
           },
         });
 

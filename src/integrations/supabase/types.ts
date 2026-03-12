@@ -324,6 +324,69 @@ export type Database = {
           },
         ]
       }
+      deleted_users: {
+        Row: {
+          avatar_url: string | null
+          balance_at_deletion: number | null
+          balance_recovered: number | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deletion_reason: string | null
+          id: string
+          kyc_data: Json | null
+          name: string | null
+          notifications: Json | null
+          other_data: Json | null
+          phone: string | null
+          profile_data: Json | null
+          referrals: Json | null
+          roles: Json | null
+          support_conversations: Json | null
+          transactions: Json | null
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          balance_at_deletion?: number | null
+          balance_recovered?: number | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
+          id?: string
+          kyc_data?: Json | null
+          name?: string | null
+          notifications?: Json | null
+          other_data?: Json | null
+          phone?: string | null
+          profile_data?: Json | null
+          referrals?: Json | null
+          roles?: Json | null
+          support_conversations?: Json | null
+          transactions?: Json | null
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          balance_at_deletion?: number | null
+          balance_recovered?: number | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
+          id?: string
+          kyc_data?: Json | null
+          name?: string | null
+          notifications?: Json | null
+          other_data?: Json | null
+          phone?: string | null
+          profile_data?: Json | null
+          referrals?: Json | null
+          roles?: Json | null
+          support_conversations?: Json | null
+          transactions?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       device_registrations: {
         Row: {
           created_at: string
