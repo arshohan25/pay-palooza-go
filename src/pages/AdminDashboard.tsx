@@ -180,7 +180,7 @@ const NAV_ITEMS = [
   { id: "banners", label: "Banners", icon: Image },
   { id: "limits", label: "Limits", icon: Scale },
   { id: "team", label: "Team", icon: Users },
-  { id: "savings", label: "Savings", icon: PiggyBank },
+  { id: "savings", label: "Savings", icon: Wallet },
   { id: "notify", label: "Notify", icon: Bell },
   { id: "trash", label: "Trash", icon: Trash2 },
 ];
