@@ -180,6 +180,7 @@ const NAV_ITEMS = [
   { id: "limits", label: "Limits", icon: Scale },
   { id: "team", label: "Team", icon: Users },
   { id: "notify", label: "Notify", icon: Bell },
+  { id: "trash", label: "Trash", icon: Trash2 },
 ];
 
 export default function AdminDashboard() {
