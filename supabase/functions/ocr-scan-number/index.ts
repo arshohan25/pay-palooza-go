@@ -21,79 +21,71 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Use Gemini 2.5 Flash for fast OCR
-    const apiKey = Deno.env.get("GOOGLE_AI_API_KEY");
-    if (!apiKey) {
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
       return new Response(
         JSON.stringify({ error: "OCR service not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Strip data URL prefix if present
-    const base64Data = image.includes(",") ? image.split(",")[1] : image;
-    const mimeType = image.startsWith("data:") 
-      ? image.split(";")[0].split(":")[1] 
-      : "image/jpeg";
+    // Ensure proper data URL format
+    const dataUrl = image.startsWith("data:")
+      ? image
+      : `data:image/jpeg;base64,${image}`;
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: `You are a phone number extractor. Look at this image and find any phone numbers written, printed, or displayed in it. Focus on Bangladesh mobile numbers (11 digits starting with 01). Also look for merchant codes starting with MRC.
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "system",
+            content: `You are a phone number and merchant code extractor. Extract any visible phone numbers and merchant codes from the image. Focus on Bangladesh mobile numbers (11 digits starting with 01) and merchant codes starting with MRC.
 
 Return ONLY a JSON object with this exact format, no markdown:
 {"numbers": ["01XXXXXXXXX"], "merchant_codes": ["MRC-XXXX-XXXX"]}
 
 Rules:
-- Extract all visible phone numbers, even if handwritten or partially visible
-- Normalize to 11-digit format (remove +880, spaces, dashes)
+- Extract all visible phone numbers even if handwritten, printed, or on a screen
+- Normalize to 11-digit format (remove +880, country code, spaces, dashes)
 - If no numbers found, return {"numbers": [], "merchant_codes": []}
-- Only include valid-looking Bangladesh mobile numbers (01X followed by 8 digits)
-- Include any MRC-prefixed merchant codes found`
-                },
-                {
-                  inlineData: {
-                    mimeType,
-                    data: base64Data,
-                  },
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 256,
+- Only include valid Bangladesh mobile numbers (01 followed by 3-9 then 8 digits)
+- Include any MRC-prefixed merchant codes found`,
           },
-        }),
-      }
-    );
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Extract phone numbers and merchant codes from this image." },
+              { type: "image_url", image_url: { url: dataUrl } },
+            ],
+          },
+        ],
+        temperature: 0.1,
+        max_tokens: 256,
+      }),
+    });
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
-      console.error("Gemini API error:", errText);
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Lovable AI error:", errText);
       return new Response(
         JSON.stringify({ error: "OCR processing failed" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const geminiData = await geminiRes.json();
-    const rawText =
-      geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const data = await response.json();
+    const rawText = data?.choices?.[0]?.message?.content || "";
 
-    // Parse the JSON response from Gemini
     let numbers: string[] = [];
     let merchantCodes: string[] = [];
 
     try {
-      // Clean potential markdown wrapping
       const cleaned = rawText.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       const parsed = JSON.parse(cleaned);
       numbers = (parsed.numbers || []).filter(
@@ -103,7 +95,7 @@ Rules:
         (c: string) => /^MRC/i.test(c)
       );
     } catch {
-      // Fallback: regex extract from raw text
+      // Fallback: regex extract
       const phoneMatches = rawText.match(/01[3-9]\d{8}/g) || [];
       numbers = [...new Set(phoneMatches)];
       const mrcMatches = rawText.match(/MRC-?\w{4}-?\w{4}/gi) || [];
