@@ -1276,6 +1276,212 @@ export default function AdminDashboard() {
 
         {/* ═══ NOTIFICATIONS ═══ */}
         {activeTab === "notify" && <AdminNotificationSender />}
+
+        {/* ═══ TRASH ═══ */}
+        {activeTab === "trash" && (
+          <div className="space-y-4">
+            <Card className="border-0 shadow-[var(--shadow-card)]">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Trash2 className="w-4 h-4 text-muted-foreground" /> Deleted Users
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {deletedUsers.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <Trash2 className="w-10 h-10 text-muted-foreground/40 mb-3" />
+                    <p className="text-sm font-medium text-foreground">Trash is empty</p>
+                    <p className="text-xs text-muted-foreground mt-1">Deleted users will appear here</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border text-muted-foreground">
+                          <th className="text-left px-4 py-3 font-medium">Name</th>
+                          <th className="text-left px-4 py-3 font-medium">Phone</th>
+                          <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Balance</th>
+                          <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Recovered</th>
+                          <th className="text-left px-4 py-3 font-medium">Deleted</th>
+                          <th className="text-left px-4 py-3 font-medium">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {deletedUsers.map((du: any) => (
+                          <tr key={du.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                            <td className="px-4 py-3 font-medium text-foreground">{du.name || "—"}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{du.phone || "—"}</td>
+                            <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">৳{(du.balance_at_deletion ?? 0).toLocaleString()}</td>
+                            <td className="px-4 py-3 hidden md:table-cell">
+                              {du.balance_recovered > 0 ? (
+                                <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                  ৳{du.balance_recovered.toLocaleString()}
+                                </Badge>
+                              ) : "—"}
+                            </td>
+                            <td className="px-4 py-3 text-muted-foreground text-xs">
+                              {du.deleted_at ? new Date(du.deleted_at).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" }) : "—"}
+                            </td>
+                            <td className="px-4 py-3">
+                              <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => openTrashDetail(du.id)}>
+                                <Eye className="w-3 h-3 mr-1" /> View
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* ═══ Trash Detail Sheet ═══ */}
+        <Sheet open={!!trashDetailId} onOpenChange={(open) => { if (!open) { setTrashDetailId(null); setTrashDetail(null); } }}>
+          <SheetContent side="right" className="w-full sm:max-w-lg p-0 flex flex-col">
+            <SheetHeader className="px-4 pt-4 pb-2 shrink-0">
+              <SheetTitle className="text-base">Deleted User Details</SheetTitle>
+              <SheetDescription className="text-xs">Archived data from before deletion</SheetDescription>
+            </SheetHeader>
+            <ScrollArea className="flex-1 px-4 pb-4">
+              {trashDetailLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : trashDetail ? (
+                <div className="space-y-4">
+                  {/* Profile snapshot */}
+                  <div className="bg-muted/30 rounded-xl p-4 space-y-2">
+                    <h4 className="text-sm font-semibold text-foreground">Profile</h4>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div><span className="text-muted-foreground">Name:</span> <span className="text-foreground font-medium">{trashDetail.name || "—"}</span></div>
+                      <div><span className="text-muted-foreground">Phone:</span> <span className="text-foreground font-medium">{trashDetail.phone || "—"}</span></div>
+                      <div><span className="text-muted-foreground">Balance:</span> <span className="text-foreground font-medium">৳{(trashDetail.balance_at_deletion ?? 0).toLocaleString()}</span></div>
+                      <div><span className="text-muted-foreground">Recovered:</span> <span className="text-foreground font-medium">৳{(trashDetail.balance_recovered ?? 0).toLocaleString()}</span></div>
+                      <div><span className="text-muted-foreground">Deleted:</span> <span className="text-foreground font-medium">{trashDetail.deleted_at ? new Date(trashDetail.deleted_at).toLocaleString() : "—"}</span></div>
+                      <div><span className="text-muted-foreground">Reason:</span> <span className="text-foreground font-medium">{trashDetail.deletion_reason || "Manual"}</span></div>
+                    </div>
+                    {trashDetail.profile_data?.email && (
+                      <div className="text-xs"><span className="text-muted-foreground">Email:</span> <span className="text-foreground">{trashDetail.profile_data.email}</span></div>
+                    )}
+                    {trashDetail.profile_data?.created_at && (
+                      <div className="text-xs"><span className="text-muted-foreground">Account created:</span> <span className="text-foreground">{new Date(trashDetail.profile_data.created_at).toLocaleDateString()}</span></div>
+                    )}
+                  </div>
+
+                  {/* Roles */}
+                  {trashDetail.roles?.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-foreground mb-1">Roles</h4>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {trashDetail.roles.map((r: any, i: number) => (
+                          <Badge key={i} variant="secondary" className="text-xs">{r.role}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <Separator />
+
+                  {/* KYC */}
+                  {trashDetail.kyc_data && Object.keys(trashDetail.kyc_data).length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-foreground mb-1">KYC</h4>
+                      <div className="grid grid-cols-2 gap-2 text-xs bg-muted/30 rounded-lg p-3">
+                        <div><span className="text-muted-foreground">Status:</span> <Badge variant="outline" className="text-[10px] ml-1">{trashDetail.kyc_data.status || "—"}</Badge></div>
+                        <div><span className="text-muted-foreground">NID:</span> <span className="text-foreground">{trashDetail.kyc_data.nid_number || "—"}</span></div>
+                        <div><span className="text-muted-foreground">Full Name:</span> <span className="text-foreground">{trashDetail.kyc_data.full_name || "—"}</span></div>
+                        <div><span className="text-muted-foreground">DOB:</span> <span className="text-foreground">{trashDetail.kyc_data.date_of_birth || "—"}</span></div>
+                      </div>
+                    </div>
+                  )}
+
+                  <Separator />
+
+                  {/* Transactions */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground mb-1">
+                      Transactions ({(trashDetail.transactions ?? []).length})
+                    </h4>
+                    {(trashDetail.transactions ?? []).length > 0 ? (
+                      <div className="space-y-1 max-h-60 overflow-y-auto">
+                        {(trashDetail.transactions as any[]).slice(0, 50).map((txn: any, i: number) => (
+                          <div key={i} className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2 text-xs">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className={`text-[10px] ${TXN_TYPE_COLORS[txn.type] ?? ""}`}>{txn.type}</Badge>
+                              <span className="text-muted-foreground">
+                                {txn.created_at ? new Date(txn.created_at).toLocaleDateString("en-BD", { month: "short", day: "numeric" }) : ""}
+                              </span>
+                            </div>
+                            <span className="font-semibold text-foreground">৳{txn.amount?.toLocaleString()}</span>
+                          </div>
+                        ))}
+                        {(trashDetail.transactions as any[]).length > 50 && (
+                          <p className="text-xs text-muted-foreground text-center py-1">
+                            +{(trashDetail.transactions as any[]).length - 50} more transactions
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">No transactions</p>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  {/* Other data summary */}
+                  {trashDetail.other_data && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-foreground mb-1">Other Data</h4>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        {Object.entries(trashDetail.other_data as Record<string, any[]>).map(([key, val]) => (
+                          <div key={key} className="bg-muted/30 rounded-lg px-3 py-2">
+                            <span className="text-muted-foreground capitalize">{key.replace(/_/g, " ")}:</span>{" "}
+                            <span className="text-foreground font-medium">{Array.isArray(val) ? val.length : "—"}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Support conversations */}
+                  {trashDetail.support_conversations?.messages?.length > 0 && (
+                    <>
+                      <Separator />
+                      <div>
+                        <h4 className="text-sm font-semibold text-foreground mb-1">
+                          Support Messages ({trashDetail.support_conversations.messages.length})
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
+                          {trashDetail.support_conversations.conversations?.length || 0} conversation(s), {trashDetail.support_conversations.messages.length} message(s)
+                        </p>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Referrals */}
+                  {trashDetail.referrals?.referrals?.length > 0 && (
+                    <>
+                      <Separator />
+                      <div>
+                        <h4 className="text-sm font-semibold text-foreground mb-1">
+                          Referrals ({trashDetail.referrals.referrals.length})
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
+                          {trashDetail.referrals.rewards?.length || 0} reward(s) earned
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <p className="text-center text-muted-foreground py-8">Failed to load details</p>
+              )}
+            </ScrollArea>
+          </SheetContent>
+        </Sheet>
       </main>
 
       {/* User Lock Dialog - accessible from any user/agent/merchant row */}
