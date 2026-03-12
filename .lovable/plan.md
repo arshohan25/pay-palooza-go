@@ -1,28 +1,29 @@
-## Link User Tickets to Admin Support Dashboard
 
-### Current State
 
-User tickets (from MyTicketsPage) already write to the `support_conversations` table, and AdminSupportDashboard already queries all rows from that table. So tickets **do appear** in the admin view — but the admin UI doesn't show ticket subjects, doesn't have a "Resolve" action (only "Close"), and doesn't display ratings. The experience feels disconnected.
+## Plan: Add Biller Categories to API Hub
+
+### What
+
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-`**src/components/admin/AdminSupportDashboard.tsx**` — Enhance the admin view to fully support ticket workflows:
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-1. **Show ticket subject** in the conversation list (below user name, before last message preview)
-2. **Add status filter tabs** — All / Open / Resolved / Closed — so admins can triage
-3. **Add "Resolve" button** next to "Close" in the chat header (sets status to `resolved`)
-4. **Add "Reopen" button** for closed/resolved tickets so admins can reopen if needed
-5. **Show ticket rating** (star display) in conversation list for resolved tickets that have been rated
-6. **Show subject in chat header** alongside user name/phone
-7. **Allow replying to resolved tickets** (only closed tickets block replies — resolved stays interactive until explicitly closed)
-8. Suppot email should be receive/reply from on this dashboard too
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-### No database changes needed
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-All columns (`subject`, `status`, `rating`) already exist on `support_conversations`. This is purely a UI enhancement in AdminSupportDashboard.
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-### Summary
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-- 1 file edited: `src/components/admin/AdminSupportDashboard.tsx`
-- Admin sees ticket subjects, can filter by status, resolve/reopen/close tickets, and view user ratings
-- Real-time sync already in place — no new subscriptions needed
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
+
