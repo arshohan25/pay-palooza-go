@@ -59,3 +59,6 @@ verify_jwt = false
 
 [functions.checkout-pay]
 verify_jwt = false
+
+[functions.admin-reset-pin]
+verify_jwt = false
