@@ -1907,6 +1907,7 @@ export type Database = {
         Row: {
           admin_last_read_at: string | null
           assigned_agent_id: string | null
+          complaint_number: string | null
           created_at: string
           id: string
           rating: number | null
@@ -1919,6 +1920,7 @@ export type Database = {
         Insert: {
           admin_last_read_at?: string | null
           assigned_agent_id?: string | null
+          complaint_number?: string | null
           created_at?: string
           id?: string
           rating?: number | null
@@ -1931,6 +1933,7 @@ export type Database = {
         Update: {
           admin_last_read_at?: string | null
           assigned_agent_id?: string | null
+          complaint_number?: string | null
           created_at?: string
           id?: string
           rating?: number | null
