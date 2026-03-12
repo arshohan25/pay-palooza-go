@@ -26,6 +26,37 @@ interface AutoSaveSchedule {
   amount: number;
   is_active: boolean;
   next_run_at: string;
+  duration: string | null;
+  ends_at: string | null;
+  settled: boolean;
+}
+
+const DURATION_OPTIONS = [
+  { value: "6m", label: "6 Months" },
+  { value: "1y", label: "1 Year" },
+  { value: "2y", label: "2 Years" },
+  { value: "3y", label: "3 Years" },
+  { value: "5y", label: "5 Years" },
+  { value: "10y", label: "10 Years" },
+];
+
+function calcEndsAt(duration: string): string {
+  const now = new Date();
+  const match = duration.match(/^(\d+)(m|y)$/);
+  if (!match) return now.toISOString();
+  const num = parseInt(match[1]);
+  if (match[2] === "m") now.setMonth(now.getMonth() + num);
+  else now.setFullYear(now.getFullYear() + num);
+  return now.toISOString();
+}
+
+function remainingTime(endsAt: string): string {
+  const diff = new Date(endsAt).getTime() - Date.now();
+  if (diff <= 0) return "Expired";
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  if (days > 365) return `${Math.floor(days / 365)}y ${Math.floor((days % 365) / 30)}m left`;
+  if (days > 30) return `${Math.floor(days / 30)}m ${days % 30}d left`;
+  return `${days}d left`;
 }
 
 const PRESET_AMOUNTS = [100, 200, 500, 1000, 5000];
