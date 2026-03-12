@@ -220,6 +220,10 @@ export default function AdminDashboard() {
   const { status: wsStatus, lastConnectedAt, reconnectAttempt } = useRealtimeStatus();
   const [disabledTogglesCount, setDisabledTogglesCount] = useState(0);
   const [resetPinTarget, setResetPinTarget] = useState<{ userId: string; name: string; phone: string } | null>(null);
+  const [deletedUsers, setDeletedUsers] = useState<any[]>([]);
+  const [trashDetailId, setTrashDetailId] = useState<string | null>(null);
+  const [trashDetail, setTrashDetail] = useState<any>(null);
+  const [trashDetailLoading, setTrashDetailLoading] = useState(false);
   const [tempPin, setTempPin] = useState("");
   const [resettingPin, setResettingPin] = useState(false);
 
