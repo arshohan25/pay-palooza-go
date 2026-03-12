@@ -57,6 +57,7 @@ import AdminTeamManagement from "@/components/admin/AdminTeamManagement";
 import AdminNotificationSender from "@/components/admin/AdminNotificationSender";
 import TeamOnboardingChecklist from "@/components/admin/TeamOnboardingChecklist";
 import AdminMerchantManagement from "@/components/admin/AdminMerchantManagement";
+import AdminSavingsManagement from "@/components/admin/AdminSavingsManagement";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
