@@ -1,35 +1,29 @@
 
 
-## Add Duration to Auto-Save with Auto-Settlement
+## Plan: Add Biller Categories to API Hub
 
-### What We're Building
-Add a **duration selector** to auto-save schedules so they automatically stop after a set period (6 months, 1 year, 2 years, 3 years, 5 years, 10 years). When the end date arrives, the schedule deactivates and the user is notified.
+### What
 
-### Database Changes
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-**Add columns to `savings_auto_save`:**
-- `duration` (text, nullable) — e.g. `6m`, `1y`, `2y`, `3y`, `5y`, `10y`
-- `ends_at` (timestamptz, nullable) — calculated from created_at + duration
-- `settled` (boolean, default false) — marks if auto-settled after completion
+### Changes
 
-### Code Changes
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-**`src/components/SavingsFlow.tsx`:**
-- Add duration dropdown in auto-save form: 6 Months, 1 Year, 2 Year, 3 Year, 5 Year, 10 Year
-- Calculate `ends_at` from current date + selected duration on create
-- Show end date and remaining time on each schedule card
-- Show "Completed" badge for settled schedules
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-**`supabase/functions/process-auto-save/index.ts`:**
-- Before processing each schedule, check if `ends_at` is reached
-- If expired: set `is_active = false`, `settled = true`, skip processing, notify user with "Auto-save completed" notification
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-**`src/components/admin/AdminSavingsManagement.tsx`:**
-- Show duration and end date in auto-save schedule details
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
 
 ### Files
-1. Migration SQL — 3 new columns on `savings_auto_save`
-2. `src/components/SavingsFlow.tsx` — Duration selector UI + end date display
-3. `supabase/functions/process-auto-save/index.ts` — Auto-settlement logic
-4. `src/components/admin/AdminSavingsManagement.tsx` — Show duration info
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

@@ -1829,36 +1829,45 @@ export type Database = {
         Row: {
           amount: number
           created_at: string
+          duration: string | null
+          ends_at: string | null
           frequency: string
           goal_id: string | null
           id: string
           is_active: boolean
           last_run_at: string | null
           next_run_at: string
+          settled: boolean
           updated_at: string
           user_id: string
         }
         Insert: {
           amount?: number
           created_at?: string
+          duration?: string | null
+          ends_at?: string | null
           frequency?: string
           goal_id?: string | null
           id?: string
           is_active?: boolean
           last_run_at?: string | null
           next_run_at?: string
+          settled?: boolean
           updated_at?: string
           user_id: string
         }
         Update: {
           amount?: number
           created_at?: string
+          duration?: string | null
+          ends_at?: string | null
           frequency?: string
           goal_id?: string | null
           id?: string
           is_active?: boolean
           last_run_at?: string | null
           next_run_at?: string
+          settled?: boolean
           updated_at?: string
           user_id?: string
         }

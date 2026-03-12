@@ -26,6 +26,37 @@ interface AutoSaveSchedule {
   amount: number;
   is_active: boolean;
   next_run_at: string;
+  duration: string | null;
+  ends_at: string | null;
+  settled: boolean;
+}
+
+const DURATION_OPTIONS = [
+  { value: "6m", label: "6 Months" },
+  { value: "1y", label: "1 Year" },
+  { value: "2y", label: "2 Years" },
+  { value: "3y", label: "3 Years" },
+  { value: "5y", label: "5 Years" },
+  { value: "10y", label: "10 Years" },
+];
+
+function calcEndsAt(duration: string): string {
+  const now = new Date();
+  const match = duration.match(/^(\d+)(m|y)$/);
+  if (!match) return now.toISOString();
+  const num = parseInt(match[1]);
+  if (match[2] === "m") now.setMonth(now.getMonth() + num);
+  else now.setFullYear(now.getFullYear() + num);
+  return now.toISOString();
+}
+
+function remainingTime(endsAt: string): string {
+  const diff = new Date(endsAt).getTime() - Date.now();
+  if (diff <= 0) return "Expired";
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  if (days > 365) return `${Math.floor(days / 365)}y ${Math.floor((days % 365) / 30)}m left`;
+  if (days > 30) return `${Math.floor(days / 30)}m ${days % 30}d left`;
+  return `${days}d left`;
 }
 
 const PRESET_AMOUNTS = [100, 200, 500, 1000, 5000];
@@ -56,6 +87,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const [autoAmount, setAutoAmount] = useState("");
   const [autoGoalId, setAutoGoalId] = useState<string>("general");
   const [autoCustom, setAutoCustom] = useState(false);
+  const [autoDuration, setAutoDuration] = useState("1y");
 
   useEffect(() => {
     const unsub = onBalanceChange(setBalance);
@@ -184,12 +216,15 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       else if (autoFreq === "weekly") nextRun.setDate(nextRun.getDate() + 7);
       else nextRun.setMonth(nextRun.getMonth() + 1);
 
+      const endsAt = calcEndsAt(autoDuration);
       const { error: insertErr } = await supabase.from("savings_auto_save").insert({
         user_id: user.id,
         goal_id: autoGoalId === "general" ? null : autoGoalId,
         frequency: autoFreq,
         amount: amt,
         next_run_at: nextRun.toISOString(),
+        duration: autoDuration,
+        ends_at: endsAt,
       } as any);
       if (insertErr) throw insertErr;
       toast.success("Auto-save schedule created!");
@@ -492,6 +527,23 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 </div>
 
                 <div className="space-y-1.5">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Duration</p>
+                  <Select value={autoDuration} onValueChange={setAutoDuration}>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DURATION_OPTIONS.map(d => (
+                        <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground">
+                    Ends on: {new Date(calcEndsAt(autoDuration)).toLocaleDateString("en-BD", { year: "numeric", month: "short", day: "numeric" })}
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Link to Goal</p>
                   <Select value={autoGoalId} onValueChange={setAutoGoalId}>
                     <SelectTrigger className="rounded-xl">
@@ -522,18 +574,35 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1">Active Schedules</p>
                   {autoSaves.map(schedule => {
                     const linkedGoal = goals.find(g => g.id === schedule.goal_id);
+                    const durationLabel = DURATION_OPTIONS.find(d => d.value === schedule.duration)?.label;
                     return (
-                      <div key={schedule.id} className="bg-card rounded-2xl border border-border/60 p-3.5 flex items-center gap-3">
+                      <div key={schedule.id} className={`bg-card rounded-2xl border p-3.5 flex items-center gap-3 ${schedule.settled ? "border-teal-500/40 bg-teal-500/5" : "border-border/60"}`}>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[13px] font-semibold text-foreground">
-                            ৳{Number(schedule.amount).toLocaleString()} / {schedule.frequency}
-                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-[13px] font-semibold text-foreground">
+                              ৳{Number(schedule.amount).toLocaleString()} / {schedule.frequency}
+                            </p>
+                            {schedule.settled && (
+                              <span className="px-1.5 py-0.5 rounded-md bg-teal-500/20 text-teal-700 dark:text-teal-300 text-[9px] font-bold uppercase">Completed</span>
+                            )}
+                          </div>
                           <p className="text-[11px] text-muted-foreground">
                             {linkedGoal ? `${linkedGoal.emoji} ${linkedGoal.name}` : "General Savings"}
-                            {schedule.next_run_at && ` • Next: ${new Date(schedule.next_run_at).toLocaleDateString()}`}
+                            {durationLabel && ` • ${durationLabel}`}
                           </p>
+                          {schedule.ends_at && !schedule.settled && (
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                              <Clock size={10} className="inline mr-0.5 -mt-0.5" />
+                              {remainingTime(schedule.ends_at)} — ends {new Date(schedule.ends_at).toLocaleDateString()}
+                            </p>
+                          )}
+                          {!schedule.settled && schedule.next_run_at && (
+                            <p className="text-[10px] text-muted-foreground">Next: {new Date(schedule.next_run_at).toLocaleDateString()}</p>
+                          )}
                         </div>
-                        <Switch checked={schedule.is_active} onCheckedChange={() => toggleAutoSave(schedule.id, schedule.is_active)} />
+                        {!schedule.settled && (
+                          <Switch checked={schedule.is_active} onCheckedChange={() => toggleAutoSave(schedule.id, schedule.is_active)} />
+                        )}
                         <button onClick={() => deleteAutoSave(schedule.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
                           <Trash2 size={14} />
                         </button>

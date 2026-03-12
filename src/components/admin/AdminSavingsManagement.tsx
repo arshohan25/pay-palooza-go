@@ -222,9 +222,15 @@ export default function AdminSavingsManagement() {
                       <div key={a.id} className="p-3 rounded-xl border border-border/60 mb-2 flex items-center justify-between">
                         <div>
                           <p className="text-sm font-semibold">৳{Number(a.amount).toLocaleString()} / {a.frequency}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {a.duration && <span className="mr-1">Duration: {a.duration}</span>}
+                            {a.ends_at && <span>• Ends: {new Date(a.ends_at).toLocaleDateString()}</span>}
+                          </p>
                           <p className="text-xs text-muted-foreground">Next: {a.next_run_at ? new Date(a.next_run_at).toLocaleDateString() : "—"}</p>
                         </div>
-                        <Badge variant={a.is_active ? "default" : "secondary"}>{a.is_active ? "Active" : "Paused"}</Badge>
+                        <Badge variant={a.settled ? "default" : a.is_active ? "default" : "secondary"}>
+                          {a.settled ? "Settled" : a.is_active ? "Active" : "Paused"}
+                        </Badge>
                       </div>
                     ))}
                   </div>
