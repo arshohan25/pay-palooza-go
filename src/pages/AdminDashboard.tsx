@@ -1314,6 +1314,50 @@ export default function AdminDashboard() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Reset PIN Confirmation Dialog */}
+      <AlertDialog open={!!resetPinTarget} onOpenChange={(v) => { if (!v) setResetPinTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset User PIN</AlertDialogTitle>
+            <AlertDialogDescription>
+              Set a temporary PIN for <strong>{resetPinTarget?.name || resetPinTarget?.phone}</strong> ({resetPinTarget?.phone}). Share this PIN with the user securely — they should change it after logging in.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-foreground">Temporary PIN</label>
+              <Input
+                type="tel"
+                inputMode="numeric"
+                maxLength={4}
+                value={tempPin}
+                onChange={(e) => setTempPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                className="text-center text-2xl tracking-[0.5em] font-mono"
+                placeholder="0000"
+              />
+              <p className="text-xs text-muted-foreground">Must be exactly 4 digits</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs"
+              onClick={() => setTempPin(generateTempPin())}
+            >
+              <RefreshCw className="w-3 h-3 mr-1" /> Generate New
+            </Button>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={resettingPin}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleResetPin}
+              disabled={resettingPin || tempPin.length !== 4}
+            >
+              {resettingPin ? "Resetting…" : "Reset PIN"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* User Detail Drawer */}
       <Sheet open={!!detailUser} onOpenChange={(v) => { if (!v) { setDetailUser(null); setDetailData(null); } }}>
         <SheetContent side="right" className="w-full sm:max-w-lg p-0 flex flex-col">
