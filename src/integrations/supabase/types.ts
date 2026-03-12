@@ -1858,6 +1858,51 @@ export type Database = {
         }
         Relationships: []
       }
+      support_complaints: {
+        Row: {
+          assigned_to: string | null
+          complaint_number: string
+          conversation_id: string
+          created_at: string
+          description: string
+          id: string
+          priority: string
+          raised_by: string
+          resolution_notes: string | null
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          complaint_number: string
+          conversation_id: string
+          created_at?: string
+          description?: string
+          id?: string
+          priority?: string
+          raised_by: string
+          resolution_notes?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          complaint_number?: string
+          conversation_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          priority?: string
+          raised_by?: string
+          resolution_notes?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       support_conversations: {
         Row: {
           admin_last_read_at: string | null
