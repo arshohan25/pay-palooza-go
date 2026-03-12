@@ -7,7 +7,7 @@ import {
   TrendingUp, Activity, Search, RefreshCw, LogOut,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings, FileText,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
-  Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck, Image, Bell,
+  Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck, Image, Bell, PiggyBank,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,7 @@ import AdminTeamManagement from "@/components/admin/AdminTeamManagement";
 import AdminNotificationSender from "@/components/admin/AdminNotificationSender";
 import TeamOnboardingChecklist from "@/components/admin/TeamOnboardingChecklist";
 import AdminMerchantManagement from "@/components/admin/AdminMerchantManagement";
+import AdminSavingsManagement from "@/components/admin/AdminSavingsManagement";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -179,6 +180,7 @@ const NAV_ITEMS = [
   { id: "banners", label: "Banners", icon: Image },
   { id: "limits", label: "Limits", icon: Scale },
   { id: "team", label: "Team", icon: Users },
+  { id: "savings", label: "Savings", icon: PiggyBank },
   { id: "notify", label: "Notify", icon: Bell },
   { id: "trash", label: "Trash", icon: Trash2 },
 ];
@@ -1276,6 +1278,9 @@ export default function AdminDashboard() {
 
         {/* ═══ NOTIFICATIONS ═══ */}
         {activeTab === "notify" && <AdminNotificationSender />}
+
+        {/* ═══ SAVINGS ═══ */}
+        {activeTab === "savings" && <AdminSavingsManagement />}
 
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
