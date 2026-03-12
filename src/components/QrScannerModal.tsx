@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Zap, ImageUp, Flashlight, FlashlightOff, Info, CheckCircle2 } from "lucide-react";
+import { X, ImageUp, Flashlight, FlashlightOff, Info, CheckCircle2, ScanText, Loader2 } from "lucide-react";
 import jsQR from "jsqr";
 import { requestCamera } from "@/lib/permissions";
+import { supabase } from "@/integrations/supabase/client";
 
 interface QrScannerModalProps {
   open: boolean;
@@ -18,12 +19,16 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
   const [cameraError, setCameraError] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
   const [torchSupported, setTorchSupported] = useState(false);
+  const [ocrScanning, setOcrScanning] = useState(false);
+  const [ocrResults, setOcrResults] = useState<string[]>([]);
+  const [ocrError, setOcrError] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scanningRef = useRef(false);
   const rafRef = useRef<number | null>(null);
 
+  // ─── QR scan frame loop ──────────────────────────────────────────────────
   const scanFrame = useCallback(() => {
     if (!scanningRef.current) return;
     const video = videoRef.current;
@@ -48,6 +53,7 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
     rafRef.current = requestAnimationFrame(scanFrame);
   }, [onScan, onClose]);
 
+  // ─── Camera lifecycle ────────────────────────────────────────────────────
   useEffect(() => {
     if (!open) {
       setDetected(false);
@@ -55,6 +61,9 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
       setCameraError(false);
       setTorchOn(false);
       setTorchSupported(false);
+      setOcrScanning(false);
+      setOcrResults([]);
+      setOcrError("");
       scanningRef.current = false;
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); setCameraStream(null); }
@@ -67,7 +76,6 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
       if (result.status === "granted" && result.data) {
         const stream = result.data as MediaStream;
         setCameraStream(stream);
-        // Check torch support
         const track = stream.getVideoTracks()[0];
         const caps = (track as any).getCapabilities?.();
         if (caps?.torch) setTorchSupported(true);
@@ -97,6 +105,7 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
     };
   }, [cameraStream]);
 
+  // ─── Torch ───────────────────────────────────────────────────────────────
   const toggleTorch = async () => {
     if (!cameraStream) return;
     const track = cameraStream.getVideoTracks()[0];
@@ -106,6 +115,7 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
     } catch {}
   };
 
+  // ─── Gallery upload ──────────────────────────────────────────────────────
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -122,11 +132,73 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
       if (code && code.data) {
         setDetected(true);
         setTimeout(() => { onScan(code.data); onClose(); setUploadProcessing(false); }, 600);
-      } else { setUploadProcessing(false); }
+      } else {
+        // No QR found — try OCR on the uploaded image
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+        performOcr(dataUrl);
+        setUploadProcessing(false);
+      }
     };
     img.onerror = () => setUploadProcessing(false);
     img.src = URL.createObjectURL(file);
     e.target.value = "";
+  };
+
+  // ─── OCR: capture frame & send to edge function ──────────────────────────
+  const captureFrameForOcr = () => {
+    const video = videoRef.current;
+    if (!video || video.readyState < video.HAVE_ENOUGH_DATA) return;
+
+    const canvas = document.createElement("canvas");
+    // Use a smaller resolution for faster upload
+    const scale = Math.min(1, 640 / video.videoWidth);
+    canvas.width = video.videoWidth * scale;
+    canvas.height = video.videoHeight * scale;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+    performOcr(dataUrl);
+  };
+
+  const performOcr = async (imageDataUrl: string) => {
+    setOcrScanning(true);
+    setOcrResults([]);
+    setOcrError("");
+
+    try {
+      const { data, error } = await supabase.functions.invoke("ocr-scan-number", {
+        body: { image: imageDataUrl },
+      });
+
+      if (error) throw error;
+
+      const allResults: string[] = [
+        ...(data?.numbers || []),
+        ...(data?.merchant_codes || []),
+      ];
+
+      if (allResults.length === 0) {
+        setOcrError("No numbers found. Try again with clearer text.");
+      } else if (allResults.length === 1) {
+        // Single result — auto-select
+        setDetected(true);
+        setTimeout(() => { onScan(allResults[0]); onClose(); }, 600);
+      } else {
+        // Multiple results — let user pick
+        setOcrResults(allResults);
+      }
+    } catch (err: any) {
+      console.error("OCR error:", err);
+      setOcrError("Could not read the number. Try again.");
+    } finally {
+      setOcrScanning(false);
+    }
+  };
+
+  const handleSelectOcrResult = (result: string) => {
+    setDetected(true);
+    setTimeout(() => { onScan(result); onClose(); }, 600);
   };
 
   const cornerClass = "absolute w-10 h-10 z-20";
@@ -154,13 +226,9 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
 
           {/* Dark overlay with viewfinder cutout */}
           <div className="absolute inset-0 z-10" style={{ background: "transparent" }}>
-            {/* Top overlay */}
             <div className="absolute top-0 left-0 right-0 bg-black/60" style={{ height: "calc(50% - 130px)" }} />
-            {/* Bottom overlay */}
             <div className="absolute bottom-0 left-0 right-0 bg-black/60" style={{ height: "calc(50% - 130px)" }} />
-            {/* Left overlay */}
             <div className="absolute bg-black/60" style={{ top: "calc(50% - 130px)", bottom: "calc(50% - 130px)", left: 0, width: "calc(50% - 130px)" }} />
-            {/* Right overlay */}
             <div className="absolute bg-black/60" style={{ top: "calc(50% - 130px)", bottom: "calc(50% - 130px)", right: 0, width: "calc(50% - 130px)" }} />
           </div>
 
@@ -189,7 +257,7 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
               <div className={`${cornerClass} bottom-0 right-0 ${borderW} ${borderColor} border-l-0 border-t-0 rounded-br-2xl transition-colors duration-300`} />
 
               {/* Scan line */}
-              {!detected && cameraStream && !uploadProcessing && (
+              {!detected && cameraStream && !uploadProcessing && !ocrScanning && ocrResults.length === 0 && (
                 <motion.div
                   animate={{ top: ["5%", "92%", "5%"] }}
                   transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
@@ -223,6 +291,43 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
                 </div>
               )}
 
+              {/* OCR scanning state */}
+              {ocrScanning && !detected && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                  <Loader2 size={32} className="text-primary animate-spin" />
+                  <p className="text-white text-xs font-medium">Reading number...</p>
+                </div>
+              )}
+
+              {/* OCR results — multiple numbers found */}
+              {ocrResults.length > 1 && !detected && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-3">
+                  <p className="text-white/70 text-[10px] uppercase tracking-wider mb-1">Numbers found</p>
+                  {ocrResults.map((r, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleSelectOcrResult(r)}
+                      className="w-full py-2.5 px-3 rounded-xl bg-white/15 backdrop-blur-sm text-white text-sm font-mono font-semibold text-center active:scale-95 transition-transform"
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* OCR error */}
+              {ocrError && !detected && !ocrScanning && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center px-4">
+                  <p className="text-amber-400 text-xs">{ocrError}</p>
+                  <button
+                    onClick={captureFrameForOcr}
+                    className="text-white/70 text-[10px] underline"
+                  >
+                    Tap to retry
+                  </button>
+                </div>
+              )}
+
               {/* Detected state */}
               {detected && (
                 <motion.div
@@ -233,33 +338,48 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
                   <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center">
                     <CheckCircle2 size={36} className="text-emerald-400" />
                   </div>
-                  <p className="text-white text-sm font-semibold">QR Detected!</p>
+                  <p className="text-white text-sm font-semibold">Detected!</p>
                 </motion.div>
               )}
             </div>
 
             {/* Help text */}
             <p className="text-white/50 text-xs text-center mt-6 px-10 leading-relaxed">
-              Align the QR code to fit inside the frame.{"\n"}Pinch to zoom for better focus.
+              Scan QR code or tap "Read Number" to scan{"\n"}a handwritten or printed phone number.
             </p>
           </div>
 
           {/* Bottom controls */}
           <div className="relative z-30 pb-[env(safe-area-inset-bottom,16px)] px-6 pb-6">
             {/* Action buttons */}
-            <div className="flex items-center justify-center gap-12 mb-8">
+            <div className="flex items-center justify-center gap-8 mb-8">
               <button
                 onClick={toggleTorch}
                 disabled={!torchSupported || detected}
                 className="flex flex-col items-center gap-1.5 disabled:opacity-30"
               >
-                <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${torchOn ? "bg-primary/20 ring-2 ring-primary/40" : "bg-white/10 backdrop-blur-sm"}`}>
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${torchOn ? "bg-primary/20 ring-2 ring-primary/40" : "bg-white/10 backdrop-blur-sm"}`}>
                   {torchOn
-                    ? <Flashlight size={22} className="text-primary" />
-                    : <FlashlightOff size={22} className="text-white/80" />
+                    ? <Flashlight size={20} className="text-primary" />
+                    : <FlashlightOff size={20} className="text-white/80" />
                   }
                 </div>
                 <span className="text-white/60 text-[10px] font-medium">Torch</span>
+              </button>
+
+              {/* OCR Scan Number button */}
+              <button
+                onClick={captureFrameForOcr}
+                disabled={detected || ocrScanning || (!cameraStream && !cameraError)}
+                className="flex flex-col items-center gap-1.5 disabled:opacity-30"
+              >
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${ocrScanning ? "bg-primary/20 ring-2 ring-primary/40" : "bg-white/15 backdrop-blur-sm border border-white/20"}`}>
+                  {ocrScanning
+                    ? <Loader2 size={22} className="text-primary animate-spin" />
+                    : <ScanText size={22} className="text-white" />
+                  }
+                </div>
+                <span className="text-white/60 text-[10px] font-medium">Read Number</span>
               </button>
 
               <button
@@ -267,8 +387,8 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
                 disabled={detected || uploadProcessing}
                 className="flex flex-col items-center gap-1.5 disabled:opacity-30"
               >
-                <div className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
-                  <ImageUp size={22} className="text-white/80" />
+                <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
+                  <ImageUp size={20} className="text-white/80" />
                 </div>
                 <span className="text-white/60 text-[10px] font-medium">Gallery</span>
               </button>
