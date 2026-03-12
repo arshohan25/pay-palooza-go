@@ -252,7 +252,27 @@ export default function AdminDashboard() {
       setResettingPin(false);
     }
   };
-  
+
+  // Load deleted users when trash tab is active
+  useEffect(() => {
+    if (activeTab === "trash" && isAdmin) {
+      fetchDeletedUsers().then(setDeletedUsers);
+    }
+  }, [activeTab, isAdmin]);
+
+  const openTrashDetail = async (id: string) => {
+    setTrashDetailId(id);
+    setTrashDetailLoading(true);
+    try {
+      const detail = await fetchDeletedUserDetail(id);
+      setTrashDetail(detail);
+    } catch {
+      setTrashDetail(null);
+    } finally {
+      setTrashDetailLoading(false);
+    }
+  };
+
 
   // Fetch disabled toggles count
   useEffect(() => {
