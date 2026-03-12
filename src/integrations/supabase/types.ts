@@ -1825,6 +1825,124 @@ export type Database = {
         }
         Relationships: []
       }
+      savings_auto_save: {
+        Row: {
+          amount: number
+          created_at: string
+          frequency: string
+          goal_id: string | null
+          id: string
+          is_active: boolean
+          last_run_at: string | null
+          next_run_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          frequency?: string
+          goal_id?: string | null
+          id?: string
+          is_active?: boolean
+          last_run_at?: string | null
+          next_run_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          frequency?: string
+          goal_id?: string | null
+          id?: string
+          is_active?: boolean
+          last_run_at?: string | null
+          next_run_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "savings_auto_save_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "savings_goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      savings_deposits: {
+        Row: {
+          amount: number
+          created_at: string
+          goal_id: string
+          id: string
+          source: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          goal_id: string
+          id?: string
+          source?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          goal_id?: string
+          id?: string
+          source?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "savings_deposits_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "savings_goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      savings_goals: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          name: string
+          saved_amount: number
+          status: string
+          target_amount: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          name: string
+          saved_amount?: number
+          status?: string
+          target_amount?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          name?: string
+          saved_amount?: number
+          status?: string
+          target_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       spending_budgets: {
         Row: {
           category: string
@@ -2484,6 +2602,10 @@ export type Database = {
       }
       resolve_transfer_recipient: {
         Args: { p_flow: string; p_identifier: string }
+        Returns: Json
+      }
+      savings_deposit: {
+        Args: { p_amount: number; p_goal_id: string; p_source?: string }
         Returns: Json
       }
       transfer_money: {
