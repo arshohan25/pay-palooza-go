@@ -87,6 +87,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const [autoAmount, setAutoAmount] = useState("");
   const [autoGoalId, setAutoGoalId] = useState<string>("general");
   const [autoCustom, setAutoCustom] = useState(false);
+  const [autoDuration, setAutoDuration] = useState("1y");
 
   useEffect(() => {
     const unsub = onBalanceChange(setBalance);
