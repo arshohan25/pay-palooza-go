@@ -3,13 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, User, Loader2, MessageCircle, ArrowLeft, CheckCheck, Check, Zap, ChevronDown, Plus, Trash2, Edit2, Save, X, UserPlus } from "lucide-react";
+import { Send, Bot, User, Loader2, MessageCircle, ArrowLeft, CheckCheck, Check, Zap, ChevronDown, Plus, Trash2, Edit2, Save, X, UserPlus, Star, RotateCcw, CheckCircle2, Mail } from "lucide-react";
 import { useAgentRouting } from "@/components/admin/SupportAgentRouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -24,9 +25,11 @@ interface Conversation {
   admin_last_read_at: string | null;
   user_last_read_at: string | null;
   assigned_agent_id?: string | null;
+  rating?: number | null;
   // joined
   user_name?: string;
   user_phone?: string;
+  user_email?: string;
   last_message?: string;
   last_message_at?: string;
   unread_count?: number;
@@ -60,8 +63,27 @@ interface CannedReply {
   isDefault?: boolean;
 }
 
+type StatusFilter = "all" | "open" | "resolved" | "closed";
+
 const fmt = (d: string) =>
   new Date(d).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+
+const StarRating = ({ rating }: { rating: number }) => (
+  <div className="flex items-center gap-0.5">
+    {[1, 2, 3, 4, 5].map(i => (
+      <Star key={i} size={8} className={i <= rating ? "text-amber-400 fill-amber-400" : "text-muted-foreground/30"} />
+    ))}
+  </div>
+);
+
+const statusColor = (status: string) => {
+  switch (status) {
+    case "open": return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
+    case "resolved": return "bg-blue-500/10 text-blue-600 border-blue-500/20";
+    case "closed": return "bg-muted text-muted-foreground border-border";
+    default: return "bg-muted text-muted-foreground border-border";
+  }
+};
 
 export default function AdminSupportDashboard() {
   const { user } = useAuth();
@@ -75,6 +97,7 @@ export default function AdminSupportDashboard() {
   const [loading, setLoading] = useState(true);
   const [msgLoading, setMsgLoading] = useState(false);
   const [remoteTyping, setRemoteTyping] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [cannedReplies, setCannedReplies] = useState<CannedReply[]>([]);
   const [showAddReply, setShowAddReply] = useState(false);
   const [newReplyLabel, setNewReplyLabel] = useState("");
@@ -101,7 +124,6 @@ export default function AdminSupportDashboard() {
       text: r.content,
     }));
 
-    // Merge: DB replies first, then defaults
     const defaultReplies: CannedReply[] = DEFAULT_CANNED_REPLIES.map(r => ({ ...r, isDefault: true }));
     setCannedReplies([...dbReplies, ...defaultReplies]);
   }, [user]);
@@ -146,7 +168,7 @@ export default function AdminSupportDashboard() {
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }), 60);
   }, []);
 
-  // Load all open conversations with user info
+  // Load all conversations with user info
   const loadConversations = useCallback(async () => {
     setLoading(true);
     const { data: convs } = await supabase
@@ -156,12 +178,11 @@ export default function AdminSupportDashboard() {
 
     if (!convs) { setLoading(false); return; }
 
-    // Get user profiles for each conversation
     const userIds = [...new Set(convs.map(c => c.user_id))];
     const agentIds = [...new Set(convs.map((c: any) => c.assigned_agent_id).filter(Boolean))];
 
     const [profilesRes, agentProfilesRes] = await Promise.all([
-      supabase.from("profiles").select("user_id, name, phone").in("user_id", userIds),
+      supabase.from("profiles").select("user_id, name, phone, email").in("user_id", userIds),
       agentIds.length > 0
         ? supabase.from("team_members").select("user_id, display_name").in("user_id", agentIds)
         : Promise.resolve({ data: [] }),
@@ -170,7 +191,6 @@ export default function AdminSupportDashboard() {
     const profileMap = new Map(profilesRes.data?.map(p => [p.user_id, p]) ?? []);
     const agentMap = new Map((agentProfilesRes.data ?? []).map((a: any) => [a.user_id, a.display_name]));
 
-    // Get last message per conversation
     const enriched: Conversation[] = await Promise.all(
       convs.map(async (c) => {
         const profile = profileMap.get(c.user_id);
@@ -193,8 +213,10 @@ export default function AdminSupportDashboard() {
         return {
           ...c,
           assigned_agent_id: (c as any).assigned_agent_id || null,
+          rating: (c as any).rating || null,
           user_name: profile?.name || "Unknown",
           user_phone: profile?.phone || "",
+          user_email: (profile as any)?.email || "",
           last_message: lastMsg?.[0]?.content || "",
           last_message_at: lastMsg?.[0]?.created_at || c.created_at,
           unread_count: unreadCount,
@@ -241,7 +263,6 @@ export default function AdminSupportDashboard() {
     setMsgLoading(false);
     scrollToBottom();
 
-    // Mark user messages as read
     await supabase
       .from("support_messages")
       .update({ read_at: new Date().toISOString() })
@@ -249,13 +270,11 @@ export default function AdminSupportDashboard() {
       .eq("sender_role", "user")
       .is("read_at", null);
 
-    // Update admin_last_read_at
     await supabase
       .from("support_conversations")
       .update({ admin_last_read_at: new Date().toISOString() })
       .eq("id", conv.id);
 
-    // Update local state
     setConversations(prev => prev.map(c => c.id === conv.id ? { ...c, unread_count: 0 } : c));
   }, [scrollToBottom]);
 
@@ -276,14 +295,12 @@ export default function AdminSupportDashboard() {
           return [...prev, msg];
         });
         scrollToBottom();
-        // Auto-read if from user
         if (msg.sender_role === "user") {
           supabase.from("support_messages").update({ read_at: new Date().toISOString() }).eq("id", msg.id).then();
         }
       })
       .subscribe();
 
-    // Typing presence
     const presenceChannel = supabase.channel(`typing-${selectedConv.id}`, {
       config: { presence: { key: user?.id || "admin" } },
     });
@@ -303,7 +320,6 @@ export default function AdminSupportDashboard() {
     };
   }, [selectedConv, user?.id, scrollToBottom]);
 
-  // Send typing indicator
   const sendTypingIndicator = useCallback((convId: string) => {
     const ch = supabase.channel(`typing-${convId}`, {
       config: { presence: { key: user?.id || "admin" } },
@@ -350,7 +366,6 @@ export default function AdminSupportDashboard() {
       setInput(text);
     }
 
-    // Update conversation timestamp
     await supabase
       .from("support_conversations")
       .update({ updated_at: new Date().toISOString() })
@@ -360,14 +375,32 @@ export default function AdminSupportDashboard() {
     inputRef.current?.focus();
   };
 
-  const closeConversation = async (convId: string) => {
+  const updateConversationStatus = async (convId: string, newStatus: string) => {
     await supabase
       .from("support_conversations")
-      .update({ status: "closed" })
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
       .eq("id", convId);
-    setSelectedConv(null);
-    loadConversations();
+    
+    setSelectedConv(prev => prev ? { ...prev, status: newStatus } : null);
+    setConversations(prev => prev.map(c => c.id === convId ? { ...c, status: newStatus } : c));
+    toast.success(`Ticket ${newStatus}`);
   };
+
+  // Filter conversations by status
+  const filteredConversations = conversations.filter(c => {
+    if (statusFilter === "all") return true;
+    return c.status === statusFilter;
+  });
+
+  const statusCounts = {
+    all: conversations.length,
+    open: conversations.filter(c => c.status === "open").length,
+    resolved: conversations.filter(c => c.status === "resolved").length,
+    closed: conversations.filter(c => c.status === "closed").length,
+  };
+
+  // Can reply if not closed
+  const canReply = selectedConv && selectedConv.status !== "closed";
 
   if (loading) {
     return (
@@ -377,7 +410,6 @@ export default function AdminSupportDashboard() {
     );
   }
 
-  // Mobile: show either list or chat
   const showChat = !!selectedConv;
 
   return (
@@ -387,22 +419,36 @@ export default function AdminSupportDashboard() {
         <div className="p-4 border-b border-border">
           <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
             <MessageCircle size={16} className="text-primary" />
-            Support Conversations
+            Support Tickets
           </h3>
-          <p className="text-[10px] text-muted-foreground mt-0.5">
-            {conversations.filter(c => c.status === "open").length} open
-          </p>
           <RealtimeUpdateIndicator visible={visible} />
+          {/* Status filter tabs */}
+          <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)} className="mt-2">
+            <TabsList className="h-7 w-full grid grid-cols-4 p-0.5">
+              <TabsTrigger value="all" className="text-[9px] h-6 px-1 data-[state=active]:text-xs">
+                All {statusCounts.all > 0 && <span className="ml-0.5 opacity-60">({statusCounts.all})</span>}
+              </TabsTrigger>
+              <TabsTrigger value="open" className="text-[9px] h-6 px-1">
+                Open {statusCounts.open > 0 && <span className="ml-0.5 opacity-60">({statusCounts.open})</span>}
+              </TabsTrigger>
+              <TabsTrigger value="resolved" className="text-[9px] h-6 px-1">
+                Resolved {statusCounts.resolved > 0 && <span className="ml-0.5 opacity-60">({statusCounts.resolved})</span>}
+              </TabsTrigger>
+              <TabsTrigger value="closed" className="text-[9px] h-6 px-1">
+                Closed {statusCounts.closed > 0 && <span className="ml-0.5 opacity-60">({statusCounts.closed})</span>}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
         <ScrollArea className="flex-1">
-          {conversations.length === 0 ? (
+          {filteredConversations.length === 0 ? (
             <div className="flex flex-col items-center py-16 text-muted-foreground">
               <MessageCircle size={32} className="mb-2 opacity-30" />
-              <p className="text-xs">No support conversations</p>
+              <p className="text-xs">No {statusFilter !== "all" ? statusFilter : ""} tickets</p>
             </div>
           ) : (
             <div className="divide-y divide-border/50">
-              {conversations.map(conv => (
+              {filteredConversations.map(conv => (
                 <button
                   key={conv.id}
                   onClick={() => selectConversation(conv)}
@@ -421,14 +467,20 @@ export default function AdminSupportDashboard() {
                           {fmt(conv.last_message_at || conv.created_at)}
                         </span>
                       </div>
+                      {/* Subject line */}
+                      {conv.subject && conv.subject !== "General Support" && (
+                        <p className="text-[10px] font-medium text-foreground/70 truncate mt-0.5">
+                          📋 {conv.subject}
+                        </p>
+                      )}
                       <div className="flex items-center justify-between mt-0.5">
-                        <p className="text-[10px] text-muted-foreground truncate max-w-[70%]">
+                        <p className="text-[10px] text-muted-foreground truncate max-w-[60%]">
                           {conv.last_message || "No messages"}
                         </p>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          {conv.status === "closed" && (
-                            <Badge variant="secondary" className="text-[8px] px-1 py-0">Closed</Badge>
-                          )}
+                          <Badge variant="outline" className={`text-[7px] px-1 py-0 border ${statusColor(conv.status)}`}>
+                            {conv.status}
+                          </Badge>
                           {(conv.unread_count ?? 0) > 0 && (
                             <span className="min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full flex items-center justify-center">
                               {conv.unread_count}
@@ -438,6 +490,17 @@ export default function AdminSupportDashboard() {
                       </div>
                       <div className="flex items-center gap-1 mt-0.5">
                         <p className="text-[9px] text-muted-foreground/60">{conv.user_phone}</p>
+                        {conv.user_email && (
+                          <span className="text-[8px] text-muted-foreground/50 flex items-center gap-0.5">
+                            <Mail size={8} /> {conv.user_email}
+                          </span>
+                        )}
+                        {/* Rating stars for resolved/closed with rating */}
+                        {conv.rating && conv.rating > 0 && (
+                          <span className="ml-auto">
+                            <StarRating rating={conv.rating} />
+                          </span>
+                        )}
                         {conv.assigned_agent_name && (
                           <Badge variant="outline" className="text-[7px] px-1 py-0 ml-auto">👤 {conv.assigned_agent_name}</Badge>
                         )}
@@ -473,25 +536,86 @@ export default function AdminSupportDashboard() {
                 <User size={14} className="text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-foreground">{selectedConv.user_name}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-bold text-foreground">{selectedConv.user_name}</p>
+                  <Badge variant="outline" className={`text-[7px] px-1 py-0 border ${statusColor(selectedConv.status)}`}>
+                    {selectedConv.status}
+                  </Badge>
+                  {selectedConv.rating && selectedConv.rating > 0 && (
+                    <StarRating rating={selectedConv.rating} />
+                  )}
+                </div>
                 <p className="text-[10px] text-muted-foreground">
                   {remoteTyping ? (
                     <span className="text-primary font-semibold animate-pulse">typing...</span>
                   ) : (
-                    selectedConv.user_phone
+                    <>
+                      {selectedConv.user_phone}
+                      {selectedConv.user_email && (
+                        <span className="ml-2 text-muted-foreground/60">
+                          <Mail size={8} className="inline mr-0.5" />{selectedConv.user_email}
+                        </span>
+                      )}
+                    </>
                   )}
                 </p>
+                {selectedConv.subject && selectedConv.subject !== "General Support" && (
+                  <p className="text-[9px] text-primary/70 font-medium mt-0.5">📋 {selectedConv.subject}</p>
+                )}
               </div>
-              {selectedConv.status === "open" && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs h-7 rounded-lg"
-                  onClick={() => closeConversation(selectedConv.id)}
-                >
-                  Close
-                </Button>
-              )}
+              {/* Action buttons based on status */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                {selectedConv.status === "open" && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-[10px] h-7 rounded-lg gap-1 border-blue-500/30 text-blue-600 hover:bg-blue-50"
+                      onClick={() => updateConversationStatus(selectedConv.id, "resolved")}
+                    >
+                      <CheckCircle2 size={12} /> Resolve
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-[10px] h-7 rounded-lg"
+                      onClick={() => updateConversationStatus(selectedConv.id, "closed")}
+                    >
+                      Close
+                    </Button>
+                  </>
+                )}
+                {selectedConv.status === "resolved" && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-[10px] h-7 rounded-lg gap-1 text-emerald-600 border-emerald-500/30 hover:bg-emerald-50"
+                      onClick={() => updateConversationStatus(selectedConv.id, "open")}
+                    >
+                      <RotateCcw size={12} /> Reopen
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-[10px] h-7 rounded-lg"
+                      onClick={() => updateConversationStatus(selectedConv.id, "closed")}
+                    >
+                      Close
+                    </Button>
+                  </>
+                )}
+                {selectedConv.status === "closed" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-[10px] h-7 rounded-lg gap-1 text-emerald-600 border-emerald-500/30 hover:bg-emerald-50"
+                    onClick={() => updateConversationStatus(selectedConv.id, "open")}
+                  >
+                    <RotateCcw size={12} /> Reopen
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Messages */}
@@ -536,7 +660,6 @@ export default function AdminSupportDashboard() {
                 </AnimatePresence>
               )}
 
-              {/* Typing indicator */}
               {remoteTyping && (
                 <motion.div
                   initial={{ opacity: 0, y: 4 }}
@@ -563,8 +686,8 @@ export default function AdminSupportDashboard() {
               )}
             </div>
 
-            {/* Input */}
-            {selectedConv.status === "open" && (
+            {/* Input — show for open & resolved, hide for closed */}
+            {canReply && (
               <div className="border-t border-border">
                 {/* Canned replies */}
                 <div className="px-4 pt-2 pb-1">
@@ -590,7 +713,6 @@ export default function AdminSupportDashboard() {
                         </Button>
                       </div>
 
-                      {/* Add new reply form */}
                       {showAddReply && (
                         <div className="mb-2 p-2 bg-muted/40 rounded-lg space-y-1.5">
                           <Input
@@ -711,6 +833,13 @@ export default function AdminSupportDashboard() {
                     {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                   </Button>
                 </div>
+              </div>
+            )}
+
+            {/* Closed ticket notice */}
+            {selectedConv.status === "closed" && (
+              <div className="border-t border-border px-4 py-3 text-center">
+                <p className="text-[10px] text-muted-foreground">This ticket is closed. Reopen to reply.</p>
               </div>
             )}
           </>
