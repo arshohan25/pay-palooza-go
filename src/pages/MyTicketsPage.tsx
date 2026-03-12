@@ -281,6 +281,12 @@ const MyTicketsPage = ({ onBack }: { onBack: () => void }) => {
                         <p className="text-[13.5px] font-semibold text-foreground truncate">
                           {ticket.subject || "General Support"}
                         </p>
+                        {/* Complaint number badge */}
+                        {ticket.complaint_number && (
+                          <p className="text-[10px] font-semibold text-amber-600 mt-0.5">
+                            🔧 {ticket.complaint_number}
+                          </p>
+                        )}
                         <div className="flex items-center gap-2 mt-1">
                           <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${cfg.class}`}>
                             {t(statusKey as any)}
