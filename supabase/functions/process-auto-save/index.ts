@@ -24,13 +24,32 @@ Deno.serve(async (req) => {
 
     let processed = 0;
     let skipped = 0;
+    let settled = 0;
 
     for (const schedule of schedules ?? []) {
+      // Check if schedule has expired (duration ended)
+      if (schedule.ends_at && new Date(schedule.ends_at) <= new Date()) {
+        await supabase.from("savings_auto_save").update({
+          is_active: false,
+          settled: true,
+          updated_at: new Date().toISOString(),
+        }).eq("id", schedule.id);
+
+        await supabase.from("notifications").insert({
+          user_id: schedule.user_id,
+          title: "✅ Auto-Save Completed",
+          body: `Your ৳${schedule.amount}/${schedule.frequency} auto-save schedule has completed its ${schedule.duration || ""} duration.`,
+          category: "savings",
+        });
+
+        settled++;
+        continue;
+      }
+
       // Find the target goal
       let goalId = schedule.goal_id;
 
       if (!goalId) {
-        // Use first active goal or skip
         const { data: goals } = await supabase
           .from("savings_goals")
           .select("id")
@@ -53,7 +72,6 @@ Deno.serve(async (req) => {
         .single();
 
       if (!profile || Number(profile.balance) < Number(schedule.amount)) {
-        // Insufficient balance — notify user
         await supabase.from("notifications").insert({
           user_id: schedule.user_id,
           title: "Auto-Save Skipped",
@@ -121,7 +139,7 @@ Deno.serve(async (req) => {
       processed++;
     }
 
-    return new Response(JSON.stringify({ processed, skipped }), {
+    return new Response(JSON.stringify({ processed, skipped, settled }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {

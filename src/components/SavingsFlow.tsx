@@ -574,18 +574,35 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1">Active Schedules</p>
                   {autoSaves.map(schedule => {
                     const linkedGoal = goals.find(g => g.id === schedule.goal_id);
+                    const durationLabel = DURATION_OPTIONS.find(d => d.value === schedule.duration)?.label;
                     return (
-                      <div key={schedule.id} className="bg-card rounded-2xl border border-border/60 p-3.5 flex items-center gap-3">
+                      <div key={schedule.id} className={`bg-card rounded-2xl border p-3.5 flex items-center gap-3 ${schedule.settled ? "border-teal-500/40 bg-teal-500/5" : "border-border/60"}`}>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[13px] font-semibold text-foreground">
-                            ৳{Number(schedule.amount).toLocaleString()} / {schedule.frequency}
-                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-[13px] font-semibold text-foreground">
+                              ৳{Number(schedule.amount).toLocaleString()} / {schedule.frequency}
+                            </p>
+                            {schedule.settled && (
+                              <span className="px-1.5 py-0.5 rounded-md bg-teal-500/20 text-teal-700 dark:text-teal-300 text-[9px] font-bold uppercase">Completed</span>
+                            )}
+                          </div>
                           <p className="text-[11px] text-muted-foreground">
                             {linkedGoal ? `${linkedGoal.emoji} ${linkedGoal.name}` : "General Savings"}
-                            {schedule.next_run_at && ` • Next: ${new Date(schedule.next_run_at).toLocaleDateString()}`}
+                            {durationLabel && ` • ${durationLabel}`}
                           </p>
+                          {schedule.ends_at && !schedule.settled && (
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                              <Clock size={10} className="inline mr-0.5 -mt-0.5" />
+                              {remainingTime(schedule.ends_at)} — ends {new Date(schedule.ends_at).toLocaleDateString()}
+                            </p>
+                          )}
+                          {!schedule.settled && schedule.next_run_at && (
+                            <p className="text-[10px] text-muted-foreground">Next: {new Date(schedule.next_run_at).toLocaleDateString()}</p>
+                          )}
                         </div>
-                        <Switch checked={schedule.is_active} onCheckedChange={() => toggleAutoSave(schedule.id, schedule.is_active)} />
+                        {!schedule.settled && (
+                          <Switch checked={schedule.is_active} onCheckedChange={() => toggleAutoSave(schedule.id, schedule.is_active)} />
+                        )}
                         <button onClick={() => deleteAutoSave(schedule.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
                           <Trash2 size={14} />
                         </button>
