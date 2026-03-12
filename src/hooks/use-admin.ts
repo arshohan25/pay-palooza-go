@@ -302,3 +302,21 @@ export async function fetchUserDetails(userId: string) {
     globalLimits: globalLimitsRes.data ?? [],
   };
 }
+
+export async function fetchDeletedUsers(limit = 100) {
+  const { data } = await supabase
+    .from("deleted_users")
+    .select("id, user_id, name, phone, avatar_url, balance_at_deletion, deleted_by, deleted_at, deletion_reason, balance_recovered")
+    .order("deleted_at", { ascending: false })
+    .limit(limit);
+  return data ?? [];
+}
+
+export async function fetchDeletedUserDetail(id: string) {
+  const { data } = await supabase
+    .from("deleted_users")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  return data;
+}
