@@ -263,7 +263,7 @@ export default function AdminUserMonitor() {
           <CardContent className="p-2 sm:p-3 text-center">
             <ArrowDownLeft className="w-4 h-4 sm:w-5 sm:h-5 mx-auto text-emerald-500 mb-1" />
             <p className="text-xs sm:text-xl font-bold text-foreground truncate">৳{allUsers.reduce((s, u) => s + u.addMoneyTotal, 0).toLocaleString()}</p>
-            <p className="text-[9px] sm:text-[10px] text-muted-foreground">Add Money</p>
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground">Added</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-[var(--shadow-card)]">
