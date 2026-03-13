@@ -1284,6 +1284,9 @@ export default function AdminDashboard() {
         {/* ═══ SAVINGS ═══ */}
         {activeTab === "savings" && <AdminSavingsManagement />}
 
+        {/* ═══ USER MONITOR ═══ */}
+        {activeTab === "monitor" && <AdminUserMonitor />}
+
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
           <div className="space-y-4">
