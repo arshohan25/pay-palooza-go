@@ -224,13 +224,7 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
           )}
           <canvas ref={canvasRef} className="hidden" />
 
-          {/* Dark overlay with viewfinder cutout */}
-          <div className="absolute inset-0 z-10" style={{ background: "transparent" }}>
-            <div className="absolute top-0 left-0 right-0 bg-black/60" style={{ height: "calc(50% - 130px)" }} />
-            <div className="absolute bottom-0 left-0 right-0 bg-black/60" style={{ height: "calc(50% - 130px)" }} />
-            <div className="absolute bg-black/60" style={{ top: "calc(50% - 130px)", bottom: "calc(50% - 130px)", left: 0, width: "calc(50% - 130px)" }} />
-            <div className="absolute bg-black/60" style={{ top: "calc(50% - 130px)", bottom: "calc(50% - 130px)", right: 0, width: "calc(50% - 130px)" }} />
-          </div>
+          {/* Overlay is handled by viewfinder box-shadow below */}
 
           {/* Top bar */}
           <div className="relative z-30 flex items-center justify-between px-5 pt-[env(safe-area-inset-top,12px)] mt-3">
@@ -248,8 +242,8 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
           </div>
 
           {/* Viewfinder area */}
-          <div className="relative z-20 flex-1 flex flex-col items-center justify-center">
-            <div className="relative" style={{ width: 260, height: 260 }}>
+          <div className="relative z-20 flex-1 min-h-0 flex flex-col items-center justify-center">
+            <div className="relative w-[240px] h-[240px] bg-transparent rounded-lg" style={{ boxShadow: "0 0 0 9999px rgba(0,0,0,0.55)" }}>
               {/* Corner brackets */}
               <div className={`${cornerClass} top-0 left-0 ${borderW} ${borderColor} border-r-0 border-b-0 rounded-tl-2xl transition-colors duration-300`} />
               <div className={`${cornerClass} top-0 right-0 ${borderW} ${borderColor} border-l-0 border-b-0 rounded-tr-2xl transition-colors duration-300`} />
@@ -344,15 +338,15 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
             </div>
 
             {/* Help text */}
-            <p className="text-white/50 text-xs text-center mt-6 px-10 leading-relaxed">
-              Scan QR code or tap "Read Number" to scan{"\n"}a handwritten or printed phone number.
+            <p className="text-white/50 text-[11px] text-center mt-4 px-8 leading-relaxed">
+              Scan QR code or tap "Read Number" to scan a phone number.
             </p>
           </div>
 
           {/* Bottom controls */}
-          <div className="relative z-30 pb-[env(safe-area-inset-bottom,16px)] px-6 pb-6">
+          <div className="relative z-30 shrink-0 px-5 pb-[max(env(safe-area-inset-bottom,12px),12px)]">
             {/* Action buttons */}
-            <div className="flex items-center justify-center gap-8 mb-8">
+            <div className="flex items-center justify-center gap-5 mb-4">
               <button
                 onClick={toggleTorch}
                 disabled={!torchSupported || detected}
