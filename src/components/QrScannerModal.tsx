@@ -224,13 +224,8 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
           )}
           <canvas ref={canvasRef} className="hidden" />
 
-          {/* Dark overlay with viewfinder cutout */}
-          <div className="absolute inset-0 z-10" style={{ background: "transparent" }}>
-            <div className="absolute top-0 left-0 right-0 bg-black/60" style={{ height: "calc(50% - 130px)" }} />
-            <div className="absolute bottom-0 left-0 right-0 bg-black/60" style={{ height: "calc(50% - 130px)" }} />
-            <div className="absolute bg-black/60" style={{ top: "calc(50% - 130px)", bottom: "calc(50% - 130px)", left: 0, width: "calc(50% - 130px)" }} />
-            <div className="absolute bg-black/60" style={{ top: "calc(50% - 130px)", bottom: "calc(50% - 130px)", right: 0, width: "calc(50% - 130px)" }} />
-          </div>
+          {/* Dark overlay — simple full-screen tint; viewfinder is visually "cut" by corner brackets */}
+          <div className="absolute inset-0 z-10 bg-black/50 pointer-events-none" />
 
           {/* Top bar */}
           <div className="relative z-30 flex items-center justify-between px-5 pt-[env(safe-area-inset-top,12px)] mt-3">
