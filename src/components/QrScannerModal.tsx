@@ -245,10 +245,10 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
           <div className="relative z-20 flex-1 min-h-0 flex flex-col items-center justify-center">
             <div className="relative w-[240px] h-[240px] m-4 bg-transparent rounded-lg" style={{ boxShadow: "0 0 0 9999px rgba(0,0,0,0.55)" }}>
               {/* Corner brackets */}
-              <div className={`${cornerClass} top-0 left-0 ${borderW} ${borderColor} border-r-0 border-b-0 rounded-tl-2xl transition-colors duration-300`} />
-              <div className={`${cornerClass} top-0 right-0 ${borderW} ${borderColor} border-l-0 border-b-0 rounded-tr-2xl transition-colors duration-300`} />
-              <div className={`${cornerClass} bottom-0 left-0 ${borderW} ${borderColor} border-r-0 border-t-0 rounded-bl-2xl transition-colors duration-300`} />
-              <div className={`${cornerClass} bottom-0 right-0 ${borderW} ${borderColor} border-l-0 border-t-0 rounded-br-2xl transition-colors duration-300`} />
+              <div className={`${cornerClass} -top-2 -left-2 ${borderW} ${borderColor} border-r-0 border-b-0 rounded-tl-2xl transition-colors duration-300`} />
+              <div className={`${cornerClass} -top-2 -right-2 ${borderW} ${borderColor} border-l-0 border-b-0 rounded-tr-2xl transition-colors duration-300`} />
+              <div className={`${cornerClass} -bottom-2 -left-2 ${borderW} ${borderColor} border-r-0 border-t-0 rounded-bl-2xl transition-colors duration-300`} />
+              <div className={`${cornerClass} -bottom-2 -right-2 ${borderW} ${borderColor} border-l-0 border-t-0 rounded-br-2xl transition-colors duration-300`} />
 
               {/* Scan line */}
               {!detected && cameraStream && !uploadProcessing && !ocrScanning && ocrResults.length === 0 && (
