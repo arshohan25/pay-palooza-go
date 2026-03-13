@@ -27,7 +27,7 @@ interface MonitoredUser {
 interface DailyData {
   date: string;
   addmoney: number;
-  send: number;
+  banktransfer: number;
 }
 
 interface UserTxn {
@@ -43,7 +43,7 @@ interface UserTxn {
 
 const chartConfig = {
   addmoney: { label: "Add Money", color: "hsl(var(--primary))" },
-  send: { label: "Send/Transfer", color: "hsl(var(--destructive))" },
+  banktransfer: { label: "Bank Transfer", color: "hsl(var(--destructive))" },
 };
 
 export default function AdminUserMonitor() {
@@ -66,18 +66,18 @@ export default function AdminUserMonitor() {
       const { data: txns } = await supabase
         .from("transactions")
         .select("user_id, type, amount")
-        .in("type", ["addmoney", "send"])
+        .in("type", ["addmoney", "banktransfer"])
         .gte("created_at", since)
         .eq("status", "completed")
         .limit(1000);
 
       if (!txns?.length) { setAutoUsers([]); setLoadingAuto(false); return; }
 
-      const userMap = new Map<string, { addMoney: number; send: number; count: number }>();
+      const userMap = new Map<string, { addMoney: number; bankTransfer: number; count: number }>();
       for (const t of txns) {
-        const entry = userMap.get(t.user_id) || { addMoney: 0, send: 0, count: 0 };
+        const entry = userMap.get(t.user_id) || { addMoney: 0, bankTransfer: 0, count: 0 };
         if (t.type === "addmoney") entry.addMoney += Number(t.amount);
-        else entry.send += Number(t.amount);
+        else entry.bankTransfer += Number(t.amount);
         entry.count++;
         userMap.set(t.user_id, entry);
       }
@@ -97,7 +97,7 @@ export default function AdminUserMonitor() {
           balance: Number(p.balance),
           avatar_url: p.avatar_url,
           addMoneyTotal: stats.addMoney,
-          sendTotal: stats.send,
+          sendTotal: stats.bankTransfer,
           txnCount: stats.count,
         };
       }).sort((a, b) => (b.addMoneyTotal + b.sendTotal) - (a.addMoneyTotal + a.sendTotal));
@@ -133,14 +133,14 @@ export default function AdminUserMonitor() {
       .from("transactions")
       .select("type, amount")
       .eq("user_id", profile.user_id)
-      .in("type", ["addmoney", "send"])
+      .in("type", ["addmoney", "banktransfer"])
       .eq("status", "completed")
       .gte("created_at", since);
 
-    let addMoney = 0, send = 0;
+    let addMoney = 0, bankTransfer = 0;
     for (const t of txns ?? []) {
       if (t.type === "addmoney") addMoney += Number(t.amount);
-      else send += Number(t.amount);
+      else bankTransfer += Number(t.amount);
     }
 
     setWatchlist(prev => [...prev, {
@@ -150,7 +150,7 @@ export default function AdminUserMonitor() {
       balance: Number(profile.balance),
       avatar_url: profile.avatar_url,
       addMoneyTotal: addMoney,
-      sendTotal: send,
+      sendTotal: bankTransfer,
       txnCount: (txns ?? []).length,
     }]);
     setSearchResults([]);
@@ -171,16 +171,16 @@ export default function AdminUserMonitor() {
       .from("transactions")
       .select("id, type, amount, created_at, recipient_phone, recipient_name, status, short_id")
       .eq("user_id", user.user_id)
-      .in("type", ["addmoney", "send"])
+      .in("type", ["addmoney", "banktransfer"])
       .gte("created_at", since)
       .order("created_at", { ascending: false })
       .limit(100);
 
     // Build chart data
-    const dayMap = new Map<string, { addmoney: number; send: number }>();
+    const dayMap = new Map<string, { addmoney: number; banktransfer: number }>();
     for (let i = 29; i >= 0; i--) {
       const d = format(subDays(new Date(), i), "MMM dd");
-      dayMap.set(d, { addmoney: 0, send: 0 });
+      dayMap.set(d, { addmoney: 0, banktransfer: 0 });
     }
 
     for (const t of txns ?? []) {
@@ -189,7 +189,7 @@ export default function AdminUserMonitor() {
       const entry = dayMap.get(day);
       if (entry) {
         if (t.type === "addmoney") entry.addmoney += Number(t.amount);
-        else entry.send += Number(t.amount);
+        else entry.banktransfer += Number(t.amount);
       }
     }
 
@@ -263,14 +263,14 @@ export default function AdminUserMonitor() {
           <CardContent className="p-2 sm:p-3 text-center">
             <ArrowDownLeft className="w-4 h-4 sm:w-5 sm:h-5 mx-auto text-emerald-500 mb-1" />
             <p className="text-xs sm:text-xl font-bold text-foreground truncate">৳{allUsers.reduce((s, u) => s + u.addMoneyTotal, 0).toLocaleString()}</p>
-            <p className="text-[9px] sm:text-[10px] text-muted-foreground">Add Money</p>
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground">Added</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-[var(--shadow-card)]">
           <CardContent className="p-2 sm:p-3 text-center">
             <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 mx-auto text-destructive mb-1" />
             <p className="text-xs sm:text-xl font-bold text-foreground truncate">৳{allUsers.reduce((s, u) => s + u.sendTotal, 0).toLocaleString()}</p>
-            <p className="text-[9px] sm:text-[10px] text-muted-foreground">Transfers</p>
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground">Bank Transfers</p>
           </CardContent>
         </Card>
       </div>
@@ -334,7 +334,7 @@ export default function AdminUserMonitor() {
                       <p className="text-xs sm:text-sm font-semibold text-primary truncate">৳{user.addMoneyTotal.toLocaleString()}</p>
                     </div>
                     <div className="rounded-md bg-destructive/5 p-1 sm:p-1.5">
-                      <p className="text-[10px] sm:text-xs text-muted-foreground">Sent</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Transferred</p>
                       <p className="text-xs sm:text-sm font-semibold text-destructive truncate">৳{user.sendTotal.toLocaleString()}</p>
                     </div>
                     <div className="rounded-md bg-muted p-1 sm:p-1.5">
@@ -426,7 +426,7 @@ export default function AdminUserMonitor() {
                         <YAxis tick={{ fontSize: 10 }} className="text-muted-foreground" />
                         <ChartTooltip content={<ChartTooltipContent />} />
                         <Area type="monotone" dataKey="addmoney" stroke="hsl(var(--primary))" fill="url(#addGrad)" strokeWidth={2} />
-                        <Area type="monotone" dataKey="send" stroke="hsl(var(--destructive))" fill="url(#sendGrad)" strokeWidth={2} />
+                        <Area type="monotone" dataKey="banktransfer" stroke="hsl(var(--destructive))" fill="url(#sendGrad)" strokeWidth={2} />
                       </AreaChart>
                     </ChartContainer>
                   )}
@@ -440,8 +440,8 @@ export default function AdminUserMonitor() {
                   {recentTxns.slice(0, 20).map(txn => (
                     <div key={txn.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30">
                       <div className="flex items-center gap-2">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                          txn.type === "addmoney" ? "bg-primary/10" : "bg-destructive/10"
+                       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                           txn.type === "addmoney" ? "bg-primary/10" : "bg-destructive/10"
                         }`}>
                           {txn.type === "addmoney" ? (
                             <ArrowDownLeft className="w-4 h-4 text-primary" />
@@ -451,7 +451,7 @@ export default function AdminUserMonitor() {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-foreground">
-                            {txn.type === "addmoney" ? "Add Money" : "Send Money"}
+                            {txn.type === "addmoney" ? "Add Money" : "Bank Transfer"}
                           </p>
                           <p className="text-[10px] text-muted-foreground">
                             {format(parseISO(txn.created_at), "MMM dd, hh:mm a")} · {txn.short_id}

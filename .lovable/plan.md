@@ -1,20 +1,29 @@
 
 
-## Filter Monitor to Add Money and Bank Transfer Users Only
+## Plan: Add Biller Categories to API Hub
 
-Currently the monitor tracks `addmoney` and `send` transaction types. The user wants it to track only users who are **adding money** (from external sources) and **transferring to bank accounts/other MFS** — not internal P2P sends.
+### What
 
-### Changes to `src/components/admin/AdminUserMonitor.tsx`
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-1. **Replace transaction type filter** from `["addmoney", "send"]` to `["addmoney", "banktransfer"]` in all queries (auto-fetch, watchlist add, detail sheet)
-2. **Update labels** throughout:
-   - "Send/Transfer" → "Bank Transfer"
-   - "Sent" → "Transferred"
-   - "Send Money" → "Bank Transfer"
-   - "Transfers" → "Bank Transfers"
-   - Chart config key `send` label → "Bank Transfer"
-3. **Update icons**: Keep `ArrowDownLeft` for Add Money, use existing `ArrowUpRight` for Bank Transfer
-4. **Update stat card colors** to differentiate (keep emerald for add money, destructive for bank transfer)
+### Changes
 
-All changes are UI-only within the single file — no database or schema changes needed.
+**File: `src/components/admin/AdminApiHub.tsx`**
+
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
