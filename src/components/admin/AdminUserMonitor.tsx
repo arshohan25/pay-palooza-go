@@ -137,10 +137,10 @@ export default function AdminUserMonitor() {
       .eq("status", "completed")
       .gte("created_at", since);
 
-    let addMoney = 0, send = 0;
+    let addMoney = 0, bankTransfer = 0;
     for (const t of txns ?? []) {
       if (t.type === "addmoney") addMoney += Number(t.amount);
-      else send += Number(t.amount);
+      else bankTransfer += Number(t.amount);
     }
 
     setWatchlist(prev => [...prev, {
