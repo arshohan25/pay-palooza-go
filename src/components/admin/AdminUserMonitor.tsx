@@ -150,7 +150,7 @@ export default function AdminUserMonitor() {
       balance: Number(profile.balance),
       avatar_url: profile.avatar_url,
       addMoneyTotal: addMoney,
-      sendTotal: send,
+      sendTotal: bankTransfer,
       txnCount: (txns ?? []).length,
     }]);
     setSearchResults([]);
