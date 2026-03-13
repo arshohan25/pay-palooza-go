@@ -66,7 +66,7 @@ export default function AdminUserMonitor() {
       const { data: txns } = await supabase
         .from("transactions")
         .select("user_id, type, amount")
-        .in("type", ["addmoney", "send"])
+        .in("type", ["addmoney", "banktransfer"])
         .gte("created_at", since)
         .eq("status", "completed")
         .limit(1000);
