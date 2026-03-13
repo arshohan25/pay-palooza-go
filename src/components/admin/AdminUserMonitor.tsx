@@ -27,7 +27,7 @@ interface MonitoredUser {
 interface DailyData {
   date: string;
   addmoney: number;
-  send: number;
+  banktransfer: number;
 }
 
 interface UserTxn {
