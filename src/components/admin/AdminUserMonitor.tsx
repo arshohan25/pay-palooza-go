@@ -204,7 +204,7 @@ export default function AdminUserMonitor() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 overflow-x-hidden">
       {/* Search bar */}
       <Card className="border-0 shadow-[var(--shadow-card)]">
         <CardContent className="p-4">
