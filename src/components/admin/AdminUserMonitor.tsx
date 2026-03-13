@@ -177,10 +177,10 @@ export default function AdminUserMonitor() {
       .limit(100);
 
     // Build chart data
-    const dayMap = new Map<string, { addmoney: number; send: number }>();
+    const dayMap = new Map<string, { addmoney: number; banktransfer: number }>();
     for (let i = 29; i >= 0; i--) {
       const d = format(subDays(new Date(), i), "MMM dd");
-      dayMap.set(d, { addmoney: 0, send: 0 });
+      dayMap.set(d, { addmoney: 0, banktransfer: 0 });
     }
 
     for (const t of txns ?? []) {
