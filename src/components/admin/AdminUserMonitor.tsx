@@ -251,26 +251,26 @@ export default function AdminUserMonitor() {
       </Card>
 
       {/* Summary stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <Card className="border-0 shadow-[var(--shadow-card)]">
-          <CardContent className="p-3 text-center">
-            <Eye className="w-5 h-5 mx-auto text-primary mb-1" />
-            <p className="text-xl font-bold text-foreground">{allUsers.length}</p>
-            <p className="text-[10px] text-muted-foreground">Monitored</p>
+          <CardContent className="p-2 sm:p-3 text-center">
+            <Eye className="w-4 h-4 sm:w-5 sm:h-5 mx-auto text-primary mb-1" />
+            <p className="text-base sm:text-xl font-bold text-foreground">{allUsers.length}</p>
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground">Monitored</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-[var(--shadow-card)]">
-          <CardContent className="p-3 text-center">
-            <ArrowDownLeft className="w-5 h-5 mx-auto text-emerald-500 mb-1" />
-            <p className="text-xl font-bold text-foreground">৳{allUsers.reduce((s, u) => s + u.addMoneyTotal, 0).toLocaleString()}</p>
-            <p className="text-[10px] text-muted-foreground">Total Add Money</p>
+          <CardContent className="p-2 sm:p-3 text-center">
+            <ArrowDownLeft className="w-4 h-4 sm:w-5 sm:h-5 mx-auto text-emerald-500 mb-1" />
+            <p className="text-xs sm:text-xl font-bold text-foreground truncate">৳{allUsers.reduce((s, u) => s + u.addMoneyTotal, 0).toLocaleString()}</p>
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground">Add Money</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-[var(--shadow-card)]">
-          <CardContent className="p-3 text-center">
-            <ArrowUpRight className="w-5 h-5 mx-auto text-destructive mb-1" />
-            <p className="text-xl font-bold text-foreground">৳{allUsers.reduce((s, u) => s + u.sendTotal, 0).toLocaleString()}</p>
-            <p className="text-[10px] text-muted-foreground">Total Transfers</p>
+          <CardContent className="p-2 sm:p-3 text-center">
+            <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 mx-auto text-destructive mb-1" />
+            <p className="text-xs sm:text-xl font-bold text-foreground truncate">৳{allUsers.reduce((s, u) => s + u.sendTotal, 0).toLocaleString()}</p>
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground">Transfers</p>
           </CardContent>
         </Card>
       </div>
