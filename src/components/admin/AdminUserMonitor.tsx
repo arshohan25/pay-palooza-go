@@ -451,7 +451,7 @@ export default function AdminUserMonitor() {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-foreground">
-                            {txn.type === "addmoney" ? "Add Money" : "Send Money"}
+                            {txn.type === "addmoney" ? "Add Money" : "Bank Transfer"}
                           </p>
                           <p className="text-[10px] text-muted-foreground">
                             {format(parseISO(txn.created_at), "MMM dd, hh:mm a")} · {txn.short_id}
