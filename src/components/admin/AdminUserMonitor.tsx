@@ -43,7 +43,7 @@ interface UserTxn {
 
 const chartConfig = {
   addmoney: { label: "Add Money", color: "hsl(var(--primary))" },
-  send: { label: "Send/Transfer", color: "hsl(var(--destructive))" },
+  banktransfer: { label: "Bank Transfer", color: "hsl(var(--destructive))" },
 };
 
 export default function AdminUserMonitor() {
