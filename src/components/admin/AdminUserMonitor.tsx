@@ -73,11 +73,11 @@ export default function AdminUserMonitor() {
 
       if (!txns?.length) { setAutoUsers([]); setLoadingAuto(false); return; }
 
-      const userMap = new Map<string, { addMoney: number; send: number; count: number }>();
+      const userMap = new Map<string, { addMoney: number; bankTransfer: number; count: number }>();
       for (const t of txns) {
-        const entry = userMap.get(t.user_id) || { addMoney: 0, send: 0, count: 0 };
+        const entry = userMap.get(t.user_id) || { addMoney: 0, bankTransfer: 0, count: 0 };
         if (t.type === "addmoney") entry.addMoney += Number(t.amount);
-        else entry.send += Number(t.amount);
+        else entry.bankTransfer += Number(t.amount);
         entry.count++;
         userMap.set(t.user_id, entry);
       }
