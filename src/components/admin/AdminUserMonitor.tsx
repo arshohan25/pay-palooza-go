@@ -171,7 +171,7 @@ export default function AdminUserMonitor() {
       .from("transactions")
       .select("id, type, amount, created_at, recipient_phone, recipient_name, status, short_id")
       .eq("user_id", user.user_id)
-      .in("type", ["addmoney", "send"])
+      .in("type", ["addmoney", "banktransfer"])
       .gte("created_at", since)
       .order("created_at", { ascending: false })
       .limit(100);
