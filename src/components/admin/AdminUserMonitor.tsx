@@ -270,7 +270,7 @@ export default function AdminUserMonitor() {
           <CardContent className="p-2 sm:p-3 text-center">
             <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 mx-auto text-destructive mb-1" />
             <p className="text-xs sm:text-xl font-bold text-foreground truncate">৳{allUsers.reduce((s, u) => s + u.sendTotal, 0).toLocaleString()}</p>
-            <p className="text-[9px] sm:text-[10px] text-muted-foreground">Transfers</p>
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground">Bank Transfers</p>
           </CardContent>
         </Card>
       </div>
