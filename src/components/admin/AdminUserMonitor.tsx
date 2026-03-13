@@ -440,8 +440,8 @@ export default function AdminUserMonitor() {
                   {recentTxns.slice(0, 20).map(txn => (
                     <div key={txn.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30">
                       <div className="flex items-center gap-2">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                          txn.type === "addmoney" ? "bg-primary/10" : "bg-destructive/10"
+                       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                           txn.type === "addmoney" ? "bg-primary/10" : "bg-destructive/10"
                         }`}>
                           {txn.type === "addmoney" ? (
                             <ArrowDownLeft className="w-4 h-4 text-primary" />
