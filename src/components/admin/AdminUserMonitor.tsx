@@ -328,18 +328,18 @@ export default function AdminUserMonitor() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="rounded-md bg-primary/5 p-1.5">
-                      <p className="text-xs text-muted-foreground">Add Money</p>
-                      <p className="text-sm font-semibold text-primary">৳{user.addMoneyTotal.toLocaleString()}</p>
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center">
+                    <div className="rounded-md bg-primary/5 p-1 sm:p-1.5">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Add Money</p>
+                      <p className="text-xs sm:text-sm font-semibold text-primary truncate">৳{user.addMoneyTotal.toLocaleString()}</p>
                     </div>
-                    <div className="rounded-md bg-destructive/5 p-1.5">
-                      <p className="text-xs text-muted-foreground">Sent</p>
-                      <p className="text-sm font-semibold text-destructive">৳{user.sendTotal.toLocaleString()}</p>
+                    <div className="rounded-md bg-destructive/5 p-1 sm:p-1.5">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Sent</p>
+                      <p className="text-xs sm:text-sm font-semibold text-destructive truncate">৳{user.sendTotal.toLocaleString()}</p>
                     </div>
-                    <div className="rounded-md bg-muted p-1.5">
-                      <p className="text-xs text-muted-foreground">Txns</p>
-                      <p className="text-sm font-semibold text-foreground">{user.txnCount}</p>
+                    <div className="rounded-md bg-muted p-1 sm:p-1.5">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Txns</p>
+                      <p className="text-xs sm:text-sm font-semibold text-foreground">{user.txnCount}</p>
                     </div>
                   </div>
                 </CardContent>
