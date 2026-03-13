@@ -334,7 +334,7 @@ export default function AdminUserMonitor() {
                       <p className="text-xs sm:text-sm font-semibold text-primary truncate">৳{user.addMoneyTotal.toLocaleString()}</p>
                     </div>
                     <div className="rounded-md bg-destructive/5 p-1 sm:p-1.5">
-                      <p className="text-[10px] sm:text-xs text-muted-foreground">Sent</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Transferred</p>
                       <p className="text-xs sm:text-sm font-semibold text-destructive truncate">৳{user.sendTotal.toLocaleString()}</p>
                     </div>
                     <div className="rounded-md bg-muted p-1 sm:p-1.5">
