@@ -133,7 +133,7 @@ export default function AdminUserMonitor() {
       .from("transactions")
       .select("type, amount")
       .eq("user_id", profile.user_id)
-      .in("type", ["addmoney", "send"])
+      .in("type", ["addmoney", "banktransfer"])
       .eq("status", "completed")
       .gte("created_at", since);
 
