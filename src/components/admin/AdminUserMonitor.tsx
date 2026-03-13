@@ -189,7 +189,7 @@ export default function AdminUserMonitor() {
       const entry = dayMap.get(day);
       if (entry) {
         if (t.type === "addmoney") entry.addmoney += Number(t.amount);
-        else entry.send += Number(t.amount);
+        else entry.banktransfer += Number(t.amount);
       }
     }
 
