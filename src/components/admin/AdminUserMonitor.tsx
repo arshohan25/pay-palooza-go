@@ -204,7 +204,7 @@ export default function AdminUserMonitor() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 overflow-x-hidden">
       {/* Search bar */}
       <Card className="border-0 shadow-[var(--shadow-card)]">
         <CardContent className="p-4">
@@ -251,26 +251,26 @@ export default function AdminUserMonitor() {
       </Card>
 
       {/* Summary stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <Card className="border-0 shadow-[var(--shadow-card)]">
-          <CardContent className="p-3 text-center">
-            <Eye className="w-5 h-5 mx-auto text-primary mb-1" />
-            <p className="text-xl font-bold text-foreground">{allUsers.length}</p>
-            <p className="text-[10px] text-muted-foreground">Monitored</p>
+          <CardContent className="p-2 sm:p-3 text-center">
+            <Eye className="w-4 h-4 sm:w-5 sm:h-5 mx-auto text-primary mb-1" />
+            <p className="text-base sm:text-xl font-bold text-foreground">{allUsers.length}</p>
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground">Monitored</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-[var(--shadow-card)]">
-          <CardContent className="p-3 text-center">
-            <ArrowDownLeft className="w-5 h-5 mx-auto text-emerald-500 mb-1" />
-            <p className="text-xl font-bold text-foreground">৳{allUsers.reduce((s, u) => s + u.addMoneyTotal, 0).toLocaleString()}</p>
-            <p className="text-[10px] text-muted-foreground">Total Add Money</p>
+          <CardContent className="p-2 sm:p-3 text-center">
+            <ArrowDownLeft className="w-4 h-4 sm:w-5 sm:h-5 mx-auto text-emerald-500 mb-1" />
+            <p className="text-xs sm:text-xl font-bold text-foreground truncate">৳{allUsers.reduce((s, u) => s + u.addMoneyTotal, 0).toLocaleString()}</p>
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground">Add Money</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-[var(--shadow-card)]">
-          <CardContent className="p-3 text-center">
-            <ArrowUpRight className="w-5 h-5 mx-auto text-destructive mb-1" />
-            <p className="text-xl font-bold text-foreground">৳{allUsers.reduce((s, u) => s + u.sendTotal, 0).toLocaleString()}</p>
-            <p className="text-[10px] text-muted-foreground">Total Transfers</p>
+          <CardContent className="p-2 sm:p-3 text-center">
+            <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 mx-auto text-destructive mb-1" />
+            <p className="text-xs sm:text-xl font-bold text-foreground truncate">৳{allUsers.reduce((s, u) => s + u.sendTotal, 0).toLocaleString()}</p>
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground">Transfers</p>
           </CardContent>
         </Card>
       </div>
@@ -328,18 +328,18 @@ export default function AdminUserMonitor() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="rounded-md bg-primary/5 p-1.5">
-                      <p className="text-xs text-muted-foreground">Add Money</p>
-                      <p className="text-sm font-semibold text-primary">৳{user.addMoneyTotal.toLocaleString()}</p>
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center">
+                    <div className="rounded-md bg-primary/5 p-1 sm:p-1.5">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Add Money</p>
+                      <p className="text-xs sm:text-sm font-semibold text-primary truncate">৳{user.addMoneyTotal.toLocaleString()}</p>
                     </div>
-                    <div className="rounded-md bg-destructive/5 p-1.5">
-                      <p className="text-xs text-muted-foreground">Sent</p>
-                      <p className="text-sm font-semibold text-destructive">৳{user.sendTotal.toLocaleString()}</p>
+                    <div className="rounded-md bg-destructive/5 p-1 sm:p-1.5">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Sent</p>
+                      <p className="text-xs sm:text-sm font-semibold text-destructive truncate">৳{user.sendTotal.toLocaleString()}</p>
                     </div>
-                    <div className="rounded-md bg-muted p-1.5">
-                      <p className="text-xs text-muted-foreground">Txns</p>
-                      <p className="text-sm font-semibold text-foreground">{user.txnCount}</p>
+                    <div className="rounded-md bg-muted p-1 sm:p-1.5">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Txns</p>
+                      <p className="text-xs sm:text-sm font-semibold text-foreground">{user.txnCount}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -373,26 +373,26 @@ export default function AdminUserMonitor() {
           <ScrollArea className="h-[calc(85vh-80px)]">
             <div className="p-4 space-y-4">
               {/* Balance + totals */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 <Card className="border-0 bg-primary/5">
-                  <CardContent className="p-3 text-center">
-                    <Wallet className="w-4 h-4 mx-auto text-primary mb-1" />
-                    <p className="text-lg font-bold text-foreground">৳{selectedUser?.balance.toLocaleString()}</p>
-                    <p className="text-[10px] text-muted-foreground">Balance</p>
+                  <CardContent className="p-2 sm:p-3 text-center">
+                    <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4 mx-auto text-primary mb-1" />
+                    <p className="text-sm sm:text-lg font-bold text-foreground truncate">৳{selectedUser?.balance.toLocaleString()}</p>
+                    <p className="text-[9px] sm:text-[10px] text-muted-foreground">Balance</p>
                   </CardContent>
                 </Card>
                 <Card className="border-0 bg-emerald-500/5">
-                  <CardContent className="p-3 text-center">
-                    <ArrowDownLeft className="w-4 h-4 mx-auto text-emerald-500 mb-1" />
-                    <p className="text-lg font-bold text-foreground">৳{selectedUser?.addMoneyTotal.toLocaleString()}</p>
-                    <p className="text-[10px] text-muted-foreground">Added</p>
+                  <CardContent className="p-2 sm:p-3 text-center">
+                    <ArrowDownLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 mx-auto text-emerald-500 mb-1" />
+                    <p className="text-sm sm:text-lg font-bold text-foreground truncate">৳{selectedUser?.addMoneyTotal.toLocaleString()}</p>
+                    <p className="text-[9px] sm:text-[10px] text-muted-foreground">Added</p>
                   </CardContent>
                 </Card>
                 <Card className="border-0 bg-destructive/5">
-                  <CardContent className="p-3 text-center">
-                    <ArrowUpRight className="w-4 h-4 mx-auto text-destructive mb-1" />
-                    <p className="text-lg font-bold text-foreground">৳{selectedUser?.sendTotal.toLocaleString()}</p>
-                    <p className="text-[10px] text-muted-foreground">Sent</p>
+                  <CardContent className="p-2 sm:p-3 text-center">
+                    <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 mx-auto text-destructive mb-1" />
+                    <p className="text-sm sm:text-lg font-bold text-foreground truncate">৳{selectedUser?.sendTotal.toLocaleString()}</p>
+                    <p className="text-[9px] sm:text-[10px] text-muted-foreground">Sent</p>
                   </CardContent>
                 </Card>
               </div>
