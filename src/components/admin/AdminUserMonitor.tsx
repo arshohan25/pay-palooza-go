@@ -426,7 +426,7 @@ export default function AdminUserMonitor() {
                         <YAxis tick={{ fontSize: 10 }} className="text-muted-foreground" />
                         <ChartTooltip content={<ChartTooltipContent />} />
                         <Area type="monotone" dataKey="addmoney" stroke="hsl(var(--primary))" fill="url(#addGrad)" strokeWidth={2} />
-                        <Area type="monotone" dataKey="send" stroke="hsl(var(--destructive))" fill="url(#sendGrad)" strokeWidth={2} />
+                        <Area type="monotone" dataKey="banktransfer" stroke="hsl(var(--destructive))" fill="url(#sendGrad)" strokeWidth={2} />
                       </AreaChart>
                     </ChartContainer>
                   )}
