@@ -243,8 +243,8 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
           </div>
 
           {/* Viewfinder area */}
-          <div className="relative z-20 flex-1 flex flex-col items-center justify-center">
-            <div className="relative" style={{ width: 260, height: 260 }}>
+          <div className="relative z-20 flex-1 min-h-0 flex flex-col items-center justify-center">
+            <div className="relative w-[240px] h-[240px] bg-transparent rounded-lg" style={{ boxShadow: "0 0 0 9999px rgba(0,0,0,0.55)" }}>
               {/* Corner brackets */}
               <div className={`${cornerClass} top-0 left-0 ${borderW} ${borderColor} border-r-0 border-b-0 rounded-tl-2xl transition-colors duration-300`} />
               <div className={`${cornerClass} top-0 right-0 ${borderW} ${borderColor} border-l-0 border-b-0 rounded-tr-2xl transition-colors duration-300`} />
