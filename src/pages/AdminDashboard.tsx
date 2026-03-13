@@ -58,6 +58,7 @@ import AdminNotificationSender from "@/components/admin/AdminNotificationSender"
 import TeamOnboardingChecklist from "@/components/admin/TeamOnboardingChecklist";
 import AdminMerchantManagement from "@/components/admin/AdminMerchantManagement";
 import AdminSavingsManagement from "@/components/admin/AdminSavingsManagement";
+import AdminUserMonitor from "@/components/admin/AdminUserMonitor";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -181,6 +182,7 @@ const NAV_ITEMS = [
   { id: "limits", label: "Limits", icon: Scale },
   { id: "team", label: "Team", icon: Users },
   { id: "savings", label: "Savings", icon: Wallet },
+  { id: "monitor", label: "Monitor", icon: TrendingUp },
   { id: "notify", label: "Notify", icon: Bell },
   { id: "trash", label: "Trash", icon: Trash2 },
 ];
@@ -1281,6 +1283,9 @@ export default function AdminDashboard() {
 
         {/* ═══ SAVINGS ═══ */}
         {activeTab === "savings" && <AdminSavingsManagement />}
+
+        {/* ═══ USER MONITOR ═══ */}
+        {activeTab === "monitor" && <AdminUserMonitor />}
 
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
