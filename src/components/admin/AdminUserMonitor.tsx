@@ -97,7 +97,7 @@ export default function AdminUserMonitor() {
           balance: Number(p.balance),
           avatar_url: p.avatar_url,
           addMoneyTotal: stats.addMoney,
-          sendTotal: stats.send,
+          sendTotal: stats.bankTransfer,
           txnCount: stats.count,
         };
       }).sort((a, b) => (b.addMoneyTotal + b.sendTotal) - (a.addMoneyTotal + a.sendTotal));
