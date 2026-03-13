@@ -345,9 +345,9 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
           </div>
 
           {/* Bottom controls */}
-          <div className="relative z-30 pb-[env(safe-area-inset-bottom,16px)] px-6 pb-6">
+          <div className="relative z-30 shrink-0 px-5 pb-[max(env(safe-area-inset-bottom,12px),12px)]">
             {/* Action buttons */}
-            <div className="flex items-center justify-center gap-8 mb-8">
+            <div className="flex items-center justify-center gap-5 mb-4">
               <button
                 onClick={toggleTorch}
                 disabled={!torchSupported || detected}
