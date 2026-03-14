@@ -306,6 +306,44 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                   </div>
                 )}
 
+                {step === "pin" && (
+                  <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-6 px-4">
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
+                      <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                        <ShieldCheck size={36} className="text-emerald-600" />
+                      </div>
+                    </motion.div>
+                    <div className="text-center space-y-1">
+                      <h2 className="text-xl font-bold text-foreground">Confirm with PIN</h2>
+                      <p className="text-sm text-muted-foreground">Enter your 4-digit PIN to submit</p>
+                    </div>
+                    <div className="flex justify-center gap-3">
+                      {[0, 1, 2, 3].map(i => (
+                        <div key={i} className={`w-4 h-4 rounded-full transition-all ${i < pin.length ? "bg-emerald-500 scale-110" : "bg-border"}`} />
+                      ))}
+                    </div>
+                    <Input
+                      ref={pinRef}
+                      type="password"
+                      inputMode="numeric"
+                      maxLength={4}
+                      autoFocus
+                      value={pin}
+                      onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); setPin(v); setPinError(""); }}
+                      className="w-48 h-14 text-center text-2xl tracking-[0.5em] font-bold bg-card border-border"
+                      placeholder="····"
+                    />
+                    {pinError && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{pinError}</p>}
+                    <Button
+                      className="w-full max-w-xs h-11 bg-gradient-to-b from-emerald-500 to-green-600 border-0 text-white font-semibold"
+                      onClick={handlePinSubmit}
+                      disabled={submitting || pin.length !== 4}
+                    >
+                      {submitting ? "Verifying…" : "Confirm & Submit"}
+                    </Button>
+                  </div>
+                )}
+
                 {step === "success" && (
                   <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4 px-4">
                     <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
