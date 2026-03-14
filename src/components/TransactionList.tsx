@@ -103,6 +103,7 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
     { icon: User,     label: t("nameParty"),      value: display.name,                          copy: false },
     { icon: Tag,      label: t("type"),            value: display.label,                         copy: false },
     { icon: FileText, label: t("description"),     value: tx.description || display.label,       copy: false },
+    ...(tx.fee > 0 ? [{ icon: Coins, label: "Charge / Fee", value: `৳${tx.fee.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, copy: false }] : []),
     { icon: Clock,    label: t("dateTime"),        value: format(txDate, "dd MMM yyyy, h:mm a"), copy: false },
     ...(tx.commission > 0 ? [{ icon: Tag, label: t("commission"), value: `৳${tx.commission.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, copy: false }] : []),
   ];
