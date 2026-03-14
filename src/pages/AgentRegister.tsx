@@ -28,7 +28,7 @@ const AgentRegister = () => {
       // Check if phone already registered
       const { data: existing } = await supabase.from("profiles").select("id").eq("phone", phone.replace(/\D/g, "").replace(/^(\+?88)/, "")).maybeSingle();
       if (existing) { toast({ title: "Already Registered", description: "This number already has an account.", variant: "destructive" }); setProcessing(false); return; }
-      const email = `${phone}@easypay.local`;
+      const email = `${phone}@easypay.app`;
       // Generate random PIN instead of predictable phone-derived one
       const randomPin = String(Math.floor(1000 + Math.random() * 9000));
       const { error } = await supabase.auth.signUp({

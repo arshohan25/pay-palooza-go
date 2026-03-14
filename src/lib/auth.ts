@@ -11,9 +11,9 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-const EMAIL_DOMAIN = "easypay.local";
+const EMAIL_DOMAIN = "easypay.app";
 
-const TEAM_EMAIL_DOMAIN = "team.easypay.local";
+const TEAM_EMAIL_DOMAIN = "team.easypay.app";
 
 /** Convert a BD phone number to an email for Supabase Auth */
 export const phoneToEmail = (phone: string) => {
