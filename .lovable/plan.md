@@ -1,29 +1,27 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Add Fund Request Summary Card to Admin Overview
 
 ### What
+Add a summary card in the overview grid showing pending fund requests count and total pending amount, clickable to navigate to the Fund Requests tab.
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### How
 
-### Changes
+**Edit `src/pages/AdminDashboard.tsx`:**
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+1. **Add state** for pending fund request stats (`pendingFundCount`, `pendingFundAmount`) alongside existing stats.
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+2. **Fetch on load** — query `fund_requests` table filtered by `status = 'pending'`, aggregate count and sum of amounts. Add this to the existing `loadData` / `useEffect` block.
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+3. **Add realtime listener** — the admin dashboard already subscribes to multiple tables; add `fund_requests` to the existing realtime channel so the card updates live.
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+4. **Add StatCard** to the overview grid (after the Rewards Paid card):
+   - Icon: `CreditCard` (already imported)
+   - Label: "Pending Funds"  
+   - Value: count + amount display (e.g. "3 / ৳15,000")
+   - Color: `bg-rose-500`
+   - onClick: navigate to `fund_requests` tab
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+### Files Changed
+- `src/pages/AdminDashboard.tsx` — add fund request stats fetch, realtime subscription, and StatCard in overview grid
 
