@@ -86,30 +86,28 @@ export const onBalanceChange = (fn: (b: number) => void) => {
 let realtimeSetup = false;
 export function setupBalanceRealtime() {
   if (realtimeSetup) return;
+  if (!currentUserId) return;
   realtimeSetup = true;
 
-  supabase.auth.getSession().then(({ data: { session } }) => {
-    if (!session?.user) return;
-    supabase
-      .channel("balance-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "profiles",
-          filter: `user_id=eq.${session.user.id}`,
-        },
-        (payload) => {
-          const newBal = parseFloat(String(payload.new.balance));
-          if (!isNaN(newBal) && newBal !== balance) {
-            balance = newBal;
-            notify();
-          }
+  supabase
+    .channel("balance-realtime")
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "profiles",
+        filter: `user_id=eq.${currentUserId}`,
+      },
+      (payload) => {
+        const newBal = parseFloat(String(payload.new.balance));
+        if (!isNaN(newBal) && newBal !== balance) {
+          balance = newBal;
+          notify();
         }
-      )
-      .subscribe();
-  });
+      }
+    )
+    .subscribe();
 }
 
 /** Transfer money to another user atomically via DB function */
