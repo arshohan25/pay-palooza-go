@@ -778,9 +778,18 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 </div>
               </div>
 
-              {/* PIN dots */}
-              <div className="mb-3">
+              {/* PIN dots with hidden input */}
+              <div className="relative mb-3">
                 <PinCircles pin={pin} error={!!error} dark />
+                <HiddenPinInput
+                  value={pin}
+                  onChange={(v) => {
+                    setPin(v);
+                    setError("");
+                    if (v.length === 4) setTimeout(() => handleLoginPin(v), 260);
+                  }}
+                  disabled={isSubmitting}
+                />
               </div>
 
               {/* Error / Status */}
@@ -799,21 +808,8 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 ) : null}
               </div>
 
-              {/* Numeric keypad */}
-              <div className="flex-1 flex flex-col justify-center w-full max-w-xs">
-                <NumericKeypad
-                  dark
-                  disabled={isSubmitting}
-                  onPress={(d) => {
-                    if (pin.length >= 4) return;
-                    const next = pin + d;
-                    setPin(next);
-                    setError("");
-                    if (next.length === 4) setTimeout(() => handleLoginPin(next), 260);
-                  }}
-                  onDelete={() => { setPin(p => p.slice(0, -1)); setError(""); }}
-                />
-              </div>
+              {/* Spacer instead of keypad */}
+              <div className="flex-1" />
 
               {/* Footer actions */}
               <div className="flex items-center gap-5 mt-4">
