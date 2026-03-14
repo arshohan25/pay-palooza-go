@@ -1,8 +1,8 @@
 /**
  * Auth helpers for EasyPay.
- * 
+ *
  * Uses Supabase Auth with phone-as-email pattern:
- *   email = "{phone}@easypay.local"
+ *   email = "{phone}@easypay.app"
  *   password = PIN + "EP" (padded to meet 6-char minimum)
  *
  * This gives us real server-side auth (bcrypt-hashed PINs, JWT sessions)
@@ -11,19 +11,55 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-const EMAIL_DOMAIN = "easypay.app";
+const PRIMARY_EMAIL_DOMAIN = "easypay.app";
+const TEAM_PRIMARY_EMAIL_DOMAIN = "team.easypay.app";
+const SIGNUP_FALLBACK_EMAIL_DOMAINS = ["example.com"];
+const LEGACY_SIGNIN_EMAIL_DOMAINS = ["easypay.local"];
+const BD_PHONE_REGEX = /^01[3-9]\d{8}$/;
 
-const TEAM_EMAIL_DOMAIN = "team.easypay.app";
+const normalizeBdPhone = (phone: string) =>
+  phone.replace(/\D/g, "").replace(/^88/, "");
 
-/** Convert a BD phone number to an email for Supabase Auth */
-export const phoneToEmail = (phone: string) => {
-  const cleaned = phone.replace(/\D/g, "").replace(/^(\+?88)/, "");
-  return `${cleaned}@${EMAIL_DOMAIN}`;
+const buildSyntheticEmail = (localPart: string, domain: string) =>
+  `${localPart}@${domain}`;
+
+const unique = <T,>(items: T[]) => [...new Set(items)];
+
+const isInvalidEmailFormatError = (message: string) =>
+  message.toLowerCase().includes("unable to validate email address: invalid format");
+
+const getPhoneAuthEmails = (phone: string) => {
+  const normalizedPhone = normalizeBdPhone(phone);
+
+  if (!BD_PHONE_REGEX.test(normalizedPhone)) {
+    throw new Error("Enter a valid 11-digit Bangladeshi mobile number.");
+  }
+
+  const primaryEmail = buildSyntheticEmail(normalizedPhone, PRIMARY_EMAIL_DOMAIN);
+  const signupFallbacks = SIGNUP_FALLBACK_EMAIL_DOMAINS.map((domain) =>
+    buildSyntheticEmail(normalizedPhone, domain)
+  );
+  const legacySignInEmails = LEGACY_SIGNIN_EMAIL_DOMAINS.map((domain) =>
+    buildSyntheticEmail(normalizedPhone, domain)
+  );
+
+  return {
+    normalizedPhone,
+    primaryEmail,
+    signupEmails: unique([primaryEmail, ...signupFallbacks]),
+    signinEmails: unique([primaryEmail, ...signupFallbacks, ...legacySignInEmails]),
+  };
 };
 
-/** Convert a team username to an email for Supabase Auth */
+/** Convert a BD phone number to an email for Auth */
+export const phoneToEmail = (phone: string) => getPhoneAuthEmails(phone).primaryEmail;
+
+const normalizeTeamUsername = (username: string) =>
+  username.trim().toLowerCase().replace(/[^a-z0-9._-]/g, "");
+
+/** Convert a team username to an email for Auth */
 export const usernameToEmail = (username: string) =>
-  `${username.toLowerCase()}@${TEAM_EMAIL_DOMAIN}`;
+  buildSyntheticEmail(normalizeTeamUsername(username), TEAM_PRIMARY_EMAIL_DOMAIN);
 
 /** Generate a random username like staff-A7K2 */
 export function generateUsername(): string {
@@ -41,9 +77,54 @@ export function generatePassword(): string {
   return pw;
 }
 
+/**
+ * Create a phone-based auth account with safe domain fallback.
+ * Falls back only when provider rejects email format for the primary synthetic domain.
+ */
+export async function signUpWithPhonePassword(
+  phone: string,
+  password: string,
+  metadata: Record<string, unknown> = {}
+): Promise<{ data: any; normalizedPhone: string; emailUsed: string }> {
+  const { normalizedPhone, signupEmails } = getPhoneAuthEmails(phone);
+  let lastFormatError: Error | null = null;
+
+  for (const email of signupEmails) {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          phone: normalizedPhone,
+          ...metadata,
+        },
+      },
+    });
+
+    if (!error) {
+      return { data, normalizedPhone, emailUsed: email };
+    }
+
+    if (isInvalidEmailFormatError(error.message)) {
+      lastFormatError = error;
+      continue;
+    }
+
+    throw error;
+  }
+
+  if (lastFormatError) throw lastFormatError;
+  throw new Error("Unable to create account right now.");
+}
+
 /** Sign up a new team member with username + password */
 export async function teamSignUp(username: string, password: string, displayName: string) {
-  const email = usernameToEmail(username);
+  const normalizedUsername = normalizeTeamUsername(username);
+  if (!normalizedUsername) {
+    throw new Error("Username can only include letters, numbers, dots, underscores, and hyphens.");
+  }
+
+  const email = usernameToEmail(normalizedUsername);
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -62,7 +143,12 @@ export async function teamSignUp(username: string, password: string, displayName
 
 /** Sign in a team member with username + password */
 export async function teamSignIn(username: string, password: string) {
-  const email = usernameToEmail(username);
+  const normalizedUsername = normalizeTeamUsername(username);
+  if (!normalizedUsername) {
+    throw new Error("Invalid username format.");
+  }
+
+  const email = usernameToEmail(normalizedUsername);
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
@@ -78,28 +164,22 @@ export const pinToPassword = (pin: string) => `${pin}EP`;
 
 /** Sign up a new user with phone + PIN */
 export async function signUp(phone: string, pin: string, name?: string, referralCode?: string) {
-  const email = phoneToEmail(phone);
   const password = pinToPassword(pin);
+  const displayName = name?.trim() || normalizeBdPhone(phone);
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        phone,
-        display_name: name || phone,
-      },
-    },
+  const { data, normalizedPhone } = await signUpWithPhonePassword(phone, password, {
+    display_name: displayName,
   });
-
-  if (error) throw error;
 
   // Update profile with name and phone after signup
   if (data.user) {
-    await supabase.from("profiles").update({
-      name: name || null,
-      phone,
-    }).eq("user_id", data.user.id);
+    await supabase
+      .from("profiles")
+      .update({
+        name: name || null,
+        phone: normalizedPhone,
+      })
+      .eq("user_id", data.user.id);
 
     // If a referral code was used, create the referral link
     if (referralCode) {
@@ -124,16 +204,28 @@ export async function signUp(phone: string, pin: string, name?: string, referral
 
 /** Sign in an existing user with phone + PIN */
 export async function signIn(phone: string, pin: string) {
-  const email = phoneToEmail(phone);
+  const { signinEmails } = getPhoneAuthEmails(phone);
   const password = pinToPassword(pin);
+  let lastCredentialError: Error | null = null;
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  for (const email of signinEmails) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-  if (error) throw error;
-  return data;
+    if (!error) return data;
+
+    if (error.message.includes("Invalid login credentials")) {
+      lastCredentialError = error;
+      continue;
+    }
+
+    throw error;
+  }
+
+  if (lastCredentialError) throw lastCredentialError;
+  throw new Error("Unable to sign in right now.");
 }
 
 /** Sign out */
@@ -144,28 +236,36 @@ export async function signOut() {
 
 /** Get current session */
 export async function getSession() {
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   return session;
 }
 
 /** Get current user */
 export async function getCurrentUser() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   return user;
 }
 
 /** Check if a phone number is already registered */
 export async function isPhoneRegistered(phone: string): Promise<boolean> {
-  // Try signing in with a dummy password — if we get "Invalid login credentials"
-  // the user exists. If we get something else, they don't.
-  // Alternative: check profiles table
+  const normalizedPhone = normalizeBdPhone(phone);
+  if (!BD_PHONE_REGEX.test(normalizedPhone)) return false;
+
+  const legacyPhoneValues = LEGACY_SIGNIN_EMAIL_DOMAINS.map((domain) =>
+    buildSyntheticEmail(normalizedPhone, domain)
+  );
+
   const { data } = await supabase
     .from("profiles")
     .select("id")
-    .eq("phone", phone)
-    .maybeSingle();
-  
-  return !!data;
+    .in("phone", [normalizedPhone, ...legacyPhoneValues])
+    .limit(1);
+
+  return (data?.length ?? 0) > 0;
 }
 
 /** Change PIN (password) for authenticated user */
@@ -178,27 +278,24 @@ export async function changePin(newPin: string) {
 
 /** Get user profile */
 export async function getProfile() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("user_id", user.id)
-    .single();
+  const { data } = await supabase.from("profiles").select("*").eq("user_id", user.id).single();
 
   return data;
 }
 
 /** Update user profile */
 export async function updateProfile(updates: { name?: string; avatar_url?: string }) {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const { error } = await supabase
-    .from("profiles")
-    .update(updates)
-    .eq("user_id", user.id);
+  const { error } = await supabase.from("profiles").update(updates).eq("user_id", user.id);
 
   if (error) throw error;
 }

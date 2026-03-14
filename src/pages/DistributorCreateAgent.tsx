@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { signUpWithPhonePassword } from "@/lib/auth";
 import { motion } from "framer-motion";
 import { ArrowLeft, UserPlus, Home, Building2, MapPin, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -41,14 +42,12 @@ const DistributorCreateAgent = () => {
       if (!distData) throw new Error("Distributor record not found");
 
       // 2. Create auth account for agent
-      const email = `${phone}@easypay.app`;
+      const cleanedPhone = phone.replace(/\D/g, "").replace(/^(\+?88)/, "");
       const randomPin = String(Math.floor(1000 + Math.random() * 9000));
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password: `${randomPin}EP`,
-        options: { data: { phone, name: name || businessName } },
+      const { data: signUpData } = await signUpWithPhonePassword(cleanedPhone, `${randomPin}EP`, {
+        display_name: name || businessName || cleanedPhone,
+        name: name || businessName || null,
       });
-      if (signUpError) throw signUpError;
       const newUserId = signUpData.user?.id;
       if (!newUserId) throw new Error("Failed to create user account");
 
@@ -72,10 +71,11 @@ const DistributorCreateAgent = () => {
       });
       if (agentError) throw agentError;
 
-      // 5. Update profile with name
-      if (name) {
-        await supabase.from("profiles").update({ name }).eq("user_id", newUserId);
-      }
+      // 5. Update profile with name + normalized phone
+      await supabase
+        .from("profiles")
+        .update({ name: name || null, phone: cleanedPhone })
+        .eq("user_id", newUserId);
 
       setDone(true);
       toast({ title: "Agent Created", description: `${businessName || name || phone} has been registered as an agent` });

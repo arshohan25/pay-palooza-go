@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { usePhoneValidation } from "@/hooks/use-phone-validation";
+import { signUpWithPhonePassword } from "@/lib/auth";
 
 const AgentRegister = () => {
   const navigate = useNavigate();
@@ -25,18 +26,18 @@ const AgentRegister = () => {
     if (processing) return;
     setProcessing(true);
     try {
+      const cleanedPhone = phone.replace(/\D/g, "").replace(/^(\+?88)/, "");
+
       // Check if phone already registered
-      const { data: existing } = await supabase.from("profiles").select("id").eq("phone", phone.replace(/\D/g, "").replace(/^(\+?88)/, "")).maybeSingle();
+      const { data: existing } = await supabase.from("profiles").select("id").eq("phone", cleanedPhone).maybeSingle();
       if (existing) { toast({ title: "Already Registered", description: "This number already has an account.", variant: "destructive" }); setProcessing(false); return; }
-      const email = `${phone}@easypay.app`;
+
       // Generate random PIN instead of predictable phone-derived one
       const randomPin = String(Math.floor(1000 + Math.random() * 9000));
-      const { error } = await supabase.auth.signUp({
-        email,
-        password: `${randomPin}EP`,
-        options: { data: { phone, name } },
+      await signUpWithPhonePassword(cleanedPhone, `${randomPin}EP`, {
+        display_name: name || cleanedPhone,
+        name: name || null,
       });
-      if (error) throw error;
       setDone(true);
       toast({ title: "Customer Registered", description: `${name || phone} successfully onboarded` });
     } catch (err: any) {

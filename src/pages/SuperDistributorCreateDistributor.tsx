@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { signUpWithPhonePassword } from "@/lib/auth";
 
 const SuperDistributorCreateDistributor = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -51,22 +52,24 @@ const SuperDistributorCreateDistributor = () => {
     }
     setProcessing(true);
     try {
-      // 1. Build email from phone
+      // 1. Normalize and validate phone
       const cleaned = phone.replace(/\D/g, "").replace(/^(\+?88)/, "");
+      if (!/^01[3-9]\d{8}$/.test(cleaned)) {
+        toast({ title: "Invalid phone", description: "Enter a valid 11-digit Bangladeshi number", variant: "destructive" });
+        setProcessing(false);
+        return;
+      }
 
       // Check if phone already registered
       const { data: existing } = await supabase.from("profiles").select("id").eq("phone", cleaned).maybeSingle();
       if (existing) { toast({ title: "Already Registered", description: "This number already has an account.", variant: "destructive" }); setProcessing(false); return; }
-      const email = `${cleaned}@easypay.app`;
 
       // 2. Create auth account for distributor
       const randomPin = String(Math.floor(1000 + Math.random() * 9000));
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password: `${randomPin}EP`,
-        options: { data: { phone: cleaned, display_name: name || businessName } },
+      const { data: signUpData } = await signUpWithPhonePassword(cleaned, `${randomPin}EP`, {
+        display_name: name || businessName || cleaned,
+        name: name || null,
       });
-      if (signUpError) throw signUpError;
       const newUserId = signUpData.user?.id;
       if (!newUserId) throw new Error("Failed to create account");
 
@@ -154,7 +157,7 @@ const SuperDistributorCreateDistributor = () => {
           <div className="space-y-3">
             <div>
               <Label className="text-xs">Phone Number *</Label>
-              <Input type="tel" placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value)} />
+              <Input type="tel" placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))} />
             </div>
             <div>
               <Label className="text-xs">Full Name</Label>
