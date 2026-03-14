@@ -1,5 +1,5 @@
 const LOGO_SRC = "/icons/easypay-logo.png";
-const LOGO_RATIO = 0.22; // logo takes ~22% of QR width
+const LOGO_RATIO = 0.24; // logo takes ~24% of QR width
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -12,8 +12,8 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 }
 
 /**
- * Draw the EasyPay logo in the center of an existing QR canvas.
- * Call this AFTER QRCode.toCanvas().
+ * Draw the EasyPay logo in the center of an existing QR canvas
+ * with a professional circular clear zone, subtle border ring, and drop shadow.
  */
 export async function drawLogoOnCanvas(
   canvas: HTMLCanvasElement,
@@ -23,32 +23,54 @@ export async function drawLogoOnCanvas(
   if (!ctx) return;
 
   const logo = await loadImage(logoSrc);
-  const size = canvas.width * LOGO_RATIO;
-  const x = (canvas.width - size) / 2;
-  const y = (canvas.height - size) / 2;
+  const logoSize = canvas.width * LOGO_RATIO;
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
 
-  // Draw clear zone behind logo
-  const pad = size * 0.075;
-  const bgSize = size + pad * 2;
-  const bx = x - pad;
-  const by = y - pad;
-  const r = 6;
+  // Outer radius includes padding around the logo
+  const outerRadius = (logoSize / 2) * 1.35;
+  const innerRadius = (logoSize / 2) * 1.22;
+
+  // 1. Clear zone — pure white circle to mask QR modules
+  ctx.save();
   ctx.beginPath();
-  ctx.moveTo(bx + r, by);
-  ctx.lineTo(bx + bgSize - r, by);
-  ctx.quadraticCurveTo(bx + bgSize, by, bx + bgSize, by + r);
-  ctx.lineTo(bx + bgSize, by + bgSize - r);
-  ctx.quadraticCurveTo(bx + bgSize, by + bgSize, bx + bgSize - r, by + bgSize);
-  ctx.lineTo(bx + r, by + bgSize);
-  ctx.quadraticCurveTo(bx, by + bgSize, bx, by + bgSize - r);
-  ctx.lineTo(bx, by + r);
-  ctx.quadraticCurveTo(bx, by, bx + r, by);
-  ctx.closePath();
-  ctx.fillStyle = "#f0f0f0";
+  ctx.arc(cx, cy, outerRadius, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
   ctx.fill();
+  ctx.restore();
 
-  // Draw logo on top
-  ctx.drawImage(logo, x, y, size, size);
+  // 2. Subtle outer ring (light gray stroke)
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, outerRadius - 0.5, 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(0,0,0,0.08)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
+
+  // 3. Inner white circle with very subtle inset shadow effect
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, innerRadius, 0, Math.PI * 2);
+  ctx.fillStyle = "#fafafa";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(0,0,0,0.06)";
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+  ctx.restore();
+
+  // 4. Clip logo to a circle and draw
+  const logoDrawSize = logoSize * 0.92;
+  const lx = cx - logoDrawSize / 2;
+  const ly = cy - logoDrawSize / 2;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, logoDrawSize / 2, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.clip();
+  ctx.drawImage(logo, lx, ly, logoDrawSize, logoDrawSize);
+  ctx.restore();
 }
 
 /**
