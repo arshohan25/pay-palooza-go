@@ -1,29 +1,29 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Fund Request History View for Users
 
 ### What
+Add a new "My Requests" page accessible from the Account page, showing all of a user's Add Money and Bank Transfer (withdrawal) requests with their current status (pending/approved/rejected), amounts, dates, and admin notes.
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### How
 
-### Changes
+**New component `src/components/FundRequestHistory.tsx`**:
+- Full-page view with back button header
+- Fetches `fund_requests` where `user_id = auth.uid()` ordered by `created_at desc`
+- Real-time subscription for live status updates
+- Each request card shows: type badge (Add Money / Withdraw), amount, source method, status badge (pending amber / approved green / rejected red), date, and admin note if rejected
+- Empty state when no requests exist
+- Tappable cards expand to show details (proof image, bank info, transaction ID)
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**Edit `src/pages/AccountPage.tsx`**:
+- Add a new `SubPage` value `"requests"`
+- Add a `MenuRow` under "Insights & Limits" section: icon `ClipboardList` or `CreditCard`, label "My Fund Requests", sub "Track deposit & withdrawal status"
+- Route to the new component when selected
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+**RLS**: Already covered — `fund_requests` table has a policy `Users can view own fund requests` (SELECT where `user_id = auth.uid()`). Need to verify this exists; if not, add it via migration.
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+### Files Changed
+- `src/components/FundRequestHistory.tsx` (new)
+- `src/pages/AccountPage.tsx` (add menu row + sub-page routing)
+- Possible migration if user SELECT RLS policy is missing
 
