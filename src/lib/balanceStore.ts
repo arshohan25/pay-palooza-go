@@ -21,15 +21,23 @@ const notify = () => {
 export const getBalance = () => balance;
 export const isBalanceLoaded = () => loaded;
 
+let currentUserId: string | null = null;
+
 /** Fetch the real balance from DB for the current user */
-export async function fetchBalance(): Promise<number> {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user) return balance;
+export async function fetchBalance(userId?: string): Promise<number> {
+  const uid = userId ?? currentUserId;
+  if (!uid) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return balance;
+    currentUserId = session.user.id;
+    return fetchBalance(session.user.id);
+  }
+  currentUserId = uid;
 
   const { data, error } = await supabase
     .from("profiles")
     .select("balance")
-    .eq("user_id", session.user.id)
+    .eq("user_id", uid)
     .single();
 
   if (data && !error) {
@@ -39,6 +47,20 @@ export async function fetchBalance(): Promise<number> {
   }
   return balance;
 }
+
+// Auto-fetch balance as soon as auth is ready
+supabase.auth.onAuthStateChange((_event, session) => {
+  if (session?.user) {
+    currentUserId = session.user.id;
+    fetchBalance(session.user.id);
+    setupBalanceRealtime();
+  } else {
+    currentUserId = null;
+    balance = 0;
+    loaded = false;
+    notify();
+  }
+});
 
 /** @deprecated Balance updates now happen server-side only via RPCs */
 async function updateDbBalance(_newBalance: number): Promise<void> {
