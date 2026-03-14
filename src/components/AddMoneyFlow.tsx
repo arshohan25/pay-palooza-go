@@ -32,11 +32,6 @@ const slideVariants = {
   exit: (dir: number) => ({ x: dir < 0 ? "100%" : "-100%", opacity: 0 }),
 };
 
-const STATUS_BADGE: Record<string, { color: string; icon: any }> = {
-  pending: { color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300", icon: Clock },
-  approved: { color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300", icon: CheckCircle2 },
-  rejected: { color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300", icon: XCircle },
-};
 
 interface AddMoneyFlowProps { onClose: () => void; }
 
