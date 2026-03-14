@@ -44,7 +44,7 @@ export async function drawLogoOnCanvas(
   ctx.lineTo(bx, by + r);
   ctx.quadraticCurveTo(bx, by, bx + r, by);
   ctx.closePath();
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = "#f0f0f0";
   ctx.fill();
 
   // Draw logo on top
