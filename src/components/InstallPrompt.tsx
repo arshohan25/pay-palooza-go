@@ -12,10 +12,10 @@ const InstallPrompt = () => {
   const [installed, setInstalled] = useState(false);
   const location = useLocation();
 
-  const isInstallRoute = location.pathname.startsWith("/install");
+  const isSuppressed = location.pathname.startsWith("/install") || location.pathname.startsWith("/auth");
 
   useEffect(() => {
-    if (isAppInstalled() || sessionStorage.getItem(DISMISSED_KEY)) return;
+    if (isAppInstalled() || localStorage.getItem(DISMISSED_KEY)) return;
 
     const unsub = onPromptAvailable(() => {
       setHasPrompt(true);
@@ -39,12 +39,11 @@ const InstallPrompt = () => {
   };
 
   const handleDismiss = () => {
-    sessionStorage.setItem(DISMISSED_KEY, "1");
+    localStorage.setItem(DISMISSED_KEY, "1");
     setShow(false);
   };
 
-  // Don't show global banner on /install/* pages
-  if (isInstallRoute) return null;
+  if (isSuppressed) return null;
 
   return (
     <AnimatePresence>
