@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronRight, X, Copy, CheckCircle2, Hash, User, Tag, FileText, Clock, Coins } from "lucide-react";
+import { ChevronRight, X, Copy, CheckCircle2, Hash, User, Tag, FileText, Clock, Coins, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { useTransactions, DbTransaction } from "@/hooks/use-transactions";
