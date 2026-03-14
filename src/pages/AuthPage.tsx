@@ -1014,51 +1014,59 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                       const onComplete = mode === "register_pin" ? handleRegisterPin : handleForgotPin;
                       const currentVal = confirmStage ? confirmPin : pin;
                       return (
-                        <div className="space-y-5">
-                          <AnimatePresence mode="wait">
-                            <motion.div key={confirmStage ? "confirm" : "set"} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                              className="text-center space-y-2">
-                              <motion.div
-                                animate={{ rotate: confirmStage ? [0, -8, 8, 0] : 0 }}
-                                transition={{ duration: 0.4 }}
-                                className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/15 flex items-center justify-center mx-auto"
-                              >
-                                {confirmStage ? (
-                                  <CheckCircle2 size={24} className="text-primary" />
-                                ) : (
-                                  <Lock size={24} className="text-primary" />
-                                )}
+                        <div className="flex-1 flex flex-col">
+                          {/* Centered PIN area */}
+                          <div className="flex-1 flex flex-col items-center justify-center gap-4 px-4">
+                            <AnimatePresence mode="wait">
+                              <motion.div key={confirmStage ? "confirm" : "set"} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                                className="text-center space-y-2">
+                                <motion.div
+                                  animate={{ rotate: confirmStage ? [0, -8, 8, 0] : 0 }}
+                                  transition={{ duration: 0.4 }}
+                                  className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/15 flex items-center justify-center mx-auto"
+                                >
+                                  {confirmStage ? (
+                                    <CheckCircle2 size={24} className="text-primary" />
+                                  ) : (
+                                    <Lock size={24} className="text-primary" />
+                                  )}
+                                </motion.div>
+                                <h2 className="text-xl font-black text-foreground tracking-tight">
+                                  {confirmStage ? t.confirmPin : (mode === "forgot_pin" ? t.newPin : t.setPin)}
+                                </h2>
+                                <p className="text-xs text-muted-foreground">
+                                  {confirmStage ? t.reenterPin : t.choosePinHint}
+                                </p>
                               </motion.div>
-                              <h2 className="text-xl font-black text-foreground tracking-tight">
-                                {confirmStage ? t.confirmPin : (mode === "forgot_pin" ? t.newPin : t.setPin)}
-                              </h2>
-                              <p className="text-xs text-muted-foreground">
-                                {confirmStage ? t.reenterPin : t.choosePinHint}
-                              </p>
-                            </motion.div>
-                          </AnimatePresence>
+                            </AnimatePresence>
 
-                          <PinCircles pin={currentVal} error={!!error} />
+                            <PinCircles pin={currentVal} error={!!error} />
 
-                          {/* Error / Status area */}
-                          <div className="h-7 flex items-center justify-center">
-                            {error ? (
-                              <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-                                className="text-xs text-destructive flex items-center gap-1.5">
-                                <AlertCircle size={12} /> {error}
-                              </motion.p>
-                            ) : isSubmitting ? (
-                              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                className="text-xs text-primary font-semibold">{mode === "forgot_pin" ? t.resettingPin : t.signingUp}</motion.p>
-                            ) : !confirmStage ? (
-                              <div className="flex items-center gap-1.5">
-                                <Shield size={11} className="text-muted-foreground" />
+                            {/* PIN warning hint — directly under circles */}
+                            {!confirmStage && !error && !isSubmitting && (
+                              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                className="flex items-center gap-1.5 bg-muted/60 border border-border rounded-xl px-3 py-1.5">
+                                <Shield size={12} className="text-primary shrink-0" />
                                 <p className="text-[10px] text-muted-foreground">{t.pinWeakHint}</p>
-                              </div>
-                            ) : null}
+                              </motion.div>
+                            )}
+
+                            {/* Error / Status area */}
+                            <div className="h-6 flex items-center justify-center">
+                              {error ? (
+                                <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                                  className="text-xs text-destructive flex items-center gap-1.5">
+                                  <AlertCircle size={12} /> {error}
+                                </motion.p>
+                              ) : isSubmitting ? (
+                                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                  className="text-xs text-primary font-semibold">{mode === "forgot_pin" ? t.resettingPin : t.signingUp}</motion.p>
+                              ) : null}
+                            </div>
                           </div>
 
-                          {/* Numeric keypad */}
+                          {/* Numeric keypad pinned to bottom */}
+                          <div className="pb-4">
                           <NumericKeypad
                             disabled={isSubmitting}
                             onPress={(d) => {
@@ -1080,6 +1088,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                               setError("");
                             }}
                           />
+                          </div>
                         </div>
                       );
                     })()}
