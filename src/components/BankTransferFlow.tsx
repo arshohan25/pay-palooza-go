@@ -154,26 +154,6 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
       )}
 
       <div className="flex-1 overflow-y-auto scrollbar-none">
-        {showHistory ? (
-          <div className="px-4 pt-4 pb-32 space-y-3">
-            <h3 className="text-sm font-semibold text-foreground">Your Withdrawal Requests</h3>
-            {myRequests.length === 0 && <p className="text-sm text-muted-foreground">No requests yet.</p>}
-            {myRequests.map(r => {
-              const badge = STATUS_BADGE[r.status];
-              const Icon = badge?.icon ?? Clock;
-              return (
-                <div key={r.id} className="p-3 rounded-2xl border border-border bg-card space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-bold text-foreground">৳{r.amount.toLocaleString()}</span>
-                    <Badge className={`${badge?.color} text-[10px] gap-1`}><Icon size={10} />{r.status}</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{r.bank_name} · {r.account_number?.slice(-4).padStart(r.account_number.length, "•")} · {new Date(r.created_at).toLocaleDateString()}</p>
-                  {r.admin_note && <p className="text-xs text-destructive">Note: {r.admin_note}</p>}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
           <AnimatePresence custom={direction} mode="wait">
             <motion.div key={step} custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit"
               transition={{ type: "spring", stiffness: 320, damping: 32 }} className="px-4 pt-6 pb-32">
