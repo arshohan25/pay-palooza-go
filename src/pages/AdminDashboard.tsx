@@ -195,6 +195,8 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const { unreadCount: supportUnread } = useSupportNotifications(activeTab);
   const [stats, setStats] = useState<Stats>({ totalUsers: 0, totalTransactions: 0, totalAgents: 0, totalMerchants: 0, openAlerts: 0, pendingKyc: 0, totalReferrals: 0, totalRewardsPaid: 0 });
+  const [pendingFundCount, setPendingFundCount] = useState(0);
+  const [pendingFundAmount, setPendingFundAmount] = useState(0);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [agents, setAgents] = useState<any[]>([]);
