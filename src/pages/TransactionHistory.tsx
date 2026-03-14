@@ -494,6 +494,16 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     )}
                     <div className="flex items-center gap-2 mt-0.5">
                       <p className="text-[10.5px] text-muted-foreground/60">{relativeDate(tx.date)}</p>
+                      {tx.status === "pending" && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                          <Clock size={9} /> PENDING
+                        </span>
+                      )}
+                      {tx.status === "failed" && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-destructive/10 text-destructive">
+                          <AlertCircle size={9} /> REJECTED
+                        </span>
+                      )}
                     </div>
                   </div>
 
