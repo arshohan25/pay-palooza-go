@@ -354,18 +354,19 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
       if (currentConfirm.length < 4) { setError(t.reenterPinErr); return; }
       if (currentPin !== currentConfirm) { setError(t.pinsDontMatch); haptics.error(); setConfirmPin(""); return; }
       haptics.success(); setConfirmStage(false);
-      // Create account immediately, then launch KYC
-      await handlePostPinSignup();
+      // Create account immediately, then launch KYC — pass pin directly to avoid stale closure
+      await handlePostPinSignup(currentPin);
     }
   }, [goTo, t]);
 
   // ── Register: Create account with Supabase Auth, then show KYC ─────────────
-  const handlePostPinSignup = async () => {
+  const handlePostPinSignup = async (pinValue?: string) => {
+    const effectivePin = pinValue || pin;
     setIsSubmitting(true);
     setError("");
     try {
       const fp = await getDeviceFingerprint();
-      const result = await signUp(phone, pin, undefined, referralCodeInput.trim() || undefined);
+      const result = await signUp(phone, effectivePin, undefined, referralCodeInput.trim() || undefined);
 
       if (result.user) {
         try {

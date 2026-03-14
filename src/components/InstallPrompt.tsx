@@ -6,13 +6,13 @@ import { getInstallPrompt, onPromptAvailable, isAppInstalled, clearPrompt } from
 
 const DISMISSED_KEY = "mfs_pwa_dismissed";
 
-const InstallPrompt = () => {
+const InstallPrompt = ({ isAuthenticated = true }: { isAuthenticated?: boolean }) => {
   const [hasPrompt, setHasPrompt] = useState(!!getInstallPrompt());
   const [show, setShow] = useState(false);
   const [installed, setInstalled] = useState(false);
   const location = useLocation();
 
-  const isSuppressed = location.pathname.startsWith("/install") || location.pathname.startsWith("/auth");
+  const isSuppressed = location.pathname.startsWith("/install") || !isAuthenticated;
 
   useEffect(() => {
     if (isAppInstalled() || localStorage.getItem(DISMISSED_KEY)) return;

@@ -479,7 +479,7 @@ const Index = () => {
       )}
 
       {/* PWA install prompt */}
-      <InstallPrompt />
+      <InstallPrompt isAuthenticated={isAuthenticated} />
 
       {/* Transaction toast overlay */}
       <TxnToast />
