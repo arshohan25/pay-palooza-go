@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
     }
 
     // 4. Verify PIN via Supabase Auth sign-in
-    const email = `${cleanPhone}@easypay.local`;
+    const email = `${cleanPhone}@easypay.app`;
     const password = `${pin}EP`;
 
     const { error: authError } = await supabaseAdmin.auth.signInWithPassword({
