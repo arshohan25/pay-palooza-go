@@ -41,6 +41,7 @@ interface Transaction {
   fee: number;
   commission: number;
   _isCashback?: boolean;
+  status: string;
 }
 
 const CATEGORIES: { id: TxCategory; label: string }[] = [
