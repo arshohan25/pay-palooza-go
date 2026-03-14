@@ -83,7 +83,15 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
 
   const handleSourceContinue = () => {
     if (!source) { setError("Select a source."); return; }
-    goTo("proof");
+    goTo("send_to");
+  };
+
+  const copyToClipboard = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    haptics.light();
+    toast.success("Copied!");
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
