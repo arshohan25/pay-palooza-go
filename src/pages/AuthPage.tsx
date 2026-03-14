@@ -418,7 +418,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
       // Create account immediately, then launch KYC — pass pin directly to avoid stale closure
       await handlePostPinSignup(currentPin);
     }
-  }, [goTo, t]);
+  }, [goTo, t, phone, referralCodeInput]);
 
   // ── Register: Create account with Supabase Auth, then show KYC ─────────────
   const handlePostPinSignup = async (pinValue?: string) => {
