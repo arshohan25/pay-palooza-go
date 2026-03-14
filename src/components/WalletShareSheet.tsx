@@ -29,7 +29,8 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
       width: 220,
       margin: 2,
       color: { dark: "#000000", light: "#ffffff" },
-    }).catch(console.error);
+      errorCorrectionLevel: "H",
+    }).then(() => drawLogoOnCanvas(canvasRef.current!)).catch(console.error);
   }, [open, userId, userName]);
 
   const handleCopy = async () => {

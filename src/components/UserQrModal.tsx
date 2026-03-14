@@ -27,7 +27,8 @@ const UserQrModal = ({ open, onClose, userId, userName }: UserQrModalProps) => {
       width: 200,
       margin: 2,
       color: { dark: "#000000", light: "#ffffff" },
-    }).catch(console.error);
+      errorCorrectionLevel: "H",
+    }).then(() => drawLogoOnCanvas(canvasRef.current!)).catch(console.error);
   }, [open, userId, userName]);
 
   const handleCopy = async () => {
