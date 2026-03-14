@@ -82,7 +82,8 @@ const AgentB2B = () => {
       resolve();
     }
   }, [phone, transferType]);
-  const fee = Number(amount) > 100 ? 3 : 0;
+  const { calcFee, getFeeLabel } = useFeeConfig();
+  const fee = calcFee("send", Number(amount));
 
   const handleConfirm = async () => {
     if (processing) return;
