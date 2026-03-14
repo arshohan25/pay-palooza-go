@@ -1,3 +1,4 @@
+// QR code generator with centered logo overlay
 import QRCode from "qrcode";
 
 const LOGO_PATH = "/icons/easypay-logo.png";
