@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import SlideToConfirm from "@/components/SlideToConfirm";
 
 import { useSavedBanks, SavedBankAccount } from "@/hooks/use-saved-banks";
+import { useFeeConfig } from "@/hooks/use-fee-config";
 import { supabase } from "@/integrations/supabase/client";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
@@ -50,7 +51,8 @@ const AgentBankTransfer = () => {
   // Delete confirm
   const [deleteTarget, setDeleteTarget] = useState<SavedBankAccount | null>(null);
 
-  const fee = mode === "send" ? (Number(amount) > 100 ? 5 : 0) : 0;
+  const { calcBankTransferFee, getFeeLabel } = useFeeConfig();
+  const fee = mode === "send" ? calcBankTransferFee(Number(amount)) : 0;
 
   const handleSaveBank = async () => {
     if (!newBankName || !newAccNumber || !newAccHolder) {
@@ -234,8 +236,8 @@ const AgentBankTransfer = () => {
                     value={amount} onChange={e => setAmount(e.target.value.replace(/\D/g, ""))}
                     className="rounded-xl h-12 mt-1 text-lg font-bold"
                   />
-                  {mode === "send" && Number(amount) > 100 && (
-                    <p className="text-[10px] text-muted-foreground mt-1.5">Fee: ৳5</p>
+                  {mode === "send" && fee > 0 && (
+                    <p className="text-[10px] text-muted-foreground mt-1.5">Fee: ৳{fmt(fee)} ({getFeeLabel("banktransfer")})</p>
                   )}
                 </div>
 
