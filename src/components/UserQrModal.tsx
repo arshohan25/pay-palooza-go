@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Copy, CheckCheck, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import QRCode from "qrcode";
+import { renderQrWithLogo } from "@/lib/qrWithLogo";
 import { useI18n } from "@/lib/i18n";
 
 interface UserQrModalProps {
@@ -22,11 +22,7 @@ const UserQrModal = ({ open, onClose, userId, userName }: UserQrModalProps) => {
   useEffect(() => {
     if (!open || !canvasRef.current) return;
     const payload = JSON.stringify({ walletId, name: userName, app: "EasyPay" });
-    QRCode.toCanvas(canvasRef.current, payload, {
-      width: 200,
-      margin: 2,
-      color: { dark: "#000000", light: "#ffffff" },
-    }).catch(console.error);
+    renderQrWithLogo(canvasRef.current, payload, 200).catch(console.error);
   }, [open, userId, userName]);
 
   const handleCopy = async () => {
