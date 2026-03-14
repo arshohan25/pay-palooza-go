@@ -60,7 +60,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
   const [pinError, setPinError] = useState("");
   const [resultData, setResultData] = useState<{ fee: number; total_deducted: number; new_balance: number } | null>(null);
 
-  const myRequests = requests.filter(r => r.type === "withdraw");
+  
   const stepIndex = STEPS.indexOf(step);
   const parsedAmount = parseFloat(amount) || 0;
   const fee = Math.round(parsedAmount * 0.01 * 100) / 100;
