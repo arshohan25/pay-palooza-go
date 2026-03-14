@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Copy, CheckCheck, Share2, Download } from "lucide-react";
 import QRCode from "qrcode";
+import { drawLogoOnCanvas } from "@/lib/qrWithLogo";
 import { Button } from "@/components/ui/button";
 import { haptics } from "@/lib/haptics";
 import { useI18n } from "@/lib/i18n";
@@ -28,7 +29,8 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
       width: 220,
       margin: 2,
       color: { dark: "#000000", light: "#ffffff" },
-    }).catch(console.error);
+      errorCorrectionLevel: "H",
+    }).then(() => drawLogoOnCanvas(canvasRef.current!)).catch(console.error);
   }, [open, userId, userName]);
 
   const handleCopy = async () => {

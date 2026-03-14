@@ -1,27 +1,29 @@
 
 
-## Add EasyPay Logo to Center of All QR Codes
+## Plan: Add Biller Categories to API Hub
 
-### Approach
+### What
 
-Create a shared utility function that draws the EasyPay logo on top of any QR code canvas or data URL. All 4 QR generation locations will use it.
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-**Key requirement**: Use `errorCorrectionLevel: "H"` (highest) on all QR codes so the center logo area doesn't break scanning — QR codes with "H" level can tolerate ~30% obstruction.
+### Changes
 
-### New File: `src/lib/qrWithLogo.ts`
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-A utility with two functions:
-- `drawLogoOnCanvas(canvas: HTMLCanvasElement, logoSrc: string)` — for `toCanvas` usage (UserQrModal, WalletShareSheet)
-- `qrToDataUrlWithLogo(data: string, options, logoSrc: string): Promise<string>` — for `toDataURL` usage (MerchantDashboard, DynamicQrPage)
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-Both draw a white-bordered circle/rounded-square in the center with the logo (`/icons/easypay-logo.png`) at ~20% of QR size.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-### Files Modified
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-1. **`src/components/UserQrModal.tsx`** — After `QRCode.toCanvas`, call `drawLogoOnCanvas`; add `errorCorrectionLevel: "H"`
-2. **`src/components/WalletShareSheet.tsx`** — Same pattern
-3. **`src/pages/MerchantDashboard.tsx`** — Replace `QRCode.toDataURL` with `qrToDataUrlWithLogo`
-4. **`src/pages/DynamicQrPage.tsx`** — Same pattern
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-No database changes needed.
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
