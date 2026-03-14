@@ -103,6 +103,7 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
     { icon: User,     label: t("nameParty"),      value: display.name,                          copy: false },
     { icon: Tag,      label: t("type"),            value: display.label,                         copy: false },
     { icon: FileText, label: t("description"),     value: tx.description || display.label,       copy: false },
+    ...(tx.fee > 0 ? [{ icon: Coins, label: "Charge / Fee", value: `৳${tx.fee.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, copy: false }] : []),
     { icon: Clock,    label: t("dateTime"),        value: format(txDate, "dd MMM yyyy, h:mm a"), copy: false },
     ...(tx.commission > 0 ? [{ icon: Tag, label: t("commission"), value: `৳${tx.commission.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, copy: false }] : []),
   ];
@@ -187,12 +188,30 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
             </div>
           ))}
 
-          <div className={`mt-4 rounded-2xl p-4 flex items-center justify-between ${isCredit ? "bg-primary/10" : "bg-muted/60"}`}>
-            <span className="text-[13px] font-semibold text-muted-foreground">{t("totalAmount")}</span>
-            <span className={`text-[20px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
-              {isCredit ? "+" : "−"}৳{Math.abs(display.amount).toLocaleString()}
-            </span>
-          </div>
+          {tx.fee > 0 ? (
+            <div className="mt-4 rounded-2xl p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40">
+              <div className="flex items-center justify-between text-[12.5px]">
+                <span className="text-muted-foreground font-medium">Principal</span>
+                <span className="font-semibold text-foreground">৳{Math.abs(display.amount).toLocaleString()}</span>
+              </div>
+              <div className="flex items-center justify-between text-[12.5px] mt-1.5">
+                <span className="text-amber-600 dark:text-amber-400 font-medium">Fee (from balance)</span>
+                <span className="font-semibold text-amber-600 dark:text-amber-400">৳{tx.fee.toLocaleString()}</span>
+              </div>
+              <div className="h-px bg-amber-200/60 dark:bg-amber-800/40 my-2" />
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] font-bold text-foreground">Total Deducted</span>
+                <span className="text-[18px] font-bold text-foreground">৳{(Math.abs(display.amount) + tx.fee).toLocaleString()}</span>
+              </div>
+            </div>
+          ) : (
+            <div className={`mt-4 rounded-2xl p-4 flex items-center justify-between ${isCredit ? "bg-primary/10" : "bg-muted/60"}`}>
+              <span className="text-[13px] font-semibold text-muted-foreground">{t("totalAmount")}</span>
+              <span className={`text-[20px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
+                {isCredit ? "+" : "−"}৳{Math.abs(display.amount).toLocaleString()}
+              </span>
+            </div>
+          )}
         </div>
       </motion.div>
     </>
