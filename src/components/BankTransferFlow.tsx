@@ -64,7 +64,8 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
   
   const stepIndex = STEPS.indexOf(step);
   const parsedAmount = parseFloat(amount) || 0;
-  const fee = Math.round(parsedAmount * 0.01 * 100) / 100;
+  const { calcBankTransferFee } = useFeeConfig();
+  const fee = calcBankTransferFee(parsedAmount);
   const totalDeduction = parsedAmount + fee;
 
   const goTo = (next: Step) => {

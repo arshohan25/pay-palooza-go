@@ -2032,8 +2032,9 @@ const MerchantCashOutSheet = ({ open, onClose, onSuccess }: { open: boolean; onC
   const [dailyCount, setDailyCount] = useState(0);
   const [successData, setSuccessData] = useState<{ amount: number; to: string; fee: number; ref: string } | null>(null);
 
+  const { calcCashOutFee } = useFeeConfig();
   const parsedAmount = parseFloat(amount) || 0;
-  const fee = Math.round(parsedAmount * 0.0115 * 100) / 100;
+  const fee = calcCashOutFee(parsedAmount);
   const total = parsedAmount + fee;
   const dailyRemaining = MERCH_CASHOUT_DAILY_LIMIT - dailyUsed;
   const quotaRemaining = MERCH_CASHOUT_MAX_QUOTA - dailyCount;
