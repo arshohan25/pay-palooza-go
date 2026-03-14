@@ -1251,6 +1251,9 @@ export default function AdminDashboard() {
         {/* ═══ TREASURY DASHBOARD ═══ */}
         {activeTab === "treasury" && <AdminTreasury />}
 
+        {/* ═══ FUND REQUESTS ═══ */}
+        {activeTab === "fund_requests" && <AdminFundRequests />}
+
         {/* ═══ WEBHOOK LOG ═══ */}
         {activeTab === "webhooks" && <AdminWebhookLog />}
 
