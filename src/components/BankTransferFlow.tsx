@@ -7,7 +7,7 @@ import { verifyPin } from "@/lib/verifyPin";
 import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import {
-  ChevronLeft, AlertCircle, CheckCircle2, Landmark, User, Hash, Clock, XCircle, Trash2, ShieldCheck, ArrowDown,
+  ChevronLeft, AlertCircle, CheckCircle2, Landmark, User, Hash, Clock, Trash2, ShieldCheck, ArrowDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
