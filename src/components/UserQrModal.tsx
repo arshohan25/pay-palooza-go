@@ -41,11 +41,13 @@ const UserQrModal = ({ open, onClose, userId, userName }: UserQrModalProps) => {
   };
 
   const handleShare = async () => {
-    if (navigator.share) {
-      await navigator.share({ title: "My EasyPay ID", text: `My wallet ID: ${walletId}` });
-    } else {
-      handleCopy();
-    }
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "My EasyPay ID", text: `My wallet ID: ${walletId}` });
+        return;
+      }
+    } catch { /* blocked in iframe */ }
+    handleCopy();
   };
 
   return (
