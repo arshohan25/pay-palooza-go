@@ -300,8 +300,8 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                     {error && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{error}</p>}
 
                     <Button className="w-full h-11 bg-gradient-to-b from-emerald-500 to-green-600 border-0 text-white font-semibold"
-                      onClick={handleSubmit} disabled={submitting}>
-                      {submitting ? "Submitting…" : "Submit Request"}
+                      onClick={handleProofContinue}>
+                      Continue
                     </Button>
                   </div>
                 )}
