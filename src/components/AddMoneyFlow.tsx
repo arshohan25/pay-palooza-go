@@ -51,7 +51,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const { accounts: depositAccounts, loading: depositLoading } = useDepositAccounts(source ?? undefined);
 
-  const myRequests = requests.filter(r => r.type === "add_money");
+  
   const stepIndex = STEPS.indexOf(step);
 
   const goTo = (next: Step) => {
