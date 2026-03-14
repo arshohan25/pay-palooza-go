@@ -116,8 +116,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   };
 
   return (
-    <FeatureGuard feature="addmoney" fallbackMessage="Add Money is temporarily unavailable.">
-      <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+    <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
         transition={{ type: "spring", stiffness: 500, damping: 40 }}
         className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
 
