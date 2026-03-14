@@ -111,8 +111,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
       if (proofFile) {
         proofUrl = await uploadProof(proofFile);
       }
-      await submitRequest({
-        type: "add_money",
+      await submitAddMoney({
         amount: parseFloat(amount),
         source_method: source ?? undefined,
         proof_url: proofUrl,

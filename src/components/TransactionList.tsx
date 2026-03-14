@@ -189,7 +189,7 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
   );
 };
 
-const USER_TYPES = new Set(["send", "receive", "payment", "recharge", "addmoney"]);
+const USER_TYPES = new Set(["send", "receive", "payment", "recharge", "addmoney", "banktransfer"]);
 
 const TransactionList = ({ onSeeAll, refreshKey }: TransactionListProps) => {
   const { t } = useI18n();
