@@ -949,9 +949,9 @@ const AnalyticsTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null
           </h3>
           <div className="space-y-2">
             {[
-              { label: "Send Money to User", fee: "Flat ৳5", icon: Send, color: "text-blue-600", bg: "bg-blue-500/10" },
-              { label: "Cash Out (Merchant)", fee: "1.15%", icon: HandCoins, color: "text-emerald-600", bg: "bg-emerald-500/10" },
-              { label: "Bank Auto-Settlement", fee: "1.00%", icon: Landmark, color: "text-amber-600", bg: "bg-amber-500/10" },
+              { label: "Send Money to User", fee: getMerchFeeLabel("send") || "Flat ৳5", icon: Send, color: "text-blue-600", bg: "bg-blue-500/10" },
+              { label: "Cash Out (Merchant)", fee: getMerchFeeLabel("cashout") || "1.15%", icon: HandCoins, color: "text-emerald-600", bg: "bg-emerald-500/10" },
+              { label: "Bank Auto-Settlement", fee: getMerchFeeLabel("banktransfer") || "1.00%", icon: Landmark, color: "text-amber-600", bg: "bg-amber-500/10" },
               { label: "MDR on Payments", fee: `${((merchant?.mdr_rate ?? 0.015) * 100).toFixed(2)}%`, icon: Percent, color: "text-purple-600", bg: "bg-purple-500/10" },
             ].map(item => (
               <div key={item.label} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-muted/30 border border-border/30">
