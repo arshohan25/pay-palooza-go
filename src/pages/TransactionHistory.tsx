@@ -140,6 +140,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           fee: t.fee,
           commission: t.commission || 0,
           _isCashback: isCashback,
+          status: t.status,
         };
       }), [dbTxns, filterTypes]);
 
