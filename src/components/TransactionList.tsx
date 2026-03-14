@@ -265,6 +265,16 @@ const TransactionList = ({ onSeeAll, refreshKey }: TransactionListProps) => {
                     )}
                   </div>
                   <p className="text-[11.5px] text-muted-foreground mt-0.5">{relativeDate(tx.created_at)}</p>
+                  {tx.status === "pending" && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 mt-0.5">
+                      <Clock size={9} /> PENDING
+                    </span>
+                  )}
+                  {tx.status === "failed" && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-destructive/10 text-destructive mt-0.5">
+                      <AlertCircle size={9} /> REJECTED
+                    </span>
+                  )}
                 </div>
                 <div className="text-right shrink-0">
                   <span className={`text-[14px] font-bold ${display.isCashback ? "text-amber-600 dark:text-amber-400" : isCredit ? "text-primary" : "text-foreground"}`}>
