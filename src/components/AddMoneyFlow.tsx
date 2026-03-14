@@ -1,15 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
-import { useFundRequests, FundRequest } from "@/hooks/use-fund-requests";
+import { useFundRequests } from "@/hooks/use-fund-requests";
 import { useDepositAccounts } from "@/hooks/use-deposit-accounts";
 import {
-  ChevronLeft, CheckCircle2, AlertCircle, Upload, Clock, XCircle,
-  Landmark, CreditCard, Wallet, Image as ImageIcon, Copy, Check,
+  ChevronLeft, CheckCircle2, AlertCircle, Upload, Clock,
+  Landmark, CreditCard, Wallet, Copy, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
 import { toast } from "sonner";
 
