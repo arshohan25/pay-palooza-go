@@ -146,12 +146,10 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
               <p className="text-xs text-white/70 mt-0.5">Withdraw to bank account</p>
             </div>
           </div>
-          {!showHistory && (
-            <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
-              <motion.div className="h-full bg-white rounded-full"
-                animate={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }} />
-            </div>
-          )}
+          <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
+            <motion.div className="h-full bg-white rounded-full"
+              animate={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }} />
+          </div>
         </motion.div>
       )}
 
