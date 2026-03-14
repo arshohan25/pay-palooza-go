@@ -195,6 +195,8 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const { unreadCount: supportUnread } = useSupportNotifications(activeTab);
   const [stats, setStats] = useState<Stats>({ totalUsers: 0, totalTransactions: 0, totalAgents: 0, totalMerchants: 0, openAlerts: 0, pendingKyc: 0, totalReferrals: 0, totalRewardsPaid: 0 });
+  const [pendingFundCount, setPendingFundCount] = useState(0);
+  const [pendingFundAmount, setPendingFundAmount] = useState(0);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [agents, setAgents] = useState<any[]>([]);
@@ -328,6 +330,15 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchPendingFunds = useCallback(async () => {
+    const { count, data } = await supabase
+      .from("fund_requests")
+      .select("amount", { count: "exact" })
+      .eq("status", "pending");
+    setPendingFundCount(count ?? 0);
+    setPendingFundAmount((data ?? []).reduce((sum, r) => sum + Number(r.amount), 0));
+  }, []);
+
   const loadData = useCallback(async () => {
     setRefreshing(true);
     const [s, t, u, a, ag, m, kycRes] = await Promise.all([
@@ -345,8 +356,9 @@ export default function AdminDashboard() {
     setAlerts(a);
     setAgents(ag);
     setMerchants(m);
+    fetchPendingFunds();
     setRefreshing(false);
-  }, []);
+  }, [fetchPendingFunds]);
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
@@ -473,6 +485,11 @@ export default function AdminDashboard() {
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "payment_gateways" }, () => {
         // Gateways tab auto-refreshes
+      })
+      // Fund request changes → refresh pending funds card
+      .on("postgres_changes", { event: "*", schema: "public", table: "fund_requests" }, () => {
+        fetchPendingFunds();
+        realtimeFlash();
       })
       .subscribe();
 
@@ -798,6 +815,7 @@ export default function AdminDashboard() {
               <StatCard icon={ScanFace} label="Pending KYC" value={stats.pendingKyc} color="bg-orange-500" onClick={() => setActiveTab("kyc")} />
               <StatCard icon={Gift} label="Referrals" value={stats.totalReferrals} color="bg-teal-500" onClick={() => setActiveTab("referrals")} />
               <StatCard icon={Award} label="Rewards Paid" value={`৳${stats.totalRewardsPaid.toLocaleString()}`} color="bg-amber-500" onClick={() => setActiveTab("referrals")} />
+              <StatCard icon={Wallet} label="Pending Funds" value={pendingFundCount > 0 ? `${pendingFundCount} / ৳${pendingFundAmount.toLocaleString()}` : "0"} color="bg-rose-500" onClick={() => setActiveTab("fund_requests")} />
             </div>
 
             <Card className="border-0 shadow-[var(--shadow-card)]">
