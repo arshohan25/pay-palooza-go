@@ -449,8 +449,8 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
       localStorage.setItem(DEVICE_KEY, phone);
       localStorage.setItem("mfs_registered_phone", phone);
       haptics.success();
-      // Show KYC flow instead of success
-      setShowKycAfterRegister(true);
+      // Skip KYC — go straight to success
+      goTo("success");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t.authError;
       if (msg.includes("already been registered") || msg.includes("already registered")) {
