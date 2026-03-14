@@ -779,57 +779,70 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 <span className="text-[10px] font-bold text-white/70">{t.trustedVerified}</span>
               </div>
             </div>
-            <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 gap-8">
-              <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200, damping: 16 }} className="relative">
-                <div className="w-20 h-20 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center">
-                  <Lock size={32} className="text-white" />
+            <div className="relative z-10 flex-1 flex flex-col items-center px-6 pt-8 pb-6"
+              style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1.5rem)" }}>
+              {/* Top section */}
+              <div className="flex flex-col items-center gap-4 mb-6">
+                <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200, damping: 16 }} className="relative">
+                  <div className="w-16 h-16 rounded-full bg-white/12 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                    <Lock size={26} className="text-white" />
+                  </div>
+                  <motion.div className="absolute inset-0 rounded-full border border-white/15"
+                    animate={{ scale: [1, 1.5], opacity: [0.4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }} />
+                </motion.div>
+                <div className="text-center text-white space-y-0.5">
+                  <h2 className="text-xl font-black">{t.enterPin}</h2>
+                  <p className="text-xs text-white/45">{t.trustedDevice}</p>
                 </div>
-                <motion.div className="absolute inset-0 rounded-full border border-white/15"
-                  animate={{ scale: [1, 1.4], opacity: [0.4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }} />
-              </motion.div>
-              <div className="text-center text-white space-y-1">
-                <h2 className="text-2xl font-black">{t.enterPin}</h2>
-                <p className="text-sm text-white/50">{t.trustedDevice}</p>
               </div>
-              <PinCircles pin={pin} error={!!error} dark />
-              {error && (
-                <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-                  className="text-xs text-destructive/80 flex items-center gap-1.5">
-                  <AlertCircle size={12} /> {error}
-                </motion.p>
-              )}
-              {isSubmitting && (
-                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-white/60">{t.signingIn}</motion.p>
-              )}
-              <input
-                type="password"
-                inputMode="numeric"
-                autoFocus
-                maxLength={4}
-                value={pin}
-                onChange={(e) => {
-                  if (isSubmitting) return;
-                  const val = e.target.value.replace(/\D/g, "").slice(0, 4);
-                  setPin(val);
-                  setError("");
-                  if (val.length === 4) setTimeout(() => handleLoginPin(val), 260);
-                }}
-                className="w-48 h-14 text-center text-2xl font-black tracking-[0.8em] bg-white/10 border border-white/20 rounded-2xl text-white focus:outline-none focus:border-white/40 placeholder:text-white/20"
-                placeholder="····"
-              />
-              <div className="flex items-center gap-6">
+
+              {/* PIN dots */}
+              <div className="mb-3">
+                <PinCircles pin={pin} error={!!error} dark />
+              </div>
+
+              {/* Error / Status */}
+              <div className="h-8 flex items-center justify-center">
+                {error ? (
+                  <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                    className="text-xs text-red-300 flex items-center gap-1.5">
+                    <AlertCircle size={12} /> {error}
+                  </motion.p>
+                ) : isSubmitting ? (
+                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-white/50">{t.signingIn}</motion.p>
+                ) : showPin && pin.length > 0 ? (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <span className="text-lg font-black tracking-[0.6em] text-white/70 pl-[0.6em]">{pin}</span>
+                  </motion.div>
+                ) : null}
+              </div>
+
+              {/* Numeric keypad */}
+              <div className="flex-1 flex flex-col justify-center w-full max-w-xs">
+                <NumericKeypad
+                  dark
+                  disabled={isSubmitting}
+                  onPress={(d) => {
+                    if (pin.length >= 4) return;
+                    const next = pin + d;
+                    setPin(next);
+                    setError("");
+                    if (next.length === 4) setTimeout(() => handleLoginPin(next), 260);
+                  }}
+                  onDelete={() => { setPin(p => p.slice(0, -1)); setError(""); }}
+                />
+              </div>
+
+              {/* Footer actions */}
+              <div className="flex items-center gap-5 mt-4">
                 <button onClick={() => { setPin(""); setOtp(""); handleForgotSendOtp(); }}
-                  className="text-sm text-white/50 hover:text-white/80 transition-colors">{forgotOtpSending ? "Sending…" : t.forgotPin}</button>
+                  className="text-xs text-white/40 hover:text-white/70 transition-colors font-semibold">{forgotOtpSending ? "Sending…" : t.forgotPin}</button>
+                <div className="w-px h-3 bg-white/15" />
                 <button onClick={() => setShowPin(v => !v)}
-                  className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors">
-                  {showPin ? <EyeOff size={13} /> : <Eye size={13} />} {showPin ? t.hidePin : t.showPin}
+                  className="flex items-center gap-1 text-xs text-white/40 hover:text-white/70 transition-colors font-semibold">
+                  {showPin ? <EyeOff size={12} /> : <Eye size={12} />} {showPin ? t.hidePin : t.showPin}
                 </button>
               </div>
-              {showPin && pin.length > 0 && (
-                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
-                  <span className="text-3xl font-black tracking-[0.8em] text-white pl-[0.8em]">{pin}</span>
-                </motion.div>
-              )}
             </div>
           </motion.div>
         )}
