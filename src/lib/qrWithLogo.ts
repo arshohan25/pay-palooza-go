@@ -24,29 +24,11 @@ export async function drawLogoOnCanvas(
 
   const logo = await loadImage(logoSrc);
   const size = canvas.width * LOGO_RATIO;
-  const padding = size * 0.18;
-  const totalSize = size + padding * 2;
-  const x = (canvas.width - totalSize) / 2;
-  const y = (canvas.height - totalSize) / 2;
-  const radius = totalSize * 0.22;
+  const x = (canvas.width - size) / 2;
+  const y = (canvas.height - size) / 2;
 
-  // White rounded-rect background
-  ctx.fillStyle = "#ffffff";
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + totalSize - radius, y);
-  ctx.quadraticCurveTo(x + totalSize, y, x + totalSize, y + radius);
-  ctx.lineTo(x + totalSize, y + totalSize - radius);
-  ctx.quadraticCurveTo(x + totalSize, y + totalSize, x + totalSize - radius, y + totalSize);
-  ctx.lineTo(x + radius, y + totalSize);
-  ctx.quadraticCurveTo(x, y + totalSize, x, y + totalSize - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
-  ctx.closePath();
-  ctx.fill();
-
-  // Draw logo
-  ctx.drawImage(logo, x + padding, y + padding, size, size);
+  // Draw logo directly (no background)
+  ctx.drawImage(logo, x, y, size, size);
 }
 
 /**
