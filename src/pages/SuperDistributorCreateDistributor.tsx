@@ -57,7 +57,7 @@ const SuperDistributorCreateDistributor = () => {
       // Check if phone already registered
       const { data: existing } = await supabase.from("profiles").select("id").eq("phone", cleaned).maybeSingle();
       if (existing) { toast({ title: "Already Registered", description: "This number already has an account.", variant: "destructive" }); setProcessing(false); return; }
-      const email = `${cleaned}@easypay.local`;
+      const email = `${cleaned}@easypay.app`;
 
       // 2. Create auth account for distributor
       const randomPin = String(Math.floor(1000 + Math.random() * 9000));

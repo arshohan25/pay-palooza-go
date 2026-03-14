@@ -176,7 +176,7 @@ Deno.serve(async (req) => {
         .single();
 
       const cusName = userProfile?.name || userProfile?.phone || "EasyPay User";
-      const cusEmail = userProfile?.email || `${userProfile?.phone || userId}@easypay.local`;
+      const cusEmail = userProfile?.email || `${userProfile?.phone || userId}@easypay.app`;
 
       // Create payment session in DB
       const { data: session, error: sessionError } = await supabaseAdmin
