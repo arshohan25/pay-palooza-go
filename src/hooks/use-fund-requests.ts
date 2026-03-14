@@ -70,6 +70,22 @@ export function useFundRequests() {
     if (error) throw error;
   };
 
+  const submitWithdraw = async (params: {
+    amount: number;
+    bank_name: string;
+    account_number: string;
+    account_holder: string;
+  }) => {
+    const { data, error } = await supabase.rpc("submit_withdraw_request", {
+      p_amount: params.amount,
+      p_bank_name: params.bank_name,
+      p_account_number: params.account_number,
+      p_account_holder: params.account_holder,
+    });
+    if (error) throw error;
+    return data as { success: boolean; amount: number; fee: number; total_deducted: number; new_balance: number };
+  };
+
   const uploadProof = async (file: File): Promise<string> => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) throw new Error("Not authenticated");
@@ -83,5 +99,5 @@ export function useFundRequests() {
 
   const pendingCount = requests.filter(r => r.status === "pending").length;
 
-  return { requests, loading, submitRequest, uploadProof, pendingCount, refresh: fetchRequests };
+  return { requests, loading, submitRequest, submitWithdraw, uploadProof, pendingCount, refresh: fetchRequests };
 }

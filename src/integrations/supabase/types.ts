@@ -690,6 +690,7 @@ export type Database = {
           reviewed_by: string | null
           source_method: string | null
           status: string
+          transaction_id: string | null
           transaction_id_proof: string | null
           type: string
           updated_at: string
@@ -708,6 +709,7 @@ export type Database = {
           reviewed_by?: string | null
           source_method?: string | null
           status?: string
+          transaction_id?: string | null
           transaction_id_proof?: string | null
           type?: string
           updated_at?: string
@@ -726,12 +728,21 @@ export type Database = {
           reviewed_by?: string | null
           source_method?: string | null
           status?: string
+          transaction_id?: string | null
           transaction_id_proof?: string | null
           type?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fund_requests_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       global_feature_toggles: {
         Row: {
@@ -2722,6 +2733,15 @@ export type Database = {
       }
       savings_deposit: {
         Args: { p_amount: number; p_goal_id: string; p_source?: string }
+        Returns: Json
+      }
+      submit_withdraw_request: {
+        Args: {
+          p_account_holder: string
+          p_account_number: string
+          p_amount: number
+          p_bank_name: string
+        }
         Returns: Json
       }
       transfer_money: {
