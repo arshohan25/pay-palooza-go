@@ -28,6 +28,7 @@ import { verifyPin } from "@/lib/verifyPin";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import { haptics } from "@/lib/haptics";
 import DailyLimitBadge from "@/components/DailyLimitBadge";
+import { useFeeConfig } from "@/hooks/use-fee-config";
 import MerchantApiTab from "@/components/MerchantApiTab";
 import MerchantAnalyticsTab from "@/components/MerchantAnalyticsTab";
 import MerchantProductsTab from "@/components/MerchantProductsTab";
@@ -674,10 +675,11 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll }: 
     }
   };
 
+  const { getFeeLabel: getMerchFeeLabel } = useFeeConfig();
   const quickActions = [
-    { icon: Send, label: "Send Money", desc: "Flat ৳5 fee", gradient: "from-blue-500 to-indigo-600", onClick: () => setShowSendMoney(true) },
-    { icon: HandCoins, label: "Cash Out", desc: "1.15% charge", gradient: "from-emerald-500 to-teal-600", onClick: () => setShowCashOut(true) },
-    { icon: Landmark, label: "Add Bank", desc: "Auto settle · 1%", gradient: "from-amber-500 to-orange-600", onClick: () => setShowAddBank(true) },
+    { icon: Send, label: "Send Money", desc: getMerchFeeLabel("send") || "Fee varies", gradient: "from-blue-500 to-indigo-600", onClick: () => setShowSendMoney(true) },
+    { icon: HandCoins, label: "Cash Out", desc: getMerchFeeLabel("cashout") || "Fee varies", gradient: "from-emerald-500 to-teal-600", onClick: () => setShowCashOut(true) },
+    { icon: Landmark, label: "Add Bank", desc: `Auto settle · ${getMerchFeeLabel("banktransfer") || "1%"}`, gradient: "from-amber-500 to-orange-600", onClick: () => setShowAddBank(true) },
     { icon: CalendarClock, label: "Settlement", desc: "Schedule", gradient: "from-purple-500 to-violet-600", onClick: () => setShowSettlementConfig(true) },
   ];
 
@@ -798,6 +800,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll }: 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* ── Analytics Tab ── */
 const AnalyticsTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null; paymentTxns: TxnRow[] }) => {
+  const { getFeeLabel: getMerchFeeLabel } = useFeeConfig();
   const totalRevenue = paymentTxns.reduce((s, t) => s + t.amount, 0);
   const mdrDeducted = Math.round(totalRevenue * (merchant?.mdr_rate ?? 0.015));
   const avgTxn = paymentTxns.length > 0 ? Math.round(totalRevenue / paymentTxns.length) : 0;
@@ -947,9 +950,9 @@ const AnalyticsTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null
           </h3>
           <div className="space-y-2">
             {[
-              { label: "Send Money to User", fee: "Flat ৳5", icon: Send, color: "text-blue-600", bg: "bg-blue-500/10" },
-              { label: "Cash Out (Merchant)", fee: "1.15%", icon: HandCoins, color: "text-emerald-600", bg: "bg-emerald-500/10" },
-              { label: "Bank Auto-Settlement", fee: "1.00%", icon: Landmark, color: "text-amber-600", bg: "bg-amber-500/10" },
+              { label: "Send Money to User", fee: getMerchFeeLabel("send") || "Flat ৳5", icon: Send, color: "text-blue-600", bg: "bg-blue-500/10" },
+              { label: "Cash Out (Merchant)", fee: getMerchFeeLabel("cashout") || "1.15%", icon: HandCoins, color: "text-emerald-600", bg: "bg-emerald-500/10" },
+              { label: "Bank Auto-Settlement", fee: getMerchFeeLabel("banktransfer") || "1.00%", icon: Landmark, color: "text-amber-600", bg: "bg-amber-500/10" },
               { label: "MDR on Payments", fee: `${((merchant?.mdr_rate ?? 0.015) * 100).toFixed(2)}%`, icon: Percent, color: "text-purple-600", bg: "bg-purple-500/10" },
             ].map(item => (
               <div key={item.label} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-muted/30 border border-border/30">
@@ -1808,8 +1811,9 @@ const MerchantSendMoneySheet = ({ open, onClose, onSuccess }: { open: boolean; o
   const [dailyCount, setDailyCount] = useState(0);
   const [successData, setSuccessData] = useState<{ amount: number; to: string; ref: string } | null>(null);
 
-  const fee = 5;
+  const { calcFee: calcSendFee } = useFeeConfig();
   const parsedAmount = parseFloat(amount) || 0;
+  const fee = calcSendFee("send", parsedAmount);
   const total = parsedAmount + fee;
   const dailyRemaining = MERCH_SEND_DAILY_LIMIT - dailyUsed;
   const quotaRemaining = MERCH_SEND_MAX_QUOTA - dailyCount;
@@ -2029,8 +2033,9 @@ const MerchantCashOutSheet = ({ open, onClose, onSuccess }: { open: boolean; onC
   const [dailyCount, setDailyCount] = useState(0);
   const [successData, setSuccessData] = useState<{ amount: number; to: string; fee: number; ref: string } | null>(null);
 
+  const { calcCashOutFee } = useFeeConfig();
   const parsedAmount = parseFloat(amount) || 0;
-  const fee = Math.round(parsedAmount * 0.0115 * 100) / 100;
+  const fee = calcCashOutFee(parsedAmount);
   const total = parsedAmount + fee;
   const dailyRemaining = MERCH_CASHOUT_DAILY_LIMIT - dailyUsed;
   const quotaRemaining = MERCH_CASHOUT_MAX_QUOTA - dailyCount;

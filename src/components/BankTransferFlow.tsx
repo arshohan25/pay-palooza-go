@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useFundRequests } from "@/hooks/use-fund-requests";
 import { useSavedBanks } from "@/hooks/use-saved-banks";
 import { verifyPin } from "@/lib/verifyPin";
+import { useFeeConfig } from "@/hooks/use-fee-config";
 import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import {
@@ -63,7 +64,8 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
   
   const stepIndex = STEPS.indexOf(step);
   const parsedAmount = parseFloat(amount) || 0;
-  const fee = Math.round(parsedAmount * 0.01 * 100) / 100;
+  const { calcBankTransferFee } = useFeeConfig();
+  const fee = calcBankTransferFee(parsedAmount);
   const totalDeduction = parsedAmount + fee;
 
   const goTo = (next: Step) => {
