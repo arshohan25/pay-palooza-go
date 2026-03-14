@@ -805,7 +805,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
               <div className="h-8 flex items-center justify-center">
                 {error ? (
                   <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-                    className="text-xs text-red-300 flex items-center gap-1.5">
+                    className="text-xs text-destructive-foreground/80 flex items-center gap-1.5">
                     <AlertCircle size={12} /> {error}
                   </motion.p>
                 ) : isSubmitting ? (
