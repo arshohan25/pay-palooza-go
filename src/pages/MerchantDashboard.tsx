@@ -800,6 +800,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll }: 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* ── Analytics Tab ── */
 const AnalyticsTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null; paymentTxns: TxnRow[] }) => {
+  const { getFeeLabel: getMerchFeeLabel } = useFeeConfig();
   const totalRevenue = paymentTxns.reduce((s, t) => s + t.amount, 0);
   const mdrDeducted = Math.round(totalRevenue * (merchant?.mdr_rate ?? 0.015));
   const avgTxn = paymentTxns.length > 0 ? Math.round(totalRevenue / paymentTxns.length) : 0;
