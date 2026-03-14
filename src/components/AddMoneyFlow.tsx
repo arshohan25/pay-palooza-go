@@ -137,12 +137,6 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                 <h1 className="text-xl font-extrabold tracking-tight">Add Money</h1>
                 <p className="text-xs text-white/70 mt-0.5">Submit a deposit request for approval</p>
               </div>
-              {myRequests.length > 0 && (
-                <button onClick={() => setShowHistory(!showHistory)}
-                  className="text-xs bg-white/20 px-3 py-1.5 rounded-full font-medium">
-                  {showHistory ? "New Request" : `History (${myRequests.length})`}
-                </button>
-              )}
             </div>
             {!showHistory && (
               <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
