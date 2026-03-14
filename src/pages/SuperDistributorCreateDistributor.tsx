@@ -157,7 +157,7 @@ const SuperDistributorCreateDistributor = () => {
           <div className="space-y-3">
             <div>
               <Label className="text-xs">Phone Number *</Label>
-              <Input type="tel" placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value)} />
+              <Input type="tel" placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))} />
             </div>
             <div>
               <Label className="text-xs">Full Name</Label>

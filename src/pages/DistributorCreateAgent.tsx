@@ -71,10 +71,11 @@ const DistributorCreateAgent = () => {
       });
       if (agentError) throw agentError;
 
-      // 5. Update profile with name
-      if (name) {
-        await supabase.from("profiles").update({ name }).eq("user_id", newUserId);
-      }
+      // 5. Update profile with name + normalized phone
+      await supabase
+        .from("profiles")
+        .update({ name: name || null, phone: cleanedPhone })
+        .eq("user_id", newUserId);
 
       setDone(true);
       toast({ title: "Agent Created", description: `${businessName || name || phone} has been registered as an agent` });
