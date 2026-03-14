@@ -171,6 +171,7 @@ const NAV_ITEMS = [
   { id: "kyc", label: "KYC", icon: ScanFace },
   { id: "referrals", label: "Referrals", icon: Gift },
   { id: "treasury", label: "Treasury", icon: Wallet },
+  { id: "fund_requests", label: "Fund Requests", icon: CreditCard },
   { id: "webhooks", label: "Webhooks", icon: Activity },
   { id: "permissions", label: "Permissions", icon: ShieldAlert },
   { id: "reporting", label: "Reports", icon: BarChart3 },
