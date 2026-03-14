@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
-import FeatureGuard from "@/components/FeatureGuard";
+
 
 type Step = "amount" | "source" | "proof" | "success";
 const STEPS: Step[] = ["amount", "source", "proof"];
