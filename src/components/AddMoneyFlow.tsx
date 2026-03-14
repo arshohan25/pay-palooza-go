@@ -69,7 +69,8 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   const goBack = () => {
     if (step === "amount") { onClose(); return; }
     if (step === "source") { goTo("amount"); return; }
-    if (step === "proof") { goTo("source"); return; }
+    if (step === "send_to") { goTo("source"); return; }
+    if (step === "proof") { goTo("send_to"); return; }
   };
 
   const handleAmountContinue = () => {
