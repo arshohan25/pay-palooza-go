@@ -815,6 +815,7 @@ export default function AdminDashboard() {
               <StatCard icon={ScanFace} label="Pending KYC" value={stats.pendingKyc} color="bg-orange-500" onClick={() => setActiveTab("kyc")} />
               <StatCard icon={Gift} label="Referrals" value={stats.totalReferrals} color="bg-teal-500" onClick={() => setActiveTab("referrals")} />
               <StatCard icon={Award} label="Rewards Paid" value={`৳${stats.totalRewardsPaid.toLocaleString()}`} color="bg-amber-500" onClick={() => setActiveTab("referrals")} />
+              <StatCard icon={Wallet} label="Pending Funds" value={pendingFundCount > 0 ? `${pendingFundCount} / ৳${pendingFundAmount.toLocaleString()}` : "0"} color="bg-rose-500" onClick={() => setActiveTab("fund_requests")} />
             </div>
 
             <Card className="border-0 shadow-[var(--shadow-card)]">
