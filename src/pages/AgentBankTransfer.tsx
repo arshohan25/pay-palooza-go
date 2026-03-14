@@ -51,7 +51,8 @@ const AgentBankTransfer = () => {
   // Delete confirm
   const [deleteTarget, setDeleteTarget] = useState<SavedBankAccount | null>(null);
 
-  const fee = mode === "send" ? (Number(amount) > 100 ? 5 : 0) : 0;
+  const { calcBankTransferFee, getFeeLabel } = useFeeConfig();
+  const fee = mode === "send" ? calcBankTransferFee(Number(amount)) : 0;
 
   const handleSaveBank = async () => {
     if (!newBankName || !newAccNumber || !newAccHolder) {
