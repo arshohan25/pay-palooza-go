@@ -44,7 +44,7 @@ const ROLE_STYLES: Record<string, { label: string; bg: string; text: string }> =
 
 const ONBOARDING_KEY = "mfs_onboarding_done";
 
-type SubPage = "limits" | "insights" | "refer" | "tickets" | "blocked" | null;
+type SubPage = "limits" | "insights" | "refer" | "tickets" | "blocked" | "requests" | null;
 
 
 
