@@ -1,29 +1,24 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Backfill Missing Transaction Records for Fund Requests
 
-### What
+### Current State
+3 `fund_requests` records have `transaction_id = NULL` (created before the RPCs were implemented):
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+1. **Add Money ৳1,000** — status: `approved`, source: bkash
+2. **Withdraw ৳2,000** — status: `rejected`, bank: Dutch-Bangla Bank
+3. **Withdraw ৳10,000** — status: `pending`, bank: Dutch-Bangla Bank
 
-### Changes
+### Plan
+Use the database insert tool to:
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+1. **Insert 3 transaction records** into `transactions` table with matching types, amounts, statuses, and timestamps from the fund_requests.
+   - Add Money (approved) → type `addmoney`, status `completed`
+   - Withdraw (rejected) → type `banktransfer`, status `failed`
+   - Withdraw (pending) → type `banktransfer`, status `pending`
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+2. **Update the 3 fund_requests** to set `transaction_id` pointing to the newly created transactions.
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+### Files Changed
+- No code changes — data-only operations via insert tool.
 
