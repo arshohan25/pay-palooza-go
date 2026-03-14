@@ -1046,7 +1046,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                             {!confirmStage && !error && !isSubmitting && (
                               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                                 className="flex items-center gap-1.5 bg-muted/60 border border-border rounded-xl px-3 py-1.5">
-                                <Shield size={12} className="text-warning shrink-0" />
+                                <Shield size={12} className="text-primary shrink-0" />
                                 <p className="text-[10px] text-muted-foreground">{t.pinWeakHint}</p>
                               </motion.div>
                             )}
