@@ -22,6 +22,7 @@ import ReferPage from "@/pages/ReferPage";
 import MyTicketsPage from "@/pages/MyTicketsPage";
 import BlockedUsersPage from "@/components/BlockedUsersPage";
 import MerchantApplicationFlow from "@/components/MerchantApplicationFlow";
+import FundRequestHistory from "@/components/FundRequestHistory";
 import { generateWalletId } from "@/lib/walletId";
 import { useI18n } from "@/lib/i18n";
 import { useUserRoles } from "@/hooks/use-user-roles";
@@ -43,7 +44,7 @@ const ROLE_STYLES: Record<string, { label: string; bg: string; text: string }> =
 
 const ONBOARDING_KEY = "mfs_onboarding_done";
 
-type SubPage = "limits" | "insights" | "refer" | "tickets" | "blocked" | null;
+type SubPage = "limits" | "insights" | "refer" | "tickets" | "blocked" | "requests" | null;
 
 
 
@@ -185,6 +186,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   if (subPage === "refer")    return <ReferPage            onBack={() => setSubPage(null)} />;
   if (subPage === "tickets")  return <MyTicketsPage        onBack={() => setSubPage(null)} />;
   if (subPage === "blocked")  return <BlockedUsersPage    onBack={() => setSubPage(null)} />;
+  if (subPage === "requests") return <FundRequestHistory  onBack={() => setSubPage(null)} />;
 
   const handleCopy = async () => {
     try { await navigator.clipboard.writeText(walletId); }
@@ -381,6 +383,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
         <Section title={t("sectionInsightsLimits")}>
           {!isDisabled("account_spending_insights") && <MenuRow icon={BarChart3}  iconClass="gradient-payment"  label={t("spendingInsights")} sub={t("insightsSub")}        onClick={() => setSubPage("insights")} />}
           {!isDisabled("account_limits_charges") && <MenuRow icon={CreditCard} iconClass="gradient-cashout"  label={t("limitsCharges")}  sub={t("limitsSub")}   onClick={() => setSubPage("limits")} />}
+          <MenuRow icon={ClipboardList} iconClass="gradient-send" label="My Fund Requests" sub="Track deposit & withdrawal status" onClick={() => setSubPage("requests")} />
         </Section>
 
         {/* ── Notifications ── */}
