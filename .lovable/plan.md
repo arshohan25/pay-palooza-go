@@ -1,24 +1,33 @@
 
 
-## Backfill Missing Transaction Records for Fund Requests
+## Fix: Bank Transfer Fee Showing Flat ৳5 Instead of 1%
 
-### Current State
-3 `fund_requests` records have `transaction_id = NULL` (created before the RPCs were implemented):
+### Root Cause
+Two files have hardcoded fee values instead of using the dynamic `useFeeConfig` hook:
 
-1. **Add Money ৳1,000** — status: `approved`, source: bkash
-2. **Withdraw ৳2,000** — status: `rejected`, bank: Dutch-Bangla Bank
-3. **Withdraw ৳10,000** — status: `pending`, bank: Dutch-Bangla Bank
+1. **`src/pages/AgentBankTransfer.tsx` line 53** — Fee is hardcoded as flat ৳5 for amounts over ৳100:
+   ```tsx
+   const fee = mode === "send" ? (Number(amount) > 100 ? 5 : 0) : 0;
+   ```
+   Should be 1% (matching the `fee_config` table).
+
+2. **`src/pages/AgentBankTransfer.tsx` line 238** — Fee hint text is also hardcoded:
+   ```tsx
+   <p className="text-[10px] ...">Fee: ৳5</p>
+   ```
+
+3. **`src/pages/LimitsPage.tsx` lines 117-118** — Send Money fee is hardcoded as `"Free/৳3/৳5"` instead of using the dynamic `sendFee` variable that's already computed on line 100.
 
 ### Plan
-Use the database insert tool to:
 
-1. **Insert 3 transaction records** into `transactions` table with matching types, amounts, statuses, and timestamps from the fund_requests.
-   - Add Money (approved) → type `addmoney`, status `completed`
-   - Withdraw (rejected) → type `banktransfer`, status `failed`
-   - Withdraw (pending) → type `banktransfer`, status `pending`
+**File: `src/pages/AgentBankTransfer.tsx`**
+- Import `useFeeConfig` hook
+- Replace hardcoded `fee` calculation (line 53) with `calcBankTransferFee(Number(amount))`
+- Replace hardcoded "Fee: ৳5" text (line 238) with dynamic fee label from `getFeeLabel("banktransfer")`
 
-2. **Update the 3 fund_requests** to set `transaction_id` pointing to the newly created transactions.
+**File: `src/pages/LimitsPage.tsx`**
+- Replace hardcoded `"Free/৳3/৳5"` on lines 117-118 with the already-computed `sendFee` variable
 
-### Files Changed
-- No code changes — data-only operations via insert tool.
+### No database changes needed
+The `fee_config` table already has the correct 1% percentage rule for `banktransfer`.
 
