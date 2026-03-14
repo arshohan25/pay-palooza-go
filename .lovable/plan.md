@@ -1,29 +1,37 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Fix All Hardcoded Fees — Use Dynamic `useFeeConfig` Everywhere
 
-### What
+### Problem
+Multiple components still use hardcoded fee values instead of the dynamic `useFeeConfig` hook. The database has the correct rules, but the UI ignores them in several places.
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### Hardcoded Fee Locations Found
+
+| File | Current Hardcoded Value | Should Be |
+|------|------------------------|-----------|
+| `src/components/BankTransferFlow.tsx` line 66 | `parsedAmount * 0.01` (1% hardcoded) | `calcBankTransferFee(parsedAmount)` |
+| `src/pages/AgentB2B.tsx` line 84 | `Number(amount) > 100 ? 3 : 0` | `calcFee("send", Number(amount))` |
+| `src/pages/MerchantDashboard.tsx` line 678 | `"Flat ৳5 fee"` desc text | Dynamic `getFeeLabel("send")` |
+| `src/pages/MerchantDashboard.tsx` line 679 | `"1.15% charge"` desc text | Dynamic `getFeeLabel("cashout")` |
+| `src/pages/MerchantDashboard.tsx` line 680 | `"Auto settle · 1%"` desc text | Dynamic fee label |
+| `src/pages/MerchantDashboard.tsx` line 811 | `const fee = 5` (Merchant Send) | `calcFee("send", parsedAmount)` |
+| `src/pages/MerchantDashboard.tsx` line 2033 | `parsedAmount * 0.0115` (Merchant Cash Out) | `calcCashOutFee(parsedAmount)` |
+| `src/pages/MerchantDashboard.tsx` lines 950-953 | Hardcoded fee breakdown labels | Dynamic `getFeeLabel()` calls |
 
 ### Changes
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**`src/components/BankTransferFlow.tsx`**
+- Import `useFeeConfig`
+- Replace `Math.round(parsedAmount * 0.01 * 100) / 100` with `calcBankTransferFee(parsedAmount)`
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+**`src/pages/AgentB2B.tsx`**
+- Import `useFeeConfig`
+- Replace `Number(amount) > 100 ? 3 : 0` with `calcFee("send", Number(amount))`
+- Update fee hint text from `"Fee: ৳3"` to dynamic label
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+**`src/pages/MerchantDashboard.tsx`**
+- Import `useFeeConfig`
+- Replace hardcoded fee values in quick actions desc, fee breakdown section, MerchantSendMoneySheet (`fee = 5`), and MerchantCashOutSheet (`parsedAmount * 0.0115`) with dynamic calculations
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+### No database changes needed
 
