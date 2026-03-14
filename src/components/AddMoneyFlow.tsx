@@ -47,7 +47,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
+  
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const { accounts: depositAccounts, loading: depositLoading } = useDepositAccounts(source ?? undefined);
 
