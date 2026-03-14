@@ -59,6 +59,7 @@ import TeamOnboardingChecklist from "@/components/admin/TeamOnboardingChecklist"
 import AdminMerchantManagement from "@/components/admin/AdminMerchantManagement";
 import AdminSavingsManagement from "@/components/admin/AdminSavingsManagement";
 import AdminFundRequests from "@/components/admin/AdminFundRequests";
+import AdminDepositAccounts from "@/components/admin/AdminDepositAccounts";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -1270,7 +1271,13 @@ export default function AdminDashboard() {
         {activeTab === "treasury" && <AdminTreasury />}
 
         {/* ═══ FUND REQUESTS ═══ */}
-        {activeTab === "fund_requests" && <AdminFundRequests />}
+        {activeTab === "fund_requests" && (
+          <div className="space-y-8">
+            <AdminFundRequests />
+            <Separator />
+            <AdminDepositAccounts />
+          </div>
+        )}
 
         {/* ═══ WEBHOOK LOG ═══ */}
         {activeTab === "webhooks" && <AdminWebhookLog />}

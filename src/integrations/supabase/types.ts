@@ -387,6 +387,48 @@ export type Database = {
         }
         Relationships: []
       }
+      deposit_accounts: {
+        Row: {
+          account_name: string | null
+          account_number: string
+          bank_name: string | null
+          created_at: string
+          id: string
+          instructions: string | null
+          is_active: boolean
+          label: string
+          method: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          account_name?: string | null
+          account_number: string
+          bank_name?: string | null
+          created_at?: string
+          id?: string
+          instructions?: string | null
+          is_active?: boolean
+          label: string
+          method: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          account_name?: string | null
+          account_number?: string
+          bank_name?: string | null
+          created_at?: string
+          id?: string
+          instructions?: string | null
+          is_active?: boolean
+          label?: string
+          method?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       device_registrations: {
         Row: {
           created_at: string

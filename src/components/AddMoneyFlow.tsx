@@ -2,18 +2,20 @@ import { useState, useEffect } from "react";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFundRequests, FundRequest } from "@/hooks/use-fund-requests";
+import { useDepositAccounts } from "@/hooks/use-deposit-accounts";
 import {
   ChevronLeft, CheckCircle2, AlertCircle, Upload, Clock, XCircle,
-  Landmark, CreditCard, Wallet, Image as ImageIcon,
+  Landmark, CreditCard, Wallet, Image as ImageIcon, Copy, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
+import { toast } from "sonner";
 
 
-type Step = "amount" | "source" | "proof" | "success";
-const STEPS: Step[] = ["amount", "source", "proof"];
+type Step = "amount" | "source" | "send_to" | "proof" | "success";
+const STEPS: Step[] = ["amount", "source", "send_to", "proof"];
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 25000];
 
 const SOURCE_OPTIONS = [
@@ -52,6 +54,8 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const { accounts: depositAccounts, loading: depositLoading } = useDepositAccounts(source ?? undefined);
 
   const myRequests = requests.filter(r => r.type === "add_money");
   const stepIndex = STEPS.indexOf(step);
@@ -65,7 +69,8 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   const goBack = () => {
     if (step === "amount") { onClose(); return; }
     if (step === "source") { goTo("amount"); return; }
-    if (step === "proof") { goTo("source"); return; }
+    if (step === "send_to") { goTo("source"); return; }
+    if (step === "proof") { goTo("send_to"); return; }
   };
 
   const handleAmountContinue = () => {
@@ -78,7 +83,15 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
 
   const handleSourceContinue = () => {
     if (!source) { setError("Select a source."); return; }
-    goTo("proof");
+    goTo("send_to");
+  };
+
+  const copyToClipboard = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    haptics.light();
+    toast.success("Copied!");
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -217,6 +230,52 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                       {error && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{error}</p>}
                     </div>
                     <Button className="w-full h-11 bg-gradient-to-b from-emerald-500 to-green-600 border-0 text-white font-semibold" onClick={handleSourceContinue}>Continue</Button>
+                  </div>
+                )}
+
+                {step === "send_to" && (
+                  <div className="space-y-6">
+                    <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-1">
+                      <div className="flex justify-between text-sm"><span className="text-muted-foreground">Amount</span><span className="font-bold text-foreground">৳{parseFloat(amount).toLocaleString()}</span></div>
+                      <div className="flex justify-between text-sm"><span className="text-muted-foreground">Source</span><span className="font-medium text-foreground capitalize">{source?.replace("_", " ")}</span></div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-foreground">Send money to this account</label>
+                      {depositLoading ? (
+                        <p className="text-sm text-muted-foreground">Loading accounts…</p>
+                      ) : depositAccounts.length === 0 ? (
+                        <div className="rounded-2xl border border-border bg-card p-4 text-center">
+                          <p className="text-sm text-muted-foreground">No deposit account configured for this method yet. Please contact support.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {depositAccounts.map(acc => (
+                            <div key={acc.id} className="rounded-2xl border border-border bg-card p-4 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-muted-foreground">{acc.label}</span>
+                                {acc.account_name && <span className="text-xs text-muted-foreground">{acc.account_name}</span>}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg font-bold font-mono text-foreground flex-1">{acc.account_number}</span>
+                                <button
+                                  onClick={() => copyToClipboard(acc.account_number, acc.id)}
+                                  className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary active:scale-95 transition-transform"
+                                >
+                                  {copiedId === acc.id ? <Check size={16} /> : <Copy size={16} />}
+                                </button>
+                              </div>
+                              {acc.bank_name && <p className="text-xs text-muted-foreground">Bank: {acc.bank_name}</p>}
+                              {acc.instructions && <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2">{acc.instructions}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <Button className="w-full h-11 bg-gradient-to-b from-emerald-500 to-green-600 border-0 text-white font-semibold" onClick={() => goTo("proof")}>
+                      I've Sent the Money
+                    </Button>
                   </div>
                 )}
 
