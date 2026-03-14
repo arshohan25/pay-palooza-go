@@ -2619,7 +2619,7 @@ export type Database = {
         Returns: Json
       }
       admin_reject_fund_request: {
-        Args: { p_admin_note: string; p_request_id: string }
+        Args: { p_admin_note?: string; p_request_id: string }
         Returns: Json
       }
       admin_reset_all_milestones: {
@@ -2733,6 +2733,15 @@ export type Database = {
       }
       savings_deposit: {
         Args: { p_amount: number; p_goal_id: string; p_source?: string }
+        Returns: Json
+      }
+      submit_addmoney_request: {
+        Args: {
+          p_amount: number
+          p_proof_url?: string
+          p_source_method?: string
+          p_transaction_id_proof?: string
+        }
         Returns: Json
       }
       submit_withdraw_request: {
