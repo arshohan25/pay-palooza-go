@@ -260,57 +260,39 @@ function PinCircles({ pin, error, length = 4, dark = false }: { pin: string; err
   );
 }
 
-// ─── Numeric Keypad ──────────────────────────────────────────────────────────
-function NumericKeypad({
-  onPress,
-  onDelete,
-  dark = false,
+// ─── Hidden PIN Input (native keyboard) ──────────────────────────────────────
+function HiddenPinInput({
+  value,
+  onChange,
   disabled = false,
+  autoFocus = true,
 }: {
-  onPress: (digit: string) => void;
-  onDelete: () => void;
-  dark?: boolean;
+  value: string;
+  onChange: (v: string) => void;
   disabled?: boolean;
+  autoFocus?: boolean;
 }) {
-  const keys = [["1", "2", "3"], ["4", "5", "6"], ["7", "8", "9"], ["", "0", "del"]];
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (autoFocus) setTimeout(() => ref.current?.focus(), 150);
+  }, [autoFocus]);
   return (
-    <div className="grid grid-cols-3 gap-3 w-full max-w-[280px] mx-auto">
-      {keys.flat().map((key, i) => {
-        if (key === "") return <div key={i} />;
-        const isDel = key === "del";
-        return (
-          <motion.button
-            key={key}
-            whileTap={disabled ? {} : { scale: 0.88 }}
-            onClick={() => {
-              if (disabled) return;
-              if (isDel) onDelete();
-              else onPress(key);
-              haptics.light();
-            }}
-            disabled={disabled}
-            className={`h-[56px] rounded-2xl text-xl font-bold flex items-center justify-center select-none transition-colors ${
-              disabled ? "opacity-30 cursor-not-allowed" : "active:opacity-70"
-            } ${
-              dark
-                ? isDel
-                  ? "bg-white/8 text-white/60 hover:bg-white/12"
-                  : "bg-white/10 text-white hover:bg-white/15 border border-white/10"
-                : isDel
-                  ? "bg-muted/60 text-muted-foreground hover:bg-muted"
-                  : "bg-card text-foreground hover:bg-muted/40 border border-border shadow-xs"
-            }`}
-          >
-            {isDel ? (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/>
-                <line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/>
-              </svg>
-            ) : key}
-          </motion.button>
-        );
-      })}
-    </div>
+    <input
+      ref={ref}
+      type="password"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      maxLength={4}
+      value={value}
+      onChange={(e) => {
+        const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+        onChange(v);
+        haptics.light();
+      }}
+      disabled={disabled}
+      className="absolute w-full h-full opacity-0 cursor-pointer"
+      autoComplete="off"
+    />
   );
 }
 
