@@ -360,12 +360,13 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   }, [goTo, t]);
 
   // ── Register: Create account with Supabase Auth, then show KYC ─────────────
-  const handlePostPinSignup = async () => {
+  const handlePostPinSignup = async (pinValue?: string) => {
+    const effectivePin = pinValue || pin;
     setIsSubmitting(true);
     setError("");
     try {
       const fp = await getDeviceFingerprint();
-      const result = await signUp(phone, pin, undefined, referralCodeInput.trim() || undefined);
+      const result = await signUp(phone, effectivePin, undefined, referralCodeInput.trim() || undefined);
 
       if (result.user) {
         try {
