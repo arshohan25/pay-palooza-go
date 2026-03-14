@@ -1,24 +1,29 @@
 
 
-## Add PIN Confirmation to Add Money Flow
+## Plan: Add Biller Categories to API Hub
 
-BankTransferFlow already has a PIN step — only AddMoneyFlow is missing it.
+### What
+
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-**File: `src/components/AddMoneyFlow.tsx`**
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-1. **Add "pin" step** to the flow: Change type from `"amount" | "source" | "send_to" | "proof" | "success"` to include `"pin"`, and update `STEPS` to `["amount", "source", "send_to", "proof", "pin"]`
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-2. **Add imports**: `verifyPin` from `@/lib/verifyPin`, `ShieldCheck` from lucide-react, `Input` already imported
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-3. **Add state**: `pin` (string), `pinError` (string)
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-4. **Update `goBack`**: Add `if (step === "pin") { goTo("proof"); return; }`
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-5. **Change proof step submit**: Instead of calling `handleSubmit` directly, the "Submit Request" button now navigates to `goTo("pin")`
+3. Add the new category icons to the `categoryIcons` map.
 
-6. **Add `handlePinSubmit`**: Verify PIN via `verifyPin(pin)`, then run the existing `handleSubmit` logic (upload proof, call `submitAddMoney`, transition to success)
-
-7. **Add PIN step UI**: Replicate the exact same PIN entry pattern from BankTransferFlow (shield icon, 4-dot display, hidden numeric input, visible Input field, confirm button) with emerald/green gradient styling to match the Add Money theme
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

@@ -1,20 +1,21 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFundRequests } from "@/hooks/use-fund-requests";
 import { useDepositAccounts } from "@/hooks/use-deposit-accounts";
 import {
   ChevronLeft, CheckCircle2, AlertCircle, Upload, Clock,
-  Landmark, CreditCard, Wallet, Copy, Check, ShieldAlert,
+  Landmark, CreditCard, Wallet, Copy, Check, ShieldAlert, ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n";
 import { toast } from "sonner";
+import { verifyPin } from "@/lib/verifyPin";
 
 
-type Step = "amount" | "source" | "send_to" | "proof" | "success";
-const STEPS: Step[] = ["amount", "source", "send_to", "proof"];
+type Step = "amount" | "source" | "send_to" | "proof" | "pin" | "success";
+const STEPS: Step[] = ["amount", "source", "send_to", "proof", "pin"];
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 25000];
 
 const SOURCE_OPTIONS = [
@@ -47,6 +48,9 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [pin, setPin] = useState("");
+  const [pinError, setPinError] = useState("");
+  const pinRef = useRef<HTMLInputElement>(null);
   
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const { accounts: depositAccounts, loading: depositLoading } = useDepositAccounts(source ?? undefined);
@@ -65,6 +69,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
     if (step === "source") { goTo("amount"); return; }
     if (step === "send_to") { goTo("source"); return; }
     if (step === "proof") { goTo("send_to"); return; }
+    if (step === "pin") { goTo("proof"); return; }
   };
 
   const handleAmountContinue = () => {
@@ -97,10 +102,20 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
     setError("");
   };
 
-  const handleSubmit = async () => {
+  const handleProofContinue = () => {
     if (!txnId.trim() && !proofFile) { setError("Provide a Transaction ID or upload proof."); return; }
+    setPin("");
+    setPinError("");
+    goTo("pin");
+  };
+
+  const handlePinSubmit = async () => {
+    if (pin.length !== 4) { setPinError("Enter your 4-digit PIN."); return; }
     setSubmitting(true);
+    setPinError("");
     try {
+      const valid = await verifyPin(pin);
+      if (!valid) { setPinError("Incorrect PIN. Try again."); setPin(""); setSubmitting(false); return; }
       let proofUrl: string | undefined;
       if (proofFile) {
         proofUrl = await uploadProof(proofFile);
@@ -115,7 +130,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
       setDir(1);
       setStep("success");
     } catch (e: any) {
-      setError(e.message || "Failed to submit request.");
+      setPinError(e.message || "Failed to submit request.");
     } finally {
       setSubmitting(false);
     }
@@ -285,8 +300,46 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                     {error && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{error}</p>}
 
                     <Button className="w-full h-11 bg-gradient-to-b from-emerald-500 to-green-600 border-0 text-white font-semibold"
-                      onClick={handleSubmit} disabled={submitting}>
-                      {submitting ? "Submitting…" : "Submit Request"}
+                      onClick={handleProofContinue}>
+                      Continue
+                    </Button>
+                  </div>
+                )}
+
+                {step === "pin" && (
+                  <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-6 px-4">
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
+                      <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                        <ShieldCheck size={36} className="text-emerald-600" />
+                      </div>
+                    </motion.div>
+                    <div className="text-center space-y-1">
+                      <h2 className="text-xl font-bold text-foreground">Confirm with PIN</h2>
+                      <p className="text-sm text-muted-foreground">Enter your 4-digit PIN to submit</p>
+                    </div>
+                    <div className="flex justify-center gap-3">
+                      {[0, 1, 2, 3].map(i => (
+                        <div key={i} className={`w-4 h-4 rounded-full transition-all ${i < pin.length ? "bg-emerald-500 scale-110" : "bg-border"}`} />
+                      ))}
+                    </div>
+                    <Input
+                      ref={pinRef}
+                      type="password"
+                      inputMode="numeric"
+                      maxLength={4}
+                      autoFocus
+                      value={pin}
+                      onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); setPin(v); setPinError(""); }}
+                      className="w-48 h-14 text-center text-2xl tracking-[0.5em] font-bold bg-card border-border"
+                      placeholder="····"
+                    />
+                    {pinError && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{pinError}</p>}
+                    <Button
+                      className="w-full max-w-xs h-11 bg-gradient-to-b from-emerald-500 to-green-600 border-0 text-white font-semibold"
+                      onClick={handlePinSubmit}
+                      disabled={submitting || pin.length !== 4}
+                    >
+                      {submitting ? "Verifying…" : "Confirm & Submit"}
                     </Button>
                   </div>
                 )}
