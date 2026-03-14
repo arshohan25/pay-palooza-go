@@ -1,11 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
-import { useFundRequests, FundRequest } from "@/hooks/use-fund-requests";
+import { useFundRequests } from "@/hooks/use-fund-requests";
 import { useSavedBanks } from "@/hooks/use-saved-banks";
+import { verifyPin } from "@/lib/verifyPin";
 import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
+import SlideToConfirm from "@/components/SlideToConfirm";
 import {
-  ChevronLeft, AlertCircle, CheckCircle2, Landmark, User, Hash, Clock, XCircle, Trash2,
+  ChevronLeft, AlertCircle, CheckCircle2, Landmark, User, Hash, Clock, XCircle, Trash2, ShieldCheck, ArrowDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,8 +18,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-type Step = "bank" | "amount" | "success";
-const STEPS: Step[] = ["bank", "amount"];
+type Step = "bank" | "amount" | "confirm" | "pin" | "success";
+const STEPS: Step[] = ["bank", "amount", "confirm", "pin"];
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 20000];
 
 const BANKS = [
@@ -47,7 +49,7 @@ interface BankTransferFlowProps { onClose: () => void; }
 
 const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
   const { t } = useI18n();
-  const { requests, submitRequest } = useFundRequests();
+  const { requests, submitWithdraw } = useFundRequests();
   const { accounts: savedBanks, save: saveBank, remove: removeBank } = useSavedBanks();
   const [step, setStep] = useState<Step>("bank");
   const [direction, setDirection] = useState(1);
@@ -59,21 +61,30 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
   const [submitting, setSubmitting] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [pin, setPin] = useState("");
+  const [pinError, setPinError] = useState("");
+  const [resultData, setResultData] = useState<{ fee: number; total_deducted: number; new_balance: number } | null>(null);
 
   const myRequests = requests.filter(r => r.type === "withdraw");
   const stepIndex = STEPS.indexOf(step);
+  const parsedAmount = parseFloat(amount) || 0;
+  const fee = Math.round(parsedAmount * 0.01 * 100) / 100;
+  const totalDeduction = parsedAmount + fee;
 
   const goTo = (next: Step) => {
     haptics.medium();
     setDirection(STEPS.indexOf(next) > STEPS.indexOf(step) ? 1 : -1);
     setStep(next);
     setError("");
+    setPinError("");
   };
 
   const goBack = () => {
     haptics.medium();
     if (step === "bank") { onClose(); return; }
     if (step === "amount") { goTo("bank"); return; }
+    if (step === "confirm") { goTo("amount"); return; }
+    if (step === "pin") { goTo("confirm"); return; }
   };
 
   const handleBankContinue = () => {
@@ -83,28 +94,41 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
     goTo("amount");
   };
 
-  const handleSubmit = async () => {
+  const handleAmountContinue = () => {
     const val = parseFloat(amount);
     if (!amount || isNaN(val) || val <= 0) { setError("Enter a valid amount."); return; }
     if (val < 30) { setError("Minimum withdrawal is ৳30."); return; }
     if (val > 50000) { setError("Maximum withdrawal is ৳50,000."); return; }
+    goTo("confirm");
+  };
+
+  const handleSlideConfirm = () => {
+    goTo("pin");
+  };
+
+  const handlePinSubmit = async () => {
+    if (pin.length !== 4) { setPinError("Enter your 4-digit PIN."); return; }
     setSubmitting(true);
+    setPinError("");
     try {
-      await submitRequest({
-        type: "withdraw",
-        amount: val,
-        source_method: "bank_transfer",
+      const valid = await verifyPin(pin);
+      if (!valid) { setPinError("Incorrect PIN. Try again."); setPin(""); setSubmitting(false); return; }
+
+      const result = await submitWithdraw({
+        amount: parsedAmount,
         bank_name: bankName,
         account_number: accountNumber,
         account_holder: accountHolder,
       });
+      setResultData({ fee: result.fee, total_deducted: result.total_deducted, new_balance: result.new_balance });
+
       const bankShort = BANKS.find(b => b.name === bankName)?.short ?? bankName.slice(0, 4).toUpperCase();
       saveBank({ bank_name: bankName, account_number: accountNumber, account_holder: accountHolder, short_code: bankShort });
       haptics.success();
       setDirection(1);
       setStep("success");
     } catch (e: any) {
-      setError(e.message || "Failed to submit request.");
+      setPinError(e.message || "Failed to submit request.");
     } finally {
       setSubmitting(false);
     }
@@ -124,7 +148,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
             </button>
             <div className="flex-1 min-w-0">
               <h1 className="text-xl font-extrabold tracking-tight">{t("flowBankTransfer")}</h1>
-              <p className="text-xs text-white/70 mt-0.5">Submit a withdrawal request</p>
+              <p className="text-xs text-white/70 mt-0.5">Withdraw to bank account</p>
             </div>
             {myRequests.length > 0 && (
               <button onClick={() => setShowHistory(!showHistory)}
@@ -246,6 +270,11 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                         onChange={e => { const v = e.target.value; if (v === "" || /^\d*\.?\d*$/.test(v)) { setAmount(v); setError(""); } }}
                         className="w-full pl-10 pr-4 h-16 text-3xl font-bold text-foreground bg-card border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/40" />
                     </div>
+                    {parsedAmount > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        1% charge: ৳{fee.toLocaleString()} · Total deduction: ৳{totalDeduction.toLocaleString()}
+                      </p>
+                    )}
                     {error && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{error}</p>}
                   </div>
                   <div className="grid grid-cols-3 gap-2">
@@ -256,15 +285,99 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                       </button>
                     ))}
                   </div>
+                  <Button className="w-full h-11 bg-gradient-to-b from-blue-500 to-indigo-600 border-0 text-white font-semibold"
+                    onClick={handleAmountContinue}>
+                    Continue
+                  </Button>
+                </div>
+              )}
+
+              {step === "confirm" && (
+                <div className="space-y-6">
+                  <div className="text-center space-y-1">
+                    <p className="text-sm text-muted-foreground">Withdrawal Summary</p>
+                    <p className="text-4xl font-extrabold text-foreground">৳{parsedAmount.toLocaleString()}</p>
+                  </div>
+
+                  <div className="rounded-2xl border border-border bg-card overflow-hidden">
+                    <div className="flex items-center justify-between p-4 border-b border-border">
+                      <span className="text-sm text-muted-foreground">Transfer Amount</span>
+                      <span className="text-sm font-bold text-foreground">৳{parsedAmount.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 border-b border-border">
+                      <span className="text-sm text-muted-foreground">Service Charge (1%)</span>
+                      <span className="text-sm font-bold text-destructive">−৳{fee.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-muted/50">
+                      <span className="text-sm font-bold text-foreground">Total Deduction</span>
+                      <span className="text-base font-extrabold text-foreground">৳{totalDeduction.toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border">
+                    <div className="bg-gradient-to-b from-blue-500 to-indigo-600 w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0"><Landmark size={18} /></div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-foreground truncate">{bankName}</p>
+                      <p className="text-xs text-muted-foreground">{accountNumber} · {accountHolder}</p>
+                    </div>
+                  </div>
+
                   <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
                     <p className="text-xs text-amber-700 dark:text-amber-300">
-                      <Clock size={12} className="inline mr-1" />
-                      Your balance will be deducted after admin approves this withdrawal request.
+                      <AlertCircle size={12} className="inline mr-1" />
+                      ৳{totalDeduction.toLocaleString()} will be deducted from your balance instantly. You'll receive ৳{parsedAmount.toLocaleString()} after admin approval. If rejected, the full ৳{totalDeduction.toLocaleString()} will be refunded.
                     </p>
                   </div>
-                  <Button className="w-full h-11 bg-gradient-to-b from-blue-500 to-indigo-600 border-0 text-white font-semibold"
-                    onClick={handleSubmit} disabled={submitting}>
-                    {submitting ? "Submitting…" : "Submit Withdrawal Request"}
+
+                  <SlideToConfirm onConfirm={handleSlideConfirm} label="Slide to Confirm" />
+                </div>
+              )}
+
+              {step === "pin" && (
+                <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-6">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                    <ShieldCheck size={32} className="text-primary" />
+                  </div>
+                  <div className="text-center space-y-1">
+                    <h2 className="text-lg font-bold text-foreground">Enter Your PIN</h2>
+                    <p className="text-sm text-muted-foreground">Confirm withdrawal of ৳{totalDeduction.toLocaleString()}</p>
+                  </div>
+                  <div className="flex gap-3">
+                    {[0, 1, 2, 3].map(i => (
+                      <div key={i} className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center text-xl font-bold transition-all ${pin.length > i ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground"}`}>
+                        {pin.length > i ? "•" : ""}
+                      </div>
+                    ))}
+                  </div>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={4}
+                    autoFocus
+                    value={pin}
+                    onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); setPin(v); setPinError(""); }}
+                    className="sr-only"
+                  />
+                  {/* Visible numpad-like input trigger */}
+                  <div className="w-full max-w-[200px]">
+                    <Input
+                      type="password"
+                      inputMode="numeric"
+                      maxLength={4}
+                      placeholder="Enter 4-digit PIN"
+                      value={pin}
+                      onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); setPin(v); setPinError(""); }}
+                      className="text-center text-lg tracking-[0.5em] h-12 bg-card border-border"
+                      autoFocus
+                    />
+                  </div>
+                  {pinError && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{pinError}</p>}
+                  <Button
+                    className="w-full max-w-xs h-11 bg-gradient-to-b from-blue-500 to-indigo-600 border-0 text-white font-semibold"
+                    onClick={handlePinSubmit}
+                    disabled={submitting || pin.length !== 4}
+                  >
+                    {submitting ? "Processing…" : "Confirm Withdrawal"}
                   </Button>
                 </div>
               )}
@@ -272,13 +385,34 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
               {step === "success" && (
                 <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4 px-4">
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
-                    <div className="w-20 h-20 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto">
-                      <Clock size={36} className="text-blue-600" />
+                    <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto">
+                      <CheckCircle2 size={36} className="text-emerald-600" />
                     </div>
                   </motion.div>
-                  <h2 className="text-xl font-bold text-foreground">Withdrawal Request Submitted</h2>
+                  <h2 className="text-xl font-bold text-foreground">Withdrawal Submitted</h2>
                   <p className="text-sm text-muted-foreground max-w-xs">
-                    Your withdrawal of <span className="font-bold text-foreground">৳{parseFloat(amount).toLocaleString()}</span> to {bankName} is pending admin approval.
+                    ৳{resultData ? resultData.total_deducted.toLocaleString() : totalDeduction.toLocaleString()} has been deducted from your balance.
+                  </p>
+                  <div className="w-full max-w-xs rounded-2xl border border-border bg-card overflow-hidden text-left">
+                    <div className="flex justify-between p-3 border-b border-border">
+                      <span className="text-xs text-muted-foreground">You'll Receive</span>
+                      <span className="text-sm font-bold text-foreground">৳{parsedAmount.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between p-3 border-b border-border">
+                      <span className="text-xs text-muted-foreground">Charge (1%)</span>
+                      <span className="text-sm font-bold text-destructive">৳{(resultData?.fee ?? fee).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between p-3 border-b border-border">
+                      <span className="text-xs text-muted-foreground">Bank</span>
+                      <span className="text-sm font-bold text-foreground">{bankName}</span>
+                    </div>
+                    <div className="flex justify-between p-3">
+                      <span className="text-xs text-muted-foreground">Status</span>
+                      <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 text-[10px] gap-1"><Clock size={10} />Pending Approval</Badge>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground max-w-xs">
+                    If rejected, ৳{resultData ? resultData.total_deducted.toLocaleString() : totalDeduction.toLocaleString()} will be refunded to your wallet instantly.
                   </p>
                   <Button className="mt-4 w-full max-w-xs" onClick={onClose}>Done</Button>
                 </div>
@@ -288,7 +422,6 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
         )}
       </div>
 
-      {/* Delete saved bank confirm dialog */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

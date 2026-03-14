@@ -99,5 +99,5 @@ export function useFundRequests() {
 
   const pendingCount = requests.filter(r => r.status === "pending").length;
 
-  return { requests, loading, submitRequest, uploadProof, pendingCount, refresh: fetchRequests };
+  return { requests, loading, submitRequest, submitWithdraw, uploadProof, pendingCount, refresh: fetchRequests };
 }
