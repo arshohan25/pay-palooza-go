@@ -41,7 +41,7 @@ const DistributorCreateAgent = () => {
       if (!distData) throw new Error("Distributor record not found");
 
       // 2. Create auth account for agent
-      const email = `${phone}@easypay.local`;
+      const email = `${phone}@easypay.app`;
       const randomPin = String(Math.floor(1000 + Math.random() * 9000));
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
