@@ -1271,7 +1271,13 @@ export default function AdminDashboard() {
         {activeTab === "treasury" && <AdminTreasury />}
 
         {/* ═══ FUND REQUESTS ═══ */}
-        {activeTab === "fund_requests" && <AdminFundRequests />}
+        {activeTab === "fund_requests" && (
+          <div className="space-y-8">
+            <AdminFundRequests />
+            <Separator />
+            <AdminDepositAccounts />
+          </div>
+        )}
 
         {/* ═══ WEBHOOK LOG ═══ */}
         {activeTab === "webhooks" && <AdminWebhookLog />}
