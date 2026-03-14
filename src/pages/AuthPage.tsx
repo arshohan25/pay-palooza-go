@@ -354,8 +354,8 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
       if (currentConfirm.length < 4) { setError(t.reenterPinErr); return; }
       if (currentPin !== currentConfirm) { setError(t.pinsDontMatch); haptics.error(); setConfirmPin(""); return; }
       haptics.success(); setConfirmStage(false);
-      // Create account immediately, then launch KYC
-      await handlePostPinSignup();
+      // Create account immediately, then launch KYC — pass pin directly to avoid stale closure
+      await handlePostPinSignup(currentPin);
     }
   }, [goTo, t]);
 
