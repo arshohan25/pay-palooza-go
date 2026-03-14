@@ -22,6 +22,7 @@ import ReferPage from "@/pages/ReferPage";
 import MyTicketsPage from "@/pages/MyTicketsPage";
 import BlockedUsersPage from "@/components/BlockedUsersPage";
 import MerchantApplicationFlow from "@/components/MerchantApplicationFlow";
+import FundRequestHistory from "@/components/FundRequestHistory";
 import { generateWalletId } from "@/lib/walletId";
 import { useI18n } from "@/lib/i18n";
 import { useUserRoles } from "@/hooks/use-user-roles";
