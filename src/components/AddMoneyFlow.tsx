@@ -233,6 +233,52 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                   </div>
                 )}
 
+                {step === "send_to" && (
+                  <div className="space-y-6">
+                    <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-1">
+                      <div className="flex justify-between text-sm"><span className="text-muted-foreground">Amount</span><span className="font-bold text-foreground">৳{parseFloat(amount).toLocaleString()}</span></div>
+                      <div className="flex justify-between text-sm"><span className="text-muted-foreground">Source</span><span className="font-medium text-foreground capitalize">{source?.replace("_", " ")}</span></div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-foreground">Send money to this account</label>
+                      {depositLoading ? (
+                        <p className="text-sm text-muted-foreground">Loading accounts…</p>
+                      ) : depositAccounts.length === 0 ? (
+                        <div className="rounded-2xl border border-border bg-card p-4 text-center">
+                          <p className="text-sm text-muted-foreground">No deposit account configured for this method yet. Please contact support.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {depositAccounts.map(acc => (
+                            <div key={acc.id} className="rounded-2xl border border-border bg-card p-4 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-muted-foreground">{acc.label}</span>
+                                {acc.account_name && <span className="text-xs text-muted-foreground">{acc.account_name}</span>}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg font-bold font-mono text-foreground flex-1">{acc.account_number}</span>
+                                <button
+                                  onClick={() => copyToClipboard(acc.account_number, acc.id)}
+                                  className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary active:scale-95 transition-transform"
+                                >
+                                  {copiedId === acc.id ? <Check size={16} /> : <Copy size={16} />}
+                                </button>
+                              </div>
+                              {acc.bank_name && <p className="text-xs text-muted-foreground">Bank: {acc.bank_name}</p>}
+                              {acc.instructions && <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2">{acc.instructions}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <Button className="w-full h-11 bg-gradient-to-b from-emerald-500 to-green-600 border-0 text-white font-semibold" onClick={() => goTo("proof")}>
+                      I've Sent the Money
+                    </Button>
+                  </div>
+                )}
+
                 {step === "proof" && (
                   <div className="space-y-6">
                     <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-1">
