@@ -5,6 +5,7 @@ import { renderQrWithLogo } from "@/lib/qrWithLogo";
 import { Button } from "@/components/ui/button";
 import { haptics } from "@/lib/haptics";
 import { useI18n } from "@/lib/i18n";
+import { toast } from "@/hooks/use-toast";
 
 interface WalletShareSheetProps {
   open: boolean;
