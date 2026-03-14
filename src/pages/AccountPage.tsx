@@ -186,6 +186,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   if (subPage === "refer")    return <ReferPage            onBack={() => setSubPage(null)} />;
   if (subPage === "tickets")  return <MyTicketsPage        onBack={() => setSubPage(null)} />;
   if (subPage === "blocked")  return <BlockedUsersPage    onBack={() => setSubPage(null)} />;
+  if (subPage === "requests") return <FundRequestHistory  onBack={() => setSubPage(null)} />;
 
   const handleCopy = async () => {
     try { await navigator.clipboard.writeText(walletId); }
