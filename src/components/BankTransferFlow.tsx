@@ -55,7 +55,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
+  
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
   const [resultData, setResultData] = useState<{ fee: number; total_deducted: number; new_balance: number } | null>(null);
