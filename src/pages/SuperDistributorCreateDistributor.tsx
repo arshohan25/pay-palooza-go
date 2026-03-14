@@ -52,22 +52,24 @@ const SuperDistributorCreateDistributor = () => {
     }
     setProcessing(true);
     try {
-      // 1. Build email from phone
+      // 1. Normalize and validate phone
       const cleaned = phone.replace(/\D/g, "").replace(/^(\+?88)/, "");
+      if (!/^01[3-9]\d{8}$/.test(cleaned)) {
+        toast({ title: "Invalid phone", description: "Enter a valid 11-digit Bangladeshi number", variant: "destructive" });
+        setProcessing(false);
+        return;
+      }
 
       // Check if phone already registered
       const { data: existing } = await supabase.from("profiles").select("id").eq("phone", cleaned).maybeSingle();
       if (existing) { toast({ title: "Already Registered", description: "This number already has an account.", variant: "destructive" }); setProcessing(false); return; }
-      const email = `${cleaned}@easypay.app`;
 
       // 2. Create auth account for distributor
       const randomPin = String(Math.floor(1000 + Math.random() * 9000));
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password: `${randomPin}EP`,
-        options: { data: { phone: cleaned, display_name: name || businessName } },
+      const { data: signUpData } = await signUpWithPhonePassword(cleaned, `${randomPin}EP`, {
+        display_name: name || businessName || cleaned,
+        name: name || null,
       });
-      if (signUpError) throw signUpError;
       const newUserId = signUpData.user?.id;
       if (!newUserId) throw new Error("Failed to create account");
 
