@@ -28,6 +28,7 @@ import { verifyPin } from "@/lib/verifyPin";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import { haptics } from "@/lib/haptics";
 import DailyLimitBadge from "@/components/DailyLimitBadge";
+import { useFeeConfig } from "@/hooks/use-fee-config";
 import MerchantApiTab from "@/components/MerchantApiTab";
 import MerchantAnalyticsTab from "@/components/MerchantAnalyticsTab";
 import MerchantProductsTab from "@/components/MerchantProductsTab";
