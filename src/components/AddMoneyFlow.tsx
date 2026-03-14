@@ -1,20 +1,21 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFundRequests } from "@/hooks/use-fund-requests";
 import { useDepositAccounts } from "@/hooks/use-deposit-accounts";
 import {
   ChevronLeft, CheckCircle2, AlertCircle, Upload, Clock,
-  Landmark, CreditCard, Wallet, Copy, Check, ShieldAlert,
+  Landmark, CreditCard, Wallet, Copy, Check, ShieldAlert, ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n";
 import { toast } from "sonner";
+import { verifyPin } from "@/lib/verifyPin";
 
 
-type Step = "amount" | "source" | "send_to" | "proof" | "success";
-const STEPS: Step[] = ["amount", "source", "send_to", "proof"];
+type Step = "amount" | "source" | "send_to" | "proof" | "pin" | "success";
+const STEPS: Step[] = ["amount", "source", "send_to", "proof", "pin"];
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 25000];
 
 const SOURCE_OPTIONS = [
