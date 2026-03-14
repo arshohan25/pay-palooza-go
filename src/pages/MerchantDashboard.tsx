@@ -1072,13 +1072,12 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
   const qrPayload = merchant?.qr_code_data || `MRC-${merchant?.id?.slice(0, 8) || "UNKNOWN"}`;
 
   useEffect(() => {
-    import("@/lib/qrWithLogo").then(({ qrToDataUrlWithLogo }) =>
-      qrToDataUrlWithLogo(qrPayload, {
-        width: 280,
-        margin: 2,
-        color: { dark: "#1a1a2e", light: "#ffffff" },
-      })
-    ).then(setQrDataUrl).catch(() => {});
+    QRCode.toDataURL(qrPayload, {
+      width: 280,
+      margin: 2,
+      color: { dark: "#1a1a2e", light: "#ffffff" },
+      errorCorrectionLevel: "H",
+    }).then(setQrDataUrl).catch(() => {});
   }, [qrPayload]);
 
   const copyCode = () => {

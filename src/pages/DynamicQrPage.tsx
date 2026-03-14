@@ -96,8 +96,7 @@ const DynamicQrPage = () => {
         amount: session.amount,
         ref: session.reference || null,
       });
-      const { qrToDataUrlWithLogo } = await import("@/lib/qrWithLogo");
-      const url = await qrToDataUrlWithLogo(qrPayload, { width: 320, margin: 2, color: { dark: "#0f172a", light: "#ffffff" } });
+      const url = await QRCode.toDataURL(qrPayload, { width: 320, margin: 2, color: { dark: "#0f172a", light: "#ffffff" } });
       setQrDataUrl(url);
       setStatus("pending");
     } catch (err) {
