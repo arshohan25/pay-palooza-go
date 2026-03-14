@@ -1,29 +1,26 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Remove History from Add Money and Bank Transfer Flows
 
-### What
-
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+Both flows have inline history views (toggled via a "History" button in the header) that duplicate what the main Transaction History page already shows. We'll strip these out.
 
 ### Changes
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**File: `src/components/AddMoneyFlow.tsx`**
+- Remove `showHistory` state variable
+- Remove `myRequests` filtering and related imports (`FundRequest`, `Clock`, `XCircle`, `Badge`)
+- Remove the History toggle button from the header (lines 146-151)
+- Remove the `{!showHistory && ...}` conditional wrapper around the progress bar — always show it
+- Remove the `{showHistory ? ... : ...}` conditional in the content area — always render the `AnimatePresence` flow directly
+- Remove unused `STATUS_BADGE` constant
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+**File: `src/components/BankTransferFlow.tsx`**
+- Remove `showHistory` state variable
+- Remove `myRequests` filtering
+- Remove the History toggle button from the header (lines 153-158)
+- Remove the `{!showHistory && ...}` conditional wrapper around the progress bar — always show it
+- Remove the `{showHistory ? ... : ...}` conditional in the content area — always render the `AnimatePresence` flow directly
+- Remove unused `STATUS_BADGE` constant and related imports (`Clock`, `XCircle`, `Badge`) if no longer used elsewhere in the file
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+No database changes needed.
 
