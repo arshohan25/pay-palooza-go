@@ -1,45 +1,37 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFundRequests } from "@/hooks/use-fund-requests";
 import { useSavedBanks } from "@/hooks/use-saved-banks";
 import { verifyPin } from "@/lib/verifyPin";
 import { useFeeConfig } from "@/hooks/use-fee-config";
+import { BANGLADESH_BANKS } from "@/lib/bangladeshBanks";
 import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import {
-  ChevronLeft, AlertCircle, CheckCircle2, Landmark, User, Hash, Clock, Trash2, ShieldCheck, ArrowDown,
+  ChevronLeft, AlertCircle, CheckCircle2, Landmark, User, Hash, Clock, Trash2, ShieldCheck, Search, ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
 import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-type Step = "bank" | "amount" | "confirm" | "pin" | "success";
-const STEPS: Step[] = ["bank", "amount", "confirm", "pin"];
+type Step = "bank" | "amount" | "pin" | "confirm" | "success";
+const STEPS: Step[] = ["bank", "amount", "pin", "confirm"];
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 20000];
-
-const BANKS = [
-  { id: "dbbl", name: "Dutch-Bangla Bank", short: "DBBL" },
-  { id: "brac", name: "BRAC Bank", short: "BRAC" },
-  { id: "city", name: "City Bank", short: "CITY" },
-  { id: "ebl", name: "Eastern Bank", short: "EBL" },
-  { id: "ucb", name: "UCB Bank", short: "UCB" },
-  { id: "islami", name: "Islami Bank", short: "IBBL" },
-  { id: "ab", name: "AB Bank", short: "AB" },
-  { id: "scb", name: "Standard Chartered", short: "SCB" },
-];
 
 const slideVariants = {
   enter: (dir: number) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0 }),
   center: { x: 0, opacity: 1 },
   exit: (dir: number) => ({ x: dir < 0 ? "100%" : "-100%", opacity: 0 }),
 };
-
 
 interface BankTransferFlowProps { onClose: () => void; }
 
@@ -56,17 +48,25 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [bankSearch, setBankSearch] = useState("");
+  const [bankDropdownOpen, setBankDropdownOpen] = useState(false);
   
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
+  const [pinVerified, setPinVerified] = useState(false);
   const [resultData, setResultData] = useState<{ fee: number; total_deducted: number; new_balance: number } | null>(null);
 
-  
   const stepIndex = STEPS.indexOf(step);
   const parsedAmount = parseFloat(amount) || 0;
   const { calcBankTransferFee } = useFeeConfig();
   const fee = calcBankTransferFee(parsedAmount);
   const totalDeduction = parsedAmount + fee;
+
+  const filteredBanks = useMemo(() => {
+    if (!bankSearch.trim()) return BANGLADESH_BANKS;
+    const q = bankSearch.toLowerCase();
+    return BANGLADESH_BANKS.filter(b => b.name.toLowerCase().includes(q) || b.short.toLowerCase().includes(q));
+  }, [bankSearch]);
 
   const goTo = (next: Step) => {
     haptics.medium();
@@ -80,8 +80,8 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
     haptics.medium();
     if (step === "bank") { onClose(); return; }
     if (step === "amount") { goTo("bank"); return; }
-    if (step === "confirm") { goTo("amount"); return; }
-    if (step === "pin") { goTo("confirm"); return; }
+    if (step === "pin") { goTo("amount"); return; }
+    if (step === "confirm") { goTo("pin"); return; }
   };
 
   const handleBankContinue = () => {
@@ -96,10 +96,6 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
     if (!amount || isNaN(val) || val <= 0) { setError("Enter a valid amount."); return; }
     if (val < 30) { setError("Minimum withdrawal is ৳30."); return; }
     if (val > 50000) { setError("Maximum withdrawal is ৳50,000."); return; }
-    goTo("confirm");
-  };
-
-  const handleSlideConfirm = () => {
     goTo("pin");
   };
 
@@ -110,7 +106,19 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
     try {
       const valid = await verifyPin(pin);
       if (!valid) { setPinError("Incorrect PIN. Try again."); setPin(""); setSubmitting(false); return; }
+      setPinVerified(true);
+      goTo("confirm");
+    } catch (e: any) {
+      setPinError(e.message || "Verification failed.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
+  const handleSlideConfirm = async () => {
+    if (!pinVerified) return;
+    setSubmitting(true);
+    try {
       const result = await submitWithdraw({
         amount: parsedAmount,
         bank_name: bankName,
@@ -119,17 +127,22 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
       });
       setResultData({ fee: result.fee, total_deducted: result.total_deducted, new_balance: result.new_balance });
 
-      const bankShort = BANKS.find(b => b.name === bankName)?.short ?? bankName.slice(0, 4).toUpperCase();
+      const bankShort = BANGLADESH_BANKS.find(b => b.name === bankName)?.short ?? bankName.slice(0, 4).toUpperCase();
       saveBank({ bank_name: bankName, account_number: accountNumber, account_holder: accountHolder, short_code: bankShort });
       haptics.success();
       setDirection(1);
       setStep("success");
     } catch (e: any) {
-      setPinError(e.message || "Failed to submit request.");
+      setError(e.message || "Failed to submit request.");
+      goTo("pin");
+      setPinVerified(false);
+      setPin("");
     } finally {
       setSubmitting(false);
     }
   };
+
+  const selectedBank = BANGLADESH_BANKS.find(b => b.name === bankName);
 
   return (
     <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
@@ -185,20 +198,71 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                       <div className="flex items-center gap-3"><div className="flex-1 h-px bg-border" /><span className="text-xs text-muted-foreground">{t("orEnterNew")}</span><div className="flex-1 h-px bg-border" /></div>
                     </div>
                   )}
+
+                  {/* Bank dropdown */}
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-foreground">{t("selectBank")}</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {BANKS.map(b => (
-                        <button key={b.id} onClick={() => { setBankName(b.name); setError(""); }}
-                          className={`p-3 rounded-xl border text-left transition-all active:scale-95 ${bankName === b.name ? "border-primary bg-primary/10 shadow-card" : "border-border bg-card hover:border-primary/50"}`}>
-                          <div className="flex items-center gap-2">
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${bankName === b.name ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{b.short.slice(0, 2)}</div>
-                            <p className="text-xs font-semibold text-foreground truncate">{b.name}</p>
-                          </div>
+                    <Popover open={bankDropdownOpen} onOpenChange={setBankDropdownOpen}>
+                      <PopoverTrigger asChild>
+                        <button className="w-full flex items-center gap-3 p-3 rounded-2xl border border-border bg-card hover:border-primary/50 transition-all text-left">
+                          {selectedBank ? (
+                            <>
+                              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold text-white shrink-0" style={{ backgroundColor: selectedBank.color }}>
+                                {selectedBank.short.slice(0, 2)}
+                              </div>
+                              <span className="flex-1 text-sm font-semibold text-foreground">{selectedBank.name}</span>
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                                <Landmark size={16} className="text-muted-foreground" />
+                              </div>
+                              <span className="flex-1 text-sm text-muted-foreground">Choose a bank…</span>
+                            </>
+                          )}
+                          <ChevronDown size={16} className="text-muted-foreground shrink-0" />
                         </button>
-                      ))}
-                    </div>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 max-h-72 overflow-hidden" align="start">
+                        <div className="p-2 border-b border-border">
+                          <div className="relative">
+                            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                            <input
+                              type="text"
+                              placeholder="Search banks…"
+                              value={bankSearch}
+                              onChange={e => setBankSearch(e.target.value)}
+                              className="w-full pl-8 pr-3 py-2 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
+                              autoFocus
+                            />
+                          </div>
+                        </div>
+                        <div className="overflow-y-auto max-h-56">
+                          {filteredBanks.length === 0 ? (
+                            <p className="text-xs text-muted-foreground text-center py-4">No banks found</p>
+                          ) : (
+                            filteredBanks.map(b => (
+                              <button
+                                key={b.id}
+                                onClick={() => { setBankName(b.name); setBankDropdownOpen(false); setBankSearch(""); setError(""); }}
+                                className={`w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/50 transition-colors ${bankName === b.name ? "bg-primary/10" : ""}`}
+                              >
+                                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{ backgroundColor: b.color }}>
+                                  {b.short.slice(0, 2)}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-foreground truncate">{b.name}</p>
+                                  <p className="text-[10px] text-muted-foreground">{b.short}</p>
+                                </div>
+                                {bankName === b.name && <CheckCircle2 size={14} className="text-primary shrink-0" />}
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
+
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-foreground">{t("accountNumber")}</label>
                     <div className="relative">
@@ -261,6 +325,47 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                 </div>
               )}
 
+              {/* PIN step — now before confirm */}
+              {step === "pin" && (
+                <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-6">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                    <ShieldCheck size={32} className="text-primary" />
+                  </div>
+                  <div className="text-center space-y-1">
+                    <h2 className="text-lg font-bold text-foreground">Enter Your PIN</h2>
+                    <p className="text-sm text-muted-foreground">Confirm withdrawal of ৳{totalDeduction.toLocaleString()}</p>
+                  </div>
+                  <div className="flex gap-3">
+                    {[0, 1, 2, 3].map(i => (
+                      <div key={i} className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center text-xl font-bold transition-all ${pin.length > i ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground"}`}>
+                        {pin.length > i ? "•" : ""}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="w-full max-w-[200px]">
+                    <Input
+                      type="password"
+                      inputMode="numeric"
+                      maxLength={4}
+                      placeholder="Enter 4-digit PIN"
+                      value={pin}
+                      onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); setPin(v); setPinError(""); }}
+                      className="text-center text-lg tracking-[0.5em] h-12 bg-card border-border"
+                      autoFocus
+                    />
+                  </div>
+                  {pinError && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{pinError}</p>}
+                  <Button
+                    className="w-full max-w-xs h-11 bg-gradient-to-b from-blue-500 to-indigo-600 border-0 text-white font-semibold"
+                    onClick={handlePinSubmit}
+                    disabled={submitting || pin.length !== 4}
+                  >
+                    {submitting ? "Verifying…" : "Verify PIN"}
+                  </Button>
+                </div>
+              )}
+
+              {/* Confirm step — now after PIN, with SlideToConfirm */}
               {step === "confirm" && (
                 <div className="space-y-6">
                   <div className="text-center space-y-1">
@@ -298,56 +403,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                     </p>
                   </div>
 
-                  <SlideToConfirm onConfirm={handleSlideConfirm} label="Slide to Confirm" />
-                </div>
-              )}
-
-              {step === "pin" && (
-                <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-6">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                    <ShieldCheck size={32} className="text-primary" />
-                  </div>
-                  <div className="text-center space-y-1">
-                    <h2 className="text-lg font-bold text-foreground">Enter Your PIN</h2>
-                    <p className="text-sm text-muted-foreground">Confirm withdrawal of ৳{totalDeduction.toLocaleString()}</p>
-                  </div>
-                  <div className="flex gap-3">
-                    {[0, 1, 2, 3].map(i => (
-                      <div key={i} className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center text-xl font-bold transition-all ${pin.length > i ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground"}`}>
-                        {pin.length > i ? "•" : ""}
-                      </div>
-                    ))}
-                  </div>
-                  <input
-                    type="password"
-                    inputMode="numeric"
-                    maxLength={4}
-                    autoFocus
-                    value={pin}
-                    onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); setPin(v); setPinError(""); }}
-                    className="sr-only"
-                  />
-                  {/* Visible numpad-like input trigger */}
-                  <div className="w-full max-w-[200px]">
-                    <Input
-                      type="password"
-                      inputMode="numeric"
-                      maxLength={4}
-                      placeholder="Enter 4-digit PIN"
-                      value={pin}
-                      onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); setPin(v); setPinError(""); }}
-                      className="text-center text-lg tracking-[0.5em] h-12 bg-card border-border"
-                      autoFocus
-                    />
-                  </div>
-                  {pinError && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{pinError}</p>}
-                  <Button
-                    className="w-full max-w-xs h-11 bg-gradient-to-b from-blue-500 to-indigo-600 border-0 text-white font-semibold"
-                    onClick={handlePinSubmit}
-                    disabled={submitting || pin.length !== 4}
-                  >
-                    {submitting ? "Processing…" : "Confirm Withdrawal"}
-                  </Button>
+                  <SlideToConfirm onConfirm={handleSlideConfirm} label={submitting ? "Processing…" : "Slide to Confirm"} disabled={submitting} />
                 </div>
               )}
 
