@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Copy, CheckCheck, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import QRCode from "qrcode";
+import { renderQrWithLogo } from "@/lib/qrWithLogo";
 import { useI18n } from "@/lib/i18n";
 
 interface UserQrModalProps {
