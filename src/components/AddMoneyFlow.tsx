@@ -246,6 +246,15 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
 
                 {step === "proof" && (
                   <div className="space-y-6">
+                    <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 flex gap-3">
+                      <ShieldAlert size={20} className="text-destructive shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="text-sm font-bold text-destructive">⚠️ Warning</p>
+                        <p className="text-xs text-destructive/90 leading-relaxed">
+                          Submitting fake transaction details, forged screenshots, or fraudulent proof will result in <span className="font-bold">immediate and permanent account termination</span>. Legal action may be pursued. All submissions are verified.
+                        </p>
+                      </div>
+                    </div>
                     <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-1">
                       <div className="flex justify-between text-sm"><span className="text-muted-foreground">Amount</span><span className="font-bold text-foreground">৳{parseFloat(amount).toLocaleString()}</span></div>
                       <div className="flex justify-between text-sm"><span className="text-muted-foreground">Source</span><span className="font-medium text-foreground capitalize">{source?.replace("_", " ")}</span></div>
