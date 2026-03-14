@@ -386,7 +386,6 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
               )}
             </motion.div>
           </AnimatePresence>
-        )}
       </div>
 
       <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>

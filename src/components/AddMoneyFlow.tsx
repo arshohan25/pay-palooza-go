@@ -298,7 +298,6 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                 )}
               </motion.div>
             </AnimatePresence>
-          )}
         </div>
       </motion.div>
   );
