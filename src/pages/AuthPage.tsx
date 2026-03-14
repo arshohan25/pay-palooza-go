@@ -1009,65 +1009,76 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
 
                     {/* ── (forgot_verify removed — OTP-only flow now) ── */}
 
-                    {/* ── SET / CONFIRM PIN ── */}
+                    {/* ── SET / CONFIRM PIN (redesigned with keypad) ── */}
                     {(mode === "register_pin" || mode === "forgot_pin") && (() => {
                       const onComplete = mode === "register_pin" ? handleRegisterPin : handleForgotPin;
                       const currentVal = confirmStage ? confirmPin : pin;
                       return (
-                        <div className="space-y-6">
-                          <div className="space-y-1">
-                            <AnimatePresence mode="wait">
-                              <motion.div key={confirmStage ? "confirm" : "set"} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
-                                <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/15 flex items-center justify-center mb-3">
-                                  <Lock size={22} className="text-primary" />
-                                </div>
-                                <h2 className="text-2xl font-black text-foreground tracking-tight">
-                                  {confirmStage ? t.confirmPin : (mode === "forgot_pin" ? t.newPin : t.setPin)}
-                                </h2>
-                                <p className="text-sm text-muted-foreground mt-0.5">
-                                  {confirmStage ? t.reenterPin : t.choosePinHint}
-                                </p>
+                        <div className="space-y-5">
+                          <AnimatePresence mode="wait">
+                            <motion.div key={confirmStage ? "confirm" : "set"} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                              className="text-center space-y-2">
+                              <motion.div
+                                animate={{ rotate: confirmStage ? [0, -8, 8, 0] : 0 }}
+                                transition={{ duration: 0.4 }}
+                                className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/15 flex items-center justify-center mx-auto"
+                              >
+                                {confirmStage ? (
+                                  <CheckCircle2 size={24} className="text-primary" />
+                                ) : (
+                                  <Lock size={24} className="text-primary" />
+                                )}
                               </motion.div>
-                            </AnimatePresence>
-                          </div>
+                              <h2 className="text-xl font-black text-foreground tracking-tight">
+                                {confirmStage ? t.confirmPin : (mode === "forgot_pin" ? t.newPin : t.setPin)}
+                              </h2>
+                              <p className="text-xs text-muted-foreground">
+                                {confirmStage ? t.reenterPin : t.choosePinHint}
+                              </p>
+                            </motion.div>
+                          </AnimatePresence>
+
                           <PinCircles pin={currentVal} error={!!error} />
-                          {error && (
-                            <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-                              className="text-xs text-destructive flex items-center justify-center gap-1.5">
-                              <AlertCircle size={12} /> {error}
-                            </motion.p>
-                          )}
-                          {!confirmStage && (
-                            <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/60 border border-border">
-                              <Shield size={13} className="text-muted-foreground shrink-0" />
-                              <p className="text-[11px] text-muted-foreground">{t.pinWeakHint}</p>
-                            </div>
-                          )}
-                          {isSubmitting && (
-                            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                              className="text-sm text-primary font-semibold text-center">{t.resettingPin}</motion.p>
-                          )}
-                          <input
-                            type="password"
-                            inputMode="numeric"
-                            autoFocus
-                            maxLength={4}
-                            value={currentVal}
-                            onChange={(e) => {
-                              if (isSubmitting) return;
-                              const val = e.target.value.replace(/\D/g, "").slice(0, 4);
+
+                          {/* Error / Status area */}
+                          <div className="h-7 flex items-center justify-center">
+                            {error ? (
+                              <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                                className="text-xs text-destructive flex items-center gap-1.5">
+                                <AlertCircle size={12} /> {error}
+                              </motion.p>
+                            ) : isSubmitting ? (
+                              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                className="text-xs text-primary font-semibold">{mode === "forgot_pin" ? t.resettingPin : t.signingUp}</motion.p>
+                            ) : !confirmStage ? (
+                              <div className="flex items-center gap-1.5">
+                                <Shield size={11} className="text-muted-foreground" />
+                                <p className="text-[10px] text-muted-foreground">{t.pinWeakHint}</p>
+                              </div>
+                            ) : null}
+                          </div>
+
+                          {/* Numeric keypad */}
+                          <NumericKeypad
+                            disabled={isSubmitting}
+                            onPress={(d) => {
+                              if (currentVal.length >= 4) return;
+                              const next = currentVal + d;
                               if (!confirmStage) {
-                                setPin(val);
+                                setPin(next);
                                 setError("");
-                                if (val.length === 4) setTimeout(() => onComplete(val, confirmPin, false), 260);
+                                if (next.length === 4) setTimeout(() => onComplete(next, confirmPin, false), 260);
                               } else {
-                                setConfirmPin(val);
+                                setConfirmPin(next);
                                 setError("");
-                                if (val.length === 4) setTimeout(() => onComplete(pin, val, true), 260);
+                                if (next.length === 4) setTimeout(() => onComplete(pin, next, true), 260);
                               }
                             }}
-                            className="w-48 mx-auto h-14 text-center text-2xl font-black tracking-[0.8em] bg-card border-2 border-border rounded-2xl text-foreground focus:outline-none focus:border-primary focus:shadow-glow placeholder:text-muted-foreground/20"
-                            placeholder="····"
+                            onDelete={() => {
+                              if (!confirmStage) setPin(p => p.slice(0, -1));
+                              else setConfirmPin(p => p.slice(0, -1));
+                              setError("");
+                            }}
                           />
                         </div>
                       );
