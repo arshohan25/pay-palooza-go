@@ -1,29 +1,18 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Fix QR Share Button
 
-### What
+The issue is that `navigator.share()` fails silently in the Lovable preview iframe (it's not supported in that context). The `handleShare` function in `WalletShareSheet` checks `navigator.share` which exists but throws when called inside an iframe, and the error is caught and swallowed.
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+Additionally, the console warning about "Function components cannot be given refs" in `WalletShareSheet` is caused by `AnimatePresence` wrapping `motion.span` inside a `Button` component — framer-motion tries to pass a ref to the function component child.
 
 ### Changes
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**File: `src/components/WalletShareSheet.tsx`**
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+1. **Fix share handler** — Wrap `navigator.share()` call to catch the `NotAllowedError` / iframe restriction and fall back to copy + toast notification so the user gets feedback instead of nothing happening.
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+2. **Fix AnimatePresence ref warning** — Remove the `AnimatePresence` wrapper inside the Copy `Button` (lines 158-169). Use a simple conditional render instead, since the animation inside a button isn't essential and causes the ref warning.
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+3. **Add toast import** and show a success toast when falling back to copy, so the user knows something happened.
 
