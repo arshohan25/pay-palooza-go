@@ -634,6 +634,63 @@ export type Database = {
         }
         Relationships: []
       }
+      fund_requests: {
+        Row: {
+          account_holder: string | null
+          account_number: string | null
+          admin_note: string | null
+          amount: number
+          bank_name: string | null
+          created_at: string
+          id: string
+          proof_url: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_method: string | null
+          status: string
+          transaction_id_proof: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_holder?: string | null
+          account_number?: string | null
+          admin_note?: string | null
+          amount: number
+          bank_name?: string | null
+          created_at?: string
+          id?: string
+          proof_url?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_method?: string | null
+          status?: string
+          transaction_id_proof?: string | null
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_holder?: string | null
+          account_number?: string | null
+          admin_note?: string | null
+          amount?: number
+          bank_name?: string | null
+          created_at?: string
+          id?: string
+          proof_url?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_method?: string | null
+          status?: string
+          transaction_id_proof?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       global_feature_toggles: {
         Row: {
           created_at: string
@@ -2487,6 +2544,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_approve_fund_request: {
+        Args: { p_admin_note?: string; p_request_id: string }
+        Returns: Json
+      }
       admin_chargeback: {
         Args: {
           p_amount: number
@@ -2502,6 +2563,10 @@ export type Database = {
           p_description?: string
           p_target_phone: string
         }
+        Returns: Json
+      }
+      admin_reject_fund_request: {
+        Args: { p_admin_note: string; p_request_id: string }
         Returns: Json
       }
       admin_reset_all_milestones: {
