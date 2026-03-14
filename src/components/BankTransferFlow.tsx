@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useFundRequests } from "@/hooks/use-fund-requests";
 import { useSavedBanks } from "@/hooks/use-saved-banks";
 import { verifyPin } from "@/lib/verifyPin";
+import { useFeeConfig } from "@/hooks/use-fee-config";
 import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import {
