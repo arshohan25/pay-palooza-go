@@ -58,6 +58,7 @@ import AdminNotificationSender from "@/components/admin/AdminNotificationSender"
 import TeamOnboardingChecklist from "@/components/admin/TeamOnboardingChecklist";
 import AdminMerchantManagement from "@/components/admin/AdminMerchantManagement";
 import AdminSavingsManagement from "@/components/admin/AdminSavingsManagement";
+import AdminFundRequests from "@/components/admin/AdminFundRequests";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -171,6 +172,7 @@ const NAV_ITEMS = [
   { id: "kyc", label: "KYC", icon: ScanFace },
   { id: "referrals", label: "Referrals", icon: Gift },
   { id: "treasury", label: "Treasury", icon: Wallet },
+  { id: "fund_requests", label: "Fund Requests", icon: CreditCard },
   { id: "webhooks", label: "Webhooks", icon: Activity },
   { id: "permissions", label: "Permissions", icon: ShieldAlert },
   { id: "reporting", label: "Reports", icon: BarChart3 },
@@ -1248,6 +1250,9 @@ export default function AdminDashboard() {
 
         {/* ═══ TREASURY DASHBOARD ═══ */}
         {activeTab === "treasury" && <AdminTreasury />}
+
+        {/* ═══ FUND REQUESTS ═══ */}
+        {activeTab === "fund_requests" && <AdminFundRequests />}
 
         {/* ═══ WEBHOOK LOG ═══ */}
         {activeTab === "webhooks" && <AdminWebhookLog />}
