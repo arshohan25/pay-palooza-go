@@ -330,6 +330,15 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchPendingFunds = useCallback(async () => {
+    const { count, data } = await supabase
+      .from("fund_requests")
+      .select("amount", { count: "exact" })
+      .eq("status", "pending");
+    setPendingFundCount(count ?? 0);
+    setPendingFundAmount((data ?? []).reduce((sum, r) => sum + Number(r.amount), 0));
+  }, []);
+
   const loadData = useCallback(async () => {
     setRefreshing(true);
     const [s, t, u, a, ag, m, kycRes] = await Promise.all([
@@ -347,8 +356,9 @@ export default function AdminDashboard() {
     setAlerts(a);
     setAgents(ag);
     setMerchants(m);
+    fetchPendingFunds();
     setRefreshing(false);
-  }, []);
+  }, [fetchPendingFunds]);
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
