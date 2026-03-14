@@ -27,25 +27,46 @@ export async function drawLogoOnCanvas(
   const x = (canvas.width - size) / 2;
   const y = (canvas.height - size) / 2;
 
-  // Draw clear zone behind logo
-  const pad = size * 0.075;
+  // Premium clear zone behind logo
+  const pad = size * 0.1;
   const bgSize = size + pad * 2;
   const bx = x - pad;
   const by = y - pad;
-  const r = 6;
-  ctx.beginPath();
-  ctx.moveTo(bx + r, by);
-  ctx.lineTo(bx + bgSize - r, by);
-  ctx.quadraticCurveTo(bx + bgSize, by, bx + bgSize, by + r);
-  ctx.lineTo(bx + bgSize, by + bgSize - r);
-  ctx.quadraticCurveTo(bx + bgSize, by + bgSize, bx + bgSize - r, by + bgSize);
-  ctx.lineTo(bx + r, by + bgSize);
-  ctx.quadraticCurveTo(bx, by + bgSize, bx, by + bgSize - r);
-  ctx.lineTo(bx, by + r);
-  ctx.quadraticCurveTo(bx, by, bx + r, by);
-  ctx.closePath();
-  ctx.fillStyle = "#f0f0f0";
+  const r = bgSize * 0.18;
+
+  // Soft outer shadow
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.12)";
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 1;
+
+  // Rounded rect path helper
+  const roundRect = (rx: number, ry: number, rw: number, rh: number, rr: number) => {
+    ctx.beginPath();
+    ctx.moveTo(rx + rr, ry);
+    ctx.lineTo(rx + rw - rr, ry);
+    ctx.quadraticCurveTo(rx + rw, ry, rx + rw, ry + rr);
+    ctx.lineTo(rx + rw, ry + rh - rr);
+    ctx.quadraticCurveTo(rx + rw, ry + rh, rx + rw - rr, ry + rh);
+    ctx.lineTo(rx + rr, ry + rh);
+    ctx.quadraticCurveTo(rx, ry + rh, rx, ry + rh - rr);
+    ctx.lineTo(rx, ry + rr);
+    ctx.quadraticCurveTo(rx, ry, rx + rr, ry);
+    ctx.closePath();
+  };
+
+  // Fill white background with shadow
+  roundRect(bx, by, bgSize, bgSize, r);
+  ctx.fillStyle = "#ffffff";
   ctx.fill();
+  ctx.restore();
+
+  // Subtle border ring
+  roundRect(bx, by, bgSize, bgSize, r);
+  ctx.strokeStyle = "rgba(0,0,0,0.06)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
 
   // Draw logo on top
   ctx.drawImage(logo, x, y, size, size);
