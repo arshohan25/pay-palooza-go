@@ -1088,6 +1088,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                               setError("");
                             }}
                           />
+                          </div>
                         </div>
                       );
                     })()}
