@@ -1810,8 +1810,9 @@ const MerchantSendMoneySheet = ({ open, onClose, onSuccess }: { open: boolean; o
   const [dailyCount, setDailyCount] = useState(0);
   const [successData, setSuccessData] = useState<{ amount: number; to: string; ref: string } | null>(null);
 
-  const fee = 5;
+  const { calcFee: calcSendFee } = useFeeConfig();
   const parsedAmount = parseFloat(amount) || 0;
+  const fee = calcSendFee("send", parsedAmount);
   const total = parsedAmount + fee;
   const dailyRemaining = MERCH_SEND_DAILY_LIMIT - dailyUsed;
   const quotaRemaining = MERCH_SEND_MAX_QUOTA - dailyCount;
