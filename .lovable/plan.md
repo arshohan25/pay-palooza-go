@@ -1,22 +1,29 @@
 
 
-## Fix: Bank Transfer Not Showing in Transaction History
+## Plan: Add Biller Categories to API Hub
 
-### Root Cause
-Two places filter out `banktransfer` transactions:
+### What
 
-1. **`src/pages/Index.tsx` line 301** — The history tab passes `filterTypes={["send", "receive", "payment", "recharge", "addmoney"]}` to `TransactionHistory`, missing `"banktransfer"`.
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-2. **`src/components/TransactionList.tsx` line 202** — `USER_TYPES` already includes `"banktransfer"`, so the recent transactions widget on home is fine. But let me double-check this was actually applied from the previous edit.
+### Changes
 
-### Fix
-**`src/pages/Index.tsx` line 301**: Add `"banktransfer"` to the `filterTypes` array:
-```tsx
-filterTypes={["send", "receive", "payment", "recharge", "addmoney", "banktransfer"]}
-```
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-That's the only change needed. The `TransactionList` component on the home screen already includes `banktransfer` in `USER_TYPES`, and the `TransactionHistory` component already has `banktransfer` in its `CATEGORIES` list — it's just being filtered out by the parent.
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-### Files Changed
-- `src/pages/Index.tsx` — add `"banktransfer"` to filterTypes
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
