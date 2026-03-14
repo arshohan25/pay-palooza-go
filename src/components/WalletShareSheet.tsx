@@ -5,6 +5,7 @@ import { renderQrWithLogo } from "@/lib/qrWithLogo";
 import { Button } from "@/components/ui/button";
 import { haptics } from "@/lib/haptics";
 import { useI18n } from "@/lib/i18n";
+import { toast } from "@/hooks/use-toast";
 
 interface WalletShareSheetProps {
   open: boolean;
@@ -43,9 +44,14 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
   const handleShare = async () => {
     haptics.medium();
     const text = `💳 My EasyPay Wallet ID: ${walletId}\n👤 ${userName}\n\nScan my QR code to send money instantly!`;
-    if (navigator.share) {
-      try { await navigator.share({ title: "My EasyPay Wallet", text }); } catch { /* dismissed */ }
-    } else { handleCopy(); }
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "My EasyPay Wallet", text });
+        return;
+      }
+    } catch { /* share failed or blocked in iframe */ }
+    await handleCopy();
+    toast({ title: t("copied"), description: t("walletId") + ": " + walletId });
   };
 
   const handleDownload = async () => {
@@ -155,18 +161,8 @@ const WalletShareSheet = ({ open, onClose, userId, userName }: WalletShareSheetP
                   className="h-14 flex-col gap-1.5 text-[11px] font-semibold rounded-2xl"
                   onClick={handleCopy}
                 >
-                  <AnimatePresence mode="wait" initial={false}>
-                    <motion.span
-                      key={copied ? "c" : "x"}
-                      initial={{ scale: 0.7, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0.7, opacity: 0 }}
-                      className="flex flex-col items-center gap-1"
-                    >
-                      {copied ? <CheckCheck size={16} className="text-primary" /> : <Copy size={16} />}
-                      <span>{copied ? t("copied") : t("copyId")}</span>
-                    </motion.span>
-                  </AnimatePresence>
+                  {copied ? <CheckCheck size={16} className="text-primary" /> : <Copy size={16} />}
+                  <span>{copied ? t("copied") : t("copyId")}</span>
                 </Button>
 
                 <Button
