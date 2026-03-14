@@ -12,10 +12,10 @@ const InstallPrompt = () => {
   const [installed, setInstalled] = useState(false);
   const location = useLocation();
 
-  const isInstallRoute = location.pathname.startsWith("/install");
+  const isSuppressed = location.pathname.startsWith("/install") || location.pathname.startsWith("/auth");
 
   useEffect(() => {
-    if (isAppInstalled() || sessionStorage.getItem(DISMISSED_KEY)) return;
+    if (isAppInstalled() || localStorage.getItem(DISMISSED_KEY)) return;
 
     const unsub = onPromptAvailable(() => {
       setHasPrompt(true);
