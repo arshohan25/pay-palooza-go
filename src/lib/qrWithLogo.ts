@@ -27,7 +27,27 @@ export async function drawLogoOnCanvas(
   const x = (canvas.width - size) / 2;
   const y = (canvas.height - size) / 2;
 
-  // Draw logo directly (no background)
+  // Draw clear zone behind logo
+  const pad = size * 0.15;
+  const bgSize = size + pad * 2;
+  const bx = x - pad;
+  const by = y - pad;
+  const r = 6;
+  ctx.beginPath();
+  ctx.moveTo(bx + r, by);
+  ctx.lineTo(bx + bgSize - r, by);
+  ctx.quadraticCurveTo(bx + bgSize, by, bx + bgSize, by + r);
+  ctx.lineTo(bx + bgSize, by + bgSize - r);
+  ctx.quadraticCurveTo(bx + bgSize, by + bgSize, bx + bgSize - r, by + bgSize);
+  ctx.lineTo(bx + r, by + bgSize);
+  ctx.quadraticCurveTo(bx, by + bgSize, bx, by + bgSize - r);
+  ctx.lineTo(bx, by + r);
+  ctx.quadraticCurveTo(bx, by, bx + r, by);
+  ctx.closePath();
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+
+  // Draw logo on top
   ctx.drawImage(logo, x, y, size, size);
 }
 
