@@ -7,7 +7,7 @@ import { verifyPin } from "@/lib/verifyPin";
 import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import {
-  ChevronLeft, AlertCircle, CheckCircle2, Landmark, User, Hash, Clock, XCircle, Trash2, ShieldCheck, ArrowDown,
+  ChevronLeft, AlertCircle, CheckCircle2, Landmark, User, Hash, Clock, Trash2, ShieldCheck, ArrowDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,11 +39,6 @@ const slideVariants = {
   exit: (dir: number) => ({ x: dir < 0 ? "100%" : "-100%", opacity: 0 }),
 };
 
-const STATUS_BADGE: Record<string, { color: string; icon: any }> = {
-  pending: { color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300", icon: Clock },
-  approved: { color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300", icon: CheckCircle2 },
-  rejected: { color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300", icon: XCircle },
-};
 
 interface BankTransferFlowProps { onClose: () => void; }
 
@@ -60,12 +55,12 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
+  
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
   const [resultData, setResultData] = useState<{ fee: number; total_deducted: number; new_balance: number } | null>(null);
 
-  const myRequests = requests.filter(r => r.type === "withdraw");
+  
   const stepIndex = STEPS.indexOf(step);
   const parsedAmount = parseFloat(amount) || 0;
   const fee = Math.round(parsedAmount * 0.01 * 100) / 100;
@@ -150,43 +145,15 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
               <h1 className="text-xl font-extrabold tracking-tight">{t("flowBankTransfer")}</h1>
               <p className="text-xs text-white/70 mt-0.5">Withdraw to bank account</p>
             </div>
-            {myRequests.length > 0 && (
-              <button onClick={() => setShowHistory(!showHistory)}
-                className="text-xs bg-white/20 px-3 py-1.5 rounded-full font-medium">
-                {showHistory ? "New Request" : `History (${myRequests.length})`}
-              </button>
-            )}
           </div>
-          {!showHistory && (
-            <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
-              <motion.div className="h-full bg-white rounded-full"
-                animate={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }} />
-            </div>
-          )}
+          <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
+            <motion.div className="h-full bg-white rounded-full"
+              animate={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }} />
+          </div>
         </motion.div>
       )}
 
       <div className="flex-1 overflow-y-auto scrollbar-none">
-        {showHistory ? (
-          <div className="px-4 pt-4 pb-32 space-y-3">
-            <h3 className="text-sm font-semibold text-foreground">Your Withdrawal Requests</h3>
-            {myRequests.length === 0 && <p className="text-sm text-muted-foreground">No requests yet.</p>}
-            {myRequests.map(r => {
-              const badge = STATUS_BADGE[r.status];
-              const Icon = badge?.icon ?? Clock;
-              return (
-                <div key={r.id} className="p-3 rounded-2xl border border-border bg-card space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-bold text-foreground">৳{r.amount.toLocaleString()}</span>
-                    <Badge className={`${badge?.color} text-[10px] gap-1`}><Icon size={10} />{r.status}</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{r.bank_name} · {r.account_number?.slice(-4).padStart(r.account_number.length, "•")} · {new Date(r.created_at).toLocaleDateString()}</p>
-                  {r.admin_note && <p className="text-xs text-destructive">Note: {r.admin_note}</p>}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
           <AnimatePresence custom={direction} mode="wait">
             <motion.div key={step} custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit"
               transition={{ type: "spring", stiffness: 320, damping: 32 }} className="px-4 pt-6 pb-32">
@@ -419,7 +386,6 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
               )}
             </motion.div>
           </AnimatePresence>
-        )}
       </div>
 
       <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
