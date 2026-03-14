@@ -1,1 +1,0 @@
-ALTER TABLE public.profiles ALTER COLUMN kyc_exempt SET DEFAULT true;
