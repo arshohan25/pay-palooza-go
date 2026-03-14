@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import {
   Search, X, CalendarIcon, SlidersHorizontal,
-  CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw, Share2, Coins, TrendingUp, BadgeDollarSign, ChevronDown,
+  CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw, Share2, Coins, TrendingUp, BadgeDollarSign, ChevronDown, AlertCircle,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,7 @@ interface Transaction {
   fee: number;
   commission: number;
   _isCashback?: boolean;
+  status: string;
 }
 
 const CATEGORIES: { id: TxCategory; label: string }[] = [
@@ -139,6 +140,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           fee: t.fee,
           commission: t.commission || 0,
           _isCashback: isCashback,
+          status: t.status,
         };
       }), [dbTxns, filterTypes]);
 
@@ -492,6 +494,16 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     )}
                     <div className="flex items-center gap-2 mt-0.5">
                       <p className="text-[10.5px] text-muted-foreground/60">{relativeDate(tx.date)}</p>
+                      {tx.status === "pending" && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                          <Clock size={9} /> PENDING
+                        </span>
+                      )}
+                      {tx.status === "failed" && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-destructive/10 text-destructive">
+                          <AlertCircle size={9} /> REJECTED
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -602,10 +614,22 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                       {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString()}
                     </p>
                     <p className="text-[12.5px] text-muted-foreground mt-0.5">{selectedTx.detail}</p>
-                    <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-primary/10">
-                      <CheckCircle2 size={12} className="text-primary" />
-                      <span className="text-[11px] font-bold text-primary">Successful</span>
-                    </div>
+                    {selectedTx.status === "pending" ? (
+                      <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30">
+                        <Clock size={12} className="text-amber-600 dark:text-amber-400" />
+                        <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300">Pending</span>
+                      </div>
+                    ) : selectedTx.status === "failed" ? (
+                      <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-destructive/10">
+                        <AlertCircle size={12} className="text-destructive" />
+                        <span className="text-[11px] font-bold text-destructive">Rejected</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-primary/10">
+                        <CheckCircle2 size={12} className="text-primary" />
+                        <span className="text-[11px] font-bold text-primary">Successful</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="h-px bg-border/60 mb-3" />

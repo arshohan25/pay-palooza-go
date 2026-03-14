@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronRight, X, Copy, CheckCircle2, Hash, User, Tag, FileText, Clock, Coins } from "lucide-react";
+import { ChevronRight, X, Copy, CheckCircle2, Hash, User, Tag, FileText, Clock, Coins, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { useTransactions, DbTransaction } from "@/hooks/use-transactions";
@@ -149,6 +149,16 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
                 <Coins size={12} className="text-amber-600 dark:text-amber-400" />
                 <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300">Drive Cashback</span>
               </div>
+            ) : tx.status === "pending" ? (
+              <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30">
+                <Clock size={12} className="text-amber-600 dark:text-amber-400" />
+                <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300">Pending</span>
+              </div>
+            ) : tx.status === "failed" ? (
+              <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-destructive/10">
+                <AlertCircle size={12} className="text-destructive" />
+                <span className="text-[11px] font-bold text-destructive">Rejected</span>
+              </div>
             ) : (
               <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-primary/10">
                 <CheckCircle2 size={12} className="text-primary" />
@@ -189,7 +199,7 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
   );
 };
 
-const USER_TYPES = new Set(["send", "receive", "payment", "recharge", "addmoney"]);
+const USER_TYPES = new Set(["send", "receive", "payment", "recharge", "addmoney", "banktransfer"]);
 
 const TransactionList = ({ onSeeAll, refreshKey }: TransactionListProps) => {
   const { t } = useI18n();
@@ -255,6 +265,16 @@ const TransactionList = ({ onSeeAll, refreshKey }: TransactionListProps) => {
                     )}
                   </div>
                   <p className="text-[11.5px] text-muted-foreground mt-0.5">{relativeDate(tx.created_at)}</p>
+                  {tx.status === "pending" && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 mt-0.5">
+                      <Clock size={9} /> PENDING
+                    </span>
+                  )}
+                  {tx.status === "failed" && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-destructive/10 text-destructive mt-0.5">
+                      <AlertCircle size={9} /> REJECTED
+                    </span>
+                  )}
                 </div>
                 <div className="text-right shrink-0">
                   <span className={`text-[14px] font-bold ${display.isCashback ? "text-amber-600 dark:text-amber-400" : isCredit ? "text-primary" : "text-foreground"}`}>

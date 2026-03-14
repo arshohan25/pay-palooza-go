@@ -70,6 +70,22 @@ export function useFundRequests() {
     if (error) throw error;
   };
 
+  const submitAddMoney = async (params: {
+    amount: number;
+    source_method?: string;
+    proof_url?: string;
+    transaction_id_proof?: string;
+  }) => {
+    const { data, error } = await supabase.rpc("submit_addmoney_request", {
+      p_amount: params.amount,
+      p_source_method: params.source_method ?? null,
+      p_proof_url: params.proof_url ?? null,
+      p_transaction_id_proof: params.transaction_id_proof ?? null,
+    });
+    if (error) throw error;
+    return data as { success: boolean; request_id: string; transaction_id: string; amount: number };
+  };
+
   const submitWithdraw = async (params: {
     amount: number;
     bank_name: string;
@@ -99,5 +115,5 @@ export function useFundRequests() {
 
   const pendingCount = requests.filter(r => r.status === "pending").length;
 
-  return { requests, loading, submitRequest, submitWithdraw, uploadProof, pendingCount, refresh: fetchRequests };
+  return { requests, loading, submitRequest, submitAddMoney, submitWithdraw, uploadProof, pendingCount, refresh: fetchRequests };
 }

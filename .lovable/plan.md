@@ -1,36 +1,29 @@
 
 
-## Show Fund Requests (Add Money & Bank Transfer) in Transaction History
+## Plan: Add Biller Categories to API Hub
 
-### Problem
-- **Bank Transfer (withdraw)**: Already creates a `pending` transaction via `submit_withdraw_request` RPC, so it appears in history — but the status badge always shows green "completed" regardless of actual status.
-- **Add Money (deposit)**: Only creates a transaction record when admin approves. Before approval, nothing shows in transaction history.
-- The `TransactionList` home widget filters out `banktransfer` type entirely (line 192: `USER_TYPES` only includes send, receive, payment, recharge, addmoney).
+### What
 
-### Solution
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-#### 1. Database Migration
-- **New RPC `submit_addmoney_request`**: Similar to `submit_withdraw_request` but for deposits. Creates a `pending` `addmoney` transaction + linked fund_request at submission time (no balance change — balance only added on approval).
-- **Update `admin_approve_fund_request`**: For `add_money` type, update the existing pending transaction to `completed` instead of inserting a new one. Still add balance.
-- **Update `admin_reject_fund_request`**: For `add_money` type, update the pending transaction to `rejected`. No balance refund needed (nothing was deducted).
+### Changes
 
-#### 2. Frontend: `src/hooks/use-fund-requests.ts`
-- Add `submitAddMoney` method that calls the new RPC instead of plain insert.
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-#### 3. Frontend: `src/components/AddMoneyFlow.tsx`
-- Call `submitAddMoney` RPC instead of `submitRequest` for add_money type.
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-#### 4. Frontend: `src/components/TransactionList.tsx`
-- Add `banktransfer` to `USER_TYPES` so it shows on the home screen.
-- Show status badges for `pending` and `rejected` transactions (amber for pending, red for rejected) in both the list rows and the detail sheet.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-#### 5. Frontend: `src/pages/TransactionHistory.tsx`
-- Show status badges (pending/rejected) on transaction rows — same treatment as TransactionList.
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-### Files Changed
-- Database migration (new `submit_addmoney_request` RPC, updated approve/reject RPCs)
-- `src/hooks/use-fund-requests.ts` — add `submitAddMoney` method
-- `src/components/AddMoneyFlow.tsx` — use new RPC
-- `src/components/TransactionList.tsx` — add `banktransfer` to USER_TYPES, show status badges
-- `src/pages/TransactionHistory.tsx` — show status badges on rows
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

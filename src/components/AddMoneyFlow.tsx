@@ -43,7 +43,7 @@ interface AddMoneyFlowProps { onClose: () => void; }
 
 const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   const { t } = useI18n();
-  const { requests, submitRequest, uploadProof } = useFundRequests();
+  const { requests, submitAddMoney, uploadProof } = useFundRequests();
   const [step, setStep] = useState<Step>("amount");
   const [direction, setDir] = useState(1);
   const [amount, setAmount] = useState("");
@@ -111,8 +111,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
       if (proofFile) {
         proofUrl = await uploadProof(proofFile);
       }
-      await submitRequest({
-        type: "add_money",
+      await submitAddMoney({
         amount: parseFloat(amount),
         source_method: source ?? undefined,
         proof_url: proofUrl,
