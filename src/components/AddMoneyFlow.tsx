@@ -5,7 +5,7 @@ import { useFundRequests } from "@/hooks/use-fund-requests";
 import { useDepositAccounts } from "@/hooks/use-deposit-accounts";
 import {
   ChevronLeft, CheckCircle2, AlertCircle, Upload, Clock,
-  Landmark, CreditCard, Wallet, Copy, Check,
+  Landmark, CreditCard, Wallet, Copy, Check, ShieldAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
