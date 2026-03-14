@@ -209,26 +209,105 @@ function OtpBoxes({ value, error }: { value: string; error: boolean }) {
   );
 }
 
-// ─── PIN Dots ─────────────────────────────────────────────────────────────────
+// ─── PIN Dots (redesigned) ────────────────────────────────────────────────────
 function PinCircles({ pin, error, length = 4, dark = false }: { pin: string; error: boolean; length?: number; dark?: boolean }) {
   return (
-    <div className="flex justify-center gap-6">
+    <div className="flex justify-center gap-5">
       {Array.from({ length }).map((_, i) => {
         const filled = i < pin.length;
+        const isNext = i === pin.length;
         return (
-          <motion.div
-            key={i}
-            animate={{
-              scale: filled ? 1.3 : 1,
-              backgroundColor: error ? "hsl(var(--destructive))" : filled ? dark ? "white" : "hsl(var(--primary))" : "transparent",
+          <div key={i} className="relative">
+            <motion.div
+              animate={{
+                scale: filled ? 1 : isNext ? 1.05 : 0.9,
+                backgroundColor: error && filled
+                  ? "hsl(var(--destructive))"
+                  : filled
+                    ? dark ? "rgba(255,255,255,0.95)" : "hsl(var(--primary))"
+                    : "transparent",
+              }}
+              transition={{ type: "spring", stiffness: 500, damping: 24 }}
+              className={`w-[18px] h-[18px] rounded-full border-[2.5px] ${
+                error && filled
+                  ? "border-destructive"
+                  : filled
+                    ? dark ? "border-white" : "border-primary"
+                    : dark ? "border-white/25" : "border-muted-foreground/20"
+              }`}
+            />
+            {/* Glow ring on filled */}
+            {filled && !error && (
+              <motion.div
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1.8, opacity: 0 }}
+                transition={{ duration: 0.5 }}
+                className={`absolute inset-0 rounded-full ${dark ? "bg-white/20" : "bg-primary/20"}`}
+              />
+            )}
+            {/* Pulse on next slot */}
+            {isNext && !error && (
+              <motion.div
+                animate={{ scale: [1, 1.6, 1], opacity: [0.3, 0, 0.3] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                className={`absolute inset-0 rounded-full ${dark ? "bg-white/15" : "bg-primary/15"}`}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Numeric Keypad ──────────────────────────────────────────────────────────
+function NumericKeypad({
+  onPress,
+  onDelete,
+  dark = false,
+  disabled = false,
+}: {
+  onPress: (digit: string) => void;
+  onDelete: () => void;
+  dark?: boolean;
+  disabled?: boolean;
+}) {
+  const keys = [["1", "2", "3"], ["4", "5", "6"], ["7", "8", "9"], ["", "0", "del"]];
+  return (
+    <div className="grid grid-cols-3 gap-3 w-full max-w-[280px] mx-auto">
+      {keys.flat().map((key, i) => {
+        if (key === "") return <div key={i} />;
+        const isDel = key === "del";
+        return (
+          <motion.button
+            key={key}
+            whileTap={disabled ? {} : { scale: 0.88 }}
+            onClick={() => {
+              if (disabled) return;
+              if (isDel) onDelete();
+              else onPress(key);
+              haptics.light();
             }}
-            transition={{ type: "spring", stiffness: 500, damping: 22 }}
-            className={`w-4 h-4 rounded-full border-2 transition-all ${
-              error && filled ? "border-destructive shadow-[0_0_12px_hsl(var(--destructive)/0.5)]"
-              : filled ? dark ? "border-white shadow-[0_0_16px_rgba(255,255,255,0.4)]" : "border-primary shadow-[0_0_16px_hsl(var(--primary)/0.4)]"
-              : dark ? "border-white/30" : "border-muted-foreground/25"
+            disabled={disabled}
+            className={`h-[56px] rounded-2xl text-xl font-bold flex items-center justify-center select-none transition-colors ${
+              disabled ? "opacity-30 cursor-not-allowed" : "active:opacity-70"
+            } ${
+              dark
+                ? isDel
+                  ? "bg-white/8 text-white/60 hover:bg-white/12"
+                  : "bg-white/10 text-white hover:bg-white/15 border border-white/10"
+                : isDel
+                  ? "bg-muted/60 text-muted-foreground hover:bg-muted"
+                  : "bg-card text-foreground hover:bg-muted/40 border border-border shadow-xs"
             }`}
-          />
+          >
+            {isDel ? (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/>
+                <line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/>
+              </svg>
+            ) : key}
+          </motion.button>
         );
       })}
     </div>
