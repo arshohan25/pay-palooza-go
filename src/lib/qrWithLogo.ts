@@ -23,53 +23,51 @@ export async function drawLogoOnCanvas(
   if (!ctx) return;
 
   const logo = await loadImage(logoSrc);
-  const size = canvas.width * LOGO_RATIO;
-  const x = (canvas.width - size) / 2;
-  const y = (canvas.height - size) / 2;
+  const size = Math.round(canvas.width * LOGO_RATIO);
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
 
-  // Premium clear zone behind logo
-  const pad = size * 0.1;
-  const bgSize = size + pad * 2;
-  const bx = x - pad;
-  const by = y - pad;
-  const r = bgSize * 0.18;
+  // Clear zone: circle behind logo
+  const clearRadius = size * 0.62;
 
-  // Soft outer shadow
+  // White circle with soft shadow
   ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,0.12)";
-  ctx.shadowBlur = 6;
-  ctx.shadowOffsetX = 0;
+  ctx.shadowColor = "rgba(0,0,0,0.10)";
+  ctx.shadowBlur = 4;
   ctx.shadowOffsetY = 1;
-
-  // Rounded rect path helper
-  const roundRect = (rx: number, ry: number, rw: number, rh: number, rr: number) => {
-    ctx.beginPath();
-    ctx.moveTo(rx + rr, ry);
-    ctx.lineTo(rx + rw - rr, ry);
-    ctx.quadraticCurveTo(rx + rw, ry, rx + rw, ry + rr);
-    ctx.lineTo(rx + rw, ry + rh - rr);
-    ctx.quadraticCurveTo(rx + rw, ry + rh, rx + rw - rr, ry + rh);
-    ctx.lineTo(rx + rr, ry + rh);
-    ctx.quadraticCurveTo(rx, ry + rh, rx, ry + rh - rr);
-    ctx.lineTo(rx, ry + rr);
-    ctx.quadraticCurveTo(rx, ry, rx + rr, ry);
-    ctx.closePath();
-  };
-
-  // Fill white background with shadow
-  roundRect(bx, by, bgSize, bgSize, r);
+  ctx.beginPath();
+  ctx.arc(cx, cy, clearRadius, 0, Math.PI * 2);
   ctx.fillStyle = "#ffffff";
   ctx.fill();
   ctx.restore();
 
-  // Subtle border ring
-  roundRect(bx, by, bgSize, bgSize, r);
-  ctx.strokeStyle = "rgba(0,0,0,0.06)";
+  // Subtle border
+  ctx.beginPath();
+  ctx.arc(cx, cy, clearRadius, 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(0,0,0,0.05)";
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  // Draw logo on top
-  ctx.drawImage(logo, x, y, size, size);
+  // Clip logo to circle for clean edges
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, size * 0.52, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.clip();
+
+  // Draw logo centered, maintaining aspect ratio
+  const logoAspect = logo.naturalWidth / logo.naturalHeight;
+  let drawW = size;
+  let drawH = size;
+  if (logoAspect > 1) {
+    drawH = size / logoAspect;
+  } else {
+    drawW = size * logoAspect;
+  }
+  const drawX = cx - drawW / 2;
+  const drawY = cy - drawH / 2;
+  ctx.drawImage(logo, drawX, drawY, drawW, drawH);
+  ctx.restore();
 }
 
 /**
