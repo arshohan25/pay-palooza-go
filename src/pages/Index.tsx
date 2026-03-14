@@ -298,7 +298,7 @@ const Index = () => {
       );
     }
     if (activeTab === "history") {
-      return <TransactionHistory onRefresh={triggerRefresh} filterTypes={["send", "receive", "payment", "recharge", "addmoney"]} />;
+      return <TransactionHistory onRefresh={triggerRefresh} filterTypes={["send", "receive", "payment", "recharge", "addmoney", "banktransfer"]} />;
     }
     if (activeTab === "account") {
       return <AccountPage onSignOut={signOut} onReplayOnboarding={() => { setOnboardingDone(false); setReplayOnboarding(true); }} />;
