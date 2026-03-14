@@ -1018,7 +1018,25 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                               </motion.div>
                             </AnimatePresence>
 
-                            <PinCircles pin={currentVal} error={!!error} />
+                            <div className="relative">
+                              <PinCircles pin={currentVal} error={!!error} />
+                              <HiddenPinInput
+                                value={currentVal}
+                                onChange={(v) => {
+                                  if (!confirmStage) {
+                                    setPin(v);
+                                    setError("");
+                                    if (v.length === 4) setTimeout(() => onComplete(v, confirmPin, false), 260);
+                                  } else {
+                                    setConfirmPin(v);
+                                    setError("");
+                                    if (v.length === 4) setTimeout(() => onComplete(pin, v, true), 260);
+                                  }
+                                }}
+                                disabled={isSubmitting}
+                                autoFocus
+                              />
+                            </div>
 
                             {/* PIN warning hint — directly under circles */}
                             {!confirmStage && !error && !isSubmitting && (
@@ -1041,31 +1059,6 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                                   className="text-xs text-primary font-semibold">{mode === "forgot_pin" ? t.resettingPin : t.signingUp}</motion.p>
                               ) : null}
                             </div>
-                          </div>
-
-                          {/* Numeric keypad pinned to bottom */}
-                          <div className="pb-4">
-                          <NumericKeypad
-                            disabled={isSubmitting}
-                            onPress={(d) => {
-                              if (currentVal.length >= 4) return;
-                              const next = currentVal + d;
-                              if (!confirmStage) {
-                                setPin(next);
-                                setError("");
-                                if (next.length === 4) setTimeout(() => onComplete(next, confirmPin, false), 260);
-                              } else {
-                                setConfirmPin(next);
-                                setError("");
-                                if (next.length === 4) setTimeout(() => onComplete(pin, next, true), 260);
-                              }
-                            }}
-                            onDelete={() => {
-                              if (!confirmStage) setPin(p => p.slice(0, -1));
-                              else setConfirmPin(p => p.slice(0, -1));
-                              setError("");
-                            }}
-                          />
                           </div>
                         </div>
                       );
