@@ -486,6 +486,11 @@ export default function AdminDashboard() {
       .on("postgres_changes", { event: "*", schema: "public", table: "payment_gateways" }, () => {
         // Gateways tab auto-refreshes
       })
+      // Fund request changes → refresh pending funds card
+      .on("postgres_changes", { event: "*", schema: "public", table: "fund_requests" }, () => {
+        fetchPendingFunds();
+        realtimeFlash();
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
