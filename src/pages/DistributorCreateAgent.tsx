@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { signUpWithPhonePassword } from "@/lib/auth";
 import { motion } from "framer-motion";
 import { ArrowLeft, UserPlus, Home, Building2, MapPin, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";

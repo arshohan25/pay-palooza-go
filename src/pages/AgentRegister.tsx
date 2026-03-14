@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { usePhoneValidation } from "@/hooks/use-phone-validation";
+import { signUpWithPhonePassword } from "@/lib/auth";
 
 const AgentRegister = () => {
   const navigate = useNavigate();
