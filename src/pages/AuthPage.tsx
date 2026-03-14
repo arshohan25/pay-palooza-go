@@ -260,57 +260,39 @@ function PinCircles({ pin, error, length = 4, dark = false }: { pin: string; err
   );
 }
 
-// ─── Numeric Keypad ──────────────────────────────────────────────────────────
-function NumericKeypad({
-  onPress,
-  onDelete,
-  dark = false,
+// ─── Hidden PIN Input (native keyboard) ──────────────────────────────────────
+function HiddenPinInput({
+  value,
+  onChange,
   disabled = false,
+  autoFocus = true,
 }: {
-  onPress: (digit: string) => void;
-  onDelete: () => void;
-  dark?: boolean;
+  value: string;
+  onChange: (v: string) => void;
   disabled?: boolean;
+  autoFocus?: boolean;
 }) {
-  const keys = [["1", "2", "3"], ["4", "5", "6"], ["7", "8", "9"], ["", "0", "del"]];
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (autoFocus) setTimeout(() => ref.current?.focus(), 150);
+  }, [autoFocus]);
   return (
-    <div className="grid grid-cols-3 gap-3 w-full max-w-[280px] mx-auto">
-      {keys.flat().map((key, i) => {
-        if (key === "") return <div key={i} />;
-        const isDel = key === "del";
-        return (
-          <motion.button
-            key={key}
-            whileTap={disabled ? {} : { scale: 0.88 }}
-            onClick={() => {
-              if (disabled) return;
-              if (isDel) onDelete();
-              else onPress(key);
-              haptics.light();
-            }}
-            disabled={disabled}
-            className={`h-[56px] rounded-2xl text-xl font-bold flex items-center justify-center select-none transition-colors ${
-              disabled ? "opacity-30 cursor-not-allowed" : "active:opacity-70"
-            } ${
-              dark
-                ? isDel
-                  ? "bg-white/8 text-white/60 hover:bg-white/12"
-                  : "bg-white/10 text-white hover:bg-white/15 border border-white/10"
-                : isDel
-                  ? "bg-muted/60 text-muted-foreground hover:bg-muted"
-                  : "bg-card text-foreground hover:bg-muted/40 border border-border shadow-xs"
-            }`}
-          >
-            {isDel ? (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/>
-                <line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/>
-              </svg>
-            ) : key}
-          </motion.button>
-        );
-      })}
-    </div>
+    <input
+      ref={ref}
+      type="password"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      maxLength={4}
+      value={value}
+      onChange={(e) => {
+        const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+        onChange(v);
+        haptics.light();
+      }}
+      disabled={disabled}
+      className="absolute w-full h-full opacity-0 cursor-pointer"
+      autoComplete="off"
+    />
   );
 }
 
@@ -796,9 +778,18 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 </div>
               </div>
 
-              {/* PIN dots */}
-              <div className="mb-3">
+              {/* PIN dots with hidden input */}
+              <div className="relative mb-3">
                 <PinCircles pin={pin} error={!!error} dark />
+                <HiddenPinInput
+                  value={pin}
+                  onChange={(v) => {
+                    setPin(v);
+                    setError("");
+                    if (v.length === 4) setTimeout(() => handleLoginPin(v), 260);
+                  }}
+                  disabled={isSubmitting}
+                />
               </div>
 
               {/* Error / Status */}
@@ -817,21 +808,8 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 ) : null}
               </div>
 
-              {/* Numeric keypad */}
-              <div className="flex-1 flex flex-col justify-center w-full max-w-xs">
-                <NumericKeypad
-                  dark
-                  disabled={isSubmitting}
-                  onPress={(d) => {
-                    if (pin.length >= 4) return;
-                    const next = pin + d;
-                    setPin(next);
-                    setError("");
-                    if (next.length === 4) setTimeout(() => handleLoginPin(next), 260);
-                  }}
-                  onDelete={() => { setPin(p => p.slice(0, -1)); setError(""); }}
-                />
-              </div>
+              {/* Spacer instead of keypad */}
+              <div className="flex-1" />
 
               {/* Footer actions */}
               <div className="flex items-center gap-5 mt-4">
@@ -1040,7 +1018,25 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                               </motion.div>
                             </AnimatePresence>
 
-                            <PinCircles pin={currentVal} error={!!error} />
+                            <div className="relative">
+                              <PinCircles pin={currentVal} error={!!error} />
+                              <HiddenPinInput
+                                value={currentVal}
+                                onChange={(v) => {
+                                  if (!confirmStage) {
+                                    setPin(v);
+                                    setError("");
+                                    if (v.length === 4) setTimeout(() => onComplete(v, confirmPin, false), 260);
+                                  } else {
+                                    setConfirmPin(v);
+                                    setError("");
+                                    if (v.length === 4) setTimeout(() => onComplete(pin, v, true), 260);
+                                  }
+                                }}
+                                disabled={isSubmitting}
+                                autoFocus
+                              />
+                            </div>
 
                             {/* PIN warning hint — directly under circles */}
                             {!confirmStage && !error && !isSubmitting && (
@@ -1063,31 +1059,6 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                                   className="text-xs text-primary font-semibold">{mode === "forgot_pin" ? t.resettingPin : t.signingUp}</motion.p>
                               ) : null}
                             </div>
-                          </div>
-
-                          {/* Numeric keypad pinned to bottom */}
-                          <div className="pb-4">
-                          <NumericKeypad
-                            disabled={isSubmitting}
-                            onPress={(d) => {
-                              if (currentVal.length >= 4) return;
-                              const next = currentVal + d;
-                              if (!confirmStage) {
-                                setPin(next);
-                                setError("");
-                                if (next.length === 4) setTimeout(() => onComplete(next, confirmPin, false), 260);
-                              } else {
-                                setConfirmPin(next);
-                                setError("");
-                                if (next.length === 4) setTimeout(() => onComplete(pin, next, true), 260);
-                              }
-                            }}
-                            onDelete={() => {
-                              if (!confirmStage) setPin(p => p.slice(0, -1));
-                              else setConfirmPin(p => p.slice(0, -1));
-                              setError("");
-                            }}
-                          />
                           </div>
                         </div>
                       );
