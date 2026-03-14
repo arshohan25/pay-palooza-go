@@ -102,10 +102,20 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
     setError("");
   };
 
-  const handleSubmit = async () => {
+  const handleProofContinue = () => {
     if (!txnId.trim() && !proofFile) { setError("Provide a Transaction ID or upload proof."); return; }
+    setPin("");
+    setPinError("");
+    goTo("pin");
+  };
+
+  const handlePinSubmit = async () => {
+    if (pin.length !== 4) { setPinError("Enter your 4-digit PIN."); return; }
     setSubmitting(true);
+    setPinError("");
     try {
+      const valid = await verifyPin(pin);
+      if (!valid) { setPinError("Incorrect PIN. Try again."); setPin(""); setSubmitting(false); return; }
       let proofUrl: string | undefined;
       if (proofFile) {
         proofUrl = await uploadProof(proofFile);
@@ -120,7 +130,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
       setDir(1);
       setStep("success");
     } catch (e: any) {
-      setError(e.message || "Failed to submit request.");
+      setPinError(e.message || "Failed to submit request.");
     } finally {
       setSubmitting(false);
     }
