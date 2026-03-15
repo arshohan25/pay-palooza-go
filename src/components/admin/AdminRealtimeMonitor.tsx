@@ -80,7 +80,7 @@ export default function AdminRealtimeMonitor() {
         const alert = payload.new as any;
         setEvents(prev => [{
           id: alert.id,
-          type: "alert",
+          type: "alert" as const,
           label: `🚨 ${alert.rule_triggered}`,
           detail: `Severity: ${alert.severity}`,
           time: new Date().toLocaleTimeString(),
