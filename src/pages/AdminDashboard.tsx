@@ -182,7 +182,7 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
     items: [
       { id: "transactions", label: "Transactions", icon: Receipt },
       { id: "chargebacks", label: "Chargebacks", icon: RotateCcw },
-      { id: "deposits", label: "Deposits", icon: CreditCard },
+      
       { id: "disputes", label: "Disputes", icon: Scale },
       { id: "support", label: "Support", icon: MessageCircle },
       { id: "kyc", label: "KYC", icon: ScanFace },
