@@ -9,7 +9,18 @@ export interface FeeRule {
   min_amount: number | null;
   max_amount: number | null;
   agent_commission: number | null;
+  distributor_commission: number | null;
+  master_distributor_commission: number | null;
+  platform_share: number | null;
   is_active: boolean;
+}
+
+export interface CommissionBreakdown {
+  totalFee: number;
+  agent: number;
+  distributor: number;
+  masterDistributor: number;
+  company: number;
 }
 
 export interface FeeConfig {
@@ -20,6 +31,8 @@ export interface FeeConfig {
   calcBankTransferFee: (amount: number) => number;
   getFeeLabel: (txnType: string) => string;
   getAgentCommission: (txnType: string, amount: number) => number;
+  getMasterDistributorCommission: (txnType: string, amount: number) => number;
+  getCommissionBreakdown: (txnType: string, amount: number) => CommissionBreakdown;
 }
 
 export function useFeeConfig(): FeeConfig {
@@ -111,5 +124,25 @@ export function useFeeConfig(): FeeConfig {
     return labels.join(", ");
   }, [rules]);
 
-  return { rules, loading, calcFee, calcCashOutFee, calcBankTransferFee, getFeeLabel, getAgentCommission };
+  const getMasterDistributorCommission = useCallback((txnType: string, amount: number): number => {
+    if (amount <= 0) return 0;
+    const rule = findRule(txnType, amount);
+    if (!rule || !rule.master_distributor_commission) return 0;
+    return parseFloat((amount * rule.master_distributor_commission / 100).toFixed(2));
+  }, [findRule]);
+
+  const getCommissionBreakdown = useCallback((txnType: string, amount: number): CommissionBreakdown => {
+    const totalFee = calcFee(txnType, amount);
+    const agent = getAgentCommission(txnType, amount);
+    const distributor = (() => {
+      const rule = findRule(txnType, amount);
+      if (!rule || !rule.distributor_commission) return 0;
+      return parseFloat((amount * rule.distributor_commission / 100).toFixed(2));
+    })();
+    const masterDistributor = getMasterDistributorCommission(txnType, amount);
+    const company = Math.max(0, parseFloat((totalFee - agent - distributor - masterDistributor).toFixed(2)));
+    return { totalFee, agent, distributor, masterDistributor, company };
+  }, [calcFee, getAgentCommission, getMasterDistributorCommission, findRule]);
+
+  return { rules, loading, calcFee, calcCashOutFee, calcBankTransferFee, getFeeLabel, getAgentCommission, getMasterDistributorCommission, getCommissionBreakdown };
 }
