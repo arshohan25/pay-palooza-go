@@ -75,7 +75,9 @@ import AdminLiquidityPrediction from "@/components/admin/AdminLiquidityPredictio
 import AdminRealtimeMonitor from "@/components/admin/AdminRealtimeMonitor";
 import AdminDepositAccounts from "@/components/admin/AdminDepositAccounts";
 import AdminRiskControl from "@/components/admin/AdminRiskControl";
-import { useSupportNotifications } from "@/hooks/use-support-notifications";
+import AdminFloatManagement from "@/components/admin/AdminFloatManagement";
+import AdminRevenueDashboard from "@/components/admin/AdminRevenueDashboard";
+import AdminMfsMonitor from "@/components/admin/AdminMfsMonitor";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { useIsMobile } from "@/hooks/use-mobile";
