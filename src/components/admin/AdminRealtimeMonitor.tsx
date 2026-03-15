@@ -103,7 +103,7 @@ export default function AdminRealtimeMonitor() {
         if (pauseRef.current) return;
         setEvents(prev => [{
           id: (payload.new as any).id,
-          type: "kyc",
+          type: "kyc" as const,
           label: "New KYC submission",
           detail: `Status: ${(payload.new as any).status}`,
           time: new Date().toLocaleTimeString(),

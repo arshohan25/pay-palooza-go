@@ -42,7 +42,7 @@ export default function AdminLiquidityPrediction() {
         const key = entry.created_at.slice(0, 10);
         if (!flowMap[key]) continue;
         const amt = Number(entry.amount);
-        if (entry.type === "earning" || entry.type === "deposit") {
+        if (entry.type === "earning" || entry.type === "initial_deposit") {
           flowMap[key].inflow += amt;
         } else {
           flowMap[key].outflow += amt;
