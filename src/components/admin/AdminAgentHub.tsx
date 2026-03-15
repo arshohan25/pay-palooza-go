@@ -43,16 +43,18 @@ export default function AdminAgentHub() {
         <Users className="w-5 h-5 text-primary" /> Agent Management Hub
       </h3>
       <Tabs defaultValue="list" className="w-full">
-        <TabsList className="w-full grid grid-cols-5 h-auto">
+        <TabsList className="w-full grid grid-cols-6 h-auto">
           <TabsTrigger value="list" className="text-xs">Agents</TabsTrigger>
           <TabsTrigger value="kyc" className="text-xs">KYC</TabsTrigger>
           <TabsTrigger value="wallets" className="text-xs">Wallets</TabsTrigger>
+          <TabsTrigger value="commission" className="text-xs">Commission</TabsTrigger>
           <TabsTrigger value="areas" className="text-xs">Areas</TabsTrigger>
           <TabsTrigger value="settlements" className="text-xs">Settle</TabsTrigger>
         </TabsList>
         <TabsContent value="list"><AgentListTab /></TabsContent>
         <TabsContent value="kyc"><AgentKycTab /></TabsContent>
         <TabsContent value="wallets"><AgentWalletsTab /></TabsContent>
+        <TabsContent value="commission"><AgentCommissionTab /></TabsContent>
         <TabsContent value="areas"><AgentAreasTab /></TabsContent>
         <TabsContent value="settlements"><AgentSettlementsTab /></TabsContent>
       </Tabs>
