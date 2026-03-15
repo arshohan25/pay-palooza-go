@@ -43,16 +43,18 @@ export default function AdminAgentHub() {
         <Users className="w-5 h-5 text-primary" /> Agent Management Hub
       </h3>
       <Tabs defaultValue="list" className="w-full">
-        <TabsList className="w-full grid grid-cols-5 h-auto">
+        <TabsList className="w-full grid grid-cols-6 h-auto">
           <TabsTrigger value="list" className="text-xs">Agents</TabsTrigger>
           <TabsTrigger value="kyc" className="text-xs">KYC</TabsTrigger>
           <TabsTrigger value="wallets" className="text-xs">Wallets</TabsTrigger>
+          <TabsTrigger value="commission" className="text-xs">Commission</TabsTrigger>
           <TabsTrigger value="areas" className="text-xs">Areas</TabsTrigger>
           <TabsTrigger value="settlements" className="text-xs">Settle</TabsTrigger>
         </TabsList>
         <TabsContent value="list"><AgentListTab /></TabsContent>
         <TabsContent value="kyc"><AgentKycTab /></TabsContent>
         <TabsContent value="wallets"><AgentWalletsTab /></TabsContent>
+        <TabsContent value="commission"><AgentCommissionTab /></TabsContent>
         <TabsContent value="areas"><AgentAreasTab /></TabsContent>
         <TabsContent value="settlements"><AgentSettlementsTab /></TabsContent>
       </Tabs>
@@ -358,6 +360,69 @@ function AgentAreasTab() {
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function AgentCommissionTab() {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const { data } = await supabase.from("commission_logs").select("*").order("created_at", { ascending: false }).limit(100);
+      if (data) {
+        const agentIds = [...new Set(data.filter(l => l.agent_id).map(l => l.agent_id))];
+        const { data: agents } = await supabase.from("agents").select("id, business_name").in("id", agentIds);
+        const aMap = Object.fromEntries((agents ?? []).map(a => [a.id, a.business_name]));
+        setLogs(data.map(l => ({ ...l, agent_name: aMap[l.agent_id] || "—" })));
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  const totalAgent = logs.reduce((s, l) => s + Number(l.agent_amount), 0);
+  const byType: Record<string, number> = {};
+  logs.forEach(l => { byType[l.txn_type] = (byType[l.txn_type] || 0) + Number(l.agent_amount); });
+
+  return (
+    <div className="space-y-3">
+      <Card className="border-0 shadow-[var(--shadow-card)]"><CardContent className="p-3 text-center"><p className="text-[10px] text-muted-foreground">Total Agent Commission</p><p className="text-lg font-bold text-emerald-600">৳{totalAgent.toLocaleString()}</p></CardContent></Card>
+      {Object.keys(byType).length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(byType).map(([type, amt]) => (
+            <Badge key={type} variant="secondary" className="text-xs">{type}: ৳{amt.toLocaleString()}</Badge>
+          ))}
+        </div>
+      )}
+      <Card className="border-0 shadow-[var(--shadow-card)]">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="border-b border-border text-muted-foreground">
+                <th className="text-left px-3 py-2.5 font-medium text-xs">Agent</th>
+                <th className="text-left px-3 py-2.5 font-medium text-xs">Type</th>
+                <th className="text-right px-3 py-2.5 font-medium text-xs">Txn Amt</th>
+                <th className="text-right px-3 py-2.5 font-medium text-xs">Commission</th>
+                <th className="text-left px-3 py-2.5 font-medium text-xs hidden sm:table-cell">Date</th>
+              </tr></thead>
+              <tbody>
+                {logs.map(l => (
+                  <tr key={l.id} className="border-b border-border/50 hover:bg-muted/30">
+                    <td className="px-3 py-2.5 text-xs font-medium">{l.agent_name}</td>
+                    <td className="px-3 py-2.5"><Badge variant="secondary" className="text-[10px]">{l.txn_type}</Badge></td>
+                    <td className="px-3 py-2.5 text-xs text-right">৳{Number(l.txn_amount).toLocaleString()}</td>
+                    <td className="px-3 py-2.5 text-xs font-semibold text-right text-emerald-600">৳{Number(l.agent_amount).toLocaleString()}</td>
+                    <td className="px-3 py-2.5 text-xs text-muted-foreground hidden sm:table-cell">{new Date(l.created_at).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {!loading && logs.length === 0 && <EmptyState text="No commission logs" />}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -75,6 +75,9 @@ import AdminLiquidityPrediction from "@/components/admin/AdminLiquidityPredictio
 import AdminRealtimeMonitor from "@/components/admin/AdminRealtimeMonitor";
 import AdminDepositAccounts from "@/components/admin/AdminDepositAccounts";
 import AdminRiskControl from "@/components/admin/AdminRiskControl";
+import AdminFloatManagement from "@/components/admin/AdminFloatManagement";
+import AdminRevenueDashboard from "@/components/admin/AdminRevenueDashboard";
+import AdminMfsMonitor from "@/components/admin/AdminMfsMonitor";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -183,7 +186,7 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
     items: [
       { id: "transactions", label: "Transactions", icon: Receipt },
       { id: "chargebacks", label: "Chargebacks", icon: RotateCcw },
-      
+      { id: "mfs_monitor", label: "MFS Monitor", icon: Activity },
       { id: "disputes", label: "Disputes", icon: Scale },
       { id: "support", label: "Support", icon: MessageCircle },
       { id: "kyc", label: "KYC", icon: ScanFace },
@@ -199,6 +202,8 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "settlements", label: "Settlements", icon: Wallet },
       { id: "bank_recon", label: "Bank Recon", icon: CreditCard },
       { id: "treasury", label: "Treasury", icon: Wallet },
+      { id: "float_mgmt", label: "Float Mgmt", icon: Wallet },
+      { id: "revenue", label: "Revenue", icon: TrendingUp },
       { id: "savings", label: "Savings", icon: PiggyBank },
       { id: "limits", label: "Limits", icon: Scale },
     ],
@@ -1447,6 +1452,15 @@ export default function AdminDashboard() {
 
         {/* ═══ RISK CONTROL ═══ */}
         {activeTab === "risk_control" && <AdminRiskControl />}
+
+        {/* ═══ FLOAT MANAGEMENT ═══ */}
+        {activeTab === "float_mgmt" && <AdminFloatManagement />}
+
+        {/* ═══ REVENUE DASHBOARD ═══ */}
+        {activeTab === "revenue" && <AdminRevenueDashboard />}
+
+        {/* ═══ MFS MONITOR ═══ */}
+        {activeTab === "mfs_monitor" && <AdminMfsMonitor />}
 
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (

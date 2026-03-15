@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Settings, Globe, Wrench, AlertTriangle, DollarSign, Shield, Clock } from "lucide-react";
+import { Settings, Globe, Wrench, AlertTriangle, DollarSign, Shield, Clock, Receipt, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -17,13 +17,17 @@ export default function AdminSystemSettings() {
         <Settings className="w-5 h-5 text-primary" /> System Settings
       </h3>
       <Tabs defaultValue="app" className="w-full">
-        <TabsList className="w-full grid grid-cols-3 h-auto">
+        <TabsList className="w-full grid grid-cols-5 h-auto">
           <TabsTrigger value="app" className="text-xs">App Config</TabsTrigger>
           <TabsTrigger value="currency" className="text-xs">Currency</TabsTrigger>
-          <TabsTrigger value="maintenance" className="text-xs">Maintenance</TabsTrigger>
+          <TabsTrigger value="fees" className="text-xs">Fee Rules</TabsTrigger>
+          <TabsTrigger value="txnrules" className="text-xs">Txn Rules</TabsTrigger>
+          <TabsTrigger value="maintenance" className="text-xs">Maint.</TabsTrigger>
         </TabsList>
         <TabsContent value="app"><AppConfigTab /></TabsContent>
         <TabsContent value="currency"><CurrencyConfigTab /></TabsContent>
+        <TabsContent value="fees"><FeeRulesTab /></TabsContent>
+        <TabsContent value="txnrules"><TransactionRulesTab /></TabsContent>
         <TabsContent value="maintenance"><MaintenanceTab /></TabsContent>
       </Tabs>
     </div>
@@ -126,6 +130,127 @@ function CurrencyConfigTab() {
   );
 }
 
+function FeeRulesTab() {
+  const [fees, setFees] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const { data } = await supabase.from("fee_config").select("*").order("txn_type");
+      setFees(data ?? []);
+      setLoading(false);
+    })();
+  }, []);
+
+  const toggleFee = async (id: string, active: boolean) => {
+    await supabase.from("fee_config").update({ is_active: !active } as any).eq("id", id);
+    setFees(prev => prev.map(f => f.id === id ? { ...f, is_active: !active } : f));
+    toast.success(`Fee rule ${!active ? "activated" : "deactivated"}`);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-2">
+        <Card className="border-0 shadow-[var(--shadow-card)]"><CardContent className="p-3 text-center"><p className="text-[10px] text-muted-foreground">Total Rules</p><p className="text-lg font-bold text-foreground">{fees.length}</p></CardContent></Card>
+        <Card className="border-0 shadow-[var(--shadow-card)]"><CardContent className="p-3 text-center"><p className="text-[10px] text-muted-foreground">Active</p><p className="text-lg font-bold text-emerald-600">{fees.filter(f => f.is_active).length}</p></CardContent></Card>
+      </div>
+      <Card className="border-0 shadow-[var(--shadow-card)]">
+        <CardContent className="p-0">
+          <table className="w-full text-sm">
+            <thead><tr className="border-b border-border text-muted-foreground">
+              <th className="text-left px-3 py-2.5 font-medium text-xs">Txn Type</th>
+              <th className="text-left px-3 py-2.5 font-medium text-xs">Fee</th>
+              <th className="text-left px-3 py-2.5 font-medium text-xs hidden sm:table-cell">Range</th>
+              <th className="text-left px-3 py-2.5 font-medium text-xs">Active</th>
+            </tr></thead>
+            <tbody>
+              {fees.map(f => (
+                <tr key={f.id} className="border-b border-border/50 hover:bg-muted/30">
+                  <td className="px-3 py-2.5"><Badge variant="secondary" className="text-[10px]">{f.txn_type}</Badge></td>
+                  <td className="px-3 py-2.5 text-xs font-semibold">{f.fee_type === "percent" ? `${f.fee_value}%` : `৳${f.fee_value}`}</td>
+                  <td className="px-3 py-2.5 text-xs text-muted-foreground hidden sm:table-cell">
+                    ৳{Number(f.min_amount ?? 0).toLocaleString()} — {f.max_amount ? `৳${Number(f.max_amount).toLocaleString()}` : "∞"}
+                  </td>
+                  <td className="px-3 py-2.5"><Switch checked={f.is_active} onCheckedChange={() => toggleFee(f.id, f.is_active)} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!loading && fees.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">No fee rules configured</p>}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function TransactionRulesTab() {
+  const [limits, setLimits] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const { data } = await supabase.from("transaction_limits" as any).select("*").order("txn_type");
+      setLimits(data ?? []);
+      setLoading(false);
+    })();
+  }, []);
+
+  return (
+    <div className="space-y-3">
+      <Card className="border-0 shadow-[var(--shadow-card)]">
+        <CardContent className="p-4 space-y-3">
+          <p className="text-sm font-medium text-foreground flex items-center gap-2"><Zap className="w-4 h-4 text-primary" /> Transaction Safety Rules</p>
+          <div className="space-y-2">
+            {[
+              { rule: "Duplicate Transaction Guard", desc: "Block identical txns within 30 seconds", enabled: true },
+              { rule: "Velocity Control", desc: "Max 20 transactions per hour per user", enabled: true },
+              { rule: "Night-time Restriction", desc: "High-value txns blocked 12AM-6AM", enabled: false },
+              { rule: "New Account Limit", desc: "Reduced limits for accounts < 7 days old", enabled: true },
+              { rule: "Cross-device Alert", desc: "Alert on txn from new device", enabled: true },
+            ].map(r => (
+              <div key={r.rule} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
+                <div>
+                  <p className="text-xs font-medium text-foreground">{r.rule}</p>
+                  <p className="text-[10px] text-muted-foreground">{r.desc}</p>
+                </div>
+                <Badge variant={r.enabled ? "default" : "secondary"} className="text-[10px]">{r.enabled ? "Active" : "Off"}</Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {limits.length > 0 && (
+        <Card className="border-0 shadow-[var(--shadow-card)]">
+          <CardContent className="p-4 space-y-3">
+            <p className="text-sm font-medium text-foreground flex items-center gap-2"><Receipt className="w-4 h-4 text-primary" /> Global Transaction Limits</p>
+            <table className="w-full text-sm">
+              <thead><tr className="border-b border-border text-muted-foreground">
+                <th className="text-left px-2 py-2 font-medium text-xs">Type</th>
+                <th className="text-left px-2 py-2 font-medium text-xs">Period</th>
+                <th className="text-right px-2 py-2 font-medium text-xs">Max Amount</th>
+                <th className="text-right px-2 py-2 font-medium text-xs">Max Count</th>
+              </tr></thead>
+              <tbody>
+                {limits.map((l: any, i: number) => (
+                  <tr key={i} className="border-b border-border/50">
+                    <td className="px-2 py-2 text-xs">{l.txn_type}</td>
+                    <td className="px-2 py-2 text-xs">{l.period}</td>
+                    <td className="px-2 py-2 text-xs text-right">৳{Number(l.max_amount ?? 0).toLocaleString()}</td>
+                    <td className="px-2 py-2 text-xs text-right">{l.max_count ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
 function MaintenanceTab() {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -141,21 +266,18 @@ function MaintenanceTab() {
 
   const toggleMaintenance = async () => {
     const newState = !maintenanceMode;
-    // Check if the toggle exists, if not create it
     const { data: existing } = await supabase.from("global_feature_toggles").select("id").eq("feature_key", "maintenance_mode").single();
     if (existing) {
       await supabase.from("global_feature_toggles").update({ is_enabled: newState }).eq("feature_key", "maintenance_mode");
     } else {
       await supabase.from("global_feature_toggles").insert({
-        feature_key: "maintenance_mode",
-        label: "Maintenance Mode",
+        feature_key: "maintenance_mode", label: "Maintenance Mode",
         description: "When enabled, the platform shows a maintenance page to all users",
-        is_enabled: newState,
-        sort_order: 999,
+        is_enabled: newState, sort_order: 999,
       });
     }
     setMaintenanceMode(newState);
-    toast.success(newState ? "Maintenance mode ENABLED — platform is now in maintenance" : "Maintenance mode DISABLED — platform is live");
+    toast.success(newState ? "Maintenance mode ENABLED" : "Maintenance mode DISABLED");
   };
 
   return (
