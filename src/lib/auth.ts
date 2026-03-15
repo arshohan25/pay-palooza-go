@@ -255,17 +255,12 @@ export async function isPhoneRegistered(phone: string): Promise<boolean> {
   const normalizedPhone = normalizeBdPhone(phone);
   if (!BD_PHONE_REGEX.test(normalizedPhone)) return false;
 
-  const legacyPhoneValues = LEGACY_SIGNIN_EMAIL_DOMAINS.map((domain) =>
-    buildSyntheticEmail(normalizedPhone, domain)
-  );
+  const { data, error } = await supabase.rpc("is_phone_registered", {
+    p_phone: normalizedPhone,
+  });
 
-  const { data } = await supabase
-    .from("profiles")
-    .select("id")
-    .in("phone", [normalizedPhone, ...legacyPhoneValues])
-    .limit(1);
-
-  return (data?.length ?? 0) > 0;
+  if (error) throw error;
+  return data === true;
 }
 
 /** Change PIN (password) for authenticated user */
