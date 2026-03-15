@@ -198,6 +198,11 @@ const NAV_ITEMS = [
   { id: "team", label: "Team", icon: Users },
   { id: "savings", label: "Savings", icon: Wallet },
   { id: "notify", label: "Notify", icon: Bell },
+  { id: "agent_hub", label: "Agent Hub", icon: Building2 },
+  { id: "wallets", label: "Wallets", icon: Wallet },
+  { id: "security", label: "Security", icon: Shield },
+  { id: "sys_settings", label: "Settings", icon: Settings },
+  { id: "loyalty", label: "Loyalty", icon: Star },
   { id: "trash", label: "Trash", icon: Trash2 },
 ];
 
