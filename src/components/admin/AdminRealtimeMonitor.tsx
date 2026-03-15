@@ -92,7 +92,7 @@ export default function AdminRealtimeMonitor() {
         const p = payload.new as any;
         setEvents(prev => [{
           id: p.id,
-          type: "user",
+          type: "user" as const,
           label: `New user: ${p.name || p.phone || "Unknown"}`,
           detail: p.phone || "",
           time: new Date().toLocaleTimeString(),
