@@ -212,6 +212,60 @@ export type Database = {
         }
         Relationships: []
       }
+      cashback_rules: {
+        Row: {
+          cashback_type: string
+          cashback_value: number
+          created_at: string
+          created_by: string | null
+          daily_limit: number | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_amount: number | null
+          max_cashback: number | null
+          min_amount: number | null
+          name: string
+          starts_at: string | null
+          txn_type: string
+          updated_at: string
+        }
+        Insert: {
+          cashback_type?: string
+          cashback_value?: number
+          created_at?: string
+          created_by?: string | null
+          daily_limit?: number | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_amount?: number | null
+          max_cashback?: number | null
+          min_amount?: number | null
+          name: string
+          starts_at?: string | null
+          txn_type: string
+          updated_at?: string
+        }
+        Update: {
+          cashback_type?: string
+          cashback_value?: number
+          created_at?: string
+          created_by?: string | null
+          daily_limit?: number | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_amount?: number | null
+          max_cashback?: number | null
+          min_amount?: number | null
+          name?: string
+          starts_at?: string | null
+          txn_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           admin_id: string | null
@@ -1732,6 +1786,63 @@ export type Database = {
         }
         Relationships: []
       }
+      promo_codes: {
+        Row: {
+          applies_to: string | null
+          code: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          discount_type: string
+          discount_value: number
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_discount: number | null
+          min_amount: number | null
+          starts_at: string | null
+          updated_at: string
+          usage_limit: number | null
+          used_count: number
+        }
+        Insert: {
+          applies_to?: string | null
+          code: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_discount?: number | null
+          min_amount?: number | null
+          starts_at?: string | null
+          updated_at?: string
+          usage_limit?: number | null
+          used_count?: number
+        }
+        Update: {
+          applies_to?: string | null
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_discount?: number | null
+          min_amount?: number | null
+          starts_at?: string | null
+          updated_at?: string
+          usage_limit?: number | null
+          used_count?: number
+        }
+        Relationships: []
+      }
       recharge_api_configs: {
         Row: {
           api_base_url: string | null
@@ -2059,6 +2170,78 @@ export type Database = {
           target_amount?: number
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      settlements: {
+        Row: {
+          bank_account: string | null
+          bank_name: string | null
+          commission_amount: number
+          created_at: string
+          entity_id: string
+          entity_name: string | null
+          entity_phone: string | null
+          entity_type: string
+          fee_amount: number
+          gross_amount: number
+          id: string
+          net_amount: number
+          notes: string | null
+          period_end: string
+          period_start: string
+          settled_at: string | null
+          settled_by: string | null
+          settlement_ref: string | null
+          status: string
+          txn_count: number
+          updated_at: string
+        }
+        Insert: {
+          bank_account?: string | null
+          bank_name?: string | null
+          commission_amount?: number
+          created_at?: string
+          entity_id: string
+          entity_name?: string | null
+          entity_phone?: string | null
+          entity_type: string
+          fee_amount?: number
+          gross_amount?: number
+          id?: string
+          net_amount?: number
+          notes?: string | null
+          period_end: string
+          period_start: string
+          settled_at?: string | null
+          settled_by?: string | null
+          settlement_ref?: string | null
+          status?: string
+          txn_count?: number
+          updated_at?: string
+        }
+        Update: {
+          bank_account?: string | null
+          bank_name?: string | null
+          commission_amount?: number
+          created_at?: string
+          entity_id?: string
+          entity_name?: string | null
+          entity_phone?: string | null
+          entity_type?: string
+          fee_amount?: number
+          gross_amount?: number
+          id?: string
+          net_amount?: number
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          settled_at?: string | null
+          settled_by?: string | null
+          settlement_ref?: string | null
+          status?: string
+          txn_count?: number
+          updated_at?: string
         }
         Relationships: []
       }

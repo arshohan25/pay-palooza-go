@@ -59,6 +59,10 @@ import TeamOnboardingChecklist from "@/components/admin/TeamOnboardingChecklist"
 import AdminMerchantManagement from "@/components/admin/AdminMerchantManagement";
 import AdminSavingsManagement from "@/components/admin/AdminSavingsManagement";
 import AdminFundRequests from "@/components/admin/AdminFundRequests";
+import AdminSettlements from "@/components/admin/AdminSettlements";
+import AdminBankReconciliation from "@/components/admin/AdminBankReconciliation";
+import AdminMarketingTools from "@/components/admin/AdminMarketingTools";
+import AdminAdvancedReports from "@/components/admin/AdminAdvancedReports";
 import AdminDepositAccounts from "@/components/admin/AdminDepositAccounts";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
@@ -182,6 +186,10 @@ const NAV_ITEMS = [
   { id: "apihub", label: "API Hub", icon: Plug },
   { id: "banners", label: "Banners", icon: Image },
   { id: "limits", label: "Limits", icon: Scale },
+  { id: "settlements", label: "Settlements", icon: Wallet },
+  { id: "bank_recon", label: "Bank Recon", icon: CreditCard },
+  { id: "marketing", label: "Marketing", icon: Gift },
+  { id: "adv_reports", label: "Adv. Reports", icon: BarChart3 },
   { id: "team", label: "Team", icon: Users },
   { id: "savings", label: "Savings", icon: Wallet },
   { id: "notify", label: "Notify", icon: Bell },
