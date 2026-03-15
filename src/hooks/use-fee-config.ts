@@ -9,7 +9,18 @@ export interface FeeRule {
   min_amount: number | null;
   max_amount: number | null;
   agent_commission: number | null;
+  distributor_commission: number | null;
+  master_distributor_commission: number | null;
+  platform_share: number | null;
   is_active: boolean;
+}
+
+export interface CommissionBreakdown {
+  totalFee: number;
+  agent: number;
+  distributor: number;
+  masterDistributor: number;
+  company: number;
 }
 
 export interface FeeConfig {
