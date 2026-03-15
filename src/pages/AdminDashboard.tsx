@@ -261,10 +261,9 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "trash", label: "Trash", icon: Trash2 },
     ],
   },
-] as const;
+];
 
-// Flat list for backward compat in rendering content
-const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items);
+const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items) as { id: string; label: string; icon: any }[];
 
 export default function AdminDashboard() {
   const { isAdmin, loading: authLoading } = useAdmin();
