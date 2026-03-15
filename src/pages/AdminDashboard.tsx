@@ -201,6 +201,8 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "settlements", label: "Settlements", icon: Wallet },
       { id: "bank_recon", label: "Bank Recon", icon: CreditCard },
       { id: "treasury", label: "Treasury", icon: Wallet },
+      { id: "float_mgmt", label: "Float Mgmt", icon: Wallet },
+      { id: "revenue", label: "Revenue", icon: TrendingUp },
       { id: "savings", label: "Savings", icon: PiggyBank },
       { id: "limits", label: "Limits", icon: Scale },
     ],
