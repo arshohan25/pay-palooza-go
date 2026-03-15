@@ -1,29 +1,59 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Problem
 
-### What
+The `isPhoneRegistered()` function queries the `profiles` table to check if a phone number exists. However, the RLS policy on `profiles` only allows authenticated users to view **their own** profile. On the login/registration screen, the user is **not authenticated**, so the query returns zero rows every time — making every number appear "not registered."
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+This worked before because the old code likely used a different check or the RLS was more permissive.
 
-### Changes
+## Fix
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+Create a **security definer** database function that safely checks if a phone number exists without exposing any profile data. Then update the frontend to call this function instead of querying the table directly.
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+### 1. Database migration — create `is_phone_registered` RPC
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+```sql
+CREATE OR REPLACE FUNCTION public.is_phone_registered(p_phone text)
+RETURNS boolean
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = 'public'
+AS $$
+DECLARE
+  v_norm text;
+BEGIN
+  v_norm := regexp_replace(COALESCE(p_phone, ''), '[^0-9]', '', 'g');
+  IF left(v_norm, 2) = '88' AND length(v_norm) > 11 THEN
+    v_norm := substring(v_norm FROM 3);
+  END IF;
+  IF v_norm !~ '^01[3-9][0-9]{8}$' THEN
+    RETURN false;
+  END IF;
+  RETURN EXISTS (
+    SELECT 1 FROM profiles WHERE phone = v_norm LIMIT 1
+  );
+END;
+$$;
+```
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+### 2. Update `src/lib/auth.ts` — `isPhoneRegistered()`
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+Replace the current implementation that does `supabase.from("profiles").select(...)` with:
 
-3. Add the new category icons to the `categoryIcons` map.
+```typescript
+export async function isPhoneRegistered(phone: string): Promise<boolean> {
+  const normalizedPhone = normalizeBdPhone(phone);
+  if (!BD_PHONE_REGEX.test(normalizedPhone)) return false;
 
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+  const { data, error } = await supabase.rpc("is_phone_registered", {
+    p_phone: normalizedPhone,
+  });
+
+  if (error) throw error;
+  return data === true;
+}
+```
+
+This bypasses RLS via the security definer function while only exposing a boolean — no profile data leaks.
 
