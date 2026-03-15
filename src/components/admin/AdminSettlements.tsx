@@ -105,7 +105,7 @@ export default function AdminSettlements() {
 
       // Get the user_id for querying transactions
       const { data: entityProfile } = await supabase.from("profiles").select("user_id").eq("phone", form.entityPhone).maybeSingle();
-      const txnTypes = form.entityType === "merchant" ? ["payment"] : ["cashin", "cashout"];
+      const txnTypes = form.entityType === "merchant" ? ["payment" as const] : ["cashin" as const, "cashout" as const];
       const { data: txns } = await supabase.from("transactions")
         .select("amount, fee, commission")
         .eq("user_id", entityProfile?.user_id ?? "")
