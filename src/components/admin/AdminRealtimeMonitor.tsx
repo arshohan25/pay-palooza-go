@@ -62,7 +62,7 @@ export default function AdminRealtimeMonitor() {
         const txn = payload.new as any;
         setEvents(prev => [{
           id: txn.id,
-          type: "transaction",
+          type: "transaction" as const,
           label: `${txn.type} ৳${Number(txn.amount).toLocaleString()}`,
           detail: txn.recipient_phone || txn.short_id || "",
           time: new Date().toLocaleTimeString(),
