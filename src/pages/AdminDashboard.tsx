@@ -68,6 +68,11 @@ import AdminWalletSystem from "@/components/admin/AdminWalletSystem";
 import AdminSecurityCenter from "@/components/admin/AdminSecurityCenter";
 import AdminSystemSettings from "@/components/admin/AdminSystemSettings";
 import AdminLoyaltyPoints from "@/components/admin/AdminLoyaltyPoints";
+import AdminAiFraudDetection from "@/components/admin/AdminAiFraudDetection";
+import AdminGeoTracking from "@/components/admin/AdminGeoTracking";
+import AdminSmartRouting from "@/components/admin/AdminSmartRouting";
+import AdminLiquidityPrediction from "@/components/admin/AdminLiquidityPrediction";
+import AdminRealtimeMonitor from "@/components/admin/AdminRealtimeMonitor";
 import AdminDepositAccounts from "@/components/admin/AdminDepositAccounts";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
@@ -203,6 +208,11 @@ const NAV_ITEMS = [
   { id: "security", label: "Security", icon: Shield },
   { id: "sys_settings", label: "Settings", icon: Settings },
   { id: "loyalty", label: "Loyalty", icon: Star },
+  { id: "ai_fraud", label: "AI Fraud", icon: ShieldCheck },
+  { id: "geo_tracking", label: "Geo Track", icon: Building2 },
+  { id: "smart_routing", label: "Routing", icon: CreditCard },
+  { id: "liquidity", label: "Liquidity", icon: TrendingUp },
+  { id: "live_monitor", label: "Live Monitor", icon: Activity },
   { id: "trash", label: "Trash", icon: Trash2 },
 ];
 
@@ -1356,6 +1366,21 @@ export default function AdminDashboard() {
 
         {/* ═══ LOYALTY POINTS ═══ */}
         {activeTab === "loyalty" && <AdminLoyaltyPoints />}
+
+        {/* ═══ AI FRAUD DETECTION ═══ */}
+        {activeTab === "ai_fraud" && <AdminAiFraudDetection />}
+
+        {/* ═══ GEO TRACKING ═══ */}
+        {activeTab === "geo_tracking" && <AdminGeoTracking />}
+
+        {/* ═══ SMART ROUTING ═══ */}
+        {activeTab === "smart_routing" && <AdminSmartRouting />}
+
+        {/* ═══ LIQUIDITY PREDICTION ═══ */}
+        {activeTab === "liquidity" && <AdminLiquidityPrediction />}
+
+        {/* ═══ REAL-TIME MONITOR ═══ */}
+        {activeTab === "live_monitor" && <AdminRealtimeMonitor />}
 
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
