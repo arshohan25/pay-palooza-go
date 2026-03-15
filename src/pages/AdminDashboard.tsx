@@ -7,7 +7,7 @@ import {
   TrendingUp, Activity, Search, RefreshCw, LogOut,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings, FileText,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
-  Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck, Image, Bell, PiggyBank,
+  Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck, Image, Bell, PiggyBank, Shield, Star, Building2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,6 +63,11 @@ import AdminSettlements from "@/components/admin/AdminSettlements";
 import AdminBankReconciliation from "@/components/admin/AdminBankReconciliation";
 import AdminMarketingTools from "@/components/admin/AdminMarketingTools";
 import AdminAdvancedReports from "@/components/admin/AdminAdvancedReports";
+import AdminAgentHub from "@/components/admin/AdminAgentHub";
+import AdminWalletSystem from "@/components/admin/AdminWalletSystem";
+import AdminSecurityCenter from "@/components/admin/AdminSecurityCenter";
+import AdminSystemSettings from "@/components/admin/AdminSystemSettings";
+import AdminLoyaltyPoints from "@/components/admin/AdminLoyaltyPoints";
 import AdminDepositAccounts from "@/components/admin/AdminDepositAccounts";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
@@ -193,6 +198,11 @@ const NAV_ITEMS = [
   { id: "team", label: "Team", icon: Users },
   { id: "savings", label: "Savings", icon: Wallet },
   { id: "notify", label: "Notify", icon: Bell },
+  { id: "agent_hub", label: "Agent Hub", icon: Building2 },
+  { id: "wallets", label: "Wallets", icon: Wallet },
+  { id: "security", label: "Security", icon: Shield },
+  { id: "sys_settings", label: "Settings", icon: Settings },
+  { id: "loyalty", label: "Loyalty", icon: Star },
   { id: "trash", label: "Trash", icon: Trash2 },
 ];
 
@@ -1331,6 +1341,21 @@ export default function AdminDashboard() {
 
         {/* ═══ ADVANCED REPORTS ═══ */}
         {activeTab === "adv_reports" && <AdminAdvancedReports />}
+
+        {/* ═══ AGENT HUB ═══ */}
+        {activeTab === "agent_hub" && <AdminAgentHub />}
+
+        {/* ═══ WALLET SYSTEM ═══ */}
+        {activeTab === "wallets" && <AdminWalletSystem />}
+
+        {/* ═══ SECURITY CENTER ═══ */}
+        {activeTab === "security" && <AdminSecurityCenter />}
+
+        {/* ═══ SYSTEM SETTINGS ═══ */}
+        {activeTab === "sys_settings" && <AdminSystemSettings />}
+
+        {/* ═══ LOYALTY POINTS ═══ */}
+        {activeTab === "loyalty" && <AdminLoyaltyPoints />}
 
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
