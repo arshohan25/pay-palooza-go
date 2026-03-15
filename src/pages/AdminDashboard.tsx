@@ -1342,6 +1342,21 @@ export default function AdminDashboard() {
         {/* ═══ ADVANCED REPORTS ═══ */}
         {activeTab === "adv_reports" && <AdminAdvancedReports />}
 
+        {/* ═══ AGENT HUB ═══ */}
+        {activeTab === "agent_hub" && <AdminAgentHub />}
+
+        {/* ═══ WALLET SYSTEM ═══ */}
+        {activeTab === "wallets" && <AdminWalletSystem />}
+
+        {/* ═══ SECURITY CENTER ═══ */}
+        {activeTab === "security" && <AdminSecurityCenter />}
+
+        {/* ═══ SYSTEM SETTINGS ═══ */}
+        {activeTab === "sys_settings" && <AdminSystemSettings />}
+
+        {/* ═══ LOYALTY POINTS ═══ */}
+        {activeTab === "loyalty" && <AdminLoyaltyPoints />}
+
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
           <div className="space-y-4">
