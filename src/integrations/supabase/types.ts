@@ -378,6 +378,122 @@ export type Database = {
           },
         ]
       }
+      commission_logs: {
+        Row: {
+          agent_amount: number
+          agent_id: string | null
+          company_amount: number
+          created_at: string
+          distributor_amount: number
+          distributor_id: string | null
+          id: string
+          master_distributor_amount: number
+          master_distributor_id: string | null
+          tier_id: string | null
+          total_fee: number
+          transaction_id: string | null
+          txn_amount: number
+          txn_type: string
+        }
+        Insert: {
+          agent_amount?: number
+          agent_id?: string | null
+          company_amount?: number
+          created_at?: string
+          distributor_amount?: number
+          distributor_id?: string | null
+          id?: string
+          master_distributor_amount?: number
+          master_distributor_id?: string | null
+          tier_id?: string | null
+          total_fee?: number
+          transaction_id?: string | null
+          txn_amount: number
+          txn_type: string
+        }
+        Update: {
+          agent_amount?: number
+          agent_id?: string | null
+          company_amount?: number
+          created_at?: string
+          distributor_amount?: number
+          distributor_id?: string | null
+          id?: string
+          master_distributor_amount?: number
+          master_distributor_id?: string | null
+          tier_id?: string | null
+          total_fee?: number
+          transaction_id?: string | null
+          txn_amount?: number
+          txn_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_logs_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "commission_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_logs_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commission_tiers: {
+        Row: {
+          agent_rate: number
+          company_rate: number | null
+          created_at: string
+          distributor_rate: number
+          fee_config_id: string | null
+          id: string
+          is_active: boolean
+          master_distributor_rate: number
+          max_amount: number | null
+          min_amount: number
+          updated_at: string
+        }
+        Insert: {
+          agent_rate?: number
+          company_rate?: number | null
+          created_at?: string
+          distributor_rate?: number
+          fee_config_id?: string | null
+          id?: string
+          is_active?: boolean
+          master_distributor_rate?: number
+          max_amount?: number | null
+          min_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          agent_rate?: number
+          company_rate?: number | null
+          created_at?: string
+          distributor_rate?: number
+          fee_config_id?: string | null
+          id?: string
+          is_active?: boolean
+          master_distributor_rate?: number
+          max_amount?: number | null
+          min_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_tiers_fee_config_id_fkey"
+            columns: ["fee_config_id"]
+            isOneToOne: false
+            referencedRelation: "fee_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deleted_users: {
         Row: {
           avatar_url: string | null
@@ -651,6 +767,7 @@ export type Database = {
           fee_value: number
           id: string
           is_active: boolean
+          master_distributor_commission: number | null
           max_amount: number | null
           min_amount: number | null
           platform_share: number | null
@@ -666,6 +783,7 @@ export type Database = {
           fee_value: number
           id?: string
           is_active?: boolean
+          master_distributor_commission?: number | null
           max_amount?: number | null
           min_amount?: number | null
           platform_share?: number | null
@@ -681,6 +799,7 @@ export type Database = {
           fee_value?: number
           id?: string
           is_active?: boolean
+          master_distributor_commission?: number | null
           max_amount?: number | null
           min_amount?: number | null
           platform_share?: number | null
@@ -2815,6 +2934,10 @@ export type Database = {
       }
       admin_toggle_referral_milestone: {
         Args: { p_action: string; p_milestone: number; p_referral_id: string }
+        Returns: Json
+      }
+      calculate_commission: {
+        Args: { p_amount: number; p_txn_type: string }
         Returns: Json
       }
       check_referral_milestones: {
