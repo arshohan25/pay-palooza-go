@@ -1445,6 +1445,9 @@ export default function AdminDashboard() {
         {/* ═══ REAL-TIME MONITOR ═══ */}
         {activeTab === "live_monitor" && <AdminRealtimeMonitor />}
 
+        {/* ═══ RISK CONTROL ═══ */}
+        {activeTab === "risk_control" && <AdminRiskControl />}
+
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
           <div className="space-y-4">
