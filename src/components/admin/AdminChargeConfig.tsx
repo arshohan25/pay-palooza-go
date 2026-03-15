@@ -29,7 +29,7 @@ interface FeeConfig {
   platform_share: number | null;
 }
 
-const TXN_TYPES = ["send", "cashout", "payment", "recharge", "paybill", "addmoney", "banktransfer"];
+const TXN_TYPES = ["send", "cashout", "cashin", "payment", "recharge", "paybill", "addmoney", "banktransfer"];
 const FEE_TYPES = ["flat", "percentage"];
 
 export default function AdminChargeConfig() {
