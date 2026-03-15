@@ -168,53 +168,102 @@ const STATUS_COLORS: Record<string, string> = {
   false_positive: "bg-muted text-muted-foreground",
 };
 
-const NAV_ITEMS = [
-  { id: "overview", label: "Overview", icon: LayoutDashboard },
-  { id: "merchants", label: "Merchants", icon: Store },
-  { id: "users", label: "Users", icon: UserCog },
-  { id: "transactions", label: "Transactions", icon: Receipt },
-  { id: "chargebacks", label: "Chargebacks", icon: RotateCcw },
-  { id: "alerts", label: "Fraud", icon: AlertTriangle },
-  { id: "charges", label: "Charges", icon: Settings },
-  { id: "commissions", label: "Commissions", icon: Coins },
-  { id: "disputes", label: "Disputes", icon: Scale },
-  { id: "support", label: "Support", icon: MessageCircle },
-  { id: "locks", label: "Locks", icon: Lock },
-  { id: "orders", label: "Orders", icon: Package },
-  { id: "gateways", label: "Gateways", icon: CreditCard },
-  { id: "toggles", label: "Toggles", icon: ToggleRight },
-  { id: "recharge", label: "Recharge", icon: Smartphone },
-  { id: "kyc", label: "KYC", icon: ScanFace },
-  { id: "referrals", label: "Referrals", icon: Gift },
-  { id: "treasury", label: "Treasury", icon: Wallet },
-  { id: "fund_requests", label: "Fund Requests", icon: CreditCard },
-  { id: "webhooks", label: "Webhooks", icon: Activity },
-  { id: "permissions", label: "Permissions", icon: ShieldAlert },
-  { id: "reporting", label: "Reports", icon: BarChart3 },
-  { id: "billers", label: "Billers", icon: FileText },
-  { id: "auditlog", label: "Audit Log", icon: Eye },
-  { id: "apihub", label: "API Hub", icon: Plug },
-  { id: "banners", label: "Banners", icon: Image },
-  { id: "limits", label: "Limits", icon: Scale },
-  { id: "settlements", label: "Settlements", icon: Wallet },
-  { id: "bank_recon", label: "Bank Recon", icon: CreditCard },
-  { id: "marketing", label: "Marketing", icon: Gift },
-  { id: "adv_reports", label: "Adv. Reports", icon: BarChart3 },
-  { id: "team", label: "Team", icon: Users },
-  { id: "savings", label: "Savings", icon: Wallet },
-  { id: "notify", label: "Notify", icon: Bell },
-  { id: "agent_hub", label: "Agent Hub", icon: Building2 },
-  { id: "wallets", label: "Wallets", icon: Wallet },
-  { id: "security", label: "Security", icon: Shield },
-  { id: "sys_settings", label: "Settings", icon: Settings },
-  { id: "loyalty", label: "Loyalty", icon: Star },
-  { id: "ai_fraud", label: "AI Fraud", icon: ShieldCheck },
-  { id: "geo_tracking", label: "Geo Track", icon: Building2 },
-  { id: "smart_routing", label: "Routing", icon: CreditCard },
-  { id: "liquidity", label: "Liquidity", icon: TrendingUp },
-  { id: "live_monitor", label: "Live Monitor", icon: Activity },
-  { id: "trash", label: "Trash", icon: Trash2 },
+const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: string; icon: any }[] }[] = [
+  {
+    label: "Overview",
+    items: [
+      { id: "overview", label: "Dashboard", icon: LayoutDashboard },
+      { id: "users", label: "Users", icon: UserCog },
+      { id: "alerts", label: "Fraud Alerts", icon: AlertTriangle },
+    ],
+  },
+  {
+    label: "Operations",
+    items: [
+      { id: "transactions", label: "Transactions", icon: Receipt },
+      { id: "chargebacks", label: "Chargebacks", icon: RotateCcw },
+      
+      { id: "disputes", label: "Disputes", icon: Scale },
+      { id: "support", label: "Support", icon: MessageCircle },
+      { id: "kyc", label: "KYC", icon: ScanFace },
+      { id: "orders", label: "Orders", icon: Package },
+      { id: "fund_requests", label: "Fund Requests", icon: CreditCard },
+    ],
+  },
+  {
+    label: "Financial",
+    items: [
+      { id: "commissions", label: "Commissions", icon: Coins },
+      { id: "charges", label: "Charges", icon: Settings },
+      { id: "settlements", label: "Settlements", icon: Wallet },
+      { id: "bank_recon", label: "Bank Recon", icon: CreditCard },
+      { id: "treasury", label: "Treasury", icon: Wallet },
+      { id: "savings", label: "Savings", icon: PiggyBank },
+      { id: "limits", label: "Limits", icon: Scale },
+    ],
+  },
+  {
+    label: "Network",
+    items: [
+      { id: "agent_hub", label: "Agent Hub", icon: Building2 },
+      { id: "wallets", label: "Wallets", icon: Wallet },
+      { id: "merchants", label: "Merchants", icon: Store },
+      { id: "referrals", label: "Referrals", icon: Gift },
+    ],
+  },
+  {
+    label: "System",
+    items: [
+      { id: "gateways", label: "Gateways", icon: CreditCard },
+      { id: "toggles", label: "Toggles", icon: ToggleRight },
+      { id: "locks", label: "Locks", icon: Lock },
+      { id: "permissions", label: "Permissions", icon: ShieldAlert },
+      { id: "security", label: "Security", icon: Shield },
+      { id: "sys_settings", label: "Settings", icon: Settings },
+      { id: "apihub", label: "API Hub", icon: Plug },
+      { id: "webhooks", label: "Webhooks", icon: Activity },
+      { id: "billers", label: "Billers", icon: FileText },
+      { id: "recharge", label: "Recharge", icon: Smartphone },
+    ],
+  },
+  {
+    label: "Marketing",
+    items: [
+      { id: "marketing", label: "Marketing", icon: Gift },
+      { id: "banners", label: "Banners", icon: Image },
+      { id: "loyalty", label: "Loyalty", icon: Star },
+      { id: "notify", label: "Notify", icon: Bell },
+    ],
+  },
+  {
+    label: "Reports",
+    items: [
+      { id: "reporting", label: "Reports", icon: BarChart3 },
+      { id: "adv_reports", label: "Adv. Reports", icon: BarChart3 },
+      { id: "auditlog", label: "Audit Log", icon: Eye },
+    ],
+  },
+  {
+    label: "⭐ Pro Fintech",
+    pro: true,
+    items: [
+      { id: "ai_fraud", label: "AI Fraud", icon: ShieldCheck },
+      { id: "geo_tracking", label: "Geo Track", icon: Building2 },
+      { id: "smart_routing", label: "Routing", icon: CreditCard },
+      { id: "liquidity", label: "Liquidity", icon: TrendingUp },
+      { id: "live_monitor", label: "Live Monitor", icon: Activity },
+    ],
+  },
+  {
+    label: "Other",
+    items: [
+      { id: "team", label: "Team", icon: Users },
+      { id: "trash", label: "Trash", icon: Trash2 },
+    ],
+  },
 ];
+
+const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items) as { id: string; label: string; icon: any }[];
 
 export default function AdminDashboard() {
   const { isAdmin, loading: authLoading } = useAdmin();
@@ -654,40 +703,52 @@ export default function AdminDashboard() {
   };
 
   const navContent = (
-    <nav className="flex flex-col gap-0.5 px-2 pb-4">
-      {NAV_ITEMS.map(item => (
-        <button
-          key={item.id}
-          onClick={() => { setActiveTab(item.id); setShowNavMenu(false); }}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === item.id
-              ? "bg-primary/10 text-primary"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-          }`}
-        >
-          <item.icon className="w-4 h-4 shrink-0" />
-          {item.label}
-          {item.id === "alerts" && stats.openAlerts > 0 && (
-            <span className="ml-auto min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
-              {stats.openAlerts}
-            </span>
-          )}
-          {item.id === "support" && supportUnread > 0 && (
-            <span className="ml-auto min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
-              {supportUnread}
-            </span>
-          )}
-          {item.id === "kyc" && stats.pendingKyc > 0 && (
-            <span className="ml-auto min-w-[16px] h-4 px-1 bg-orange-500 text-white text-[9px] font-bold rounded-full inline-flex items-center justify-center">
-              {stats.pendingKyc}
-            </span>
-          )}
-          {item.id === "toggles" && disabledTogglesCount > 0 && (
-            <span className="ml-auto min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
-              {disabledTogglesCount}
-            </span>
-          )}
-        </button>
+    <nav className="flex flex-col gap-1 px-2 pb-4">
+      {NAV_GROUPS.map((group, gi) => (
+        <div key={group.label}>
+          {gi > 0 && <Separator className="my-2" />}
+          <div className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider ${
+            group.pro ? "text-primary" : "text-muted-foreground/60"
+          }`}>
+            {group.label}
+          </div>
+          <div className="flex flex-col gap-0.5">
+            {group.items.map(item => (
+              <button
+                key={item.id}
+                onClick={() => { setActiveTab(item.id); setShowNavMenu(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === item.id
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <item.icon className="w-4 h-4 shrink-0" />
+                {item.label}
+                {item.id === "alerts" && stats.openAlerts > 0 && (
+                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {stats.openAlerts}
+                  </span>
+                )}
+                {item.id === "support" && supportUnread > 0 && (
+                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {supportUnread}
+                  </span>
+                )}
+                {item.id === "kyc" && stats.pendingKyc > 0 && (
+                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-amber-500 text-amber-50 text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {stats.pendingKyc}
+                  </span>
+                )}
+                {item.id === "toggles" && disabledTogglesCount > 0 && (
+                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {disabledTogglesCount}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
       ))}
     </nav>
   );
