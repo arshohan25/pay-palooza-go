@@ -225,6 +225,7 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "webhooks", label: "Webhooks", icon: Activity },
       { id: "billers", label: "Billers", icon: FileText },
       { id: "recharge", label: "Recharge", icon: Smartphone },
+      { id: "risk_control", label: "Risk Control", icon: ShieldAlert },
     ],
   },
   {
