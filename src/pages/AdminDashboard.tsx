@@ -168,53 +168,103 @@ const STATUS_COLORS: Record<string, string> = {
   false_positive: "bg-muted text-muted-foreground",
 };
 
-const NAV_ITEMS = [
-  { id: "overview", label: "Overview", icon: LayoutDashboard },
-  { id: "merchants", label: "Merchants", icon: Store },
-  { id: "users", label: "Users", icon: UserCog },
-  { id: "transactions", label: "Transactions", icon: Receipt },
-  { id: "chargebacks", label: "Chargebacks", icon: RotateCcw },
-  { id: "alerts", label: "Fraud", icon: AlertTriangle },
-  { id: "charges", label: "Charges", icon: Settings },
-  { id: "commissions", label: "Commissions", icon: Coins },
-  { id: "disputes", label: "Disputes", icon: Scale },
-  { id: "support", label: "Support", icon: MessageCircle },
-  { id: "locks", label: "Locks", icon: Lock },
-  { id: "orders", label: "Orders", icon: Package },
-  { id: "gateways", label: "Gateways", icon: CreditCard },
-  { id: "toggles", label: "Toggles", icon: ToggleRight },
-  { id: "recharge", label: "Recharge", icon: Smartphone },
-  { id: "kyc", label: "KYC", icon: ScanFace },
-  { id: "referrals", label: "Referrals", icon: Gift },
-  { id: "treasury", label: "Treasury", icon: Wallet },
-  { id: "fund_requests", label: "Fund Requests", icon: CreditCard },
-  { id: "webhooks", label: "Webhooks", icon: Activity },
-  { id: "permissions", label: "Permissions", icon: ShieldAlert },
-  { id: "reporting", label: "Reports", icon: BarChart3 },
-  { id: "billers", label: "Billers", icon: FileText },
-  { id: "auditlog", label: "Audit Log", icon: Eye },
-  { id: "apihub", label: "API Hub", icon: Plug },
-  { id: "banners", label: "Banners", icon: Image },
-  { id: "limits", label: "Limits", icon: Scale },
-  { id: "settlements", label: "Settlements", icon: Wallet },
-  { id: "bank_recon", label: "Bank Recon", icon: CreditCard },
-  { id: "marketing", label: "Marketing", icon: Gift },
-  { id: "adv_reports", label: "Adv. Reports", icon: BarChart3 },
-  { id: "team", label: "Team", icon: Users },
-  { id: "savings", label: "Savings", icon: Wallet },
-  { id: "notify", label: "Notify", icon: Bell },
-  { id: "agent_hub", label: "Agent Hub", icon: Building2 },
-  { id: "wallets", label: "Wallets", icon: Wallet },
-  { id: "security", label: "Security", icon: Shield },
-  { id: "sys_settings", label: "Settings", icon: Settings },
-  { id: "loyalty", label: "Loyalty", icon: Star },
-  { id: "ai_fraud", label: "AI Fraud", icon: ShieldCheck },
-  { id: "geo_tracking", label: "Geo Track", icon: Building2 },
-  { id: "smart_routing", label: "Routing", icon: CreditCard },
-  { id: "liquidity", label: "Liquidity", icon: TrendingUp },
-  { id: "live_monitor", label: "Live Monitor", icon: Activity },
-  { id: "trash", label: "Trash", icon: Trash2 },
-];
+const NAV_GROUPS = [
+  {
+    label: "Overview",
+    items: [
+      { id: "overview", label: "Dashboard", icon: LayoutDashboard },
+      { id: "users", label: "Users", icon: UserCog },
+      { id: "alerts", label: "Fraud Alerts", icon: AlertTriangle },
+    ],
+  },
+  {
+    label: "Operations",
+    items: [
+      { id: "transactions", label: "Transactions", icon: Receipt },
+      { id: "chargebacks", label: "Chargebacks", icon: RotateCcw },
+      { id: "deposits", label: "Deposits", icon: CreditCard },
+      { id: "disputes", label: "Disputes", icon: Scale },
+      { id: "support", label: "Support", icon: MessageCircle },
+      { id: "kyc", label: "KYC", icon: ScanFace },
+      { id: "orders", label: "Orders", icon: Package },
+      { id: "fund_requests", label: "Fund Requests", icon: CreditCard },
+    ],
+  },
+  {
+    label: "Financial",
+    items: [
+      { id: "commissions", label: "Commissions", icon: Coins },
+      { id: "charges", label: "Charges", icon: Settings },
+      { id: "settlements", label: "Settlements", icon: Wallet },
+      { id: "bank_recon", label: "Bank Recon", icon: CreditCard },
+      { id: "treasury", label: "Treasury", icon: Wallet },
+      { id: "savings", label: "Savings", icon: PiggyBank },
+      { id: "limits", label: "Limits", icon: Scale },
+    ],
+  },
+  {
+    label: "Network",
+    items: [
+      { id: "agent_hub", label: "Agent Hub", icon: Building2 },
+      { id: "wallets", label: "Wallets", icon: Wallet },
+      { id: "merchants", label: "Merchants", icon: Store },
+      { id: "referrals", label: "Referrals", icon: Gift },
+    ],
+  },
+  {
+    label: "System",
+    items: [
+      { id: "gateways", label: "Gateways", icon: CreditCard },
+      { id: "toggles", label: "Toggles", icon: ToggleRight },
+      { id: "locks", label: "Locks", icon: Lock },
+      { id: "permissions", label: "Permissions", icon: ShieldAlert },
+      { id: "security", label: "Security", icon: Shield },
+      { id: "sys_settings", label: "Settings", icon: Settings },
+      { id: "apihub", label: "API Hub", icon: Plug },
+      { id: "webhooks", label: "Webhooks", icon: Activity },
+      { id: "billers", label: "Billers", icon: FileText },
+      { id: "recharge", label: "Recharge", icon: Smartphone },
+    ],
+  },
+  {
+    label: "Marketing",
+    items: [
+      { id: "marketing", label: "Marketing", icon: Gift },
+      { id: "banners", label: "Banners", icon: Image },
+      { id: "loyalty", label: "Loyalty", icon: Star },
+      { id: "notify", label: "Notify", icon: Bell },
+    ],
+  },
+  {
+    label: "Reports",
+    items: [
+      { id: "reporting", label: "Reports", icon: BarChart3 },
+      { id: "adv_reports", label: "Adv. Reports", icon: BarChart3 },
+      { id: "auditlog", label: "Audit Log", icon: Eye },
+    ],
+  },
+  {
+    label: "⭐ Pro Fintech",
+    pro: true,
+    items: [
+      { id: "ai_fraud", label: "AI Fraud", icon: ShieldCheck },
+      { id: "geo_tracking", label: "Geo Track", icon: Building2 },
+      { id: "smart_routing", label: "Routing", icon: CreditCard },
+      { id: "liquidity", label: "Liquidity", icon: TrendingUp },
+      { id: "live_monitor", label: "Live Monitor", icon: Activity },
+    ],
+  },
+  {
+    label: "Other",
+    items: [
+      { id: "team", label: "Team", icon: Users },
+      { id: "trash", label: "Trash", icon: Trash2 },
+    ],
+  },
+] as const;
+
+// Flat list for backward compat in rendering content
+const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items);
 
 export default function AdminDashboard() {
   const { isAdmin, loading: authLoading } = useAdmin();
