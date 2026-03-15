@@ -74,6 +74,7 @@ import AdminSmartRouting from "@/components/admin/AdminSmartRouting";
 import AdminLiquidityPrediction from "@/components/admin/AdminLiquidityPrediction";
 import AdminRealtimeMonitor from "@/components/admin/AdminRealtimeMonitor";
 import AdminDepositAccounts from "@/components/admin/AdminDepositAccounts";
+import AdminRiskControl from "@/components/admin/AdminRiskControl";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
