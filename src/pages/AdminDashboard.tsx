@@ -59,6 +59,10 @@ import TeamOnboardingChecklist from "@/components/admin/TeamOnboardingChecklist"
 import AdminMerchantManagement from "@/components/admin/AdminMerchantManagement";
 import AdminSavingsManagement from "@/components/admin/AdminSavingsManagement";
 import AdminFundRequests from "@/components/admin/AdminFundRequests";
+import AdminSettlements from "@/components/admin/AdminSettlements";
+import AdminBankReconciliation from "@/components/admin/AdminBankReconciliation";
+import AdminMarketingTools from "@/components/admin/AdminMarketingTools";
+import AdminAdvancedReports from "@/components/admin/AdminAdvancedReports";
 import AdminDepositAccounts from "@/components/admin/AdminDepositAccounts";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
