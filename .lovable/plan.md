@@ -1,19 +1,29 @@
 
 
-## Wire Tab Rendering for 4 New Admin Modules
+## Plan: Add Biller Categories to API Hub
 
-The imports and sidebar nav items for Settlements, Bank Reconciliation, Marketing Tools, and Advanced Reports are already in place. The only missing piece is the conditional rendering blocks in the main content area.
+### What
 
-### Change
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-In `src/pages/AdminDashboard.tsx`, insert 4 rendering blocks after the savings tab (around line 1321):
+### Changes
 
-```tsx
-{activeTab === "settlements" && <AdminSettlements />}
-{activeTab === "bank_recon" && <AdminBankReconciliation />}
-{activeTab === "marketing" && <AdminMarketingTools />}
-{activeTab === "adv_reports" && <AdminAdvancedReports />}
-```
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-Single file, 4 lines added. No other changes needed.
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
