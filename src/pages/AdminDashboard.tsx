@@ -703,40 +703,52 @@ export default function AdminDashboard() {
   };
 
   const navContent = (
-    <nav className="flex flex-col gap-0.5 px-2 pb-4">
-      {NAV_ITEMS.map(item => (
-        <button
-          key={item.id}
-          onClick={() => { setActiveTab(item.id); setShowNavMenu(false); }}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === item.id
-              ? "bg-primary/10 text-primary"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-          }`}
-        >
-          <item.icon className="w-4 h-4 shrink-0" />
-          {item.label}
-          {item.id === "alerts" && stats.openAlerts > 0 && (
-            <span className="ml-auto min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
-              {stats.openAlerts}
-            </span>
-          )}
-          {item.id === "support" && supportUnread > 0 && (
-            <span className="ml-auto min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
-              {supportUnread}
-            </span>
-          )}
-          {item.id === "kyc" && stats.pendingKyc > 0 && (
-            <span className="ml-auto min-w-[16px] h-4 px-1 bg-orange-500 text-white text-[9px] font-bold rounded-full inline-flex items-center justify-center">
-              {stats.pendingKyc}
-            </span>
-          )}
-          {item.id === "toggles" && disabledTogglesCount > 0 && (
-            <span className="ml-auto min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
-              {disabledTogglesCount}
-            </span>
-          )}
-        </button>
+    <nav className="flex flex-col gap-1 px-2 pb-4">
+      {NAV_GROUPS.map((group, gi) => (
+        <div key={group.label}>
+          {gi > 0 && <Separator className="my-2" />}
+          <div className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider ${
+            group.pro ? "text-primary" : "text-muted-foreground/60"
+          }`}>
+            {group.label}
+          </div>
+          <div className="flex flex-col gap-0.5">
+            {group.items.map(item => (
+              <button
+                key={item.id}
+                onClick={() => { setActiveTab(item.id); setShowNavMenu(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === item.id
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <item.icon className="w-4 h-4 shrink-0" />
+                {item.label}
+                {item.id === "alerts" && stats.openAlerts > 0 && (
+                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {stats.openAlerts}
+                  </span>
+                )}
+                {item.id === "support" && supportUnread > 0 && (
+                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {supportUnread}
+                  </span>
+                )}
+                {item.id === "kyc" && stats.pendingKyc > 0 && (
+                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-amber-500 text-amber-50 text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {stats.pendingKyc}
+                  </span>
+                )}
+                {item.id === "toggles" && disabledTogglesCount > 0 && (
+                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {disabledTogglesCount}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
       ))}
     </nav>
   );
