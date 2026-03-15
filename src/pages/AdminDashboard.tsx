@@ -1452,6 +1452,15 @@ export default function AdminDashboard() {
         {/* ═══ RISK CONTROL ═══ */}
         {activeTab === "risk_control" && <AdminRiskControl />}
 
+        {/* ═══ FLOAT MANAGEMENT ═══ */}
+        {activeTab === "float_mgmt" && <AdminFloatManagement />}
+
+        {/* ═══ REVENUE DASHBOARD ═══ */}
+        {activeTab === "revenue" && <AdminRevenueDashboard />}
+
+        {/* ═══ MFS MONITOR ═══ */}
+        {activeTab === "mfs_monitor" && <AdminMfsMonitor />}
+
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
           <div className="space-y-4">
