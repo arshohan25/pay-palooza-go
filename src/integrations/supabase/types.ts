@@ -2714,6 +2714,7 @@ export type Database = {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
       }
+      is_phone_registered: { Args: { p_phone: string }; Returns: boolean }
       normalize_bd_phone: { Args: { p_raw: string }; Returns: string }
       record_transaction: {
         Args: {
