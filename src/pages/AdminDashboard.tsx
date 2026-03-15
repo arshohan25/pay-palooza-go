@@ -208,6 +208,11 @@ const NAV_ITEMS = [
   { id: "security", label: "Security", icon: Shield },
   { id: "sys_settings", label: "Settings", icon: Settings },
   { id: "loyalty", label: "Loyalty", icon: Star },
+  { id: "ai_fraud", label: "AI Fraud", icon: ShieldCheck },
+  { id: "geo_tracking", label: "Geo Track", icon: Building2 },
+  { id: "smart_routing", label: "Routing", icon: CreditCard },
+  { id: "liquidity", label: "Liquidity", icon: TrendingUp },
+  { id: "live_monitor", label: "Live Monitor", icon: Activity },
   { id: "trash", label: "Trash", icon: Trash2 },
 ];
 
