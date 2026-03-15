@@ -134,6 +134,51 @@ export type Database = {
         }
         Relationships: []
       }
+      aml_rules: {
+        Row: {
+          action: string
+          condition_type: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          last_triggered_at: string | null
+          rule_name: string
+          threshold: number
+          time_window_minutes: number | null
+          trigger_count: number
+          updated_at: string
+        }
+        Insert: {
+          action?: string
+          condition_type: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          last_triggered_at?: string | null
+          rule_name: string
+          threshold?: number
+          time_window_minutes?: number | null
+          trigger_count?: number
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          condition_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          last_triggered_at?: string | null
+          rule_name?: string
+          threshold?: number
+          time_window_minutes?: number | null
+          trigger_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string

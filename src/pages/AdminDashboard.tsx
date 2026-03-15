@@ -74,6 +74,7 @@ import AdminSmartRouting from "@/components/admin/AdminSmartRouting";
 import AdminLiquidityPrediction from "@/components/admin/AdminLiquidityPrediction";
 import AdminRealtimeMonitor from "@/components/admin/AdminRealtimeMonitor";
 import AdminDepositAccounts from "@/components/admin/AdminDepositAccounts";
+import AdminRiskControl from "@/components/admin/AdminRiskControl";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -224,6 +225,7 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "webhooks", label: "Webhooks", icon: Activity },
       { id: "billers", label: "Billers", icon: FileText },
       { id: "recharge", label: "Recharge", icon: Smartphone },
+      { id: "risk_control", label: "Risk Control", icon: ShieldAlert },
     ],
   },
   {
@@ -1442,6 +1444,9 @@ export default function AdminDashboard() {
 
         {/* ═══ REAL-TIME MONITOR ═══ */}
         {activeTab === "live_monitor" && <AdminRealtimeMonitor />}
+
+        {/* ═══ RISK CONTROL ═══ */}
+        {activeTab === "risk_control" && <AdminRiskControl />}
 
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
