@@ -1367,6 +1367,21 @@ export default function AdminDashboard() {
         {/* ═══ LOYALTY POINTS ═══ */}
         {activeTab === "loyalty" && <AdminLoyaltyPoints />}
 
+        {/* ═══ AI FRAUD DETECTION ═══ */}
+        {activeTab === "ai_fraud" && <AdminAiFraudDetection />}
+
+        {/* ═══ GEO TRACKING ═══ */}
+        {activeTab === "geo_tracking" && <AdminGeoTracking />}
+
+        {/* ═══ SMART ROUTING ═══ */}
+        {activeTab === "smart_routing" && <AdminSmartRouting />}
+
+        {/* ═══ LIQUIDITY PREDICTION ═══ */}
+        {activeTab === "liquidity" && <AdminLiquidityPrediction />}
+
+        {/* ═══ REAL-TIME MONITOR ═══ */}
+        {activeTab === "live_monitor" && <AdminRealtimeMonitor />}
+
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
           <div className="space-y-4">
