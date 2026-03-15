@@ -31,6 +31,8 @@ export interface FeeConfig {
   calcBankTransferFee: (amount: number) => number;
   getFeeLabel: (txnType: string) => string;
   getAgentCommission: (txnType: string, amount: number) => number;
+  getMasterDistributorCommission: (txnType: string, amount: number) => number;
+  getCommissionBreakdown: (txnType: string, amount: number) => CommissionBreakdown;
 }
 
 export function useFeeConfig(): FeeConfig {
