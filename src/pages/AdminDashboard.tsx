@@ -1320,6 +1320,18 @@ export default function AdminDashboard() {
         {/* ═══ SAVINGS ═══ */}
         {activeTab === "savings" && <AdminSavingsManagement />}
 
+        {/* ═══ SETTLEMENTS ═══ */}
+        {activeTab === "settlements" && <AdminSettlements />}
+
+        {/* ═══ BANK RECONCILIATION ═══ */}
+        {activeTab === "bank_recon" && <AdminBankReconciliation />}
+
+        {/* ═══ MARKETING TOOLS ═══ */}
+        {activeTab === "marketing" && <AdminMarketingTools />}
+
+        {/* ═══ ADVANCED REPORTS ═══ */}
+        {activeTab === "adv_reports" && <AdminAdvancedReports />}
+
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
           <div className="space-y-4">
