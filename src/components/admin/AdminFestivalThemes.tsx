@@ -149,7 +149,7 @@ const PRESETS: Record<string, PresetData> = {
     name: "Pohela Boishakh", emoji: "🎨",
     greeting: "শুভ নববর্ষ! Happy Bangla New Year 🎨",
     gradient: "linear-gradient(135deg, hsl(0 70% 45%), hsl(30 80% 50%))",
-    accent: "hsl(0 70% 50%)", effect: "petals", body_pattern: "petals",
+    accent: "hsl(0 70% 50%)", effect: "petals", body_pattern: "rangoli",
     palette: {
       "primary": "0 70% 48%", "primary-foreground": "0 0% 100%",
       "background": "35 40% 96%", "foreground": "0 30% 12%",
