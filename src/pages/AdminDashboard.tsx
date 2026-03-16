@@ -1215,12 +1215,13 @@ export default function AdminDashboard() {
               <Card className="border-0 shadow-[var(--shadow-card)]">
                 <CardHeader className="pb-2"><CardTitle className="text-base">Agent Management</CardTitle></CardHeader>
                 <CardContent className="p-0">
-                  <div className="overflow-x-auto">
+                  {/* Desktop table */}
+                  <div className="overflow-x-auto hidden md:block">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-border text-muted-foreground">
                           <th className="text-left px-4 py-3 font-medium">Business</th>
-                          <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Territory</th>
+                          <th className="text-left px-4 py-3 font-medium">Territory</th>
                           <th className="text-left px-4 py-3 font-medium">Status</th>
                           <th className="text-left px-4 py-3 font-medium">Action</th>
                         </tr>
@@ -1229,7 +1230,7 @@ export default function AdminDashboard() {
                         {agents.map((agent: any) => (
                           <tr key={agent.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                             <td className="px-4 py-3 font-medium text-foreground">{agent.business_name || "—"}</td>
-                            <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{agent.territory_code || "—"}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{agent.territory_code || "—"}</td>
                             <td className="px-4 py-3">
                               <Badge variant={agent.status === "suspended" ? "destructive" : agent.status === "active" ? "secondary" : "outline"} className="text-xs">
                                 {agent.status}
@@ -1263,6 +1264,46 @@ export default function AdminDashboard() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                  {/* Mobile card layout */}
+                  <div className="md:hidden divide-y divide-border/50">
+                    {agents.map((agent: any) => (
+                      <div key={agent.id} className="p-4 space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-foreground text-sm truncate">{agent.business_name || "—"}</p>
+                            <p className="text-xs text-muted-foreground">{agent.territory_code || "No territory"}</p>
+                          </div>
+                          <Badge variant={agent.status === "suspended" ? "destructive" : agent.status === "active" ? "secondary" : "outline"} className="text-[10px] shrink-0">
+                            {agent.status}
+                          </Badge>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          <Button
+                            size="sm"
+                            variant={agent.status === "suspended" ? "default" : "destructive"}
+                            className="text-xs h-7"
+                            onClick={async () => {
+                              try {
+                                const ns = await toggleAgentStatus(agent.id, agent.status);
+                                setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: ns } : a));
+                                toast.success(`Agent ${ns}`);
+                              } catch { toast.error("Failed to update status"); }
+                            }}
+                          >
+                            {agent.status === "suspended" ? "Activate" : "Suspend"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs h-7 gap-1"
+                            onClick={() => setLockTarget({ userId: agent.user_id, label: `${agent.business_name || "Agent"} (${agent.territory_code || agent.id.slice(0, 8)})` })}
+                          >
+                            <Lock className="w-3 h-3" /> Lock
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                   {agents.length === 0 && (
                     <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
