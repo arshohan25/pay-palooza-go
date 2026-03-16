@@ -1,27 +1,29 @@
 
 
-## Fix: Dark/Light Mode Not Working with Festival Themes
+## Plan: Add Biller Categories to API Hub
 
-### Root Cause
+### What
 
-The `FestivalThemeProvider` applies light-mode palette overrides as **inline styles** on `document.documentElement.style`. Inline styles have **higher CSS specificity** than any class-based rule, including `.dark { --primary: ... }`. So when the user toggles to dark mode, the light-mode festival values win, and the dark palette never takes effect.
-
-### Fix
-
-Instead of setting light-mode variables as inline styles, inject **all** festival overrides (both light and dark) into a single `<style>` element with proper CSS specificity:
-
-```css
-/* Injected <style id="festival-theme-vars"> */
-:root { --primary: 270 60% 55%; --background: 245 30% 12%; ... }
-.dark { --primary: 280 50% 65%; --background: 250 25% 8%; ... }
-```
-
-This ensures `.dark` rules properly override `:root` rules when the class toggles.
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-**`src/contexts/FestivalThemeContext.tsx`** — Rewrite `applyPalette` and `clearPalette`:
-- Stop using `root.style.setProperty()` for light-mode vars
-- Build a single `<style id="festival-theme-vars">` element containing both `:root { ... }` and `.dark { ... }` blocks
-- `clearPalette` simply removes the style element and body pattern class
+**File: `src/components/admin/AdminApiHub.tsx`**
+
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

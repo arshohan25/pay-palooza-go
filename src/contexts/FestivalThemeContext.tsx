@@ -24,46 +24,35 @@ export function FestivalThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<FestivalTheme | null>(null);
 
   const applyPalette = useCallback((palette: Record<string, string>) => {
-    const root = document.documentElement;
+    const lightVars: string[] = [];
+    const darkVars: string[] = [];
+
     Object.entries(palette).forEach(([key, value]) => {
       if (!value) return;
       const cssKey = key.replace(/_/g, "-");
-      // Keys prefixed with "dark-" go into a style block for .dark mode
-      if (cssKey.startsWith("dark-")) return;
-      root.style.setProperty(`--${cssKey}`, value);
+      if (cssKey.startsWith("dark-")) {
+        darkVars.push(`--${cssKey.replace(/^dark-/, "")}: ${value};`);
+      } else {
+        lightVars.push(`--${cssKey}: ${value};`);
+      }
     });
 
-    // Apply dark-mode overrides via a style element
-    const darkEntries = Object.entries(palette).filter(([k, v]) => k.startsWith("dark_") || k.startsWith("dark-"));
-    if (darkEntries.length > 0) {
-      let css = ".dark {\n";
-      darkEntries.forEach(([key, value]) => {
-        if (!value) return;
-        const cssKey = key.replace(/_/g, "-").replace(/^dark-/, "");
-        css += `  --${cssKey}: ${value};\n`;
-      });
-      css += "}";
-      let el = document.getElementById("festival-dark-vars");
-      if (!el) {
-        el = document.createElement("style");
-        el.id = "festival-dark-vars";
-        document.head.appendChild(el);
-      }
-      el.textContent = css;
+    let css = "";
+    if (lightVars.length > 0) css += `:root {\n  ${lightVars.join("\n  ")}\n}\n`;
+    if (darkVars.length > 0) css += `.dark {\n  ${darkVars.join("\n  ")}\n}`;
+
+    let el = document.getElementById("festival-theme-vars") as HTMLStyleElement | null;
+    if (!el) {
+      el = document.createElement("style");
+      el.id = "festival-theme-vars";
+      document.head.appendChild(el);
     }
+    el.textContent = css;
   }, []);
 
-  const clearPalette = useCallback((palette: Record<string, string>) => {
-    const root = document.documentElement;
-    Object.keys(palette).forEach(key => {
-      const cssKey = key.replace(/_/g, "-");
-      if (cssKey.startsWith("dark-")) return;
-      root.style.removeProperty(`--${cssKey}`);
-    });
-    // Remove dark overrides
-    const el = document.getElementById("festival-dark-vars");
+  const clearPalette = useCallback(() => {
+    const el = document.getElementById("festival-theme-vars");
     if (el) el.remove();
-    // Clear body pattern
     document.body.className = document.body.className
       .split(" ")
       .filter(c => !c.startsWith("festival-body-"))
@@ -106,9 +95,7 @@ export function FestivalThemeProvider({ children }: { children: ReactNode }) {
     fetchTheme();
 
     return () => {
-      if (theme?.theme_palette) {
-        clearPalette(theme.theme_palette);
-      }
+      clearPalette();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
