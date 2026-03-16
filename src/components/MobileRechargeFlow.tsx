@@ -343,9 +343,16 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     haptics.light();
   };
 
-  // Packs → Amount (only when browsing via operator card tap)
+  // Packs → Number or Amount (drive pack + dummy phone → number entry first)
   const handlePackContinue = () => {
     if (!selectedPack) { setError("Please select a pack to continue."); return; }
+    if (isPhoneDummy) {
+      // Clear dummy phone so user enters real number
+      setPhone("");
+      setError("");
+      goTo("number");
+      return;
+    }
     goTo("amount");
   };
 
