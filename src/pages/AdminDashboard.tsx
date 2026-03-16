@@ -145,13 +145,13 @@ const StatCard = ({ icon: Icon, label, value, color, onClick }: { icon: any; lab
       className={`border-0 shadow-[var(--shadow-card)] transition-colors ${onClick ? "cursor-pointer hover:bg-muted/40" : ""}`}
       onClick={onClick}
     >
-      <CardContent className="p-4 flex items-center gap-4">
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
-          <Icon className="w-6 h-6 text-primary-foreground" />
+      <CardContent className="p-3 md:p-4 flex items-center gap-3 md:gap-4">
+        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
+          <Icon className="w-5 h-5 md:w-6 md:h-6 text-primary-foreground" />
         </div>
-        <div>
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="text-2xl font-bold text-foreground">{typeof value === "number" ? value.toLocaleString() : value}</p>
+        <div className="min-w-0">
+          <p className="text-xs md:text-sm text-muted-foreground truncate">{label}</p>
+          <p className="text-xl md:text-2xl font-bold text-foreground truncate">{typeof value === "number" ? value.toLocaleString() : value}</p>
         </div>
       </CardContent>
     </Card>
@@ -880,16 +880,17 @@ export default function AdminDashboard() {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              <Button variant="outline" size="icon" onClick={loadData} disabled={refreshing}>
-                <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+              <Button variant="outline" size="icon" onClick={loadData} disabled={refreshing} className="h-7 w-7 md:h-9 md:w-9">
+                <RefreshCw className={`w-3.5 h-3.5 md:w-4 md:h-4 ${refreshing ? "animate-spin" : ""}`} />
               </Button>
               <Button
                 variant={showActivityFeed ? "default" : "outline"}
                 size="icon"
                 onClick={() => setShowActivityFeed(v => !v)}
                 title="Activity Feed"
+                className="h-7 w-7 md:h-9 md:w-9"
               >
-                <Radio className="w-4 h-4" />
+                <Radio className="w-3.5 h-3.5 md:w-4 md:h-4" />
               </Button>
             </div>
           </div>
@@ -953,27 +954,27 @@ export default function AdminDashboard() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border text-muted-foreground">
-                        <th className="text-left px-4 py-3 font-medium">Type</th>
-                        <th className="text-left px-4 py-3 font-medium">Amount</th>
-                        <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Recipient</th>
-                        <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">Status</th>
-                        <th className="text-left px-4 py-3 font-medium">Time</th>
+                        <th className="text-left px-3 md:px-4 py-3 font-medium">Type</th>
+                        <th className="text-left px-3 md:px-4 py-3 font-medium">Amount</th>
+                        <th className="text-left px-3 md:px-4 py-3 font-medium hidden md:table-cell">Recipient</th>
+                        <th className="text-left px-3 md:px-4 py-3 font-medium hidden lg:table-cell">Status</th>
+                        <th className="text-left px-3 md:px-4 py-3 font-medium">Time</th>
                       </tr>
                     </thead>
                     <tbody>
                       {transactions.slice(0, 10).map((txn: any) => (
                         <tr key={txn.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                          <td className="px-4 py-3">
+                          <td className="px-3 md:px-4 py-3">
                             <Badge variant="secondary" className={`text-xs ${TXN_TYPE_COLORS[txn.type] ?? ""}`}>
                               {txn.type}
                             </Badge>
                           </td>
-                          <td className="px-4 py-3 font-semibold text-foreground">৳{txn.amount?.toLocaleString()}</td>
-                          <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{txn.recipient_phone || "—"}</td>
-                          <td className="px-4 py-3 hidden lg:table-cell">
+                          <td className="px-3 md:px-4 py-3 font-semibold text-foreground">৳{txn.amount?.toLocaleString()}</td>
+                          <td className="px-3 md:px-4 py-3 text-muted-foreground hidden md:table-cell">{txn.recipient_phone || "—"}</td>
+                          <td className="px-3 md:px-4 py-3 hidden lg:table-cell">
                             <Badge variant="outline" className="text-xs">{txn.status}</Badge>
                           </td>
-                          <td className="px-4 py-3 text-muted-foreground text-xs">
+                          <td className="px-3 md:px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">
                             {new Date(txn.created_at).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                           </td>
                         </tr>
@@ -1214,12 +1215,13 @@ export default function AdminDashboard() {
               <Card className="border-0 shadow-[var(--shadow-card)]">
                 <CardHeader className="pb-2"><CardTitle className="text-base">Agent Management</CardTitle></CardHeader>
                 <CardContent className="p-0">
-                  <div className="overflow-x-auto">
+                  {/* Desktop table */}
+                  <div className="overflow-x-auto hidden md:block">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-border text-muted-foreground">
                           <th className="text-left px-4 py-3 font-medium">Business</th>
-                          <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Territory</th>
+                          <th className="text-left px-4 py-3 font-medium">Territory</th>
                           <th className="text-left px-4 py-3 font-medium">Status</th>
                           <th className="text-left px-4 py-3 font-medium">Action</th>
                         </tr>
@@ -1228,7 +1230,7 @@ export default function AdminDashboard() {
                         {agents.map((agent: any) => (
                           <tr key={agent.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                             <td className="px-4 py-3 font-medium text-foreground">{agent.business_name || "—"}</td>
-                            <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{agent.territory_code || "—"}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{agent.territory_code || "—"}</td>
                             <td className="px-4 py-3">
                               <Badge variant={agent.status === "suspended" ? "destructive" : agent.status === "active" ? "secondary" : "outline"} className="text-xs">
                                 {agent.status}
@@ -1263,6 +1265,46 @@ export default function AdminDashboard() {
                       </tbody>
                     </table>
                   </div>
+                  {/* Mobile card layout */}
+                  <div className="md:hidden divide-y divide-border/50">
+                    {agents.map((agent: any) => (
+                      <div key={agent.id} className="p-4 space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-foreground text-sm truncate">{agent.business_name || "—"}</p>
+                            <p className="text-xs text-muted-foreground">{agent.territory_code || "No territory"}</p>
+                          </div>
+                          <Badge variant={agent.status === "suspended" ? "destructive" : agent.status === "active" ? "secondary" : "outline"} className="text-[10px] shrink-0">
+                            {agent.status}
+                          </Badge>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          <Button
+                            size="sm"
+                            variant={agent.status === "suspended" ? "default" : "destructive"}
+                            className="text-xs h-7"
+                            onClick={async () => {
+                              try {
+                                const ns = await toggleAgentStatus(agent.id, agent.status);
+                                setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: ns } : a));
+                                toast.success(`Agent ${ns}`);
+                              } catch { toast.error("Failed to update status"); }
+                            }}
+                          >
+                            {agent.status === "suspended" ? "Activate" : "Suspend"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs h-7 gap-1"
+                            onClick={() => setLockTarget({ userId: agent.user_id, label: `${agent.business_name || "Agent"} (${agent.territory_code || agent.id.slice(0, 8)})` })}
+                          >
+                            <Lock className="w-3 h-3" /> Lock
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                   {agents.length === 0 && (
                     <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
                       <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
@@ -1281,12 +1323,13 @@ export default function AdminDashboard() {
               <Card className="border-0 shadow-[var(--shadow-card)]">
                 <CardHeader className="pb-2"><CardTitle className="text-base">Merchant Management</CardTitle></CardHeader>
                 <CardContent className="p-0">
-                  <div className="overflow-x-auto">
+                  {/* Desktop table */}
+                  <div className="overflow-x-auto hidden md:block">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-border text-muted-foreground">
                           <th className="text-left px-4 py-3 font-medium">Business</th>
-                          <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Category</th>
+                          <th className="text-left px-4 py-3 font-medium">Category</th>
                           <th className="text-left px-4 py-3 font-medium">Status</th>
                           <th className="text-left px-4 py-3 font-medium">Action</th>
                         </tr>
@@ -1295,7 +1338,7 @@ export default function AdminDashboard() {
                         {merchants.map((m: any) => (
                           <tr key={m.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                             <td className="px-4 py-3 font-medium text-foreground">{m.business_name}</td>
-                            <td className="px-4 py-3 text-muted-foreground capitalize hidden md:table-cell">{m.category}</td>
+                            <td className="px-4 py-3 text-muted-foreground capitalize">{m.category}</td>
                             <td className="px-4 py-3">
                               <Badge variant={m.status === "suspended" ? "destructive" : m.status === "active" ? "secondary" : "outline"} className="text-xs">
                                 {m.status}
@@ -1329,6 +1372,46 @@ export default function AdminDashboard() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                  {/* Mobile card layout */}
+                  <div className="md:hidden divide-y divide-border/50">
+                    {merchants.map((m: any) => (
+                      <div key={m.id} className="p-4 space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-foreground text-sm truncate">{m.business_name}</p>
+                            <p className="text-xs text-muted-foreground capitalize">{m.category}</p>
+                          </div>
+                          <Badge variant={m.status === "suspended" ? "destructive" : m.status === "active" ? "secondary" : "outline"} className="text-[10px] shrink-0">
+                            {m.status}
+                          </Badge>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          <Button
+                            size="sm"
+                            variant={m.status === "suspended" ? "default" : "destructive"}
+                            className="text-xs h-7"
+                            onClick={async () => {
+                              try {
+                                const ns = await toggleMerchantStatus(m.id, m.status);
+                                setMerchants(prev => prev.map(x => x.id === m.id ? { ...x, status: ns } : x));
+                                toast.success(`Merchant ${ns}`);
+                              } catch { toast.error("Failed to update status"); }
+                            }}
+                          >
+                            {m.status === "suspended" ? "Activate" : "Suspend"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs h-7 gap-1"
+                            onClick={() => setLockTarget({ userId: m.user_id, label: `${m.business_name} (${m.category})` })}
+                          >
+                            <Lock className="w-3 h-3" /> Lock
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                   {merchants.length === 0 && (
                     <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
@@ -1548,44 +1631,76 @@ export default function AdminDashboard() {
                     <p className="text-xs text-muted-foreground mt-1">Deleted users will appear here</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-border text-muted-foreground">
-                          <th className="text-left px-4 py-3 font-medium">Name</th>
-                          <th className="text-left px-4 py-3 font-medium">Phone</th>
-                          <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Balance</th>
-                          <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Recovered</th>
-                          <th className="text-left px-4 py-3 font-medium">Deleted</th>
-                          <th className="text-left px-4 py-3 font-medium">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {deletedUsers.map((du: any) => (
-                          <tr key={du.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                            <td className="px-4 py-3 font-medium text-foreground">{du.name || "—"}</td>
-                            <td className="px-4 py-3 text-muted-foreground">{du.phone || "—"}</td>
-                            <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">৳{(du.balance_at_deletion ?? 0).toLocaleString()}</td>
-                            <td className="px-4 py-3 hidden md:table-cell">
-                              {du.balance_recovered > 0 ? (
-                                <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                                  ৳{du.balance_recovered.toLocaleString()}
-                                </Badge>
-                              ) : "—"}
-                            </td>
-                            <td className="px-4 py-3 text-muted-foreground text-xs">
-                              {du.deleted_at ? new Date(du.deleted_at).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" }) : "—"}
-                            </td>
-                            <td className="px-4 py-3">
-                              <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => openTrashDetail(du.id)}>
-                                <Eye className="w-3 h-3 mr-1" /> View
-                              </Button>
-                            </td>
+                  <>
+                    {/* Desktop table */}
+                    <div className="overflow-x-auto hidden md:block">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border text-muted-foreground">
+                            <th className="text-left px-4 py-3 font-medium">Name</th>
+                            <th className="text-left px-4 py-3 font-medium">Phone</th>
+                            <th className="text-left px-4 py-3 font-medium">Balance</th>
+                            <th className="text-left px-4 py-3 font-medium">Recovered</th>
+                            <th className="text-left px-4 py-3 font-medium">Deleted</th>
+                            <th className="text-left px-4 py-3 font-medium">Action</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {deletedUsers.map((du: any) => (
+                            <tr key={du.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                              <td className="px-4 py-3 font-medium text-foreground">{du.name || "—"}</td>
+                              <td className="px-4 py-3 text-muted-foreground">{du.phone || "—"}</td>
+                              <td className="px-4 py-3 text-muted-foreground">৳{(du.balance_at_deletion ?? 0).toLocaleString()}</td>
+                              <td className="px-4 py-3">
+                                {du.balance_recovered > 0 ? (
+                                  <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                    ৳{du.balance_recovered.toLocaleString()}
+                                  </Badge>
+                                ) : "—"}
+                              </td>
+                              <td className="px-4 py-3 text-muted-foreground text-xs">
+                                {du.deleted_at ? new Date(du.deleted_at).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" }) : "—"}
+                              </td>
+                              <td className="px-4 py-3">
+                                <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => openTrashDetail(du.id)}>
+                                  <Eye className="w-3 h-3 mr-1" /> View
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {/* Mobile card layout */}
+                    <div className="md:hidden divide-y divide-border/50">
+                      {deletedUsers.map((du: any) => (
+                        <div key={du.id} className="p-4 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-foreground text-sm truncate">{du.name || "—"}</p>
+                              <p className="text-xs text-muted-foreground">{du.phone || "—"}</p>
+                            </div>
+                            <p className="text-xs text-muted-foreground whitespace-nowrap">
+                              {du.deleted_at ? new Date(du.deleted_at).toLocaleDateString("en-BD", { month: "short", day: "numeric" }) : "—"}
+                            </p>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3 text-xs">
+                              <span className="text-muted-foreground">Balance: <span className="text-foreground font-medium">৳{(du.balance_at_deletion ?? 0).toLocaleString()}</span></span>
+                              {du.balance_recovered > 0 && (
+                                <Badge variant="secondary" className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                  Recovered ৳{du.balance_recovered.toLocaleString()}
+                                </Badge>
+                              )}
+                            </div>
+                            <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => openTrashDetail(du.id)}>
+                              <Eye className="w-3 h-3 mr-1" /> View
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
