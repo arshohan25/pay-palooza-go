@@ -272,6 +272,8 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "loyalty", label: "Loyalty", icon: Star },
       { id: "notify", label: "Notify", icon: Bell },
       { id: "announcements", label: "Announcements", icon: Megaphone },
+      { id: "feedback", label: "Feedback", icon: Star },
+      { id: "changelog", label: "Changelog", icon: FileText },
     ],
   },
   {
