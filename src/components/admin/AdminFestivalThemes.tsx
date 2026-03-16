@@ -224,7 +224,7 @@ const PRESETS: Record<string, PresetData> = {
     name: "Victory Day", emoji: "🇧🇩",
     greeting: "Happy Victory Day! 16th December 🇧🇩",
     gradient: "linear-gradient(135deg, hsl(150 80% 30%), hsl(0 70% 40%))",
-    accent: "hsl(150 80% 40%)", effect: "confetti", body_pattern: "confetti",
+    accent: "hsl(150 80% 40%)", effect: "confetti", body_pattern: "waves",
     palette: {
       "primary": "150 80% 32%", "primary-foreground": "0 0% 100%",
       "background": "152 18% 95%", "foreground": "155 28% 12%",
