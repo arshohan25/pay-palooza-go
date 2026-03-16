@@ -810,6 +810,31 @@ export default function AdminDashboard() {
                     {disabledTogglesCount}
                   </span>
                 )}
+                {item.id === "complaints" && pendingComplaintsCount > 0 && (
+                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {pendingComplaintsCount}
+                  </span>
+                )}
+                {item.id === "fund_requests" && pendingFundCount > 0 && (
+                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {pendingFundCount}
+                  </span>
+                )}
+                {item.id === "merchant_apps" && pendingMerchantAppsCount > 0 && (
+                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-amber-500 text-amber-50 text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {pendingMerchantAppsCount}
+                  </span>
+                )}
+                {item.id === "api_requests" && pendingApiRequestsCount > 0 && (
+                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-amber-500 text-amber-50 text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {pendingApiRequestsCount}
+                  </span>
+                )}
+                {item.id === "orders" && pendingOrdersCount > 0 && (
+                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {pendingOrdersCount}
+                  </span>
+                )}
               </button>
             ))}
           </div>
