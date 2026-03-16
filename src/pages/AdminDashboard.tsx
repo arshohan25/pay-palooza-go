@@ -1687,6 +1687,18 @@ export default function AdminDashboard() {
         {/* ═══ DEPOSIT ACCOUNTS ═══ */}
         {activeTab === "deposit_accounts" && <AdminDepositAccounts />}
 
+        {/* ═══ BLACKLIST MANAGER ═══ */}
+        {activeTab === "blacklist" && <AdminBlacklistManager />}
+
+        {/* ═══ AGENT LEADERBOARD ═══ */}
+        {activeTab === "agent_leaderboard" && <AdminAgentLeaderboard />}
+
+        {/* ═══ USER FEEDBACK ═══ */}
+        {activeTab === "feedback" && <AdminUserFeedback />}
+
+        {/* ═══ CHANGELOG ═══ */}
+        {activeTab === "changelog" && <AdminChangelogManager />}
+
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
           <div className="space-y-4">
