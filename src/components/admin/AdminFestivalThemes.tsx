@@ -299,7 +299,7 @@ const PRESETS: Record<string, PresetData> = {
     name: "Hijri New Year", emoji: "🕌",
     greeting: "Happy Islamic New Year! 🕌",
     gradient: "linear-gradient(135deg, hsl(150 50% 25%), hsl(160 40% 32%))",
-    accent: "hsl(150 50% 40%)", effect: "stars", body_pattern: "stars",
+    accent: "hsl(150 50% 40%)", effect: "stars", body_pattern: "arabesque",
     palette: {
       "primary": "150 50% 38%", "primary-foreground": "0 0% 100%",
       "background": "152 18% 95%", "foreground": "155 25% 12%",
