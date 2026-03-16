@@ -257,6 +257,48 @@ export type Database = {
         }
         Relationships: []
       }
+      campaigns: {
+        Row: {
+          cashback_ids: string[] | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          ends_at: string | null
+          id: string
+          name: string
+          promo_ids: string[] | null
+          starts_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          cashback_ids?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          name: string
+          promo_ids?: string[] | null
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          cashback_ids?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          name?: string
+          promo_ids?: string[] | null
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cashback_rules: {
         Row: {
           cashback_type: string
