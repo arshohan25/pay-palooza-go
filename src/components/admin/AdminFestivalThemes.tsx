@@ -124,7 +124,7 @@ const PRESETS: Record<string, PresetData> = {
     name: "Eid Ul Adha", emoji: "🐑",
     greeting: "Eid Ul Adha Mubarak! Blessed sacrifice 🐑",
     gradient: "linear-gradient(135deg, hsl(35 70% 35%), hsl(25 60% 42%))",
-    accent: "hsl(35 70% 50%)", effect: "stars", body_pattern: "stars",
+    accent: "hsl(35 70% 50%)", effect: "stars", body_pattern: "mosque",
     palette: {
       "primary": "35 70% 46%", "primary-foreground": "0 0% 100%",
       "background": "38 25% 95%", "foreground": "32 30% 12%",
