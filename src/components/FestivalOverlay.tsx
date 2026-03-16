@@ -98,6 +98,8 @@ export default function FestivalOverlay() {
             <div className={`festival-particles ${effectClass}`}>
               {Array.from({ length: 12 }).map((_, i) => {
                 const colors = ["#fff", "#fbbf24", "#f87171", "#34d399", "#60a5fa", "#c084fc"];
+                const petalColors = ["hsl(340 80% 65%)", "hsl(350 75% 70%)", "hsl(330 70% 60%)", "hsl(0 70% 75%)", "hsl(320 60% 65%)"];
+                const leafColors = ["hsl(30 70% 45%)", "hsl(20 80% 40%)", "hsl(40 75% 50%)", "hsl(15 65% 35%)", "hsl(35 60% 55%)"];
                 return (
                   <span
                     key={i}
