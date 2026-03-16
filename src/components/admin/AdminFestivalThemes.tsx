@@ -71,7 +71,7 @@ const PRESETS: Record<string, PresetData> = {
     name: "Ramadan Mubarak", emoji: "🌙",
     greeting: "Ramadan Mubarak! Wishing you a blessed month 🌙",
     gradient: "linear-gradient(135deg, hsl(245 60% 18%), hsl(270 50% 25%), hsl(220 50% 15%))",
-    accent: "hsl(270 60% 55%)", effect: "crescents", body_pattern: "crescents",
+    accent: "hsl(270 60% 55%)", effect: "crescents", body_pattern: "arabesque",
     palette: {
       // Light mode
       "primary": "270 60% 50%", "primary-foreground": "0 0% 100%",
@@ -99,7 +99,7 @@ const PRESETS: Record<string, PresetData> = {
     name: "Eid Ul Fitr", emoji: "☪️",
     greeting: "Eid Mubarak! May your celebrations be joyful ☪️",
     gradient: "linear-gradient(135deg, hsl(160 60% 30%), hsl(170 50% 38%), hsl(45 70% 45%))",
-    accent: "hsl(160 60% 45%)", effect: "sparkles", body_pattern: "sparkles",
+    accent: "hsl(160 60% 45%)", effect: "sparkles", body_pattern: "lanterns",
     palette: {
       "primary": "160 60% 40%", "primary-foreground": "0 0% 100%",
       "background": "165 20% 95%", "foreground": "160 30% 10%",
@@ -124,7 +124,7 @@ const PRESETS: Record<string, PresetData> = {
     name: "Eid Ul Adha", emoji: "🐑",
     greeting: "Eid Ul Adha Mubarak! Blessed sacrifice 🐑",
     gradient: "linear-gradient(135deg, hsl(35 70% 35%), hsl(25 60% 42%))",
-    accent: "hsl(35 70% 50%)", effect: "stars", body_pattern: "stars",
+    accent: "hsl(35 70% 50%)", effect: "stars", body_pattern: "mosque",
     palette: {
       "primary": "35 70% 46%", "primary-foreground": "0 0% 100%",
       "background": "38 25% 95%", "foreground": "32 30% 12%",
@@ -149,7 +149,7 @@ const PRESETS: Record<string, PresetData> = {
     name: "Pohela Boishakh", emoji: "🎨",
     greeting: "শুভ নববর্ষ! Happy Bangla New Year 🎨",
     gradient: "linear-gradient(135deg, hsl(0 70% 45%), hsl(30 80% 50%))",
-    accent: "hsl(0 70% 50%)", effect: "petals", body_pattern: "petals",
+    accent: "hsl(0 70% 50%)", effect: "petals", body_pattern: "rangoli",
     palette: {
       "primary": "0 70% 48%", "primary-foreground": "0 0% 100%",
       "background": "35 40% 96%", "foreground": "0 30% 12%",
@@ -174,7 +174,7 @@ const PRESETS: Record<string, PresetData> = {
     name: "Happy New Year", emoji: "🎆",
     greeting: "Happy New Year! Cheers to new beginnings 🎆",
     gradient: "linear-gradient(135deg, hsl(220 80% 22%), hsl(260 60% 28%), hsl(300 50% 25%))",
-    accent: "hsl(45 90% 55%)", effect: "fireworks", body_pattern: "fireworks",
+    accent: "hsl(45 90% 55%)", effect: "fireworks", body_pattern: "waves",
     palette: {
       "primary": "230 80% 48%", "primary-foreground": "0 0% 100%",
       "background": "228 22% 95%", "foreground": "225 30% 12%",
@@ -224,7 +224,7 @@ const PRESETS: Record<string, PresetData> = {
     name: "Victory Day", emoji: "🇧🇩",
     greeting: "Happy Victory Day! 16th December 🇧🇩",
     gradient: "linear-gradient(135deg, hsl(150 80% 30%), hsl(0 70% 40%))",
-    accent: "hsl(150 80% 40%)", effect: "confetti", body_pattern: "confetti",
+    accent: "hsl(150 80% 40%)", effect: "confetti", body_pattern: "waves",
     palette: {
       "primary": "150 80% 32%", "primary-foreground": "0 0% 100%",
       "background": "152 18% 95%", "foreground": "155 28% 12%",
@@ -249,7 +249,7 @@ const PRESETS: Record<string, PresetData> = {
     name: "Independence Day", emoji: "🇧🇩",
     greeting: "Happy Independence Day! 26th March 🇧🇩",
     gradient: "linear-gradient(135deg, hsl(150 80% 30%), hsl(45 90% 50%))",
-    accent: "hsl(150 80% 40%)", effect: "confetti", body_pattern: "confetti",
+    accent: "hsl(150 80% 40%)", effect: "confetti", body_pattern: "waves",
     palette: {
       "primary": "150 80% 32%", "primary-foreground": "0 0% 100%",
       "background": "152 18% 95%", "foreground": "155 28% 12%",
@@ -274,7 +274,7 @@ const PRESETS: Record<string, PresetData> = {
     name: "Durga Puja", emoji: "🪷",
     greeting: "Shubho Durga Puja! 🪷",
     gradient: "linear-gradient(135deg, hsl(330 60% 38%), hsl(45 80% 48%))",
-    accent: "hsl(330 60% 50%)", effect: "leaves", body_pattern: "leaves",
+    accent: "hsl(330 60% 50%)", effect: "leaves", body_pattern: "rangoli",
     palette: {
       "primary": "330 60% 48%", "primary-foreground": "0 0% 100%",
       "background": "335 18% 95%", "foreground": "338 28% 12%",
@@ -299,7 +299,7 @@ const PRESETS: Record<string, PresetData> = {
     name: "Hijri New Year", emoji: "🕌",
     greeting: "Happy Islamic New Year! 🕌",
     gradient: "linear-gradient(135deg, hsl(150 50% 25%), hsl(160 40% 32%))",
-    accent: "hsl(150 50% 40%)", effect: "stars", body_pattern: "stars",
+    accent: "hsl(150 50% 40%)", effect: "stars", body_pattern: "arabesque",
     palette: {
       "primary": "150 50% 38%", "primary-foreground": "0 0% 100%",
       "background": "152 18% 95%", "foreground": "155 25% 12%",
@@ -329,7 +329,7 @@ const PRESETS: Record<string, PresetData> = {
 };
 
 const EFFECTS = ["none", "stars", "lanterns", "confetti", "snow", "fireworks", "petals", "crescents", "hearts", "leaves", "sparkles"];
-const BODY_PATTERNS = ["none", "stars", "crescents", "petals", "snow", "confetti", "fireworks", "sparkles", "leaves", "hearts"];
+const BODY_PATTERNS = ["none", "stars", "crescents", "petals", "snow", "confetti", "fireworks", "sparkles", "leaves", "hearts", "arabesque", "lanterns", "mosque", "waves", "rangoli"];
 
 interface FormState {
   name: string;
