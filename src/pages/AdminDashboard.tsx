@@ -1508,6 +1508,24 @@ export default function AdminDashboard() {
         {/* ═══ USER SESSIONS ═══ */}
         {activeTab === "sessions" && <AdminUserSessions />}
 
+        {/* ═══ COMPLAINTS ═══ */}
+        {activeTab === "complaints" && <AdminComplaintManager />}
+
+        {/* ═══ DEVICE MANAGER ═══ */}
+        {activeTab === "devices" && <AdminDeviceManager />}
+
+        {/* ═══ AUTO-SAVE MONITOR ═══ */}
+        {activeTab === "auto_save" && <AdminAutoSaveMonitor />}
+
+        {/* ═══ OTP MONITOR ═══ */}
+        {activeTab === "otp_monitor" && <AdminOtpMonitor />}
+
+        {/* ═══ COMMISSION LEDGER ═══ */}
+        {activeTab === "commission_ledger" && <AdminCommissionLedger />}
+
+        {/* ═══ DEPOSIT ACCOUNTS ═══ */}
+        {activeTab === "deposit_accounts" && <AdminDepositAccounts />}
+
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
           <div className="space-y-4">
