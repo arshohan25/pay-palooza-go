@@ -1323,12 +1323,13 @@ export default function AdminDashboard() {
               <Card className="border-0 shadow-[var(--shadow-card)]">
                 <CardHeader className="pb-2"><CardTitle className="text-base">Merchant Management</CardTitle></CardHeader>
                 <CardContent className="p-0">
-                  <div className="overflow-x-auto">
+                  {/* Desktop table */}
+                  <div className="overflow-x-auto hidden md:block">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-border text-muted-foreground">
                           <th className="text-left px-4 py-3 font-medium">Business</th>
-                          <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Category</th>
+                          <th className="text-left px-4 py-3 font-medium">Category</th>
                           <th className="text-left px-4 py-3 font-medium">Status</th>
                           <th className="text-left px-4 py-3 font-medium">Action</th>
                         </tr>
@@ -1337,7 +1338,7 @@ export default function AdminDashboard() {
                         {merchants.map((m: any) => (
                           <tr key={m.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                             <td className="px-4 py-3 font-medium text-foreground">{m.business_name}</td>
-                            <td className="px-4 py-3 text-muted-foreground capitalize hidden md:table-cell">{m.category}</td>
+                            <td className="px-4 py-3 text-muted-foreground capitalize">{m.category}</td>
                             <td className="px-4 py-3">
                               <Badge variant={m.status === "suspended" ? "destructive" : m.status === "active" ? "secondary" : "outline"} className="text-xs">
                                 {m.status}
@@ -1371,6 +1372,46 @@ export default function AdminDashboard() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                  {/* Mobile card layout */}
+                  <div className="md:hidden divide-y divide-border/50">
+                    {merchants.map((m: any) => (
+                      <div key={m.id} className="p-4 space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-foreground text-sm truncate">{m.business_name}</p>
+                            <p className="text-xs text-muted-foreground capitalize">{m.category}</p>
+                          </div>
+                          <Badge variant={m.status === "suspended" ? "destructive" : m.status === "active" ? "secondary" : "outline"} className="text-[10px] shrink-0">
+                            {m.status}
+                          </Badge>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          <Button
+                            size="sm"
+                            variant={m.status === "suspended" ? "default" : "destructive"}
+                            className="text-xs h-7"
+                            onClick={async () => {
+                              try {
+                                const ns = await toggleMerchantStatus(m.id, m.status);
+                                setMerchants(prev => prev.map(x => x.id === m.id ? { ...x, status: ns } : x));
+                                toast.success(`Merchant ${ns}`);
+                              } catch { toast.error("Failed to update status"); }
+                            }}
+                          >
+                            {m.status === "suspended" ? "Activate" : "Suspend"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs h-7 gap-1"
+                            onClick={() => setLockTarget({ userId: m.user_id, label: `${m.business_name} (${m.category})` })}
+                          >
+                            <Lock className="w-3 h-3" /> Lock
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                   {merchants.length === 0 && (
                     <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
