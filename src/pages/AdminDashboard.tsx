@@ -224,6 +224,7 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "wallets", label: "Wallets", icon: Wallet },
       { id: "merchants", label: "Merchants", icon: Store },
       { id: "referrals", label: "Referrals", icon: Gift },
+      { id: "distributors", label: "Distributors", icon: Building2 },
     ],
   },
   {
