@@ -241,6 +241,8 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "billers", label: "Billers", icon: FileText },
       { id: "recharge", label: "Recharge", icon: Smartphone },
       { id: "risk_control", label: "Risk Control", icon: ShieldAlert },
+      { id: "sys_health", label: "Health", icon: Activity },
+      { id: "sessions", label: "Sessions", icon: Users },
     ],
   },
   {
