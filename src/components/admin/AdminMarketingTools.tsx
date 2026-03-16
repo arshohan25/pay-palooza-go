@@ -4,16 +4,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Megaphone, Plus, Tag, Percent, Gift, Pencil, Trash2, Copy } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Megaphone, Plus, Tag, Percent, Gift, Pencil, Trash2, Copy, Calendar, Rocket } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
-type SubTab = "promo" | "cashback";
+type SubTab = "promo" | "cashback" | "campaigns";
 
 interface PromoCode {
   id: string; code: string; description: string | null;
@@ -34,21 +37,32 @@ interface CashbackRule {
   created_at: string;
 }
 
+interface Campaign {
+  id: string; name: string; description: string | null;
+  status: string; starts_at: string | null; ends_at: string | null;
+  promo_ids: string[]; cashback_ids: string[];
+  created_by: string | null; created_at: string; updated_at: string;
+}
+
 const TXN_TYPES = ["send", "payment", "recharge", "paybill", "cashin", "cashout", "addmoney", "banktransfer"];
 
 export default function AdminMarketingTools() {
   const [subTab, setSubTab] = useState<SubTab>("promo");
   const [promos, setPromos] = useState<PromoCode[]>([]);
   const [cashbacks, setCashbacks] = useState<CashbackRule[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPromoForm, setShowPromoForm] = useState(false);
   const [showCashbackForm, setShowCashbackForm] = useState(false);
+  const [showCampaignForm, setShowCampaignForm] = useState(false);
   const [editingPromo, setEditingPromo] = useState<PromoCode | null>(null);
   const [editingCashback, setEditingCashback] = useState<CashbackRule | null>(null);
+  const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [saving, setSaving] = useState(false);
 
   const [promoForm, setPromoForm] = useState({ code: "", description: "", discountType: "flat", discountValue: "", minAmount: "0", maxDiscount: "", usageLimit: "", appliesTo: "all", isActive: true, expiresAt: "" });
   const [cashbackForm, setCashbackForm] = useState({ name: "", txnType: "send", minAmount: "0", maxAmount: "", cashbackType: "flat", cashbackValue: "", maxCashback: "", dailyLimit: "1", isActive: true, expiresAt: "" });
+  const [campaignForm, setCampaignForm] = useState({ name: "", description: "", status: "draft", startsAt: "", endsAt: "", promoIds: [] as string[], cashbackIds: [] as string[] });
 
   const loadPromos = useCallback(async () => {
     const { data } = await supabase.from("promo_codes").select("*").order("created_at", { ascending: false });
@@ -60,19 +74,24 @@ export default function AdminMarketingTools() {
     setCashbacks((data as CashbackRule[]) ?? []);
   }, []);
 
+  const loadCampaigns = useCallback(async () => {
+    const { data } = await supabase.from("campaigns").select("*").order("created_at", { ascending: false });
+    setCampaigns((data as Campaign[]) ?? []);
+  }, []);
+
   useEffect(() => {
     setLoading(true);
-    Promise.all([loadPromos(), loadCashbacks()]).finally(() => setLoading(false));
-  }, [loadPromos, loadCashbacks]);
+    Promise.all([loadPromos(), loadCashbacks(), loadCampaigns()]).finally(() => setLoading(false));
+  }, [loadPromos, loadCashbacks, loadCampaigns]);
 
-  // Realtime
   useEffect(() => {
     const ch = supabase.channel("marketing-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "promo_codes" }, () => loadPromos())
       .on("postgres_changes", { event: "*", schema: "public", table: "cashback_rules" }, () => loadCashbacks())
+      .on("postgres_changes", { event: "*", schema: "public", table: "campaigns" }, () => loadCampaigns())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [loadPromos, loadCashbacks]);
+  }, [loadPromos, loadCashbacks, loadCampaigns]);
 
   const generateCode = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -100,15 +119,11 @@ export default function AdminMarketingTools() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const payload: any = {
-        code: promoForm.code.toUpperCase(),
-        description: promoForm.description || null,
-        discount_type: promoForm.discountType,
-        discount_value: Number(promoForm.discountValue),
-        min_amount: Number(promoForm.minAmount) || 0,
-        max_discount: promoForm.maxDiscount ? Number(promoForm.maxDiscount) : null,
+        code: promoForm.code.toUpperCase(), description: promoForm.description || null,
+        discount_type: promoForm.discountType, discount_value: Number(promoForm.discountValue),
+        min_amount: Number(promoForm.minAmount) || 0, max_discount: promoForm.maxDiscount ? Number(promoForm.maxDiscount) : null,
         usage_limit: promoForm.usageLimit ? Number(promoForm.usageLimit) : null,
-        applies_to: promoForm.appliesTo,
-        is_active: promoForm.isActive,
+        applies_to: promoForm.appliesTo, is_active: promoForm.isActive,
         expires_at: promoForm.expiresAt ? new Date(promoForm.expiresAt).toISOString() : null,
         updated_at: new Date().toISOString(),
       };
@@ -122,14 +137,9 @@ export default function AdminMarketingTools() {
         if (error) throw error;
         toast.success("Promo code created");
       }
-      setShowPromoForm(false);
-      setEditingPromo(null);
-      loadPromos();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to save");
-    } finally {
-      setSaving(false);
-    }
+      setShowPromoForm(false); setEditingPromo(null); loadPromos();
+    } catch (err: any) { toast.error(err.message || "Failed to save"); }
+    finally { setSaving(false); }
   };
 
   const deletePromo = async (id: string) => {
@@ -162,15 +172,11 @@ export default function AdminMarketingTools() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const payload: any = {
-        name: cashbackForm.name,
-        txn_type: cashbackForm.txnType,
-        min_amount: Number(cashbackForm.minAmount) || 0,
-        max_amount: cashbackForm.maxAmount ? Number(cashbackForm.maxAmount) : null,
-        cashback_type: cashbackForm.cashbackType,
-        cashback_value: Number(cashbackForm.cashbackValue),
+        name: cashbackForm.name, txn_type: cashbackForm.txnType,
+        min_amount: Number(cashbackForm.minAmount) || 0, max_amount: cashbackForm.maxAmount ? Number(cashbackForm.maxAmount) : null,
+        cashback_type: cashbackForm.cashbackType, cashback_value: Number(cashbackForm.cashbackValue),
         max_cashback: cashbackForm.maxCashback ? Number(cashbackForm.maxCashback) : null,
-        daily_limit: Number(cashbackForm.dailyLimit) || 1,
-        is_active: cashbackForm.isActive,
+        daily_limit: Number(cashbackForm.dailyLimit) || 1, is_active: cashbackForm.isActive,
         expires_at: cashbackForm.expiresAt ? new Date(cashbackForm.expiresAt).toISOString() : null,
         updated_at: new Date().toISOString(),
       };
@@ -184,14 +190,9 @@ export default function AdminMarketingTools() {
         if (error) throw error;
         toast.success("Cashback rule created");
       }
-      setShowCashbackForm(false);
-      setEditingCashback(null);
-      loadCashbacks();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to save");
-    } finally {
-      setSaving(false);
-    }
+      setShowCashbackForm(false); setEditingCashback(null); loadCashbacks();
+    } catch (err: any) { toast.error(err.message || "Failed to save"); }
+    finally { setSaving(false); }
   };
 
   const deleteCashback = async (id: string) => {
@@ -205,6 +206,68 @@ export default function AdminMarketingTools() {
     loadCashbacks();
   };
 
+  // Campaign CRUD
+  const openEditCampaign = (c: Campaign) => {
+    setEditingCampaign(c);
+    setCampaignForm({
+      name: c.name, description: c.description || "", status: c.status,
+      startsAt: c.starts_at ? new Date(c.starts_at).toISOString().slice(0, 10) : "",
+      endsAt: c.ends_at ? new Date(c.ends_at).toISOString().slice(0, 10) : "",
+      promoIds: c.promo_ids || [], cashbackIds: c.cashback_ids || [],
+    });
+    setShowCampaignForm(true);
+  };
+
+  const saveCampaign = async () => {
+    if (!campaignForm.name) { toast.error("Campaign name required"); return; }
+    setSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const payload: any = {
+        name: campaignForm.name, description: campaignForm.description || null,
+        status: campaignForm.status,
+        starts_at: campaignForm.startsAt ? new Date(campaignForm.startsAt).toISOString() : null,
+        ends_at: campaignForm.endsAt ? new Date(campaignForm.endsAt).toISOString() : null,
+        promo_ids: campaignForm.promoIds, cashback_ids: campaignForm.cashbackIds,
+        updated_at: new Date().toISOString(),
+      };
+      if (editingCampaign) {
+        const { error } = await supabase.from("campaigns").update(payload).eq("id", editingCampaign.id);
+        if (error) throw error;
+        toast.success("Campaign updated");
+      } else {
+        payload.created_by = session?.user?.id;
+        const { error } = await supabase.from("campaigns").insert(payload);
+        if (error) throw error;
+        toast.success("Campaign created");
+      }
+      setShowCampaignForm(false); setEditingCampaign(null); loadCampaigns();
+    } catch (err: any) { toast.error(err.message || "Failed to save"); }
+    finally { setSaving(false); }
+  };
+
+  const deleteCampaign = async (id: string) => {
+    const { error } = await supabase.from("campaigns").delete().eq("id", id);
+    if (error) toast.error("Failed to delete");
+    else { toast.success("Campaign deleted"); loadCampaigns(); }
+  };
+
+  const toggleCampaignStatus = async (c: Campaign) => {
+    const newStatus = c.status === "active" ? "draft" : "active";
+    await supabase.from("campaigns").update({ status: newStatus, updated_at: new Date().toISOString() } as any).eq("id", c.id);
+    loadCampaigns();
+  };
+
+  const getLinkedRedemptions = (c: Campaign) => {
+    return promos.filter(p => c.promo_ids?.includes(p.id)).reduce((s, p) => s + p.used_count, 0);
+  };
+
+  const statusColor = (s: string) => {
+    if (s === "active") return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300";
+    if (s === "ended") return "bg-muted text-muted-foreground";
+    return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300";
+  };
+
   return (
     <div className="space-y-4">
       <div>
@@ -214,9 +277,10 @@ export default function AdminMarketingTools() {
         <p className="text-sm text-muted-foreground">Manage promo codes, cashback rules, and campaigns</p>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <Button variant={subTab === "promo" ? "default" : "outline"} size="sm" onClick={() => setSubTab("promo")}><Tag className="w-4 h-4 mr-1" /> Promo Codes</Button>
         <Button variant={subTab === "cashback" ? "default" : "outline"} size="sm" onClick={() => setSubTab("cashback")}><Gift className="w-4 h-4 mr-1" /> Cashback Rules</Button>
+        <Button variant={subTab === "campaigns" ? "default" : "outline"} size="sm" onClick={() => setSubTab("campaigns")}><Rocket className="w-4 h-4 mr-1" /> Campaigns</Button>
       </div>
 
       {/* Summary */}
@@ -224,7 +288,7 @@ export default function AdminMarketingTools() {
         <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Active Promos</p><p className="text-xl font-bold text-primary">{promos.filter(p => p.is_active).length}</p></CardContent></Card>
         <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Total Redemptions</p><p className="text-xl font-bold text-foreground">{promos.reduce((s, p) => s + p.used_count, 0)}</p></CardContent></Card>
         <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Active Cashback</p><p className="text-xl font-bold text-emerald-600">{cashbacks.filter(c => c.is_active).length}</p></CardContent></Card>
-        <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Total Rules</p><p className="text-xl font-bold text-foreground">{cashbacks.length}</p></CardContent></Card>
+        <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Campaigns</p><p className="text-xl font-bold text-foreground">{campaigns.filter(c => c.status === "active").length} active</p></CardContent></Card>
       </div>
 
       {loading ? (
@@ -352,6 +416,72 @@ export default function AdminMarketingTools() {
               </Card>
             </div>
           )}
+
+          {/* CAMPAIGNS TAB */}
+          {subTab === "campaigns" && (
+            <div className="space-y-3">
+              <div className="flex justify-end">
+                <Button size="sm" onClick={() => {
+                  setEditingCampaign(null);
+                  setCampaignForm({ name: "", description: "", status: "draft", startsAt: "", endsAt: "", promoIds: [], cashbackIds: [] });
+                  setShowCampaignForm(true);
+                }}>
+                  <Plus className="w-4 h-4 mr-1" /> New Campaign
+                </Button>
+              </div>
+              <Card>
+                <CardContent className="p-0">
+                  <ScrollArea className="max-h-[450px]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Campaign</TableHead>
+                          <TableHead>Date Range</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-center">Promos</TableHead>
+                          <TableHead className="text-center">Cashback</TableHead>
+                          <TableHead className="text-center">Redemptions</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {campaigns.length === 0 ? (
+                          <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No campaigns yet</TableCell></TableRow>
+                        ) : campaigns.map(c => (
+                          <TableRow key={c.id}>
+                            <TableCell>
+                              <p className="font-medium text-foreground">{c.name}</p>
+                              {c.description && <p className="text-xs text-muted-foreground truncate max-w-[200px]">{c.description}</p>}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                              {c.starts_at ? format(new Date(c.starts_at), "MMM d") : "—"}
+                              {" → "}
+                              {c.ends_at ? format(new Date(c.ends_at), "MMM d") : "—"}
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={`text-xs ${statusColor(c.status)}`}>{c.status}</Badge>
+                            </TableCell>
+                            <TableCell className="text-center font-mono">{c.promo_ids?.length || 0}</TableCell>
+                            <TableCell className="text-center font-mono">{c.cashback_ids?.length || 0}</TableCell>
+                            <TableCell className="text-center font-mono">{getLinkedRedemptions(c)}</TableCell>
+                            <TableCell>
+                              <div className="flex gap-1">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleCampaignStatus(c)} title={c.status === "active" ? "Deactivate" : "Activate"}>
+                                  <Rocket className={`w-3.5 h-3.5 ${c.status === "active" ? "text-emerald-600" : "text-muted-foreground"}`} />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditCampaign(c)}><Pencil className="w-3.5 h-3.5" /></Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteCampaign(c.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </>
       )}
 
@@ -451,6 +581,88 @@ export default function AdminMarketingTools() {
               <Switch checked={cashbackForm.isActive} onCheckedChange={v => setCashbackForm(f => ({ ...f, isActive: v }))} />
             </div>
             <Button className="w-full" onClick={saveCashback} disabled={saving}>{saving ? "Saving…" : editingCashback ? "Update" : "Create"}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Campaign Form Dialog */}
+      <Dialog open={showCampaignForm} onOpenChange={v => { if (!v) { setShowCampaignForm(false); setEditingCampaign(null); } }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{editingCampaign ? "Edit Campaign" : "Create Campaign"}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Campaign Name</Label><Input value={campaignForm.name} onChange={e => setCampaignForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Eid Mega Sale" /></div>
+            <div><Label>Description</Label><Textarea value={campaignForm.description} onChange={e => setCampaignForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="Optional description..." /></div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label>Status</Label>
+                <Select value={campaignForm.status} onValueChange={v => setCampaignForm(f => ({ ...f, status: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="ended">Ended</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>Start Date</Label><Input type="date" value={campaignForm.startsAt} onChange={e => setCampaignForm(f => ({ ...f, startsAt: e.target.value }))} /></div>
+              <div><Label>End Date</Label><Input type="date" value={campaignForm.endsAt} onChange={e => setCampaignForm(f => ({ ...f, endsAt: e.target.value }))} /></div>
+            </div>
+
+            {/* Link Promo Codes */}
+            {promos.length > 0 && (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Link Promo Codes</Label>
+                <ScrollArea className="max-h-[120px] border rounded-lg p-2">
+                  {promos.map(p => (
+                    <label key={p.id} className="flex items-center gap-2 py-1 cursor-pointer text-sm">
+                      <Checkbox
+                        checked={campaignForm.promoIds.includes(p.id)}
+                        onCheckedChange={(checked) => {
+                          setCampaignForm(f => ({
+                            ...f,
+                            promoIds: checked ? [...f.promoIds, p.id] : f.promoIds.filter(id => id !== p.id),
+                          }));
+                        }}
+                      />
+                      <code className="font-mono text-xs">{p.code}</code>
+                      <span className="text-xs text-muted-foreground">
+                        ({p.discount_type === "percent" ? `${p.discount_value}%` : `৳${p.discount_value}`})
+                      </span>
+                    </label>
+                  ))}
+                </ScrollArea>
+              </div>
+            )}
+
+            {/* Link Cashback Rules */}
+            {cashbacks.length > 0 && (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Link Cashback Rules</Label>
+                <ScrollArea className="max-h-[120px] border rounded-lg p-2">
+                  {cashbacks.map(c => (
+                    <label key={c.id} className="flex items-center gap-2 py-1 cursor-pointer text-sm">
+                      <Checkbox
+                        checked={campaignForm.cashbackIds.includes(c.id)}
+                        onCheckedChange={(checked) => {
+                          setCampaignForm(f => ({
+                            ...f,
+                            cashbackIds: checked ? [...f.cashbackIds, c.id] : f.cashbackIds.filter(id => id !== c.id),
+                          }));
+                        }}
+                      />
+                      <span className="text-xs">{c.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({c.cashback_type === "percent" ? `${c.cashback_value}%` : `৳${c.cashback_value}`})
+                      </span>
+                    </label>
+                  ))}
+                </ScrollArea>
+              </div>
+            )}
+
+            <Button className="w-full" onClick={saveCampaign} disabled={saving}>{saving ? "Saving…" : editingCampaign ? "Update" : "Create"}</Button>
           </div>
         </DialogContent>
       </Dialog>
