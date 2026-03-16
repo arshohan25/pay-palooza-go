@@ -338,6 +338,11 @@ export default function AdminDashboard() {
   const { visible: realtimeVisible, flash: realtimeFlash } = useRealtimeIndicator();
   const { status: wsStatus, lastConnectedAt, reconnectAttempt } = useRealtimeStatus();
   const [disabledTogglesCount, setDisabledTogglesCount] = useState(0);
+  const [pendingComplaintsCount, setPendingComplaintsCount] = useState(0);
+  const [pendingMerchantAppsCount, setPendingMerchantAppsCount] = useState(0);
+  const [pendingApiRequestsCount, setPendingApiRequestsCount] = useState(0);
+  const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
+  const { resolvedTheme, setTheme } = useTheme();
   const [resetPinTarget, setResetPinTarget] = useState<{ userId: string; name: string; phone: string } | null>(null);
   const [deletedUsers, setDeletedUsers] = useState<any[]>([]);
   const [trashDetailId, setTrashDetailId] = useState<string | null>(null);
