@@ -99,7 +99,7 @@ const PRESETS: Record<string, PresetData> = {
     name: "Eid Ul Fitr", emoji: "☪️",
     greeting: "Eid Mubarak! May your celebrations be joyful ☪️",
     gradient: "linear-gradient(135deg, hsl(160 60% 30%), hsl(170 50% 38%), hsl(45 70% 45%))",
-    accent: "hsl(160 60% 45%)", effect: "sparkles", body_pattern: "sparkles",
+    accent: "hsl(160 60% 45%)", effect: "sparkles", body_pattern: "lanterns",
     palette: {
       "primary": "160 60% 40%", "primary-foreground": "0 0% 100%",
       "background": "165 20% 95%", "foreground": "160 30% 10%",
