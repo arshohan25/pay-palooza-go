@@ -1,47 +1,29 @@
 
 
-## Suggested Admin Panel Additions
+## Plan: Add Biller Categories to API Hub
 
-After reviewing the full navigation structure (9 groups, 70+ modules) and all existing components, here are the most impactful missing features:
+### What
 
-### 1. Scheduled Reports & Email Digests
-**Problem**: Admins must manually check the dashboard for updates. No automated reporting exists.
-**Solution**: A "Scheduled Reports" module under Reports that lets admins configure daily/weekly email digests with key metrics (transaction volume, new users, pending KYC, open complaints).
-- New table `scheduled_reports` (frequency, recipients, report_type, last_sent_at)
-- Edge function to compile and send via email
-- **Effort**: Medium
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-### 2. Blacklist / Watchlist Manager
-**Problem**: Risk Control exists but there's no dedicated phone/IP/device blacklist with auto-block rules.
-**Solution**: A "Blacklist" module under System for managing blocked phones, IPs, and device fingerprints with auto-reject on registration/login.
-- New table `blacklist_entries` (type, value, reason, blocked_by, expires_at)
-- Integrate with auth flow to reject blacklisted entries
-- **Effort**: Medium
+### Changes
 
-### 3. Agent Performance Leaderboard
-**Problem**: Agent Hub tracks agents but lacks performance ranking and gamification.
-**Solution**: Add a "Leaderboard" sub-tab inside Agent Hub showing top agents by transaction volume, commission earned, and customer ratings.
-- Computed from existing `transactions` and `commission_logs` data
-- No new tables needed
-- **Effort**: Low
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-### 4. User Feedback / App Ratings
-**Problem**: Support tickets capture complaints but there's no proactive feedback collection.
-**Solution**: A "Feedback" module under Marketing for viewing in-app ratings and NPS scores.
-- New table `user_feedback` (user_id, rating, comment, screen, created_at)
-- Frontend widget for users to submit feedback
-- **Effort**: Medium
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-### 5. Changelog / Release Notes Manager
-**Problem**: Platform Announcements cover urgent notices but there's no versioned changelog for feature updates.
-**Solution**: A "Changelog" module under Marketing for publishing versioned release notes visible to users.
-- New table `changelog_entries` (version, title, body, published_at)
-- User-facing changelog page
-- **Effort**: Low
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
----
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-### Recommendation
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-I'd suggest starting with **items 1-3** as they have the highest operational impact. Which of these would you like me to implement?
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

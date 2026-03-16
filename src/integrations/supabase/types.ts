@@ -257,6 +257,42 @@ export type Database = {
         }
         Relationships: []
       }
+      blacklist_entries: {
+        Row: {
+          blocked_by: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          reason: string | null
+          type: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          blocked_by: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          reason?: string | null
+          type: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          blocked_by?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          reason?: string | null
+          type?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       campaigns: {
         Row: {
           cashback_ids: string[] | null
@@ -350,6 +386,42 @@ export type Database = {
           starts_at?: string | null
           txn_type?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      changelog_entries: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_published: boolean
+          published_at: string | null
+          title: string
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_published?: boolean
+          published_at?: string | null
+          title: string
+          updated_at?: string
+          version: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_published?: boolean
+          published_at?: string | null
+          title?: string
+          updated_at?: string
+          version?: string
         }
         Relationships: []
       }
@@ -2945,6 +3017,33 @@ export type Database = {
           id?: string
           reference?: string | null
           type?: Database["public"]["Enums"]["treasury_ledger_type"]
+        }
+        Relationships: []
+      }
+      user_feedback: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          screen: string | null
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          screen?: string | null
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          screen?: string | null
+          user_id?: string
         }
         Relationships: []
       }

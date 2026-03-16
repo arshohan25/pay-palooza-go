@@ -92,6 +92,10 @@ import AdminAutoSaveMonitor from "@/components/admin/AdminAutoSaveMonitor";
 import AdminOtpMonitor from "@/components/admin/AdminOtpMonitor";
 import AdminCommissionLedger from "@/components/admin/AdminCommissionLedger";
 import AdminAnnouncementManager from "@/components/admin/AdminAnnouncementManager";
+import AdminBlacklistManager from "@/components/admin/AdminBlacklistManager";
+import AdminAgentLeaderboard from "@/components/admin/AdminAgentLeaderboard";
+import AdminUserFeedback from "@/components/admin/AdminUserFeedback";
+import AdminChangelogManager from "@/components/admin/AdminChangelogManager";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -232,6 +236,7 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
     label: "Network",
     items: [
       { id: "agent_hub", label: "Agent Hub", icon: Building2 },
+      { id: "agent_leaderboard", label: "Leaderboard", icon: Award },
       { id: "wallets", label: "Wallets", icon: Wallet },
       { id: "merchants", label: "Merchants", icon: Store },
       { id: "referrals", label: "Referrals", icon: Gift },
@@ -252,6 +257,7 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "billers", label: "Billers", icon: FileText },
       { id: "recharge", label: "Recharge", icon: Smartphone },
       { id: "risk_control", label: "Risk Control", icon: ShieldAlert },
+      { id: "blacklist", label: "Blacklist", icon: Shield },
       { id: "devices", label: "Devices", icon: Smartphone },
       { id: "otp_monitor", label: "OTP Monitor", icon: ShieldAlert },
       { id: "sys_health", label: "Health", icon: Activity },
@@ -266,6 +272,8 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "loyalty", label: "Loyalty", icon: Star },
       { id: "notify", label: "Notify", icon: Bell },
       { id: "announcements", label: "Announcements", icon: Megaphone },
+      { id: "feedback", label: "Feedback", icon: Star },
+      { id: "changelog", label: "Changelog", icon: FileText },
     ],
   },
   {
@@ -1678,6 +1686,18 @@ export default function AdminDashboard() {
 
         {/* ═══ DEPOSIT ACCOUNTS ═══ */}
         {activeTab === "deposit_accounts" && <AdminDepositAccounts />}
+
+        {/* ═══ BLACKLIST MANAGER ═══ */}
+        {activeTab === "blacklist" && <AdminBlacklistManager />}
+
+        {/* ═══ AGENT LEADERBOARD ═══ */}
+        {activeTab === "agent_leaderboard" && <AdminAgentLeaderboard />}
+
+        {/* ═══ USER FEEDBACK ═══ */}
+        {activeTab === "feedback" && <AdminUserFeedback />}
+
+        {/* ═══ CHANGELOG ═══ */}
+        {activeTab === "changelog" && <AdminChangelogManager />}
 
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
