@@ -519,9 +519,28 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
             {step === "number" && (
               <div className="px-4 pt-5 pb-10 space-y-5">
 
+                {/* Selected pack summary (drive pack flow) */}
+                {selectedPack && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-3 p-3 rounded-2xl border border-primary/30 bg-primary/5"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                      <Package size={18} className="text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-muted-foreground">Selected pack</p>
+                      <p className="text-sm font-bold text-foreground truncate">{selectedPack.name}</p>
+                      <p className="text-xs text-muted-foreground">{selectedPack.details} · {selectedPack.validity}</p>
+                    </div>
+                    <p className="text-base font-extrabold text-primary shrink-0">৳{selectedPack.price}</p>
+                  </motion.div>
+                )}
+
                 {/* Phone input + continue */}
                 <div className="space-y-3">
-                  <label className="text-sm font-semibold text-foreground">Mobile Number</label>
+                  <label className="text-sm font-semibold text-foreground">{selectedPack ? "Enter recipient number" : "Mobile Number"}</label>
                   <div className="relative">
                     <Smartphone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input
