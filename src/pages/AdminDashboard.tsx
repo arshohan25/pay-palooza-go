@@ -1476,6 +1476,27 @@ export default function AdminDashboard() {
         {/* ═══ MFS MONITOR ═══ */}
         {activeTab === "mfs_monitor" && <AdminMfsMonitor />}
 
+        {/* ═══ MERCHANT APPLICATIONS ═══ */}
+        {activeTab === "merchant_apps" && <AdminMerchantApplications />}
+
+        {/* ═══ API REQUESTS ═══ */}
+        {activeTab === "api_requests" && <AdminApiRequests />}
+
+        {/* ═══ TEAM ACTIVITY ═══ */}
+        {activeTab === "team_activity" && <TeamActivityDashboard />}
+
+        {/* ═══ DISTRIBUTORS ═══ */}
+        {activeTab === "distributors" && <AdminDistributorManagement />}
+
+        {/* ═══ SYSTEM HEALTH ═══ */}
+        {activeTab === "sys_health" && <AdminSystemHealth />}
+
+        {/* ═══ DATA EXPORT ═══ */}
+        {activeTab === "data_export" && <AdminDataExport />}
+
+        {/* ═══ USER SESSIONS ═══ */}
+        {activeTab === "sessions" && <AdminUserSessions />}
+
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
           <div className="space-y-4">
