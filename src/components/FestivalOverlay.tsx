@@ -108,8 +108,14 @@ export default function FestivalOverlay() {
                       top: `${Math.random() * 80}%`,
                       animationDelay: `${Math.random() * 3}s`,
                       animationDuration: `${1.5 + Math.random() * 2}s`,
-                      ...(theme.overlay_effect === "confetti" || theme.overlay_effect === "fireworks"
+                    ...(theme.overlay_effect === "confetti" || theme.overlay_effect === "fireworks"
                         ? { background: colors[i % colors.length] }
+                        : theme.overlay_effect === "petals"
+                        ? { background: petalColors[i % petalColors.length] }
+                        : theme.overlay_effect === "leaves"
+                        ? { background: leafColors[i % leafColors.length] }
+                        : theme.overlay_effect === "sparkles"
+                        ? { background: ["#fff", "#fbbf24", "#e2e8f0"][i % 3] }
                         : {}),
                     }}
                   />

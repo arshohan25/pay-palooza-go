@@ -43,7 +43,7 @@ const PRESETS: Record<string, { name: string; emoji: string; greeting: string; g
   custom: { name: "", emoji: "🎉", greeting: "", gradient: "linear-gradient(135deg, hsl(200 60% 20%), hsl(220 50% 30%))", accent: "hsl(200 60% 50%)", effect: "none" },
 };
 
-const EFFECTS = ["none", "stars", "lanterns", "confetti", "snow", "fireworks"];
+const EFFECTS = ["none", "stars", "lanterns", "confetti", "snow", "fireworks", "petals", "crescents", "hearts", "leaves", "sparkles"];
 
 const emptyForm = (): Omit<FestivalTheme, "id" | "created_at" | "updated_at" | "created_by"> => ({
   name: "", preset_key: "custom", greeting_text: "", accent_color: null, emoji: "🎉",
