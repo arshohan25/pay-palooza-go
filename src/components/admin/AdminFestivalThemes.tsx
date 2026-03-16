@@ -38,7 +38,7 @@ const PRESETS: Record<string, { name: string; emoji: string; greeting: string; g
   arabic_new_year: { name: "Hijri New Year", emoji: "🕌", greeting: "Happy Islamic New Year! 🕌", gradient: "linear-gradient(135deg, hsl(150 50% 18%), hsl(160 40% 25%))", accent: "hsl(150 50% 40%)", effect: "stars" },
   victory_day: { name: "Victory Day", emoji: "🇧🇩", greeting: "Happy Victory Day! 16th December 🇧🇩", gradient: "linear-gradient(135deg, hsl(150 80% 25%), hsl(0 70% 40%))", accent: "hsl(150 80% 40%)", effect: "confetti" },
   independence_day: { name: "Independence Day", emoji: "🇧🇩", greeting: "Happy Independence Day! 26th March 🇧🇩", gradient: "linear-gradient(135deg, hsl(150 80% 25%), hsl(45 90% 50%))", accent: "hsl(150 80% 40%)", effect: "confetti" },
-  durga_puja: { name: "Durga Puja", emoji: "🪷", greeting: "Shubho Durga Puja! 🪷", gradient: "linear-gradient(135deg, hsl(330 60% 30%), hsl(45 80% 45%))", accent: "hsl(330 60% 50%)", effect: "lanterns" },
+  durga_puja: { name: "Durga Puja", emoji: "🪷", greeting: "Shubho Durga Puja! 🪷", gradient: "linear-gradient(135deg, hsl(330 60% 30%), hsl(45 80% 45%))", accent: "hsl(330 60% 50%)", effect: "leaves" },
   christmas: { name: "Merry Christmas", emoji: "🎄", greeting: "Merry Christmas! Season's Greetings 🎄", gradient: "linear-gradient(135deg, hsl(0 70% 30%), hsl(140 60% 25%))", accent: "hsl(0 70% 50%)", effect: "snow" },
   custom: { name: "", emoji: "🎉", greeting: "", gradient: "linear-gradient(135deg, hsl(200 60% 20%), hsl(220 50% 30%))", accent: "hsl(200 60% 50%)", effect: "none" },
 };
