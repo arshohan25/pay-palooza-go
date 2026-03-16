@@ -880,16 +880,17 @@ export default function AdminDashboard() {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              <Button variant="outline" size="icon" onClick={loadData} disabled={refreshing}>
-                <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+              <Button variant="outline" size="icon" onClick={loadData} disabled={refreshing} className="h-7 w-7 md:h-9 md:w-9">
+                <RefreshCw className={`w-3.5 h-3.5 md:w-4 md:h-4 ${refreshing ? "animate-spin" : ""}`} />
               </Button>
               <Button
                 variant={showActivityFeed ? "default" : "outline"}
                 size="icon"
                 onClick={() => setShowActivityFeed(v => !v)}
                 title="Activity Feed"
+                className="h-7 w-7 md:h-9 md:w-9"
               >
-                <Radio className="w-4 h-4" />
+                <Radio className="w-3.5 h-3.5 md:w-4 md:h-4" />
               </Button>
             </div>
           </div>
