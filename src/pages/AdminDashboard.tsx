@@ -1701,6 +1701,9 @@ export default function AdminDashboard() {
         {/* ═══ CHANGELOG ═══ */}
         {activeTab === "changelog" && <AdminChangelogManager />}
 
+        {/* ═══ FESTIVAL THEMES ═══ */}
+        {activeTab === "festival_themes" && <AdminFestivalThemes />}
+
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
           <div className="space-y-4">

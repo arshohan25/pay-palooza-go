@@ -208,8 +208,9 @@ const Index = () => {
         <div className="space-y-5">
           <AppHeader onSignOut={signOut} />
           <PlatformBanner />
+          <FestivalOverlay />
 
-          {/* Pull-to-refresh indicator */}
+           {/* Pull-to-refresh indicator */}
           <AnimatePresence>
             {isPulling && (
               <motion.div
