@@ -7,7 +7,7 @@ import {
   TrendingUp, Activity, Search, RefreshCw, LogOut,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings, FileText,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
-  Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck, Image, Bell, PiggyBank, Shield, Star, Building2,
+  Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck, Image, Bell, PiggyBank, Shield, Star, Building2, Megaphone,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -90,6 +90,7 @@ import AdminDeviceManager from "@/components/admin/AdminDeviceManager";
 import AdminAutoSaveMonitor from "@/components/admin/AdminAutoSaveMonitor";
 import AdminOtpMonitor from "@/components/admin/AdminOtpMonitor";
 import AdminCommissionLedger from "@/components/admin/AdminCommissionLedger";
+import AdminAnnouncementManager from "@/components/admin/AdminAnnouncementManager";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -263,6 +264,7 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "banners", label: "Banners", icon: Image },
       { id: "loyalty", label: "Loyalty", icon: Star },
       { id: "notify", label: "Notify", icon: Bell },
+      { id: "announcements", label: "Announcements", icon: Megaphone },
     ],
   },
   {
@@ -1429,6 +1431,9 @@ export default function AdminDashboard() {
 
         {/* ═══ NOTIFICATIONS ═══ */}
         {activeTab === "notify" && <AdminNotificationSender />}
+
+        {/* ═══ ANNOUNCEMENTS ═══ */}
+        {activeTab === "announcements" && <AdminAnnouncementManager />}
 
         {/* ═══ SAVINGS ═══ */}
         {activeTab === "savings" && <AdminSavingsManagement />}
