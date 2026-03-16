@@ -314,7 +314,7 @@ body.festival-body-crescents::before {
 
 /* Stars — scattered diamond stars with glow */
 body.festival-body-stars::before {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cpolygon points='50,8 56,38 86,38 62,56 68,86 50,68 32,86 38,56 14,38 44,38' fill='%23d4af37' opacity='0.25'/%3E%3Ccircle cx='15' cy='15' r='1.5' fill='%23fff' opacity='0.3'/%3E%3Ccircle cx='85' cy='80' r='1' fill='%23fff' opacity='0.2'/%3E%3Ccircle cx='75' cy='20' r='0.8' fill='%23d4af37' opacity='0.2'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cpolygon points='50,8 56,38 86,38 62,56 68,86 50,68 32,86 38,56 14,38 44,38' fill='%23d4af37' opacity='0.45'/%3E%3Ccircle cx='15' cy='15' r='1.5' fill='%23fff' opacity='0.5'/%3E%3Ccircle cx='85' cy='80' r='1' fill='%23fff' opacity='0.4'/%3E%3Ccircle cx='75' cy='20' r='0.8' fill='%23d4af37' opacity='0.4'/%3E%3C/svg%3E");
   background-size: 120px 120px;
 }
 
