@@ -36,6 +36,8 @@ const App = () => (
     <I18nProvider>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
+          <FestivalThemeProvider>
+          <FestivalBodyEffect />
           <Toaster />
           <Sonner />
           <BrowserRouter>
