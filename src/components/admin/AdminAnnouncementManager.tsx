@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,6 +33,8 @@ const typeOptions = [
 
 const emptyForm = { title: "", message: "", type: "info", priority: 0, starts_at: "", ends_at: "", is_active: true };
 
+const db = supabase as any;
+
 export default function AdminAnnouncementManager() {
   const [items, setItems] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,11 +44,11 @@ export default function AdminAnnouncementManager() {
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase
+    const { data } = await db
       .from("platform_announcements")
       .select("*")
       .order("priority", { ascending: false });
-    if (data) setItems(data as any);
+    if (data) setItems(data);
     setLoading(false);
   };
 
@@ -80,13 +82,13 @@ export default function AdminAnnouncementManager() {
       updated_at: new Date().toISOString(),
     };
     if (editId) {
-      const { error } = await supabase.from("platform_announcements").update(payload).eq("id", editId);
+      const { error } = await db.from("platform_announcements").update(payload).eq("id", editId);
       if (error) { toast.error(error.message); return; }
       toast.success("Announcement updated");
     } else {
       const { data: { user } } = await supabase.auth.getUser();
       payload.created_by = user?.id;
-      const { error } = await supabase.from("platform_announcements").insert(payload);
+      const { error } = await db.from("platform_announcements").insert(payload);
       if (error) { toast.error(error.message); return; }
       toast.success("Announcement created");
     }
@@ -95,14 +97,14 @@ export default function AdminAnnouncementManager() {
   };
 
   const remove = async (id: string) => {
-    const { error } = await supabase.from("platform_announcements").delete().eq("id", id);
+    const { error } = await db.from("platform_announcements").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
     toast.success("Deleted");
     load();
   };
 
   const toggleActive = async (id: string, val: boolean) => {
-    await supabase.from("platform_announcements").update({ is_active: val, updated_at: new Date().toISOString() }).eq("id", id);
+    await db.from("platform_announcements").update({ is_active: val, updated_at: new Date().toISOString() }).eq("id", id);
     load();
   };
 

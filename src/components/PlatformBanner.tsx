@@ -28,8 +28,8 @@ export default function PlatformBanner() {
   });
 
   useEffect(() => {
-    const fetch = async () => {
-      const { data } = await supabase
+    const load = async () => {
+      const { data } = await (supabase as any)
         .from("platform_announcements")
         .select("id, title, message, type, priority")
         .eq("is_active", true)
@@ -39,7 +39,7 @@ export default function PlatformBanner() {
         .limit(5);
       if (data) setAnnouncements(data);
     };
-    fetch();
+    load();
   }, []);
 
   const dismiss = (id: string) => {
