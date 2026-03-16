@@ -20,6 +20,11 @@ const PARTICLE_STYLES: Record<string, string> = {
   confetti: "festival-confetti",
   snow: "festival-snow",
   fireworks: "festival-fireworks",
+  petals: "festival-petals",
+  crescents: "festival-crescents",
+  hearts: "festival-hearts",
+  leaves: "festival-leaves",
+  sparkles: "festival-sparkles",
 };
 
 export default function FestivalOverlay() {
