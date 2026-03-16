@@ -85,6 +85,11 @@ import AdminDistributorManagement from "@/components/admin/AdminDistributorManag
 import AdminSystemHealth from "@/components/admin/AdminSystemHealth";
 import AdminDataExport from "@/components/admin/AdminDataExport";
 import AdminUserSessions from "@/components/admin/AdminUserSessions";
+import AdminComplaintManager from "@/components/admin/AdminComplaintManager";
+import AdminDeviceManager from "@/components/admin/AdminDeviceManager";
+import AdminAutoSaveMonitor from "@/components/admin/AdminAutoSaveMonitor";
+import AdminOtpMonitor from "@/components/admin/AdminOtpMonitor";
+import AdminCommissionLedger from "@/components/admin/AdminCommissionLedger";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -196,6 +201,7 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "mfs_monitor", label: "MFS Monitor", icon: Activity },
       { id: "disputes", label: "Disputes", icon: Scale },
       { id: "support", label: "Support", icon: MessageCircle },
+      { id: "complaints", label: "Complaints", icon: AlertTriangle },
       { id: "kyc", label: "KYC", icon: ScanFace },
       { id: "orders", label: "Orders", icon: Package },
       { id: "fund_requests", label: "Fund Requests", icon: CreditCard },
@@ -214,6 +220,9 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "float_mgmt", label: "Float Mgmt", icon: Wallet },
       { id: "revenue", label: "Revenue", icon: TrendingUp },
       { id: "savings", label: "Savings", icon: PiggyBank },
+      { id: "auto_save", label: "Auto-Save", icon: PiggyBank },
+      { id: "deposit_accounts", label: "Deposit Accts", icon: CreditCard },
+      { id: "commission_ledger", label: "Commission Log", icon: Coins },
       { id: "limits", label: "Limits", icon: Scale },
     ],
   },
@@ -241,6 +250,8 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "billers", label: "Billers", icon: FileText },
       { id: "recharge", label: "Recharge", icon: Smartphone },
       { id: "risk_control", label: "Risk Control", icon: ShieldAlert },
+      { id: "devices", label: "Devices", icon: Smartphone },
+      { id: "otp_monitor", label: "OTP Monitor", icon: ShieldAlert },
       { id: "sys_health", label: "Health", icon: Activity },
       { id: "sessions", label: "Sessions", icon: Users },
     ],
@@ -1496,6 +1507,24 @@ export default function AdminDashboard() {
 
         {/* ═══ USER SESSIONS ═══ */}
         {activeTab === "sessions" && <AdminUserSessions />}
+
+        {/* ═══ COMPLAINTS ═══ */}
+        {activeTab === "complaints" && <AdminComplaintManager />}
+
+        {/* ═══ DEVICE MANAGER ═══ */}
+        {activeTab === "devices" && <AdminDeviceManager />}
+
+        {/* ═══ AUTO-SAVE MONITOR ═══ */}
+        {activeTab === "auto_save" && <AdminAutoSaveMonitor />}
+
+        {/* ═══ OTP MONITOR ═══ */}
+        {activeTab === "otp_monitor" && <AdminOtpMonitor />}
+
+        {/* ═══ COMMISSION LEDGER ═══ */}
+        {activeTab === "commission_ledger" && <AdminCommissionLedger />}
+
+        {/* ═══ DEPOSIT ACCOUNTS ═══ */}
+        {activeTab === "deposit_accounts" && <AdminDepositAccounts />}
 
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
