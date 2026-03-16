@@ -437,6 +437,7 @@ export default function AdminDashboard() {
     return () => { supabase.removeChannel(ch); };
   }, [isAdmin]);
 
+  const fetchUserUsage = async (userId: string) => {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
