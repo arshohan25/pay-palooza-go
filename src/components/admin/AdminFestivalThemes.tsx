@@ -174,7 +174,7 @@ const PRESETS: Record<string, PresetData> = {
     name: "Happy New Year", emoji: "🎆",
     greeting: "Happy New Year! Cheers to new beginnings 🎆",
     gradient: "linear-gradient(135deg, hsl(220 80% 22%), hsl(260 60% 28%), hsl(300 50% 25%))",
-    accent: "hsl(45 90% 55%)", effect: "fireworks", body_pattern: "fireworks",
+    accent: "hsl(45 90% 55%)", effect: "fireworks", body_pattern: "waves",
     palette: {
       "primary": "230 80% 48%", "primary-foreground": "0 0% 100%",
       "background": "228 22% 95%", "foreground": "225 30% 12%",
