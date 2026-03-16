@@ -964,17 +964,17 @@ export default function AdminDashboard() {
                     <tbody>
                       {transactions.slice(0, 10).map((txn: any) => (
                         <tr key={txn.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                          <td className="px-4 py-3">
+                          <td className="px-3 md:px-4 py-3">
                             <Badge variant="secondary" className={`text-xs ${TXN_TYPE_COLORS[txn.type] ?? ""}`}>
                               {txn.type}
                             </Badge>
                           </td>
-                          <td className="px-4 py-3 font-semibold text-foreground">৳{txn.amount?.toLocaleString()}</td>
-                          <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{txn.recipient_phone || "—"}</td>
-                          <td className="px-4 py-3 hidden lg:table-cell">
+                          <td className="px-3 md:px-4 py-3 font-semibold text-foreground">৳{txn.amount?.toLocaleString()}</td>
+                          <td className="px-3 md:px-4 py-3 text-muted-foreground hidden md:table-cell">{txn.recipient_phone || "—"}</td>
+                          <td className="px-3 md:px-4 py-3 hidden lg:table-cell">
                             <Badge variant="outline" className="text-xs">{txn.status}</Badge>
                           </td>
-                          <td className="px-4 py-3 text-muted-foreground text-xs">
+                          <td className="px-3 md:px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">
                             {new Date(txn.created_at).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                           </td>
                         </tr>
