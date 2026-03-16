@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ShieldAlert, AlertTriangle, Eye, Ban, TrendingUp, Activity, Shield, Clock, Users } from "lucide-react";
@@ -16,23 +17,20 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, Responsive
 const AgentFraudTab = () => {
   const [agents, setAgents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedAgent, setSelectedAgent] = useState<any>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [freezing, setFreezing] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase
-        .from("agents")
-        .select("id, user_id, business_name, max_float, territory_code, status, commission_earned, customers_onboarded")
-        .eq("status", "active");
+  const fetchAgents = async () => {
+    const { data } = await supabase
+      .from("agents")
+      .select("id, user_id, business_name, max_float, territory_code, status, commission_earned, customers_onboarded")
+      .eq("status", "active");
+    setAgents(data ?? []);
+    setLoading(false);
+  };
 
-      // Flag agents: high commission (proxy for high volume) relative to float
-      const flagged = (data ?? []).filter(a => {
-        const utilization = a.commission_earned / Math.max(a.max_float, 1);
-        return utilization > 0.8 || a.customers_onboarded > 50;
-      });
-      setAgents(data ?? []);
-      setLoading(false);
-    })();
-  }, []);
+  useEffect(() => { fetchAgents(); }, []);
 
   const flagLevel = (a: any) => {
     const util = a.commission_earned / Math.max(a.max_float, 1);
@@ -40,6 +38,35 @@ const AgentFraudTab = () => {
     if (util > 1) return "high";
     if (util > 0.8) return "medium";
     return "low";
+  };
+
+  const handleView = async (agent: any) => {
+    setSelectedAgent(agent);
+    setSheetOpen(true);
+  };
+
+  const handleFreeze = async (agent: any) => {
+    setFreezing(agent.id);
+    try {
+      const { error } = await supabase.from("agents").update({ status: "suspended" as any }).eq("id", agent.id);
+      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await supabase.from("audit_logs").insert({
+          actor_id: session.user.id,
+          action: "freeze_agent",
+          entity_type: "agent",
+          entity_id: agent.id,
+          details: { business_name: agent.business_name, risk_level: flagLevel(agent) },
+        });
+      }
+      toast.success(`Agent "${agent.business_name}" frozen`);
+      fetchAgents();
+    } catch {
+      toast.error("Failed to freeze agent");
+    } finally {
+      setFreezing(null);
+    }
   };
 
   const SEVERITY_BADGE: Record<string, string> = {
@@ -89,9 +116,13 @@ const AgentFraudTab = () => {
                 <TableCell>{util}%</TableCell>
                 <TableCell><Badge className={SEVERITY_BADGE[level]}>{level}</Badge></TableCell>
                 <TableCell className="flex gap-1">
-                  <Button size="sm" variant="outline" className="h-7 text-xs"><Eye className="w-3 h-3 mr-1" />View</Button>
+                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleView(a)}>
+                    <Eye className="w-3 h-3 mr-1" />View
+                  </Button>
                   {(level === "critical" || level === "high") && (
-                    <Button size="sm" variant="destructive" className="h-7 text-xs"><Ban className="w-3 h-3 mr-1" />Freeze</Button>
+                    <Button size="sm" variant="destructive" className="h-7 text-xs" disabled={freezing === a.id} onClick={() => handleFreeze(a)}>
+                      <Ban className="w-3 h-3 mr-1" />{freezing === a.id ? "…" : "Freeze"}
+                    </Button>
                   )}
                 </TableCell>
               </TableRow>
@@ -102,6 +133,31 @@ const AgentFraudTab = () => {
           )}
         </TableBody>
       </Table>
+
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent>
+          <SheetHeader><SheetTitle>Agent Details</SheetTitle></SheetHeader>
+          {selectedAgent && (
+            <div className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <div className="flex justify-between"><span className="text-sm text-muted-foreground">Business</span><span className="text-sm font-medium">{selectedAgent.business_name || "—"}</span></div>
+                <div className="flex justify-between"><span className="text-sm text-muted-foreground">Territory</span><span className="text-sm font-medium">{selectedAgent.territory_code || "N/A"}</span></div>
+                <div className="flex justify-between"><span className="text-sm text-muted-foreground">Max Float</span><span className="text-sm font-medium">৳{Number(selectedAgent.max_float).toLocaleString()}</span></div>
+                <div className="flex justify-between"><span className="text-sm text-muted-foreground">Commission Earned</span><span className="text-sm font-medium">৳{Number(selectedAgent.commission_earned).toLocaleString()}</span></div>
+                <div className="flex justify-between"><span className="text-sm text-muted-foreground">Customers Onboarded</span><span className="text-sm font-medium">{selectedAgent.customers_onboarded}</span></div>
+                <div className="flex justify-between"><span className="text-sm text-muted-foreground">Float Utilization</span><span className="text-sm font-medium">{((selectedAgent.commission_earned / Math.max(selectedAgent.max_float, 1)) * 100).toFixed(1)}%</span></div>
+                <div className="flex justify-between"><span className="text-sm text-muted-foreground">Risk Level</span><Badge className={SEVERITY_BADGE[flagLevel(selectedAgent)]}>{flagLevel(selectedAgent)}</Badge></div>
+                <div className="flex justify-between"><span className="text-sm text-muted-foreground">Status</span><Badge variant="outline">{selectedAgent.status}</Badge></div>
+              </div>
+              {(flagLevel(selectedAgent) === "critical" || flagLevel(selectedAgent) === "high") && (
+                <Button variant="destructive" className="w-full" onClick={() => { handleFreeze(selectedAgent); setSheetOpen(false); }}>
+                  <Ban className="w-4 h-4 mr-2" />Freeze This Agent
+                </Button>
+              )}
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
@@ -352,24 +408,44 @@ const RiskDashboardTab = () => {
   const [fraudCount, setFraudCount] = useState(0);
   const [amlActive, setAmlActive] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [trendData, setTrendData] = useState<{ day: string; risk: number }[]>([]);
 
   useEffect(() => {
     (async () => {
-      const [{ count: fc }, { data: aml }] = await Promise.all([
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+      const [{ count: fc }, { data: aml }, { data: alerts7d }] = await Promise.all([
         supabase.from("fraud_alerts").select("*", { count: "exact", head: true }).in("status", ["open", "investigating"]),
         supabase.from("aml_rules").select("id").eq("is_active", true),
+        supabase.from("fraud_alerts").select("created_at, severity").gte("created_at", weekAgo),
       ]);
       setFraudCount(fc ?? 0);
       setAmlActive(aml?.length ?? 0);
+
+      // Build real 7-day trend from fraud_alerts
+      const dayCounts: Record<string, number> = {};
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        dayCounts[d.toLocaleDateString("en", { weekday: "short" })] = 0;
+      }
+      for (const alert of (alerts7d ?? [])) {
+        const d = new Date(alert.created_at);
+        const key = d.toLocaleDateString("en", { weekday: "short" });
+        if (key in dayCounts) {
+          const weight = alert.severity === "critical" ? 3 : alert.severity === "high" ? 2 : 1;
+          dayCounts[key] += weight;
+        }
+      }
+      const maxVal = Math.max(...Object.values(dayCounts), 1);
+      setTrendData(Object.entries(dayCounts).map(([day, val]) => ({
+        day,
+        risk: Math.min(100, Math.round((val / maxVal) * 80 + 10)),
+      })));
+
       setLoading(false);
     })();
   }, []);
-
-  const trendData = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (6 - i));
-    return { day: d.toLocaleDateString("en", { weekday: "short" }), risk: Math.floor(Math.random() * 40 + 20) };
-  });
 
   const riskScore = Math.min(100, fraudCount * 15 + (amlActive > 3 ? 10 : 0) + 25);
   const riskColor = riskScore > 70 ? "text-red-600" : riskScore > 40 ? "text-amber-600" : "text-emerald-600";
@@ -427,24 +503,24 @@ const RiskDashboardTab = () => {
 /* ─── Main Component ─── */
 export default function AdminRiskControl() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <ShieldAlert className="w-5 h-5 text-destructive" />
-        <h2 className="text-lg font-bold">🔐 Risk Control</h2>
+        <ShieldAlert className="w-5 h-5 text-primary" />
+        <h2 className="text-lg font-bold text-foreground">Risk Control Center</h2>
       </div>
 
-      <Tabs defaultValue="dashboard" className="w-full">
-        <TabsList className="w-full flex flex-wrap h-auto gap-1">
+      <Tabs defaultValue="dashboard" className="space-y-4">
+        <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="dashboard" className="text-xs">Risk Dashboard</TabsTrigger>
           <TabsTrigger value="agent_fraud" className="text-xs">Agent Fraud</TabsTrigger>
-          <TabsTrigger value="suspicious" className="text-xs">Suspicious CashOut</TabsTrigger>
+          <TabsTrigger value="cash_out" className="text-xs">Suspicious Cash Out</TabsTrigger>
           <TabsTrigger value="aml" className="text-xs">AML Rules</TabsTrigger>
           <TabsTrigger value="limits" className="text-xs">Txn Limits</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard"><RiskDashboardTab /></TabsContent>
         <TabsContent value="agent_fraud"><AgentFraudTab /></TabsContent>
-        <TabsContent value="suspicious"><SuspiciousCashOutTab /></TabsContent>
+        <TabsContent value="cash_out"><SuspiciousCashOutTab /></TabsContent>
         <TabsContent value="aml"><AmlRulesTab /></TabsContent>
         <TabsContent value="limits"><TxnLimitsTab /></TabsContent>
       </Tabs>

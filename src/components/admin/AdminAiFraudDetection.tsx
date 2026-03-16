@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { Brain, ShieldAlert, TrendingUp, AlertTriangle, Activity, Zap, Eye, RefreshCw } from "lucide-react";
+import { Brain, ShieldAlert, TrendingUp, AlertTriangle, Activity, Zap, Eye, RefreshCw, Search, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 interface RiskProfile {
@@ -41,6 +41,42 @@ export default function AdminAiFraudDetection() {
   const [alertStats, setAlertStats] = useState({ total: 0, open: 0, critical: 0, resolved: 0 });
   const [velocityAlerts, setVelocityAlerts] = useState<any[]>([]);
   const [patterns, setPatterns] = useState<{ label: string; count: number; severity: string }[]>([]);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const investigate = async (userId: string, name: string, reason: string) => {
+    setActionLoading(userId + "-inv");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error("Not authenticated");
+      await supabase.from("fraud_alerts").insert({
+        user_id: userId,
+        rule_triggered: `manual_investigation: ${reason}`,
+        severity: "high" as any,
+        status: "investigating" as any,
+        details: { initiated_by: session.user.id, user_name: name },
+      });
+      toast.success(`Investigation opened for ${name}`);
+    } catch { toast.error("Failed to create alert"); }
+    finally { setActionLoading(null); }
+  };
+
+  const lockWallet = async (userId: string, name: string) => {
+    setActionLoading(userId + "-lock");
+    try {
+      const { error } = await supabase.from("profiles").update({ status: "suspended" }).eq("user_id", userId);
+      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await supabase.from("audit_logs").insert({
+          actor_id: session.user.id, action: "lock_wallet_fraud",
+          entity_type: "user", entity_id: userId,
+          details: { user_name: name, reason: "AI fraud detection" },
+        });
+      }
+      toast.success(`Wallet locked for ${name}`);
+    } catch { toast.error("Failed to lock wallet"); }
+    finally { setActionLoading(null); }
+  };
 
   const analyze = async () => {
     setLoading(true);
@@ -52,7 +88,7 @@ export default function AdminAiFraudDetection() {
       const [alertsRes, txnsRes, profilesRes, devicesRes] = await Promise.all([
         supabase.from("fraud_alerts").select("*").order("created_at", { ascending: false }).limit(200),
         supabase.from("transactions").select("user_id, type, amount, created_at, recipient_phone, status")
-          .gte("created_at", weekAgo.toISOString()).eq("status", "completed").order("created_at", { ascending: false }).limit(1000),
+          .gte("created_at", weekAgo.toISOString()).eq("status", "completed" as any).order("created_at", { ascending: false }).limit(1000),
         supabase.from("profiles").select("user_id, name, phone, balance, status").limit(500),
         supabase.from("device_registrations").select("user_id, device_fingerprint").limit(500),
       ]);
@@ -62,7 +98,6 @@ export default function AdminAiFraudDetection() {
       const profiles = profilesRes.data ?? [];
       const devices = devicesRes.data ?? [];
 
-      // Alert stats
       setAlertStats({
         total: alerts.length,
         open: alerts.filter(a => a.status === "open").length,
@@ -70,8 +105,6 @@ export default function AdminAiFraudDetection() {
         resolved: alerts.filter(a => a.status === "resolved").length,
       });
 
-      // Pattern detection
-      const patternMap: Record<string, { count: number; severity: string }> = {};
       const userTxnCounts: Record<string, number> = {};
       const userTxnVolumes: Record<string, number> = {};
       const userRecipients: Record<string, Set<string>> = {};
@@ -86,7 +119,6 @@ export default function AdminAiFraudDetection() {
         }
       }
 
-      // Velocity checks (>10 txns/day)
       const dailyTxns: Record<string, number> = {};
       for (const txn of txns) {
         if (new Date(txn.created_at) >= dayAgo) {
@@ -102,9 +134,6 @@ export default function AdminAiFraudDetection() {
         .sort((a, b) => b.count - a.count);
       setVelocityAlerts(velocityFlags);
 
-      // Pattern analysis
-      const highVolumeUsers = Object.entries(userTxnVolumes).filter(([, v]) => v > 50000).length;
-      const multiRecipientUsers = Object.entries(userRecipients).filter(([, s]) => s.size > 10).length;
       const multiDeviceUsers = new Set<string>();
       const deviceMap: Record<string, Set<string>> = {};
       for (const d of devices) {
@@ -112,6 +141,9 @@ export default function AdminAiFraudDetection() {
         deviceMap[d.user_id].add(d.device_fingerprint);
         if (deviceMap[d.user_id].size > 2) multiDeviceUsers.add(d.user_id);
       }
+
+      const highVolumeUsers = Object.entries(userTxnVolumes).filter(([, v]) => v > 50000).length;
+      const multiRecipientUsers = Object.entries(userRecipients).filter(([, s]) => s.size > 10).length;
 
       setPatterns([
         { label: "High-volume users (>৳50K/week)", count: highVolumeUsers, severity: highVolumeUsers > 5 ? "high" : "medium" },
@@ -121,7 +153,6 @@ export default function AdminAiFraudDetection() {
         { label: "Rapid-fire same-amount sends", count: alerts.filter(a => a.rule_triggered?.includes("rapid") || a.rule_triggered?.includes("velocity")).length, severity: "high" },
       ]);
 
-      // Build risk profiles
       const riskList: RiskProfile[] = profiles.map(p => {
         const uid = p.user_id;
         let score = 0;
@@ -131,7 +162,6 @@ export default function AdminAiFraudDetection() {
 
         if (volume > 100000) { score += 30; factors.push("Very high volume"); }
         else if (volume > 50000) { score += 15; factors.push("High volume"); }
-
         if (txnCount > 20) { score += 20; factors.push("High frequency"); }
         if ((userRecipients[uid]?.size || 0) > 10) { score += 15; factors.push("Many recipients"); }
         if (multiDeviceUsers.has(uid)) { score += 20; factors.push("Multi-device"); }
@@ -139,13 +169,8 @@ export default function AdminAiFraudDetection() {
         if (alerts.some(a => a.user_id === uid && a.status === "open")) { score += 20; factors.push("Open alert"); }
 
         return {
-          userId: uid,
-          name: p.name || "—",
-          phone: p.phone || "",
-          riskScore: Math.min(100, score),
-          factors,
-          txnCount,
-          totalVolume: volume,
+          userId: uid, name: p.name || "—", phone: p.phone || "",
+          riskScore: Math.min(100, score), factors, txnCount, totalVolume: volume,
           flagged: score >= RISK_THRESHOLDS.medium,
         };
       }).filter(r => r.riskScore > 0).sort((a, b) => b.riskScore - a.riskScore);
@@ -238,7 +263,7 @@ export default function AdminAiFraudDetection() {
                     <TableHead>Risk Score</TableHead>
                     <TableHead className="hidden md:table-cell">Factors</TableHead>
                     <TableHead className="hidden md:table-cell">Volume</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -258,7 +283,18 @@ export default function AdminAiFraudDetection() {
                         <div className="flex flex-wrap gap-1">{r.factors.map(f => <Badge key={f} variant="outline" className="text-[9px]">{f}</Badge>)}</div>
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-sm text-muted-foreground">৳{r.totalVolume.toLocaleString()}</TableCell>
-                      <TableCell><Badge variant={getRiskBadge(r.riskScore).variant} className="text-[10px]">{getRiskBadge(r.riskScore).label}</Badge></TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="outline" className="h-7 text-xs" disabled={actionLoading === r.userId + "-inv"} onClick={() => investigate(r.userId, r.name, r.factors.join(", "))}>
+                            <Search className="w-3 h-3 mr-1" />{actionLoading === r.userId + "-inv" ? "…" : "Investigate"}
+                          </Button>
+                          {r.riskScore >= RISK_THRESHOLDS.high && (
+                            <Button size="sm" variant="destructive" className="h-7 text-xs" disabled={actionLoading === r.userId + "-lock"} onClick={() => lockWallet(r.userId, r.name)}>
+                              <Lock className="w-3 h-3 mr-1" />{actionLoading === r.userId + "-lock" ? "…" : "Lock"}
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -298,6 +334,7 @@ export default function AdminAiFraudDetection() {
                     <TableHead>User</TableHead>
                     <TableHead>Txns Today</TableHead>
                     <TableHead>Severity</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -309,10 +346,22 @@ export default function AdminAiFraudDetection() {
                       </TableCell>
                       <TableCell className="text-sm font-bold text-foreground">{v.count}</TableCell>
                       <TableCell><Badge variant={v.severity === "critical" ? "destructive" : "secondary"} className="text-[10px] capitalize">{v.severity}</Badge></TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="outline" className="h-7 text-xs" disabled={actionLoading === v.userId + "-inv"} onClick={() => investigate(v.userId, v.name, `Velocity: ${v.count} txns/day`)}>
+                            <Search className="w-3 h-3 mr-1" />Investigate
+                          </Button>
+                          {v.severity === "critical" && (
+                            <Button size="sm" variant="destructive" className="h-7 text-xs" disabled={actionLoading === v.userId + "-lock"} onClick={() => lockWallet(v.userId, v.name)}>
+                              <Lock className="w-3 h-3 mr-1" />Lock
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                   {velocityAlerts.length === 0 && (
-                    <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">No velocity violations detected</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No velocity violations detected</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
