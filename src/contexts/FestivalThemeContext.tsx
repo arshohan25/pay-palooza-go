@@ -95,9 +95,7 @@ export function FestivalThemeProvider({ children }: { children: ReactNode }) {
     fetchTheme();
 
     return () => {
-      if (theme?.theme_palette) {
-        clearPalette(theme.theme_palette);
-      }
+      clearPalette();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
