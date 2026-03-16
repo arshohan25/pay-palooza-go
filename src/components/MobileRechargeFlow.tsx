@@ -226,6 +226,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
   const [pin, setPin]                 = useState("");
   const [error, setError]             = useState("");
   const [showShare, setShowShare]     = useState(false);
+  const [isPhoneDummy, setIsPhoneDummy] = useState(false);
   const txnTime = useRef(new Date());
   const txnId   = useRef(generateTxnId());
 
