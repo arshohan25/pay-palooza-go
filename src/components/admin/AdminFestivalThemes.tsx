@@ -360,6 +360,7 @@ export default function AdminFestivalThemes() {
   const [form, setForm] = useState<FormState>(emptyForm());
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewTheme, setPreviewTheme] = useState<FestivalTheme | null>(null);
+  const [previewDark, setPreviewDark] = useState(false);
 
   const fetchThemes = async () => {
     setLoading(true);
