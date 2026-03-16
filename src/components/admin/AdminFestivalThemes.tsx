@@ -329,7 +329,7 @@ const PRESETS: Record<string, PresetData> = {
 };
 
 const EFFECTS = ["none", "stars", "lanterns", "confetti", "snow", "fireworks", "petals", "crescents", "hearts", "leaves", "sparkles"];
-const BODY_PATTERNS = ["none", "stars", "crescents", "petals", "snow", "confetti", "fireworks", "sparkles", "leaves", "hearts"];
+const BODY_PATTERNS = ["none", "stars", "crescents", "petals", "snow", "confetti", "fireworks", "sparkles", "leaves", "hearts", "arabesque", "lanterns", "mosque", "waves", "rangoli"];
 
 interface FormState {
   name: string;
