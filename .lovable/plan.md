@@ -1,29 +1,45 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Improve Admin Dashboard Mobile Responsiveness
 
-### What
+### Problems Identified (at 390px viewport)
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+1. **Header cluttered** — search input, status badge, refresh/activity buttons all compete for space in top bar
+2. **StatCards overflow** — `p-4` padding + `w-12 h-12` icon box + large text in a 2-col grid causes text wrapping/clipping (e.g. "Pending Funds" value `"3 / ৳12,500"`)
+3. **Agents sub-tab has NO mobile card layout** — raw table with `overflow-x-auto` forces horizontal scroll on 390px
+4. **Merchants sub-tab has NO mobile card layout** — same issue
+5. **Trash/Deleted Users has NO mobile card layout** — same issue
+6. **Overview transactions table** — `px-4` cell padding wastes space on mobile; time column too wide
 
-### Changes
+### Implementation Plan
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+All changes are in **`src/pages/AdminDashboard.tsx`** only.
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+#### 1. Compact StatCard on mobile
+- Reduce icon box to `w-10 h-10` and icon to `w-5 h-5` on mobile
+- Reduce padding to `p-3` on mobile, keep `p-4` on desktop
+- Shrink value text to `text-xl` on mobile
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+#### 2. Compact header on mobile
+- Hide the activity feed button on mobile header row (it's accessible via the sheet anyway — keep it but shrink)
+- Make the refresh + activity buttons `h-7 w-7` on mobile
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+#### 3. Add mobile card layout for Agents sub-tab
+- Mirror the Users mobile pattern: `md:hidden` card list with business name, territory, status badge, and action buttons
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+#### 4. Add mobile card layout for Merchants sub-tab
+- Same pattern: business name, category, status badge, action buttons
 
-3. Add the new category icons to the `categoryIcons` map.
+#### 5. Add mobile card layout for Trash tab
+- Card list with name, phone, balance, deletion date, and View button
 
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+#### 6. Compact overview transactions table on mobile
+- Reduce cell padding from `px-4` to `px-3` on mobile
+- Truncate long values
+
+### Files Changed
+
+| File | Action |
+|------|--------|
+| `src/pages/AdminDashboard.tsx` | **Edit** — 6 targeted changes for mobile responsiveness |
 
