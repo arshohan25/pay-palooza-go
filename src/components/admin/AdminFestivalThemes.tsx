@@ -71,7 +71,7 @@ const PRESETS: Record<string, PresetData> = {
     name: "Ramadan Mubarak", emoji: "🌙",
     greeting: "Ramadan Mubarak! Wishing you a blessed month 🌙",
     gradient: "linear-gradient(135deg, hsl(245 60% 18%), hsl(270 50% 25%), hsl(220 50% 15%))",
-    accent: "hsl(270 60% 55%)", effect: "crescents", body_pattern: "crescents",
+    accent: "hsl(270 60% 55%)", effect: "crescents", body_pattern: "arabesque",
     palette: {
       // Light mode
       "primary": "270 60% 50%", "primary-foreground": "0 0% 100%",
