@@ -226,6 +226,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
   const [pin, setPin]                 = useState("");
   const [error, setError]             = useState("");
   const [showShare, setShowShare]     = useState(false);
+  const [isPhoneDummy, setIsPhoneDummy] = useState(false);
   const txnTime = useRef(new Date());
   const txnId   = useRef(generateTxnId());
 
@@ -287,9 +288,17 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
 
   const goBack = () => {
     haptics.medium();
-    if (step === "number") { onClose(); return; }
+    if (step === "number") {
+      // If we came to number step from packs (drive pack flow), go back to packs
+      if (selectedPack) { goTo("packs"); return; }
+      onClose(); return;
+    }
     if (step === "packs")  { setSelectedPack(null); setCustomAmount(""); goTo("number"); return; }
-    if (step === "amount") { goTo("number"); return; }
+    if (step === "amount") {
+      // If drive pack flow (came from operator tap with pack selected), go back to number entry
+      if (selectedPack && !isPhoneDummy) { goTo("number"); return; }
+      goTo("number"); return;
+    }
     if (step === "pin")    { goTo("amount"); return; }
   };
 
@@ -299,6 +308,13 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     if (digits.length !== 11) { setError("Enter an 11-digit mobile number."); return; }
     if (!detectedOp) { setError("Unable to detect operator. Check the number."); return; }
     setSelectedOp(detectedOp);
+    setIsPhoneDummy(false);
+    // If a pack is already selected (drive pack flow), go to amount
+    if (selectedPack) {
+      setCustomAmount(String(selectedPack.price));
+      goTo("amount");
+      return;
+    }
     setCustomAmount("");
     goTo("amount");
   };
@@ -308,6 +324,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     setSelectedOp(op);
     if (detectedOp?.short !== op.short) {
       setPhone(op.prefixes[0] + "00000000");
+      setIsPhoneDummy(true);
     }
     setSelectedPack(null);
     setCustomAmount("");
@@ -326,9 +343,16 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     haptics.light();
   };
 
-  // Packs → Amount (only when browsing via operator card tap)
+  // Packs → Number or Amount (drive pack + dummy phone → number entry first)
   const handlePackContinue = () => {
     if (!selectedPack) { setError("Please select a pack to continue."); return; }
+    if (isPhoneDummy) {
+      // Clear dummy phone so user enters real number
+      setPhone("");
+      setError("");
+      goTo("number");
+      return;
+    }
     goTo("amount");
   };
 
@@ -495,9 +519,28 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
             {step === "number" && (
               <div className="px-4 pt-5 pb-10 space-y-5">
 
+                {/* Selected pack summary (drive pack flow) */}
+                {selectedPack && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-3 p-3 rounded-2xl border border-primary/30 bg-primary/5"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                      <Package size={18} className="text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-muted-foreground">Selected pack</p>
+                      <p className="text-sm font-bold text-foreground truncate">{selectedPack.name}</p>
+                      <p className="text-xs text-muted-foreground">{selectedPack.details} · {selectedPack.validity}</p>
+                    </div>
+                    <p className="text-base font-extrabold text-primary shrink-0">৳{selectedPack.price}</p>
+                  </motion.div>
+                )}
+
                 {/* Phone input + continue */}
                 <div className="space-y-3">
-                  <label className="text-sm font-semibold text-foreground">Mobile Number</label>
+                  <label className="text-sm font-semibold text-foreground">{selectedPack ? "Enter recipient number" : "Mobile Number"}</label>
                   <div className="relative">
                     <Smartphone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -572,9 +615,9 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                     whileTap={{ scale: 0.97 }}
                     onClick={handleNumberContinue}
                     className="w-full h-13 rounded-2xl text-white font-bold text-base shadow-lg flex items-center justify-center gap-2 transition-all"
-                    style={{ background: "linear-gradient(135deg, hsl(0 74% 50%), hsl(0 74% 38%))", minHeight: 52 }}
+                    style={{ background: selectedPack ? (operator ? `linear-gradient(135deg, ${operator.brandColor}, ${operator.brandColorDark})` : "linear-gradient(135deg, hsl(0 74% 50%), hsl(0 74% 38%))") : "linear-gradient(135deg, hsl(0 74% 50%), hsl(0 74% 38%))", minHeight: 52 }}
                   >
-                    Continue
+                    {selectedPack ? `Continue with ${selectedPack.name}` : "Continue"}
                     <ChevronRight size={18} />
                   </motion.button>
                 </div>
