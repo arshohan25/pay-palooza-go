@@ -324,6 +324,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     setSelectedOp(op);
     if (detectedOp?.short !== op.short) {
       setPhone(op.prefixes[0] + "00000000");
+      setIsPhoneDummy(true);
     }
     setSelectedPack(null);
     setCustomAmount("");
