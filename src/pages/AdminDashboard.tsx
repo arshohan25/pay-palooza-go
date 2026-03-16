@@ -948,6 +948,15 @@ export default function AdminDashboard() {
               >
                 <Radio className="w-3.5 h-3.5 md:w-4 md:h-4" />
               </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+                title="Toggle theme"
+                className="h-7 w-7 md:h-9 md:w-9"
+              >
+                {resolvedTheme === "dark" ? <Sun className="w-3.5 h-3.5 md:w-4 md:h-4" /> : <Moon className="w-3.5 h-3.5 md:w-4 md:h-4" />}
+              </Button>
             </div>
           </div>
 
