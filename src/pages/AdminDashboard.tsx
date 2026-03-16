@@ -278,6 +278,7 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
     label: "Other",
     items: [
       { id: "team", label: "Team", icon: Users },
+      { id: "team_activity", label: "Team Activity", icon: Activity },
       { id: "trash", label: "Trash", icon: Trash2 },
     ],
   },
