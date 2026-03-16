@@ -199,6 +199,8 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "kyc", label: "KYC", icon: ScanFace },
       { id: "orders", label: "Orders", icon: Package },
       { id: "fund_requests", label: "Fund Requests", icon: CreditCard },
+      { id: "merchant_apps", label: "Merchant Apps", icon: Store },
+      { id: "api_requests", label: "API Requests", icon: Plug },
     ],
   },
   {
