@@ -288,9 +288,17 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
 
   const goBack = () => {
     haptics.medium();
-    if (step === "number") { onClose(); return; }
+    if (step === "number") {
+      // If we came to number step from packs (drive pack flow), go back to packs
+      if (selectedPack) { goTo("packs"); return; }
+      onClose(); return;
+    }
     if (step === "packs")  { setSelectedPack(null); setCustomAmount(""); goTo("number"); return; }
-    if (step === "amount") { goTo("number"); return; }
+    if (step === "amount") {
+      // If drive pack flow (came from operator tap with pack selected), go back to number entry
+      if (selectedPack && !isPhoneDummy) { goTo("number"); return; }
+      goTo("number"); return;
+    }
     if (step === "pin")    { goTo("amount"); return; }
   };
 
