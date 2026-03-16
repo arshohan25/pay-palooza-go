@@ -356,7 +356,7 @@ body.festival-body-leaves::before {
 
 /* Hearts — elegant heart pattern */
 body.festival-body-hearts::before {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cpath d='M40 55 C32 47 22 42 22 34 C22 29 26 25 31 25 C34.5 25 37.5 27 40 30 C42.5 27 45.5 25 49 25 C54 25 58 29 58 34 C58 42 48 47 40 55Z' fill='%23e84393' opacity='0.15'/%3E%3Ccircle cx='15' cy='15' r='1.5' fill='%23fd79a8' opacity='0.1'/%3E%3Ccircle cx='68' cy='12' r='1' fill='%23e84393' opacity='0.08'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cpath d='M40 55 C32 47 22 42 22 34 C22 29 26 25 31 25 C34.5 25 37.5 27 40 30 C42.5 27 45.5 25 49 25 C54 25 58 29 58 34 C58 42 48 47 40 55Z' fill='%23e84393' opacity='0.3'/%3E%3Ccircle cx='15' cy='15' r='1.5' fill='%23fd79a8' opacity='0.2'/%3E%3Ccircle cx='68' cy='12' r='1' fill='%23e84393' opacity='0.15'/%3E%3C/svg%3E");
   background-size: 100px 100px;
 }
 
