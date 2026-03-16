@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { I18nProvider } from "@/lib/i18n";
+import { FestivalThemeProvider } from "@/contexts/FestivalThemeContext";
+import FestivalBodyEffect from "@/components/FestivalBodyEffect";
 import RoleGuard from "@/components/RoleGuard";
 import Index from "./pages/Index";
 import AdminDashboard from "./pages/AdminDashboard";
