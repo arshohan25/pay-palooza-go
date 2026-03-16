@@ -274,7 +274,7 @@ const PRESETS: Record<string, PresetData> = {
     name: "Durga Puja", emoji: "🪷",
     greeting: "Shubho Durga Puja! 🪷",
     gradient: "linear-gradient(135deg, hsl(330 60% 38%), hsl(45 80% 48%))",
-    accent: "hsl(330 60% 50%)", effect: "leaves", body_pattern: "leaves",
+    accent: "hsl(330 60% 50%)", effect: "leaves", body_pattern: "rangoli",
     palette: {
       "primary": "330 60% 48%", "primary-foreground": "0 0% 100%",
       "background": "335 18% 95%", "foreground": "338 28% 12%",
