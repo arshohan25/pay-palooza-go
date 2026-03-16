@@ -618,72 +618,151 @@ export default function AdminFestivalThemes() {
               </div>
             </TabsContent>
 
-            <TabsContent value="preview" className="mt-4 space-y-4">
-              {/* Banner preview */}
-              <div>
-                <Label className="mb-2 block">Banner Preview</Label>
-                <div className="rounded-xl overflow-hidden" style={{ background: form.banner_gradient || "hsl(var(--muted))" }}>
-                  <div className="px-4 py-5 text-center">
-                    <span className="text-3xl block mb-1">{form.emoji}</span>
-                    <p className="text-white font-semibold text-sm drop-shadow">{form.greeting_text || "Your greeting here…"}</p>
-                  </div>
+            <TabsContent value="preview" className="mt-4 space-y-2">
+              {/* Light / Dark toggle */}
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold">Live Preview</Label>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground">{previewDark ? "Dark" : "Light"}</span>
+                  <Switch checked={previewDark} onCheckedChange={setPreviewDark} />
                 </div>
               </div>
 
-              {/* Palette preview */}
-              {paletteCount > 0 && (
-                <div>
-                  <Label className="mb-2 block">Palette Preview</Label>
-                  <div
-                    className="rounded-xl p-4 space-y-3 border"
-                    style={{
-                      background: form.theme_palette.background ? `hsl(${form.theme_palette.background})` : undefined,
-                      color: form.theme_palette.foreground ? `hsl(${form.theme_palette.foreground})` : undefined,
-                      borderColor: form.theme_palette.border ? `hsl(${form.theme_palette.border})` : undefined,
-                    }}
-                  >
+              {/* Phone mockup */}
+              {(() => {
+                const p = (key: string): string | undefined => {
+                  if (previewDark) {
+                    const dk = form.theme_palette[`dark-${key}`] || form.theme_palette[`dark_${key}`];
+                    if (dk) return dk;
+                  }
+                  return form.theme_palette[key];
+                };
+                const hsl = (key: string) => p(key) ? `hsl(${p(key)})` : undefined;
+                const bg = hsl("background") || (previewDark ? "#0a0a0a" : "#fafafa");
+                const fg = hsl("foreground") || (previewDark ? "#fafafa" : "#0a0a0a");
+                const primary = hsl("primary") || "hsl(var(--primary))";
+                const primaryFg = hsl("primary-foreground") || "#fff";
+                const card = hsl("card") || (previewDark ? "#111" : "#fff");
+                const cardFg = hsl("card-foreground") || fg;
+                const muted = hsl("muted") || (previewDark ? "#222" : "#eee");
+                const mutedFg = hsl("muted-foreground") || (previewDark ? "#888" : "#666");
+                const heroGrad = p("gradient-hero") || p("gradient-primary") || (p("primary") ? `linear-gradient(135deg, hsl(${p("primary")}), hsl(${p("primary")} / 0.7))` : primary);
+                const glowShadow = p("shadow-glow") || `0 4px 20px ${primary}40`;
+                const border = hsl("border") || (previewDark ? "#333" : "#ddd");
+
+                return (
+                  <div className="flex justify-center">
                     <div
-                      className="rounded-lg p-3"
-                      style={{
-                        background: form.theme_palette["gradient-hero"] || form.theme_palette["gradient-primary"] || (form.theme_palette.primary ? `hsl(${form.theme_palette.primary})` : undefined),
-                      }}
+                      className="relative rounded-[2rem] border-[3px] border-foreground/20 overflow-hidden shadow-xl"
+                      style={{ width: 280, height: 520, background: bg }}
                     >
-                      <p className="text-white text-sm font-bold">৳ 12,450.00</p>
-                      <p className="text-white/70 text-xs">Available Balance</p>
-                    </div>
-                    <div
-                      className="rounded-lg p-3"
-                      style={{
-                        background: form.theme_palette.card ? `hsl(${form.theme_palette.card})` : undefined,
-                        color: form.theme_palette["card-foreground"] ? `hsl(${form.theme_palette["card-foreground"]})` : undefined,
-                      }}
-                    >
-                      <p className="text-sm font-semibold">Card Element</p>
-                      <p className="text-xs opacity-60">Sample card content</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <div
-                        className="rounded-md px-3 py-1.5 text-xs font-medium"
-                        style={{
-                          background: form.theme_palette.primary ? `hsl(${form.theme_palette.primary})` : undefined,
-                          color: form.theme_palette["primary-foreground"] ? `hsl(${form.theme_palette["primary-foreground"]})` : "#fff",
-                        }}
-                      >
-                        Primary Button
+                      {/* Status bar */}
+                      <div className="flex items-center justify-between px-5 pt-2 pb-1" style={{ color: fg }}>
+                        <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.7 }}>9:41</span>
+                        <div className="flex items-center gap-1" style={{ opacity: 0.5 }}>
+                          <div style={{ width: 12, height: 7, border: `1px solid ${fg}`, borderRadius: 2, position: "relative" }}>
+                            <div style={{ position: "absolute", inset: 1, background: fg, borderRadius: 1 }} />
+                          </div>
+                        </div>
                       </div>
+
+                      {/* Header */}
+                      <div className="flex items-center justify-between px-4 py-2" style={{ color: fg }}>
+                        <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: -0.5 }}>EasyPay</span>
+                        <div className="flex items-center gap-2">
+                          <div style={{ width: 18, height: 18, borderRadius: 9, background: muted }} />
+                          <div style={{ width: 18, height: 18, borderRadius: 9, background: muted }} />
+                        </div>
+                      </div>
+
+                      {/* Festival banner */}
+                      {(form.greeting_text || form.emoji) && (
+                        <div className="mx-3 mb-2 rounded-xl overflow-hidden" style={{ background: form.banner_gradient || primary }}>
+                          <div className="px-3 py-2.5 flex items-center gap-2">
+                            <span style={{ fontSize: 18 }}>{form.emoji}</span>
+                            <p style={{ color: "#fff", fontSize: 10, fontWeight: 600, textShadow: "0 1px 2px rgba(0,0,0,0.3)", flex: 1 }}>
+                              {form.greeting_text || "Your greeting…"}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Balance card */}
                       <div
-                        className="rounded-md px-3 py-1.5 text-xs font-medium"
-                        style={{
-                          background: form.theme_palette.accent ? `hsl(${form.theme_palette.accent})` : undefined,
-                          color: form.theme_palette["accent-foreground"] ? `hsl(${form.theme_palette["accent-foreground"]})` : "#fff",
-                        }}
+                        className="mx-3 mb-3 rounded-2xl overflow-hidden"
+                        style={{ background: heroGrad, boxShadow: glowShadow, padding: "14px 14px 12px" }}
                       >
-                        Accent Button
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <p style={{ fontSize: 8, color: "rgba(255,255,255,0.6)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>Welcome Back</p>
+                            <p style={{ fontSize: 11, color: "#fff", fontWeight: 700 }}>Demo User</p>
+                          </div>
+                          <div style={{ width: 22, height: 22, borderRadius: 8, background: "rgba(255,255,255,0.15)" }} />
+                        </div>
+                        <p style={{ fontSize: 8, color: "rgba(255,255,255,0.55)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Available Balance</p>
+                        <p style={{ fontSize: 22, color: "#fff", fontWeight: 800, letterSpacing: -0.5 }}>
+                          <span style={{ fontSize: 14, opacity: 0.7 }}>৳ </span>12,450.00
+                        </p>
+                      </div>
+
+                      {/* Quick actions */}
+                      <div className="flex justify-around mx-3 mb-3">
+                        {["Send", "Cash Out", "Pay Bill", "Recharge"].map(label => (
+                          <div key={label} className="flex flex-col items-center gap-1">
+                            <div style={{ width: 32, height: 32, borderRadius: 12, background: primary, opacity: 0.9 }} />
+                            <span style={{ fontSize: 8, color: fg, fontWeight: 600, opacity: 0.7 }}>{label}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Transaction list */}
+                      <div className="mx-3 rounded-xl overflow-hidden" style={{ background: card, border: `1px solid ${border}` }}>
+                        {[
+                          { name: "Send Money", amount: "- ৳500", neg: true },
+                          { name: "Add Money", amount: "+ ৳2,000", neg: false },
+                          { name: "Mobile Recharge", amount: "- ৳100", neg: true },
+                        ].map((tx, i) => (
+                          <div
+                            key={i}
+                            className="flex items-center justify-between px-3 py-2"
+                            style={{ borderBottom: i < 2 ? `1px solid ${border}` : "none" }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div style={{ width: 24, height: 24, borderRadius: 8, background: muted }} />
+                              <div>
+                                <p style={{ fontSize: 10, fontWeight: 600, color: cardFg }}>{tx.name}</p>
+                                <p style={{ fontSize: 8, color: mutedFg }}>Today, 2:30 PM</p>
+                              </div>
+                            </div>
+                            <span style={{ fontSize: 10, fontWeight: 700, color: tx.neg ? (previewDark ? "#f87171" : "#dc2626") : (previewDark ? "#4ade80" : "#16a34a") }}>
+                              {tx.amount}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Bottom nav */}
+                      <div
+                        className="absolute bottom-0 left-0 right-0 flex items-center justify-around py-2 px-2"
+                        style={{ background: card, borderTop: `1px solid ${border}` }}
+                      >
+                        {["Home", "History", "Scan", "Inbox", "Account"].map((tab, i) => (
+                          <div key={tab} className="flex flex-col items-center gap-0.5">
+                            <div style={{
+                              width: tab === "Scan" ? 28 : 16,
+                              height: tab === "Scan" ? 28 : 16,
+                              borderRadius: tab === "Scan" ? 10 : 6,
+                              background: i === 0 ? primary : (tab === "Scan" ? primary : muted),
+                              ...(tab === "Scan" ? { marginTop: -10 } : {}),
+                            }} />
+                            <span style={{ fontSize: 7, fontWeight: 600, color: i === 0 ? primary : mutedFg }}>{tab}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </TabsContent>
           </Tabs>
 
