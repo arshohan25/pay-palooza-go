@@ -1,175 +1,207 @@
 import { useFestivalTheme } from "@/contexts/FestivalThemeContext";
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useRef, useState } from "react";
 
-/**
- * Fireworks celebration burst effect.
- * Shows a dramatic burst of themed particles + fireworks every time the app loads
- * while a festival theme is active. Multi-wave for realism.
- */
-
-const FIREWORK_CHARS = ["🎆", "🎇", "✦", "✧", "⊹", "💥", "✨"];
-
-const BURST_CHARS: Record<string, string[]> = {
-  stars: ["✦", "✧", "⭐", "⋆", "★", ...FIREWORK_CHARS],
-  crescents: ["☪", "☽", "🌙", "✦", "⋆", ...FIREWORK_CHARS],
-  petals: ["🌸", "🌺", "💮", "🌷", "✿", ...FIREWORK_CHARS],
-  confetti: ["🎊", "🎉", "✦", "●", "■", ...FIREWORK_CHARS],
-  snow: ["❄", "❅", "❆", "✧", "•", ...FIREWORK_CHARS],
-  fireworks: ["🎆", "🎇", "✦", "✧", "⊹", "💥", "✨", "🌟", "⭐"],
-  hearts: ["♥", "❤", "💖", "💕", "✦", ...FIREWORK_CHARS],
-  leaves: ["🍂", "🍁", "🍃", "✦", "🌿", ...FIREWORK_CHARS],
-  sparkles: ["✨", "💫", "⭐", "✦", "⋆", ...FIREWORK_CHARS],
-  lanterns: ["🏮", "🪔", "💡", "✦", "⋆", ...FIREWORK_CHARS],
+const THEME_COLORS: Record<string, string[]> = {
+  crescents: ["#d4af37", "#f5e6a3", "#ffffff", "#e8c547"],
+  stars: ["#d4af37", "#f5e6a3", "#ffffff", "#e8c547"],
+  lanterns: ["#d4af37", "#f5e6a3", "#ffffff", "#e8c547"],
+  petals: ["#e53935", "#ff9800", "#ffeb3b", "#ffffff"],
+  leaves: ["#e53935", "#ff9800", "#ffeb3b", "#ffffff"],
+  hearts: ["#e53935", "#ff1744", "#ff80ab", "#ffffff"],
+  confetti: ["#6366f1", "#f59e0b", "#10b981", "#ffffff"],
+  fireworks: ["#6366f1", "#f59e0b", "#10b981", "#ef4444", "#ffffff"],
+  sparkles: ["#6366f1", "#a78bfa", "#f59e0b", "#ffffff"],
+  snow: ["#90caf9", "#e3f2fd", "#ffffff", "#b3e5fc"],
 };
 
-interface Particle {
-  id: number;
-  char: string;
-  x: number;
-  y: number;
+const DEFAULT_COLORS = ["#f59e0b", "#10b981", "#6366f1", "#ef4444", "#ffffff"];
+
+interface Spark {
+  x: number; y: number;
+  vx: number; vy: number;
+  alpha: number;
   size: number;
-  delay: number;
-  duration: number;
-  rotation: number;
-  opacity: number;
-  wave: number;
+  color: string;
+  decay: number;
+  drag: number;
+}
+
+interface Rocket {
+  x: number; y: number;
+  vy: number;
+  targetY: number;
+  trail: { x: number; y: number; alpha: number }[];
+  exploded: boolean;
+  colors: string[];
 }
 
 export default function FestivalBodyEffect() {
   const { theme, isActive } = useFestivalTheme();
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [show, setShow] = useState(false);
-  const [fading, setFading] = useState(false);
 
   useEffect(() => {
     if (!isActive || !theme || theme.overlay_effect === "none") return;
 
-    // Play every time the component mounts (every login / page load)
     setShow(true);
-    setFading(false);
 
-    const fadeTimer = setTimeout(() => setFading(true), 5000);
-    const removeTimer = setTimeout(() => setShow(false), 7500);
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText = "position:fixed;inset:0;z-index:50;pointer-events:none;";
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    document.body.appendChild(canvas);
+    canvasRef.current = canvas;
+
+    const ctx = canvas.getContext("2d")!;
+    const W = canvas.width;
+    const H = canvas.height;
+    const gravity = 0.06;
+    const colors = THEME_COLORS[theme.overlay_effect] || DEFAULT_COLORS;
+
+    const rockets: Rocket[] = [];
+    const sparks: Spark[] = [];
+    let flashAlpha = 0;
+    let running = true;
+    let startTime = performance.now();
+
+    // Schedule 5 rockets over ~3.5s
+    const launchTimes = [0, 600, 1200, 2000, 3000];
+    const launched = new Set<number>();
+
+    function launchRocket() {
+      const x = W * (0.2 + Math.random() * 0.6);
+      rockets.push({
+        x, y: H + 10,
+        vy: -(7 + Math.random() * 4),
+        targetY: H * (0.15 + Math.random() * 0.25),
+        trail: [],
+        exploded: false,
+        colors,
+      });
+    }
+
+    function explode(r: Rocket) {
+      r.exploded = true;
+      flashAlpha = 0.35;
+      const count = 35 + Math.floor(Math.random() * 25);
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 1.5 + Math.random() * 4;
+        sparks.push({
+          x: r.x, y: r.y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          alpha: 1,
+          size: 2 + Math.random() * 2.5,
+          color: r.colors[Math.floor(Math.random() * r.colors.length)],
+          decay: 0.012 + Math.random() * 0.008,
+          drag: 0.97 + Math.random() * 0.02,
+        });
+      }
+    }
+
+    function draw() {
+      if (!running) return;
+      const elapsed = performance.now() - startTime;
+
+      // Launch rockets on schedule
+      launchTimes.forEach((t, i) => {
+        if (elapsed >= t && !launched.has(i)) {
+          launched.add(i);
+          launchRocket();
+        }
+      });
+
+      ctx.clearRect(0, 0, W, H);
+
+      // Screen flash
+      if (flashAlpha > 0) {
+        ctx.fillStyle = `rgba(255, 215, 0, ${flashAlpha})`;
+        ctx.fillRect(0, 0, W, H);
+        flashAlpha *= 0.88;
+        if (flashAlpha < 0.01) flashAlpha = 0;
+      }
+
+      // Update & draw rockets
+      for (let i = rockets.length - 1; i >= 0; i--) {
+        const r = rockets[i];
+        if (r.exploded) continue;
+
+        r.trail.push({ x: r.x, y: r.y, alpha: 1 });
+        if (r.trail.length > 12) r.trail.shift();
+
+        r.y += r.vy;
+        r.vy += 0.03; // slight deceleration
+
+        // Draw trail
+        for (let j = 0; j < r.trail.length; j++) {
+          const t = r.trail[j];
+          t.alpha *= 0.85;
+          ctx.beginPath();
+          ctx.arc(t.x, t.y, 2 * t.alpha, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 220, 120, ${t.alpha * 0.7})`;
+          ctx.fill();
+        }
+
+        // Rocket head
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffe082";
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = "#ffab00";
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        if (r.y <= r.targetY) {
+          explode(r);
+        }
+      }
+
+      // Update & draw sparks
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        const s = sparks[i];
+        s.vx *= s.drag;
+        s.vy = s.vy * s.drag + gravity;
+        s.x += s.vx;
+        s.y += s.vy;
+        s.alpha -= s.decay;
+        s.size *= 0.995;
+
+        if (s.alpha <= 0) {
+          sparks.splice(i, 1);
+          continue;
+        }
+
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fillStyle = s.color;
+        ctx.globalAlpha = s.alpha;
+        ctx.shadowBlur = 4;
+        ctx.shadowColor = s.color;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+      }
+
+      // End condition: all rockets exploded and no sparks left
+      const allExploded = rockets.length > 0 && rockets.every(r => r.exploded);
+      if (allExploded && sparks.length === 0 && elapsed > 4000) {
+        running = false;
+        canvas.remove();
+        setShow(false);
+        return;
+      }
+
+      requestAnimationFrame(draw);
+    }
+
+    requestAnimationFrame(draw);
 
     return () => {
-      clearTimeout(fadeTimer);
-      clearTimeout(removeTimer);
+      running = false;
+      canvas.remove();
     };
   }, [isActive, theme]);
 
-  const particles: Particle[] = useMemo(() => {
-    if (!isActive || !theme || theme.overlay_effect === "none") return [];
-    const chars = BURST_CHARS[theme.overlay_effect] || BURST_CHARS.fireworks;
-
-    // Wave 1: 30 particles burst immediately
-    const wave1: Particle[] = Array.from({ length: 30 }, (_, i) => ({
-      id: i,
-      char: chars[i % chars.length],
-      x: 5 + Math.random() * 90,
-      y: -10 - Math.random() * 20,
-      size: 14 + Math.random() * 18,
-      delay: Math.random() * 0.6,
-      duration: 2.5 + Math.random() * 2,
-      rotation: Math.random() * 360,
-      opacity: 0.5 + Math.random() * 0.4,
-      wave: 1,
-    }));
-
-    // Wave 2: 20 particles burst after 0.8s delay — more fireworks-heavy
-    const wave2: Particle[] = Array.from({ length: 20 }, (_, i) => ({
-      id: 30 + i,
-      char: FIREWORK_CHARS[i % FIREWORK_CHARS.length],
-      x: 10 + Math.random() * 80,
-      y: -5 - Math.random() * 15,
-      size: 16 + Math.random() * 20,
-      delay: 0.8 + Math.random() * 0.5,
-      duration: 2.2 + Math.random() * 1.8,
-      rotation: Math.random() * 360,
-      opacity: 0.6 + Math.random() * 0.35,
-      wave: 2,
-    }));
-
-    return [...wave1, ...wave2];
-  }, [isActive, theme]);
-
-  if (!show || particles.length === 0) return null;
-
-  return (
-    <>
-      <style>{`
-        @keyframes festival-burst-fall {
-          0% {
-            transform: translateY(0) rotate(0deg) scale(0.2);
-            opacity: 0;
-          }
-          10% {
-            opacity: var(--p-opacity);
-            transform: translateY(5vh) rotate(60deg) scale(1.4);
-          }
-          25% {
-            opacity: var(--p-opacity);
-            transform: translateY(20vh) rotate(120deg) scale(1.1);
-          }
-          50% {
-            opacity: calc(var(--p-opacity) * 0.7);
-            transform: translateY(55vh) rotate(220deg) scale(0.9);
-          }
-          100% {
-            opacity: 0;
-            transform: translateY(115vh) rotate(400deg) scale(0.4);
-          }
-        }
-        @keyframes festival-burst-sparkle {
-          0%, 100% { filter: brightness(1) drop-shadow(0 0 2px rgba(255,215,0,0.3)); }
-          50% { filter: brightness(1.8) drop-shadow(0 0 8px rgba(255,215,0,0.6)); }
-        }
-        @keyframes festival-burst-flash {
-          0% { opacity: 0.6; }
-          50% { opacity: 0; }
-          100% { opacity: 0; }
-        }
-      `}</style>
-      {/* Screen flash for fireworks feel */}
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          zIndex: 51,
-          background: "radial-gradient(circle at 50% 30%, rgba(255,215,0,0.15), transparent 70%)",
-          animation: "festival-burst-flash 1.2s ease-out forwards",
-        }}
-        aria-hidden="true"
-      />
-      <div
-        className="fixed inset-0 pointer-events-none overflow-hidden"
-        style={{
-          zIndex: 50,
-          opacity: fading ? 0 : 1,
-          transition: "opacity 2.5s ease-out",
-        }}
-        aria-hidden="true"
-      >
-        {particles.map(p => (
-          <span
-            key={p.id}
-            className="absolute block"
-            style={{
-              left: `${p.x}%`,
-              top: `${p.y}%`,
-              fontSize: `${p.size}px`,
-              "--p-opacity": p.opacity,
-              animationName: "festival-burst-fall, festival-burst-sparkle",
-              animationDuration: `${p.duration}s, 0.5s`,
-              animationDelay: `${p.delay}s, ${p.delay}s`,
-              animationIterationCount: "1, 5",
-              animationTimingFunction: "cubic-bezier(0.25, 0.46, 0.45, 0.94), ease-in-out",
-              animationFillMode: "forwards, none",
-              opacity: 0,
-              transform: `rotate(${p.rotation}deg)`,
-            } as React.CSSProperties}
-          >
-            {p.char}
-          </span>
-        ))}
-      </div>
-    </>
-  );
+  return null;
 }
