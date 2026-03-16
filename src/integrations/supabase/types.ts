@@ -970,6 +970,7 @@ export type Database = {
         Row: {
           accent_color: string | null
           banner_gradient: string | null
+          body_pattern: string | null
           created_at: string
           created_by: string | null
           emoji: string
@@ -981,11 +982,13 @@ export type Database = {
           overlay_effect: string
           preset_key: string
           starts_at: string | null
+          theme_palette: Json | null
           updated_at: string
         }
         Insert: {
           accent_color?: string | null
           banner_gradient?: string | null
+          body_pattern?: string | null
           created_at?: string
           created_by?: string | null
           emoji?: string
@@ -997,11 +1000,13 @@ export type Database = {
           overlay_effect?: string
           preset_key?: string
           starts_at?: string | null
+          theme_palette?: Json | null
           updated_at?: string
         }
         Update: {
           accent_color?: string | null
           banner_gradient?: string | null
+          body_pattern?: string | null
           created_at?: string
           created_by?: string | null
           emoji?: string
@@ -1013,6 +1018,7 @@ export type Database = {
           overlay_effect?: string
           preset_key?: string
           starts_at?: string | null
+          theme_palette?: Json | null
           updated_at?: string
         }
         Relationships: []
