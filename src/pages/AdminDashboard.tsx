@@ -412,7 +412,31 @@ export default function AdminDashboard() {
     return () => { supabase.removeChannel(ch); };
   }, [isAdmin]);
 
-  const fetchUserUsage = async (userId: string) => {
+  // Fetch pending counts for sidebar badges
+  useEffect(() => {
+    if (!isAdmin) return;
+    const fetchBadgeCounts = async () => {
+      const [complaints, merchantApps, apiReqs, orders] = await Promise.all([
+        supabase.from("support_complaints").select("id", { count: "exact", head: true }).in("status", ["open", "in_progress"]),
+        supabase.from("merchant_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("merchant_api_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      ]);
+      setPendingComplaintsCount(complaints.count ?? 0);
+      setPendingMerchantAppsCount(merchantApps.count ?? 0);
+      setPendingApiRequestsCount(apiReqs.count ?? 0);
+      setPendingOrdersCount(orders.count ?? 0);
+    };
+    fetchBadgeCounts();
+    const ch = supabase.channel("admin-badge-counts")
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_complaints" }, () => fetchBadgeCounts())
+      .on("postgres_changes", { event: "*", schema: "public", table: "merchant_applications" }, () => fetchBadgeCounts())
+      .on("postgres_changes", { event: "*", schema: "public", table: "merchant_api_requests" }, () => fetchBadgeCounts())
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => fetchBadgeCounts())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [isAdmin]);
+
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
