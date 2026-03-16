@@ -30,20 +30,20 @@ interface FestivalTheme {
 }
 
 const PRESETS: Record<string, { name: string; emoji: string; greeting: string; gradient: string; accent: string; effect: string }> = {
-  ramadan: { name: "Ramadan Mubarak", emoji: "🌙", greeting: "Ramadan Mubarak! Wishing you a blessed month 🌙", gradient: "linear-gradient(135deg, hsl(245 60% 18%), hsl(270 50% 25%), hsl(220 50% 15%))", accent: "hsl(270 60% 55%)", effect: "lanterns" },
+  ramadan: { name: "Ramadan Mubarak", emoji: "🌙", greeting: "Ramadan Mubarak! Wishing you a blessed month 🌙", gradient: "linear-gradient(135deg, hsl(245 60% 18%), hsl(270 50% 25%), hsl(220 50% 15%))", accent: "hsl(270 60% 55%)", effect: "crescents" },
   eid_fitr: { name: "Eid Ul Fitr", emoji: "☪️", greeting: "Eid Mubarak! May your celebrations be joyful ☪️", gradient: "linear-gradient(135deg, hsl(160 60% 20%), hsl(170 50% 28%))", accent: "hsl(160 60% 45%)", effect: "stars" },
   eid_adha: { name: "Eid Ul Adha", emoji: "🐑", greeting: "Eid Ul Adha Mubarak! Blessed sacrifice 🐑", gradient: "linear-gradient(135deg, hsl(35 70% 25%), hsl(25 60% 30%))", accent: "hsl(35 70% 50%)", effect: "stars" },
   new_year: { name: "Happy New Year", emoji: "🎆", greeting: "Happy New Year! Cheers to new beginnings 🎆", gradient: "linear-gradient(135deg, hsl(220 80% 15%), hsl(260 60% 20%), hsl(300 50% 18%))", accent: "hsl(45 90% 55%)", effect: "fireworks" },
-  pohela_boishakh: { name: "Pohela Boishakh", emoji: "🎨", greeting: "শুভ নববর্ষ! Happy Bangla New Year 🎨", gradient: "linear-gradient(135deg, hsl(0 70% 40%), hsl(30 80% 50%))", accent: "hsl(0 70% 50%)", effect: "confetti" },
+  pohela_boishakh: { name: "Pohela Boishakh", emoji: "🎨", greeting: "শুভ নববর্ষ! Happy Bangla New Year 🎨", gradient: "linear-gradient(135deg, hsl(0 70% 40%), hsl(30 80% 50%))", accent: "hsl(0 70% 50%)", effect: "petals" },
   arabic_new_year: { name: "Hijri New Year", emoji: "🕌", greeting: "Happy Islamic New Year! 🕌", gradient: "linear-gradient(135deg, hsl(150 50% 18%), hsl(160 40% 25%))", accent: "hsl(150 50% 40%)", effect: "stars" },
   victory_day: { name: "Victory Day", emoji: "🇧🇩", greeting: "Happy Victory Day! 16th December 🇧🇩", gradient: "linear-gradient(135deg, hsl(150 80% 25%), hsl(0 70% 40%))", accent: "hsl(150 80% 40%)", effect: "confetti" },
   independence_day: { name: "Independence Day", emoji: "🇧🇩", greeting: "Happy Independence Day! 26th March 🇧🇩", gradient: "linear-gradient(135deg, hsl(150 80% 25%), hsl(45 90% 50%))", accent: "hsl(150 80% 40%)", effect: "confetti" },
-  durga_puja: { name: "Durga Puja", emoji: "🪷", greeting: "Shubho Durga Puja! 🪷", gradient: "linear-gradient(135deg, hsl(330 60% 30%), hsl(45 80% 45%))", accent: "hsl(330 60% 50%)", effect: "lanterns" },
+  durga_puja: { name: "Durga Puja", emoji: "🪷", greeting: "Shubho Durga Puja! 🪷", gradient: "linear-gradient(135deg, hsl(330 60% 30%), hsl(45 80% 45%))", accent: "hsl(330 60% 50%)", effect: "leaves" },
   christmas: { name: "Merry Christmas", emoji: "🎄", greeting: "Merry Christmas! Season's Greetings 🎄", gradient: "linear-gradient(135deg, hsl(0 70% 30%), hsl(140 60% 25%))", accent: "hsl(0 70% 50%)", effect: "snow" },
   custom: { name: "", emoji: "🎉", greeting: "", gradient: "linear-gradient(135deg, hsl(200 60% 20%), hsl(220 50% 30%))", accent: "hsl(200 60% 50%)", effect: "none" },
 };
 
-const EFFECTS = ["none", "stars", "lanterns", "confetti", "snow", "fireworks"];
+const EFFECTS = ["none", "stars", "lanterns", "confetti", "snow", "fireworks", "petals", "crescents", "hearts", "leaves", "sparkles"];
 
 const emptyForm = (): Omit<FestivalTheme, "id" | "created_at" | "updated_at" | "created_by"> => ({
   name: "", preset_key: "custom", greeting_text: "", accent_color: null, emoji: "🎉",
