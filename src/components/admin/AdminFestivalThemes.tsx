@@ -249,7 +249,7 @@ const PRESETS: Record<string, PresetData> = {
     name: "Independence Day", emoji: "🇧🇩",
     greeting: "Happy Independence Day! 26th March 🇧🇩",
     gradient: "linear-gradient(135deg, hsl(150 80% 30%), hsl(45 90% 50%))",
-    accent: "hsl(150 80% 40%)", effect: "confetti", body_pattern: "confetti",
+    accent: "hsl(150 80% 40%)", effect: "confetti", body_pattern: "waves",
     palette: {
       "primary": "150 80% 32%", "primary-foreground": "0 0% 100%",
       "background": "152 18% 95%", "foreground": "155 28% 12%",
