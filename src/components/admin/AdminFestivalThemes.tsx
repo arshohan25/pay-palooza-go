@@ -30,7 +30,7 @@ interface FestivalTheme {
 }
 
 const PRESETS: Record<string, { name: string; emoji: string; greeting: string; gradient: string; accent: string; effect: string }> = {
-  ramadan: { name: "Ramadan Mubarak", emoji: "🌙", greeting: "Ramadan Mubarak! Wishing you a blessed month 🌙", gradient: "linear-gradient(135deg, hsl(245 60% 18%), hsl(270 50% 25%), hsl(220 50% 15%))", accent: "hsl(270 60% 55%)", effect: "lanterns" },
+  ramadan: { name: "Ramadan Mubarak", emoji: "🌙", greeting: "Ramadan Mubarak! Wishing you a blessed month 🌙", gradient: "linear-gradient(135deg, hsl(245 60% 18%), hsl(270 50% 25%), hsl(220 50% 15%))", accent: "hsl(270 60% 55%)", effect: "crescents" },
   eid_fitr: { name: "Eid Ul Fitr", emoji: "☪️", greeting: "Eid Mubarak! May your celebrations be joyful ☪️", gradient: "linear-gradient(135deg, hsl(160 60% 20%), hsl(170 50% 28%))", accent: "hsl(160 60% 45%)", effect: "stars" },
   eid_adha: { name: "Eid Ul Adha", emoji: "🐑", greeting: "Eid Ul Adha Mubarak! Blessed sacrifice 🐑", gradient: "linear-gradient(135deg, hsl(35 70% 25%), hsl(25 60% 30%))", accent: "hsl(35 70% 50%)", effect: "stars" },
   new_year: { name: "Happy New Year", emoji: "🎆", greeting: "Happy New Year! Cheers to new beginnings 🎆", gradient: "linear-gradient(135deg, hsl(220 80% 15%), hsl(260 60% 20%), hsl(300 50% 18%))", accent: "hsl(45 90% 55%)", effect: "fireworks" },
