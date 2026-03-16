@@ -78,6 +78,13 @@ import AdminRiskControl from "@/components/admin/AdminRiskControl";
 import AdminFloatManagement from "@/components/admin/AdminFloatManagement";
 import AdminRevenueDashboard from "@/components/admin/AdminRevenueDashboard";
 import AdminMfsMonitor from "@/components/admin/AdminMfsMonitor";
+import AdminMerchantApplications from "@/components/admin/AdminMerchantApplications";
+import AdminApiRequests from "@/components/admin/AdminApiRequests";
+import TeamActivityDashboard from "@/components/admin/TeamActivityDashboard";
+import AdminDistributorManagement from "@/components/admin/AdminDistributorManagement";
+import AdminSystemHealth from "@/components/admin/AdminSystemHealth";
+import AdminDataExport from "@/components/admin/AdminDataExport";
+import AdminUserSessions from "@/components/admin/AdminUserSessions";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -192,6 +199,8 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "kyc", label: "KYC", icon: ScanFace },
       { id: "orders", label: "Orders", icon: Package },
       { id: "fund_requests", label: "Fund Requests", icon: CreditCard },
+      { id: "merchant_apps", label: "Merchant Apps", icon: Store },
+      { id: "api_requests", label: "API Requests", icon: Plug },
     ],
   },
   {
@@ -215,6 +224,7 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "wallets", label: "Wallets", icon: Wallet },
       { id: "merchants", label: "Merchants", icon: Store },
       { id: "referrals", label: "Referrals", icon: Gift },
+      { id: "distributors", label: "Distributors", icon: Building2 },
     ],
   },
   {
@@ -231,6 +241,8 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "billers", label: "Billers", icon: FileText },
       { id: "recharge", label: "Recharge", icon: Smartphone },
       { id: "risk_control", label: "Risk Control", icon: ShieldAlert },
+      { id: "sys_health", label: "Health", icon: Activity },
+      { id: "sessions", label: "Sessions", icon: Users },
     ],
   },
   {
@@ -248,6 +260,7 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "reporting", label: "Reports", icon: BarChart3 },
       { id: "adv_reports", label: "Adv. Reports", icon: BarChart3 },
       { id: "auditlog", label: "Audit Log", icon: Eye },
+      { id: "data_export", label: "Export", icon: Download },
     ],
   },
   {
@@ -265,6 +278,7 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
     label: "Other",
     items: [
       { id: "team", label: "Team", icon: Users },
+      { id: "team_activity", label: "Team Activity", icon: Activity },
       { id: "trash", label: "Trash", icon: Trash2 },
     ],
   },
@@ -1461,6 +1475,27 @@ export default function AdminDashboard() {
 
         {/* ═══ MFS MONITOR ═══ */}
         {activeTab === "mfs_monitor" && <AdminMfsMonitor />}
+
+        {/* ═══ MERCHANT APPLICATIONS ═══ */}
+        {activeTab === "merchant_apps" && <AdminMerchantApplications />}
+
+        {/* ═══ API REQUESTS ═══ */}
+        {activeTab === "api_requests" && <AdminApiRequests />}
+
+        {/* ═══ TEAM ACTIVITY ═══ */}
+        {activeTab === "team_activity" && <TeamActivityDashboard />}
+
+        {/* ═══ DISTRIBUTORS ═══ */}
+        {activeTab === "distributors" && <AdminDistributorManagement />}
+
+        {/* ═══ SYSTEM HEALTH ═══ */}
+        {activeTab === "sys_health" && <AdminSystemHealth />}
+
+        {/* ═══ DATA EXPORT ═══ */}
+        {activeTab === "data_export" && <AdminDataExport />}
+
+        {/* ═══ USER SESSIONS ═══ */}
+        {activeTab === "sessions" && <AdminUserSessions />}
 
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
