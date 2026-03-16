@@ -1432,6 +1432,9 @@ export default function AdminDashboard() {
         {/* ═══ NOTIFICATIONS ═══ */}
         {activeTab === "notify" && <AdminNotificationSender />}
 
+        {/* ═══ ANNOUNCEMENTS ═══ */}
+        {activeTab === "announcements" && <AdminAnnouncementManager />}
+
         {/* ═══ SAVINGS ═══ */}
         {activeTab === "savings" && <AdminSavingsManagement />}
 
