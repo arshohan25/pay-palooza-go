@@ -615,9 +615,9 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                     whileTap={{ scale: 0.97 }}
                     onClick={handleNumberContinue}
                     className="w-full h-13 rounded-2xl text-white font-bold text-base shadow-lg flex items-center justify-center gap-2 transition-all"
-                    style={{ background: "linear-gradient(135deg, hsl(0 74% 50%), hsl(0 74% 38%))", minHeight: 52 }}
+                    style={{ background: selectedPack ? (operator ? `linear-gradient(135deg, ${operator.brandColor}, ${operator.brandColorDark})` : "linear-gradient(135deg, hsl(0 74% 50%), hsl(0 74% 38%))") : "linear-gradient(135deg, hsl(0 74% 50%), hsl(0 74% 38%))", minHeight: 52 }}
                   >
-                    Continue
+                    {selectedPack ? `Continue with ${selectedPack.name}` : "Continue"}
                     <ChevronRight size={18} />
                   </motion.button>
                 </div>
