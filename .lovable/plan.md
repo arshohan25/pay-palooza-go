@@ -1,32 +1,29 @@
 
 
-## Fix Background Textures & Add Fireworks on Every Login
+## Plan: Add Biller Categories to API Hub
 
-### Problems Identified
+### What
 
-1. **Background patterns barely visible**: The base `::before` opacity is set to `0.06` (light) / `0.08` (dark) -- far too subtle to see. The SVG patterns themselves also have very low internal opacity values (0.1-0.25), compounding the invisibility.
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-2. **Burst effect only fires once per session**: `FestivalBodyEffect` uses `sessionStorage` to ensure it only plays once. User wants a fireworks celebration **every time they open the app** while a theme is active, not just once.
+### Changes
 
-### Plan
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-**File: `src/index.css`** -- Fix pattern visibility
-- Increase base `::before` opacity from `0.06`/`0.08` to `0.12`/`0.18` so patterns are actually visible
-- Boost internal SVG fill/stroke opacity values across all 14 patterns (roughly double each)
-- Add a subtle CSS animation (`festival-pattern-shimmer`) that slowly shifts background position, giving patterns a living, premium feel
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-**File: `src/components/FestivalBodyEffect.tsx`** -- Fireworks on every login
-- Remove the `sessionStorage` guard so the burst plays every time the component mounts (every page load / login)
-- Add `fireworks` characters to all theme burst mappings as secondary particles -- so every festival gets a fireworks feel alongside its themed particles (e.g., Ramadan gets crescents + fireworks sparkles)
-- Increase particle count from 30 to 45 for a more dramatic entrance
-- Add multi-wave bursts: first wave at 0s, second wave at 0.8s for a more realistic fireworks effect
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-**File: `src/components/admin/AdminFestivalThemes.tsx`** -- No changes needed (presets already mapped correctly)
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-### Summary of Changes
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-| File | Change |
-|------|--------|
-| `src/index.css` | Boost pattern opacity, add shimmer animation |
-| `src/components/FestivalBodyEffect.tsx` | Remove session-once guard, add fireworks to all themes, increase particles, add second burst wave |
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
