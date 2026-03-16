@@ -1,39 +1,29 @@
 
 
-## Add Theme Toggle + Notification Badges to Admin Dashboard
+## Plan: Add Biller Categories to API Hub
 
-### Changes — Single File: `src/pages/AdminDashboard.tsx`
+### What
 
-#### 1. Theme Toggle in Header
-Add a Sun/Moon toggle button next to the Refresh and Activity buttons in the top header bar. Uses `useTheme` from `next-themes` (already used elsewhere in the app).
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-**Location**: Lines 883-894 area, add before/after the refresh button.
+### Changes
 
-#### 2. Real-time Notification Badges on Sidebar Nav Items
-Currently badges exist for: `alerts`, `support`, `kyc`, `toggles`. Add badges for:
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-- **Complaints** (`complaints`): Count of open/in-progress complaints from `support_complaints`
-- **Fund Requests** (`fund_requests`): Already have `pendingFundCount` state — wire it to the nav badge
-- **Merchant Apps** (`merchant_apps`): Count of pending merchant applications
-- **API Requests** (`api_requests`): Count of pending API requests
-- **Orders** (`orders`): Count of pending orders
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-Each count fetched via a simple `select("id", { count: "exact", head: true })` query with real-time listener, following the existing pattern used for `disabledTogglesCount`.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-### Technical Details
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-| What | How |
-|------|-----|
-| Theme toggle | Import `useTheme` from `next-themes`, add `Sun`/`Moon` icons (already imported in other files) |
-| Complaint count | `supabase.from("support_complaints").select(...).in("status", ["open","in_progress"])` |
-| Fund request badge | Reuse existing `pendingFundCount` state |
-| Merchant apps count | `supabase.from("merchant_applications").select(...).eq("status","pending")` |
-| API requests count | `supabase.from("api_key_requests").select(...).eq("status","pending")` |
-| Real-time updates | Add listeners to existing `admin-global-realtime` channel or dedicated small channels |
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-### Files Changed
+3. Add the new category icons to the `categoryIcons` map.
 
-| File | Action |
-|------|--------|
-| `src/pages/AdminDashboard.tsx` | **Edit** — add theme toggle + badge counts + nav badge rendering |
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

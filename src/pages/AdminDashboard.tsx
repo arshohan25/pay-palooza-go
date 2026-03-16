@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "next-themes";
 import { motion } from "framer-motion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import {
   Users, ArrowLeftRight, ShieldAlert, Store, UserCheck, Trash2, Download, UserX, CheckCircle, Clock, Eye,
-  TrendingUp, Activity, Search, RefreshCw, LogOut,
+  TrendingUp, Activity, Search, RefreshCw, LogOut, Sun, Moon,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings, FileText,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
   Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck, Image, Bell, PiggyBank, Shield, Star, Building2, Megaphone,
@@ -337,6 +338,11 @@ export default function AdminDashboard() {
   const { visible: realtimeVisible, flash: realtimeFlash } = useRealtimeIndicator();
   const { status: wsStatus, lastConnectedAt, reconnectAttempt } = useRealtimeStatus();
   const [disabledTogglesCount, setDisabledTogglesCount] = useState(0);
+  const [pendingComplaintsCount, setPendingComplaintsCount] = useState(0);
+  const [pendingMerchantAppsCount, setPendingMerchantAppsCount] = useState(0);
+  const [pendingApiRequestsCount, setPendingApiRequestsCount] = useState(0);
+  const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
+  const { resolvedTheme, setTheme } = useTheme();
   const [resetPinTarget, setResetPinTarget] = useState<{ userId: string; name: string; phone: string } | null>(null);
   const [deletedUsers, setDeletedUsers] = useState<any[]>([]);
   const [trashDetailId, setTrashDetailId] = useState<string | null>(null);
@@ -402,6 +408,31 @@ export default function AdminDashboard() {
     fetchCount();
     const ch = supabase.channel("admin-toggle-count")
       .on("postgres_changes", { event: "*", schema: "public", table: "global_feature_toggles" }, () => fetchCount())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [isAdmin]);
+
+  // Fetch pending counts for sidebar badges
+  useEffect(() => {
+    if (!isAdmin) return;
+    const fetchBadgeCounts = async () => {
+      const [complaints, merchantApps, apiReqs, orders] = await Promise.all([
+        supabase.from("support_complaints").select("id", { count: "exact", head: true }).in("status", ["open", "in_progress"]),
+        supabase.from("merchant_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("merchant_api_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      ]);
+      setPendingComplaintsCount(complaints.count ?? 0);
+      setPendingMerchantAppsCount(merchantApps.count ?? 0);
+      setPendingApiRequestsCount(apiReqs.count ?? 0);
+      setPendingOrdersCount(orders.count ?? 0);
+    };
+    fetchBadgeCounts();
+    const ch = supabase.channel("admin-badge-counts")
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_complaints" }, () => fetchBadgeCounts())
+      .on("postgres_changes", { event: "*", schema: "public", table: "merchant_applications" }, () => fetchBadgeCounts())
+      .on("postgres_changes", { event: "*", schema: "public", table: "merchant_api_requests" }, () => fetchBadgeCounts())
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => fetchBadgeCounts())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [isAdmin]);
@@ -779,6 +810,31 @@ export default function AdminDashboard() {
                     {disabledTogglesCount}
                   </span>
                 )}
+                {item.id === "complaints" && pendingComplaintsCount > 0 && (
+                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {pendingComplaintsCount}
+                  </span>
+                )}
+                {item.id === "fund_requests" && pendingFundCount > 0 && (
+                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {pendingFundCount}
+                  </span>
+                )}
+                {item.id === "merchant_apps" && pendingMerchantAppsCount > 0 && (
+                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-amber-500 text-amber-50 text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {pendingMerchantAppsCount}
+                  </span>
+                )}
+                {item.id === "api_requests" && pendingApiRequestsCount > 0 && (
+                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-amber-500 text-amber-50 text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {pendingApiRequestsCount}
+                  </span>
+                )}
+                {item.id === "orders" && pendingOrdersCount > 0 && (
+                  <span className="ml-auto min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
+                    {pendingOrdersCount}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -891,6 +947,15 @@ export default function AdminDashboard() {
                 className="h-7 w-7 md:h-9 md:w-9"
               >
                 <Radio className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+                title="Toggle theme"
+                className="h-7 w-7 md:h-9 md:w-9"
+              >
+                {resolvedTheme === "dark" ? <Sun className="w-3.5 h-3.5 md:w-4 md:h-4" /> : <Moon className="w-3.5 h-3.5 md:w-4 md:h-4" />}
               </Button>
             </div>
           </div>
