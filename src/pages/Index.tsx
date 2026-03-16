@@ -206,6 +206,7 @@ const Index = () => {
       return (
         <div className="space-y-5">
           <AppHeader onSignOut={signOut} />
+          <PlatformBanner />
 
           {/* Pull-to-refresh indicator */}
           <AnimatePresence>
