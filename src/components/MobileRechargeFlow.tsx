@@ -308,6 +308,13 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     if (digits.length !== 11) { setError("Enter an 11-digit mobile number."); return; }
     if (!detectedOp) { setError("Unable to detect operator. Check the number."); return; }
     setSelectedOp(detectedOp);
+    setIsPhoneDummy(false);
+    // If a pack is already selected (drive pack flow), go to amount
+    if (selectedPack) {
+      setCustomAmount(String(selectedPack.price));
+      goTo("amount");
+      return;
+    }
     setCustomAmount("");
     goTo("amount");
   };
