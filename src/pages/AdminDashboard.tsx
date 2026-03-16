@@ -954,11 +954,11 @@ export default function AdminDashboard() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border text-muted-foreground">
-                        <th className="text-left px-4 py-3 font-medium">Type</th>
-                        <th className="text-left px-4 py-3 font-medium">Amount</th>
-                        <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Recipient</th>
-                        <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">Status</th>
-                        <th className="text-left px-4 py-3 font-medium">Time</th>
+                        <th className="text-left px-3 md:px-4 py-3 font-medium">Type</th>
+                        <th className="text-left px-3 md:px-4 py-3 font-medium">Amount</th>
+                        <th className="text-left px-3 md:px-4 py-3 font-medium hidden md:table-cell">Recipient</th>
+                        <th className="text-left px-3 md:px-4 py-3 font-medium hidden lg:table-cell">Status</th>
+                        <th className="text-left px-3 md:px-4 py-3 font-medium">Time</th>
                       </tr>
                     </thead>
                     <tbody>
