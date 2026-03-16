@@ -1631,45 +1631,77 @@ export default function AdminDashboard() {
                     <p className="text-xs text-muted-foreground mt-1">Deleted users will appear here</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-border text-muted-foreground">
-                          <th className="text-left px-4 py-3 font-medium">Name</th>
-                          <th className="text-left px-4 py-3 font-medium">Phone</th>
-                          <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Balance</th>
-                          <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Recovered</th>
-                          <th className="text-left px-4 py-3 font-medium">Deleted</th>
-                          <th className="text-left px-4 py-3 font-medium">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {deletedUsers.map((du: any) => (
-                          <tr key={du.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                            <td className="px-4 py-3 font-medium text-foreground">{du.name || "—"}</td>
-                            <td className="px-4 py-3 text-muted-foreground">{du.phone || "—"}</td>
-                            <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">৳{(du.balance_at_deletion ?? 0).toLocaleString()}</td>
-                            <td className="px-4 py-3 hidden md:table-cell">
-                              {du.balance_recovered > 0 ? (
-                                <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                                  ৳{du.balance_recovered.toLocaleString()}
-                                </Badge>
-                              ) : "—"}
-                            </td>
-                            <td className="px-4 py-3 text-muted-foreground text-xs">
-                              {du.deleted_at ? new Date(du.deleted_at).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" }) : "—"}
-                            </td>
-                            <td className="px-4 py-3">
-                              <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => openTrashDetail(du.id)}>
-                                <Eye className="w-3 h-3 mr-1" /> View
-                              </Button>
-                            </td>
+                  <>
+                    {/* Desktop table */}
+                    <div className="overflow-x-auto hidden md:block">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border text-muted-foreground">
+                            <th className="text-left px-4 py-3 font-medium">Name</th>
+                            <th className="text-left px-4 py-3 font-medium">Phone</th>
+                            <th className="text-left px-4 py-3 font-medium">Balance</th>
+                            <th className="text-left px-4 py-3 font-medium">Recovered</th>
+                            <th className="text-left px-4 py-3 font-medium">Deleted</th>
+                            <th className="text-left px-4 py-3 font-medium">Action</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                        </thead>
+                        <tbody>
+                          {deletedUsers.map((du: any) => (
+                            <tr key={du.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                              <td className="px-4 py-3 font-medium text-foreground">{du.name || "—"}</td>
+                              <td className="px-4 py-3 text-muted-foreground">{du.phone || "—"}</td>
+                              <td className="px-4 py-3 text-muted-foreground">৳{(du.balance_at_deletion ?? 0).toLocaleString()}</td>
+                              <td className="px-4 py-3">
+                                {du.balance_recovered > 0 ? (
+                                  <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                    ৳{du.balance_recovered.toLocaleString()}
+                                  </Badge>
+                                ) : "—"}
+                              </td>
+                              <td className="px-4 py-3 text-muted-foreground text-xs">
+                                {du.deleted_at ? new Date(du.deleted_at).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" }) : "—"}
+                              </td>
+                              <td className="px-4 py-3">
+                                <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => openTrashDetail(du.id)}>
+                                  <Eye className="w-3 h-3 mr-1" /> View
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {/* Mobile card layout */}
+                    <div className="md:hidden divide-y divide-border/50">
+                      {deletedUsers.map((du: any) => (
+                        <div key={du.id} className="p-4 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-foreground text-sm truncate">{du.name || "—"}</p>
+                              <p className="text-xs text-muted-foreground">{du.phone || "—"}</p>
+                            </div>
+                            <p className="text-xs text-muted-foreground whitespace-nowrap">
+                              {du.deleted_at ? new Date(du.deleted_at).toLocaleDateString("en-BD", { month: "short", day: "numeric" }) : "—"}
+                            </p>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3 text-xs">
+                              <span className="text-muted-foreground">Balance: <span className="text-foreground font-medium">৳{(du.balance_at_deletion ?? 0).toLocaleString()}</span></span>
+                              {du.balance_recovered > 0 && (
+                                <Badge variant="secondary" className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                  Recovered ৳{du.balance_recovered.toLocaleString()}
+                                </Badge>
+                              )}
+                            </div>
+                            <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => openTrashDetail(du.id)}>
+                              <Eye className="w-3 h-3 mr-1" /> View
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )
               </CardContent>
             </Card>
           </div>
