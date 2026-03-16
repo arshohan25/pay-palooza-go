@@ -288,17 +288,22 @@ body::-webkit-scrollbar {
 }
 
 /* ── Festival body pattern overlays (premium quality) ──────────────────── */
+@keyframes festival-pattern-shimmer {
+  0% { background-position: 0 0; }
+  100% { background-position: 400px 400px; }
+}
 body[class*="festival-body-"]::before {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.06;
+  opacity: 0.18;
+  animation: festival-pattern-shimmer 60s linear infinite;
 }
 .dark body[class*="festival-body-"]::before,
 body.dark[class*="festival-body-"]::before {
-  opacity: 0.08;
+  opacity: 0.25;
 }
 
 /* Crescents — elegant golden crescent moons */
