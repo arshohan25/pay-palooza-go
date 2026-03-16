@@ -344,7 +344,7 @@ body.festival-body-fireworks::before {
 
 /* Sparkles — twinkling diamond shapes */
 body.festival-body-sparkles::before {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cpath d='M40 25 L43 37 L55 40 L43 43 L40 55 L37 43 L25 40 L37 37Z' fill='%23fdcb6e' opacity='0.25'/%3E%3Cpath d='M15 60 L16.5 65 L22 66.5 L16.5 68 L15 73 L13.5 68 L8 66.5 L13.5 65Z' fill='%23d4af37' opacity='0.15'/%3E%3Ccircle cx='65' cy='20' r='1' fill='%23fff' opacity='0.2'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cpath d='M40 25 L43 37 L55 40 L43 43 L40 55 L37 43 L25 40 L37 37Z' fill='%23fdcb6e' opacity='0.45'/%3E%3Cpath d='M15 60 L16.5 65 L22 66.5 L16.5 68 L15 73 L13.5 68 L8 66.5 L13.5 65Z' fill='%23d4af37' opacity='0.3'/%3E%3Ccircle cx='65' cy='20' r='1' fill='%23fff' opacity='0.4'/%3E%3C/svg%3E");
   background-size: 100px 100px;
 }
 
