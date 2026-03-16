@@ -1,69 +1,29 @@
 
 
-## Festival Theme Manager for Admin Panel
+## Plan: Add Biller Categories to API Hub
 
-### What We're Building
+### What
 
-A new admin module **"Festival Themes"** that lets admins activate seasonal/festival themes which apply visual overlays, greeting banners, and color accents to the user-facing app. Admins can schedule themes in advance and only one theme is active at a time.
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-### Supported Festivals (Presets)
+### Changes
 
-Ramadan Mubarak, Eid Ul Fitr, Eid Ul Adha, New Year (Jan 1), Pohela Boishakh (Bangla New Year), Arabic/Hijri New Year, Victory Day (Dec 16), Independence Day (Mar 26), Durga Puja, Christmas, and a "Custom" option for ad-hoc themes.
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-### Database
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-New table `festival_themes`:
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid PK | |
-| name | text | e.g. "Ramadan Mubarak" |
-| preset_key | text | e.g. `ramadan`, `eid_fitr`, `custom` |
-| greeting_text | text | Banner message shown to users |
-| accent_color | text | HSL or hex override for primary accent |
-| emoji | text | e.g. 🌙 ☪️ 🎆 |
-| overlay_effect | text | `stars`, `lanterns`, `confetti`, `snow`, `fireworks`, `none` |
-| banner_gradient | text | CSS gradient string for greeting card |
-| is_active | boolean | Only one should be active |
-| starts_at | timestamptz | Schedule start |
-| ends_at | timestamptz | Schedule end |
-| created_by | uuid | |
-| created_at / updated_at | timestamptz | |
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-RLS: Admin-only for ALL, authenticated SELECT for active themes.
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-### Admin Component: `AdminFestivalThemes.tsx`
-
-- List of all themes with status badges (Active / Scheduled / Inactive)
-- Create/Edit form with preset selector that auto-fills emoji, accent color, overlay, and gradient
-- Toggle active state (deactivates others automatically)
-- Schedule with start/end dates
-- Live preview card showing how the greeting banner will look
-
-### User-Facing Component: `FestivalOverlay.tsx`
-
-- Fetches the currently active theme from the database
-- Renders a **greeting banner** at the top of the home screen (below PlatformBanner) with the festival gradient, emoji, and greeting text
-- Applies a subtle **particle overlay** (CSS animations) based on `overlay_effect`:
-  - `stars` — twinkling dots
-  - `lanterns` — floating amber circles
-  - `confetti` — colored falling pieces
-  - `snow` — white falling dots
-  - `fireworks` — burst animations
-- All effects are lightweight CSS-only (no heavy libraries)
-- Dismissible per session
-
-### Admin Navigation
-
-Add `{ id: "festival_themes", label: "Festivals", icon: Star }` to the **Marketing** group in `NAV_GROUPS`.
+3. Add the new category icons to the `categoryIcons` map.
 
 ### Files
-
-| File | Action |
-|------|--------|
-| Migration SQL | **Create** — `festival_themes` table + RLS |
-| `src/components/admin/AdminFestivalThemes.tsx` | **Create** — full CRUD admin UI with presets |
-| `src/components/FestivalOverlay.tsx` | **Create** — user-facing banner + particle effects |
-| `src/pages/AdminDashboard.tsx` | **Edit** — add nav item + import + render |
-| `src/pages/Index.tsx` | **Edit** — add `<FestivalOverlay />` to home screen |
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

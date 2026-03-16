@@ -43,6 +43,7 @@ import KycFlow from "@/components/KycFlow";
 import { useKycStatus } from "@/hooks/use-kyc-status";
 import { parseQrData } from "@/lib/qrParser";
 import PlatformBanner from "@/components/PlatformBanner";
+import FestivalOverlay from "@/components/FestivalOverlay";
 
 const Index = () => {
   const { isAuthenticated, loading: authLoading, signOut, user } = useAuth();
@@ -207,8 +208,9 @@ const Index = () => {
         <div className="space-y-5">
           <AppHeader onSignOut={signOut} />
           <PlatformBanner />
+          <FestivalOverlay />
 
-          {/* Pull-to-refresh indicator */}
+           {/* Pull-to-refresh indicator */}
           <AnimatePresence>
             {isPulling && (
               <motion.div

@@ -966,6 +966,57 @@ export type Database = {
         }
         Relationships: []
       }
+      festival_themes: {
+        Row: {
+          accent_color: string | null
+          banner_gradient: string | null
+          created_at: string
+          created_by: string | null
+          emoji: string
+          ends_at: string | null
+          greeting_text: string
+          id: string
+          is_active: boolean
+          name: string
+          overlay_effect: string
+          preset_key: string
+          starts_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string | null
+          banner_gradient?: string | null
+          created_at?: string
+          created_by?: string | null
+          emoji?: string
+          ends_at?: string | null
+          greeting_text?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          overlay_effect?: string
+          preset_key?: string
+          starts_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string | null
+          banner_gradient?: string | null
+          created_at?: string
+          created_by?: string | null
+          emoji?: string
+          ends_at?: string | null
+          greeting_text?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          overlay_effect?: string
+          preset_key?: string
+          starts_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fraud_alerts: {
         Row: {
           assigned_to: string | null

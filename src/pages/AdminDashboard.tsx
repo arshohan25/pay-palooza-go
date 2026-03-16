@@ -96,6 +96,7 @@ import AdminBlacklistManager from "@/components/admin/AdminBlacklistManager";
 import AdminAgentLeaderboard from "@/components/admin/AdminAgentLeaderboard";
 import AdminUserFeedback from "@/components/admin/AdminUserFeedback";
 import AdminChangelogManager from "@/components/admin/AdminChangelogManager";
+import AdminFestivalThemes from "@/components/admin/AdminFestivalThemes";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -274,6 +275,7 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "announcements", label: "Announcements", icon: Megaphone },
       { id: "feedback", label: "Feedback", icon: Star },
       { id: "changelog", label: "Changelog", icon: FileText },
+      { id: "festival_themes", label: "Festivals", icon: Star },
     ],
   },
   {
@@ -1698,6 +1700,9 @@ export default function AdminDashboard() {
 
         {/* ═══ CHANGELOG ═══ */}
         {activeTab === "changelog" && <AdminChangelogManager />}
+
+        {/* ═══ FESTIVAL THEMES ═══ */}
+        {activeTab === "festival_themes" && <AdminFestivalThemes />}
 
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
