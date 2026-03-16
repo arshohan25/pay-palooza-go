@@ -260,6 +260,7 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "reporting", label: "Reports", icon: BarChart3 },
       { id: "adv_reports", label: "Adv. Reports", icon: BarChart3 },
       { id: "auditlog", label: "Audit Log", icon: Eye },
+      { id: "data_export", label: "Export", icon: Download },
     ],
   },
   {
