@@ -275,6 +275,7 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "announcements", label: "Announcements", icon: Megaphone },
       { id: "feedback", label: "Feedback", icon: Star },
       { id: "changelog", label: "Changelog", icon: FileText },
+      { id: "festival_themes", label: "Festivals", icon: Star },
     ],
   },
   {
