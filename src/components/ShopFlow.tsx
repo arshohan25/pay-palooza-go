@@ -8,7 +8,7 @@ import {
   RefreshCw, TrendingUp, Store, BadgeCheck, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { getBalance, recordTransaction, onBalanceChange, transferMoney } from "@/lib/balanceStore";
+import { getBalance, onBalanceChange } from "@/lib/balanceStore";
 import { verifyPin } from "@/lib/verifyPin";
 import { haptics } from "@/lib/haptics";
 import SlideToConfirm from "@/components/SlideToConfirm";
