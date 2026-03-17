@@ -1,47 +1,29 @@
 
 
-## Invoice Generator & Printer
+## Plan: Add Biller Categories to API Hub
 
-Currently the project has:
-- `ShareReceiptSheet` — shares/downloads transaction receipts as PNG images
-- `AdminTreasury` — generates PDF reports using jsPDF
+### What
 
-Missing: A proper **invoice generator** that creates printable/downloadable invoices for shop orders and merchant transactions.
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
----
+### Changes
 
-### What to Build
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-**1. Invoice Generator Component** (`src/components/InvoiceGenerator.tsx`)
-- Reusable component that accepts order data and generates a styled invoice
-- Includes: company logo, invoice number, date, buyer details, shipping address, itemized table (product, qty, unit price, total), subtotal, coupon discount, delivery fee, grand total, payment method
-- Two actions: **Download PDF** and **Print** (browser print dialog)
-- Uses jsPDF + jspdf-autotable (already in dependencies)
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-**2. Integration Points**
-- **Order Detail Page** (`src/pages/OrderDetailPage.tsx`) — Add "Download Invoice" and "Print" buttons
-- **Customer Orders Page** (`src/pages/CustomerOrdersPage.tsx`) — Add invoice icon per order row
-- **Admin Order Management** (`src/components/admin/AdminOrderManagement.tsx`) — Add invoice download for any order
-- **Merchant Dashboard** (`src/pages/MerchantDashboard.tsx`) — Invoice generation for merchant orders
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-**3. Invoice PDF Content**
-- Header: EasyPay logo + "INVOICE" title
-- Invoice number: derived from order_num (e.g., INV-ABC123)
-- From: EasyPay platform details
-- To: Buyer name, phone, shipping address
-- Items table: Product name, variant, quantity, unit price, line total
-- Summary: Subtotal, coupon discount, delivery fee, grand total
-- Footer: "Thank you for shopping with EasyPay" + generation timestamp
-- Print: Opens `window.print()` with a print-optimized hidden iframe
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-### Files to Create/Modify
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-| Action | File |
-|--------|------|
-| Create | `src/components/InvoiceGenerator.tsx` — PDF generation logic + print utility |
-| Modify | `src/pages/OrderDetailPage.tsx` — Add invoice download/print buttons |
-| Modify | `src/pages/CustomerOrdersPage.tsx` — Add invoice icon per order |
-| Modify | `src/components/admin/AdminOrderManagement.tsx` — Add invoice button for admin |
+3. Add the new category icons to the `categoryIcons` map.
 
-### No database changes needed.
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

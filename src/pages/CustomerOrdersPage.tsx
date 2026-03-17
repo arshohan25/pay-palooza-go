@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Package, ChevronRight, Clock, CircleCheck, Truck, XCircle, Loader2, Star } from "lucide-react";
+import { ArrowLeft, Package, ChevronRight, Clock, CircleCheck, Truck, XCircle, Loader2, Star, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import WriteReviewForm from "@/components/shop/WriteReviewForm";
+import { downloadInvoice } from "@/components/InvoiceGenerator";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
   processing: { label: "Processing", color: "bg-blue-500/10 text-blue-600", icon: Clock },
@@ -100,19 +101,29 @@ export default function CustomerOrdersPage() {
                     <Truck className="w-3 h-3" /> Est. delivery: {order.estimated_delivery}
                   </p>
                 )}
-                {order.status === "delivered" && items.length > 0 && (
+                <div className="flex gap-2 mt-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="mt-2 text-xs h-7"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setReviewSheet({ open: true, productId: items[0].id || items[0].product_id, orderId: order.id });
-                    }}
+                    className="text-xs h-7"
+                    onClick={(e) => { e.stopPropagation(); downloadInvoice(order); }}
                   >
-                    <Star className="w-3 h-3 mr-1" /> Rate & Review
+                    <FileText className="w-3 h-3 mr-1" /> Invoice
                   </Button>
-                )}
+                  {order.status === "delivered" && items.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-7"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setReviewSheet({ open: true, productId: items[0].id || items[0].product_id, orderId: order.id });
+                      }}
+                    >
+                      <Star className="w-3 h-3 mr-1" /> Rate & Review
+                    </Button>
+                  )}
+                </div>
               </div>
             );
           })

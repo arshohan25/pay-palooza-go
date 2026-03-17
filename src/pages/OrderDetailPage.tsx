@@ -3,9 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Clock, CircleCheck, Truck, Package, XCircle, MapPin,
-  CreditCard, Wallet, Star, Loader2, Ban, Shield,
+  CreditCard, Wallet, Star, Loader2, Ban, Shield, Download, Printer,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { downloadInvoice, printInvoice } from "@/components/InvoiceGenerator";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -265,6 +266,16 @@ export default function OrderDetailPage() {
               <p className="text-[12px] text-muted-foreground">{order.shipping_address}, {order.shipping_city}</p>
             </div>
           </div>
+        </div>
+
+        {/* Invoice Actions */}
+        <div className="flex gap-2">
+          <Button variant="outline" className="flex-1 gap-2" onClick={() => downloadInvoice(order)}>
+            <Download className="w-4 h-4" /> Download Invoice
+          </Button>
+          <Button variant="outline" className="flex-1 gap-2" onClick={() => printInvoice(order)}>
+            <Printer className="w-4 h-4" /> Print
+          </Button>
         </div>
 
         {/* Actions */}

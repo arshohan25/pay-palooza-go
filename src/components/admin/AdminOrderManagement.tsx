@@ -5,8 +5,9 @@ import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator"
 import {
   Package, Search, RefreshCw, ChevronDown, ChevronUp,
   Truck, CheckCircle2, XCircle, Clock, MapPin, CreditCard, Wallet,
-  Eye, Filter, Ban, Undo2, AlertTriangle, CheckSquare, DollarSign, ShieldCheck,
+  Eye, Filter, Ban, Undo2, AlertTriangle, CheckSquare, DollarSign, ShieldCheck, Download,
 } from "lucide-react";
+import { downloadInvoice } from "@/components/InvoiceGenerator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -635,6 +636,11 @@ export default function AdminOrderManagement() {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Invoice Download */}
+              <Button variant="outline" className="w-full gap-2" onClick={() => downloadInvoice(selectedOrder)}>
+                <Download className="w-4 h-4" /> Download Invoice PDF
+              </Button>
 
               {/* Escrow Release Button */}
               {selectedOrder.status === "delivered" && selectedOrder.escrow_status === "held" && (
