@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Search, ArrowLeft, ShoppingCart, Store, Loader2,
   ShieldCheck, Truck, RotateCcw, Flame, ChevronRight,
-  Clock, Sparkles, Zap, ClipboardList,
+  Clock, Sparkles, Zap, ClipboardList, Heart,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";

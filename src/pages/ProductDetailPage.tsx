@@ -53,6 +53,12 @@ export default function ProductDetailPage() {
   const { addToCart } = useCart();
   const { isWishlisted, toggle: toggleWishlist } = useWishlist();
   const { user } = useAuth();
+  const { addViewed } = useRecentlyViewed();
+
+  // Track recently viewed
+  useEffect(() => {
+    if (id) addViewed(id);
+  }, [id, addViewed]);
 
   const [product, setProduct] = useState<any>(null);
   const [variants, setVariants] = useState<Variant[]>([]);
