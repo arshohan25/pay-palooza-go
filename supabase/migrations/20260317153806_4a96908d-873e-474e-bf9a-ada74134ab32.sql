@@ -1,0 +1,1 @@
+ALTER TABLE public.promo_banners ADD COLUMN placement text NOT NULL DEFAULT 'home';
