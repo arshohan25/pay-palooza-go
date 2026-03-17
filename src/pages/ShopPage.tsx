@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, SlidersHorizontal, ArrowLeft, ShoppingCart, Store, TrendingUp, Loader2 } from "lucide-react";
+import { Search, SlidersHorizontal, ArrowLeft, ShoppingCart, Store, TrendingUp, Loader2, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ProductCard, { type ShopProduct } from "@/components/shop/ProductCard";
 import CategoryNav from "@/components/shop/CategoryNav";
 import CartDrawer from "@/components/shop/CartDrawer";
+import FilterDrawer, { type ShopFilters, defaultFilters } from "@/components/shop/FilterDrawer";
 import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { useAuth } from "@/hooks/use-auth";
@@ -30,6 +31,9 @@ export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [sortBy, setSortBy] = useState<SortOption>("popular");
   const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<ShopFilters>(defaultFilters);
+  const [recommendedIds, setRecommendedIds] = useState<string[]>([]);
+  const [recsLoading, setRecsLoading] = useState(false);
 
   // Load products with vendor info
   useEffect(() => {
@@ -66,10 +70,45 @@ export default function ShopPage() {
     load();
   }, []);
 
+  // AI recommendations
+  useEffect(() => {
+    if (!user) return;
+    const loadRecs = async () => {
+      setRecsLoading(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("product-recommendations", {});
+        if (!error && data?.product_ids) {
+          setRecommendedIds(data.product_ids);
+        }
+      } catch { /* ignore */ }
+      setRecsLoading(false);
+    };
+    loadRecs();
+  }, [user]);
+
   const categories = useMemo(() => {
     const cats = new Set(products.map((p) => p.category));
     return Array.from(cats).sort();
   }, [products]);
+
+  const availableBrands = useMemo(() => {
+    const brands = new Set(
+      products
+        .filter((p) => selectedCategory === "All" || p.category === selectedCategory)
+        .map((p) => p.brand)
+        .filter(Boolean) as string[]
+    );
+    return Array.from(brands).sort();
+  }, [products, selectedCategory]);
+
+  const activeFilterCount = useMemo(() => {
+    let c = 0;
+    if (filters.minPrice !== null) c++;
+    if (filters.maxPrice !== null) c++;
+    if (filters.minRating !== null) c++;
+    if (filters.brands.length > 0) c++;
+    return c;
+  }, [filters]);
 
   const filtered = useMemo(() => {
     let result = products;
@@ -88,16 +127,27 @@ export default function ShopPage() {
       );
     }
 
+    // Apply advanced filters
+    if (filters.minPrice !== null) result = result.filter((p) => p.price >= filters.minPrice!);
+    if (filters.maxPrice !== null) result = result.filter((p) => p.price <= filters.maxPrice!);
+    if (filters.minRating !== null) result = result.filter((p) => p.rating >= filters.minRating!);
+    if (filters.brands.length > 0) result = result.filter((p) => p.brand && filters.brands.includes(p.brand));
+
     switch (sortBy) {
       case "price_low": result = [...result].sort((a, b) => a.price - b.price); break;
       case "price_high": result = [...result].sort((a, b) => b.price - a.price); break;
-      case "newest": result = [...result]; break; // already sorted by created_at desc
+      case "newest": result = [...result]; break;
       case "rating": result = [...result].sort((a, b) => b.rating - a.rating); break;
       case "popular": result = [...result].sort((a, b) => b.review_count - a.review_count); break;
     }
 
     return result;
-  }, [products, selectedCategory, search, sortBy]);
+  }, [products, selectedCategory, search, sortBy, filters]);
+
+  const recommendedProducts = useMemo(() => {
+    if (recommendedIds.length === 0) return [];
+    return recommendedIds.map((id) => products.find((p) => p.id === id)).filter(Boolean) as ShopProduct[];
+  }, [recommendedIds, products]);
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -134,18 +184,26 @@ export default function ShopPage() {
           <span className="text-xs text-muted-foreground">
             {filtered.length} product{filtered.length !== 1 ? "s" : ""}
           </span>
-          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-            <SelectTrigger className="w-auto h-7 text-xs gap-1 border-0 bg-muted/50">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="popular">Popular</SelectItem>
-              <SelectItem value="newest">Newest</SelectItem>
-              <SelectItem value="price_low">Price: Low → High</SelectItem>
-              <SelectItem value="price_high">Price: High → Low</SelectItem>
-              <SelectItem value="rating">Top Rated</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-1">
+            <FilterDrawer
+              filters={filters}
+              onApply={setFilters}
+              availableBrands={availableBrands}
+              activeCount={activeFilterCount}
+            />
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+              <SelectTrigger className="w-auto h-7 text-xs gap-1 border-0 bg-muted/50">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="popular">Popular</SelectItem>
+                <SelectItem value="newest">Newest</SelectItem>
+                <SelectItem value="price_low">Price: Low → High</SelectItem>
+                <SelectItem value="price_high">Price: High → Low</SelectItem>
+                <SelectItem value="rating">Top Rated</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -179,6 +237,35 @@ export default function ShopPage() {
               />
             ))}
           </motion.div>
+        )}
+
+        {/* AI Recommendations */}
+        {recommendedProducts.length > 0 && !search.trim() && selectedCategory === "All" && (
+          <div className="mt-8 space-y-3">
+            <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-primary" /> Recommended For You
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              {recommendedProducts.map((product) => (
+                <ProductCard
+                  key={`rec-${product.id}`}
+                  product={product}
+                  isWishlisted={isWishlisted(product.id)}
+                  onAddToCart={addToCart}
+                  onToggleWishlist={toggleWishlist}
+                  onNavigate={navigate}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+        {recsLoading && !search.trim() && selectedCategory === "All" && (
+          <div className="mt-8 space-y-3">
+            <Skeleton className="h-5 w-48" />
+            <div className="grid grid-cols-2 gap-3">
+              {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="aspect-[3/4] rounded-xl" />)}
+            </div>
+          </div>
         )}
       </div>
     </div>

@@ -1,56 +1,29 @@
 
 
-## Phase 3 — Customer Experience (Reviews, Search, AI Recommendations)
+## Plan: Add Biller Categories to API Hub
 
-### What Already Exists
-- `product_reviews` table with full schema (rating, title, body, images, order_id, is_verified_purchase, is_visible)
-- `ProductReviews.tsx` — read-only display of reviews
-- `WishlistPage.tsx` + `use-wishlist.ts` — fully functional
-- `ShopPage.tsx` — has search and category filters, but no price/rating range filters
-- `LOVABLE_API_KEY` is available for AI recommendations
+### What
 
-### What Needs Building
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-**A. Write Review Form** (biggest gap — no way for customers to submit reviews)
+### Changes
 
-1. **`src/components/shop/WriteReviewForm.tsx`** — Star rating selector, title, body, image upload (Supabase Storage), submit via direct insert to `product_reviews`
-2. **Add "Write Review" button** on `CustomerOrdersPage.tsx` for delivered orders
-3. **Add review form to `ProductDetailPage.tsx`** Reviews tab — show form if user has a delivered order for this product and hasn't reviewed yet
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-**B. Enhanced Search & Filters on ShopPage**
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-1. **Price range filter** — min/max input fields in a collapsible filter drawer
-2. **Rating filter** — "4★ & above" style buttons
-3. **Brand filter** — derived from products in the current category
-4. Add a filter drawer toggled by the existing `SlidersHorizontal` icon (currently unused in ShopPage)
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-**C. AI Product Recommendations**
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-1. **Edge Function: `supabase/functions/product-recommendations/index.ts`**
-   - Takes user_id, fetches their recent orders/browsing history
-   - Calls Lovable AI (Gemini Flash) with product catalog context
-   - Returns ranked product IDs with reasoning
-2. **"Recommended For You" section** on ShopPage below the product grid
-3. Uses `google/gemini-3-flash-preview` via the Lovable AI Gateway
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-**D. Post-Delivery Review Prompt**
-
-- On `CustomerOrdersPage.tsx`, delivered orders show a "Rate & Review" button
-- Clicking opens `WriteReviewForm` as a sheet/dialog with the order context pre-filled
+3. Add the new category icons to the `categoryIcons` map.
 
 ### Files
-
-| Action | File |
-|--------|------|
-| Create | `src/components/shop/WriteReviewForm.tsx` |
-| Create | `src/components/shop/FilterDrawer.tsx` |
-| Create | `supabase/functions/product-recommendations/index.ts` |
-| Modify | `src/pages/ProductDetailPage.tsx` — add write review in Reviews tab |
-| Modify | `src/pages/CustomerOrdersPage.tsx` — add "Rate" button for delivered orders |
-| Modify | `src/pages/ShopPage.tsx` — add filter drawer + AI recommendations section |
-
-### Implementation Order
-1. WriteReviewForm + integration into ProductDetail and CustomerOrders
-2. FilterDrawer + ShopPage integration
-3. AI recommendations edge function + ShopPage section
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

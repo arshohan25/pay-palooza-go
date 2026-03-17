@@ -10,8 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import ProductImage from "@/components/ProductImage";
 import ProductReviews from "@/components/shop/ProductReviews";
+import WriteReviewForm from "@/components/shop/WriteReviewForm";
 import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
+import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 
 interface Variant {
@@ -28,6 +30,10 @@ export default function ProductDetailPage() {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { isWishlisted, toggle: toggleWishlist } = useWishlist();
+  const { user } = useAuth();
+  const [canReview, setCanReview] = useState(false);
+  const [deliveredOrderId, setDeliveredOrderId] = useState<string | null>(null);
+  const [reviewKey, setReviewKey] = useState(0);
 
   const [product, setProduct] = useState<any>(null);
   const [variants, setVariants] = useState<Variant[]>([]);
@@ -75,6 +81,37 @@ export default function ProductDetailPage() {
     };
     load();
   }, [id]);
+
+  // Check if user can review (has delivered order, hasn't reviewed yet)
+  useEffect(() => {
+    if (!user || !id) return;
+    const checkReview = async () => {
+      const { data: orders } = await supabase
+        .from("orders")
+        .select("id, items")
+        .eq("user_id", user.id)
+        .eq("status", "delivered");
+
+      const matchingOrder = (orders ?? []).find((o: any) =>
+        Array.isArray(o.items) && o.items.some((item: any) => item.id === id || item.product_id === id)
+      );
+
+      if (matchingOrder) {
+        const { data: existing } = await (supabase as any)
+          .from("product_reviews")
+          .select("id")
+          .eq("product_id", id)
+          .eq("user_id", user.id)
+          .limit(1);
+
+        if (!existing || existing.length === 0) {
+          setCanReview(true);
+          setDeliveredOrderId(matchingOrder.id);
+        }
+      }
+    };
+    checkReview();
+  }, [user, id]);
 
   if (loading) {
     return (
@@ -285,7 +322,16 @@ export default function ProductDetailPage() {
             )}
           </TabsContent>
           <TabsContent value="reviews" className="mt-3 -mx-4">
-            <ProductReviews productId={product.id} />
+            <ProductReviews productId={product.id} key={reviewKey} />
+            {canReview && (
+              <div className="px-4 mt-4">
+                <WriteReviewForm
+                  productId={product.id}
+                  orderId={deliveredOrderId ?? undefined}
+                  onSuccess={() => { setCanReview(false); setReviewKey((k) => k + 1); }}
+                />
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>

@@ -65,3 +65,6 @@ verify_jwt = false
 
 [functions.apply-coupon]
 verify_jwt = false
+
+[functions.product-recommendations]
+verify_jwt = false
