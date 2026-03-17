@@ -702,7 +702,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll }: 
                 <a.icon size={18} className="text-white" />
               </div>
               <span className="text-[10px] font-bold text-foreground leading-tight text-center">{a.label}</span>
-              <span className="text-[8px] text-muted-foreground font-medium">{a.desc}</span>
+              
             </motion.button>
           ))}
         </div>
