@@ -48,6 +48,7 @@ export default function OrderDetailPage() {
   });
 
   useEffect(() => {
+    if (!authLoading && !user) { setLoading(false); return; }
     if (!user || !id) return;
     const load = async () => {
       const [orderRes, itemsRes] = await Promise.all([
@@ -59,7 +60,7 @@ export default function OrderDetailPage() {
       setLoading(false);
     };
     load();
-  }, [user, id]);
+  }, [user, id, authLoading]);
 
   const handleCancel = async () => {
     if (!order || cancelling) return;
