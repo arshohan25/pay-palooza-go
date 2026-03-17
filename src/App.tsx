@@ -28,6 +28,11 @@ import DynamicQrPage from "./pages/DynamicQrPage";
 import NotFound from "./pages/NotFound";
 import TeamLoginPage from "./pages/TeamLoginPage";
 import RoleInstallPage from "./pages/RoleInstallPage";
+import ShopPage from "./pages/ShopPage";
+import ProductDetailPage from "./pages/ProductDetailPage";
+import VendorStorePage from "./pages/VendorStorePage";
+import WishlistPage from "./pages/WishlistPage";
+import CustomerOrdersPage from "./pages/CustomerOrdersPage";
 
 const queryClient = new QueryClient();
 

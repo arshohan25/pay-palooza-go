@@ -50,14 +50,14 @@ export default function ShopPage() {
           .in("merchant_id", merchantIds)
           .eq("is_active", true);
 
-        const storeMap = new Map(stores?.map((s: any) => [s.merchant_id, s]) ?? []);
+        const storeMap = new Map((stores ?? []).map((s: any) => [s.merchant_id, s]));
 
         setProducts(prods.map((p: any) => {
-          const store = storeMap.get(p.merchant_id);
+          const storeEntry = storeMap.get(p.merchant_id) as { store_name?: string; slug?: string } | undefined;
           return {
             ...p,
-            vendor_name: store?.store_name || (p.merchants as any)?.business_name || "Store",
-            vendor_slug: store?.slug,
+            vendor_name: storeEntry?.store_name || (p.merchants as any)?.business_name || "Store",
+            vendor_slug: storeEntry?.slug,
           };
         }));
       }
