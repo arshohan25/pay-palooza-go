@@ -37,6 +37,14 @@ interface AppliedCoupon {
   discount_value: number;
   max_discount: number | null;
 }
+interface DeliveryZone {
+  id: string;
+  zone_name: string;
+  cities: string[];
+  delivery_fee: number;
+  estimated_days: string;
+  courier_providers: { name: string } | null;
+}
 
 type PaymentMethod = "wallet" | "card";
 
