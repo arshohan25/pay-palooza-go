@@ -497,9 +497,18 @@ export default function ShopCheckoutPage() {
             </div>
           )}
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Delivery</span>
-            <span className="font-semibold text-primary">FREE</span>
+            <span className="text-muted-foreground">
+              Delivery{matchedZone ? ` (${matchedZone.zone_name})` : ""}
+            </span>
+            <span className={`font-semibold ${deliveryFee > 0 ? "text-foreground" : "text-primary"}`}>
+              {deliveryFee > 0 ? `৳${deliveryFee.toLocaleString()}` : "FREE"}
+            </span>
           </div>
+          {matchedZone && (
+            <p className="text-[10px] text-muted-foreground text-right">
+              Est. {matchedZone.estimated_days}{matchedZone.courier_providers?.name ? ` via ${matchedZone.courier_providers.name}` : ""}
+            </p>
+          )}
           <div className="h-px bg-border my-1" />
           <div className="flex justify-between text-base font-bold">
             <span className="text-foreground">Total</span>
