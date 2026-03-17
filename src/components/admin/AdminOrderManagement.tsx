@@ -90,6 +90,7 @@ export default function AdminOrderManagement() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<string>("");
   const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [releasingEscrow, setReleasingEscrow] = useState<string | null>(null);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
