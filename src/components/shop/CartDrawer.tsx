@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { ShoppingCart, Plus, Minus, Trash2, X } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
