@@ -715,6 +715,33 @@ export type Database = {
           },
         ]
       }
+      courier_providers: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+          name: string
+          tracking_url_template: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name: string
+          tracking_url_template?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name?: string
+          tracking_url_template?: string | null
+        }
+        Relationships: []
+      }
       deleted_users: {
         Row: {
           avatar_url: string | null
@@ -822,6 +849,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      delivery_zones: {
+        Row: {
+          cities: string[]
+          courier_provider_id: string | null
+          created_at: string | null
+          delivery_fee: number
+          estimated_days: string | null
+          id: string
+          is_active: boolean | null
+          zone_name: string
+        }
+        Insert: {
+          cities?: string[]
+          courier_provider_id?: string | null
+          created_at?: string | null
+          delivery_fee?: number
+          estimated_days?: string | null
+          id?: string
+          is_active?: boolean | null
+          zone_name: string
+        }
+        Update: {
+          cities?: string[]
+          courier_provider_id?: string | null
+          created_at?: string | null
+          delivery_fee?: number
+          estimated_days?: string | null
+          id?: string
+          is_active?: boolean | null
+          zone_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_zones_courier_provider_id_fkey"
+            columns: ["courier_provider_id"]
+            isOneToOne: false
+            referencedRelation: "courier_providers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       deposit_accounts: {
         Row: {
@@ -1308,6 +1376,89 @@ export type Database = {
           label?: string
           sort_order?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      job_applications: {
+        Row: {
+          applicant_email: string | null
+          applicant_name: string
+          applicant_phone: string
+          cover_note: string | null
+          created_at: string | null
+          id: string
+          job_id: string
+          resume_url: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          applicant_email?: string | null
+          applicant_name: string
+          applicant_phone: string
+          cover_note?: string | null
+          created_at?: string | null
+          id?: string
+          job_id: string
+          resume_url?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          applicant_email?: string | null
+          applicant_name?: string
+          applicant_phone?: string
+          cover_note?: string | null
+          created_at?: string | null
+          id?: string
+          job_id?: string
+          resume_url?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "job_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_listings: {
+        Row: {
+          created_at: string | null
+          department: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          location: string | null
+          requirements: string | null
+          title: string
+          type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          department?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          location?: string | null
+          requirements?: string | null
+          title: string
+          type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          department?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          location?: string | null
+          requirements?: string | null
+          title?: string
+          type?: string | null
         }
         Relationships: []
       }
