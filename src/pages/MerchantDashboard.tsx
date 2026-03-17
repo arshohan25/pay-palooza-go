@@ -80,6 +80,7 @@ const mainTabs: { id: MerchTab; icon: typeof QrCode; label: string }[] = [
 const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: string }[] = [
   { id: "analytics",    icon: PieChart,     label: "Analytics",        desc: "Insights, revenue & customers" },
   { id: "transactions", icon: ArrowUpDown,  label: "History",          desc: "View all transactions" },
+  { id: "qr",           icon: QrCode,       label: "QR Code",          desc: "Your merchant QR code" },
   { id: "api",          icon: Globe,        label: "API Integration",  desc: "API keys, webhooks & docs" },
   { id: "paylinks",     icon: Link,         label: "Pay Links",        desc: "Create & share payment links" },
   { id: "settlements",  icon: BanknoteIcon, label: "Settlement",       desc: "Bank payouts & schedule" },
