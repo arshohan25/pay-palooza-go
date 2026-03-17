@@ -20,7 +20,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }>
 
 export default function CustomerOrdersPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [reviewSheet, setReviewSheet] = useState<{ open: boolean; productId: string; orderId: string } | null>(null);
