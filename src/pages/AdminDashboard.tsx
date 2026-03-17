@@ -1722,6 +1722,9 @@ export default function AdminDashboard() {
         {/* ═══ E-COMMERCE ═══ */}
         {activeTab === "ecommerce" && <AdminEcommerceHub />}
 
+        {/* ═══ CAREERS ═══ */}
+        {activeTab === "careers" && <AdminCareersManager />}
+
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
           <div className="space-y-4">

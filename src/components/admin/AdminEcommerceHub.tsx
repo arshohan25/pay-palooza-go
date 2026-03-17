@@ -494,6 +494,8 @@ export default function AdminEcommerceHub() {
       {subTab === "coupons" && <CouponsTab />}
       {subTab === "inventory" && <AdminInventoryAlerts />}
       {subTab === "flash_sales" && <AdminFlashSales />}
+      {subTab === "couriers" && <AdminCourierProviders />}
+      {subTab === "zones" && <AdminDeliveryZones />}
       {subTab === "banners" && <AdminBannerManager />}
       {subTab === "marketing" && <AdminMarketingTools />}
     </div>
