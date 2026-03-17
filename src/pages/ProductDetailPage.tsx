@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Heart, ShoppingCart, Star, Store, Share2, Minus, Plus,
   ChevronRight, Truck, ShieldCheck, RefreshCw, Package, Banknote,
-  Clock, ChevronLeft,
+  Clock, ChevronLeft, Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
