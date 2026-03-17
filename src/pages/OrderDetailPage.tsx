@@ -1,0 +1,302 @@
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  ArrowLeft, Clock, CircleCheck, Truck, Package, XCircle, MapPin,
+  CreditCard, Wallet, Star, Loader2, Ban, Shield,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+import { useOrderNotifications } from "@/hooks/use-order-notifications";
+import WriteReviewForm from "@/components/shop/WriteReviewForm";
+import { toast } from "sonner";
+import ProductImage from "@/components/ProductImage";
+
+const STATUS_STEPS = [
+  { key: "processing", label: "Order Placed", icon: Clock, color: "hsl(36 100% 50%)" },
+  { key: "confirmed", label: "Confirmed", icon: CircleCheck, color: "hsl(291 64% 42%)" },
+  { key: "shipped", label: "Shipped", icon: Package, color: "hsl(207 90% 54%)" },
+  { key: "out_for_delivery", label: "Out for Delivery", icon: Truck, color: "hsl(14 100% 57%)" },
+  { key: "delivered", label: "Delivered", icon: CircleCheck, color: "hsl(122 39% 49%)" },
+];
+
+const ESCROW_LABELS: Record<string, { label: string; color: string }> = {
+  held: { label: "Funds Held in Escrow", color: "text-amber-600" },
+  released: { label: "Funds Released to Vendor", color: "text-emerald-600" },
+  refunded: { label: "Refunded to Wallet", color: "text-blue-600" },
+};
+
+export default function OrderDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [order, setOrder] = useState<any>(null);
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
+  const [reviewSheet, setReviewSheet] = useState<{ productId: string; orderId: string } | null>(null);
+
+  // Real-time updates
+  useOrderNotifications((update) => {
+    if (update.id === id) {
+      setOrder((prev: any) => prev ? { ...prev, status: update.status } : prev);
+    }
+  });
+
+  useEffect(() => {
+    if (!user || !id) return;
+    const load = async () => {
+      const [orderRes, itemsRes] = await Promise.all([
+        supabase.from("orders").select("*").eq("id", id).eq("user_id", user.id).single(),
+        supabase.from("order_items").select("*").eq("order_id", id),
+      ]);
+      if (orderRes.data) setOrder(orderRes.data);
+      if (itemsRes.data) setItems(itemsRes.data);
+      setLoading(false);
+    };
+    load();
+  }, [user, id]);
+
+  const handleCancel = async () => {
+    if (!order || cancelling) return;
+    setCancelling(true);
+    try {
+      const { error } = await supabase.from("orders").update({ status: "cancelled" } as any).eq("id", order.id).eq("user_id", user!.id);
+      if (error) throw error;
+      setOrder((prev: any) => ({ ...prev, status: "cancelled" }));
+      toast.success("Order cancelled · Refund will be processed within 24 hours");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to cancel order");
+    }
+    setCancelling(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background pb-20">
+        <div className="sticky top-0 z-40 bg-card border-b border-border flex items-center gap-3 px-4 py-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="w-5 h-5" /></Button>
+          <Skeleton className="h-6 w-32" />
+        </div>
+        <div className="px-4 pt-4 space-y-4">
+          <Skeleton className="h-24 w-full rounded-xl" />
+          <Skeleton className="h-40 w-full rounded-xl" />
+          <Skeleton className="h-32 w-full rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+        <Package className="w-16 h-16 text-muted-foreground/30" />
+        <p className="text-muted-foreground">Order not found</p>
+        <Button variant="outline" onClick={() => navigate("/orders")}>Back to Orders</Button>
+      </div>
+    );
+  }
+
+  const currentStepIdx = STATUS_STEPS.findIndex(s => s.key === order.status);
+  const isCancelled = order.status === "cancelled";
+  const isDelivered = order.status === "delivered";
+  const canCancel = order.status === "processing";
+  const escrow = ESCROW_LABELS[order.escrow_status] ?? null;
+  const orderItems = items.length > 0 ? items : (Array.isArray(order.items) ? order.items : []);
+  const subtotal = orderItems.reduce((s: number, i: any) => s + (Number(i.price) * Number(i.qty || i.quantity || 1)), 0);
+  const couponDiscount = Number(order.coupon_discount) || 0;
+  const deliveryFee = Number(order.delivery_fee) || 0;
+
+  return (
+    <div className="min-h-screen bg-background pb-24">
+      {/* Header */}
+      <div className="sticky top-0 z-40 bg-card border-b border-border flex items-center gap-3 px-4 py-3">
+        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-base font-bold text-foreground truncate">{order.order_num}</h1>
+          <p className="text-[11px] text-muted-foreground">
+            {new Date(order.created_at).toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+          </p>
+        </div>
+        <Badge variant="outline" className={`shrink-0 ${isCancelled ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"}`}>
+          {isCancelled ? "Cancelled" : STATUS_STEPS[currentStepIdx]?.label ?? order.status}
+        </Badge>
+      </div>
+
+      <div className="px-4 pt-4 space-y-4">
+        {/* Status Timeline */}
+        {!isCancelled && (
+          <div className="bg-card rounded-2xl border border-border p-4 space-y-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Order Tracking</p>
+            <div className="space-y-0">
+              {STATUS_STEPS.map((step, i) => {
+                const done = i <= currentStepIdx;
+                const isCurrent = i === currentStepIdx;
+                const Icon = step.icon;
+                const isLast = i === STATUS_STEPS.length - 1;
+                return (
+                  <div key={step.key} className="flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <motion.div
+                        initial={{ scale: 0.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: i * 0.08 }}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                          done ? "text-primary-foreground" : "bg-muted text-muted-foreground"
+                        } ${isCurrent ? "ring-2 ring-offset-2 ring-offset-card" : ""}`}
+                        style={done ? { background: step.color, ...(isCurrent ? { ringColor: step.color } : {}) } : {}}
+                      >
+                        <Icon className="w-4 h-4" />
+                      </motion.div>
+                      {!isLast && (
+                        <div className={`w-0.5 flex-1 min-h-[24px] my-1 rounded-full transition-colors ${done ? "bg-primary/30" : "bg-border"}`} />
+                      )}
+                    </div>
+                    <div className="pb-4 flex-1">
+                      <p className={`text-[13px] font-bold ${done ? "text-foreground" : "text-muted-foreground"}`}>{step.label}</p>
+                      {done && i === 0 && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {new Date(order.created_at).toLocaleDateString("en-BD", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {order.estimated_delivery && !isDelivered && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-xl px-3 py-2">
+                <Truck className="w-3.5 h-3.5" />
+                <span>Estimated delivery: {order.estimated_delivery}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Cancelled banner */}
+        {isCancelled && (
+          <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-4 flex items-center gap-3">
+            <XCircle className="w-8 h-8 text-destructive shrink-0" />
+            <div>
+              <p className="text-sm font-bold text-destructive">Order Cancelled</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Refund will be processed within 24 hours</p>
+            </div>
+          </div>
+        )}
+
+        {/* Escrow Status */}
+        {escrow && (
+          <div className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-2.5">
+            <Shield className="w-4 h-4 text-muted-foreground" />
+            <span className={`text-xs font-semibold ${escrow.color}`}>{escrow.label}</span>
+          </div>
+        )}
+
+        {/* Items */}
+        <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
+          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            Items ({orderItems.length})
+          </p>
+          {orderItems.map((item: any, i: number) => (
+            <div key={item.id || i} className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-muted/30 flex items-center justify-center shrink-0 overflow-hidden">
+                <ProductImage imageUrl={item.image_url} emoji={item.emoji || "📦"} alt={item.name || item.product_name} emojiSize="text-2xl" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-bold text-foreground truncate">{item.name || item.product_name}</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Qty: {item.qty || item.quantity || 1}
+                  {item.vendor_name && <> · <span className="text-primary">{item.vendor_name}</span></>}
+                </p>
+              </div>
+              <p className="text-[13px] font-bold text-foreground shrink-0">
+                ৳{(Number(item.price) * Number(item.qty || item.quantity || 1)).toLocaleString()}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Payment Summary */}
+        <div className="bg-card rounded-2xl border border-border p-4 space-y-2">
+          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Payment Summary</p>
+          <div className="flex justify-between text-[13px]">
+            <span className="text-muted-foreground">Subtotal</span>
+            <span className="font-semibold text-foreground">৳{subtotal.toLocaleString()}</span>
+          </div>
+          {couponDiscount > 0 && (
+            <div className="flex justify-between text-[13px]">
+              <span className="text-primary">Coupon Discount</span>
+              <span className="font-semibold text-primary">-৳{couponDiscount.toLocaleString()}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-[13px]">
+            <span className="text-muted-foreground">Delivery</span>
+            <span className="font-semibold text-foreground">{deliveryFee > 0 ? `৳${deliveryFee.toLocaleString()}` : "Free"}</span>
+          </div>
+          <div className="h-px bg-border my-1" />
+          <div className="flex justify-between text-[15px] font-bold">
+            <span className="text-foreground">Total</span>
+            <span className="text-primary">৳{Number(order.total).toLocaleString()}</span>
+          </div>
+          <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+            {order.payment_method === "wallet" ? (
+              <><Wallet className="w-3.5 h-3.5" /> Paid via EasyPay Wallet</>
+            ) : (
+              <><CreditCard className="w-3.5 h-3.5" /> Paid via Card</>
+            )}
+          </div>
+        </div>
+
+        {/* Shipping Info */}
+        <div className="bg-card rounded-2xl border border-border p-4 space-y-2">
+          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Shipping Details</p>
+          <div className="flex items-start gap-2">
+            <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+            <div>
+              <p className="text-[13px] font-bold text-foreground">{order.shipping_name}</p>
+              <p className="text-[12px] text-muted-foreground">{order.shipping_phone}</p>
+              <p className="text-[12px] text-muted-foreground">{order.shipping_address}, {order.shipping_city}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          {canCancel && (
+            <Button variant="destructive" className="flex-1" onClick={handleCancel} disabled={cancelling}>
+              {cancelling ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Ban className="w-4 h-4 mr-2" />}
+              Cancel Order
+            </Button>
+          )}
+          {isDelivered && orderItems.length > 0 && (
+            <Button variant="outline" className="flex-1" onClick={() => setReviewSheet({ productId: orderItems[0].product_id || orderItems[0].id, orderId: order.id })}>
+              <Star className="w-4 h-4 mr-2" /> Rate & Review
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Review Sheet */}
+      <Sheet open={!!reviewSheet} onOpenChange={(o) => !o && setReviewSheet(null)}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Write a Review</SheetTitle>
+          </SheetHeader>
+          {reviewSheet && (
+            <WriteReviewForm
+              productId={reviewSheet.productId}
+              orderId={reviewSheet.orderId}
+              onSuccess={() => setReviewSheet(null)}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
+}
