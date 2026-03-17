@@ -1,29 +1,60 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Phase 4 — Vendor Tools
 
-### What
+### What Already Exists
+- `vendor_stores` table with full schema (slug, store_name, description, logo_url, banner_url, rating, review_count, social_links, is_active)
+- `merchant_products` table already has `sku`, `brand`, `tags[]`, `weight_grams` columns
+- `MerchantProductsTab.tsx` — full CRUD for products (add/edit/delete, image upload, stock management)
+- `MerchantAnalyticsTab.tsx` — payment session analytics with charts (7d/30d/90d)
+- `MerchantDashboard.tsx` — tabs: overview, products, orders, QR, analytics, API, etc.
+- No store settings UI exists in the merchant dashboard
+- No bulk product upload capability
+- No low-stock notification system
+- Analytics only covers payment sessions, not product sales/revenue breakdown
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### What We'll Build
 
-### Changes
+**A. Vendor Store Settings Tab** (new tab in MerchantDashboard)
+- `src/components/MerchantStoreSettingsTab.tsx`
+- Edit store_name, description, slug, social_links (JSON: facebook, instagram, website)
+- Upload/change logo and banner to Supabase Storage (`product-images` bucket)
+- Auto-create `vendor_stores` row if merchant doesn't have one yet
+- Preview of how storefront looks
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**B. Bulk Product Upload via CSV**
+- `src/components/MerchantBulkUploadSheet.tsx`
+- CSV file picker → parse with built-in FileReader + manual CSV parsing
+- Expected columns: name, price, original_price, category, stock, sku, brand, description
+- Preview table before import → batch insert via Supabase
+- Download CSV template button
+- Add button to MerchantProductsTab header
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+**C. Low-Stock Inventory Alerts**
+- `src/components/MerchantInventoryAlerts.tsx`
+- Query products where `stock <= threshold` (default threshold: 5)
+- Show as a warning banner at top of Products tab
+- Quick-restock button per product (inline stock update)
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
+**D. Enhanced Vendor Analytics** (extend MerchantAnalyticsTab)
+- Add product sales section: top products by order_items count, revenue per product
+- Revenue breakdown: gross sales, platform fees, net earnings from `order_items`
+- Sales trend chart from `order_items.created_at`
 
 ### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+
+| Action | File |
+|--------|------|
+| Create | `src/components/MerchantStoreSettingsTab.tsx` — store profile editor |
+| Create | `src/components/MerchantBulkUploadSheet.tsx` — CSV import |
+| Create | `src/components/MerchantInventoryAlerts.tsx` — low-stock warnings |
+| Modify | `src/pages/MerchantDashboard.tsx` — add "Store" tab, wire new components |
+| Modify | `src/components/MerchantProductsTab.tsx` — add bulk upload button + inventory alerts |
+| Modify | `src/components/MerchantAnalyticsTab.tsx` — add product sales analytics |
+
+### Implementation Order
+1. Store Settings tab (new component + add to dashboard tabs)
+2. Bulk Upload sheet (new component + integrate into Products tab)
+3. Inventory Alerts (new component + embed in Products tab)
+4. Enhanced Analytics (extend existing analytics with order_items data)
 
