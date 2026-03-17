@@ -70,6 +70,7 @@ const App = () => (
                 <Route path="/install" element={<RoleInstallPage />} />
                 <Route path="/install/:role" element={<RoleInstallPage />} />
                 <Route path="/shop" element={<ShopPage />} />
+                <Route path="/shop/checkout" element={<ShopCheckoutPage />} />
                 <Route path="/shop/:slug" element={<VendorStorePage />} />
                 <Route path="/product/:id" element={<ProductDetailPage />} />
                 <Route path="/wishlist" element={<WishlistPage />} />

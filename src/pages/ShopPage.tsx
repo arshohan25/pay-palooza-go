@@ -170,7 +170,7 @@ export default function ShopPage() {
             items={items}
             onUpdateQty={updateQty}
             onRemove={removeFromCart}
-            onCheckout={() => { setCartOpen(false); navigate("/"); }}
+            onCheckout={() => { setCartOpen(false); navigate("/shop/checkout"); }}
             open={cartOpen}
             onOpenChange={setCartOpen}
           />

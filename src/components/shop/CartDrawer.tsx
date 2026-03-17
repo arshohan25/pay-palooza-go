@@ -81,7 +81,7 @@ export default function CartDrawer({ items, onUpdateQty, onRemove, onCheckout, o
                 <span>Total</span>
                 <span>৳{total.toLocaleString()}</span>
               </div>
-              <Button className="w-full" size="lg" onClick={onCheckout}>
+              <Button className="w-full" size="lg" onClick={() => { onOpenChange(false); navigate("/shop/checkout"); }}>
                 Proceed to Checkout
               </Button>
             </div>

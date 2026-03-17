@@ -343,13 +343,20 @@ export default function ProductDetailPage() {
           <p className="text-lg font-bold text-foreground">৳{(finalPrice * qty).toLocaleString()}</p>
         </div>
         <Button
-          className="px-8"
+          variant="outline"
           size="lg"
           onClick={handleAddToCart}
           disabled={product.stock <= 0}
         >
           <ShoppingCart className="w-4 h-4 mr-2" />
           Add to Cart
+        </Button>
+        <Button
+          size="lg"
+          onClick={() => { handleAddToCart(); navigate("/shop/checkout"); }}
+          disabled={product.stock <= 0}
+        >
+          Buy Now
         </Button>
       </div>
     </div>
