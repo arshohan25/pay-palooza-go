@@ -203,6 +203,7 @@ export default function ShopPage() {
   const [recommendedIds, setRecommendedIds] = useState<string[]>([]);
   const [recsLoading, setRecsLoading] = useState(false);
   const [flashSales, setFlashSales] = useState<any[]>([]);
+  const [visibleCount, setVisibleCount] = useState(20);
 
   // Load products
   useEffect(() => {
