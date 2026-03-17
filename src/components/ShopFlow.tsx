@@ -1491,9 +1491,19 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
         {editingAddress !== null && (
           <AddressEditor
             address={editingAddress === "new" ? null : editingAddress}
-            onSave={(a) => {
+            onSave={async (a) => {
               setAddresses(prev => { const exists = prev.find(p => p.id === a.id); if (exists) return prev.map(p => p.id === a.id ? a : p); return [...prev, a]; });
               setSelectedAddressId(a.id); setEditingAddress(null); setShowAddressPicker(false); toast.success(t("addressSaved"));
+              // Persist to DB
+              const { data: { session } } = await supabase.auth.getSession();
+              if (session?.user) {
+                await supabase.from("delivery_addresses").upsert({
+                  id: a.id.startsWith("a") && a.id.length < 10 ? undefined : a.id,
+                  user_id: session.user.id, label: a.label, recipient_name: a.name,
+                  phone: a.phone, address_line: a.line1, area: a.line2 || null,
+                  city: a.city, is_default: false,
+                } as any, { onConflict: "id" });
+              }
             }}
             onCancel={() => setEditingAddress(null)}
           />
