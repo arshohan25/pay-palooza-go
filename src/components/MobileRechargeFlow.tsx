@@ -622,7 +622,8 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                   </motion.button>
                 </div>
 
-                {/* Operator cards */}
+                {/* Operator cards — hide when a pack is already selected */}
+                {!selectedPack && (
                 <div className="space-y-2.5">
                   <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Browse by operator</p>
                   <div className="space-y-2">
@@ -652,6 +653,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                     ))}
                   </div>
                 </div>
+                )}
               </div>
             )}
 
