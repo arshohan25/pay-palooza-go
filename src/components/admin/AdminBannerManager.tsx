@@ -175,7 +175,7 @@ export default function AdminBannerManager() {
   };
 
   const save = async () => {
-    if (!form.title.trim()) { toast.error("Title is required"); return; }
+    // Title is optional for media-only banners
     setSaving(true);
 
     const finalLinkUrl = form.link_mode === "feature"
