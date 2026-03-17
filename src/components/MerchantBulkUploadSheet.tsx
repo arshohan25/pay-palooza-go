@@ -49,7 +49,7 @@ const TEMPLATE_CSV = `name,price,original_price,category,stock,sku,brand,descrip
 "Example Product",299,399,Electronics,50,SKU-001,BrandX,"A great product"
 "Another Item",150,,Fashion,20,SKU-002,BrandY,"Stylish item"`;
 
-const MerchantBulkUploadSheet = ({ merchantId, open, onOpenChange, onSuccess }: Props) => {
+const MerchantBulkUploadSheet = ({ merchantId, businessName, open, onOpenChange, onSuccess }: Props) => {
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<ParsedRow[]>([]);
