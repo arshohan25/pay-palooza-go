@@ -139,6 +139,7 @@ export default function ShopPage() {
   const { user } = useAuth();
   const { items, addToCart, updateQty, removeFromCart, count } = useCart();
   const { isWishlisted, toggle: toggleWishlist } = useWishlist();
+  const { recentIds } = useRecentlyViewed();
   const [cartOpen, setCartOpen] = useState(false);
 
   const [products, setProducts] = useState<ShopProduct[]>([]);
@@ -150,6 +151,7 @@ export default function ShopPage() {
   const [shopBanners, setShopBanners] = useState<any[]>([]);
   const [recommendedIds, setRecommendedIds] = useState<string[]>([]);
   const [recsLoading, setRecsLoading] = useState(false);
+  const [flashSales, setFlashSales] = useState<any[]>([]);
 
   // Load products
   useEffect(() => {
