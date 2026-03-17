@@ -82,6 +82,37 @@ export default function ProductDetailPage() {
     load();
   }, [id]);
 
+  // Check if user can review (has delivered order, hasn't reviewed yet)
+  useEffect(() => {
+    if (!user || !id) return;
+    const checkReview = async () => {
+      const { data: orders } = await supabase
+        .from("orders")
+        .select("id, items")
+        .eq("user_id", user.id)
+        .eq("status", "delivered");
+
+      const matchingOrder = (orders ?? []).find((o: any) =>
+        Array.isArray(o.items) && o.items.some((item: any) => item.id === id || item.product_id === id)
+      );
+
+      if (matchingOrder) {
+        const { data: existing } = await (supabase as any)
+          .from("product_reviews")
+          .select("id")
+          .eq("product_id", id)
+          .eq("user_id", user.id)
+          .limit(1);
+
+        if (!existing || existing.length === 0) {
+          setCanReview(true);
+          setDeliveredOrderId(matchingOrder.id);
+        }
+      }
+    };
+    checkReview();
+  }, [user, id]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background p-4 space-y-4">
