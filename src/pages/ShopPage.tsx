@@ -22,6 +22,7 @@ import PromoSlider from "@/components/PromoSlider";
 import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { useAuth } from "@/hooks/use-auth";
+import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
 import { cn } from "@/lib/utils";
 
 type SortOption = "popular" | "price_low" | "price_high" | "newest" | "rating";
