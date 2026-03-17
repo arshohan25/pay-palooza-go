@@ -70,6 +70,7 @@ interface Props {
 
 const MerchantProductsTab = ({ merchantId }: Props) => {
   const { toast } = useToast();
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
