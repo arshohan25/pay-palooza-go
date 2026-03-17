@@ -483,10 +483,13 @@ export default function AdminEcommerceHub() {
 
       <Separator />
 
+      {subTab === "dashboard" && <AdminEcommerceStats />}
       {subTab === "products" && <ProductsTab />}
       {subTab === "stores" && <StoresTab />}
       {subTab === "reviews" && <ReviewsTab />}
       {subTab === "coupons" && <CouponsTab />}
+      {subTab === "inventory" && <AdminInventoryAlerts />}
+      {subTab === "flash_sales" && <AdminFlashSales />}
       {subTab === "banners" && <AdminBannerManager />}
       {subTab === "marketing" && <AdminMarketingTools />}
     </div>
