@@ -1,29 +1,56 @@
+## Redesign Shop Home Page — Premium & Elegant
 
+### Overview
 
-## Plan: Add Biller Categories to API Hub
+Redesign the shop page for a cleaner, more premium feel. Remove the hardcoded "Collect Vouchers" card and replace it with admin-managed promotional cards fetched from the existing `promo_banners` table (using a new `placement` column to target shop-specific banners).
 
-### What
+### Database Change
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+Add a `placement` column to `promo_banners` so admins can assign banners to specific pages:
 
-### Changes
+```sql
+ALTER TABLE promo_banners ADD COLUMN placement text DEFAULT 'home';
+```
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+Values: `home` (default, existing behavior), `shop`, `both`.
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+### UI Redesign — `ShopPage.tsx`
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+**Header**: Refined with a subtle gradient accent line and cleaner spacing. Keep search + cart.
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+**Remove**: The hardcoded "Collect Vouchers" card (lines 260-276).
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+**Replace with**: A dynamic promo card section that fetches `promo_banners` where `placement IN ('shop', 'both')`. Renders as compact, elegant gradient cards — admin-controlled content.
 
-3. Add the new category icons to the `categoryIcons` map.
+**Trust Bar**: Slim it down to a single-line icon row with softer styling, more whitespace.
 
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+**Category Nav**: Keep as-is add more categories (already clean).
 
+**Promo Slider**: Keep but tighten padding. (image/gif/video banner uploadable within fixed size)
+
+**Trending Section**: Redesign `FlashCard` with slightly larger cards (140px), rounded-2xl, subtle shadow, cleaner typography. Add a thin progress-style "selling fast" indicator for items with low stock.
+
+**Product Grid Section**: 
+
+- Cleaner section header — remove the sparkles animation, use a simple bold heading
+- Tighter gap-2.5 grid spacing
+- Sort/filter bar simplified
+
+**ProductCard.tsx** refinements:
+
+- Softer border (`border-border/40`), slightly larger corner radius (`rounded-2xl`)
+- Price uses `font-extrabold` with primary color for discount prices
+- Star rating uses a warm amber fill instead of accent
+- Vendor name row slightly bolder
+- Add-to-cart button uses filled primary style instead of ghost
+
+### Admin Panel Update — `AdminEcommerceHub.tsx`
+
+In the **Banners** sub-tab (which already renders `AdminBannerManager`), the existing banner manager already handles CRUD. We just need to update `AdminBannerManager` to include a `placement` dropdown (home / shop / both) when creating/editing banners.
+
+### Files Modified
+
+1. `**src/pages/ShopPage.tsx**` — Full redesign: remove voucher card, add dynamic shop promo cards, refined layout
+2. `**src/components/shop/ProductCard.tsx**` — Premium styling tweaks
+3. `**src/components/admin/AdminBannerManager.tsx**` — Add `placement` field to banner create/edit form
+4. **Migration** — Add `placement` column to `promo_banners`
