@@ -3,9 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Clock, CircleCheck, Truck, Package, XCircle, MapPin,
-  CreditCard, Wallet, Star, Loader2, Ban, Shield,
+  CreditCard, Wallet, Star, Loader2, Ban, Shield, Download, Printer,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { downloadInvoice, printInvoice } from "@/components/InvoiceGenerator";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
