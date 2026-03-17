@@ -1220,7 +1220,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                     </div>
                     {appliedPromo && (
                       <div className="flex justify-between text-[13px]">
-                        <span className="text-primary">{t("discount")} ({appliedPromo.discount}%)</span>
+                        <span className="text-primary">{t("discount")} ({appliedPromo.code})</span>
                         <span className="font-semibold text-primary">-৳{discountAmt.toLocaleString()}</span>
                       </div>
                     )}
