@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -21,16 +22,34 @@ interface ParsedRow {
 
 interface Props {
   merchantId: string;
+  businessName?: string;
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onSuccess: () => void;
 }
 
+const ensureVendorStore = async (merchantId: string, businessName: string) => {
+  const { data } = await (supabase as any)
+    .from("vendor_stores")
+    .select("id")
+    .eq("merchant_id", merchantId)
+    .maybeSingle();
+  if (!data) {
+    const slug = businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    await (supabase as any).from("vendor_stores").insert({
+      merchant_id: merchantId,
+      store_name: businessName,
+      slug,
+      is_active: true,
+    });
+  }
+};
+
 const TEMPLATE_CSV = `name,price,original_price,category,stock,sku,brand,description
 "Example Product",299,399,Electronics,50,SKU-001,BrandX,"A great product"
 "Another Item",150,,Fashion,20,SKU-002,BrandY,"Stylish item"`;
 
-const MerchantBulkUploadSheet = ({ merchantId, open, onOpenChange, onSuccess }: Props) => {
+const MerchantBulkUploadSheet = ({ merchantId, businessName, open, onOpenChange, onSuccess }: Props) => {
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<ParsedRow[]>([]);
@@ -118,6 +137,9 @@ const MerchantBulkUploadSheet = ({ merchantId, open, onOpenChange, onSuccess }: 
     const validRows = rows.filter(r => r.valid);
     if (!validRows.length) { toast({ title: "No valid rows", variant: "destructive" }); return; }
     setImporting(true);
+    if (businessName) {
+      await ensureVendorStore(merchantId, businessName);
+    }
 
     const payload = validRows.map(r => ({
       merchant_id: merchantId,

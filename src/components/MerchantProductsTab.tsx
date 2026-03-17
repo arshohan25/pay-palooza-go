@@ -66,9 +66,27 @@ const getVideoThumbnail = (url: string): string | null => {
 
 interface Props {
   merchantId: string;
+  businessName?: string;
 }
 
-const MerchantProductsTab = ({ merchantId }: Props) => {
+const ensureVendorStore = async (merchantId: string, businessName: string) => {
+  const { data } = await (supabase as any)
+    .from("vendor_stores")
+    .select("id")
+    .eq("merchant_id", merchantId)
+    .maybeSingle();
+  if (!data) {
+    const slug = businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    await (supabase as any).from("vendor_stores").insert({
+      merchant_id: merchantId,
+      store_name: businessName,
+      slug,
+      is_active: true,
+    });
+  }
+};
+
+const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
   const { toast } = useToast();
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -204,6 +222,9 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
     if (!form.name.trim()) { toast({ title: "Name required", variant: "destructive" }); return; }
     if (!form.price || Number(form.price) <= 0) { toast({ title: "Valid price required", variant: "destructive" }); return; }
     setSaving(true);
+    if (!editing && businessName) {
+      await ensureVendorStore(merchantId, businessName);
+    }
     const payload = {
       merchant_id: merchantId,
       name: form.name.trim(),
@@ -295,6 +316,7 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
       {/* Bulk Upload Sheet */}
       <MerchantBulkUploadSheet
         merchantId={merchantId}
+        businessName={businessName}
         open={showBulkUpload}
         onOpenChange={setShowBulkUpload}
         onSuccess={loadProducts}
