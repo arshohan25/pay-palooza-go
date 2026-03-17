@@ -93,6 +93,19 @@ export default function CustomerOrdersPage() {
                     <Truck className="w-3 h-3" /> Est. delivery: {order.estimated_delivery}
                   </p>
                 )}
+                {order.status === "delivered" && items.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 text-xs h-7"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setReviewSheet({ open: true, productId: items[0].id || items[0].product_id, orderId: order.id });
+                    }}
+                  >
+                    <Star className="w-3 h-3 mr-1" /> Rate & Review
+                  </Button>
+                )}
               </div>
             );
           })
