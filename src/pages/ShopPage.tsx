@@ -238,6 +238,35 @@ export default function ShopPage() {
             ))}
           </motion.div>
         )}
+
+        {/* AI Recommendations */}
+        {recommendedProducts.length > 0 && !search.trim() && selectedCategory === "All" && (
+          <div className="mt-8 space-y-3">
+            <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-primary" /> Recommended For You
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              {recommendedProducts.map((product) => (
+                <ProductCard
+                  key={`rec-${product.id}`}
+                  product={product}
+                  isWishlisted={isWishlisted(product.id)}
+                  onAddToCart={addToCart}
+                  onToggleWishlist={toggleWishlist}
+                  onNavigate={navigate}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+        {recsLoading && !search.trim() && selectedCategory === "All" && (
+          <div className="mt-8 space-y-3">
+            <Skeleton className="h-5 w-48" />
+            <div className="grid grid-cols-2 gap-3">
+              {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="aspect-[3/4] rounded-xl" />)}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
