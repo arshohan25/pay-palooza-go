@@ -1,37 +1,29 @@
-## Add E-Commerce Management to Admin Panel
 
-The admin panel currently has no shop/e-commerce management section. There are existing database tables (`vendor_stores`, `merchant_products`, `product_variants`, `product_reviews`, `coupons`, `orders`, `order_items`) but no admin UI to manage them.
 
-### What we'll build
+## Plan: Add Biller Categories to API Hub
 
-A new **"E-Commerce"** nav group in the admin sidebar with dedicated management components:
+### What
 
-### 1. Admin E-Commerce Hub (`src/components/admin/AdminEcommerceHub.tsx`)
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-A tabbed container with sub-tabs:
+### Changes
 
-- **Products** — Browse/search all `merchant_products` with vendor name, stock, price, status. Bulk actions: toggle active, delete. Inline edit price/stock.
-- **Vendor Stores** — List all `vendor_stores` with logo, name, slug, product count, status. Toggle active/suspend stores. View store details.
-- **Reviews** — List all `product_reviews` with rating, text, user info, product name. Flag/remove inappropriate reviews.
-- **Coupons** — List all `coupons` with code, discount, usage count, expiry. Create/edit/deactivate coupons.
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-Each sub-tab follows existing admin component patterns (Card-based layout, search, filters, bulk actions, detail sheets).
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-### 2. Admin Nav Update (`src/pages/AdminDashboard.tsx`)
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-- Add a new **"E-Commerce"** group to `NAV_GROUPS` with items: `{ id: "ecommerce", label: "E-Commerce", icon: ShoppingBag }`
-- Add the tab content rendering for `activeTab === "ecommerce"` mapping to `<AdminEcommerceHub />`
-- Import the new component and `ShoppingBag` icon
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-### 3. Stat Cards Enhancement
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-- Add shop stats to the overview dashboard: total products, total vendor stores, pending reviews count, benner, marketing, promotion and more necessary features
+3. Add the new category icons to the `categoryIcons` map.
 
-### Files Modified
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
-- `**src/components/admin/AdminEcommerceHub.tsx**` — New file, ~400 lines, tabbed e-commerce management
-- `**src/pages/AdminDashboard.tsx**` — Add nav group entry + tab rendering + import
-
-### No Backend Changes
-
-All data comes from existing tables with existing RLS policies (admin has `has_role` access).

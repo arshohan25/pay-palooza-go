@@ -9,6 +9,7 @@ import {
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings, FileText,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
   Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck, Image, Bell, Shield, Star, Building2, Megaphone, CalendarClock,
+  ShoppingBag,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -97,6 +98,7 @@ import AdminAgentLeaderboard from "@/components/admin/AdminAgentLeaderboard";
 import AdminUserFeedback from "@/components/admin/AdminUserFeedback";
 import AdminChangelogManager from "@/components/admin/AdminChangelogManager";
 import AdminFestivalThemes from "@/components/admin/AdminFestivalThemes";
+import AdminEcommerceHub from "@/components/admin/AdminEcommerceHub";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -296,6 +298,12 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "smart_routing", label: "Routing", icon: CreditCard },
       { id: "liquidity", label: "Liquidity", icon: TrendingUp },
       { id: "live_monitor", label: "Live Monitor", icon: Activity },
+    ],
+  },
+  {
+    label: "E-Commerce",
+    items: [
+      { id: "ecommerce", label: "E-Commerce", icon: ShoppingBag },
     ],
   },
   {
@@ -1703,6 +1711,9 @@ export default function AdminDashboard() {
 
         {/* ═══ FESTIVAL THEMES ═══ */}
         {activeTab === "festival_themes" && <AdminFestivalThemes />}
+
+        {/* ═══ E-COMMERCE ═══ */}
+        {activeTab === "ecommerce" && <AdminEcommerceHub />}
 
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
