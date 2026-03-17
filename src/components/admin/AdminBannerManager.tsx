@@ -275,6 +275,7 @@ export default function AdminBannerManager() {
                       <div className="flex items-center justify-between mt-1.5 gap-1">
                         <div className="flex items-center gap-1 min-w-0 overflow-hidden">
                           <Badge variant={b.is_active ? "default" : "secondary"} className="text-[9px] shrink-0 px-1">{b.is_active ? "On" : "Off"}</Badge>
+                          <Badge variant="outline" className="text-[9px] shrink-0 px-1 capitalize">{(b as any).placement || "home"}</Badge>
                           {b.link_url && (
                             <Badge variant="outline" className="text-[9px] shrink-0 gap-0.5 max-w-[100px] truncate px-1">
                               <Link2 className="w-2.5 h-2.5 shrink-0" />
