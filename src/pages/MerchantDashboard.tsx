@@ -36,7 +36,7 @@ import MerchantOrdersTab from "@/components/MerchantOrdersTab";
 import MerchantStoreSettingsTab from "@/components/MerchantStoreSettingsTab";
 
 /* ─── Types ─── */
-type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api";
+type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api" | "store";
 
 interface MerchantInfo {
   id: string;
