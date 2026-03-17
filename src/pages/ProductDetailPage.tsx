@@ -384,6 +384,30 @@ export default function ProductDetailPage() {
             </TabsContent>
           </Tabs>
         </motion.div>
+
+        {/* Related: More from this Store */}
+        {relatedFromVendor.length > 0 && (
+          <motion.div custom={9} variants={fadeUp} initial="hidden" animate="show">
+            <RelatedProductsRow
+              title="More from this Store"
+              products={relatedFromVendor}
+              seeAllLink={vendorInfo?.slug ? `/shop/${vendorInfo.slug}` : "/shop"}
+              onNavigate={(pid) => navigate(`/product/${pid}`)}
+            />
+          </motion.div>
+        )}
+
+        {/* Related: You May Also Like */}
+        {relatedOthers.length > 0 && (
+          <motion.div custom={10} variants={fadeUp} initial="hidden" animate="show">
+            <RelatedProductsRow
+              title="You May Also Like"
+              products={relatedOthers}
+              seeAllLink="/shop"
+              onNavigate={(pid) => navigate(`/product/${pid}`)}
+            />
+          </motion.div>
+        )}
       </div>
 
       {/* ── Fixed bottom bar ── */}
