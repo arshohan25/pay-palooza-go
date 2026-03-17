@@ -69,6 +69,7 @@ const emptyForm = {
   is_active: true,
   sort_order: 0,
   expires_at: "",
+  placement: "home",
 };
 
 export default function AdminBannerManager() {
