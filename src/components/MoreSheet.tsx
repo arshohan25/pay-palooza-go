@@ -20,6 +20,7 @@ const items = [
 ];
 
 const MoreSheet = ({ open, onClose, onBankTransfer, onSavings }: MoreSheetProps) => {
+  const navigate = useNavigate();
   const visibleItems = items;
 
   const handleTap = (id: string, soon?: boolean) => {
@@ -28,6 +29,7 @@ const MoreSheet = ({ open, onClose, onBankTransfer, onSavings }: MoreSheetProps)
     setTimeout(() => {
       if (id === "bank") onBankTransfer();
       else if (id === "savings") onSavings();
+      else if (id === "careers") navigate("/careers");
       else toast.info("Coming soon!");
     }, 200);
   };

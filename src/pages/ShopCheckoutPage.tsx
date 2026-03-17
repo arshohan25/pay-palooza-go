@@ -194,7 +194,7 @@ export default function ShopCheckoutPage() {
         p_shipping_address: `${selectedAddress.address_line}${selectedAddress.area ? ", " + selectedAddress.area : ""}`,
         p_shipping_city: selectedAddress.city,
         p_shipping_phone: selectedAddress.phone,
-        p_delivery_fee: 0,
+        p_delivery_fee: deliveryFee,
         p_coupon_id: appliedPromo?.coupon_id || null,
         p_coupon_discount: discountAmt,
         p_payment_method: payMethod,
