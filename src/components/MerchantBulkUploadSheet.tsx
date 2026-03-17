@@ -22,10 +22,28 @@ interface ParsedRow {
 
 interface Props {
   merchantId: string;
+  businessName?: string;
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onSuccess: () => void;
 }
+
+const ensureVendorStore = async (merchantId: string, businessName: string) => {
+  const { data } = await (supabase as any)
+    .from("vendor_stores")
+    .select("id")
+    .eq("merchant_id", merchantId)
+    .maybeSingle();
+  if (!data) {
+    const slug = businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    await (supabase as any).from("vendor_stores").insert({
+      merchant_id: merchantId,
+      store_name: businessName,
+      slug,
+      is_active: true,
+    });
+  }
+};
 
 const TEMPLATE_CSV = `name,price,original_price,category,stock,sku,brand,description
 "Example Product",299,399,Electronics,50,SKU-001,BrandX,"A great product"
