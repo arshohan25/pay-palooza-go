@@ -47,6 +47,7 @@ import PlatformBanner from "@/components/PlatformBanner";
 import FestivalOverlay from "@/components/FestivalOverlay";
 
 const Index = () => {
+  const navigate = useNavigate();
   const { isAuthenticated, loading: authLoading, signOut, user } = useAuth();
   const { status: kycStatus, rejectionReason } = useKycStatus();
   const [showKycFlow, setShowKycFlow] = useState(false);
