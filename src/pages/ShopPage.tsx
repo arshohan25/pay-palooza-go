@@ -351,24 +351,23 @@ export default function ShopPage() {
         </div>
       </div>
 
-      {/* ── Promo Slider ── */}
+      {/* ── Promo Slider + Shop Banners (directly under header) ── */}
       <Section delay={0.05} className="px-4 pt-3">
         <PromoSlider />
       </Section>
 
-      {/* ── Category Icons ── */}
-      <Section delay={0.1} className="pt-3">
-        <CategoryNav categories={categories} selected={selectedCategory} onSelect={setSelectedCategory} />
-      </Section>
-
-      {/* ── Shop Promo Banners (admin-managed) ── */}
       {shopBanners.length > 0 && !search.trim() && (
-        <Section delay={0.15} className="px-4 pt-1 space-y-2">
+        <Section delay={0.07} className="px-4 pt-1 space-y-2">
           {shopBanners.map((banner) => (
             <ShopPromoBanner key={banner.id} banner={banner} onNavigate={navigate} />
           ))}
         </Section>
       )}
+
+      {/* ── Category Icons ── */}
+      <Section delay={0.1} className="pt-3">
+        <CategoryNav categories={categories} selected={selectedCategory} onSelect={setSelectedCategory} />
+      </Section>
 
       {/* ── Flash Sale Banner ── */}
       {!loading && flashSales.length > 0 && !search.trim() && selectedCategory === "All" && (
