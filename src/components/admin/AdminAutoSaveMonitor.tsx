@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PiggyBank, Clock, CheckCircle, RefreshCw } from "lucide-react";
+import { Coins, Clock, CheckCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AdminAutoSaveMonitor() {
