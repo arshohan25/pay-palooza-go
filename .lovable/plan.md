@@ -1,29 +1,22 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Remove All PiggyBank Icons
 
-### What
+Replace every `PiggyBank` icon usage with a more appropriate alternative across 3 files.
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### Replacements
 
-### Changes
+| File | Current | Replacement | Reason |
+|------|---------|-------------|--------|
+| `src/pages/AdminDashboard.tsx` | `PiggyBank` for "Savings" tab | `Wallet` (already imported) | Savings context |
+| `src/pages/AdminDashboard.tsx` | `PiggyBank` for "Auto-Save" tab | `CalendarClock` | Scheduled saving |
+| `src/components/admin/AdminSavingsManagement.tsx` | `PiggyBank` for Total Savings stat card | `Coins` | Money/savings |
+| `src/components/admin/AdminAutoSaveMonitor.tsx` | `PiggyBank` for Active count card | `Coins` | Money context |
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+### Steps
+1. **AdminDashboard.tsx**: Remove `PiggyBank` from import, add `CalendarClock` if missing. Change Savings icon to `Wallet`, Auto-Save icon to `CalendarClock`.
+2. **AdminSavingsManagement.tsx**: Replace `PiggyBank` import with `Coins`, update the JSX.
+3. **AdminAutoSaveMonitor.tsx**: Replace `PiggyBank` import with `Coins`, update the JSX.
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
-
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+Three files, four icon swaps total.
 
