@@ -80,6 +80,20 @@ function FlashCard({ product, onNavigate }: { product: ShopProduct; onNavigate: 
   );
 }
 
+/* ── Live countdown hook ── */
+function useCountdown(endsAt: string) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const diff = Math.max(0, new Date(endsAt).getTime() - now);
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  return { h, m, s, expired: diff <= 0 };
+}
+
 /* ── Shop Promo Banner Card ── */
 function ShopPromoBanner({ banner, onNavigate }: { banner: any; onNavigate: (path: string) => void }) {
   const handleClick = () => {
@@ -108,7 +122,7 @@ function ShopPromoBanner({ banner, onNavigate }: { banner: any; onNavigate: (pat
           {banner.media_type === "video" ? (
             <video src={banner.media_url} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover" />
           ) : (
-            <img src={banner.media_url} alt={banner.title} className="absolute inset-0 w-full h-full object-cover" />
+            <img src={banner.media_url} alt={banner.title || ""} className="absolute inset-0 w-full h-full object-cover" />
           )}
           <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent" />
         </>
@@ -124,12 +138,49 @@ function ShopPromoBanner({ banner, onNavigate }: { banner: any; onNavigate: (pat
             {banner.badge_text}
           </span>
         )}
-        <p className="text-sm font-bold text-white">{banner.title}</p>
+        {banner.title && <p className="text-sm font-bold text-white">{banner.title}</p>}
         {banner.subtitle && <p className="text-[11px] text-white/70 mt-0.5">{banner.subtitle}</p>}
       </div>
       {banner.link_url && (
         <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
       )}
+    </button>
+  );
+}
+
+/* ── Flash Sale Card ── */
+function FlashSaleCard({ sale, onNavigate }: { sale: any; onNavigate: (path: string) => void }) {
+  const prod = sale.merchant_products;
+  const { h, m, s, expired } = useCountdown(sale.ends_at);
+  if (expired) return null;
+
+  return (
+    <button
+      onClick={() => onNavigate(`/product/${prod?.id || sale.product_id}`)}
+      className="w-full rounded-2xl overflow-hidden bg-destructive/10 border border-destructive/20 p-3 flex items-center gap-3 text-left"
+    >
+      {/* Product image / emoji */}
+      <div className="w-14 h-14 rounded-xl bg-muted/30 flex items-center justify-center overflow-hidden shrink-0">
+        {prod?.image_url ? (
+          <img src={prod.image_url} alt={prod?.name} className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-2xl">{prod?.emoji || "⚡"}</span>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] font-bold text-destructive uppercase tracking-wide">⚡ Flash Sale</p>
+        <p className="text-sm font-semibold text-foreground truncate">{prod?.name}</p>
+        <div className="flex items-baseline gap-2 mt-0.5">
+          <span className="text-base font-extrabold text-destructive">৳{sale.sale_price}</span>
+          <span className="text-xs text-muted-foreground line-through">৳{prod?.price}</span>
+        </div>
+      </div>
+      <div className="text-right shrink-0">
+        <p className="text-[9px] text-muted-foreground">Ends in</p>
+        <p className="text-sm font-bold text-foreground tabular-nums">
+          {h}h {m}m {s}s
+        </p>
+      </div>
     </button>
   );
 }
