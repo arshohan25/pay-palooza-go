@@ -399,6 +399,7 @@ const MerchantDashboard = () => {
             {activeTab === "overview"     && <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} onRefresh={loadData} onSeeAll={() => setActiveTab("transactions")} />}
             {activeTab === "products"     && merchant && <MerchantProductsTab merchantId={merchant.id} />}
             {activeTab === "orders"       && merchant && <MerchantOrdersTab merchantId={merchant.id} />}
+            {activeTab === "store"        && merchant && <MerchantStoreSettingsTab merchantId={merchant.id} businessName={merchant.business_name} />}
             {activeTab === "qr"           && <QRTab merchant={merchant} toast={toast} />}
             {activeTab === "analytics"    && merchant && <MerchantAnalyticsTab merchantId={merchant.id} />}
             {activeTab === "paylinks"     && <PayLinksTab merchant={merchant} toast={toast} />}
