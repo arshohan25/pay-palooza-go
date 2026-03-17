@@ -168,78 +168,53 @@ export default function AdminOrderManagement() {
     if (!cancelTarget) return;
     setCancelling(true);
 
-    // 1. Update order status to cancelled
-    const { error: updateErr } = await supabase
-      .from("orders")
-      .update({ status: "cancelled", notes: `Admin cancelled: ${cancelReason || "No reason provided"}` })
-      .eq("id", cancelTarget.id);
-
-    if (updateErr) {
-      toast.error("Failed to cancel order");
-      setCancelling(false);
-      return;
-    }
-
-    // 2. Refund to wallet if paid via wallet
-    if (cancelTarget.payment_method === "wallet" && cancelTarget.total > 0) {
-      // Use admin_chargeback in reverse: credit via addmoney-style refund
-      // We'll directly update balance + insert transaction using service-level RPC
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("balance")
-        .eq("user_id", cancelTarget.user_id)
-        .single();
-
-      if (profile) {
-        const newBalance = Number(profile.balance) + cancelTarget.total;
-        // Update balance
-        await supabase
-          .from("profiles")
-          .update({ balance: newBalance } as any)
-          .eq("user_id", cancelTarget.user_id);
-
-        // Record refund transaction
-        await supabase.from("transactions").insert({
-          user_id: cancelTarget.user_id,
-          type: "addmoney" as any,
-          amount: cancelTarget.total,
-          fee: 0,
-          balance_after: newBalance,
-          description: `Refund for order ${cancelTarget.order_num}: ${cancelReason || "Admin cancellation"}`,
-          reference: cancelTarget.id,
-          status: "completed" as any,
-        });
-
-        toast.success(`৳${cancelTarget.total.toLocaleString()} refunded to customer wallet`);
-      }
-    }
-
-    // 3. Log in audit
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
-      await supabase.from("audit_logs").insert({
-        actor_id: session.user.id,
-        action: "order_cancellation",
-        entity_type: "order",
-        entity_id: cancelTarget.id,
-        details: {
-          order_num: cancelTarget.order_num,
-          total: cancelTarget.total,
-          reason: cancelReason,
-          refunded: cancelTarget.payment_method === "wallet",
-        },
+    try {
+      const { data, error } = await supabase.rpc("cancel_order_escrow", {
+        p_order_id: cancelTarget.id,
+        p_reason: cancelReason || "Admin cancellation",
       });
+
+      if (error) throw error;
+      const result = typeof data === "string" ? JSON.parse(data) : data;
+
+      setOrders(prev => prev.map(o => o.id === cancelTarget.id ? { ...o, status: "cancelled", escrow_status: "refunded" } : o));
+      if (selectedOrder?.id === cancelTarget.id) {
+        setSelectedOrder(prev => prev ? { ...prev, status: "cancelled", escrow_status: "refunded" } : null);
+      }
+
+      if (result.refunded) {
+        toast.success(`Order ${cancelTarget.order_num} cancelled · ৳${cancelTarget.total.toLocaleString()} refunded to wallet`);
+      } else {
+        toast.success(`Order ${cancelTarget.order_num} cancelled`);
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to cancel order");
     }
 
-    setOrders(prev => prev.map(o => o.id === cancelTarget.id ? { ...o, status: "cancelled" } : o));
-    if (selectedOrder?.id === cancelTarget.id) {
-      setSelectedOrder(prev => prev ? { ...prev, status: "cancelled" } : null);
-    }
-
-    toast.success(`Order ${cancelTarget.order_num} cancelled`);
     setCancelTarget(null);
     setCancelReason("");
     setCancelling(false);
+  };
+
+  const releaseEscrow = async (order: OrderRow) => {
+    setReleasingEscrow(order.id);
+    try {
+      const { data, error } = await supabase.rpc("release_escrow", {
+        p_order_id: order.id,
+      });
+      if (error) throw error;
+      const result = typeof data === "string" ? JSON.parse(data) : data;
+
+      setOrders(prev => prev.map(o => o.id === order.id ? { ...o, escrow_status: "released" } : o));
+      if (selectedOrder?.id === order.id) {
+        setSelectedOrder(prev => prev ? { ...prev, escrow_status: "released" } : null);
+      }
+
+      toast.success(`Escrow released for ${order.order_num} · ৳${result.released_to_vendors?.toLocaleString()} to vendors, ৳${result.platform_fee?.toLocaleString()} platform fee`);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to release escrow");
+    }
+    setReleasingEscrow(null);
   };
 
   const toggleSelect = (id: string) => {
