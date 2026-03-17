@@ -654,55 +654,64 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
     if (!pinValid) { setCheckoutPinError("Incorrect PIN. Please try again."); setCheckoutPin(""); setCheckoutProcessing(false); return; }
     haptics.success();
 
-    if (payMethod === "wallet") {
-      if (cartTotal > walletBalance) { toast.error("Insufficient wallet balance"); setCheckoutProcessing(false); return; }
-      try {
-        await transferMoney({
-          recipientPhone: "SHOP-EASYPAY",
-          amount: cartTotal, fee: 0, type: "payment",
-          recipientName: "EasyPay Shop",
-          description: `Shop order: ${cart.map(i => i.name).join(", ")}`,
-          reference: `ORD-${Date.now().toString(36).toUpperCase().slice(-6)}`,
-        });
-      } catch (e: any) { toast.error(e.message ?? "Payment failed"); setCheckoutProcessing(false); return; }
+    if (payMethod === "wallet" && cartTotal > walletBalance) {
+      toast.error("Insufficient wallet balance"); setCheckoutProcessing(false); return;
     }
 
-    const num = `ORD-${Date.now().toString(36).toUpperCase().slice(-6)}`;
-    const dateStr = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    const estDelivery = new Date(Date.now() + 5 * 86400000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    const newOrder: Order = {
-      id: `o${Date.now()}`, orderNum: num, date: dateStr, items: [...cart], total: cartTotal,
-      address: selectedAddress, paymentMethod: payMethod, status: "processing",
-      estimatedDelivery: estDelivery, timeline: makeTimeline("processing", dateStr),
-    };
-    setOrders(prev => [newOrder, ...prev]);
+    try {
+      // Atomic escrow order via DB RPC
+      const itemsPayload = cart.map(c => ({
+        product_id: c.id,
+        merchant_id: c.merchant_id || null,
+        name: c.name,
+        price: c.price,
+        qty: c.qty,
+        emoji: c.emoji,
+        image_url: c.image_url || null,
+        vendor_name: c.vendor_name,
+      }));
 
-    // Persist — include merchant_id from first item
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
-      const firstMerchantId = cart[0]?.merchant_id || null;
-      await (supabase as any).from("orders").insert({
-        user_id: session.user.id,
-        order_num: num,
-        status: "processing",
-        total: cartTotal,
-        payment_method: payMethod,
-        shipping_name: selectedAddress.name,
-        shipping_address: `${selectedAddress.line1}, ${selectedAddress.line2}`,
-        shipping_city: selectedAddress.city,
-        shipping_phone: selectedAddress.phone,
-        merchant_id: firstMerchantId,
-        items: cart.map(c => ({ id: c.id, name: c.name, price: c.price, qty: c.qty, emoji: c.emoji, image_url: c.image_url, vendor_name: c.vendor_name, merchant_id: c.merchant_id })),
-        estimated_delivery: estDelivery,
+      const { data, error } = await supabase.rpc("place_shop_order", {
+        p_items: itemsPayload,
+        p_shipping_name: selectedAddress.name,
+        p_shipping_address: `${selectedAddress.line1}, ${selectedAddress.line2}`,
+        p_shipping_city: selectedAddress.city,
+        p_shipping_phone: selectedAddress.phone,
+        p_delivery_fee: 0,
+        p_coupon_id: appliedPromo?.coupon_id || null,
+        p_coupon_discount: discountAmt,
+        p_payment_method: payMethod,
       });
-    }
 
-    setOrderNum(num);
-    setLastOrderTotal(cartTotal);
-    setLastPayMethod(payMethod);
-    fireSuccessConfetti();
-    setCart([]); setAppliedPromo(null); setPromoInput(""); setCheckoutPin(""); setCheckoutPinError(""); setCheckoutProcessing(false);
-    setScreen("success");
+      if (error) throw error;
+      const result = typeof data === "string" ? JSON.parse(data) : data;
+      if (!result?.success) throw new Error("Order placement failed");
+
+      const num = result.order_num;
+      const dateStr = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      const estDelivery = new Date(Date.now() + 5 * 86400000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      const newOrder: Order = {
+        id: result.order_id, orderNum: num, date: dateStr, items: [...cart], total: cartTotal,
+        address: selectedAddress, paymentMethod: payMethod, status: "processing",
+        estimatedDelivery: estDelivery, timeline: makeTimeline("processing", dateStr),
+      };
+      setOrders(prev => [newOrder, ...prev]);
+
+      // Update local wallet balance
+      if (payMethod === "wallet") {
+        setWalletBalance(result.balance);
+      }
+
+      setOrderNum(num);
+      setLastOrderTotal(cartTotal);
+      setLastPayMethod(payMethod);
+      fireSuccessConfetti();
+      setCart([]); setAppliedPromo(null); setPromoInput(""); setCheckoutPin(""); setCheckoutPinError(""); setCheckoutProcessing(false);
+      setScreen("success");
+    } catch (e: any) {
+      toast.error(e.message ?? "Payment failed");
+      setCheckoutProcessing(false);
+    }
   };
 
   // ── Navigation ────────────────────────────────────────────────────────────
