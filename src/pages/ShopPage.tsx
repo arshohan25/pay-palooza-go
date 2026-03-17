@@ -184,18 +184,26 @@ export default function ShopPage() {
           <span className="text-xs text-muted-foreground">
             {filtered.length} product{filtered.length !== 1 ? "s" : ""}
           </span>
-          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-            <SelectTrigger className="w-auto h-7 text-xs gap-1 border-0 bg-muted/50">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="popular">Popular</SelectItem>
-              <SelectItem value="newest">Newest</SelectItem>
-              <SelectItem value="price_low">Price: Low → High</SelectItem>
-              <SelectItem value="price_high">Price: High → Low</SelectItem>
-              <SelectItem value="rating">Top Rated</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-1">
+            <FilterDrawer
+              filters={filters}
+              onApply={setFilters}
+              availableBrands={availableBrands}
+              activeCount={activeFilterCount}
+            />
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+              <SelectTrigger className="w-auto h-7 text-xs gap-1 border-0 bg-muted/50">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="popular">Popular</SelectItem>
+                <SelectItem value="newest">Newest</SelectItem>
+                <SelectItem value="price_low">Price: Low → High</SelectItem>
+                <SelectItem value="price_high">Price: High → Low</SelectItem>
+                <SelectItem value="rating">Top Rated</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
