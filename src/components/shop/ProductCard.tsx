@@ -78,15 +78,6 @@ export default function ProductCard({ product, isWishlisted, onAddToCart, onTogg
 
       {/* Info */}
       <div className="p-3 space-y-1.5">
-        {product.vendor_name && (
-          <button
-            onClick={(e) => { e.stopPropagation(); if (product.vendor_slug) onNavigate(`/shop/${product.vendor_slug}`); }}
-            className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-primary transition-colors"
-          >
-            <Store className="w-3 h-3" />
-            <span className="truncate">{product.vendor_name}</span>
-          </button>
-        )}
         <h3 className="text-sm font-medium text-foreground line-clamp-2 leading-tight">{product.name}</h3>
         <div className="flex items-center gap-1">
           <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
