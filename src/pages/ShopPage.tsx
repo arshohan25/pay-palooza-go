@@ -226,6 +226,7 @@ export default function ShopPage() {
       if (data) setFlashSales(data);
     };
     loadFlash();
+  }, []);
 
   const categories = useMemo(() => {
     const cats = new Set(products.map((p) => p.category));
