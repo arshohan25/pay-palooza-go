@@ -33,7 +33,7 @@ const ESCROW_LABELS: Record<string, { label: string; color: string }> = {
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [order, setOrder] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +48,7 @@ export default function OrderDetailPage() {
   });
 
   useEffect(() => {
+    if (!authLoading && !user) { setLoading(false); return; }
     if (!user || !id) return;
     const load = async () => {
       const [orderRes, itemsRes] = await Promise.all([
@@ -59,7 +60,7 @@ export default function OrderDetailPage() {
       setLoading(false);
     };
     load();
-  }, [user, id]);
+  }, [user, id, authLoading]);
 
   const handleCancel = async () => {
     if (!order || cancelling) return;
@@ -95,8 +96,8 @@ export default function OrderDetailPage() {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
         <Package className="w-16 h-16 text-muted-foreground/30" />
-        <p className="text-muted-foreground">Order not found</p>
-        <Button variant="outline" onClick={() => navigate("/orders")}>Back to Orders</Button>
+        <p className="text-muted-foreground">{!user ? "Please log in to view this order" : "Order not found"}</p>
+        <Button variant="outline" onClick={() => navigate(!user ? "/auth" : "/orders")}>{!user ? "Log In" : "Back to Orders"}</Button>
       </div>
     );
   }
