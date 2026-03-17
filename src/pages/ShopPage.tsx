@@ -368,6 +368,9 @@ export default function ShopPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          <Button variant="ghost" size="icon" className="shrink-0 rounded-full h-8 w-8" onClick={() => navigate("/wishlist")}>
+            <Heart className="w-4 h-4" />
+          </Button>
           <Button variant="ghost" size="icon" className="shrink-0 rounded-full h-8 w-8" onClick={() => navigate("/orders")}>
             <ClipboardList className="w-4 h-4" />
           </Button>
