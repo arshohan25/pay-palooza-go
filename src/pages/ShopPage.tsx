@@ -425,36 +425,10 @@ export default function ShopPage() {
 
       {/* ── Flash Sale Banner ── */}
       {!loading && flashSales.length > 0 && !search.trim() && selectedCategory === "All" && (
-        <Section delay={0.17} className="px-4 pt-3">
-          {flashSales.slice(0, 1).map((sale) => {
-            const prod = sale.merchant_products;
-            const endsAt = new Date(sale.ends_at);
-            const now = new Date();
-            const diffMs = endsAt.getTime() - now.getTime();
-            const hours = Math.floor(diffMs / 3600000);
-            const mins = Math.floor((diffMs % 3600000) / 60000);
-            return (
-              <button
-                key={sale.id}
-                onClick={() => navigate(`/product/${prod?.id || sale.product_id}`)}
-                className="w-full rounded-2xl overflow-hidden bg-destructive/10 border border-destructive/20 p-4 flex items-center gap-3 text-left"
-              >
-                <Zap className="w-8 h-8 text-destructive shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold text-destructive uppercase tracking-wide">⚡ Flash Sale</p>
-                  <p className="text-sm font-semibold text-foreground truncate">{prod?.name}</p>
-                  <div className="flex items-baseline gap-2 mt-0.5">
-                    <span className="text-base font-extrabold text-destructive">৳{sale.sale_price}</span>
-                    <span className="text-xs text-muted-foreground line-through">৳{prod?.price}</span>
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-[9px] text-muted-foreground">Ends in</p>
-                  <p className="text-sm font-bold text-foreground">{hours}h {mins}m</p>
-                </div>
-              </button>
-            );
-          })}
+        <Section delay={0.17} className="px-4 pt-3 space-y-2">
+          {flashSales.slice(0, 1).map((sale) => (
+            <FlashSaleCard key={sale.id} sale={sale} onNavigate={navigate} />
+          ))}
         </Section>
       )}
 
