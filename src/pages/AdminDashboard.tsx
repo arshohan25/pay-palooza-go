@@ -301,6 +301,12 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
     ],
   },
   {
+    label: "E-Commerce",
+    items: [
+      { id: "ecommerce", label: "E-Commerce", icon: ShoppingBag },
+    ],
+  },
+  {
     label: "Other",
     items: [
       { id: "team", label: "Team", icon: Users },
