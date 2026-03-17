@@ -33,6 +33,7 @@ import MerchantApiTab from "@/components/MerchantApiTab";
 import MerchantAnalyticsTab from "@/components/MerchantAnalyticsTab";
 import MerchantProductsTab from "@/components/MerchantProductsTab";
 import MerchantOrdersTab from "@/components/MerchantOrdersTab";
+import MerchantStoreSettingsTab from "@/components/MerchantStoreSettingsTab";
 
 /* ─── Types ─── */
 type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api";
