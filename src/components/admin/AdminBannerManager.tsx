@@ -195,6 +195,7 @@ export default function AdminBannerManager() {
       is_active: form.is_active,
       sort_order: form.sort_order,
       expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
+      placement: form.placement,
     };
 
     if (editId) {
