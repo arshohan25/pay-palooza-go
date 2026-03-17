@@ -1,6 +1,9 @@
 import { cn } from "@/lib/utils";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { LayoutGrid, Shirt, Smartphone, Home, Utensils, Dumbbell, BookOpen, Gem, Baby, Sparkles } from "lucide-react";
+import {
+  LayoutGrid, Shirt, Smartphone, Home, Utensils, Dumbbell, BookOpen, Gem, Baby, Sparkles,
+  ShoppingBasket, Car, HeartPulse, Gamepad2, PawPrint, Briefcase, Flower2, Plane,
+} from "lucide-react";
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   All: <LayoutGrid className="w-5 h-5" />,
@@ -12,6 +15,14 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   Books: <BookOpen className="w-5 h-5" />,
   Beauty: <Gem className="w-5 h-5" />,
   Kids: <Baby className="w-5 h-5" />,
+  Grocery: <ShoppingBasket className="w-5 h-5" />,
+  Automotive: <Car className="w-5 h-5" />,
+  Health: <HeartPulse className="w-5 h-5" />,
+  Toys: <Gamepad2 className="w-5 h-5" />,
+  Pets: <PawPrint className="w-5 h-5" />,
+  Office: <Briefcase className="w-5 h-5" />,
+  Garden: <Flower2 className="w-5 h-5" />,
+  Travel: <Plane className="w-5 h-5" />,
 };
 
 const FALLBACK_ICON = <Sparkles className="w-5 h-5" />;

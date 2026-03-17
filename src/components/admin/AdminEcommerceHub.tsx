@@ -16,14 +16,20 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { ScrollArea } from "@/components/ui/scroll-area";
 import AdminBannerManager from "./AdminBannerManager";
 import AdminMarketingTools from "./AdminMarketingTools";
+import AdminEcommerceStats from "./AdminEcommerceStats";
+import AdminInventoryAlerts from "./AdminInventoryAlerts";
+import AdminFlashSales from "./AdminFlashSales";
 
-type SubTab = "products" | "stores" | "reviews" | "coupons" | "banners" | "marketing";
+type SubTab = "dashboard" | "products" | "stores" | "reviews" | "coupons" | "banners" | "marketing" | "inventory" | "flash_sales";
 
 const SUB_TABS: { key: SubTab; label: string; icon: any }[] = [
+  { key: "dashboard", label: "Dashboard", icon: TrendingUp },
   { key: "products", label: "Products", icon: Package },
   { key: "stores", label: "Vendor Stores", icon: Store },
   { key: "reviews", label: "Reviews", icon: Star },
   { key: "coupons", label: "Coupons", icon: Ticket },
+  { key: "inventory", label: "Inventory", icon: AlertTriangle },
+  { key: "flash_sales", label: "Flash Sales", icon: Tag },
   { key: "banners", label: "Banners", icon: Image },
   { key: "marketing", label: "Marketing", icon: Megaphone },
 ];
