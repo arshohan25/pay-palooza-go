@@ -66,9 +66,27 @@ const getVideoThumbnail = (url: string): string | null => {
 
 interface Props {
   merchantId: string;
+  businessName?: string;
 }
 
-const MerchantProductsTab = ({ merchantId }: Props) => {
+const ensureVendorStore = async (merchantId: string, businessName: string) => {
+  const { data } = await (supabase as any)
+    .from("vendor_stores")
+    .select("id")
+    .eq("merchant_id", merchantId)
+    .maybeSingle();
+  if (!data) {
+    const slug = businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    await (supabase as any).from("vendor_stores").insert({
+      merchant_id: merchantId,
+      store_name: businessName,
+      slug,
+      is_active: true,
+    });
+  }
+};
+
+const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
   const { toast } = useToast();
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
