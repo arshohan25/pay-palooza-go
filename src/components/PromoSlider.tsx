@@ -118,7 +118,7 @@ export default function PromoSlider({ onFeatureOpen }: PromoSliderProps) {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   className={cn(
-                    "relative overflow-hidden rounded-2xl p-5",
+                    "relative overflow-hidden rounded-2xl p-5 h-[140px]",
                     b.link_url ? "cursor-pointer" : ""
                   )}
                   style={{
