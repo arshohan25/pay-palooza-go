@@ -678,12 +678,11 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll }: 
     }
   };
 
-  const { getFeeLabel: getMerchFeeLabel } = useFeeConfig();
   const quickActions = [
-    { icon: Send, label: "Send Money", desc: "Flat ৳5/txn", gradient: "from-blue-500 to-indigo-600", onClick: () => setShowSendMoney(true) },
-    { icon: HandCoins, label: "Cash Out", desc: getMerchFeeLabel("cashout") || "Fee varies", gradient: "from-emerald-500 to-teal-600", onClick: () => setShowCashOut(true) },
-    { icon: Landmark, label: "Add Bank", desc: `Auto settle · ${getMerchFeeLabel("banktransfer") || "1%"}`, gradient: "from-amber-500 to-orange-600", onClick: () => setShowAddBank(true) },
-    { icon: CalendarClock, label: "Settlement", desc: "Schedule", gradient: "from-purple-500 to-violet-600", onClick: () => setShowSettlementConfig(true) },
+    { icon: Send, label: "Send Money", gradient: "from-blue-500 to-indigo-600", onClick: () => setShowSendMoney(true) },
+    { icon: HandCoins, label: "Cash Out", gradient: "from-emerald-500 to-teal-600", onClick: () => setShowCashOut(true) },
+    { icon: Landmark, label: "Add Bank", gradient: "from-amber-500 to-orange-600", onClick: () => setShowAddBank(true) },
+    { icon: CalendarClock, label: "Settlement", gradient: "from-purple-500 to-violet-600", onClick: () => setShowSettlementConfig(true) },
   ];
 
   return (
@@ -703,7 +702,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll }: 
                 <a.icon size={18} className="text-white" />
               </div>
               <span className="text-[10px] font-bold text-foreground leading-tight text-center">{a.label}</span>
-              <span className="text-[8px] text-muted-foreground font-medium">{a.desc}</span>
+              
             </motion.button>
           ))}
         </div>

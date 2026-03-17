@@ -1,19 +1,29 @@
 
 
-## Remove Fee Labels from Merchant Quick Action Cards
+## Plan: Add Biller Categories to API Hub
 
-### Problem
-The merchant dashboard quick action cards (Send Money, Cash Out, Add Bank, Settlement) show fee details in a small subtitle line. User wants these removed from the card view — fees are already shown in the Analytics tab's fee schedule section.
+### What
+
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-**File: `src/pages/MerchantDashboard.tsx`**
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-1. **Remove `desc` from quick actions** (lines 683–687): Remove the `desc` property from all 4 action objects.
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-2. **Remove `desc` rendering** (line 706): Remove the `<span>` that displays `a.desc`.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-3. **Remove unused `getMerchFeeLabel`** import on line 681 (the first one in the Home tab — the Analytics tab still uses its own instance on line 806, so that stays).
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-Three small edits in one file.
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
