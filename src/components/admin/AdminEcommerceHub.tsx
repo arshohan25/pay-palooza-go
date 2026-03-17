@@ -19,8 +19,10 @@ import AdminMarketingTools from "./AdminMarketingTools";
 import AdminEcommerceStats from "./AdminEcommerceStats";
 import AdminInventoryAlerts from "./AdminInventoryAlerts";
 import AdminFlashSales from "./AdminFlashSales";
+import AdminCourierProviders from "./AdminCourierProviders";
+import AdminDeliveryZones from "./AdminDeliveryZones";
 
-type SubTab = "dashboard" | "products" | "stores" | "reviews" | "coupons" | "banners" | "marketing" | "inventory" | "flash_sales";
+type SubTab = "dashboard" | "products" | "stores" | "reviews" | "coupons" | "banners" | "marketing" | "inventory" | "flash_sales" | "couriers" | "zones";
 
 const SUB_TABS: { key: SubTab; label: string; icon: any }[] = [
   { key: "dashboard", label: "Dashboard", icon: TrendingUp },
@@ -30,6 +32,8 @@ const SUB_TABS: { key: SubTab; label: string; icon: any }[] = [
   { key: "coupons", label: "Coupons", icon: Ticket },
   { key: "inventory", label: "Inventory", icon: AlertTriangle },
   { key: "flash_sales", label: "Flash Sales", icon: Tag },
+  { key: "couriers", label: "Couriers", icon: Store },
+  { key: "zones", label: "Delivery Zones", icon: Package },
   { key: "banners", label: "Banners", icon: Image },
   { key: "marketing", label: "Marketing", icon: Megaphone },
 ];
