@@ -70,6 +70,22 @@ export default function ShopPage() {
     load();
   }, []);
 
+  // AI recommendations
+  useEffect(() => {
+    if (!user) return;
+    const loadRecs = async () => {
+      setRecsLoading(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("product-recommendations", {});
+        if (!error && data?.product_ids) {
+          setRecommendedIds(data.product_ids);
+        }
+      } catch { /* ignore */ }
+      setRecsLoading(false);
+    };
+    loadRecs();
+  }, [user]);
+
   const categories = useMemo(() => {
     const cats = new Set(products.map((p) => p.category));
     return Array.from(cats).sort();
