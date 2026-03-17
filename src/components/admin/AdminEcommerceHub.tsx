@@ -171,10 +171,9 @@ function StoresTab() {
 
   useEffect(() => { load(); }, []);
 
-  const toggleStatus = async (id: string, current: string) => {
-    const next = current === "active" ? "suspended" : "active";
-    await supabase.from("vendor_stores").update({ status: next }).eq("id", id);
-    toast.success(`Store ${next}`);
+  const toggleActive = async (id: string, current: boolean) => {
+    await supabase.from("vendor_stores").update({ is_active: !current }).eq("id", id);
+    toast.success(!current ? "Store activated" : "Store suspended");
     load();
   };
 
