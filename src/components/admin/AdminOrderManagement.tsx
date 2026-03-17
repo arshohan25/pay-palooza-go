@@ -5,7 +5,7 @@ import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator"
 import {
   Package, Search, RefreshCw, ChevronDown, ChevronUp,
   Truck, CheckCircle2, XCircle, Clock, MapPin, CreditCard, Wallet,
-  Eye, Filter, Ban, Undo2, AlertTriangle, CheckSquare,
+  Eye, Filter, Ban, Undo2, AlertTriangle, CheckSquare, DollarSign, ShieldCheck,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
