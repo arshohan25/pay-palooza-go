@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PiggyBank, Clock, CheckCircle, RefreshCw } from "lucide-react";
+import { Coins, Clock, CheckCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AdminAutoSaveMonitor() {
@@ -49,7 +49,7 @@ export default function AdminAutoSaveMonitor() {
 
       <div className="grid grid-cols-3 gap-3">
         <Card className="border-0 shadow-sm"><CardContent className="p-3 text-center">
-          <PiggyBank className="w-5 h-5 text-primary mx-auto mb-1" />
+          <Coins className="w-5 h-5 text-primary mx-auto mb-1" />
           <p className="text-2xl font-bold text-foreground">{active.length}</p>
           <p className="text-xs text-muted-foreground">Active</p>
         </CardContent></Card>

@@ -8,7 +8,7 @@ import {
   TrendingUp, Activity, Search, RefreshCw, LogOut, Sun, Moon,
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings, FileText,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
-  Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck, Image, Bell, PiggyBank, Shield, Star, Building2, Megaphone,
+  Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck, Image, Bell, Shield, Star, Building2, Megaphone, CalendarClock,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -226,8 +226,8 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "treasury", label: "Treasury", icon: Wallet },
       { id: "float_mgmt", label: "Float Mgmt", icon: Wallet },
       { id: "revenue", label: "Revenue", icon: TrendingUp },
-      { id: "savings", label: "Savings", icon: PiggyBank },
-      { id: "auto_save", label: "Auto-Save", icon: PiggyBank },
+      { id: "savings", label: "Savings", icon: Wallet },
+      { id: "auto_save", label: "Auto-Save", icon: CalendarClock },
       { id: "deposit_accounts", label: "Deposit Accts", icon: CreditCard },
       { id: "commission_ledger", label: "Commission Log", icon: Coins },
       { id: "limits", label: "Limits", icon: Scale },
