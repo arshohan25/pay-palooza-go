@@ -5,7 +5,7 @@ import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator"
 import {
   Package, Search, RefreshCw, ChevronDown, ChevronUp,
   Truck, CheckCircle2, XCircle, Clock, MapPin, CreditCard, Wallet,
-  Eye, Filter, Ban, Undo2, AlertTriangle, CheckSquare,
+  Eye, Filter, Ban, Undo2, AlertTriangle, CheckSquare, DollarSign, ShieldCheck,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,12 @@ interface OrderRow {
   estimated_delivery: string | null;
   created_at: string;
   updated_at: string;
+  escrow_status?: string | null;
+  escrow_released_at?: string | null;
+  coupon_discount?: number | null;
+  delivery_fee?: number | null;
+  total_vendor_commission?: number | null;
+  total_platform_fee?: number | null;
   // joined
   profile_name?: string;
   profile_phone?: string;
@@ -84,6 +90,7 @@ export default function AdminOrderManagement() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<string>("");
   const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [releasingEscrow, setReleasingEscrow] = useState<string | null>(null);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -161,78 +168,53 @@ export default function AdminOrderManagement() {
     if (!cancelTarget) return;
     setCancelling(true);
 
-    // 1. Update order status to cancelled
-    const { error: updateErr } = await supabase
-      .from("orders")
-      .update({ status: "cancelled", notes: `Admin cancelled: ${cancelReason || "No reason provided"}` })
-      .eq("id", cancelTarget.id);
-
-    if (updateErr) {
-      toast.error("Failed to cancel order");
-      setCancelling(false);
-      return;
-    }
-
-    // 2. Refund to wallet if paid via wallet
-    if (cancelTarget.payment_method === "wallet" && cancelTarget.total > 0) {
-      // Use admin_chargeback in reverse: credit via addmoney-style refund
-      // We'll directly update balance + insert transaction using service-level RPC
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("balance")
-        .eq("user_id", cancelTarget.user_id)
-        .single();
-
-      if (profile) {
-        const newBalance = Number(profile.balance) + cancelTarget.total;
-        // Update balance
-        await supabase
-          .from("profiles")
-          .update({ balance: newBalance } as any)
-          .eq("user_id", cancelTarget.user_id);
-
-        // Record refund transaction
-        await supabase.from("transactions").insert({
-          user_id: cancelTarget.user_id,
-          type: "addmoney" as any,
-          amount: cancelTarget.total,
-          fee: 0,
-          balance_after: newBalance,
-          description: `Refund for order ${cancelTarget.order_num}: ${cancelReason || "Admin cancellation"}`,
-          reference: cancelTarget.id,
-          status: "completed" as any,
-        });
-
-        toast.success(`৳${cancelTarget.total.toLocaleString()} refunded to customer wallet`);
-      }
-    }
-
-    // 3. Log in audit
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
-      await supabase.from("audit_logs").insert({
-        actor_id: session.user.id,
-        action: "order_cancellation",
-        entity_type: "order",
-        entity_id: cancelTarget.id,
-        details: {
-          order_num: cancelTarget.order_num,
-          total: cancelTarget.total,
-          reason: cancelReason,
-          refunded: cancelTarget.payment_method === "wallet",
-        },
+    try {
+      const { data, error } = await supabase.rpc("cancel_order_escrow", {
+        p_order_id: cancelTarget.id,
+        p_reason: cancelReason || "Admin cancellation",
       });
+
+      if (error) throw error;
+      const result = typeof data === "string" ? JSON.parse(data) : data;
+
+      setOrders(prev => prev.map(o => o.id === cancelTarget.id ? { ...o, status: "cancelled", escrow_status: "refunded" } : o));
+      if (selectedOrder?.id === cancelTarget.id) {
+        setSelectedOrder(prev => prev ? { ...prev, status: "cancelled", escrow_status: "refunded" } : null);
+      }
+
+      if (result.refunded) {
+        toast.success(`Order ${cancelTarget.order_num} cancelled · ৳${cancelTarget.total.toLocaleString()} refunded to wallet`);
+      } else {
+        toast.success(`Order ${cancelTarget.order_num} cancelled`);
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to cancel order");
     }
 
-    setOrders(prev => prev.map(o => o.id === cancelTarget.id ? { ...o, status: "cancelled" } : o));
-    if (selectedOrder?.id === cancelTarget.id) {
-      setSelectedOrder(prev => prev ? { ...prev, status: "cancelled" } : null);
-    }
-
-    toast.success(`Order ${cancelTarget.order_num} cancelled`);
     setCancelTarget(null);
     setCancelReason("");
     setCancelling(false);
+  };
+
+  const releaseEscrow = async (order: OrderRow) => {
+    setReleasingEscrow(order.id);
+    try {
+      const { data, error } = await supabase.rpc("release_escrow", {
+        p_order_id: order.id,
+      });
+      if (error) throw error;
+      const result = typeof data === "string" ? JSON.parse(data) : data;
+
+      setOrders(prev => prev.map(o => o.id === order.id ? { ...o, escrow_status: "released" } : o));
+      if (selectedOrder?.id === order.id) {
+        setSelectedOrder(prev => prev ? { ...prev, escrow_status: "released" } : null);
+      }
+
+      toast.success(`Escrow released for ${order.order_num} · ৳${result.released_to_vendors?.toLocaleString()} to vendors, ৳${result.platform_fee?.toLocaleString()} platform fee`);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to release escrow");
+    }
+    setReleasingEscrow(null);
   };
 
   const toggleSelect = (id: string) => {
@@ -615,16 +597,58 @@ export default function AdminOrderManagement() {
                 </CardContent>
               </Card>
 
-              {/* Payment method */}
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                {selectedOrder.payment_method === "wallet" ? (
-                  <><Wallet className="w-4 h-4" /> Paid via MFS Wallet</>
-                ) : (
-                  <><CreditCard className="w-4 h-4" /> Paid via Card</>
-                )}
-              </div>
+              {/* Escrow info */}
+              {selectedOrder.escrow_status && (
+                <Card className="border border-border/50">
+                  <CardContent className="p-4 space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <ShieldCheck className="w-3 h-3" /> Escrow
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Status</span>
+                      <Badge variant="secondary" className={
+                        selectedOrder.escrow_status === "held" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                        : selectedOrder.escrow_status === "released" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                        : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                      }>
+                        {selectedOrder.escrow_status === "held" ? "💰 Held in Escrow" : selectedOrder.escrow_status === "released" ? "✅ Released" : "↩️ Refunded"}
+                      </Badge>
+                    </div>
+                    {selectedOrder.total_platform_fee != null && selectedOrder.total_platform_fee > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Platform Fee</span>
+                        <span className="text-sm font-medium text-foreground">৳{fmt(selectedOrder.total_platform_fee)}</span>
+                      </div>
+                    )}
+                    {selectedOrder.total_vendor_commission != null && selectedOrder.total_vendor_commission > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Vendor Earnings</span>
+                        <span className="text-sm font-medium text-foreground">৳{fmt(selectedOrder.total_vendor_commission)}</span>
+                      </div>
+                    )}
+                    {selectedOrder.coupon_discount != null && selectedOrder.coupon_discount > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Coupon Discount</span>
+                        <span className="text-sm font-medium text-primary">-৳{fmt(selectedOrder.coupon_discount)}</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
-               {/* Status update + Cancel */}
+              {/* Escrow Release Button */}
+              {selectedOrder.status === "delivered" && selectedOrder.escrow_status === "held" && (
+                <Button
+                  className="w-full gap-2"
+                  onClick={() => releaseEscrow(selectedOrder)}
+                  disabled={releasingEscrow === selectedOrder.id}
+                >
+                  {releasingEscrow === selectedOrder.id ? <RefreshCw className="w-4 h-4 animate-spin" /> : <DollarSign className="w-4 h-4" />}
+                  Release Escrow to Vendors
+                </Button>
+              )}
+
+              {/* Status update + Cancel */}
               {selectedOrder.status !== "delivered" && selectedOrder.status !== "cancelled" && (
                 <div className="space-y-3 pt-2">
                   <div className="flex items-center gap-3">

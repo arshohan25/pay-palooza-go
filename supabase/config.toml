@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.admin-reset-pin]
 verify_jwt = false
+
+[functions.apply-coupon]
+verify_jwt = false

@@ -3702,6 +3702,10 @@ export type Database = {
         Args: { p_amount: number; p_txn_type: string }
         Returns: Json
       }
+      cancel_order_escrow: {
+        Args: { p_order_id: string; p_reason?: string }
+        Returns: Json
+      }
       check_referral_milestones: {
         Args: { p_referee_id: string }
         Returns: undefined
@@ -3784,6 +3788,20 @@ export type Database = {
       }
       is_phone_registered: { Args: { p_phone: string }; Returns: boolean }
       normalize_bd_phone: { Args: { p_raw: string }; Returns: string }
+      place_shop_order: {
+        Args: {
+          p_coupon_discount?: number
+          p_coupon_id?: string
+          p_delivery_fee?: number
+          p_items: Json
+          p_payment_method?: string
+          p_shipping_address: string
+          p_shipping_city: string
+          p_shipping_name: string
+          p_shipping_phone: string
+        }
+        Returns: Json
+      }
       record_transaction: {
         Args: {
           p_amount: number
@@ -3796,6 +3814,7 @@ export type Database = {
         }
         Returns: Json
       }
+      release_escrow: { Args: { p_order_id: string }; Returns: Json }
       resolve_transfer_recipient: {
         Args: { p_flow: string; p_identifier: string }
         Returns: Json
@@ -3838,6 +3857,10 @@ export type Database = {
       }
       treasury_debit_for_addmoney: {
         Args: { p_amount: number; p_user_id: string }
+        Returns: Json
+      }
+      validate_and_apply_coupon: {
+        Args: { p_cart_total: number; p_code: string; p_merchant_id?: string }
         Returns: Json
       }
     }

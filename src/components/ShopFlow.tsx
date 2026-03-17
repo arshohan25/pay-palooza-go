@@ -8,7 +8,7 @@ import {
   RefreshCw, TrendingUp, Store, BadgeCheck, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { getBalance, recordTransaction, onBalanceChange, transferMoney } from "@/lib/balanceStore";
+import { getBalance, onBalanceChange } from "@/lib/balanceStore";
 import { verifyPin } from "@/lib/verifyPin";
 import { haptics } from "@/lib/haptics";
 import SlideToConfirm from "@/components/SlideToConfirm";
@@ -89,7 +89,7 @@ const DEFAULT_ADDRESSES: Address[] = [
   { id: "a2", label: "Office", name: "Karim Hossain", line1: "Level 4, Tower A, Bashundhara City", line2: "Panthapath", city: "Dhaka-1215", phone: "01712-345678" },
 ];
 
-const PROMO_CODES: Record<string, number> = { "SAVE10": 10, "WELCOME20": 20, "FLASH15": 15, "MFS5": 5 };
+// Legacy PROMO_CODES removed — now validated via DB RPC
 
 const TIMELINE_STEP_KEYS: { step: Order["status"]; labelKey: string }[] = [
   { step: "processing", labelKey: "orderPlacedTimeline" },
@@ -469,9 +469,13 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
   const [checkoutPinError, setCheckoutPinError] = useState("");
   const [checkoutProcessing, setCheckoutProcessing] = useState(false);
 
-  // Promo
-  const [appliedPromo, setAppliedPromo] = useState<{ code: string; discount: number } | null>(null);
+  // Promo (DB-backed coupon)
+  const [appliedPromo, setAppliedPromo] = useState<{
+    code: string; discount: number; coupon_id: string;
+    discount_type: string; discount_value: number; max_discount: number | null;
+  } | null>(null);
   const [promoInput, setPromoInput] = useState("");
+  const [promoLoading, setPromoLoading] = useState(false);
 
   // Orders
   const [orders, setOrders] = useState<Order[]>(SAMPLE_ORDERS);
@@ -557,8 +561,8 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
 
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
   const cartSubtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const discountAmt = appliedPromo ? Math.round(cartSubtotal * appliedPromo.discount / 100) : 0;
-  const cartTotal = cartSubtotal - discountAmt;
+  const discountAmt = appliedPromo ? Math.round(appliedPromo.discount) : 0;
+  const cartTotal = Math.max(0, cartSubtotal - discountAmt);
   const selectedAddress = addresses.find(a => a.id === selectedAddressId) ?? addresses[0];
   const purchasedProductIds = useMemo(() => new Set(orders.flatMap(o => o.items.map(i => i.id))), [orders]);
   const wishlistProducts = products.filter(p => wishlist.has(p.id));
@@ -588,15 +592,40 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
     });
   };
 
-  // ── Promo ────────────────────────────────────────────────────────────────────
-  const applyPromo = () => {
+  // ── Promo (DB coupon validation) ──────────────────────────────────────────
+  const applyPromo = async () => {
     const upper = promoInput.trim().toUpperCase();
     if (!upper) return;
     if (appliedPromo?.code === upper) { toast.error("Already applied"); return; }
-    const disc = PROMO_CODES[upper];
-    if (!disc) { toast.error("Invalid promo code"); return; }
-    setAppliedPromo({ code: upper, discount: disc });
-    toast.success(`🎉 ${disc}% discount applied!`);
+    setPromoLoading(true);
+    try {
+      const { data, error } = await supabase.rpc("validate_and_apply_coupon", {
+        p_code: upper,
+        p_cart_total: cartSubtotal,
+        p_merchant_id: null,
+      });
+      const result = typeof data === "string" ? JSON.parse(data) : data;
+      if (error || !result?.valid) {
+        toast.error(result?.error || error?.message || "Invalid coupon code");
+        setPromoLoading(false);
+        return;
+      }
+      setAppliedPromo({
+        code: result.code,
+        discount: result.discount_amount,
+        coupon_id: result.coupon_id,
+        discount_type: result.discount_type,
+        discount_value: result.discount_value,
+        max_discount: result.max_discount,
+      });
+      const label = result.discount_type === "percentage"
+        ? `${result.discount_value}% off · saving ৳${Math.round(result.discount_amount).toLocaleString()}`
+        : `৳${Math.round(result.discount_amount).toLocaleString()} off`;
+      toast.success(`🎉 ${label}`);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to validate coupon");
+    }
+    setPromoLoading(false);
   };
   const removePromo = () => { setAppliedPromo(null); setPromoInput(""); };
 
@@ -625,55 +654,64 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
     if (!pinValid) { setCheckoutPinError("Incorrect PIN. Please try again."); setCheckoutPin(""); setCheckoutProcessing(false); return; }
     haptics.success();
 
-    if (payMethod === "wallet") {
-      if (cartTotal > walletBalance) { toast.error("Insufficient wallet balance"); setCheckoutProcessing(false); return; }
-      try {
-        await transferMoney({
-          recipientPhone: "SHOP-EASYPAY",
-          amount: cartTotal, fee: 0, type: "payment",
-          recipientName: "EasyPay Shop",
-          description: `Shop order: ${cart.map(i => i.name).join(", ")}`,
-          reference: `ORD-${Date.now().toString(36).toUpperCase().slice(-6)}`,
-        });
-      } catch (e: any) { toast.error(e.message ?? "Payment failed"); setCheckoutProcessing(false); return; }
+    if (payMethod === "wallet" && cartTotal > walletBalance) {
+      toast.error("Insufficient wallet balance"); setCheckoutProcessing(false); return;
     }
 
-    const num = `ORD-${Date.now().toString(36).toUpperCase().slice(-6)}`;
-    const dateStr = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    const estDelivery = new Date(Date.now() + 5 * 86400000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    const newOrder: Order = {
-      id: `o${Date.now()}`, orderNum: num, date: dateStr, items: [...cart], total: cartTotal,
-      address: selectedAddress, paymentMethod: payMethod, status: "processing",
-      estimatedDelivery: estDelivery, timeline: makeTimeline("processing", dateStr),
-    };
-    setOrders(prev => [newOrder, ...prev]);
+    try {
+      // Atomic escrow order via DB RPC
+      const itemsPayload = cart.map(c => ({
+        product_id: c.id,
+        merchant_id: c.merchant_id || null,
+        name: c.name,
+        price: c.price,
+        qty: c.qty,
+        emoji: c.emoji,
+        image_url: c.image_url || null,
+        vendor_name: c.vendor_name,
+      }));
 
-    // Persist — include merchant_id from first item
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
-      const firstMerchantId = cart[0]?.merchant_id || null;
-      await (supabase as any).from("orders").insert({
-        user_id: session.user.id,
-        order_num: num,
-        status: "processing",
-        total: cartTotal,
-        payment_method: payMethod,
-        shipping_name: selectedAddress.name,
-        shipping_address: `${selectedAddress.line1}, ${selectedAddress.line2}`,
-        shipping_city: selectedAddress.city,
-        shipping_phone: selectedAddress.phone,
-        merchant_id: firstMerchantId,
-        items: cart.map(c => ({ id: c.id, name: c.name, price: c.price, qty: c.qty, emoji: c.emoji, image_url: c.image_url, vendor_name: c.vendor_name, merchant_id: c.merchant_id })),
-        estimated_delivery: estDelivery,
+      const { data, error } = await supabase.rpc("place_shop_order", {
+        p_items: itemsPayload,
+        p_shipping_name: selectedAddress.name,
+        p_shipping_address: `${selectedAddress.line1}, ${selectedAddress.line2}`,
+        p_shipping_city: selectedAddress.city,
+        p_shipping_phone: selectedAddress.phone,
+        p_delivery_fee: 0,
+        p_coupon_id: appliedPromo?.coupon_id || null,
+        p_coupon_discount: discountAmt,
+        p_payment_method: payMethod,
       });
-    }
 
-    setOrderNum(num);
-    setLastOrderTotal(cartTotal);
-    setLastPayMethod(payMethod);
-    fireSuccessConfetti();
-    setCart([]); setAppliedPromo(null); setPromoInput(""); setCheckoutPin(""); setCheckoutPinError(""); setCheckoutProcessing(false);
-    setScreen("success");
+      if (error) throw error;
+      const result = typeof data === "string" ? JSON.parse(data) : data;
+      if (!result?.success) throw new Error("Order placement failed");
+
+      const num = result.order_num;
+      const dateStr = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      const estDelivery = new Date(Date.now() + 5 * 86400000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      const newOrder: Order = {
+        id: result.order_id, orderNum: num, date: dateStr, items: [...cart], total: cartTotal,
+        address: selectedAddress, paymentMethod: payMethod, status: "processing",
+        estimatedDelivery: estDelivery, timeline: makeTimeline("processing", dateStr),
+      };
+      setOrders(prev => [newOrder, ...prev]);
+
+      // Update local wallet balance
+      if (payMethod === "wallet") {
+        setWalletBalance(result.balance);
+      }
+
+      setOrderNum(num);
+      setLastOrderTotal(cartTotal);
+      setLastPayMethod(payMethod);
+      fireSuccessConfetti();
+      setCart([]); setAppliedPromo(null); setPromoInput(""); setCheckoutPin(""); setCheckoutPinError(""); setCheckoutProcessing(false);
+      setScreen("success");
+    } catch (e: any) {
+      toast.error(e.message ?? "Payment failed");
+      setCheckoutProcessing(false);
+    }
   };
 
   // ── Navigation ────────────────────────────────────────────────────────────
@@ -1149,7 +1187,12 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                         <Gift size={16} className="text-primary shrink-0" />
                         <div className="flex-1">
                           <p className="text-[13px] font-bold text-foreground">{appliedPromo.code}</p>
-                          <p className="text-[11px] text-muted-foreground">{appliedPromo.discount}% off · saving ৳{discountAmt.toLocaleString()}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {appliedPromo.discount_type === "percentage"
+                              ? `${appliedPromo.discount_value}% off${appliedPromo.max_discount ? ` (max ৳${appliedPromo.max_discount})` : ""}`
+                              : `৳${Math.round(appliedPromo.discount).toLocaleString()} off`
+                            } · saving ৳{discountAmt.toLocaleString()}
+                          </p>
                         </div>
                         <button onClick={removePromo} className="w-7 h-7 rounded-full bg-muted flex items-center justify-center"><X size={12} className="text-muted-foreground" /></button>
                       </div>
@@ -1160,7 +1203,10 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                           <input type="text" value={promoInput} onChange={e => setPromoInput(e.target.value.toUpperCase())} onKeyDown={e => e.key === "Enter" && applyPromo()}
                             placeholder={t("enterPromoCode")} className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-muted border border-border text-[13px] text-foreground font-mono outline-none focus:border-primary transition-colors uppercase" />
                         </div>
-                        <motion.button whileTap={{ scale: 0.95 }} onClick={applyPromo} className="px-4 py-2.5 rounded-xl text-primary-foreground text-[13px] font-bold shrink-0" style={{ background: SHOP_GRADIENT }}>{t("apply")}</motion.button>
+                        <motion.button whileTap={{ scale: 0.95 }} onClick={applyPromo} disabled={promoLoading}
+                          className="px-4 py-2.5 rounded-xl text-primary-foreground text-[13px] font-bold shrink-0 disabled:opacity-50" style={{ background: SHOP_GRADIENT }}>
+                          {promoLoading ? <Loader2 size={14} className="animate-spin" /> : t("apply")}
+                        </motion.button>
                       </div>
                     )}
                   </div>
@@ -1174,7 +1220,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                     </div>
                     {appliedPromo && (
                       <div className="flex justify-between text-[13px]">
-                        <span className="text-primary">{t("discount")} ({appliedPromo.discount}%)</span>
+                        <span className="text-primary">{t("discount")} ({appliedPromo.code})</span>
                         <span className="font-semibold text-primary">-৳{discountAmt.toLocaleString()}</span>
                       </div>
                     )}
