@@ -68,7 +68,10 @@ export default function ShopCheckoutPage() {
   }, [items.length, success, navigate]);
 
   // Listen to balance changes
-  useEffect(() => onBalanceChange(setWalletBalance), []);
+  useEffect(() => {
+    const unsub = onBalanceChange(setWalletBalance);
+    return () => { unsub(); };
+  }, []);
 
   // Load saved addresses
   useEffect(() => {
