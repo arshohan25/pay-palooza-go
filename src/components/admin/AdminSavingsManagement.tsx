@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, PiggyBank, TrendingUp, CalendarClock, RefreshCw } from "lucide-react";
+import { Search, Coins, TrendingUp, CalendarClock, RefreshCw } from "lucide-react";
 
 interface UserSavingsSummary {
   user_id: string;
