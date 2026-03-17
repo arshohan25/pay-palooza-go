@@ -481,6 +481,8 @@ export default function AdminEcommerceHub() {
       {subTab === "stores" && <StoresTab />}
       {subTab === "reviews" && <ReviewsTab />}
       {subTab === "coupons" && <CouponsTab />}
+      {subTab === "banners" && <AdminBannerManager />}
+      {subTab === "marketing" && <AdminMarketingTools />}
     </div>
   );
 }
