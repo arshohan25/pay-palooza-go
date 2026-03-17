@@ -597,16 +597,58 @@ export default function AdminOrderManagement() {
                 </CardContent>
               </Card>
 
-              {/* Payment method */}
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                {selectedOrder.payment_method === "wallet" ? (
-                  <><Wallet className="w-4 h-4" /> Paid via MFS Wallet</>
-                ) : (
-                  <><CreditCard className="w-4 h-4" /> Paid via Card</>
-                )}
-              </div>
+              {/* Escrow info */}
+              {selectedOrder.escrow_status && (
+                <Card className="border border-border/50">
+                  <CardContent className="p-4 space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <ShieldCheck className="w-3 h-3" /> Escrow
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Status</span>
+                      <Badge variant="secondary" className={
+                        selectedOrder.escrow_status === "held" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                        : selectedOrder.escrow_status === "released" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                        : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                      }>
+                        {selectedOrder.escrow_status === "held" ? "💰 Held in Escrow" : selectedOrder.escrow_status === "released" ? "✅ Released" : "↩️ Refunded"}
+                      </Badge>
+                    </div>
+                    {selectedOrder.total_platform_fee != null && selectedOrder.total_platform_fee > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Platform Fee</span>
+                        <span className="text-sm font-medium text-foreground">৳{fmt(selectedOrder.total_platform_fee)}</span>
+                      </div>
+                    )}
+                    {selectedOrder.total_vendor_commission != null && selectedOrder.total_vendor_commission > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Vendor Earnings</span>
+                        <span className="text-sm font-medium text-foreground">৳{fmt(selectedOrder.total_vendor_commission)}</span>
+                      </div>
+                    )}
+                    {selectedOrder.coupon_discount != null && selectedOrder.coupon_discount > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Coupon Discount</span>
+                        <span className="text-sm font-medium text-primary">-৳{fmt(selectedOrder.coupon_discount)}</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
-               {/* Status update + Cancel */}
+              {/* Escrow Release Button */}
+              {selectedOrder.status === "delivered" && selectedOrder.escrow_status === "held" && (
+                <Button
+                  className="w-full gap-2"
+                  onClick={() => releaseEscrow(selectedOrder)}
+                  disabled={releasingEscrow === selectedOrder.id}
+                >
+                  {releasingEscrow === selectedOrder.id ? <RefreshCw className="w-4 h-4 animate-spin" /> : <DollarSign className="w-4 h-4" />}
+                  Release Escrow to Vendors
+                </Button>
+              )}
+
+              {/* Status update + Cancel */}
               {selectedOrder.status !== "delivered" && selectedOrder.status !== "cancelled" && (
                 <div className="space-y-3 pt-2">
                   <div className="flex items-center gap-3">
