@@ -23,6 +23,7 @@ export default function CustomerOrdersPage() {
   const { user } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reviewSheet, setReviewSheet] = useState<{ open: boolean; productId: string; orderId: string } | null>(null);
 
   useEffect(() => {
     if (!user) return;
