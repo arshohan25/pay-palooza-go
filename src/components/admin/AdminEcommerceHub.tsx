@@ -10,17 +10,22 @@ import { toast } from "sonner";
 import {
   Package, Store, Star, Ticket, Search, RefreshCw, Trash2, Eye, Edit2,
   ShoppingBag, TrendingUp, AlertTriangle, MoreHorizontal, Plus, Tag,
+  Image, Megaphone,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import AdminBannerManager from "./AdminBannerManager";
+import AdminMarketingTools from "./AdminMarketingTools";
 
-type SubTab = "products" | "stores" | "reviews" | "coupons";
+type SubTab = "products" | "stores" | "reviews" | "coupons" | "banners" | "marketing";
 
 const SUB_TABS: { key: SubTab; label: string; icon: any }[] = [
   { key: "products", label: "Products", icon: Package },
   { key: "stores", label: "Vendor Stores", icon: Store },
   { key: "reviews", label: "Reviews", icon: Star },
   { key: "coupons", label: "Coupons", icon: Ticket },
+  { key: "banners", label: "Banners", icon: Image },
+  { key: "marketing", label: "Marketing", icon: Megaphone },
 ];
 
 /* ═══════════════════════ PRODUCTS TAB ═══════════════════════ */
