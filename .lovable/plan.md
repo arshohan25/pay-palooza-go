@@ -1,29 +1,24 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Hide "Browse by Operator" After Pack Selection
 
-### What
+The screenshot shows that after selecting a drive pack, the number entry step still displays the "Browse by Operator" operator cards below the CTA button. This is unnecessary clutter since the user has already chosen their operator and pack.
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### Change
 
-### Changes
+**File: `src/components/MobileRechargeFlow.tsx`** (lines ~625-654)
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+Wrap the "Operator cards" section in a conditional that only renders when **no pack is selected** (`!selectedPack`). When a drive pack is already selected, the user only needs the phone input and the "Continue with [Pack Name]" button.
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+```tsx
+{/* Operator cards — hide when a pack is already selected */}
+{!selectedPack && (
+  <div className="space-y-2.5">
+    <p className="text-xs font-bold ...">Browse by operator</p>
+    ...
+  </div>
+)}
+```
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+Single condition change, no other files affected.
 
