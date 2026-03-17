@@ -28,7 +28,14 @@ interface Banner {
   sort_order: number;
   expires_at: string | null;
   created_at: string;
+  placement: string;
 }
+
+const PLACEMENT_OPTIONS = [
+  { value: "home", label: "Home Only" },
+  { value: "shop", label: "Shop Only" },
+  { value: "both", label: "Home & Shop" },
+];
 
 const ICON_OPTIONS = ["Gift", "Zap", "Star", "Heart", "ShieldCheck", "Sparkles", "Trophy", "Megaphone", "PartyPopper", "Rocket", "Tag", "Percent", "BadgeDollarSign", "Crown"];
 
