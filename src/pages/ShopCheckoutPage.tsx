@@ -110,8 +110,17 @@ export default function ShopCheckoutPage() {
   }, [user]);
 
   const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
+
+  // Match delivery zone by city
+  const matchedZone = selectedAddress
+    ? deliveryZones.find((z) =>
+        z.cities.some((c) => c.toLowerCase() === selectedAddress.city.toLowerCase())
+      )
+    : null;
+  const deliveryFee = matchedZone?.delivery_fee ?? 0;
+
   const discountAmt = appliedPromo ? Math.min(appliedPromo.discount, subtotal) : 0;
-  const orderTotal = Math.max(0, subtotal - discountAmt);
+  const orderTotal = Math.max(0, subtotal - discountAmt + deliveryFee);
 
   const applyPromo = async () => {
     const code = promoInput.trim().toUpperCase();
