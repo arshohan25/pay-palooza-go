@@ -25,6 +25,7 @@ export interface ShopProduct {
   tags?: string[] | null;
   vendor_name?: string;
   vendor_slug?: string;
+  created_at?: string;
 }
 
 interface ProductCardProps {
