@@ -457,7 +457,7 @@ function CouponsTab() {
 
 /* ═══════════════════════ MAIN HUB ═══════════════════════ */
 export default function AdminEcommerceHub() {
-  const [subTab, setSubTab] = useState<SubTab>("products");
+  const [subTab, setSubTab] = useState<SubTab>("dashboard");
 
   return (
     <div className="space-y-4">
