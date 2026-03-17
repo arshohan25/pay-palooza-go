@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, SlidersHorizontal, ArrowLeft, ShoppingCart, Store, TrendingUp, Loader2 } from "lucide-react";
+import { Search, SlidersHorizontal, ArrowLeft, ShoppingCart, Store, TrendingUp, Loader2, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ProductCard, { type ShopProduct } from "@/components/shop/ProductCard";
 import CategoryNav from "@/components/shop/CategoryNav";
 import CartDrawer from "@/components/shop/CartDrawer";
+import FilterDrawer, { type ShopFilters, defaultFilters } from "@/components/shop/FilterDrawer";
 import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { useAuth } from "@/hooks/use-auth";
