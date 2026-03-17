@@ -542,6 +542,24 @@ export default function ShopPage() {
             </div>
           </div>
         )}
+
+        {/* Recently Viewed */}
+        {recentlyViewedProducts.length > 0 && !search.trim() && (
+          <div className="mt-8 space-y-3">
+            <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              Recently Viewed
+            </h2>
+            <ScrollArea className="w-full whitespace-nowrap">
+              <div className="flex gap-2.5 pb-1">
+                {recentlyViewedProducts.map((p) => (
+                  <FlashCard key={`recent-${p.id}`} product={p} onNavigate={navigate} />
+                ))}
+              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
+          </div>
+        )}
       </div>
     </div>
   );
