@@ -454,11 +454,35 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
     catch { return new Set(); }
   });
 
-  // Address state
+  // Address state — load from DB delivery_addresses
   const [addresses, setAddresses] = useState<Address[]>(DEFAULT_ADDRESSES);
   const [selectedAddressId, setSelectedAddressId] = useState("a1");
   const [showAddressPicker, setShowAddressPicker] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null | "new">(null);
+
+  // Load saved addresses from DB
+  useEffect(() => {
+    const loadSavedAddresses = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const { data } = await supabase
+        .from("delivery_addresses")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .order("is_default", { ascending: false });
+      if (data && data.length > 0) {
+        const dbAddrs: Address[] = data.map((a: any) => ({
+          id: a.id, label: a.label, name: a.recipient_name,
+          line1: a.address_line, line2: a.area || "", city: a.city + (a.postal_code ? `-${a.postal_code}` : ""),
+          phone: a.phone,
+        }));
+        setAddresses(dbAddrs);
+        const defaultAddr = data.find((a: any) => a.is_default);
+        setSelectedAddressId(defaultAddr?.id || data[0].id);
+      }
+    };
+    loadSavedAddresses();
+  }, []);
 
   // Payment method
   const [payMethod, setPayMethod] = useState<PaymentMethod>("wallet");
