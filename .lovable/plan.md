@@ -1,29 +1,29 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Fix Banner Size & Title Requirement
 
-### What
-
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### Issues
+1. **Banner size not fixed**: The PromoSlider has no fixed height — banner height varies based on content/media, causing layout shifts.
+2. **Title mandatory**: The `title` column is `NOT NULL` in the database, and the save function requires `form.title.trim()`. When uploading a media-only banner (image/video), the admin shouldn't need a title.
 
 ### Changes
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**1. Database Migration**
+```sql
+ALTER TABLE public.promo_banners ALTER COLUMN title DROP NOT NULL;
+ALTER TABLE public.promo_banners ALTER COLUMN title SET DEFAULT '';
+```
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+**2. `src/components/admin/AdminBannerManager.tsx`**
+- Remove the `if (!form.title.trim())` validation check on line 178 — title is now optional.
+- Update the label from `Title *` to `Title (optional for media banners)`.
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+**3. `src/components/PromoSlider.tsx`**
+- Add a fixed height to the banner container: `h-[140px]` so all banners render at consistent size.
+- Conditionally render title/subtitle only when they exist (title is already rendered unconditionally on line 161).
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+### Files Modified
+- **Migration** — Make `title` nullable
+- **`src/components/admin/AdminBannerManager.tsx`** — Remove title validation, update label
+- **`src/components/PromoSlider.tsx`** — Fixed banner height, conditional title rendering
 
