@@ -307,6 +307,12 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
     ],
   },
   {
+    label: "HR",
+    items: [
+      { id: "careers", label: "Careers", icon: Users },
+    ],
+  },
+  {
     label: "Other",
     items: [
       { id: "team", label: "Team", icon: Users },
