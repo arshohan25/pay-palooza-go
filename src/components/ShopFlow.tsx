@@ -89,7 +89,7 @@ const DEFAULT_ADDRESSES: Address[] = [
   { id: "a2", label: "Office", name: "Karim Hossain", line1: "Level 4, Tower A, Bashundhara City", line2: "Panthapath", city: "Dhaka-1215", phone: "01712-345678" },
 ];
 
-const PROMO_CODES: Record<string, number> = { "SAVE10": 10, "WELCOME20": 20, "FLASH15": 15, "MFS5": 5 };
+// Legacy PROMO_CODES removed — now validated via DB RPC
 
 const TIMELINE_STEP_KEYS: { step: Order["status"]; labelKey: string }[] = [
   { step: "processing", labelKey: "orderPlacedTimeline" },
