@@ -290,7 +290,7 @@ const Index = () => {
                   recharge: () => setShowRecharge(true),
                   paybill: () => setShowPayBill(true),
                   addmoney: () => setShowAddMoney(true),
-                  shop: () => setShowShop(true),
+                  shop: () => navigate("/shop"),
                   banktransfer: () => setShowBankTransfer(true),
                   savings: () => setShowSavings(true),
                   refer: () => handleTabChange("refer"),
