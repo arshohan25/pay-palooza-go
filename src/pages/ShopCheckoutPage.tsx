@@ -84,20 +84,27 @@ export default function ShopCheckoutPage() {
     return () => { unsub(); };
   }, []);
 
-  // Load saved addresses
+  // Load saved addresses and delivery zones
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const { data } = await supabase
-        .from("delivery_addresses")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("is_default", { ascending: false });
-      if (data && data.length > 0) {
-        setAddresses(data);
-        const def = data.find((a) => a.is_default) || data[0];
+      const [{ data: addrData }, { data: zoneData }] = await Promise.all([
+        supabase
+          .from("delivery_addresses")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("is_default", { ascending: false }),
+        supabase
+          .from("delivery_zones")
+          .select("*, courier_providers(name)")
+          .eq("is_active", true),
+      ]);
+      if (addrData && addrData.length > 0) {
+        setAddresses(addrData);
+        const def = addrData.find((a) => a.is_default) || addrData[0];
         setSelectedAddressId(def.id);
       }
+      setDeliveryZones((zoneData as any[]) ?? []);
     };
     load();
   }, [user]);
