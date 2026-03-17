@@ -72,7 +72,7 @@ const Index = () => {
   const [showRecharge, setShowRecharge]   = useState(false);
   const [showPayBill, setShowPayBill]     = useState(false);
   const [showAddMoney, setShowAddMoney]   = useState(false);
-  const [showShop, setShowShop]           = useState(false);
+  
   
   const [showBankTransfer, setShowBankTransfer] = useState(false);
   const [showSavings, setShowSavings]     = useState(false);
