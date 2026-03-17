@@ -1,29 +1,26 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Fix: Infinite Loading on Orders Pages When Not Authenticated
 
-### What
+### Problem
+`CustomerOrdersPage` and `OrderDetailPage` both initialize `loading = true` and only set it to `false` inside a `useEffect` that exits early when `user` is null. This means unauthenticated visitors see skeleton loaders forever.
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### Solution
+In both components, add an early exit from loading state when `useAuth()` finishes loading with no user. Two changes per file:
 
-### Changes
+**1. `src/pages/CustomerOrdersPage.tsx`**
+- Import `loading` from `useAuth()` as `authLoading`
+- Add a second `useEffect`: when `authLoading` is false and `user` is null, set `loading(false)`
+- In the render, when `!loading && !user`, show a "Please log in to see orders" message instead of empty state
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**2. `src/pages/OrderDetailPage.tsx`**
+- Same pattern: detect when auth is done but no user, and show "Please log in" instead of infinite skeletons
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+### Files to Modify
+| File | Change |
+|------|--------|
+| `src/pages/CustomerOrdersPage.tsx` | Add auth-loading guard, show login prompt |
+| `src/pages/OrderDetailPage.tsx` | Add auth-loading guard, show login prompt |
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+Both are small edits (add ~8 lines each). No new files needed.
 
