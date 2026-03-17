@@ -454,11 +454,35 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
     catch { return new Set(); }
   });
 
-  // Address state
+  // Address state — load from DB delivery_addresses
   const [addresses, setAddresses] = useState<Address[]>(DEFAULT_ADDRESSES);
   const [selectedAddressId, setSelectedAddressId] = useState("a1");
   const [showAddressPicker, setShowAddressPicker] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null | "new">(null);
+
+  // Load saved addresses from DB
+  useEffect(() => {
+    const loadSavedAddresses = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const { data } = await supabase
+        .from("delivery_addresses")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .order("is_default", { ascending: false });
+      if (data && data.length > 0) {
+        const dbAddrs: Address[] = data.map((a: any) => ({
+          id: a.id, label: a.label, name: a.recipient_name,
+          line1: a.address_line, line2: a.area || "", city: a.city + (a.postal_code ? `-${a.postal_code}` : ""),
+          phone: a.phone,
+        }));
+        setAddresses(dbAddrs);
+        const defaultAddr = data.find((a: any) => a.is_default);
+        setSelectedAddressId(defaultAddr?.id || data[0].id);
+      }
+    };
+    loadSavedAddresses();
+  }, []);
 
   // Payment method
   const [payMethod, setPayMethod] = useState<PaymentMethod>("wallet");
@@ -1467,9 +1491,19 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
         {editingAddress !== null && (
           <AddressEditor
             address={editingAddress === "new" ? null : editingAddress}
-            onSave={(a) => {
+            onSave={async (a) => {
               setAddresses(prev => { const exists = prev.find(p => p.id === a.id); if (exists) return prev.map(p => p.id === a.id ? a : p); return [...prev, a]; });
               setSelectedAddressId(a.id); setEditingAddress(null); setShowAddressPicker(false); toast.success(t("addressSaved"));
+              // Persist to DB
+              const { data: { session } } = await supabase.auth.getSession();
+              if (session?.user) {
+                await supabase.from("delivery_addresses").upsert({
+                  id: a.id.startsWith("a") && a.id.length < 10 ? undefined : a.id,
+                  user_id: session.user.id, label: a.label, recipient_name: a.name,
+                  phone: a.phone, address_line: a.line1, area: a.line2 || null,
+                  city: a.city, is_default: false,
+                } as any, { onConflict: "id" });
+              }
             }}
             onCancel={() => setEditingAddress(null)}
           />

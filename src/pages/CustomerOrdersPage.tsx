@@ -72,6 +72,7 @@ export default function CustomerOrdersPage() {
               <div
                 key={order.id}
                 className="bg-card rounded-xl border border-border p-4 space-y-2 cursor-pointer hover:shadow-sm transition-shadow"
+                onClick={() => navigate(`/orders/${order.id}`)}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-bold text-foreground">{order.order_num}</span>

@@ -1,53 +1,29 @@
 
 
-## Phase 5 — Order Detail & Tracking + Saved Addresses
+## Plan: Add Biller Categories to API Hub
 
-### Current Gaps
-- `CustomerOrdersPage` shows a flat list with no detail view — customers can't see items, shipping info, or tracking timeline
-- No order detail page exists anywhere in the app
-- `delivery_addresses` table exists but no UI to manage saved addresses
-- ShopFlow checkout collects address inline but doesn't save/reuse addresses
-- `order_items` table is populated but never displayed to customers
-- No order status timeline (just a badge)
+### What
 
-### What We'll Build
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-**A. Order Detail Page** (`src/pages/OrderDetailPage.tsx`)
-- New route: `/orders/:id`
-- Sections: order header (num, date, status badge), **status timeline** (vertical stepper showing processing → confirmed → shipped → out_for_delivery → delivered with timestamps), item list (from `order_items` with images), shipping info, payment summary (subtotal, coupon discount, delivery fee, total), escrow status indicator
-- "Rate & Review" button for delivered orders (reuse existing `WriteReviewForm`)
-- Real-time status updates via existing `useOrderNotifications` hook
-- "Cancel Order" button visible only for `processing` status (calls `cancel_order_escrow` RPC)
+### Changes
 
-**B. Update CustomerOrdersPage**
-- Make each order card clickable → navigates to `/orders/:id`
-- Add order count badge in header
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-**C. Saved Delivery Addresses** (`src/components/shop/AddressManager.tsx`)
-- CRUD for `delivery_addresses` table
-- List saved addresses with default indicator
-- Add/edit form: label, recipient_name, phone, address_line, city, area, postal_code
-- Set default toggle
-- Integrate into ShopFlow checkout: show saved address picker before manual entry, option to save new address
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-**D. Order Status Notification to DB**
-- Add a trigger on `orders` table that inserts into `notifications` when status changes (order_status_change category)
-- This ensures in-app notification center shows order updates even when user wasn't online
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
 
 ### Files
-
-| Action | File |
-|--------|------|
-| Create | `src/pages/OrderDetailPage.tsx` |
-| Create | `src/components/shop/AddressManager.tsx` |
-| Migration | Trigger: `notify_order_status_change` on orders UPDATE |
-| Modify | `src/pages/CustomerOrdersPage.tsx` — clickable cards |
-| Modify | `src/components/ShopFlow.tsx` — address picker integration |
-| Modify | `src/App.tsx` — add `/orders/:id` route |
-
-### Implementation Order
-1. Order Detail Page + route
-2. CustomerOrdersPage clickable navigation
-3. AddressManager + ShopFlow integration
-4. Order notification trigger migration
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
