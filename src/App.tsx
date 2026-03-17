@@ -29,6 +29,7 @@ import NotFound from "./pages/NotFound";
 import TeamLoginPage from "./pages/TeamLoginPage";
 import RoleInstallPage from "./pages/RoleInstallPage";
 import ShopPage from "./pages/ShopPage";
+import ShopCheckoutPage from "./pages/ShopCheckoutPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import VendorStorePage from "./pages/VendorStorePage";
 import WishlistPage from "./pages/WishlistPage";
