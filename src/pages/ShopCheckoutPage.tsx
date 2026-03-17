@@ -67,6 +67,9 @@ export default function ShopCheckoutPage() {
   const [success, setSuccess] = useState(false);
   const [orderNum, setOrderNum] = useState("");
   const [orderId, setOrderId] = useState("");
+  const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
+  const [orderNum, setOrderNum] = useState("");
+  const [orderId, setOrderId] = useState("");
 
   // Redirect if cart is empty and not showing success
   useEffect(() => {
