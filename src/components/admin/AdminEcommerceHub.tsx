@@ -204,11 +204,11 @@ function StoresTab() {
                   <p className="font-medium text-sm truncate text-foreground">{s.store_name}</p>
                   <p className="text-xs text-muted-foreground">/{s.slug}</p>
                 </div>
-                <Badge variant={s.status === "active" ? "default" : "destructive"} className="text-[10px] shrink-0">
-                  {s.status}
+                <Badge variant={s.is_active ? "default" : "destructive"} className="text-[10px] shrink-0">
+                  {s.is_active ? "Active" : "Inactive"}
                 </Badge>
-                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => toggleStatus(s.id, s.status)}>
-                  {s.status === "active" ? "Suspend" : "Activate"}
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => toggleActive(s.id, s.is_active)}>
+                  {s.is_active ? "Suspend" : "Activate"}
                 </Button>
                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setDetailStore(s)}>
                   <Eye className="w-3.5 h-3.5" />
