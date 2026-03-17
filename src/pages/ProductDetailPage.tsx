@@ -30,6 +30,10 @@ export default function ProductDetailPage() {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { isWishlisted, toggle: toggleWishlist } = useWishlist();
+  const { user } = useAuth();
+  const [canReview, setCanReview] = useState(false);
+  const [deliveredOrderId, setDeliveredOrderId] = useState<string | null>(null);
+  const [reviewKey, setReviewKey] = useState(0);
 
   const [product, setProduct] = useState<any>(null);
   const [variants, setVariants] = useState<Variant[]>([]);
