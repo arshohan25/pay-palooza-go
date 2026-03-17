@@ -28,6 +28,11 @@ import DynamicQrPage from "./pages/DynamicQrPage";
 import NotFound from "./pages/NotFound";
 import TeamLoginPage from "./pages/TeamLoginPage";
 import RoleInstallPage from "./pages/RoleInstallPage";
+import ShopPage from "./pages/ShopPage";
+import ProductDetailPage from "./pages/ProductDetailPage";
+import VendorStorePage from "./pages/VendorStorePage";
+import WishlistPage from "./pages/WishlistPage";
+import CustomerOrdersPage from "./pages/CustomerOrdersPage";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +67,11 @@ const App = () => (
                 <Route path="/team-login" element={<TeamLoginPage />} />
                 <Route path="/install" element={<RoleInstallPage />} />
                 <Route path="/install/:role" element={<RoleInstallPage />} />
+                <Route path="/shop" element={<ShopPage />} />
+                <Route path="/shop/:slug" element={<VendorStorePage />} />
+                <Route path="/product/:id" element={<ProductDetailPage />} />
+                <Route path="/wishlist" element={<WishlistPage />} />
+                <Route path="/orders" element={<CustomerOrdersPage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
