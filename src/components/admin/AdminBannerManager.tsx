@@ -175,7 +175,7 @@ export default function AdminBannerManager() {
   };
 
   const save = async () => {
-    if (!form.title.trim()) { toast.error("Title is required"); return; }
+    // Title is optional for media-only banners
     setSaving(true);
 
     const finalLinkUrl = form.link_mode === "feature"
@@ -305,7 +305,7 @@ export default function AdminBannerManager() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Title *</Label>
+              <Label>Title (optional for media banners)</Label>
               <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Invite Friends & Earn ৳50" />
             </div>
             <div>

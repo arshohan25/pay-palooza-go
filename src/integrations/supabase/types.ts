@@ -2556,7 +2556,7 @@ export type Database = {
           placement: string
           sort_order: number | null
           subtitle: string | null
-          title: string
+          title: string | null
         }
         Insert: {
           badge_text?: string | null
@@ -2574,7 +2574,7 @@ export type Database = {
           placement?: string
           sort_order?: number | null
           subtitle?: string | null
-          title: string
+          title?: string | null
         }
         Update: {
           badge_text?: string | null
@@ -2592,7 +2592,7 @@ export type Database = {
           placement?: string
           sort_order?: number | null
           subtitle?: string | null
-          title?: string
+          title?: string | null
         }
         Relationships: []
       }
