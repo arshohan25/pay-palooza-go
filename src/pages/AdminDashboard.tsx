@@ -2267,6 +2267,8 @@ export default function AdminDashboard() {
                       return { amount: 0, count: 0, isCustom: false, overrideId: null };
                     };
 
+        {/* ═══ E-COMMERCE ═══ */}
+        {activeTab === "ecommerce" && <AdminEcommerceHub />}
 
                     const startEdit = (txnType: string, period: string) => {
                       const eff = getEffective(txnType, period);
