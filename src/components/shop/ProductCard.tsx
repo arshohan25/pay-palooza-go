@@ -42,11 +42,11 @@ export default function ProductCard({ product, isWishlisted, onAddToCart, onTogg
 
   return (
     <div
-      className="bg-card rounded-xl border border-border overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer group"
+      className="bg-card rounded-2xl border border-border/40 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer group"
       onClick={() => onNavigate(`/product/${product.id}`)}
     >
       {/* Image */}
-      <div className="relative aspect-square bg-muted/40 overflow-hidden">
+      <div className="relative aspect-square bg-muted/30 overflow-hidden">
         <ProductImage
           imageUrl={product.image_url}
           emoji={product.emoji}
@@ -81,7 +81,7 @@ export default function ProductCard({ product, isWishlisted, onAddToCart, onTogg
         {product.vendor_name && (
           <button
             onClick={(e) => { e.stopPropagation(); if (product.vendor_slug) onNavigate(`/shop/${product.vendor_slug}`); }}
-            className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
+            className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-primary transition-colors"
           >
             <Store className="w-3 h-3" />
             <span className="truncate">{product.vendor_name}</span>
@@ -89,20 +89,21 @@ export default function ProductCard({ product, isWishlisted, onAddToCart, onTogg
         )}
         <h3 className="text-sm font-medium text-foreground line-clamp-2 leading-tight">{product.name}</h3>
         <div className="flex items-center gap-1">
-          <Star className="w-3 h-3 fill-accent text-accent" />
+          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
           <span className="text-xs text-muted-foreground">{product.rating.toFixed(1)} ({product.review_count})</span>
         </div>
         <div className="flex items-center justify-between">
           <div className="flex items-baseline gap-1.5">
-            <span className="text-base font-bold text-foreground">৳{product.price.toLocaleString()}</span>
+            <span className={cn("text-base font-extrabold", discount > 0 ? "text-primary" : "text-foreground")}>
+              ৳{product.price.toLocaleString()}
+            </span>
             {product.original_price && product.original_price > product.price && (
               <span className="text-xs text-muted-foreground line-through">৳{product.original_price.toLocaleString()}</span>
             )}
           </div>
           <Button
             size="icon"
-            variant="ghost"
-            className="h-7 w-7 rounded-full bg-primary/10 hover:bg-primary/20 text-primary"
+            className="h-7 w-7 rounded-full"
             disabled={product.stock <= 0}
             onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
           >

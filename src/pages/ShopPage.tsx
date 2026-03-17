@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Search, ArrowLeft, ShoppingCart, Store, Sparkles, Loader2,
-  ShieldCheck, Truck, RotateCcw, Flame, Ticket, ChevronRight,
+  Search, ArrowLeft, ShoppingCart, Store, Loader2,
+  ShieldCheck, Truck, RotateCcw, Flame, ChevronRight,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import ProductCard, { type ShopProduct } from "@/components/shop/ProductCard";
 import CategoryNav from "@/components/shop/CategoryNav";
@@ -27,27 +28,28 @@ type SortOption = "popular" | "price_low" | "price_high" | "newest" | "rating";
 /* ── Section wrapper with staggered entry ── */
 const Section = ({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) => (
   <motion.section
-    initial={{ opacity: 0, y: 16 }}
+    initial={{ opacity: 0, y: 12 }}
     animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.35, delay, ease: [0.23, 1, 0.32, 1] }}
+    transition={{ duration: 0.3, delay, ease: [0.23, 1, 0.32, 1] }}
     className={className}
   >
     {children}
   </motion.section>
 );
 
-/* ── Mini product card for flash sale row ── */
+/* ── Mini product card for trending row ── */
 function FlashCard({ product, onNavigate }: { product: ShopProduct; onNavigate: (path: string) => void }) {
   const discount = product.original_price
     ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
     : 0;
+  const stockPercent = Math.min(100, Math.max(5, (product.stock / 50) * 100));
 
   return (
     <button
       onClick={() => onNavigate(`/product/${product.id}`)}
-      className="min-w-[130px] max-w-[130px] shrink-0 rounded-xl bg-card border border-border/50 overflow-hidden text-left group shadow-sm hover:shadow-md transition-shadow"
+      className="min-w-[140px] max-w-[140px] shrink-0 rounded-2xl bg-card border border-border/40 overflow-hidden text-left group shadow-sm hover:shadow-lg transition-all duration-300"
     >
-      <div className="relative aspect-square bg-muted/30 flex items-center justify-center overflow-hidden">
+      <div className="relative aspect-square bg-muted/20 flex items-center justify-center overflow-hidden">
         {product.image_url ? (
           <img src={product.image_url} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
         ) : (
@@ -59,13 +61,73 @@ function FlashCard({ product, onNavigate }: { product: ShopProduct; onNavigate: 
           </span>
         )}
       </div>
-      <div className="p-2 space-y-0.5">
+      <div className="p-2.5 space-y-1">
         <p className="text-xs font-semibold text-foreground truncate">{product.name}</p>
-        <p className="text-xs font-bold text-primary">৳{product.price.toLocaleString()}</p>
+        <p className="text-xs font-extrabold text-primary">৳{product.price.toLocaleString()}</p>
         {product.original_price && (
           <p className="text-[10px] text-muted-foreground line-through">৳{product.original_price.toLocaleString()}</p>
         )}
+        {product.stock > 0 && product.stock <= 50 && (
+          <div className="space-y-0.5 pt-0.5">
+            <Progress value={stockPercent} className="h-1 bg-muted/60 [&>div]:bg-destructive/70" />
+            <p className="text-[9px] text-muted-foreground">Selling fast</p>
+          </div>
+        )}
       </div>
+    </button>
+  );
+}
+
+/* ── Shop Promo Banner Card ── */
+function ShopPromoBanner({ banner, onNavigate }: { banner: any; onNavigate: (path: string) => void }) {
+  const handleClick = () => {
+    if (banner.link_url) {
+      if (banner.link_url.startsWith("feature:")) {
+        const feature = banner.link_url.replace("feature:", "");
+        const featureRoutes: Record<string, string> = {
+          sendmoney: "/", cashout: "/", payment: "/", recharge: "/",
+          paybill: "/", addmoney: "/", shop: "/shop", banktransfer: "/",
+          savings: "/", refer: "/refer", kyc: "/", history: "/history",
+        };
+        onNavigate(featureRoutes[feature] || "/");
+      } else {
+        window.open(banner.link_url, "_blank");
+      }
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      className="w-full rounded-2xl overflow-hidden relative min-h-[80px]"
+    >
+      {banner.media_url ? (
+        <>
+          {banner.media_type === "video" ? (
+            <video src={banner.media_url} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover" />
+          ) : (
+            <img src={banner.media_url} alt={banner.title} className="absolute inset-0 w-full h-full object-cover" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent" />
+        </>
+      ) : (
+        <div
+          className="absolute inset-0"
+          style={{ background: `linear-gradient(135deg, ${banner.gradient_from || 'hsl(var(--primary))'}, ${banner.gradient_to || 'hsl(var(--primary) / 0.7)'})` }}
+        />
+      )}
+      <div className="relative z-10 p-4 text-left">
+        {banner.badge_text && (
+          <span className="inline-block bg-white/20 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-full mb-1">
+            {banner.badge_text}
+          </span>
+        )}
+        <p className="text-sm font-bold text-white">{banner.title}</p>
+        {banner.subtitle && <p className="text-[11px] text-white/70 mt-0.5">{banner.subtitle}</p>}
+      </div>
+      {banner.link_url && (
+        <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+      )}
     </button>
   );
 }
@@ -83,6 +145,7 @@ export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [sortBy, setSortBy] = useState<SortOption>("popular");
   const [filters, setFilters] = useState<ShopFilters>(defaultFilters);
+  const [shopBanners, setShopBanners] = useState<any[]>([]);
   const [recommendedIds, setRecommendedIds] = useState<string[]>([]);
   const [recsLoading, setRecsLoading] = useState(false);
 
@@ -117,6 +180,20 @@ export default function ShopPage() {
       setLoading(false);
     };
     load();
+  }, []);
+
+  // Load shop-specific banners
+  useEffect(() => {
+    const loadBanners = async () => {
+      const { data } = await (supabase as any)
+        .from("promo_banners")
+        .select("*")
+        .eq("is_active", true)
+        .in("placement", ["shop", "both"])
+        .order("sort_order");
+      if (data) setShopBanners(data);
+    };
+    loadBanners();
   }, []);
 
   // AI recommendations
@@ -198,16 +275,16 @@ export default function ShopPage() {
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* ── Sticky Header ── */}
-      <div className="sticky top-0 z-40 bg-card/95 backdrop-blur-md shadow-sm">
-        <div className="flex items-center gap-2 px-3 py-2.5">
-          <Button variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-5 h-5" />
+      <div className="sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b border-border/30">
+        <div className="flex items-center gap-2.5 px-4 py-3">
+          <Button variant="ghost" size="icon" className="shrink-0 rounded-full h-8 w-8" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-4.5 h-4.5" />
           </Button>
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search products, brands, stores..."
-              className="pl-9 h-9 text-sm rounded-full border-border/50 bg-muted/40 focus-visible:ring-primary/30"
+              className="pl-9 h-9 text-sm rounded-full border-border/40 bg-muted/30 focus-visible:ring-primary/30"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -228,56 +305,43 @@ export default function ShopPage() {
             )}
           </div>
         </div>
-      </div>
-
-      {/* ── Trust Bar ── */}
-      <Section delay={0.05}>
-        <div className="flex items-center justify-around py-2.5 px-4 bg-muted/40 border-b border-border/30">
+        {/* Trust Bar */}
+        <div className="flex items-center justify-center gap-6 py-1.5 px-4 border-t border-border/20">
           {[
             { icon: ShieldCheck, label: "Safe Payment" },
             { icon: Truck, label: "Fast Delivery" },
             { icon: RotateCcw, label: "Free Return" },
-          ].map(({ icon: Icon, label }, i) => (
-            <div key={label} className="flex items-center gap-1.5">
-              {i > 0 && <div className="w-px h-4 bg-border/60 mr-3" />}
-              <Icon className="w-3.5 h-3.5 text-primary" />
-              <span className="text-[10px] font-medium text-muted-foreground">{label}</span>
+          ].map(({ icon: Icon, label }) => (
+            <div key={label} className="flex items-center gap-1">
+              <Icon className="w-3 h-3 text-primary/70" />
+              <span className="text-[9px] font-medium text-muted-foreground">{label}</span>
             </div>
           ))}
         </div>
-      </Section>
+      </div>
 
       {/* ── Promo Slider ── */}
-      <Section delay={0.1} className="px-4 pt-4">
+      <Section delay={0.05} className="px-4 pt-3">
         <PromoSlider />
       </Section>
 
       {/* ── Category Icons ── */}
-      <Section delay={0.15} className="pt-4">
+      <Section delay={0.1} className="pt-3">
         <CategoryNav categories={categories} selected={selectedCategory} onSelect={setSelectedCategory} />
       </Section>
 
-      {/* ── Voucher / Deals Banner ── */}
-      <Section delay={0.2} className="px-4">
-        <button
-          className="w-full rounded-2xl p-4 flex items-center gap-3 overflow-hidden relative"
-          style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.7))" }}
-        >
-          <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
-            <Ticket className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <div className="flex-1 text-left">
-            <p className="text-sm font-bold text-primary-foreground">Collect Vouchers</p>
-            <p className="text-[10px] text-primary-foreground/70">Save up to ৳500 on your next order</p>
-          </div>
-          <ChevronRight className="w-5 h-5 text-primary-foreground/60 shrink-0" />
-          <div className="absolute -top-6 -right-6 w-20 h-20 bg-white/10 rounded-full" />
-        </button>
-      </Section>
+      {/* ── Shop Promo Banners (admin-managed) ── */}
+      {shopBanners.length > 0 && !search.trim() && (
+        <Section delay={0.15} className="px-4 pt-1 space-y-2">
+          {shopBanners.map((banner) => (
+            <ShopPromoBanner key={banner.id} banner={banner} onNavigate={navigate} />
+          ))}
+        </Section>
+      )}
 
-      {/* ── Flash Sale / Trending ── */}
+      {/* ── Trending Now ── */}
       {!loading && trendingProducts.length > 0 && !search.trim() && selectedCategory === "All" && (
-        <Section delay={0.25} className="pt-5">
+        <Section delay={0.2} className="pt-4">
           <div className="flex items-center justify-between px-4 mb-3">
             <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
               <Flame className="w-4 h-4 text-destructive" />
@@ -288,7 +352,7 @@ export default function ShopPage() {
             </button>
           </div>
           <ScrollArea className="w-full whitespace-nowrap">
-            <div className="flex gap-3 px-4 pb-1">
+            <div className="flex gap-2.5 px-4 pb-1">
               {trendingProducts.map((p) => (
                 <FlashCard key={`flash-${p.id}`} product={p} onNavigate={navigate} />
               ))}
@@ -299,12 +363,9 @@ export default function ShopPage() {
       )}
 
       {/* ── Sort & Filter Bar ── */}
-      <Section delay={0.3} className="px-4 pt-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-primary" />
-            Just For You
-          </h2>
+      <Section delay={0.25} className="px-4 pt-5">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-bold text-foreground">All Products</h2>
           <div className="flex items-center gap-1">
             <FilterDrawer
               filters={filters}
@@ -326,7 +387,7 @@ export default function ShopPage() {
             </Select>
           </div>
         </div>
-        <p className="text-[10px] text-muted-foreground -mt-1 mb-3">
+        <p className="text-[10px] text-muted-foreground mb-3">
           {filtered.length} product{filtered.length !== 1 ? "s" : ""}
         </p>
       </Section>
@@ -334,9 +395,9 @@ export default function ShopPage() {
       {/* ── Product Grid ── */}
       <div className="px-4">
         {loading ? (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5">
             {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="aspect-[3/4] rounded-xl" />
+              <Skeleton key={i} className="aspect-[3/4] rounded-2xl" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
@@ -346,7 +407,7 @@ export default function ShopPage() {
           </div>
         ) : (
           <motion.div
-            className="grid grid-cols-2 gap-3"
+            className="grid grid-cols-2 gap-2.5"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
@@ -373,16 +434,8 @@ export default function ShopPage() {
         {/* AI Recommendations */}
         {recommendedProducts.length > 0 && !search.trim() && selectedCategory === "All" && (
           <div className="mt-8 space-y-3">
-            <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-              <motion.span
-                animate={{ rotate: [0, 15, -15, 0] }}
-                transition={{ repeat: Infinity, duration: 2, repeatDelay: 3 }}
-              >
-                <Sparkles className="w-4 h-4 text-primary" />
-              </motion.span>
-              Recommended For You
-            </h2>
-            <div className="grid grid-cols-2 gap-3">
+            <h2 className="text-sm font-bold text-foreground">Recommended For You</h2>
+            <div className="grid grid-cols-2 gap-2.5">
               {recommendedProducts.map((product) => (
                 <ProductCard
                   key={`rec-${product.id}`}
@@ -399,8 +452,8 @@ export default function ShopPage() {
         {recsLoading && !search.trim() && selectedCategory === "All" && (
           <div className="mt-8 space-y-3">
             <Skeleton className="h-5 w-48" />
-            <div className="grid grid-cols-2 gap-3">
-              {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="aspect-[3/4] rounded-xl" />)}
+            <div className="grid grid-cols-2 gap-2.5">
+              {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="aspect-[3/4] rounded-2xl" />)}
             </div>
           </div>
         )}

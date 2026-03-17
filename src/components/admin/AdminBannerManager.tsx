@@ -468,6 +468,21 @@ export default function AdminBannerManager() {
               </div>
             </div>
 
+            {/* Placement */}
+            <div>
+              <Label>Show On</Label>
+              <Select value={form.placement} onValueChange={(v) => setForm({ ...form, placement: v })}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PLACEMENT_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Sort Order</Label>
