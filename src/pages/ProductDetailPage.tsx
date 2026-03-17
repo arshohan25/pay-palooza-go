@@ -64,6 +64,8 @@ export default function ProductDetailPage() {
   const [deliveredOrderId, setDeliveredOrderId] = useState<string | null>(null);
   const [reviewKey, setReviewKey] = useState(0);
   const [swipeDir, setSwipeDir] = useState(0);
+  const [relatedFromVendor, setRelatedFromVendor] = useState<any[]>([]);
+  const [relatedOthers, setRelatedOthers] = useState<any[]>([]);
 
   // ── Data loading (unchanged logic) ──
   useEffect(() => {
