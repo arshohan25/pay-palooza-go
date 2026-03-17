@@ -26,6 +26,7 @@ export default function CustomerOrdersPage() {
   const [reviewSheet, setReviewSheet] = useState<{ open: boolean; productId: string; orderId: string } | null>(null);
 
   useEffect(() => {
+    if (!authLoading && !user) { setLoading(false); return; }
     if (!user) return;
     const load = async () => {
       const { data } = await supabase
@@ -33,12 +34,11 @@ export default function CustomerOrdersPage() {
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
-
       setOrders(data ?? []);
       setLoading(false);
     };
     load();
-  }, [user]);
+  }, [user, authLoading]);
 
   return (
     <div className="min-h-screen bg-background pb-20">
