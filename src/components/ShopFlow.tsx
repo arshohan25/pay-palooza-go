@@ -561,8 +561,8 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
 
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
   const cartSubtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const discountAmt = appliedPromo ? Math.round(cartSubtotal * appliedPromo.discount / 100) : 0;
-  const cartTotal = cartSubtotal - discountAmt;
+  const discountAmt = appliedPromo ? Math.round(appliedPromo.discount) : 0;
+  const cartTotal = Math.max(0, cartSubtotal - discountAmt);
   const selectedAddress = addresses.find(a => a.id === selectedAddressId) ?? addresses[0];
   const purchasedProductIds = useMemo(() => new Set(orders.flatMap(o => o.items.map(i => i.id))), [orders]);
   const wishlistProducts = products.filter(p => wishlist.has(p.id));
