@@ -469,9 +469,13 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
   const [checkoutPinError, setCheckoutPinError] = useState("");
   const [checkoutProcessing, setCheckoutProcessing] = useState(false);
 
-  // Promo
-  const [appliedPromo, setAppliedPromo] = useState<{ code: string; discount: number } | null>(null);
+  // Promo (DB-backed coupon)
+  const [appliedPromo, setAppliedPromo] = useState<{
+    code: string; discount: number; coupon_id: string;
+    discount_type: string; discount_value: number; max_discount: number | null;
+  } | null>(null);
   const [promoInput, setPromoInput] = useState("");
+  const [promoLoading, setPromoLoading] = useState(false);
 
   // Orders
   const [orders, setOrders] = useState<Order[]>(SAMPLE_ORDERS);
