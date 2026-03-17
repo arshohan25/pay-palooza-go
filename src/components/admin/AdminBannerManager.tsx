@@ -124,6 +124,7 @@ export default function AdminBannerManager() {
       is_active: b.is_active,
       sort_order: b.sort_order,
       expires_at: b.expires_at ? b.expires_at.slice(0, 16) : "",
+      placement: (b as any).placement || "home",
     });
     setDialogOpen(true);
   };
