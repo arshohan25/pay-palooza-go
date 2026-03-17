@@ -33,6 +33,7 @@ import ProductDetailPage from "./pages/ProductDetailPage";
 import VendorStorePage from "./pages/VendorStorePage";
 import WishlistPage from "./pages/WishlistPage";
 import CustomerOrdersPage from "./pages/CustomerOrdersPage";
+import OrderDetailPage from "./pages/OrderDetailPage";
 
 const queryClient = new QueryClient();
 
