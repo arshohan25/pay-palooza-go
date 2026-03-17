@@ -96,8 +96,8 @@ export default function OrderDetailPage() {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
         <Package className="w-16 h-16 text-muted-foreground/30" />
-        <p className="text-muted-foreground">Order not found</p>
-        <Button variant="outline" onClick={() => navigate("/orders")}>Back to Orders</Button>
+        <p className="text-muted-foreground">{!user ? "Please log in to view this order" : "Order not found"}</p>
+        <Button variant="outline" onClick={() => navigate(!user ? "/auth" : "/orders")}>{!user ? "Log In" : "Back to Orders"}</Button>
       </div>
     );
   }

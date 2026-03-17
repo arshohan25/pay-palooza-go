@@ -54,6 +54,12 @@ export default function CustomerOrdersPage() {
       <div className="px-4 pt-4 space-y-3">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)
+        ) : !user ? (
+          <div className="text-center py-16">
+            <Package className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground">Please log in to see your orders</p>
+            <Button variant="outline" className="mt-4" onClick={() => navigate("/auth")}>Log In</Button>
+          </div>
         ) : orders.length === 0 ? (
           <div className="text-center py-16">
             <Package className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
