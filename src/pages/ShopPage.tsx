@@ -31,6 +31,9 @@ export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [sortBy, setSortBy] = useState<SortOption>("popular");
   const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<ShopFilters>(defaultFilters);
+  const [recommendedIds, setRecommendedIds] = useState<string[]>([]);
+  const [recsLoading, setRecsLoading] = useState(false);
 
   // Load products with vendor info
   useEffect(() => {
