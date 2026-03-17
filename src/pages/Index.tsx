@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import QrScannerModal from "@/components/QrScannerModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, ShieldCheck, Clock, XCircle } from "lucide-react";
@@ -20,7 +21,7 @@ import PaymentFlow from "@/components/PaymentFlow";
 import MobileRechargeFlow from "@/components/MobileRechargeFlow";
 import PayBillFlow from "@/components/PayBillFlow";
 import AddMoneyFlow from "@/components/AddMoneyFlow";
-import ShopFlow from "@/components/ShopFlow";
+
 import BankTransferFlow from "@/components/BankTransferFlow";
 import DynamicQrPaySheet from "@/components/DynamicQrPaySheet";
 
@@ -46,6 +47,7 @@ import PlatformBanner from "@/components/PlatformBanner";
 import FestivalOverlay from "@/components/FestivalOverlay";
 
 const Index = () => {
+  const navigate = useNavigate();
   const { isAuthenticated, loading: authLoading, signOut, user } = useAuth();
   const { status: kycStatus, rejectionReason } = useKycStatus();
   const [showKycFlow, setShowKycFlow] = useState(false);
@@ -70,7 +72,7 @@ const Index = () => {
   const [showRecharge, setShowRecharge]   = useState(false);
   const [showPayBill, setShowPayBill]     = useState(false);
   const [showAddMoney, setShowAddMoney]   = useState(false);
-  const [showShop, setShowShop]           = useState(false);
+  
   
   const [showBankTransfer, setShowBankTransfer] = useState(false);
   const [showSavings, setShowSavings]     = useState(false);
@@ -174,7 +176,7 @@ const Index = () => {
         "pay-bill": () => setShowPayBill(true),
         "payment": () => setShowPayment(true),
         "bank-transfer": () => setShowBankTransfer(true),
-        "shop": () => setShowShop(true),
+        "shop": () => navigate("/shop"),
         "savings": () => setShowSavings(true),
         "merchant-apply": () => setShowMerchantApply(true),
         "scan-pay": () => setShowScanPay(true),
@@ -275,7 +277,7 @@ const Index = () => {
                 onPayBill={() => setShowPayBill(true)}
                 onAddMoney={() => setShowAddMoney(true)}
                 onRefer={() => handleTabChange("refer")}
-                onShop={() => setShowShop(true)}
+                onShop={() => navigate("/shop")}
                 onBankTransfer={() => setShowBankTransfer(true)}
                 onSavings={() => setShowSavings(true)}
               />
@@ -288,7 +290,7 @@ const Index = () => {
                   recharge: () => setShowRecharge(true),
                   paybill: () => setShowPayBill(true),
                   addmoney: () => setShowAddMoney(true),
-                  shop: () => setShowShop(true),
+                  shop: () => navigate("/shop"),
                   banktransfer: () => setShowBankTransfer(true),
                   savings: () => setShowSavings(true),
                   refer: () => handleTabChange("refer"),
@@ -408,7 +410,7 @@ const Index = () => {
         {showRecharge  && <MobileRechargeFlow key="recharge-flow" onClose={() => setShowRecharge(false)} />}
         {showPayBill   && <PayBillFlow key="paybill-flow" onClose={() => setShowPayBill(false)} />}
         {showAddMoney  && <AddMoneyFlow key="addmoney-flow" onClose={() => setShowAddMoney(false)} />}
-        {showShop      && <ShopFlow key="shop-flow" onClose={() => setShowShop(false)} />}
+        
         {showBankTransfer && <BankTransferFlow key="bank-transfer-flow" onClose={() => setShowBankTransfer(false)} />}
         {showSavings   && <SavingsFlow key="savings-flow" onClose={() => setShowSavings(false)} />}
         {showKycFlow   && <KycFlow key="kyc-flow" onClose={() => setShowKycFlow(false)} />}
