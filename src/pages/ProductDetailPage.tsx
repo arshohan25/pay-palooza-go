@@ -32,7 +32,7 @@ interface Variant {
 /* ── Stagger helpers ── */
 const fadeUp = {
   hidden: { opacity: 0, y: 18 },
-  show: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.07, duration: 0.4, ease: [0.23, 1, 0.32, 1] } }),
+  show: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.07, duration: 0.4, ease: [0.23, 1, 0.32, 1] as [number, number, number, number] } }),
 };
 
 /* ── Estimated delivery helper ── */
