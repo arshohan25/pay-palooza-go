@@ -397,7 +397,7 @@ const MerchantDashboard = () => {
         <AnimatePresence mode="wait">
           <motion.div key={activeTab} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }}>
             {activeTab === "overview"     && <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} onRefresh={loadData} onSeeAll={() => setActiveTab("transactions")} />}
-            {activeTab === "products"     && merchant && <MerchantProductsTab merchantId={merchant.id} />}
+            {activeTab === "products"     && merchant && <MerchantProductsTab merchantId={merchant.id} businessName={merchant.business_name} />}
             {activeTab === "orders"       && merchant && <MerchantOrdersTab merchantId={merchant.id} />}
             {activeTab === "store"        && merchant && <MerchantStoreSettingsTab merchantId={merchant.id} businessName={merchant.business_name} />}
             {activeTab === "qr"           && <QRTab merchant={merchant} toast={toast} />}

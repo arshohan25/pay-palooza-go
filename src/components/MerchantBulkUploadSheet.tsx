@@ -137,6 +137,9 @@ const MerchantBulkUploadSheet = ({ merchantId, businessName, open, onOpenChange,
     const validRows = rows.filter(r => r.valid);
     if (!validRows.length) { toast({ title: "No valid rows", variant: "destructive" }); return; }
     setImporting(true);
+    if (businessName) {
+      await ensureVendorStore(merchantId, businessName);
+    }
 
     const payload = validRows.map(r => ({
       merchant_id: merchantId,

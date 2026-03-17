@@ -316,6 +316,7 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
       {/* Bulk Upload Sheet */}
       <MerchantBulkUploadSheet
         merchantId={merchantId}
+        businessName={businessName}
         open={showBulkUpload}
         onOpenChange={setShowBulkUpload}
         onSuccess={loadProducts}
