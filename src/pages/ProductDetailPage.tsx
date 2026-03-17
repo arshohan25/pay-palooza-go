@@ -85,6 +85,16 @@ export default function ProductDetailPage() {
         const { data: vars } = await (supabase as any)
           .from("product_variants").select("*").eq("product_id", id).eq("is_active", true);
         setVariants(vars ?? []);
+
+        // Fetch related products in parallel
+        const [vendorRes, othersRes] = await Promise.all([
+          supabase.from("merchant_products").select("id, name, price, original_price, image_url, rating, review_count, stock, badge")
+            .eq("merchant_id", prod.merchant_id).neq("id", id).eq("is_active", true).limit(10),
+          supabase.from("merchant_products").select("id, name, price, original_price, image_url, rating, review_count, stock, badge")
+            .eq("category", prod.category).neq("merchant_id", prod.merchant_id).eq("is_active", true).limit(10),
+        ]);
+        setRelatedFromVendor(vendorRes.data ?? []);
+        setRelatedOthers(othersRes.data ?? []);
       }
       setLoading(false);
     };
