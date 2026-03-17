@@ -1130,6 +1130,44 @@ export type Database = {
         }
         Relationships: []
       }
+      flash_sales: {
+        Row: {
+          created_at: string | null
+          ends_at: string
+          id: string
+          is_active: boolean | null
+          product_id: string
+          sale_price: number
+          starts_at: string
+        }
+        Insert: {
+          created_at?: string | null
+          ends_at: string
+          id?: string
+          is_active?: boolean | null
+          product_id: string
+          sale_price: number
+          starts_at: string
+        }
+        Update: {
+          created_at?: string | null
+          ends_at?: string
+          id?: string
+          is_active?: boolean | null
+          product_id?: string
+          sale_price?: number
+          starts_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flash_sales_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fraud_alerts: {
         Row: {
           assigned_to: string | null

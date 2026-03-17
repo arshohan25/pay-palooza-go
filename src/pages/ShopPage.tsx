@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import {
   Search, ArrowLeft, ShoppingCart, Store, Loader2,
   ShieldCheck, Truck, RotateCcw, Flame, ChevronRight,
+  Clock, Sparkles, Zap, ClipboardList,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import PromoSlider from "@/components/PromoSlider";
 import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { useAuth } from "@/hooks/use-auth";
+import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
 import { cn } from "@/lib/utils";
 
 type SortOption = "popular" | "price_low" | "price_high" | "newest" | "rating";
@@ -137,6 +139,7 @@ export default function ShopPage() {
   const { user } = useAuth();
   const { items, addToCart, updateQty, removeFromCart, count } = useCart();
   const { isWishlisted, toggle: toggleWishlist } = useWishlist();
+  const { recentIds } = useRecentlyViewed();
   const [cartOpen, setCartOpen] = useState(false);
 
   const [products, setProducts] = useState<ShopProduct[]>([]);
@@ -148,6 +151,7 @@ export default function ShopPage() {
   const [shopBanners, setShopBanners] = useState<any[]>([]);
   const [recommendedIds, setRecommendedIds] = useState<string[]>([]);
   const [recsLoading, setRecsLoading] = useState(false);
+  const [flashSales, setFlashSales] = useState<any[]>([]);
 
   // Load products
   useEffect(() => {
@@ -209,6 +213,20 @@ export default function ShopPage() {
     };
     loadRecs();
   }, [user]);
+
+  // Load flash sales
+  useEffect(() => {
+    const loadFlash = async () => {
+      const { data } = await (supabase as any)
+        .from("flash_sales")
+        .select("*, merchant_products(id, name, price, image_url, emoji)")
+        .eq("is_active", true)
+        .lte("starts_at", new Date().toISOString())
+        .gte("ends_at", new Date().toISOString());
+      if (data) setFlashSales(data);
+    };
+    loadFlash();
+  }, []);
 
   const categories = useMemo(() => {
     const cats = new Set(products.map((p) => p.category));
@@ -272,6 +290,16 @@ export default function ShopPage() {
     return recommendedIds.map((id) => products.find((p) => p.id === id)).filter(Boolean) as ShopProduct[];
   }, [recommendedIds, products]);
 
+  const newArrivals = useMemo(() => {
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    return products.filter((p) => p.created_at && p.created_at >= weekAgo).slice(0, 10);
+  }, [products]);
+
+  const recentlyViewedProducts = useMemo(() => {
+    if (recentIds.length === 0) return [];
+    return recentIds.map((id) => products.find((p) => p.id === id)).filter(Boolean).slice(0, 10) as ShopProduct[];
+  }, [recentIds, products]);
+
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* ── Sticky Header ── */}
@@ -289,6 +317,9 @@ export default function ShopPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          <Button variant="ghost" size="icon" className="shrink-0 rounded-full h-8 w-8" onClick={() => navigate("/orders")}>
+            <ClipboardList className="w-4 h-4" />
+          </Button>
           <div className="relative">
             <CartDrawer
               items={items}
@@ -339,7 +370,61 @@ export default function ShopPage() {
         </Section>
       )}
 
-      {/* ── Trending Now ── */}
+      {/* ── Flash Sale Banner ── */}
+      {!loading && flashSales.length > 0 && !search.trim() && selectedCategory === "All" && (
+        <Section delay={0.17} className="px-4 pt-3">
+          {flashSales.slice(0, 1).map((sale) => {
+            const prod = sale.merchant_products;
+            const endsAt = new Date(sale.ends_at);
+            const now = new Date();
+            const diffMs = endsAt.getTime() - now.getTime();
+            const hours = Math.floor(diffMs / 3600000);
+            const mins = Math.floor((diffMs % 3600000) / 60000);
+            return (
+              <button
+                key={sale.id}
+                onClick={() => navigate(`/product/${prod?.id || sale.product_id}`)}
+                className="w-full rounded-2xl overflow-hidden bg-destructive/10 border border-destructive/20 p-4 flex items-center gap-3 text-left"
+              >
+                <Zap className="w-8 h-8 text-destructive shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold text-destructive uppercase tracking-wide">⚡ Flash Sale</p>
+                  <p className="text-sm font-semibold text-foreground truncate">{prod?.name}</p>
+                  <div className="flex items-baseline gap-2 mt-0.5">
+                    <span className="text-base font-extrabold text-destructive">৳{sale.sale_price}</span>
+                    <span className="text-xs text-muted-foreground line-through">৳{prod?.price}</span>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-[9px] text-muted-foreground">Ends in</p>
+                  <p className="text-sm font-bold text-foreground">{hours}h {mins}m</p>
+                </div>
+              </button>
+            );
+          })}
+        </Section>
+      )}
+
+      {/* ── New Arrivals ── */}
+      {!loading && newArrivals.length > 0 && !search.trim() && selectedCategory === "All" && (
+        <Section delay={0.18} className="pt-4">
+          <div className="flex items-center justify-between px-4 mb-3">
+            <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-primary" />
+              New Arrivals
+            </h2>
+          </div>
+          <ScrollArea className="w-full whitespace-nowrap">
+            <div className="flex gap-2.5 px-4 pb-1">
+              {newArrivals.map((p) => (
+                <FlashCard key={`new-${p.id}`} product={p} onNavigate={navigate} />
+              ))}
+            </div>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+        </Section>
+      )}
+
       {!loading && trendingProducts.length > 0 && !search.trim() && selectedCategory === "All" && (
         <Section delay={0.2} className="pt-4">
           <div className="flex items-center justify-between px-4 mb-3">
@@ -455,6 +540,24 @@ export default function ShopPage() {
             <div className="grid grid-cols-2 gap-2.5">
               {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="aspect-[3/4] rounded-2xl" />)}
             </div>
+          </div>
+        )}
+
+        {/* Recently Viewed */}
+        {recentlyViewedProducts.length > 0 && !search.trim() && (
+          <div className="mt-8 space-y-3">
+            <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              Recently Viewed
+            </h2>
+            <ScrollArea className="w-full whitespace-nowrap">
+              <div className="flex gap-2.5 pb-1">
+                {recentlyViewedProducts.map((p) => (
+                  <FlashCard key={`recent-${p.id}`} product={p} onNavigate={navigate} />
+                ))}
+              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
           </div>
         )}
       </div>
