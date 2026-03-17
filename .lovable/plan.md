@@ -1,23 +1,29 @@
 
 
-## Add Banners & Marketing to E-Commerce Hub
+## Plan: Add Biller Categories to API Hub
 
-The project already has fully-built components for both:
-- **`AdminBannerManager`** — full CRUD for `promo_banners` (media upload, gradients, deep links, preview)
-- **`AdminMarketingTools`** — promo codes, cashback rules, and campaigns with realtime sync
+### What
 
-These just need to be wired into the E-Commerce Hub as new sub-tabs.
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-**`src/components/admin/AdminEcommerceHub.tsx`**:
-1. Import `AdminBannerManager` and `AdminMarketingTools`
-2. Expand `SubTab` type to include `"banners"` and `"marketing"`
-3. Add two entries to `SUB_TABS`:
-   - `{ key: "banners", label: "Banners", icon: Image }` (from lucide)
-   - `{ key: "marketing", label: "Marketing", icon: Megaphone }` (from lucide)
-4. Add rendering: `{subTab === "banners" && <AdminBannerManager />}` and `{subTab === "marketing" && <AdminMarketingTools />}`
-5. Import `Image` and `Megaphone` icons
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-This is a ~15-line edit to one file. No database changes needed — all tables and components already exist.
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
