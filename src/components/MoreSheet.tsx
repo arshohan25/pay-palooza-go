@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Landmark, Wallet, Ticket, Heart, X } from "lucide-react";
+import { Landmark, Wallet, Ticket, Heart, X, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 
 interface MoreSheetProps {
