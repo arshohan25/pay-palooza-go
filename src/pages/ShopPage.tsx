@@ -290,6 +290,16 @@ export default function ShopPage() {
     return recommendedIds.map((id) => products.find((p) => p.id === id)).filter(Boolean) as ShopProduct[];
   }, [recommendedIds, products]);
 
+  const newArrivals = useMemo(() => {
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    return products.filter((p) => p.created_at && p.created_at >= weekAgo).slice(0, 10);
+  }, [products]);
+
+  const recentlyViewedProducts = useMemo(() => {
+    if (recentIds.length === 0) return [];
+    return recentIds.map((id) => products.find((p) => p.id === id)).filter(Boolean).slice(0, 10) as ShopProduct[];
+  }, [recentIds, products]);
+
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* ── Sticky Header ── */}
