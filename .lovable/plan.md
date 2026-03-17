@@ -1,29 +1,30 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Auto-create Vendor Store on First Product Add
 
-### What
+### Problem
+Merchants must manually visit the "Store" tab and click "Create Store" before their products appear in the marketplace. If they skip this step, their products exist in `merchant_products` but no `vendor_stores` row exists, so `/shop` and `/shop/:slug` show nothing.
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### Solution
+Before inserting a new product in `MerchantProductsTab.tsx`, check if a `vendor_stores` record exists for this merchant. If not, auto-create one with sensible defaults derived from the merchant's `business_name`.
 
 ### Changes
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**File: `src/components/MerchantProductsTab.tsx`**
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+1. **Add `businessName` prop** — update the `Props` interface to accept `businessName: string` (already available in the parent).
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+2. **Add auto-create helper** — before the product insert in `handleSave()` (and in `MerchantBulkUploadSheet`), check for an existing `vendor_stores` row. If none exists, insert one with:
+   - `store_name`: `businessName`
+   - `slug`: derived from `businessName` (lowercased, hyphenated)
+   - `is_active`: `true`
+   - `merchant_id`: current merchant ID
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+3. **Same logic in `MerchantBulkUploadSheet.tsx`** — add the auto-create check before bulk insert as well, passing `merchantId` and `businessName` through.
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+**File: `src/pages/MerchantDashboard.tsx`**
 
-3. Add the new category icons to the `categoryIcons` map.
+4. Pass `businessName={merchant.business_name}` to `MerchantProductsTab` (line 400).
 
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+This is a ~20-line addition across 3 files. The store can still be customized later via the Store tab.
 
