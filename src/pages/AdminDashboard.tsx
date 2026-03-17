@@ -1712,6 +1712,9 @@ export default function AdminDashboard() {
         {/* ═══ FESTIVAL THEMES ═══ */}
         {activeTab === "festival_themes" && <AdminFestivalThemes />}
 
+        {/* ═══ E-COMMERCE ═══ */}
+        {activeTab === "ecommerce" && <AdminEcommerceHub />}
+
         {/* ═══ TRASH ═══ */}
         {activeTab === "trash" && (
           <div className="space-y-4">
