@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Package, ChevronRight, Clock, CircleCheck, Truck, XCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, Package, ChevronRight, Clock, CircleCheck, Truck, XCircle, Loader2, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import WriteReviewForm from "@/components/shop/WriteReviewForm";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
   processing: { label: "Processing", color: "bg-blue-500/10 text-blue-600", icon: Clock },
