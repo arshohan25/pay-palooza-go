@@ -158,7 +158,7 @@ export default function PromoSlider({ onFeatureOpen }: PromoSliderProps) {
                           {b.badge_text}
                         </span>
                       )}
-                      <h3 className="text-white text-sm font-bold leading-tight">{b.title}</h3>
+                      {b.title && <h3 className="text-white text-sm font-bold leading-tight">{b.title}</h3>}
                       {b.subtitle && (
                         <p className="text-white/80 text-xs mt-1 leading-snug line-clamp-2">{b.subtitle}</p>
                       )}

@@ -305,7 +305,7 @@ export default function AdminBannerManager() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Title *</Label>
+              <Label>Title (optional for media banners)</Label>
               <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Invite Friends & Earn ৳50" />
             </div>
             <div>
