@@ -28,7 +28,14 @@ interface Banner {
   sort_order: number;
   expires_at: string | null;
   created_at: string;
+  placement: string;
 }
+
+const PLACEMENT_OPTIONS = [
+  { value: "home", label: "Home Only" },
+  { value: "shop", label: "Shop Only" },
+  { value: "both", label: "Home & Shop" },
+];
 
 const ICON_OPTIONS = ["Gift", "Zap", "Star", "Heart", "ShieldCheck", "Sparkles", "Trophy", "Megaphone", "PartyPopper", "Rocket", "Tag", "Percent", "BadgeDollarSign", "Crown"];
 
@@ -62,6 +69,7 @@ const emptyForm = {
   is_active: true,
   sort_order: 0,
   expires_at: "",
+  placement: "home",
 };
 
 export default function AdminBannerManager() {
@@ -116,6 +124,7 @@ export default function AdminBannerManager() {
       is_active: b.is_active,
       sort_order: b.sort_order,
       expires_at: b.expires_at ? b.expires_at.slice(0, 16) : "",
+      placement: (b as any).placement || "home",
     });
     setDialogOpen(true);
   };
@@ -186,6 +195,7 @@ export default function AdminBannerManager() {
       is_active: form.is_active,
       sort_order: form.sort_order,
       expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
+      placement: form.placement,
     };
 
     if (editId) {
@@ -265,6 +275,7 @@ export default function AdminBannerManager() {
                       <div className="flex items-center justify-between mt-1.5 gap-1">
                         <div className="flex items-center gap-1 min-w-0 overflow-hidden">
                           <Badge variant={b.is_active ? "default" : "secondary"} className="text-[9px] shrink-0 px-1">{b.is_active ? "On" : "Off"}</Badge>
+                          <Badge variant="outline" className="text-[9px] shrink-0 px-1 capitalize">{(b as any).placement || "home"}</Badge>
                           {b.link_url && (
                             <Badge variant="outline" className="text-[9px] shrink-0 gap-0.5 max-w-[100px] truncate px-1">
                               <Link2 className="w-2.5 h-2.5 shrink-0" />
@@ -455,6 +466,21 @@ export default function AdminBannerManager() {
                   {form.subtitle && <p className="text-white/80 text-xs mt-0.5">{form.subtitle}</p>}
                 </div>
               </div>
+            </div>
+
+            {/* Placement */}
+            <div>
+              <Label>Show On</Label>
+              <Select value={form.placement} onValueChange={(v) => setForm({ ...form, placement: v })}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PLACEMENT_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

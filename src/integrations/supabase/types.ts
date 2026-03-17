@@ -2515,6 +2515,7 @@ export type Database = {
           link_url: string | null
           media_type: string | null
           media_url: string | null
+          placement: string
           sort_order: number | null
           subtitle: string | null
           title: string
@@ -2532,6 +2533,7 @@ export type Database = {
           link_url?: string | null
           media_type?: string | null
           media_url?: string | null
+          placement?: string
           sort_order?: number | null
           subtitle?: string | null
           title: string
@@ -2549,6 +2551,7 @@ export type Database = {
           link_url?: string | null
           media_type?: string | null
           media_url?: string | null
+          placement?: string
           sort_order?: number | null
           subtitle?: string | null
           title?: string
