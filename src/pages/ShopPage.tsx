@@ -525,7 +525,7 @@ export default function ShopPage() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
-            {filtered.map((product, i) => (
+            {paginatedProducts.map((product, i) => (
               <motion.div
                 key={product.id}
                 initial={{ opacity: 0, y: 12 }}
@@ -542,6 +542,20 @@ export default function ShopPage() {
               </motion.div>
             ))}
           </motion.div>
+        )}
+
+        {/* Load More */}
+        {!loading && hasMore && (
+          <div className="flex justify-center pt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full px-6"
+              onClick={() => setVisibleCount((c) => c + 20)}
+            >
+              Load More ({filtered.length - visibleCount} remaining)
+            </Button>
+          </div>
         )}
 
         {/* AI Recommendations */}
