@@ -176,7 +176,7 @@ const Index = () => {
         "pay-bill": () => setShowPayBill(true),
         "payment": () => setShowPayment(true),
         "bank-transfer": () => setShowBankTransfer(true),
-        "shop": () => setShowShop(true),
+        "shop": () => navigate("/shop"),
         "savings": () => setShowSavings(true),
         "merchant-apply": () => setShowMerchantApply(true),
         "scan-pay": () => setShowScanPay(true),
