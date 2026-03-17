@@ -680,7 +680,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll }: 
 
   const { getFeeLabel: getMerchFeeLabel } = useFeeConfig();
   const quickActions = [
-    { icon: Send, label: "Send Money", desc: getMerchFeeLabel("send") || "Fee varies", gradient: "from-blue-500 to-indigo-600", onClick: () => setShowSendMoney(true) },
+    { icon: Send, label: "Send Money", desc: "Flat ৳5/txn", gradient: "from-blue-500 to-indigo-600", onClick: () => setShowSendMoney(true) },
     { icon: HandCoins, label: "Cash Out", desc: getMerchFeeLabel("cashout") || "Fee varies", gradient: "from-emerald-500 to-teal-600", onClick: () => setShowCashOut(true) },
     { icon: Landmark, label: "Add Bank", desc: `Auto settle · ${getMerchFeeLabel("banktransfer") || "1%"}`, gradient: "from-amber-500 to-orange-600", onClick: () => setShowAddBank(true) },
     { icon: CalendarClock, label: "Settlement", desc: "Schedule", gradient: "from-purple-500 to-violet-600", onClick: () => setShowSettlementConfig(true) },
