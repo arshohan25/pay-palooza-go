@@ -1,25 +1,29 @@
 
 
-## Redesign Description Tab — Card View
+## Plan: Add Biller Categories to API Hub
 
-### Current State
-The Description tab renders plain `<p>` paragraphs with no visual structure — just stacked muted text lines.
+### What
 
-### Redesign
-Replace the plain text with a styled card layout:
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-**File: `src/pages/ProductDetailPage.tsx`** (lines 353-357)
+### Changes
 
-Replace the description `TabsContent` with:
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-1. **Highlight Card** — A bordered rounded card (`bg-card border`) containing:
-   - A small "Product Details" header with a `Package` icon
-   - Each line of the description rendered as a bullet-point row with a small colored dot indicator and `text-sm` text
-   - Lines split on `\n`; if only one line, show as a single paragraph with subtle left accent border
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-2. **Key Highlights Section** (if category/brand exist) — A small "Highlights" card below with icon-labeled chips showing category, brand, stock status in a flex-wrap layout using `Badge` components
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-3. **Visual polish** — Subtle `bg-muted/30` background on the content area, rounded-xl cards with `divide-y` between bullet rows, matching the specs tab card style already on the page
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-Single file change, ~30 lines replaced.
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

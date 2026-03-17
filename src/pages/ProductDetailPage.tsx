@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Heart, ShoppingCart, Star, Store, Share2, Minus, Plus,
   ChevronRight, Truck, ShieldCheck, RefreshCw, Package, Banknote,
-  Clock, ChevronLeft,
+  Clock, ChevronLeft, Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -350,10 +350,51 @@ export default function ProductDetailPage() {
               <TabsTrigger value="reviews" className="flex-1 rounded-lg text-xs py-2 data-[state=active]:bg-card data-[state=active]:shadow-sm">Reviews ({product.review_count})</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="description" className="mt-3 space-y-2">
-              {(product.description || "No description available.").split("\n").filter(Boolean).map((line: string, i: number) => (
-                <p key={i} className="text-sm text-muted-foreground leading-relaxed">{line}</p>
-              ))}
+            <TabsContent value="description" className="mt-3 space-y-3">
+              {/* Product Details Card */}
+              <div className="bg-card border border-border/60 rounded-xl overflow-hidden">
+                <div className="flex items-center gap-2 px-3.5 py-2.5 bg-muted/30 border-b border-border/40">
+                  <Package className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-xs font-semibold text-foreground">Product Details</span>
+                </div>
+                {(() => {
+                  const lines = (product.description || "No description available.").split("\n").filter(Boolean);
+                  if (lines.length <= 1) {
+                    return (
+                      <div className="px-3.5 py-3 border-l-2 border-primary/40 ml-3 my-3">
+                        <p className="text-sm text-muted-foreground leading-relaxed">{lines[0] || "No description available."}</p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="divide-y divide-border/40">
+                      {lines.map((line: string, i: number) => (
+                        <div key={i} className="flex items-start gap-2.5 px-3.5 py-2.5">
+                          <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary/60 shrink-0" />
+                          <p className="text-sm text-muted-foreground leading-relaxed">{line}</p>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Key Highlights */}
+              {(product.category || (product as any).brand) && (
+                <div className="bg-card border border-border/60 rounded-xl overflow-hidden">
+                  <div className="flex items-center gap-2 px-3.5 py-2.5 bg-muted/30 border-b border-border/40">
+                    <Tag className="w-3.5 h-3.5 text-primary" />
+                    <span className="text-xs font-semibold text-foreground">Key Highlights</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 px-3.5 py-3">
+                    {product.category && <Badge variant="secondary" className="text-xs">{product.category}</Badge>}
+                    {(product as any).brand && <Badge variant="outline" className="text-xs">{(product as any).brand}</Badge>}
+                    <Badge variant={product.stock > 0 ? "default" : "destructive"} className="text-xs">
+                      {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
+                    </Badge>
+                  </div>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="specs" className="mt-3">
