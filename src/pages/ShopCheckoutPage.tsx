@@ -37,6 +37,14 @@ interface AppliedCoupon {
   discount_value: number;
   max_discount: number | null;
 }
+interface DeliveryZone {
+  id: string;
+  zone_name: string;
+  cities: string[];
+  delivery_fee: number;
+  estimated_days: string;
+  courier_providers: { name: string } | null;
+}
 
 type PaymentMethod = "wallet" | "card";
 
@@ -59,6 +67,7 @@ export default function ShopCheckoutPage() {
   const [success, setSuccess] = useState(false);
   const [orderNum, setOrderNum] = useState("");
   const [orderId, setOrderId] = useState("");
+  const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
 
   // Redirect if cart is empty and not showing success
   useEffect(() => {
@@ -73,27 +82,43 @@ export default function ShopCheckoutPage() {
     return () => { unsub(); };
   }, []);
 
-  // Load saved addresses
+  // Load saved addresses and delivery zones
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const { data } = await supabase
-        .from("delivery_addresses")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("is_default", { ascending: false });
-      if (data && data.length > 0) {
-        setAddresses(data);
-        const def = data.find((a) => a.is_default) || data[0];
+      const [{ data: addrData }, { data: zoneData }] = await Promise.all([
+        supabase
+          .from("delivery_addresses")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("is_default", { ascending: false }),
+        supabase
+          .from("delivery_zones")
+          .select("*, courier_providers(name)")
+          .eq("is_active", true),
+      ]);
+      if (addrData && addrData.length > 0) {
+        setAddresses(addrData);
+        const def = addrData.find((a) => a.is_default) || addrData[0];
         setSelectedAddressId(def.id);
       }
+      setDeliveryZones((zoneData as any[]) ?? []);
     };
     load();
   }, [user]);
 
   const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
+
+  // Match delivery zone by city
+  const matchedZone = selectedAddress
+    ? deliveryZones.find((z) =>
+        z.cities.some((c) => c.toLowerCase() === selectedAddress.city.toLowerCase())
+      )
+    : null;
+  const deliveryFee = matchedZone?.delivery_fee ?? 0;
+
   const discountAmt = appliedPromo ? Math.min(appliedPromo.discount, subtotal) : 0;
-  const orderTotal = Math.max(0, subtotal - discountAmt);
+  const orderTotal = Math.max(0, subtotal - discountAmt + deliveryFee);
 
   const applyPromo = async () => {
     const code = promoInput.trim().toUpperCase();
@@ -167,7 +192,7 @@ export default function ShopCheckoutPage() {
         p_shipping_address: `${selectedAddress.address_line}${selectedAddress.area ? ", " + selectedAddress.area : ""}`,
         p_shipping_city: selectedAddress.city,
         p_shipping_phone: selectedAddress.phone,
-        p_delivery_fee: 0,
+        p_delivery_fee: deliveryFee,
         p_coupon_id: appliedPromo?.coupon_id || null,
         p_coupon_discount: discountAmt,
         p_payment_method: payMethod,
@@ -472,9 +497,18 @@ export default function ShopCheckoutPage() {
             </div>
           )}
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Delivery</span>
-            <span className="font-semibold text-primary">FREE</span>
+            <span className="text-muted-foreground">
+              Delivery{matchedZone ? ` (${matchedZone.zone_name})` : ""}
+            </span>
+            <span className={`font-semibold ${deliveryFee > 0 ? "text-foreground" : "text-primary"}`}>
+              {deliveryFee > 0 ? `৳${deliveryFee.toLocaleString()}` : "FREE"}
+            </span>
           </div>
+          {matchedZone && (
+            <p className="text-[10px] text-muted-foreground text-right">
+              Est. {matchedZone.estimated_days}{matchedZone.courier_providers?.name ? ` via ${matchedZone.courier_providers.name}` : ""}
+            </p>
+          )}
           <div className="h-px bg-border my-1" />
           <div className="flex justify-between text-base font-bold">
             <span className="text-foreground">Total</span>
