@@ -65,6 +65,12 @@ interface OrderRow {
   estimated_delivery: string | null;
   created_at: string;
   updated_at: string;
+  escrow_status?: string | null;
+  escrow_released_at?: string | null;
+  coupon_discount?: number | null;
+  delivery_fee?: number | null;
+  total_vendor_commission?: number | null;
+  total_platform_fee?: number | null;
   // joined
   profile_name?: string;
   profile_phone?: string;
