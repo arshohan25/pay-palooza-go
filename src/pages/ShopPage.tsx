@@ -332,6 +332,12 @@ export default function ShopPage() {
     return result;
   }, [products, selectedCategory, search, sortBy, filters]);
 
+  // Reset pagination when filters change
+  useEffect(() => { setVisibleCount(20); }, [selectedCategory, search, sortBy, filters]);
+
+  const paginatedProducts = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
+  const hasMore = visibleCount < filtered.length;
+
   const trendingProducts = useMemo(
     () => [...products].sort((a, b) => b.review_count - a.review_count).slice(0, 10),
     [products]
