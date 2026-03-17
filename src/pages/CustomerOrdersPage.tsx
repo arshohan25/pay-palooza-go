@@ -111,6 +111,22 @@ export default function CustomerOrdersPage() {
           })
         )}
       </div>
+
+      {/* Review Sheet */}
+      <Sheet open={!!reviewSheet?.open} onOpenChange={(o) => !o && setReviewSheet(null)}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Write a Review</SheetTitle>
+          </SheetHeader>
+          {reviewSheet && (
+            <WriteReviewForm
+              productId={reviewSheet.productId}
+              orderId={reviewSheet.orderId}
+              onSuccess={() => setReviewSheet(null)}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

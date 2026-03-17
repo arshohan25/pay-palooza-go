@@ -322,7 +322,16 @@ export default function ProductDetailPage() {
             )}
           </TabsContent>
           <TabsContent value="reviews" className="mt-3 -mx-4">
-            <ProductReviews productId={product.id} />
+            <ProductReviews productId={product.id} key={reviewKey} />
+            {canReview && (
+              <div className="px-4 mt-4">
+                <WriteReviewForm
+                  productId={product.id}
+                  orderId={deliveredOrderId ?? undefined}
+                  onSuccess={() => { setCanReview(false); setReviewKey((k) => k + 1); }}
+                />
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
