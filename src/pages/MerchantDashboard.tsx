@@ -33,9 +33,10 @@ import MerchantApiTab from "@/components/MerchantApiTab";
 import MerchantAnalyticsTab from "@/components/MerchantAnalyticsTab";
 import MerchantProductsTab from "@/components/MerchantProductsTab";
 import MerchantOrdersTab from "@/components/MerchantOrdersTab";
+import MerchantStoreSettingsTab from "@/components/MerchantStoreSettingsTab";
 
 /* ─── Types ─── */
-type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api";
+type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api" | "store";
 
 interface MerchantInfo {
   id: string;
@@ -73,12 +74,13 @@ const mainTabs: { id: MerchTab; icon: typeof QrCode; label: string }[] = [
   { id: "overview",     icon: BarChart3,    label: "Overview" },
   { id: "products",     icon: Package,      label: "Products" },
   { id: "orders",       icon: Receipt,      label: "Orders" },
-  { id: "qr",           icon: QrCode,       label: "QR Code" },
+  { id: "store",        icon: Store,        label: "Store" },
 ];
 
 const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: string }[] = [
   { id: "analytics",    icon: PieChart,     label: "Analytics",        desc: "Insights, revenue & customers" },
   { id: "transactions", icon: ArrowUpDown,  label: "History",          desc: "View all transactions" },
+  { id: "qr",           icon: QrCode,       label: "QR Code",          desc: "Your merchant QR code" },
   { id: "api",          icon: Globe,        label: "API Integration",  desc: "API keys, webhooks & docs" },
   { id: "paylinks",     icon: Link,         label: "Pay Links",        desc: "Create & share payment links" },
   { id: "settlements",  icon: BanknoteIcon, label: "Settlement",       desc: "Bank payouts & schedule" },
@@ -397,6 +399,7 @@ const MerchantDashboard = () => {
             {activeTab === "overview"     && <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} onRefresh={loadData} onSeeAll={() => setActiveTab("transactions")} />}
             {activeTab === "products"     && merchant && <MerchantProductsTab merchantId={merchant.id} />}
             {activeTab === "orders"       && merchant && <MerchantOrdersTab merchantId={merchant.id} />}
+            {activeTab === "store"        && merchant && <MerchantStoreSettingsTab merchantId={merchant.id} businessName={merchant.business_name} />}
             {activeTab === "qr"           && <QRTab merchant={merchant} toast={toast} />}
             {activeTab === "analytics"    && merchant && <MerchantAnalyticsTab merchantId={merchant.id} />}
             {activeTab === "paylinks"     && <PayLinksTab merchant={merchant} toast={toast} />}

@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import {
   Plus, Pencil, Trash2, Eye, EyeOff, Search, ToggleLeft, ToggleRight,
-  ImagePlus, X, Loader2, Video, Play,
+  ImagePlus, X, Loader2, Video, Play, Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import MerchantBulkUploadSheet from "@/components/MerchantBulkUploadSheet";
+import MerchantInventoryAlerts from "@/components/MerchantInventoryAlerts";
 
 interface Product {
   id: string;
@@ -68,6 +70,7 @@ interface Props {
 
 const MerchantProductsTab = ({ merchantId }: Props) => {
   const { toast } = useToast();
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -268,8 +271,11 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
 
   return (
     <div className="space-y-4">
+      {/* Inventory Alerts */}
+      <MerchantInventoryAlerts merchantId={merchantId} />
+
       {/* Header bar */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <div className="flex-1 relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -278,10 +284,21 @@ const MerchantProductsTab = ({ merchantId }: Props) => {
             className="pl-9 h-10 rounded-xl"
           />
         </div>
+        <Button onClick={() => setShowBulkUpload(true)} variant="outline" className="shrink-0 rounded-xl gap-1.5 h-10" size="sm">
+          <Upload size={14} /> CSV
+        </Button>
         <Button onClick={openAdd} className="shrink-0 rounded-xl gap-1.5 h-10" size="sm">
           <Plus size={15} /> Add
         </Button>
       </div>
+
+      {/* Bulk Upload Sheet */}
+      <MerchantBulkUploadSheet
+        merchantId={merchantId}
+        open={showBulkUpload}
+        onOpenChange={setShowBulkUpload}
+        onSuccess={loadProducts}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2">
