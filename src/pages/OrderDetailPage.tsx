@@ -268,6 +268,16 @@ export default function OrderDetailPage() {
           </div>
         </div>
 
+        {/* Invoice Actions */}
+        <div className="flex gap-2">
+          <Button variant="outline" className="flex-1 gap-2" onClick={() => downloadInvoice(order)}>
+            <Download className="w-4 h-4" /> Download Invoice
+          </Button>
+          <Button variant="outline" className="flex-1 gap-2" onClick={() => printInvoice(order)}>
+            <Printer className="w-4 h-4" /> Print
+          </Button>
+        </div>
+
         {/* Actions */}
         <div className="flex gap-3">
           {canCancel && (

@@ -637,6 +637,11 @@ export default function AdminOrderManagement() {
                 </Card>
               )}
 
+              {/* Invoice Download */}
+              <Button variant="outline" className="w-full gap-2" onClick={() => downloadInvoice(selectedOrder)}>
+                <Download className="w-4 h-4" /> Download Invoice PDF
+              </Button>
+
               {/* Escrow Release Button */}
               {selectedOrder.status === "delivered" && selectedOrder.escrow_status === "held" && (
                 <Button
