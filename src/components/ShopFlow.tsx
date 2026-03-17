@@ -592,15 +592,40 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
     });
   };
 
-  // ── Promo ────────────────────────────────────────────────────────────────────
-  const applyPromo = () => {
+  // ── Promo (DB coupon validation) ──────────────────────────────────────────
+  const applyPromo = async () => {
     const upper = promoInput.trim().toUpperCase();
     if (!upper) return;
     if (appliedPromo?.code === upper) { toast.error("Already applied"); return; }
-    const disc = PROMO_CODES[upper];
-    if (!disc) { toast.error("Invalid promo code"); return; }
-    setAppliedPromo({ code: upper, discount: disc });
-    toast.success(`🎉 ${disc}% discount applied!`);
+    setPromoLoading(true);
+    try {
+      const { data, error } = await supabase.rpc("validate_and_apply_coupon", {
+        p_code: upper,
+        p_cart_total: cartSubtotal,
+        p_merchant_id: null,
+      });
+      const result = typeof data === "string" ? JSON.parse(data) : data;
+      if (error || !result?.valid) {
+        toast.error(result?.error || error?.message || "Invalid coupon code");
+        setPromoLoading(false);
+        return;
+      }
+      setAppliedPromo({
+        code: result.code,
+        discount: result.discount_amount,
+        coupon_id: result.coupon_id,
+        discount_type: result.discount_type,
+        discount_value: result.discount_value,
+        max_discount: result.max_discount,
+      });
+      const label = result.discount_type === "percentage"
+        ? `${result.discount_value}% off · saving ৳${Math.round(result.discount_amount).toLocaleString()}`
+        : `৳${Math.round(result.discount_amount).toLocaleString()} off`;
+      toast.success(`🎉 ${label}`);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to validate coupon");
+    }
+    setPromoLoading(false);
   };
   const removePromo = () => { setAppliedPromo(null); setPromoInput(""); };
 
