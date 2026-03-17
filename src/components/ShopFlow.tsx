@@ -1203,7 +1203,10 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                           <input type="text" value={promoInput} onChange={e => setPromoInput(e.target.value.toUpperCase())} onKeyDown={e => e.key === "Enter" && applyPromo()}
                             placeholder={t("enterPromoCode")} className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-muted border border-border text-[13px] text-foreground font-mono outline-none focus:border-primary transition-colors uppercase" />
                         </div>
-                        <motion.button whileTap={{ scale: 0.95 }} onClick={applyPromo} className="px-4 py-2.5 rounded-xl text-primary-foreground text-[13px] font-bold shrink-0" style={{ background: SHOP_GRADIENT }}>{t("apply")}</motion.button>
+                        <motion.button whileTap={{ scale: 0.95 }} onClick={applyPromo} disabled={promoLoading}
+                          className="px-4 py-2.5 rounded-xl text-primary-foreground text-[13px] font-bold shrink-0 disabled:opacity-50" style={{ background: SHOP_GRADIENT }}>
+                          {promoLoading ? <Loader2 size={14} className="animate-spin" /> : t("apply")}
+                        </motion.button>
                       </div>
                     )}
                   </div>
