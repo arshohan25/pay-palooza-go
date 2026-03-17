@@ -277,7 +277,7 @@ const Index = () => {
                 onPayBill={() => setShowPayBill(true)}
                 onAddMoney={() => setShowAddMoney(true)}
                 onRefer={() => handleTabChange("refer")}
-                onShop={() => setShowShop(true)}
+                onShop={() => navigate("/shop")}
                 onBankTransfer={() => setShowBankTransfer(true)}
                 onSavings={() => setShowSavings(true)}
               />
