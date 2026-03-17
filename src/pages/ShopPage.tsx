@@ -91,6 +91,25 @@ export default function ShopPage() {
     return Array.from(cats).sort();
   }, [products]);
 
+  const availableBrands = useMemo(() => {
+    const brands = new Set(
+      products
+        .filter((p) => selectedCategory === "All" || p.category === selectedCategory)
+        .map((p) => p.brand)
+        .filter(Boolean) as string[]
+    );
+    return Array.from(brands).sort();
+  }, [products, selectedCategory]);
+
+  const activeFilterCount = useMemo(() => {
+    let c = 0;
+    if (filters.minPrice !== null) c++;
+    if (filters.maxPrice !== null) c++;
+    if (filters.minRating !== null) c++;
+    if (filters.brands.length > 0) c++;
+    return c;
+  }, [filters]);
+
   const filtered = useMemo(() => {
     let result = products;
 
@@ -108,16 +127,27 @@ export default function ShopPage() {
       );
     }
 
+    // Apply advanced filters
+    if (filters.minPrice !== null) result = result.filter((p) => p.price >= filters.minPrice!);
+    if (filters.maxPrice !== null) result = result.filter((p) => p.price <= filters.maxPrice!);
+    if (filters.minRating !== null) result = result.filter((p) => p.rating >= filters.minRating!);
+    if (filters.brands.length > 0) result = result.filter((p) => p.brand && filters.brands.includes(p.brand));
+
     switch (sortBy) {
       case "price_low": result = [...result].sort((a, b) => a.price - b.price); break;
       case "price_high": result = [...result].sort((a, b) => b.price - a.price); break;
-      case "newest": result = [...result]; break; // already sorted by created_at desc
+      case "newest": result = [...result]; break;
       case "rating": result = [...result].sort((a, b) => b.rating - a.rating); break;
       case "popular": result = [...result].sort((a, b) => b.review_count - a.review_count); break;
     }
 
     return result;
-  }, [products, selectedCategory, search, sortBy]);
+  }, [products, selectedCategory, search, sortBy, filters]);
+
+  const recommendedProducts = useMemo(() => {
+    if (recommendedIds.length === 0) return [];
+    return recommendedIds.map((id) => products.find((p) => p.id === id)).filter(Boolean) as ShopProduct[];
+  }, [recommendedIds, products]);
 
   return (
     <div className="min-h-screen bg-background pb-20">
