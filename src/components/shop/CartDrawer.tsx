@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { ShoppingCart, Plus, Minus, Trash2, X } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ interface CartDrawerProps {
 }
 
 export default function CartDrawer({ items, onUpdateQty, onRemove, onCheckout, open, onOpenChange }: CartDrawerProps) {
+  const navigate = useNavigate();
   const total = items.reduce((s, i) => s + i.price * i.qty, 0);
   const count = items.reduce((s, i) => s + i.qty, 0);
 
@@ -79,7 +81,7 @@ export default function CartDrawer({ items, onUpdateQty, onRemove, onCheckout, o
                 <span>Total</span>
                 <span>৳{total.toLocaleString()}</span>
               </div>
-              <Button className="w-full" size="lg" onClick={onCheckout}>
+              <Button className="w-full" size="lg" onClick={() => { onOpenChange(false); navigate("/shop/checkout"); }}>
                 Proceed to Checkout
               </Button>
             </div>

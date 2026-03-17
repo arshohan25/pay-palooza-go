@@ -29,6 +29,7 @@ import NotFound from "./pages/NotFound";
 import TeamLoginPage from "./pages/TeamLoginPage";
 import RoleInstallPage from "./pages/RoleInstallPage";
 import ShopPage from "./pages/ShopPage";
+import ShopCheckoutPage from "./pages/ShopCheckoutPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import VendorStorePage from "./pages/VendorStorePage";
 import WishlistPage from "./pages/WishlistPage";
@@ -69,6 +70,7 @@ const App = () => (
                 <Route path="/install" element={<RoleInstallPage />} />
                 <Route path="/install/:role" element={<RoleInstallPage />} />
                 <Route path="/shop" element={<ShopPage />} />
+                <Route path="/shop/checkout" element={<ShopCheckoutPage />} />
                 <Route path="/shop/:slug" element={<VendorStorePage />} />
                 <Route path="/product/:id" element={<ProductDetailPage />} />
                 <Route path="/wishlist" element={<WishlistPage />} />
