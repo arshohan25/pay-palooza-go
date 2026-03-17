@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Search, ArrowLeft, ShoppingCart, Store, Loader2,
   ShieldCheck, Truck, RotateCcw, Flame, ChevronRight,
-  Clock, Sparkles, Zap, ClipboardList,
+  Clock, Sparkles, Zap, ClipboardList, Heart,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -80,6 +80,20 @@ function FlashCard({ product, onNavigate }: { product: ShopProduct; onNavigate: 
   );
 }
 
+/* ── Live countdown hook ── */
+function useCountdown(endsAt: string) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const diff = Math.max(0, new Date(endsAt).getTime() - now);
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  return { h, m, s, expired: diff <= 0 };
+}
+
 /* ── Shop Promo Banner Card ── */
 function ShopPromoBanner({ banner, onNavigate }: { banner: any; onNavigate: (path: string) => void }) {
   const handleClick = () => {
@@ -108,7 +122,7 @@ function ShopPromoBanner({ banner, onNavigate }: { banner: any; onNavigate: (pat
           {banner.media_type === "video" ? (
             <video src={banner.media_url} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover" />
           ) : (
-            <img src={banner.media_url} alt={banner.title} className="absolute inset-0 w-full h-full object-cover" />
+            <img src={banner.media_url} alt={banner.title || ""} className="absolute inset-0 w-full h-full object-cover" />
           )}
           <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent" />
         </>
@@ -124,12 +138,49 @@ function ShopPromoBanner({ banner, onNavigate }: { banner: any; onNavigate: (pat
             {banner.badge_text}
           </span>
         )}
-        <p className="text-sm font-bold text-white">{banner.title}</p>
+        {banner.title && <p className="text-sm font-bold text-white">{banner.title}</p>}
         {banner.subtitle && <p className="text-[11px] text-white/70 mt-0.5">{banner.subtitle}</p>}
       </div>
       {banner.link_url && (
         <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
       )}
+    </button>
+  );
+}
+
+/* ── Flash Sale Card ── */
+function FlashSaleCard({ sale, onNavigate }: { sale: any; onNavigate: (path: string) => void }) {
+  const prod = sale.merchant_products;
+  const { h, m, s, expired } = useCountdown(sale.ends_at);
+  if (expired) return null;
+
+  return (
+    <button
+      onClick={() => onNavigate(`/product/${prod?.id || sale.product_id}`)}
+      className="w-full rounded-2xl overflow-hidden bg-destructive/10 border border-destructive/20 p-3 flex items-center gap-3 text-left"
+    >
+      {/* Product image / emoji */}
+      <div className="w-14 h-14 rounded-xl bg-muted/30 flex items-center justify-center overflow-hidden shrink-0">
+        {prod?.image_url ? (
+          <img src={prod.image_url} alt={prod?.name} className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-2xl">{prod?.emoji || "⚡"}</span>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] font-bold text-destructive uppercase tracking-wide">⚡ Flash Sale</p>
+        <p className="text-sm font-semibold text-foreground truncate">{prod?.name}</p>
+        <div className="flex items-baseline gap-2 mt-0.5">
+          <span className="text-base font-extrabold text-destructive">৳{sale.sale_price}</span>
+          <span className="text-xs text-muted-foreground line-through">৳{prod?.price}</span>
+        </div>
+      </div>
+      <div className="text-right shrink-0">
+        <p className="text-[9px] text-muted-foreground">Ends in</p>
+        <p className="text-sm font-bold text-foreground tabular-nums">
+          {h}h {m}m {s}s
+        </p>
+      </div>
     </button>
   );
 }
@@ -152,6 +203,7 @@ export default function ShopPage() {
   const [recommendedIds, setRecommendedIds] = useState<string[]>([]);
   const [recsLoading, setRecsLoading] = useState(false);
   const [flashSales, setFlashSales] = useState<any[]>([]);
+  const [visibleCount, setVisibleCount] = useState(20);
 
   // Load products
   useEffect(() => {
@@ -280,6 +332,12 @@ export default function ShopPage() {
     return result;
   }, [products, selectedCategory, search, sortBy, filters]);
 
+  // Reset pagination when filters change
+  useEffect(() => { setVisibleCount(20); }, [selectedCategory, search, sortBy, filters]);
+
+  const paginatedProducts = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
+  const hasMore = visibleCount < filtered.length;
+
   const trendingProducts = useMemo(
     () => [...products].sort((a, b) => b.review_count - a.review_count).slice(0, 10),
     [products]
@@ -317,6 +375,9 @@ export default function ShopPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          <Button variant="ghost" size="icon" className="shrink-0 rounded-full h-8 w-8" onClick={() => navigate("/wishlist")}>
+            <Heart className="w-4 h-4" />
+          </Button>
           <Button variant="ghost" size="icon" className="shrink-0 rounded-full h-8 w-8" onClick={() => navigate("/orders")}>
             <ClipboardList className="w-4 h-4" />
           </Button>
@@ -371,36 +432,10 @@ export default function ShopPage() {
 
       {/* ── Flash Sale Banner ── */}
       {!loading && flashSales.length > 0 && !search.trim() && selectedCategory === "All" && (
-        <Section delay={0.17} className="px-4 pt-3">
-          {flashSales.slice(0, 1).map((sale) => {
-            const prod = sale.merchant_products;
-            const endsAt = new Date(sale.ends_at);
-            const now = new Date();
-            const diffMs = endsAt.getTime() - now.getTime();
-            const hours = Math.floor(diffMs / 3600000);
-            const mins = Math.floor((diffMs % 3600000) / 60000);
-            return (
-              <button
-                key={sale.id}
-                onClick={() => navigate(`/product/${prod?.id || sale.product_id}`)}
-                className="w-full rounded-2xl overflow-hidden bg-destructive/10 border border-destructive/20 p-4 flex items-center gap-3 text-left"
-              >
-                <Zap className="w-8 h-8 text-destructive shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold text-destructive uppercase tracking-wide">⚡ Flash Sale</p>
-                  <p className="text-sm font-semibold text-foreground truncate">{prod?.name}</p>
-                  <div className="flex items-baseline gap-2 mt-0.5">
-                    <span className="text-base font-extrabold text-destructive">৳{sale.sale_price}</span>
-                    <span className="text-xs text-muted-foreground line-through">৳{prod?.price}</span>
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-[9px] text-muted-foreground">Ends in</p>
-                  <p className="text-sm font-bold text-foreground">{hours}h {mins}m</p>
-                </div>
-              </button>
-            );
-          })}
+        <Section delay={0.17} className="px-4 pt-3 space-y-2">
+          {flashSales.slice(0, 1).map((sale) => (
+            <FlashSaleCard key={sale.id} sale={sale} onNavigate={navigate} />
+          ))}
         </Section>
       )}
 
@@ -496,7 +531,7 @@ export default function ShopPage() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
-            {filtered.map((product, i) => (
+            {paginatedProducts.map((product, i) => (
               <motion.div
                 key={product.id}
                 initial={{ opacity: 0, y: 12 }}
@@ -513,6 +548,20 @@ export default function ShopPage() {
               </motion.div>
             ))}
           </motion.div>
+        )}
+
+        {/* Load More */}
+        {!loading && hasMore && (
+          <div className="flex justify-center pt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full px-6"
+              onClick={() => setVisibleCount((c) => c + 20)}
+            >
+              Load More ({filtered.length - visibleCount} remaining)
+            </Button>
+          </div>
         )}
 
         {/* AI Recommendations */}

@@ -18,6 +18,7 @@ import WriteReviewForm from "@/components/shop/WriteReviewForm";
 import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { useAuth } from "@/hooks/use-auth";
+import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
 import { cn } from "@/lib/utils";
 
 interface Variant {
@@ -52,6 +53,12 @@ export default function ProductDetailPage() {
   const { addToCart } = useCart();
   const { isWishlisted, toggle: toggleWishlist } = useWishlist();
   const { user } = useAuth();
+  const { addViewed } = useRecentlyViewed();
+
+  // Track recently viewed
+  useEffect(() => {
+    if (id) addViewed(id);
+  }, [id, addViewed]);
 
   const [product, setProduct] = useState<any>(null);
   const [variants, setVariants] = useState<Variant[]>([]);
