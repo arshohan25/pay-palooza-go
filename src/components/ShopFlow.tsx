@@ -1187,7 +1187,12 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                         <Gift size={16} className="text-primary shrink-0" />
                         <div className="flex-1">
                           <p className="text-[13px] font-bold text-foreground">{appliedPromo.code}</p>
-                          <p className="text-[11px] text-muted-foreground">{appliedPromo.discount}% off · saving ৳{discountAmt.toLocaleString()}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {appliedPromo.discount_type === "percentage"
+                              ? `${appliedPromo.discount_value}% off${appliedPromo.max_discount ? ` (max ৳${appliedPromo.max_discount})` : ""}`
+                              : `৳${Math.round(appliedPromo.discount).toLocaleString()} off`
+                            } · saving ৳{discountAmt.toLocaleString()}
+                          </p>
                         </div>
                         <button onClick={removePromo} className="w-7 h-7 rounded-full bg-muted flex items-center justify-center"><X size={12} className="text-muted-foreground" /></button>
                       </div>
