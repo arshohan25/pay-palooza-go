@@ -410,7 +410,7 @@ const Index = () => {
         {showRecharge  && <MobileRechargeFlow key="recharge-flow" onClose={() => setShowRecharge(false)} />}
         {showPayBill   && <PayBillFlow key="paybill-flow" onClose={() => setShowPayBill(false)} />}
         {showAddMoney  && <AddMoneyFlow key="addmoney-flow" onClose={() => setShowAddMoney(false)} />}
-        {showShop      && <ShopFlow key="shop-flow" onClose={() => setShowShop(false)} />}
+        
         {showBankTransfer && <BankTransferFlow key="bank-transfer-flow" onClose={() => setShowBankTransfer(false)} />}
         {showSavings   && <SavingsFlow key="savings-flow" onClose={() => setShowSavings(false)} />}
         {showKycFlow   && <KycFlow key="kyc-flow" onClose={() => setShowKycFlow(false)} />}
