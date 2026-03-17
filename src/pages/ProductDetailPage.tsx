@@ -428,6 +428,58 @@ export default function ProductDetailPage() {
   );
 }
 
+/* ── Related products row ── */
+function RelatedProductsRow({ title, products, seeAllLink, onNavigate }: {
+  title: string; products: any[]; seeAllLink: string; onNavigate: (id: string) => void;
+}) {
+  const navigate = useNavigate();
+  return (
+    <div className="space-y-2.5">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-bold text-foreground">{title}</h3>
+        <button onClick={() => navigate(seeAllLink)} className="text-xs font-medium text-primary flex items-center gap-0.5">
+          See All <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+      <div className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory pb-1 -mx-4 px-4 scrollbar-hide">
+        {products.map((p) => {
+          const discount = p.original_price && p.original_price > p.price
+            ? Math.round(((p.original_price - p.price) / p.original_price) * 100) : 0;
+          return (
+            <button key={p.id} onClick={() => onNavigate(p.id)}
+              className="snap-start shrink-0 w-[140px] bg-card border border-border/60 rounded-xl overflow-hidden text-left hover:shadow-md transition-shadow">
+              <div className="aspect-square relative bg-muted/30">
+                <img src={p.image_url || "/placeholder.svg"} alt={p.name}
+                  className="w-full h-full object-cover" loading="lazy" />
+                {discount > 0 && (
+                  <span className="absolute top-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-destructive text-destructive-foreground">
+                    -{discount}%
+                  </span>
+                )}
+              </div>
+              <div className="p-2 space-y-1">
+                <p className="text-[11px] font-medium text-foreground leading-tight line-clamp-2">{p.name}</p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-xs font-bold text-foreground">৳{p.price?.toLocaleString()}</span>
+                  {p.original_price && p.original_price > p.price && (
+                    <span className="text-[10px] text-muted-foreground line-through">৳{p.original_price?.toLocaleString()}</span>
+                  )}
+                </div>
+                {p.rating > 0 && (
+                  <div className="flex items-center gap-0.5">
+                    <Star className="w-2.5 h-2.5 fill-accent text-accent" />
+                    <span className="text-[10px] text-muted-foreground">{p.rating?.toFixed(1)}</span>
+                  </div>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /* ── Rating distribution bar chart ── */
 function RatingDistribution({ rating, count }: { rating: number; count: number }) {
   if (!count) return null;
