@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import {
   Plus, Pencil, Trash2, Eye, EyeOff, Search, ToggleLeft, ToggleRight,
-  ImagePlus, X, Loader2, Video, Play,
+  ImagePlus, X, Loader2, Video, Play, Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import MerchantBulkUploadSheet from "@/components/MerchantBulkUploadSheet";
+import MerchantInventoryAlerts from "@/components/MerchantInventoryAlerts";
 
 interface Product {
   id: string;
