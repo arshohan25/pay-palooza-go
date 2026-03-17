@@ -89,11 +89,11 @@ function ProductsTab() {
           <p className="text-xs text-muted-foreground">Total Products</p>
         </CardContent></Card>
         <Card className="border-0 shadow-sm"><CardContent className="p-3 text-center">
-          <p className="text-2xl font-bold text-emerald-600">{products.filter(p => p.is_active).length}</p>
+          <p className="text-2xl font-bold text-primary">{products.filter(p => p.is_active).length}</p>
           <p className="text-xs text-muted-foreground">Active</p>
         </CardContent></Card>
         <Card className="border-0 shadow-sm"><CardContent className="p-3 text-center">
-          <p className="text-2xl font-bold text-amber-600">{products.filter(p => (p.stock ?? 0) <= 5).length}</p>
+          <p className="text-2xl font-bold text-destructive">{products.filter(p => (p.stock ?? 0) <= 5).length}</p>
           <p className="text-xs text-muted-foreground">Low Stock</p>
         </CardContent></Card>
       </div>
