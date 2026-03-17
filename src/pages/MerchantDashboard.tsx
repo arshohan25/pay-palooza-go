@@ -74,7 +74,7 @@ const mainTabs: { id: MerchTab; icon: typeof QrCode; label: string }[] = [
   { id: "overview",     icon: BarChart3,    label: "Overview" },
   { id: "products",     icon: Package,      label: "Products" },
   { id: "orders",       icon: Receipt,      label: "Orders" },
-  { id: "qr",           icon: QrCode,       label: "QR Code" },
+  { id: "store",        icon: Store,        label: "Store" },
 ];
 
 const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: string }[] = [
