@@ -21,7 +21,7 @@ import PaymentFlow from "@/components/PaymentFlow";
 import MobileRechargeFlow from "@/components/MobileRechargeFlow";
 import PayBillFlow from "@/components/PayBillFlow";
 import AddMoneyFlow from "@/components/AddMoneyFlow";
-import ShopFlow from "@/components/ShopFlow";
+
 import BankTransferFlow from "@/components/BankTransferFlow";
 import DynamicQrPaySheet from "@/components/DynamicQrPaySheet";
 
