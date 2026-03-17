@@ -214,6 +214,19 @@ export default function ShopPage() {
     loadRecs();
   }, [user]);
 
+  // Load flash sales
+  useEffect(() => {
+    const loadFlash = async () => {
+      const { data } = await (supabase as any)
+        .from("flash_sales")
+        .select("*, merchant_products(id, name, price, image_url, emoji)")
+        .eq("is_active", true)
+        .lte("starts_at", new Date().toISOString())
+        .gte("ends_at", new Date().toISOString());
+      if (data) setFlashSales(data);
+    };
+    loadFlash();
+
   const categories = useMemo(() => {
     const cats = new Set(products.map((p) => p.category));
     return Array.from(cats).sort();
