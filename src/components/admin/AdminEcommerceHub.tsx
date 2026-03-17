@@ -231,7 +231,7 @@ function StoresTab() {
                 {detailStore.banner_url && <img src={detailStore.banner_url} alt="Banner" className="w-full h-32 object-cover rounded-xl" />}
                 <div className="text-sm space-y-1">
                   <p><span className="text-muted-foreground">Slug:</span> <span className="text-foreground">/{detailStore.slug}</span></p>
-                  <p><span className="text-muted-foreground">Status:</span> <Badge variant={detailStore.status === "active" ? "default" : "destructive"}>{detailStore.status}</Badge></p>
+                  <p><span className="text-muted-foreground">Status:</span> <Badge variant={detailStore.is_active ? "default" : "destructive"}>{detailStore.is_active ? "Active" : "Inactive"}</Badge></p>
                   <p><span className="text-muted-foreground">Description:</span> <span className="text-foreground">{detailStore.description || "—"}</span></p>
                   <p><span className="text-muted-foreground">Created:</span> <span className="text-foreground">{new Date(detailStore.created_at).toLocaleDateString()}</span></p>
                 </div>
