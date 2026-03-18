@@ -56,7 +56,7 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
       setForm({
         label: addr.label, recipient_name: addr.recipient_name, phone: addr.phone,
         address_line: addr.address_line, city: addr.city, area: addr.area || "",
-        postal_code: addr.postal_code || "", is_default: addr.is_default,
+        is_default: addr.is_default,
       });
     }
     setEditing(addr);
