@@ -259,12 +259,20 @@ const DonationsPage = () => {
                     </div>
                   </div>
 
-                  {/* Large amount display */}
+                  {/* Single editable amount field */}
                   <div className="text-center py-6">
                     <p className="text-xs text-muted-foreground uppercase tracking-[0.2em] mb-3">Amount</p>
-                    <div className="flex items-baseline justify-center gap-1">
+                    <div className="flex items-center justify-center gap-1">
                       <span className="text-3xl font-medium text-muted-foreground/50">৳</span>
-                      <span className="text-5xl font-extrabold text-foreground tabular-nums tracking-tight">{amount || "0"}</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={amount}
+                        onChange={e => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
+                        placeholder="0"
+                        autoFocus
+                        className="w-full max-w-[220px] text-5xl font-extrabold text-center bg-transparent border-b-2 border-transparent focus:border-primary/40 outline-none transition-all text-foreground placeholder:text-muted-foreground/30 tabular-nums tracking-tight"
+                      />
                     </div>
                   </div>
 
@@ -285,16 +293,6 @@ const DonationsPage = () => {
                       </motion.button>
                     ))}
                   </div>
-
-                  {/* Custom input */}
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="Custom amount"
-                    value={amount}
-                    onChange={e => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
-                    className="w-full text-center text-lg font-semibold py-3 bg-muted/20 rounded-2xl border-0 ring-1 ring-border/40 focus:ring-2 focus:ring-primary/40 outline-none transition-all text-foreground placeholder:text-muted-foreground/40"
-                  />
 
                   {/* Collapsible message */}
                   <div>
