@@ -174,7 +174,9 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
   }, [uiMessages.length, activeChat]);
 
   // Typing indicator
-  const { remoteTyping, sendTyping } = useTypingIndicator(activeChat, userId);
+  const { typingUsers, setTyping } = useTypingIndicator(activeChat, userId, "Merchant");
+  const remoteTyping = typingUsers.length > 0;
+  const sendTyping = () => setTyping(true);
 
   // Send handler
   const handleSend = async () => {
