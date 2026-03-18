@@ -525,9 +525,6 @@ export default function ProductDetailPage() {
           disabled={chattingWithMerchant || product.merchants?.user_id === user?.id}>
           {chattingWithMerchant ? <Loader2 className="w-5 h-5 animate-spin" /> : <MessageCircle className="w-5 h-5" />}
         </Button>
-        <Button variant="outline" size="icon" className="rounded-xl shrink-0 h-11 w-11" onClick={() => navigate("/shop/checkout")}>
-          <ShoppingCart className="w-5 h-5" />
-        </Button>
         <Button variant="outline" size="lg" className="flex-1 rounded-xl h-11 text-sm font-bold"
           onClick={handleAddToCart} disabled={product.stock <= 0}>
           Add to Cart
