@@ -54,9 +54,7 @@ export default function ShopCheckoutPage() {
   const { items, clearCart, total: subtotal, count } = useCart();
 
   const [walletBalance, setWalletBalance] = useState(getBalance());
-  const [addresses, setAddresses] = useState<Address[]>([]);
-  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
-  const [showAddressPicker, setShowAddressPicker] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [payMethod, setPayMethod] = useState<PaymentMethod>("wallet");
   const [promoInput, setPromoInput] = useState("");
   const [appliedPromo, setAppliedPromo] = useState<AppliedCoupon | null>(null);
