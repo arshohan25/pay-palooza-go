@@ -4158,6 +4158,18 @@ export type Database = {
         }
         Returns: Json
       }
+      process_donation: {
+        Args: {
+          p_amount: number
+          p_cause_icon?: string
+          p_cause_name: string
+          p_frequency?: string
+          p_is_anonymous?: boolean
+          p_is_recurring?: boolean
+          p_message?: string
+        }
+        Returns: Json
+      }
       record_transaction: {
         Args: {
           p_amount: number
