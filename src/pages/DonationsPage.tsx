@@ -1,60 +1,40 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Heart, GraduationCap, Stethoscope, Droplets, Wheat, Baby, Check, History, Loader2, Trophy, EyeOff, Share2, RefreshCw, Trash2, CalendarClock, Home, Sparkles } from "lucide-react";
+import { ArrowLeft, Heart, GraduationCap, Stethoscope, Droplets, Wheat, Baby, Check, History, Loader2, Trophy, EyeOff, Share2, RefreshCw, Trash2, CalendarClock, Home } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { verifyPin } from "@/lib/verifyPin";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import ShareReceiptSheet, { ReceiptData } from "@/components/ShareReceiptSheet";
 import { format } from "date-fns";
 import { fireSuccessConfetti } from "@/lib/confetti";
-import { springTransition } from "@/lib/transitions";
 
 const CAUSES = [
-  { id: "education", name: "Education", icon: GraduationCap, gradient: "from-blue-500 to-indigo-600", emoji: "📚" },
-  { id: "disaster", name: "Disaster Relief", icon: Heart, gradient: "from-orange-500 to-red-600", emoji: "🆘" },
-  { id: "healthcare", name: "Healthcare", icon: Stethoscope, gradient: "from-emerald-500 to-teal-600", emoji: "🏥" },
-  { id: "water", name: "Clean Water", icon: Droplets, gradient: "from-cyan-500 to-blue-600", emoji: "💧" },
-  { id: "food", name: "Food Security", icon: Wheat, gradient: "from-amber-500 to-yellow-600", emoji: "🌾" },
-  { id: "orphan", name: "Orphan Support", icon: Baby, gradient: "from-pink-500 to-rose-600", emoji: "👶" },
+  { id: "education", name: "Education", icon: GraduationCap, gradient: "from-blue-500 to-indigo-600", desc: "Support students in need" },
+  { id: "disaster", name: "Disaster Relief", icon: Heart, gradient: "from-orange-500 to-red-600", desc: "Help communities rebuild" },
+  { id: "healthcare", name: "Healthcare", icon: Stethoscope, gradient: "from-emerald-500 to-teal-600", desc: "Access to medical care" },
+  { id: "water", name: "Clean Water", icon: Droplets, gradient: "from-cyan-500 to-blue-600", desc: "Safe drinking water for all" },
+  { id: "food", name: "Food Security", icon: Wheat, gradient: "from-amber-500 to-yellow-600", desc: "Fight hunger together" },
+  { id: "orphan", name: "Orphan Support", icon: Baby, gradient: "from-pink-500 to-rose-600", desc: "A better future for children" },
 ];
+
+const CAUSE_EMOJI: Record<string, string> = {
+  Education: "📚", "Disaster Relief": "🆘", Healthcare: "🏥",
+  "Clean Water": "💧", "Food Security": "🌾", "Orphan Support": "👶",
+};
 
 const PRESET_AMOUNTS = [50, 100, 500, 1000];
 
 type Step = "cause" | "amount" | "pin" | "success";
 
-interface DonationRecord {
-  id: string;
-  cause_name: string;
-  cause_icon: string | null;
-  amount: number;
-  message: string | null;
-  created_at: string;
-}
+interface DonationRecord { id: string; cause_name: string; cause_icon: string | null; amount: number; message: string | null; created_at: string; }
+interface LeaderboardEntry { donor_name: string; total_amount: number; donation_count: number; cause_name: string; }
+interface RecurringDonation { id: string; cause_name: string; cause_icon: string | null; amount: number; frequency: string; is_active: boolean; next_run_at: string; last_run_at: string | null; message: string | null; is_anonymous: boolean; }
 
-interface LeaderboardEntry {
-  donor_name: string;
-  total_amount: number;
-  donation_count: number;
-  cause_name: string;
-}
-
-interface RecurringDonation {
-  id: string;
-  cause_name: string;
-  cause_icon: string | null;
-  amount: number;
-  frequency: string;
-  is_active: boolean;
-  next_run_at: string;
-  last_run_at: string | null;
-  message: string | null;
-  is_anonymous: boolean;
-}
+const spring = { type: "spring" as const, stiffness: 500, damping: 32 };
 
 const DonationsPage = () => {
   const navigate = useNavigate();
@@ -68,28 +48,22 @@ const DonationsPage = () => {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [history, setHistory] = useState<DonationRecord[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-
   const [isRecurring, setIsRecurring] = useState(false);
   const [frequency, setFrequency] = useState<"weekly" | "monthly">("monthly");
   const [recurringList, setRecurringList] = useState<RecurringDonation[]>([]);
   const [recurringLoading, setRecurringLoading] = useState(false);
-
   const [shareOpen, setShareOpen] = useState(false);
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
-
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [leaderboardCause, setLeaderboardCause] = useState<string | null>(null);
+  const [msgExpanded, setMsgExpanded] = useState(false);
+  const pinRef = useRef<HTMLInputElement>(null);
 
   const fetchHistory = async () => {
     if (!user) return;
     setHistoryLoading(true);
-    const { data } = await supabase
-      .from("donations")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(50);
+    const { data } = await supabase.from("donations").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50);
     setHistory((data as DonationRecord[]) ?? []);
     setHistoryLoading(false);
   };
@@ -97,35 +71,21 @@ const DonationsPage = () => {
   const fetchRecurring = async () => {
     if (!user) return;
     setRecurringLoading(true);
-    const { data } = await supabase
-      .from("recurring_donations")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+    const { data } = await supabase.from("recurring_donations").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
     setRecurringList((data as RecurringDonation[]) ?? []);
     setRecurringLoading(false);
   };
 
   const fetchLeaderboard = async (cause?: string | null) => {
     setLeaderboardLoading(true);
-    const { data } = await supabase.rpc("donation_leaderboard", {
-      p_cause: cause || null,
-    });
+    const { data } = await supabase.rpc("donation_leaderboard", { p_cause: cause || null });
     setLeaderboard((data as LeaderboardEntry[]) ?? []);
     setLeaderboardLoading(false);
   };
 
-  useEffect(() => {
-    if (user) {
-      fetchHistory();
-      fetchRecurring();
-    }
-  }, [user]);
+  useEffect(() => { if (user) { fetchHistory(); fetchRecurring(); } }, [user]);
 
-  const handleSelectCause = (cause: typeof CAUSES[0]) => {
-    setSelectedCause(cause);
-    setStep("amount");
-  };
+  const handleSelectCause = (cause: typeof CAUSES[0]) => { setSelectedCause(cause); setStep("amount"); };
 
   const handleAmountNext = () => {
     const num = parseFloat(amount);
@@ -140,44 +100,28 @@ const DonationsPage = () => {
     try {
       const valid = await verifyPin(pin);
       if (!valid) { toast.error("Incorrect PIN"); setPin(""); setLoading(false); return; }
-
       const num = parseFloat(amount);
       const desc = `Donation: ${selectedCause!.name}${message ? ` — ${message}` : ""}`;
+      const emoji = CAUSE_EMOJI[selectedCause!.name] || "❤️";
 
-      const { data, error } = await supabase.rpc("record_transaction", {
-        p_type: "payment",
-        p_amount: num,
-        p_fee: 0,
-        p_description: desc,
-        p_reference: `DON-${selectedCause!.id.toUpperCase()}`,
-        p_recipient_name: selectedCause!.name,
+      const { error } = await supabase.rpc("record_transaction", {
+        p_type: "payment", p_amount: num, p_fee: 0, p_description: desc,
+        p_reference: `DON-${selectedCause!.id.toUpperCase()}`, p_recipient_name: selectedCause!.name,
       });
-
       if (error) throw error;
 
       await supabase.from("donations").insert({
-        user_id: user!.id,
-        cause_name: selectedCause!.name,
-        cause_icon: selectedCause!.emoji,
-        amount: num,
-        message: message || null,
-        is_anonymous: isAnonymous,
+        user_id: user!.id, cause_name: selectedCause!.name, cause_icon: emoji,
+        amount: num, message: message || null, is_anonymous: isAnonymous,
       });
 
       if (isRecurring) {
         const nextRun = new Date();
         if (frequency === "weekly") nextRun.setDate(nextRun.getDate() + 7);
         else nextRun.setMonth(nextRun.getMonth() + 1);
-
         await supabase.from("recurring_donations").insert({
-          user_id: user!.id,
-          cause_name: selectedCause!.name,
-          cause_icon: selectedCause!.emoji,
-          amount: num,
-          frequency,
-          message: message || null,
-          is_anonymous: isAnonymous,
-          next_run_at: nextRun.toISOString(),
+          user_id: user!.id, cause_name: selectedCause!.name, cause_icon: emoji,
+          amount: num, frequency, message: message || null, is_anonymous: isAnonymous, next_run_at: nextRun.toISOString(),
         });
       }
 
@@ -209,10 +153,7 @@ const DonationsPage = () => {
   };
 
   const toggleRecurringActive = async (id: string, currentActive: boolean) => {
-    await supabase.from("recurring_donations").update({
-      is_active: !currentActive,
-      updated_at: new Date().toISOString(),
-    }).eq("id", id);
+    await supabase.from("recurring_donations").update({ is_active: !currentActive, updated_at: new Date().toISOString() }).eq("id", id);
     setRecurringList(prev => prev.map(r => r.id === id ? { ...r, is_active: !currentActive } : r));
     toast.success(!currentActive ? "Schedule resumed" : "Schedule paused");
   };
@@ -224,54 +165,45 @@ const DonationsPage = () => {
   };
 
   const resetFlow = () => {
-    setStep("cause");
-    setSelectedCause(null);
-    setAmount("");
-    setMessage("");
-    setPin("");
-    setIsAnonymous(false);
-    setIsRecurring(false);
-    setFrequency("monthly");
+    setStep("cause"); setSelectedCause(null); setAmount(""); setMessage("");
+    setPin(""); setIsAnonymous(false); setIsRecurring(false); setFrequency("monthly"); setMsgExpanded(false);
   };
 
   const causeForIcon = (name: string) => CAUSES.find(c => c.name === name);
 
-  const MEDAL_BG = ["bg-yellow-500/10 border-yellow-500/30", "bg-slate-400/10 border-slate-400/30", "bg-amber-700/10 border-amber-700/30"];
-  const MEDAL_TEXT = ["text-yellow-500", "text-slate-400", "text-amber-700"];
+  const MEDALS = ["🥇", "🥈", "🥉"];
+  const MEDAL_BAR = ["from-yellow-400 to-amber-500", "from-slate-300 to-slate-400", "from-amber-600 to-amber-700"];
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Premium Header */}
-      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl">
-        <div className="flex items-center gap-3 px-4 py-3.5 max-w-md mx-auto">
+      {/* Minimal Header */}
+      <div className="sticky top-0 z-30 bg-background/70 backdrop-blur-xl">
+        <div className="flex items-center gap-3 px-5 py-4 max-w-md mx-auto">
           <button
             onClick={() => step === "cause" ? navigate(-1) : resetFlow()}
-            className="w-9 h-9 rounded-full bg-muted/60 flex items-center justify-center active:scale-95 transition-transform"
+            className="w-8 h-8 rounded-full bg-muted/50 flex items-center justify-center active:scale-90 transition-transform"
           >
-            <ArrowLeft size={18} className="text-foreground" />
+            <ArrowLeft size={16} className="text-foreground" />
           </button>
-          <div className="flex-1">
-            <h1 className="text-lg font-bold text-foreground tracking-tight">Donations</h1>
-          </div>
-          <Sparkles size={18} className="text-primary/60" />
+          <h1 className="text-base font-semibold text-foreground tracking-tight">Donations</h1>
         </div>
-        <div className="h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
       </div>
 
-      <div className="max-w-md mx-auto px-4 pt-3">
+      <div className="max-w-md mx-auto px-5 pt-1">
         <Tabs defaultValue="donate">
-          <TabsList className="w-full bg-transparent p-0 h-auto gap-1 mb-4">
-            <TabsTrigger value="donate" className="flex-1 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md bg-muted/50 text-muted-foreground text-xs py-2 transition-all">
-              <Heart size={13} className="mr-1" /> Donate
+          {/* iOS-style segmented control */}
+          <TabsList className="w-full bg-muted/40 rounded-xl p-1 h-auto gap-0 mb-5">
+            <TabsTrigger value="donate" className="flex-1 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm bg-transparent text-muted-foreground text-xs py-2 font-medium transition-all">
+              Donate
             </TabsTrigger>
-            <TabsTrigger value="recurring" className="flex-1 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md bg-muted/50 text-muted-foreground text-xs py-2 transition-all" onClick={() => { if (recurringList.length === 0) fetchRecurring(); }}>
-              <RefreshCw size={13} className="mr-1" /> Recurring
+            <TabsTrigger value="recurring" className="flex-1 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm bg-transparent text-muted-foreground text-xs py-2 font-medium transition-all" onClick={() => { if (recurringList.length === 0) fetchRecurring(); }}>
+              Recurring
             </TabsTrigger>
-            <TabsTrigger value="history" className="flex-1 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md bg-muted/50 text-muted-foreground text-xs py-2 transition-all">
-              <History size={13} className="mr-1" /> History
+            <TabsTrigger value="history" className="flex-1 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm bg-transparent text-muted-foreground text-xs py-2 font-medium transition-all">
+              History
             </TabsTrigger>
-            <TabsTrigger value="leaderboard" className="flex-1 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md bg-muted/50 text-muted-foreground text-xs py-2 transition-all" onClick={() => { if (leaderboard.length === 0) fetchLeaderboard(leaderboardCause); }}>
-              <Trophy size={13} className="mr-1" /> Top
+            <TabsTrigger value="leaderboard" className="flex-1 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm bg-transparent text-muted-foreground text-xs py-2 font-medium transition-all" onClick={() => { if (leaderboard.length === 0) fetchLeaderboard(leaderboardCause); }}>
+              Top
             </TabsTrigger>
           </TabsList>
 
@@ -280,26 +212,36 @@ const DonationsPage = () => {
             <AnimatePresence mode="wait">
               {/* Step 1: Cause Selection */}
               {step === "cause" && (
-                <motion.div key="cause" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.3 }}>
-                  <div className="text-center mb-6 mt-2">
-                    <h2 className="text-2xl font-bold text-foreground tracking-tight">Make a Difference</h2>
-                    <p className="text-sm text-muted-foreground mt-1">Choose a cause close to your heart</p>
+                <motion.div key="cause" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.35 }}>
+                  {/* Soft gradient blob */}
+                  <div className="relative text-center mb-8 mt-2">
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-48 h-48 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+                    <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.1, ...spring }}>
+                      <Heart size={20} className="text-primary mx-auto mb-2 opacity-60" />
+                    </motion.div>
+                    <h2 className="text-2xl font-extrabold text-foreground tracking-tight relative">Choose a Cause</h2>
+                    <p className="text-sm text-muted-foreground mt-1.5 relative">Your generosity changes lives</p>
                   </div>
+
                   <div className="grid grid-cols-2 gap-3">
                     {CAUSES.map((cause, i) => (
                       <motion.button
                         key={cause.id}
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 24 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.06 * i, ...springTransition }}
+                        transition={{ delay: 0.05 * i, ...spring }}
+                        whileHover={{ y: -2 }}
+                        whileTap={{ scale: 0.97 }}
                         onClick={() => handleSelectCause(cause)}
-                        className="group flex flex-col items-center gap-3 p-6 rounded-2xl bg-card shadow-sm hover:shadow-lg active:scale-[0.96] transition-all duration-200 text-center relative overflow-hidden"
+                        className="flex flex-col items-center gap-2.5 p-5 pb-4 rounded-3xl bg-card ring-1 ring-border/50 hover:ring-primary/30 transition-all duration-200 text-center"
                       >
-                        <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <div className={`bg-gradient-to-br ${cause.gradient} w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/10`}>
-                          <cause.icon size={28} />
+                        <div className={`bg-gradient-to-br ${cause.gradient} w-14 h-14 rounded-2xl flex items-center justify-center text-white`}>
+                          <cause.icon size={26} />
                         </div>
-                        <p className="text-sm font-semibold text-foreground">{cause.name}</p>
+                        <div>
+                          <p className="text-sm font-semibold text-foreground leading-tight">{cause.name}</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{cause.desc}</p>
+                        </div>
                       </motion.button>
                     ))}
                   </div>
@@ -308,91 +250,89 @@ const DonationsPage = () => {
 
               {/* Step 2: Amount */}
               {step === "amount" && selectedCause && (
-                <motion.div key="amount" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.3 }} className="space-y-5">
-                  {/* Selected cause banner */}
-                  <div className={`bg-gradient-to-r ${selectedCause.gradient} rounded-2xl p-5 text-white relative overflow-hidden`}>
-                    <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/10 blur-xl" />
-                    <div className="flex items-center gap-3 relative z-10">
-                      <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                        <selectedCause.icon size={22} />
-                      </div>
-                      <div>
-                        <p className="font-bold text-lg">{selectedCause.name}</p>
-                        <p className="text-white/70 text-xs">Your contribution matters</p>
-                      </div>
+                <motion.div key="amount" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} transition={{ duration: 0.3 }} className="space-y-6">
+                  {/* Compact cause pill */}
+                  <div className="flex justify-center">
+                    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r ${selectedCause.gradient} text-white text-sm font-medium`}>
+                      <selectedCause.icon size={16} />
+                      {selectedCause.name}
                     </div>
                   </div>
 
-                  {/* Amount display */}
-                  <div className="text-center py-4">
-                    <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">Donation Amount</p>
-                    <div className="text-4xl font-bold text-foreground tracking-tight">
-                      ৳{amount || "0"}
+                  {/* Large amount display */}
+                  <div className="text-center py-6">
+                    <p className="text-xs text-muted-foreground uppercase tracking-[0.2em] mb-3">Amount</p>
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span className="text-3xl font-medium text-muted-foreground/50">৳</span>
+                      <span className="text-5xl font-extrabold text-foreground tabular-nums tracking-tight">{amount || "0"}</span>
                     </div>
                   </div>
 
                   {/* Preset pills */}
                   <div className="flex gap-2 justify-center">
                     {PRESET_AMOUNTS.map(a => (
-                      <button
+                      <motion.button
                         key={a}
+                        whileTap={{ scale: 0.92 }}
                         onClick={() => setAmount(String(a))}
                         className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
                           amount === String(a)
-                            ? "bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-105"
-                            : "bg-muted/60 text-foreground hover:bg-muted"
+                            ? `bg-gradient-to-r ${selectedCause.gradient} text-white shadow-lg scale-105`
+                            : "bg-muted/40 text-foreground ring-1 ring-border/40 hover:ring-border"
                         }`}
                       >
                         ৳{a}
-                      </button>
+                      </motion.button>
                     ))}
                   </div>
 
-                  {/* Custom amount */}
-                  <div className="relative">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="Enter custom amount"
-                      value={amount}
-                      onChange={e => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
-                      className="w-full text-center text-lg font-semibold py-3 bg-transparent border-b-2 border-border focus:border-primary outline-none transition-colors text-foreground placeholder:text-muted-foreground/50"
-                    />
-                  </div>
-
-                  {/* Message */}
-                  <Textarea
-                    placeholder="Leave a kind note… (optional)"
-                    value={message}
-                    onChange={e => setMessage(e.target.value.slice(0, 200))}
-                    rows={2}
-                    className="rounded-xl bg-muted/30 border-0 focus-visible:ring-1 focus-visible:ring-primary/30 resize-none"
+                  {/* Custom input */}
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Custom amount"
+                    value={amount}
+                    onChange={e => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
+                    className="w-full text-center text-lg font-semibold py-3 bg-muted/20 rounded-2xl border-0 ring-1 ring-border/40 focus:ring-2 focus:ring-primary/40 outline-none transition-all text-foreground placeholder:text-muted-foreground/40"
                   />
 
+                  {/* Collapsible message */}
+                  <div>
+                    <button
+                      onClick={() => setMsgExpanded(!msgExpanded)}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 mx-auto"
+                    >
+                      {msgExpanded ? "Hide message" : "Add a message (optional)"}
+                    </button>
+                    <AnimatePresence>
+                      {msgExpanded && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mt-2">
+                          <textarea
+                            placeholder="Leave a kind note…"
+                            value={message}
+                            onChange={e => setMessage(e.target.value.slice(0, 200))}
+                            rows={2}
+                            className="w-full rounded-2xl bg-muted/20 ring-1 ring-border/40 focus:ring-2 focus:ring-primary/30 outline-none px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/40 resize-none transition-all"
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
                   {/* Toggle rows */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/30">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center">
-                          <EyeOff size={15} className="text-muted-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-foreground">Donate anonymously</p>
-                          <p className="text-[11px] text-muted-foreground">Hidden from leaderboard</p>
-                        </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between py-3 px-1">
+                      <div className="flex items-center gap-2.5">
+                        <EyeOff size={15} className="text-muted-foreground" />
+                        <span className="text-sm text-foreground">Donate anonymously</span>
                       </div>
                       <Switch checked={isAnonymous} onCheckedChange={setIsAnonymous} />
                     </div>
-
-                    <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/30">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center">
-                          <RefreshCw size={15} className="text-muted-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-foreground">Make this recurring</p>
-                          <p className="text-[11px] text-muted-foreground">Auto-donate on schedule</p>
-                        </div>
+                    <div className="h-px bg-border/30" />
+                    <div className="flex items-center justify-between py-3 px-1">
+                      <div className="flex items-center gap-2.5">
+                        <RefreshCw size={15} className="text-muted-foreground" />
+                        <span className="text-sm text-foreground">Make this recurring</span>
                       </div>
                       <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
                     </div>
@@ -401,29 +341,31 @@ const DonationsPage = () => {
                   {/* Frequency */}
                   <AnimatePresence>
                     {isRecurring && (
-                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="flex gap-2 overflow-hidden">
-                        {(["weekly", "monthly"] as const).map(f => (
-                          <button
-                            key={f}
-                            onClick={() => setFrequency(f)}
-                            className={`flex-1 py-2.5 rounded-full text-sm font-semibold transition-all ${
-                              frequency === f
-                                ? "bg-primary text-primary-foreground shadow-md"
-                                : "bg-muted/50 text-foreground"
-                            }`}
-                          >
-                            {f === "weekly" ? "Weekly" : "Monthly"}
-                          </button>
-                        ))}
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                        <div className="flex gap-2">
+                          {(["weekly", "monthly"] as const).map(f => (
+                            <button
+                              key={f}
+                              onClick={() => setFrequency(f)}
+                              className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                                frequency === f
+                                  ? "bg-primary text-primary-foreground shadow-sm"
+                                  : "bg-muted/30 text-muted-foreground ring-1 ring-border/30"
+                              }`}
+                            >
+                              {f === "weekly" ? "Weekly" : "Monthly"}
+                            </button>
+                          ))}
+                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
 
-                  {/* Continue button */}
+                  {/* CTA */}
                   <button
                     onClick={handleAmountNext}
                     disabled={!amount || parseFloat(amount) < 10}
-                    className={`w-full py-3.5 rounded-2xl font-bold text-base disabled:opacity-40 transition-all active:scale-[0.98] bg-gradient-to-r ${selectedCause.gradient} text-white shadow-lg shadow-primary/20`}
+                    className={`w-full py-4 rounded-2xl font-bold text-base disabled:opacity-30 transition-all active:scale-[0.98] bg-gradient-to-r ${selectedCause.gradient} text-white shadow-xl shadow-black/10`}
                   >
                     Continue — ৳{amount || "0"}
                   </button>
@@ -432,43 +374,50 @@ const DonationsPage = () => {
 
               {/* Step 3: PIN */}
               {step === "pin" && selectedCause && (
-                <motion.div key="pin" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.3 }} className="mt-4 space-y-8 text-center">
-                  {/* Cause icon */}
-                  <div className="flex flex-col items-center gap-3">
-                    <div className={`w-20 h-20 rounded-3xl bg-gradient-to-br ${selectedCause.gradient} flex items-center justify-center text-white shadow-xl shadow-primary/15`}>
-                      <selectedCause.icon size={34} />
+                <motion.div key="pin" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} transition={{ duration: 0.3 }} className="mt-6 space-y-8 text-center">
+                  {/* Cause pill + amount */}
+                  <div className="flex flex-col items-center gap-4">
+                    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r ${selectedCause.gradient} text-white text-sm font-medium`}>
+                      <selectedCause.icon size={15} />
+                      {selectedCause.name}
                     </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider">Donating to</p>
-                      <p className="text-lg font-bold text-foreground mt-0.5">{selectedCause.name}</p>
-                    </div>
-                    <p className="text-3xl font-bold text-foreground">৳{parseFloat(amount).toLocaleString()}</p>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      {isAnonymous && <span className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-full"><EyeOff size={11} /> Anonymous</span>}
-                      {isRecurring && <span className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-full"><RefreshCw size={11} /> {frequency === "weekly" ? "Weekly" : "Monthly"}</span>}
-                    </div>
+                    <p className="text-4xl font-extrabold text-foreground tracking-tight">৳{parseFloat(amount).toLocaleString()}</p>
+                    {(isAnonymous || isRecurring) && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {isAnonymous && <span className="ring-1 ring-border/40 px-2.5 py-1 rounded-full flex items-center gap-1"><EyeOff size={10} /> Anonymous</span>}
+                        {isRecurring && <span className="ring-1 ring-border/40 px-2.5 py-1 rounded-full flex items-center gap-1"><RefreshCw size={10} /> {frequency === "weekly" ? "Weekly" : "Monthly"}</span>}
+                      </div>
+                    )}
                   </div>
 
                   {/* PIN Entry */}
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-4">Enter your 4-digit PIN</p>
+                  <div onClick={() => pinRef.current?.focus()}>
+                    <p className="text-sm text-muted-foreground mb-5">Enter your 4-digit PIN</p>
                     <div className="flex justify-center gap-3">
                       {[0, 1, 2, 3].map(i => (
                         <div
                           key={i}
-                          className={`w-14 h-14 rounded-2xl border-2 flex items-center justify-center text-2xl font-bold transition-all ${
+                          className={`w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-200 ${
                             pin.length > i
-                              ? "border-primary bg-primary/5 text-foreground"
+                              ? `bg-gradient-to-br ${selectedCause.gradient} shadow-md`
                               : pin.length === i
-                              ? "border-primary/50 bg-muted/30"
-                              : "border-border bg-muted/20"
+                              ? "ring-2 ring-primary/40 bg-muted/20"
+                              : "bg-muted/20 ring-1 ring-border/40"
                           }`}
                         >
-                          {pin.length > i ? "•" : ""}
+                          {pin.length > i && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={spring}
+                              className="w-3 h-3 rounded-full bg-white"
+                            />
+                          )}
                         </div>
                       ))}
                     </div>
                     <input
+                      ref={pinRef}
                       type="password"
                       inputMode="numeric"
                       maxLength={4}
@@ -479,69 +428,73 @@ const DonationsPage = () => {
                     />
                   </div>
 
-                  {/* Confirm button */}
+                  {/* Confirm */}
                   <button
                     onClick={handlePinSubmit}
                     disabled={pin.length !== 4 || loading}
-                    className={`w-full py-3.5 rounded-2xl font-bold text-base disabled:opacity-40 flex items-center justify-center gap-2 transition-all active:scale-[0.98] bg-gradient-to-r ${selectedCause.gradient} text-white shadow-lg`}
+                    className={`w-full py-4 rounded-2xl font-bold text-base disabled:opacity-30 flex items-center justify-center gap-2 transition-all active:scale-[0.98] bg-gradient-to-r ${selectedCause.gradient} text-white shadow-xl shadow-black/10`}
                   >
                     {loading ? <Loader2 size={18} className="animate-spin" /> : <Heart size={18} />}
-                    {loading ? "Processing…" : "Confirm Donation"}
+                    {loading ? "Processing…" : `Confirm ৳${parseFloat(amount).toLocaleString()}`}
                   </button>
                 </motion.div>
               )}
 
               {/* Step 4: Success */}
               {step === "success" && (
-                <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={springTransition} className="mt-8 text-center space-y-6">
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 18, delay: 0.15 }}
-                    className={`w-24 h-24 rounded-full bg-gradient-to-br ${selectedCause?.gradient || "from-emerald-500 to-teal-600"} flex items-center justify-center mx-auto shadow-2xl shadow-primary/20`}
-                  >
-                    <Check size={48} className="text-white" strokeWidth={3} />
-                  </motion.div>
+                <motion.div key="success" initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={spring} className="mt-10 text-center space-y-6">
+                  {/* Pulsing ring + check */}
+                  <div className="relative w-28 h-28 mx-auto">
+                    <div className={`absolute inset-0 rounded-full bg-gradient-to-br ${selectedCause?.gradient || "from-emerald-500 to-teal-600"} opacity-20 animate-ping`} style={{ animationDuration: "2s" }} />
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: [0, 1.15, 1] }}
+                      transition={{ duration: 0.5, ease: "easeOut", delay: 0.15 }}
+                      className={`absolute inset-0 rounded-full bg-gradient-to-br ${selectedCause?.gradient || "from-emerald-500 to-teal-600"} flex items-center justify-center shadow-2xl`}
+                    >
+                      <Check size={52} className="text-white" strokeWidth={3} />
+                    </motion.div>
+                  </div>
 
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-                    <p className="text-2xl font-bold text-foreground">Thank You!</p>
-                    <p className="text-muted-foreground text-sm mt-2">
+                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="space-y-2">
+                    <p className="text-3xl font-extrabold text-foreground">Thank You!</p>
+                    <p className="text-muted-foreground text-sm">
                       You donated <span className="font-bold text-foreground">৳{parseFloat(amount).toLocaleString()}</span> to
                     </p>
-                    <p className="font-semibold text-foreground">{selectedCause?.name}</p>
+                    <p className="text-lg font-semibold text-foreground">{selectedCause?.name}</p>
                   </motion.div>
 
                   {(isAnonymous || isRecurring) && (
                     <div className="flex items-center justify-center gap-2">
                       {isAnonymous && (
-                        <span className="text-xs bg-muted/60 text-muted-foreground px-3 py-1.5 rounded-full flex items-center gap-1">
+                        <span className="text-xs ring-1 ring-border/40 text-muted-foreground px-3 py-1.5 rounded-full flex items-center gap-1">
                           <EyeOff size={11} /> Anonymous
                         </span>
                       )}
                       {isRecurring && (
-                        <span className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-full flex items-center gap-1 font-medium">
+                        <span className="text-xs ring-1 ring-primary/30 text-primary px-3 py-1.5 rounded-full flex items-center gap-1 font-medium">
                           <RefreshCw size={11} /> {frequency === "weekly" ? "Weekly" : "Monthly"}
                         </span>
                       )}
                     </div>
                   )}
 
-                  <div className="flex gap-2.5 justify-center pt-2">
+                  <div className="flex gap-2.5 justify-center pt-4">
                     <button
                       onClick={resetFlow}
-                      className={`px-5 py-2.5 rounded-full font-semibold text-sm bg-gradient-to-r ${selectedCause?.gradient || "from-primary to-primary"} text-white shadow-md active:scale-95 transition-transform flex items-center gap-1.5`}
+                      className={`px-6 py-3 rounded-full font-semibold text-sm bg-gradient-to-r ${selectedCause?.gradient || "from-primary to-primary"} text-white shadow-lg active:scale-95 transition-transform flex items-center gap-1.5`}
                     >
                       <Heart size={14} /> Donate Again
                     </button>
                     <button
                       onClick={() => navigate("/")}
-                      className="px-5 py-2.5 rounded-full font-semibold text-sm bg-muted/60 text-foreground active:scale-95 transition-transform flex items-center gap-1.5"
+                      className="px-5 py-3 rounded-full font-semibold text-sm ring-1 ring-border/40 text-foreground active:scale-95 transition-transform flex items-center gap-1.5 hover:bg-muted/30"
                     >
                       <Home size={14} /> Home
                     </button>
                     <button
                       onClick={() => setShareOpen(true)}
-                      className="px-5 py-2.5 rounded-full font-semibold text-sm bg-muted/60 text-foreground active:scale-95 transition-transform flex items-center gap-1.5"
+                      className="px-5 py-3 rounded-full font-semibold text-sm ring-1 ring-border/40 text-foreground active:scale-95 transition-transform flex items-center gap-1.5 hover:bg-muted/30"
                     >
                       <Share2 size={14} /> Share
                     </button>
@@ -556,15 +509,15 @@ const DonationsPage = () => {
             {recurringLoading ? (
               <div className="flex justify-center py-16"><Loader2 className="animate-spin text-muted-foreground" /></div>
             ) : recurringList.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground">
-                <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-3">
-                  <RefreshCw size={28} className="opacity-30" />
+              <div className="text-center py-20 text-muted-foreground">
+                <div className="w-14 h-14 rounded-2xl bg-muted/30 flex items-center justify-center mx-auto mb-3">
+                  <RefreshCw size={24} className="opacity-25" />
                 </div>
                 <p className="text-sm font-medium">No recurring donations</p>
-                <p className="text-xs mt-1 text-muted-foreground/70">Set one up in the Donate tab</p>
+                <p className="text-xs mt-1 text-muted-foreground/60">Set one up in the Donate tab</p>
               </div>
             ) : (
-              <div className="space-y-2.5 mt-1">
+              <div className="space-y-2 mt-1">
                 {recurringList.map((r, i) => {
                   const cause = causeForIcon(r.cause_name);
                   return (
@@ -573,7 +526,7 @@ const DonationsPage = () => {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.04 * i }}
-                      className={`flex items-center gap-3 p-3.5 rounded-2xl bg-card shadow-sm ${!r.is_active ? "opacity-50" : ""}`}
+                      className={`flex items-center gap-3 p-3.5 rounded-2xl bg-card/80 backdrop-blur-sm ring-1 ring-border/40 ${!r.is_active ? "opacity-40" : ""}`}
                     >
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${cause ? `bg-gradient-to-br ${cause.gradient} text-white` : "bg-muted"}`}>
                         {cause ? <cause.icon size={18} /> : (r.cause_icon || "❤️")}
@@ -586,14 +539,10 @@ const DonationsPage = () => {
                           <span>· Next: {format(new Date(r.next_run_at), "dd MMM")}</span>
                         </div>
                       </div>
-                      <p className="text-sm font-bold text-foreground mr-1">৳{r.amount}</p>
-                      <Switch
-                        checked={r.is_active}
-                        onCheckedChange={() => toggleRecurringActive(r.id, r.is_active)}
-                        className="scale-90"
-                      />
+                      <p className="text-sm font-bold text-foreground mr-1 tabular-nums">৳{r.amount}</p>
+                      <Switch checked={r.is_active} onCheckedChange={() => toggleRecurringActive(r.id, r.is_active)} className="scale-90" />
                       <button onClick={() => deleteRecurring(r.id)} className="w-7 h-7 rounded-lg bg-destructive/10 flex items-center justify-center active:scale-90 transition-transform">
-                        <Trash2 size={14} className="text-destructive" />
+                        <Trash2 size={13} className="text-destructive" />
                       </button>
                     </motion.div>
                   );
@@ -607,15 +556,15 @@ const DonationsPage = () => {
             {historyLoading ? (
               <div className="flex justify-center py-16"><Loader2 className="animate-spin text-muted-foreground" /></div>
             ) : history.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground">
-                <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-3">
-                  <Heart size={28} className="opacity-30" />
+              <div className="text-center py-20 text-muted-foreground">
+                <div className="w-14 h-14 rounded-2xl bg-muted/30 flex items-center justify-center mx-auto mb-3">
+                  <Heart size={24} className="opacity-25" />
                 </div>
                 <p className="text-sm font-medium">No donations yet</p>
-                <p className="text-xs mt-1 text-muted-foreground/70">Your donation history will appear here</p>
+                <p className="text-xs mt-1 text-muted-foreground/60">Your history will appear here</p>
               </div>
             ) : (
-              <div className="space-y-2.5 mt-1">
+              <div className="space-y-2 mt-1">
                 {history.map((d, i) => {
                   const cause = causeForIcon(d.cause_name);
                   return (
@@ -624,7 +573,7 @@ const DonationsPage = () => {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.04 * i }}
-                      className="flex items-center gap-3 p-3.5 rounded-2xl bg-card shadow-sm"
+                      className="flex items-center gap-3 p-3.5 rounded-2xl bg-card/80 backdrop-blur-sm ring-1 ring-border/40"
                     >
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${cause ? `bg-gradient-to-br ${cause.gradient} text-white` : "bg-muted"}`}>
                         {cause ? <cause.icon size={18} /> : (d.cause_icon || "❤️")}
@@ -633,7 +582,7 @@ const DonationsPage = () => {
                         <p className="text-sm font-semibold text-foreground truncate">{d.cause_name}</p>
                         <p className="text-[11px] text-muted-foreground">{format(new Date(d.created_at), "dd MMM yyyy, hh:mm a")}</p>
                       </div>
-                      <p className="text-sm font-bold text-foreground">৳{d.amount}</p>
+                      <p className="text-sm font-bold text-foreground tabular-nums">৳{d.amount}</p>
                     </motion.div>
                   );
                 })}
@@ -643,20 +592,20 @@ const DonationsPage = () => {
 
           {/* ── Leaderboard Tab ── */}
           <TabsContent value="leaderboard" className="mt-0">
-            <div className="flex gap-2 overflow-x-auto py-3 no-scrollbar">
+            <div className="flex gap-2 overflow-x-auto py-2 no-scrollbar mb-3">
               <button
                 onClick={() => { setLeaderboardCause(null); fetchLeaderboard(null); }}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${leaderboardCause === null ? "bg-primary text-primary-foreground shadow-md" : "bg-muted/50 text-foreground"}`}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${leaderboardCause === null ? "bg-primary text-primary-foreground" : "bg-muted/30 text-muted-foreground ring-1 ring-border/30"}`}
               >
-                All Causes
+                All
               </button>
               {CAUSES.map(c => (
                 <button
                   key={c.id}
                   onClick={() => { setLeaderboardCause(c.name); fetchLeaderboard(c.name); }}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${leaderboardCause === c.name ? "bg-primary text-primary-foreground shadow-md" : "bg-muted/50 text-foreground"}`}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${leaderboardCause === c.name ? "bg-primary text-primary-foreground" : "bg-muted/30 text-muted-foreground ring-1 ring-border/30"}`}
                 >
-                  {c.emoji} {c.name}
+                  {CAUSE_EMOJI[c.name]} {c.name}
                 </button>
               ))}
             </div>
@@ -664,14 +613,14 @@ const DonationsPage = () => {
             {leaderboardLoading ? (
               <div className="flex justify-center py-16"><Loader2 className="animate-spin text-muted-foreground" /></div>
             ) : leaderboard.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground">
-                <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-3">
-                  <Trophy size={28} className="opacity-30" />
+              <div className="text-center py-20 text-muted-foreground">
+                <div className="w-14 h-14 rounded-2xl bg-muted/30 flex items-center justify-center mx-auto mb-3">
+                  <Trophy size={24} className="opacity-25" />
                 </div>
                 <p className="text-sm font-medium">No donations recorded yet</p>
               </div>
             ) : (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {leaderboard.map((entry, i) => {
                   const cause = causeForIcon(entry.cause_name);
                   return (
@@ -680,17 +629,21 @@ const DonationsPage = () => {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.04 * i }}
-                      className={`flex items-center gap-3 p-3.5 rounded-2xl bg-card shadow-sm ${i < 3 ? `border ${MEDAL_BG[i]}` : ""}`}
+                      className="flex items-center gap-3 p-3.5 rounded-2xl bg-card/80 backdrop-blur-sm ring-1 ring-border/40 relative overflow-hidden"
                     >
-                      <div className="w-8 text-center">
+                      {/* Top 3 gradient accent bar */}
+                      {i < 3 && (
+                        <div className={`absolute left-0 top-1.5 bottom-1.5 w-1 rounded-full bg-gradient-to-b ${MEDAL_BAR[i]}`} />
+                      )}
+                      <div className="w-8 text-center pl-1">
                         {i < 3 ? (
-                          <Trophy size={20} className={MEDAL_TEXT[i]} />
+                          <span className="text-lg">{MEDALS[i]}</span>
                         ) : (
-                          <span className="text-sm font-bold text-muted-foreground">{i + 1}</span>
+                          <span className="text-xs font-bold text-muted-foreground">{i + 1}</span>
                         )}
                       </div>
                       <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0 ${cause ? `bg-gradient-to-br ${cause.gradient} text-white` : "bg-muted"}`}>
-                        {cause ? <cause.icon size={16} /> : "❤️"}
+                        {cause ? <cause.icon size={15} /> : "❤️"}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-foreground truncate">
@@ -700,7 +653,7 @@ const DonationsPage = () => {
                           {entry.cause_name} · {entry.donation_count} donation{entry.donation_count > 1 ? "s" : ""}
                         </p>
                       </div>
-                      <p className="text-sm font-bold text-primary">৳{entry.total_amount.toLocaleString()}</p>
+                      <p className="text-sm font-bold text-primary tabular-nums">৳{entry.total_amount.toLocaleString()}</p>
                     </motion.div>
                   );
                 })}
