@@ -1,38 +1,23 @@
 
 
-## Verification: Product Inquiry Chat Flow
+## Testing the Product Inquiry Chat Flow
 
-### Current Status: Fully Implemented
+This is a **manual testing task** that cannot be automated from within the editor. The current logged-in user owns the only merchant store ("Rafiq Electronics"), so the "This is your own store" guard blocks self-testing.
 
-The end-to-end flow is correctly wired:
+### Steps to Test
 
-1. **ProductDetailPage** (`handleChatWithMerchant`): Creates a direct conversation with the merchant's `user_id`, sends a message with product metadata (`isProductInquiry: true`, `productName`, `productPrice`, `productImage`, `productEmoji`), then navigates to `/inbox?conv={convId}`
-
-2. **use-chat hook** (`sendMessage`): Accepts metadata as 4th argument, stores it as JSON in `chat_messages.metadata` column
-
-3. **InboxPage** (`msgToUIMessage`): Detects `isProductInquiry` in metadata, sets message type to `"product"`, extracts all product fields
-
-4. **InboxPage** (ProductBubble rendering): Renders a rich card with product image/emoji, name, price, and "Product Inquiry" label
-
-5. **Deep-linking**: Reads `?conv=` param to auto-open the correct conversation
-
-6. **Unread tracking**: The `useChat` hook tracks `totalUnread` count which powers badge indicators
-
-### Testing Limitation
-
-The current logged-in user (`897da592...`) owns the only merchant store ("Rafiq Electronics"). Tapping Chat on their own products triggers `"This is your own store"` guard (line 98). To test the full flow, you need a **second user account** that is not the merchant owner.
-
-### Recommended Test Steps
-
-1. Log out and create/log in with a second test account
-2. Navigate to Shop, open a product from "Rafiq Electronics"
-3. Tap the Chat button in the bottom bar
-4. Verify: navigates to Inbox with the conversation auto-opened
-5. Verify: a rich product card bubble appears showing product name, emoji, and price
-6. Log back into the merchant account
-7. Verify: the conversation appears with an unread badge and the product inquiry card is visible
+1. **Open the app** in an incognito/private browser window: `https://pay-palooza-go.lovable.app`
+2. **Create a new account** with a different phone number (e.g., `01712345678`) and any 4-digit PIN
+3. **Navigate to Shop** from the home screen
+4. **Open any Rafiq Electronics product**
+5. **Tap the Chat button** in the bottom action bar
+6. **Verify**: You are redirected to the Inbox with the conversation auto-opened and a rich product card (emoji, name, price) appears as the first message
+7. **Switch back to your original account** (main browser window)
+8. **Open the Inbox** and verify:
+   - The conversation appears with an **unread badge**
+   - The product inquiry card is visible with correct product details
 
 ### No Code Changes Needed
 
-The implementation is complete and correct. No bugs found in the flow.
+The implementation is complete. This plan is for manual verification only.
 
