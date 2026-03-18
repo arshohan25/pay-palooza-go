@@ -56,7 +56,7 @@ export default function CartDrawer({ items, onUpdateQty, onRemove, onCheckout, o
                     <ProductImage imageUrl={item.image_url} emoji={item.emoji} alt={item.name} className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground line-clamp-1">{item.name}</p>
+                    <p className="text-sm font-medium text-foreground line-clamp-1 cursor-pointer hover:text-primary transition-colors" onClick={() => { onOpenChange(false); navigate(`/product/${item.id}`); }}>{item.name}</p>
                     {item.vendor_name && <p className="text-[11px] text-muted-foreground">{item.vendor_name}</p>}
                     <p className="text-sm font-bold text-foreground mt-0.5">৳{(item.price * item.qty).toLocaleString()}</p>
                     <div className="flex items-center gap-2 mt-1">
