@@ -1,50 +1,29 @@
 
 
-## Problem
+## Plan: Add Biller Categories to API Hub
 
-Products don't show on the Shop page for regular (non-admin, non-merchant) users.
+### What
 
-**Root cause**: The product query uses `merchants!inner(id, business_name, user_id)` — an inner join on the `merchants` table. The `merchants` table has RLS that only allows:
-- The merchant themselves (`auth.uid() = user_id`)
-- Admins (`has_role(auth.uid(), 'admin')`)
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-A regular customer has no SELECT access to `merchants`, so the inner join returns zero rows, hiding all products.
+### Changes
 
-## Solution
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-Add a public SELECT policy on the `merchants` table that exposes only the non-sensitive columns needed for the shop (id, business_name). Since RLS operates at the row level (not column level), the simplest fix is to allow authenticated users to read merchant rows:
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-### 1. Add RLS policy on `merchants` for public read
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-```sql
-CREATE POLICY "Anyone can read merchants for shop"
-ON public.merchants
-FOR SELECT
-TO authenticated
-USING (true);
-```
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-This replaces the restrictive "Merchants can view own record" policy scope. Since the existing admin policy already covers admin access, we just need to widen the SELECT for authenticated users. The `merchants` table contains business info (business_name, category, etc.) which is appropriate for public visibility.
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-Alternatively, to be more conservative, drop the existing SELECT policy and replace it:
+3. Add the new category icons to the `categoryIcons` map.
 
-```sql
-DROP POLICY "Merchants can view own record" ON public.merchants;
-
-CREATE POLICY "Authenticated users can read merchants"
-ON public.merchants
-FOR SELECT
-TO authenticated
-USING (true);
-```
-
-### 2. No code changes needed
-
-The ShopPage query will work as-is once the RLS policy allows reading `merchants`.
-
-### Technical detail
-
-- The `merchants` table stores business-facing data (business_name, category, phone, status) — not sensitive PII that needs hiding
-- INSERT/UPDATE/DELETE policies remain restricted to the merchant owner and admins
-- Only SELECT is broadened
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
