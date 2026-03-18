@@ -489,6 +489,10 @@ const MerchantDashboard = () => {
         )}
       </AnimatePresence>
 
+      {/* ── Floating Chat FAB ── */}
+      {activeTab !== "inbox" && (
+        <MerchantChatFAB userId={user?.id ?? null} onOpenInbox={() => setActiveTab("inbox")} />
+      )}
     </div>
   );
 };
