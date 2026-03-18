@@ -2184,6 +2184,7 @@ export type Database = {
         Row: {
           coupon_discount: number | null
           coupon_id: string | null
+          courier_provider_id: string | null
           created_at: string
           delivery_address_id: string | null
           delivery_fee: number | null
@@ -2204,12 +2205,14 @@ export type Database = {
           total: number
           total_platform_fee: number | null
           total_vendor_commission: number | null
+          tracking_number: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           coupon_discount?: number | null
           coupon_id?: string | null
+          courier_provider_id?: string | null
           created_at?: string
           delivery_address_id?: string | null
           delivery_fee?: number | null
@@ -2230,12 +2233,14 @@ export type Database = {
           total?: number
           total_platform_fee?: number | null
           total_vendor_commission?: number | null
+          tracking_number?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           coupon_discount?: number | null
           coupon_id?: string | null
+          courier_provider_id?: string | null
           created_at?: string
           delivery_address_id?: string | null
           delivery_fee?: number | null
@@ -2256,6 +2261,7 @@ export type Database = {
           total?: number
           total_platform_fee?: number | null
           total_vendor_commission?: number | null
+          tracking_number?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -2265,6 +2271,13 @@ export type Database = {
             columns: ["coupon_id"]
             isOneToOne: false
             referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_courier_provider_id_fkey"
+            columns: ["courier_provider_id"]
+            isOneToOne: false
+            referencedRelation: "courier_providers"
             referencedColumns: ["id"]
           },
           {
@@ -2976,6 +2989,56 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      return_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          details: string | null
+          id: string
+          order_id: string
+          reason: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          order_id: string
+          reason: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          order_id?: string
+          reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       saved_bank_accounts: {
         Row: {
