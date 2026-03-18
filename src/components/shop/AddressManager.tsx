@@ -213,10 +213,6 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
                     <Input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder="e.g. Dhaka" />
                   </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Postal Code</Label>
-                  <Input value={form.postal_code} onChange={e => setForm(f => ({ ...f, postal_code: e.target.value }))} placeholder="e.g. 1216" />
-                </div>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={form.is_default} onChange={e => setForm(f => ({ ...f, is_default: e.target.checked }))}
                     className="rounded border-border" />
