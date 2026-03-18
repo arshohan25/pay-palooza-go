@@ -383,7 +383,7 @@ const DonationsPage = () => {
                     {(isAnonymous || isRecurring) && (
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         {isAnonymous && <span className="ring-1 ring-border/40 px-2.5 py-1 rounded-full flex items-center gap-1"><EyeOff size={10} /> Anonymous</span>}
-                        {isRecurring && <span className="ring-1 ring-border/40 px-2.5 py-1 rounded-full flex items-center gap-1"><RefreshCw size={10} /> {frequency === "weekly" ? "Weekly" : "Monthly"}</span>}
+                        {isRecurring && <span className="ring-1 ring-border/40 px-2.5 py-1 rounded-full flex items-center gap-1"><RefreshCw size={10} /> {frequency === "weekly" ? "Weekly" : frequency === "yearly" ? "Yearly" : "Monthly"}</span>}
                       </div>
                     )}
                   </div>
