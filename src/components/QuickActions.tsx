@@ -287,6 +287,7 @@ interface QuickActionsProps {
 }
 
 const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney, onRefer, onShop, onBankTransfer, onSavings }: QuickActionsProps) => {
+  const navigate = useNavigate();
   const { t } = useI18n();
   const { isLocked } = useFeatureLocks();
   const { isDisabled: isGloballyDisabled, toggles } = useGlobalToggles();
