@@ -78,7 +78,7 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
         const { error } = await supabase.from("delivery_addresses").insert({
           user_id: userId, label: form.label, recipient_name: form.recipient_name,
           phone: form.phone, address_line: form.address_line, city: form.city,
-          area: form.area || null, postal_code: form.postal_code || null, is_default: form.is_default,
+          area: form.area || null, is_default: form.is_default,
         });
         if (error) throw error;
         toast.success("Address saved");
@@ -86,7 +86,7 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
         const { error } = await supabase.from("delivery_addresses").update({
           label: form.label, recipient_name: form.recipient_name, phone: form.phone,
           address_line: form.address_line, city: form.city,
-          area: form.area || null, postal_code: form.postal_code || null, is_default: form.is_default,
+          area: form.area || null, is_default: form.is_default,
         } as any).eq("id", editing.id);
         if (error) throw error;
         toast.success("Address updated");
