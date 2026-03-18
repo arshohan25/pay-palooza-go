@@ -58,6 +58,7 @@ const DonationsPage = () => {
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [leaderboardCause, setLeaderboardCause] = useState<string | null>(null);
   const [msgExpanded, setMsgExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState("donate");
   const pinRef = useRef<HTMLInputElement>(null);
 
   const fetchHistory = async () => {
@@ -84,6 +85,15 @@ const DonationsPage = () => {
   };
 
   useEffect(() => { if (user) { fetchHistory(); fetchRecurring(); } }, [user]);
+
+  useEffect(() => {
+    if (activeTab === "leaderboard" && leaderboard.length === 0) {
+      fetchLeaderboard(leaderboardCause);
+    }
+    if (activeTab === "recurring" && recurringList.length === 0) {
+      fetchRecurring();
+    }
+  }, [activeTab]);
 
   const handleSelectCause = (cause: typeof CAUSES[0]) => { setSelectedCause(cause); setStep("amount"); };
 
@@ -180,19 +190,19 @@ const DonationsPage = () => {
       </div>
 
       <div className="max-w-md mx-auto px-5 pt-1">
-        <Tabs defaultValue="donate">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           {/* iOS-style segmented control */}
           <TabsList className="w-full bg-muted/40 rounded-xl p-1 h-auto gap-0 mb-5">
             <TabsTrigger value="donate" className="flex-1 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm bg-transparent text-muted-foreground text-xs py-2 font-medium transition-all">
               Donate
             </TabsTrigger>
-            <TabsTrigger value="recurring" className="flex-1 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm bg-transparent text-muted-foreground text-xs py-2 font-medium transition-all" onClick={() => { if (recurringList.length === 0) fetchRecurring(); }}>
+            <TabsTrigger value="recurring" className="flex-1 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm bg-transparent text-muted-foreground text-xs py-2 font-medium transition-all">
               Recurring
             </TabsTrigger>
             <TabsTrigger value="history" className="flex-1 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm bg-transparent text-muted-foreground text-xs py-2 font-medium transition-all">
               History
             </TabsTrigger>
-            <TabsTrigger value="leaderboard" className="flex-1 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm bg-transparent text-muted-foreground text-xs py-2 font-medium transition-all" onClick={() => { if (leaderboard.length === 0) fetchLeaderboard(leaderboardCause); }}>
+            <TabsTrigger value="leaderboard" className="flex-1 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm bg-transparent text-muted-foreground text-xs py-2 font-medium transition-all">
               Top
             </TabsTrigger>
           </TabsList>
