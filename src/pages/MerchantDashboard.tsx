@@ -601,6 +601,8 @@ const MerchantBenefitsPage = ({ navigate }: { navigate: (path: string) => void }
 /* ── Overview Tab ── */
 const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll }: { merchant: MerchantInfo | null; balance: number; paymentTxns: TxnRow[]; onRefresh: () => void; onSeeAll: () => void }) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { totalUnread } = useChat();
   const [showSendMoney, setShowSendMoney] = useState(false);
   const [showCashOut, setShowCashOut] = useState(false);
   const [showAddBank, setShowAddBank] = useState(false);
@@ -633,7 +635,6 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll }: 
     if (!merchant) return;
     setQrDemoLoading(true);
     try {
-      // Fetch the merchant's active API key
       const { data: keyData } = await supabase
         .from("merchant_api_keys")
         .select("api_key, app_password")
@@ -667,7 +668,6 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll }: 
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-      // Open QR page in new tab — prefer backend-returned URL for correct host
       const qrUrl = data.qr_page_url || `/pay/qr/${data.session_id}`;
       window.open(qrUrl, "_blank");
       toast({ title: "QR Page Opened", description: "Scan with the EasyPay app to test the payment flow." });
@@ -683,6 +683,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll }: 
     { icon: HandCoins, label: "Cash Out", gradient: "from-emerald-500 to-teal-600", onClick: () => setShowCashOut(true) },
     { icon: Landmark, label: "Add Bank", gradient: "from-amber-500 to-orange-600", onClick: () => setShowAddBank(true) },
     { icon: CalendarClock, label: "Settlement", gradient: "from-purple-500 to-violet-600", onClick: () => setShowSettlementConfig(true) },
+    { icon: MessageCircle, label: "Inquiries", gradient: "from-pink-500 to-rose-600", onClick: () => navigate("/inbox"), badge: totalUnread > 0 ? totalUnread : undefined },
   ];
 
   return (
