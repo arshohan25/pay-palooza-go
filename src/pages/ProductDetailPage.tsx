@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Heart, ShoppingCart, Star, Store, Share2, Minus, Plus,
   ChevronRight, Truck, ShieldCheck, RefreshCw, Package, Banknote,
-  Clock, ChevronLeft, Tag,
+  Clock, ChevronLeft, Tag, MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,8 @@ import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { useAuth } from "@/hooks/use-auth";
 import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
+import { useChat } from "@/hooks/use-chat";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 interface Variant {
@@ -54,6 +56,7 @@ export default function ProductDetailPage() {
   const { isWishlisted, toggle: toggleWishlist } = useWishlist();
   const { user } = useAuth();
   const { addViewed } = useRecentlyViewed();
+  const { createDirectConversation, sendMessage } = useChat();
 
   // Track recently viewed
   useEffect(() => {
@@ -73,6 +76,38 @@ export default function ProductDetailPage() {
   const [swipeDir, setSwipeDir] = useState(0);
   const [relatedFromVendor, setRelatedFromVendor] = useState<any[]>([]);
   const [relatedOthers, setRelatedOthers] = useState<any[]>([]);
+  const [chattingWithMerchant, setChattingWithMerchant] = useState(false);
+
+  const handleChatWithMerchant = useCallback(async () => {
+    if (!user) {
+      toast.error("Please log in to chat with the seller");
+      return;
+    }
+    const merchantUserId = (product?.merchants as any)?.user_id;
+    if (!merchantUserId) {
+      toast.error("Merchant info unavailable");
+      return;
+    }
+    if (merchantUserId === user.id) {
+      toast.info("This is your own store");
+      return;
+    }
+    setChattingWithMerchant(true);
+    try {
+      const convId = await createDirectConversation(merchantUserId);
+      if (convId) {
+        const contextMsg = `Hi, I'm interested in ${product.name} (৳${product.price})`;
+        await sendMessage(convId, contextMsg);
+        navigate("/inbox");
+      } else {
+        toast.error("Could not start conversation");
+      }
+    } catch {
+      toast.error("Failed to start chat");
+    } finally {
+      setChattingWithMerchant(false);
+    }
+  }, [user, product, createDirectConversation, sendMessage, navigate]);
 
   // ── Data loading (unchanged logic) ──
   useEffect(() => {
@@ -277,11 +312,23 @@ export default function ProductDetailPage() {
               </div>
               <span className="text-sm font-semibold text-foreground truncate">{vendorInfo.name}</span>
             </div>
-            {vendorInfo.slug && (
-              <Button variant="outline" size="sm" className="text-xs h-7 rounded-lg shrink-0" onClick={() => navigate(`/shop/${vendorInfo.slug}`)}>
-                Visit Store <ChevronRight className="w-3 h-3 ml-0.5" />
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs h-7 rounded-lg"
+                disabled={chattingWithMerchant}
+                onClick={handleChatWithMerchant}
+              >
+                <MessageCircle className="w-3 h-3 mr-1" />
+                Chat
               </Button>
-            )}
+              {vendorInfo.slug && (
+                <Button variant="outline" size="sm" className="text-xs h-7 rounded-lg" onClick={() => navigate(`/shop/${vendorInfo.slug}`)}>
+                  Visit Store <ChevronRight className="w-3 h-3 ml-0.5" />
+                </Button>
+              )}
+            </div>
           </motion.div>
         )}
 

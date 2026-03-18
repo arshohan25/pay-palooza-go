@@ -1,29 +1,29 @@
 
 
-## Add "Chat with Merchant" on Product Detail Page
+## Plan: Add Biller Categories to API Hub
 
-### Problem
-Buyers have no way to contact the vendor directly from the product page to ask questions before purchasing.
+### What
 
-### Solution
-Add a "Chat" button in the vendor row on the product detail page. Tapping it creates (or opens) a direct conversation with the merchant and navigates to the Inbox page with that conversation active. The product name/link is sent as the first message for context.
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-**File: `src/pages/ProductDetailPage.tsx`**
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-1. Import `MessageCircle` from lucide-react and `useChat` hook
-2. Extract `merchant_user_id` from the already-fetched `product.merchants.user_id`
-3. Add a "Chat" button next to "Visit Store" in the vendor row (lines 270-286)
-4. On click:
-   - Guard: require auth (show toast if not logged in)
-   - Guard: prevent chatting with yourself (if buyer is the merchant)
-   - Call `createDirectConversation(merchantUserId)` to get/create a conversation
-   - Send an automatic context message: "Hi, I'm interested in [Product Name] (৳price)"
-   - Navigate to `/inbox` (the chat page will show the new conversation)
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-The existing `createDirectConversation` RPC handles deduplication — if a conversation already exists, it returns the existing one.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
 
 ### Files
-- **Modified**: `src/pages/ProductDetailPage.tsx` — add Chat button in vendor row
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
