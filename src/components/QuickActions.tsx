@@ -420,6 +420,9 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
     if (soon) { toast.info("Coming soon!"); return; }
     if (id === "refer") onRefer();
     else if (id === "savings") onSavings();
+    else if (id === "donations") navigate("/donations");
+    else if (id === "coupons") navigate("/coupons");
+    else if (id === "careers") navigate("/careers");
   };
 
   const filteredMoreServices = visibleMoreServices;
