@@ -60,8 +60,6 @@ export default function ProductDetailPage() {
   const { createDirectConversation, sendMessage } = useChat();
   const { isOnline } = useOnlinePresence(user?.id ?? null);
 
-  const merchantUserId = product?.merchants?.user_id;
-  const merchantOnline = merchantUserId ? isOnline(merchantUserId) : false;
 
   // Track recently viewed
   useEffect(() => {
