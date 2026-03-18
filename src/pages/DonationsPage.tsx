@@ -264,12 +264,13 @@ const DonationsPage = () => {
               {step === "amount" && selectedCause && (
                 <motion.div key="amount" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} transition={{ duration: 0.3 }} className="space-y-6">
                   {/* Compact cause pill */}
-                  <div className="flex justify-center">
-                    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r ${selectedCause.gradient} text-white text-sm font-medium`}>
-                      <selectedCause.icon size={16} />
-                      {selectedCause.name}
-                    </div>
-                  </div>
+                   <div className="flex flex-col items-center gap-1">
+                     <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r ${selectedCause.gradient} text-white text-sm font-medium`}>
+                       <selectedCause.icon size={16} />
+                       {selectedCause.name}
+                     </div>
+                     <button onClick={() => { setStep("cause"); setSelectedCause(null); }} className="text-[11px] text-muted-foreground hover:text-primary transition-colors">Change cause</button>
+                   </div>
 
                   {/* Single editable amount field */}
                   <div className="text-center py-6">
