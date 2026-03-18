@@ -98,6 +98,7 @@ Deno.serve(async (req) => {
       // Calculate next run
       const nextRun = new Date();
       if (schedule.frequency === "weekly") nextRun.setDate(nextRun.getDate() + 7);
+      else if (schedule.frequency === "yearly") nextRun.setFullYear(nextRun.getFullYear() + 1);
       else nextRun.setMonth(nextRun.getMonth() + 1);
 
       await supabase.from("recurring_donations").update({

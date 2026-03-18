@@ -49,7 +49,7 @@ const DonationsPage = () => {
   const [history, setHistory] = useState<DonationRecord[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [isRecurring, setIsRecurring] = useState(false);
-  const [frequency, setFrequency] = useState<"weekly" | "monthly">("monthly");
+  const [frequency, setFrequency] = useState<"weekly" | "monthly" | "yearly">("monthly");
   const [recurringList, setRecurringList] = useState<RecurringDonation[]>([]);
   const [recurringLoading, setRecurringLoading] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
