@@ -1,29 +1,27 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Add Address Management to Checkout
 
-### What
+The checkout page currently loads saved addresses but has no way to add, edit, or save new addresses inline. If a user has no addresses, they see a dead-end "add from account settings" message.
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### Solution
+
+Integrate the existing `AddressManager` component directly into the checkout page. This component already supports add, edit, delete, and selection with a bottom-sheet form.
 
 ### Changes
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**`src/pages/ShopCheckoutPage.tsx`**
+- Import `AddressManager` from `@/components/shop/AddressManager`
+- Replace the current manual address list + "no addresses" dead-end with `<AddressManager>` component
+- Pass `userId`, `onSelect` (to set selected address), `selectedId`, and `compact` props
+- Remove the manual address fetching logic (lines 86-108) and inline address picker UI (lines 298-370) — let `AddressManager` handle everything
+- Keep the `selectedAddress` state by receiving callbacks from `AddressManager.onSelect`
+- The `AddressManager` already provides: add new address button, edit/delete, label chips, default toggle, and bottom-sheet form
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
-
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+### Result
+- Users can add a new shipping address directly during checkout
+- Users can edit existing addresses inline
+- Users can select from saved addresses
+- Default address auto-selected on load
+- No more dead-end when no addresses exist
 
