@@ -86,6 +86,15 @@ const DonationsPage = () => {
 
   useEffect(() => { if (user) { fetchHistory(); fetchRecurring(); } }, [user]);
 
+  useEffect(() => {
+    if (activeTab === "leaderboard" && leaderboard.length === 0) {
+      fetchLeaderboard(leaderboardCause);
+    }
+    if (activeTab === "recurring" && recurringList.length === 0) {
+      fetchRecurring();
+    }
+  }, [activeTab]);
+
   const handleSelectCause = (cause: typeof CAUSES[0]) => { setSelectedCause(cause); setStep("amount"); };
 
   const handleAmountNext = () => {
