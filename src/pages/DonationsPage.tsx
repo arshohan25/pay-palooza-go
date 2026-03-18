@@ -181,7 +181,7 @@ const DonationsPage = () => {
       </div>
 
       <div className="max-w-md mx-auto px-5 pt-1">
-        <Tabs defaultValue="donate">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           {/* iOS-style segmented control */}
           <TabsList className="w-full bg-muted/40 rounded-xl p-1 h-auto gap-0 mb-5">
             <TabsTrigger value="donate" className="flex-1 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm bg-transparent text-muted-foreground text-xs py-2 font-medium transition-all">
