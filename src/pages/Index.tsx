@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import QrScannerModal from "@/components/QrScannerModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, ShieldCheck, Clock, XCircle } from "lucide-react";
