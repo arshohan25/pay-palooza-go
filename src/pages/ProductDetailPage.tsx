@@ -58,6 +58,10 @@ export default function ProductDetailPage() {
   const { user } = useAuth();
   const { addViewed } = useRecentlyViewed();
   const { createDirectConversation, sendMessage } = useChat();
+  const { isOnline } = useOnlinePresence(user?.id ?? null);
+
+  const merchantUserId = product?.merchants?.user_id;
+  const merchantOnline = merchantUserId ? isOnline(merchantUserId) : false;
 
   // Track recently viewed
   useEffect(() => {
