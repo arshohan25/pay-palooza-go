@@ -95,7 +95,7 @@ const moreServices = [
   { id: "savings", Icon: SavingsIcon, label: "Savings", desc: "Set goals & grow money", gradient: "from-emerald-500 to-teal-600", featureKey: "savings" },
   
   { id: "coupons", Icon: CouponsIcon, label: "Coupons & Offers", desc: "Exclusive deals", gradient: "from-pink-500 to-rose-600", soon: true, featureKey: "coupons" },
-  { id: "donations", Icon: DonationsIcon, label: "Donations", desc: "Support causes", gradient: "from-red-500 to-rose-700", soon: true, featureKey: "donations" },
+  { id: "donations", Icon: DonationsIcon, label: "Donations", desc: "Support causes", gradient: "from-red-500 to-rose-700", soon: false, featureKey: "donations" },
   { id: "loan", Icon: LoanIcon, label: "Loan", desc: "Quick personal loans", gradient: "from-amber-500 to-orange-600", soon: true, featureKey: "loan" },
   { id: "insurance", Icon: InsuranceIcon, label: "Insurance", desc: "Protect what matters", gradient: "from-violet-500 to-purple-600", soon: true, featureKey: "insurance" },
   { id: "giftcards", Icon: GiftCardsIcon, label: "Gift Cards", desc: "Send & redeem gifts", gradient: "from-orange-400 to-red-500", soon: true, featureKey: "gift_cards" },
