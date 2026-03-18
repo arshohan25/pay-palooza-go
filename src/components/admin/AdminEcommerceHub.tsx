@@ -37,6 +37,7 @@ const SUB_TABS: { key: SubTab; label: string; icon: any }[] = [
   { key: "zones", label: "Delivery Zones", icon: Package },
   { key: "banners", label: "Banners", icon: Image },
   { key: "marketing", label: "Marketing", icon: Megaphone },
+  { key: "returns", label: "Returns", icon: Package },
 ];
 
 /* ═══════════════════════ PRODUCTS TAB ═══════════════════════ */
