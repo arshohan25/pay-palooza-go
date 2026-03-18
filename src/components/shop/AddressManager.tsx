@@ -33,7 +33,7 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
   const [editing, setEditing] = useState<SavedAddress | "new" | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    label: "Home", recipient_name: "", phone: "", address_line: "", city: "", area: "", postal_code: "", is_default: false,
+    label: "Home", recipient_name: "", phone: "", address_line: "", city: "", area: "", is_default: false,
   });
 
   const fetchAddresses = async () => {
