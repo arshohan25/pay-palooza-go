@@ -1,23 +1,29 @@
 
 
-## Single Editable Amount Field
+## Plan: Add Biller Categories to API Hub
 
-### Problem
-The amount step has two separate input areas: a read-only large display (line 262-269) and a separate "Custom amount" input (lines 289-297). User wants one unified editable field.
+### What
 
-### Change — `src/pages/DonationsPage.tsx` (lines 262-297)
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-**Remove**: The static display (lines 262-269) and the separate custom input (lines 289-297).
+### Changes
 
-**Replace with**: A single large editable `<input>` that serves as both the display and the input:
-- `text-5xl font-extrabold`, center-aligned, transparent background, no visible border
-- Currency symbol `৳` to the left
-- `inputMode="numeric"`, filters non-numeric, `autoFocus`
-- Subtle bottom border or ring on focus only
-- Placeholder "0" when empty
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-**Keep**: Preset pills below as quick-fill shortcuts (tapping sets the input value).
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-### Result
-One field to view and edit the amount. Presets still work as shortcuts. Cleaner, more intuitive.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
