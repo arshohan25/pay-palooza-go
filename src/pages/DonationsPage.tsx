@@ -187,13 +187,13 @@ const DonationsPage = () => {
             <TabsTrigger value="donate" className="flex-1 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm bg-transparent text-muted-foreground text-xs py-2 font-medium transition-all">
               Donate
             </TabsTrigger>
-            <TabsTrigger value="recurring" className="flex-1 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm bg-transparent text-muted-foreground text-xs py-2 font-medium transition-all" onClick={() => { if (recurringList.length === 0) fetchRecurring(); }}>
+            <TabsTrigger value="recurring" className="flex-1 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm bg-transparent text-muted-foreground text-xs py-2 font-medium transition-all">
               Recurring
             </TabsTrigger>
             <TabsTrigger value="history" className="flex-1 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm bg-transparent text-muted-foreground text-xs py-2 font-medium transition-all">
               History
             </TabsTrigger>
-            <TabsTrigger value="leaderboard" className="flex-1 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm bg-transparent text-muted-foreground text-xs py-2 font-medium transition-all" onClick={() => { if (leaderboard.length === 0) fetchLeaderboard(leaderboardCause); }}>
+            <TabsTrigger value="leaderboard" className="flex-1 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm bg-transparent text-muted-foreground text-xs py-2 font-medium transition-all">
               Top
             </TabsTrigger>
           </TabsList>
