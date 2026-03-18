@@ -530,8 +530,8 @@ export default function ProductDetailPage() {
           )}
           {/* Online indicator */}
           {merchantOnline && !chattingWithMerchant && (
-            <span className="absolute top-1 right-1 w-3 h-3 rounded-full bg-emerald-500 border-2 border-primary">
-              <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
+            <span className="absolute top-1 right-1 w-3 h-3 rounded-full bg-accent border-2 border-primary">
+              <span className="absolute inset-0 rounded-full bg-accent animate-ping opacity-75" />
             </span>
           )}
         </button>
