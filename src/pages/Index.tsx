@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import QrScannerModal from "@/components/QrScannerModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, ShieldCheck, Clock, XCircle } from "lucide-react";
@@ -48,6 +48,7 @@ import FestivalOverlay from "@/components/FestivalOverlay";
 
 const Index = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { isAuthenticated, loading: authLoading, signOut, user } = useAuth();
   const { status: kycStatus, rejectionReason } = useKycStatus();
   const [showKycFlow, setShowKycFlow] = useState(false);
@@ -55,6 +56,14 @@ const Index = () => {
   const [onboardingDone, setOnboardingDone]  = useState(() => hasSeenOnboarding());
   const [replayOnboarding, setReplayOnboarding] = useState(false);
   const [activeTab, setActiveTab]         = useState("home");
+
+  // Read ?tab= param to set active tab on navigation
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam && ["home", "history", "account", "refer", "inbox"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
   const handleTabChange = useCallback((tab: string) => {
     if (tab === "scan") {
       setShowScanPay(true);

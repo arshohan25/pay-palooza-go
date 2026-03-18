@@ -111,7 +111,7 @@ export default function ProductDetailPage() {
           productEmoji: product.emoji,
           isProductInquiry: true,
         });
-        navigate(`/inbox?conv=${convId}`);
+        navigate(`/?tab=inbox&conv=${convId}`);
       } else {
         toast.error("Could not start conversation");
       }
