@@ -2957,6 +2957,54 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_donations: {
+        Row: {
+          amount: number
+          cause_icon: string | null
+          cause_name: string
+          created_at: string
+          frequency: string
+          id: string
+          is_active: boolean
+          is_anonymous: boolean
+          last_run_at: string | null
+          message: string | null
+          next_run_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          cause_icon?: string | null
+          cause_name: string
+          created_at?: string
+          frequency: string
+          id?: string
+          is_active?: boolean
+          is_anonymous?: boolean
+          last_run_at?: string | null
+          message?: string | null
+          next_run_at: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          cause_icon?: string | null
+          cause_name?: string
+          created_at?: string
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          is_anonymous?: boolean
+          last_run_at?: string | null
+          message?: string | null
+          next_run_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       referral_rewards: {
         Row: {
           amount: number
