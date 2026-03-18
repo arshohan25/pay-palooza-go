@@ -81,6 +81,9 @@ export default function ProductDetailPage() {
   const [relatedOthers, setRelatedOthers] = useState<any[]>([]);
   const [chattingWithMerchant, setChattingWithMerchant] = useState(false);
 
+  const merchantUserId = product?.merchants?.user_id;
+  const merchantOnline = merchantUserId ? isOnline(merchantUserId) : false;
+
   const handleChatWithMerchant = useCallback(async () => {
     if (!user) {
       toast.error("Please log in to chat with the seller");
