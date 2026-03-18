@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, MapPin, Wallet, CreditCard, ShoppingCart, Package,
-  Pencil, Plus, ChevronRight, CheckCircle2, X, Ticket, Gift,
-  AlertCircle, Loader2,
+  X, Ticket, Gift, AlertCircle, Loader2,
 } from "lucide-react";
+import AddressManager from "@/components/shop/AddressManager";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
