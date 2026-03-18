@@ -1122,6 +1122,8 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
   const { user } = useAuth();
   const profileData = useProfile();
   const chat = useChat();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { isOnline, onlineUsers } = useOnlinePresence(user?.id ?? null);
   const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
@@ -1136,6 +1138,22 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
   const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
 
   useEffect(() => { clearInboxCount(); }, []);
+
+  // Deep-link: open conversation from ?conv= query param
+  const deepLinkHandled = useRef(false);
+  useEffect(() => {
+    const convParam = searchParams.get("conv");
+    if (convParam && !deepLinkHandled.current && chat.conversations.length > 0) {
+      deepLinkHandled.current = true;
+      const exists = chat.conversations.find((c) => c.id === convParam);
+      if (exists) {
+        setActiveContactId(convParam);
+        chat.openConversation(convParam);
+      }
+      // Clean up the URL
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, chat.conversations, chat.openConversation, setSearchParams]);
 
   // Convert DB conversations to UI contacts
   const uiContacts: UIContact[] = chat.conversations.map((conv) =>
