@@ -449,9 +449,12 @@ const DonationsPage = () => {
                     {isAnonymous && <p className="text-xs text-muted-foreground mt-1">🕶️ Donated anonymously</p>}
                     {isRecurring && <p className="text-xs text-primary mt-1 font-medium">🔄 {frequency === "weekly" ? "Weekly" : "Monthly"} recurring schedule created</p>}
                   </div>
-                  <div className="flex gap-3 justify-center">
+                  <div className="flex gap-3 justify-center flex-wrap">
                     <button onClick={resetFlow} className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold">
                       Donate Again
+                    </button>
+                    <button onClick={() => navigate("/")} className="px-5 py-2.5 rounded-xl bg-muted text-foreground font-semibold flex items-center gap-1.5">
+                      Go Home
                     </button>
                     <button onClick={() => setShareOpen(true)} className="px-5 py-2.5 rounded-xl bg-muted text-foreground font-semibold flex items-center gap-1.5">
                       <Share2 size={15} /> Share
