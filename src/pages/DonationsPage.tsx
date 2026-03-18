@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Heart, GraduationCap, Stethoscope, Droplets, Wheat, Baby, Check, History, Loader2 } from "lucide-react";
+import { ArrowLeft, Heart, GraduationCap, Stethoscope, Droplets, Wheat, Baby, Check, History, Loader2, Trophy, EyeOff, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -9,6 +9,8 @@ import { verifyPin } from "@/lib/verifyPin";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import ShareReceiptSheet, { ReceiptData } from "@/components/ShareReceiptSheet";
 import { format } from "date-fns";
 
 const CAUSES = [
@@ -33,6 +35,13 @@ interface DonationRecord {
   created_at: string;
 }
 
+interface LeaderboardEntry {
+  donor_name: string;
+  total_amount: number;
+  donation_count: number;
+  cause_name: string;
+}
+
 const DonationsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -42,8 +51,18 @@ const DonationsPage = () => {
   const [message, setMessage] = useState("");
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [history, setHistory] = useState<DonationRecord[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+
+  // Share receipt state
+  const [shareOpen, setShareOpen] = useState(false);
+  const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
+
+  // Leaderboard state
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [leaderboardCause, setLeaderboardCause] = useState<string | null>(null);
 
   const fetchHistory = async () => {
     if (!user) return;
@@ -56,6 +75,15 @@ const DonationsPage = () => {
       .limit(50);
     setHistory((data as DonationRecord[]) ?? []);
     setHistoryLoading(false);
+  };
+
+  const fetchLeaderboard = async (cause?: string | null) => {
+    setLeaderboardLoading(true);
+    const { data } = await supabase.rpc("donation_leaderboard", {
+      p_cause: cause || null,
+    });
+    setLeaderboard((data as LeaderboardEntry[]) ?? []);
+    setLeaderboardLoading(false);
   };
 
   useEffect(() => {
@@ -102,6 +130,23 @@ const DonationsPage = () => {
         cause_icon: selectedCause!.emoji,
         amount: num,
         message: message || null,
+        is_anonymous: isAnonymous,
+      });
+
+      // Build receipt for sharing
+      const now = new Date();
+      setReceiptData({
+        title: "Donation Receipt",
+        amount: `৳${num.toLocaleString()}`,
+        gradient: `bg-gradient-to-r ${selectedCause!.gradient}`,
+        rows: [
+          { label: "Cause", value: selectedCause!.name },
+          { label: "Amount", value: `৳${num.toLocaleString()}` },
+          { label: "Date", value: format(now, "dd MMM yyyy, hh:mm a") },
+          ...(isAnonymous ? [{ label: "Identity", value: "Anonymous" }] : []),
+          ...(message ? [{ label: "Message", value: message }] : []),
+        ],
+        txnId: `DON-${selectedCause!.id.toUpperCase()}-${Date.now().toString(36).toUpperCase()}`,
       });
 
       setStep("success");
@@ -119,9 +164,12 @@ const DonationsPage = () => {
     setAmount("");
     setMessage("");
     setPin("");
+    setIsAnonymous(false);
   };
 
   const causeForIcon = (name: string) => CAUSES.find(c => c.name === name);
+
+  const MEDAL_COLORS = ["text-yellow-500", "text-slate-400", "text-amber-700"];
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -141,6 +189,9 @@ const DonationsPage = () => {
             <TabsTrigger value="donate" className="flex-1">Donate</TabsTrigger>
             <TabsTrigger value="history" className="flex-1">
               <History size={14} className="mr-1.5" /> History
+            </TabsTrigger>
+            <TabsTrigger value="leaderboard" className="flex-1" onClick={() => { if (leaderboard.length === 0) fetchLeaderboard(leaderboardCause); }}>
+              <Trophy size={14} className="mr-1.5" /> Top
             </TabsTrigger>
           </TabsList>
 
@@ -221,6 +272,18 @@ const DonationsPage = () => {
                     />
                   </div>
 
+                  {/* Anonymous toggle */}
+                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-card border border-border">
+                    <div className="flex items-center gap-2.5">
+                      <EyeOff size={16} className="text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Donate anonymously</p>
+                        <p className="text-[11px] text-muted-foreground">Your name won't appear on the leaderboard</p>
+                      </div>
+                    </div>
+                    <Switch checked={isAnonymous} onCheckedChange={setIsAnonymous} />
+                  </div>
+
                   <button
                     onClick={handleAmountNext}
                     disabled={!amount || parseFloat(amount) < 10}
@@ -238,6 +301,7 @@ const DonationsPage = () => {
                     <p className="text-muted-foreground text-sm">Donating to</p>
                     <p className="text-lg font-bold text-foreground">{selectedCause?.name}</p>
                     <p className="text-2xl font-extrabold text-primary mt-1">৳{parseFloat(amount).toLocaleString()}</p>
+                    {isAnonymous && <p className="text-xs text-muted-foreground mt-1 flex items-center justify-center gap-1"><EyeOff size={12} /> Anonymous</p>}
                   </div>
 
                   <div>
@@ -280,10 +344,16 @@ const DonationsPage = () => {
                     <p className="text-muted-foreground text-sm mt-1">
                       ৳{parseFloat(amount).toLocaleString()} donated to <span className="font-semibold text-foreground">{selectedCause?.name}</span>
                     </p>
+                    {isAnonymous && <p className="text-xs text-muted-foreground mt-1">🕶️ Donated anonymously</p>}
                   </div>
-                  <button onClick={resetFlow} className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold">
-                    Donate Again
-                  </button>
+                  <div className="flex gap-3 justify-center">
+                    <button onClick={resetFlow} className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold">
+                      Donate Again
+                    </button>
+                    <button onClick={() => setShareOpen(true)} className="px-5 py-2.5 rounded-xl bg-muted text-foreground font-semibold flex items-center gap-1.5">
+                      <Share2 size={15} /> Share
+                    </button>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -318,8 +388,73 @@ const DonationsPage = () => {
               </div>
             )}
           </TabsContent>
+
+          {/* ── Leaderboard Tab ── */}
+          <TabsContent value="leaderboard">
+            {/* Cause filter pills */}
+            <div className="flex gap-2 overflow-x-auto py-3 no-scrollbar">
+              <button
+                onClick={() => { setLeaderboardCause(null); fetchLeaderboard(null); }}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap border transition-all ${leaderboardCause === null ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-foreground"}`}
+              >
+                All Causes
+              </button>
+              {CAUSES.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => { setLeaderboardCause(c.name); fetchLeaderboard(c.name); }}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap border transition-all ${leaderboardCause === c.name ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-foreground"}`}
+                >
+                  {c.emoji} {c.name}
+                </button>
+              ))}
+            </div>
+
+            {leaderboardLoading ? (
+              <div className="flex justify-center py-12"><Loader2 className="animate-spin text-muted-foreground" /></div>
+            ) : leaderboard.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Trophy size={32} className="mx-auto mb-2 opacity-40" />
+                <p className="text-sm">No donations recorded yet</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {leaderboard.map((entry, i) => {
+                  const cause = causeForIcon(entry.cause_name);
+                  return (
+                    <div key={`${entry.donor_name}-${entry.cause_name}-${i}`} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
+                      <div className="w-8 text-center">
+                        {i < 3 ? (
+                          <Trophy size={20} className={MEDAL_COLORS[i]} />
+                        ) : (
+                          <span className="text-sm font-bold text-muted-foreground">{i + 1}</span>
+                        )}
+                      </div>
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm ${cause ? `bg-gradient-to-b ${cause.gradient} text-white` : "bg-muted"}`}>
+                        {cause ? <cause.icon size={16} /> : "❤️"}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">
+                          {entry.donor_name === "Anonymous" ? "🕶️ Anonymous" : entry.donor_name}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {entry.cause_name} · {entry.donation_count} donation{entry.donation_count > 1 ? "s" : ""}
+                        </p>
+                      </div>
+                      <p className="text-sm font-bold text-primary">৳{entry.total_amount.toLocaleString()}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
       </div>
+
+      {/* Share Receipt Sheet */}
+      {receiptData && (
+        <ShareReceiptSheet open={shareOpen} onClose={() => setShareOpen(false)} receipt={receiptData} />
+      )}
     </div>
   );
 };

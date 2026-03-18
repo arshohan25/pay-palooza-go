@@ -1,60 +1,29 @@
 
 
-## Donations: Anonymous Mode, Receipt Sharing, and Leaderboard
+## Plan: Add Biller Categories to API Hub
 
-### 1. Database Migration
+### What
 
-**Add `is_anonymous` column to `donations` table:**
-```sql
-ALTER TABLE donations ADD COLUMN is_anonymous boolean NOT NULL DEFAULT false;
-```
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-**Add RLS policy for public leaderboard reads** (only expose non-anonymous donor names):
-```sql
-CREATE POLICY "Public read donations for leaderboard"
-  ON donations FOR SELECT TO authenticated
-  USING (true);
-```
-Update the existing "Users view own donations" policy — actually, adding the broader policy covers it. Remove the old one to avoid confusion.
+### Changes
 
-**Create a leaderboard RPC** (security definer to join profiles safely):
-```sql
-CREATE OR REPLACE FUNCTION public.donation_leaderboard(p_cause text DEFAULT NULL)
-RETURNS TABLE(donor_name text, total_amount numeric, donation_count bigint, cause_name text)
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
-AS $$
-  SELECT
-    CASE WHEN d.is_anonymous THEN 'Anonymous' ELSE COALESCE(p.name, 'Unknown') END as donor_name,
-    SUM(d.amount) as total_amount,
-    COUNT(*) as donation_count,
-    d.cause_name
-  FROM donations d
-  LEFT JOIN profiles p ON p.user_id = d.user_id
-  WHERE (p_cause IS NULL OR d.cause_name = p_cause)
-  GROUP BY d.user_id, d.cause_name, d.is_anonymous, p.name
-  ORDER BY total_amount DESC
-  LIMIT 50
-$$;
-```
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-### 2. Amount Step — Add Anonymous Toggle
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-In the amount step (Step 2), add a switch/checkbox: "Donate anonymously" that sets `isAnonymous` state. Pass it to the insert call.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-### 3. Success Step — Share Receipt
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-On the success screen, add a "Share Receipt" button that opens the existing `ShareReceiptSheet` component with donation details (cause, amount, date, anonymous status).
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-### 4. New Leaderboard Tab
+3. Add the new category icons to the `categoryIcons` map.
 
-Add a third tab "Leaderboard" to the Tabs component. It will:
-- Call `supabase.rpc('donation_leaderboard')` on mount
-- Show a cause filter (horizontal pill selector for each cause + "All")
-- Display a ranked list with medal icons for top 3, showing donor name (or "Anonymous"), total amount, and donation count
-- Each cause card uses its matching gradient
-
-### Files Changed
-
-- **Migration**: Add `is_anonymous` column, leaderboard RPC, update RLS
-- **`src/pages/DonationsPage.tsx`**: Add `isAnonymous` state + toggle in amount step, share receipt on success, new leaderboard tab with cause filter
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

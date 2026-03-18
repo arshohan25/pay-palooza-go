@@ -1058,6 +1058,7 @@ export type Database = {
           cause_name: string
           created_at: string | null
           id: string
+          is_anonymous: boolean
           message: string | null
           transaction_id: string | null
           user_id: string
@@ -1068,6 +1069,7 @@ export type Database = {
           cause_name: string
           created_at?: string | null
           id?: string
+          is_anonymous?: boolean
           message?: string | null
           transaction_id?: string | null
           user_id: string
@@ -1078,6 +1080,7 @@ export type Database = {
           cause_name?: string
           created_at?: string | null
           id?: string
+          is_anonymous?: boolean
           message?: string | null
           transaction_id?: string | null
           user_id?: string
@@ -4018,6 +4021,15 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      donation_leaderboard: {
+        Args: { p_cause?: string }
+        Returns: {
+          cause_name: string
+          donation_count: number
+          donor_name: string
+          total_amount: number
+        }[]
       }
       expire_stale_payment_sessions: { Args: never; Returns: number }
       find_chat_user_by_phone: { Args: { p_phone: string }; Returns: Json }
