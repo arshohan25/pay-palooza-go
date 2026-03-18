@@ -37,7 +37,7 @@ import MerchantStoreSettingsTab from "@/components/MerchantStoreSettingsTab";
 import { useChat } from "@/hooks/use-chat";
 
 /* ─── Types ─── */
-type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api" | "store";
+type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api" | "store" | "inbox";
 
 interface MerchantInfo {
   id: string;
