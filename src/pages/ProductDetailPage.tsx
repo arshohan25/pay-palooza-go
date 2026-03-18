@@ -279,11 +279,23 @@ export default function ProductDetailPage() {
               </div>
               <span className="text-sm font-semibold text-foreground truncate">{vendorInfo.name}</span>
             </div>
-            {vendorInfo.slug && (
-              <Button variant="outline" size="sm" className="text-xs h-7 rounded-lg shrink-0" onClick={() => navigate(`/shop/${vendorInfo.slug}`)}>
-                Visit Store <ChevronRight className="w-3 h-3 ml-0.5" />
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs h-7 rounded-lg"
+                disabled={chattingWithMerchant}
+                onClick={handleChatWithMerchant}
+              >
+                <MessageCircle className="w-3 h-3 mr-1" />
+                Chat
               </Button>
-            )}
+              {vendorInfo.slug && (
+                <Button variant="outline" size="sm" className="text-xs h-7 rounded-lg" onClick={() => navigate(`/shop/${vendorInfo.slug}`)}>
+                  Visit Store <ChevronRight className="w-3 h-3 ml-0.5" />
+                </Button>
+              )}
+            </div>
           </motion.div>
         )}
 
