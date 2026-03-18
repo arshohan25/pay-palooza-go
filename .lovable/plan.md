@@ -1,29 +1,27 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Fix: Add "Go Home" button on donation success screen
 
-### What
+The success screen (step 4) only shows "Donate Again" and "Share" buttons. There's no way to navigate back home.
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### Change
+**File: `src/pages/DonationsPage.tsx`** (lines 452-459)
 
-### Changes
+Add a "Go Home" button to the success screen button group:
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+```tsx
+<div className="flex gap-3 justify-center flex-wrap">
+  <button onClick={resetFlow} className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold">
+    Donate Again
+  </button>
+  <button onClick={() => navigate("/")} className="px-5 py-2.5 rounded-xl bg-muted text-foreground font-semibold flex items-center gap-1.5">
+    Go Home
+  </button>
+  <button onClick={() => setShareOpen(true)} className="px-5 py-2.5 rounded-xl bg-muted text-foreground font-semibold flex items-center gap-1.5">
+    <Share2 size={15} /> Share
+  </button>
+</div>
+```
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
-
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+This adds a "Go Home" button between "Donate Again" and "Share" that navigates back to the home page. The back arrow in the header also works (calls `resetFlow` which goes back to cause selection), but users expect a prominent home button after completing a flow.
 
