@@ -1051,6 +1051,47 @@ export type Database = {
           },
         ]
       }
+      donations: {
+        Row: {
+          amount: number
+          cause_icon: string | null
+          cause_name: string
+          created_at: string | null
+          id: string
+          message: string | null
+          transaction_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          cause_icon?: string | null
+          cause_name: string
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          transaction_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          cause_icon?: string | null
+          cause_name?: string
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          transaction_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donations_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feature_locks: {
         Row: {
           created_at: string

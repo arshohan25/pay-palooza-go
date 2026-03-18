@@ -16,21 +16,21 @@ const items = [
   
   { id: "careers", icon: Briefcase, label: "Careers", desc: "Join our team & grow", gradient: "bg-gradient-to-b from-violet-500 to-purple-600" },
   { id: "coupons", icon: Ticket, label: "Coupons & Offers", desc: "Exclusive deals & cashback", gradient: "bg-gradient-to-b from-pink-500 to-rose-600" },
-  { id: "donations", icon: Heart, label: "Donations", desc: "Support causes you care about", gradient: "bg-gradient-to-b from-red-500 to-rose-700", soon: true },
+  { id: "donations", icon: Heart, label: "Donations", desc: "Support causes you care about", gradient: "bg-gradient-to-b from-red-500 to-rose-700" },
 ];
 
 const MoreSheet = ({ open, onClose, onBankTransfer, onSavings }: MoreSheetProps) => {
   const navigate = useNavigate();
   const visibleItems = items;
 
-  const handleTap = (id: string, soon?: boolean) => {
-    if (soon) { toast.info("Coming soon!"); return; }
+  const handleTap = (id: string) => {
     onClose();
     setTimeout(() => {
       if (id === "bank") onBankTransfer();
       else if (id === "savings") onSavings();
       else if (id === "careers") navigate("/careers");
       else if (id === "coupons") navigate("/coupons");
+      else if (id === "donations") navigate("/donations");
       else toast.info("Coming soon!");
     }, 200);
   };
@@ -67,8 +67,8 @@ const MoreSheet = ({ open, onClose, onBankTransfer, onSavings }: MoreSheetProps)
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.05 * i, duration: 0.3 }}
-                  onClick={() => handleTap(item.id, item.soon)}
-                  className={`flex flex-col items-center gap-3 p-5 rounded-2xl bg-card border border-border shadow-card hover:shadow-elevated active:scale-[0.97] transition-all text-center ${item.soon ? "opacity-60" : ""}`}
+                  onClick={() => handleTap(item.id)}
+                  className="flex flex-col items-center gap-3 p-5 rounded-2xl bg-card border border-border shadow-card hover:shadow-elevated active:scale-[0.97] transition-all text-center"
                 >
                   <div className={`${item.gradient} w-14 h-14 rounded-2xl flex items-center justify-center text-white`}>
                     <item.icon size={24} />
@@ -76,9 +76,6 @@ const MoreSheet = ({ open, onClose, onBankTransfer, onSavings }: MoreSheetProps)
                   <div className="min-w-0">
                     <div className="flex items-center justify-center gap-1.5">
                       <p className="text-sm font-bold text-foreground">{item.label}</p>
-                      {item.soon && (
-                        <span className="text-[9px] font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">Soon</span>
-                      )}
                     </div>
                     <p className="text-[11px] text-muted-foreground mt-1 leading-tight">{item.desc}</p>
                   </div>
