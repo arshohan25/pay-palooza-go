@@ -2423,7 +2423,7 @@ const MerchantSettlementConfigSheet = ({ open, onClose, merchant }: { open: bool
 };
 
 /* ── Merchant Floating Chat FAB ── */
-const MerchantChatFAB = ({ userId, navigate }: { userId: string | null; navigate: (path: string) => void }) => {
+const MerchantChatFAB = ({ userId, onOpenInbox }: { userId: string | null; onOpenInbox: () => void }) => {
   const [totalUnread, setTotalUnread] = useState(0);
   const { conversations } = useChat();
 
