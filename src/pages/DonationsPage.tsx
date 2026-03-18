@@ -341,7 +341,7 @@ const DonationsPage = () => {
                     {isRecurring && (
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
                         <div className="flex gap-2">
-                          {(["weekly", "monthly"] as const).map(f => (
+                          {(["weekly", "monthly", "yearly"] as const).map(f => (
                             <button
                               key={f}
                               onClick={() => setFrequency(f)}
@@ -351,7 +351,7 @@ const DonationsPage = () => {
                                   : "bg-muted/30 text-muted-foreground ring-1 ring-border/30"
                               }`}
                             >
-                              {f === "weekly" ? "Weekly" : "Monthly"}
+                              {f === "weekly" ? "Weekly" : f === "monthly" ? "Monthly" : "Yearly"}
                             </button>
                           ))}
                         </div>
