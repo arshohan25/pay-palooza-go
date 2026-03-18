@@ -158,13 +158,14 @@ function computeMessageStatus(
 function msgToUIMessage(msg: ChatMessage, userId: string, othersReadTimes?: string[]): UIMessage {
   const meta = msg.metadata as Record<string, unknown>;
   const status = computeMessageStatus(msg, userId, othersReadTimes ?? []);
+  const isProduct = meta?.isProductInquiry === true;
   return {
     id: msg.id,
     text: msg.decryptedContent || msg.content,
     time: new Date(msg.created_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
     sent: msg.sender_id === userId,
     status,
-    type: msg.message_type,
+    type: isProduct ? "product" : msg.message_type,
     amount: meta?.amount as number | undefined,
     txnId: meta?.txnId as string | undefined,
     orderId: meta?.orderId as string | undefined,
@@ -174,6 +175,11 @@ function msgToUIMessage(msg: ChatMessage, userId: string, othersReadTimes?: stri
     imageUrl: meta?.imageUrl as string | undefined,
     reactions: [],
     senderId: msg.sender_id,
+    productId: meta?.productId as string | undefined,
+    productName: meta?.productName as string | undefined,
+    productPrice: meta?.productPrice as number | undefined,
+    productImage: meta?.productImage as string | null | undefined,
+    productEmoji: meta?.productEmoji as string | undefined,
   };
 }
 
