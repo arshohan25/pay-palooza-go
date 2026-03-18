@@ -1,29 +1,47 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Problem
 
-### What
+The "Chat" button on the product detail page navigates to `/inbox?conv={convId}`, but `/inbox` is not a registered route in `App.tsx`. The Inbox is rendered as a tab inside the Index page (when `activeTab === "inbox"`), not as a standalone page.
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+This same bug affects `MerchantDashboard.tsx` which also navigates to `/inbox`.
 
-### Changes
+## Solution
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+Two navigation calls need to be fixed to use the tab-based routing pattern instead of a standalone `/inbox` route.
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+### 1. ProductDetailPage.tsx (line ~114)
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+Change:
+```ts
+navigate(`/inbox?conv=${convId}`);
+```
+To:
+```ts
+navigate(`/?tab=inbox&conv=${convId}`);
+```
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+### 2. MerchantDashboard.tsx (line ~687)
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+Change:
+```ts
+onClick: () => navigate("/inbox")
+```
+To:
+```ts
+onClick: () => navigate("/?tab=inbox")
+```
 
-3. Add the new category icons to the `categoryIcons` map.
+### 3. Index.tsx — Read URL params to set active tab and pass conv ID
 
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+The Index page needs to:
+- Read `tab` search param on mount and set `activeTab` accordingly
+- Read `conv` search param and pass it to `InboxPage` so it auto-opens the conversation
+
+This requires adding a `useSearchParams` or `useLocation` hook to Index.tsx to parse the URL, then setting `activeTab` to the `tab` param value and forwarding `conv` to InboxPage.
+
+### Files changed
+- `src/pages/ProductDetailPage.tsx` — fix navigate path
+- `src/pages/MerchantDashboard.tsx` — fix navigate path  
+- `src/pages/Index.tsx` — read `tab` and `conv` URL params, set active tab, pass conv to InboxPage
 
