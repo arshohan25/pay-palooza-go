@@ -366,15 +366,11 @@ export default function ShopPage() {
           <Button variant="ghost" size="icon" className="shrink-0 rounded-full h-8 w-8" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-4.5 h-4.5" />
           </Button>
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search products, brands, stores..."
-              className="pl-9 h-9 text-sm rounded-full border-border/40 bg-muted/30 focus-visible:ring-primary/30"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+          <SearchAutocomplete
+            value={search}
+            onChange={setSearch}
+            onNavigate={navigate}
+          />
           <Button variant="ghost" size="icon" className="shrink-0 rounded-full h-8 w-8" onClick={() => navigate("/wishlist")}>
             <Heart className="w-4 h-4" />
           </Button>
