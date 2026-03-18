@@ -15,7 +15,6 @@ interface SavedAddress {
   address_line: string;
   city: string;
   area: string | null;
-  postal_code: string | null;
   is_default: boolean;
 }
 
