@@ -2441,7 +2441,7 @@ const MerchantChatFAB = ({ userId, onOpenInbox }: { userId: string | null; onOpe
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.8 }}
       whileTap={{ scale: 0.9 }}
-      onClick={() => setActiveTab("inbox")}
+      onClick={() => onOpenInbox()}
       className="fixed bottom-6 right-4 z-[60] w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-primary-foreground"
       style={{ background: "linear-gradient(135deg, hsl(24 90% 50%), hsl(350 65% 38%))" }}
     >
