@@ -37,6 +37,7 @@ import CustomerOrdersPage from "./pages/CustomerOrdersPage";
 import OrderDetailPage from "./pages/OrderDetailPage";
 import CareersPage from "./pages/CareersPage";
 import CouponsPage from "./pages/CouponsPage";
+import DonationsPage from "./pages/DonationsPage";
 
 const queryClient = new QueryClient();
 
