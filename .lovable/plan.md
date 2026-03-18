@@ -1,29 +1,33 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Fix: Donation Leaderboard Shows Empty
 
-### What
+### Root Cause
+The leaderboard fetch is triggered via `onClick` on `TabsTrigger` (line 195), but only when `leaderboard.length === 0`. This pattern is fragile with Radix UI tabs -- the `onClick` may fire before/after the tab switch inconsistently, and there's a stale closure risk where `leaderboard.length` references an outdated value.
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+Additionally, the `Tabs` component uses `defaultValue="donate"` with no controlled `onValueChange`, so tab switches rely entirely on Radix internals and the `onClick` handler.
 
-### Changes
+### Fix -- `src/pages/DonationsPage.tsx`
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**1. Add tab state and `onValueChange` handler**
+- Add `const [activeTab, setActiveTab] = useState("donate")`
+- Change `<Tabs defaultValue="donate">` to `<Tabs value={activeTab} onValueChange={setActiveTab}`
+- Remove the `onClick` handlers from all `TabsTrigger` elements
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+**2. Add useEffect to fetch leaderboard on tab switch**
+```tsx
+useEffect(() => {
+  if (activeTab === "leaderboard" && leaderboard.length === 0) {
+    fetchLeaderboard(leaderboardCause);
+  }
+  if (activeTab === "recurring" && recurringList.length === 0) {
+    fetchRecurring();
+  }
+}, [activeTab]);
+```
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
+This ensures the fetch is triggered reliably when the tab becomes active, using React's state management instead of relying on DOM click events.
 
 ### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+- **Modified**: `src/pages/DonationsPage.tsx` -- controlled tab state with `onValueChange` and `useEffect`-based data fetching
 
