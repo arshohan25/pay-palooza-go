@@ -104,26 +104,16 @@ const DonationsPage = () => {
       const desc = `Donation: ${selectedCause!.name}${message ? ` — ${message}` : ""}`;
       const emoji = CAUSE_EMOJI[selectedCause!.name] || "❤️";
 
-      const { error } = await supabase.rpc("record_transaction", {
-        p_type: "payment", p_amount: num, p_fee: 0, p_description: desc,
-        p_reference: `DON-${selectedCause!.id.toUpperCase()}`, p_recipient_name: selectedCause!.name,
+      const { error } = await supabase.rpc("process_donation" as any, {
+        p_amount: num,
+        p_cause_name: selectedCause!.name,
+        p_cause_icon: emoji,
+        p_message: message || null,
+        p_is_anonymous: isAnonymous,
+        p_is_recurring: isRecurring,
+        p_frequency: frequency,
       });
       if (error) throw error;
-
-      await supabase.from("donations").insert({
-        user_id: user!.id, cause_name: selectedCause!.name, cause_icon: emoji,
-        amount: num, message: message || null, is_anonymous: isAnonymous,
-      });
-
-      if (isRecurring) {
-        const nextRun = new Date();
-        if (frequency === "weekly") nextRun.setDate(nextRun.getDate() + 7);
-        else nextRun.setMonth(nextRun.getMonth() + 1);
-        await supabase.from("recurring_donations").insert({
-          user_id: user!.id, cause_name: selectedCause!.name, cause_icon: emoji,
-          amount: num, frequency, message: message || null, is_anonymous: isAnonymous, next_run_at: nextRun.toISOString(),
-        });
-      }
 
       const now = new Date();
       setReceiptData({
