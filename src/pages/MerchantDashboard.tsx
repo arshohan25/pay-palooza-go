@@ -696,15 +696,21 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll }: 
             <Zap size={14} className="text-primary" /> Merchant Services
           </h3>
         </div>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-5 gap-2">
           {quickActions.map(a => (
             <motion.button key={a.label} whileTap={{ scale: 0.95 }} onClick={a.onClick}
               className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-card shadow-card border border-border/40 hover:shadow-elevated transition-all press-effect">
-              <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${a.gradient} flex items-center justify-center shadow-sm`}>
-                <a.icon size={18} className="text-white" />
+              <div className="relative">
+                <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${a.gradient} flex items-center justify-center shadow-sm`}>
+                  <a.icon size={18} className="text-white" />
+                </div>
+                {a.badge && a.badge > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-background">
+                    {a.badge > 99 ? "99+" : a.badge}
+                  </span>
+                )}
               </div>
               <span className="text-[10px] font-bold text-foreground leading-tight text-center">{a.label}</span>
-              
             </motion.button>
           ))}
         </div>
