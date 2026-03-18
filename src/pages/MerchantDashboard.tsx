@@ -410,6 +410,7 @@ const MerchantDashboard = () => {
             {activeTab === "settlements"  && <SettlementTab merchant={merchant} paymentTxns={paymentTxns} />}
             {activeTab === "mdr"          && <MDRTab merchant={merchant} paymentTxns={paymentTxns} />}
             {activeTab === "api"          && merchant && <MerchantApiTab merchantId={merchant.id} />}
+            {activeTab === "inbox"        && <InboxPage />}
           </motion.div>
         </AnimatePresence>
       </div>
