@@ -2421,4 +2421,41 @@ const MerchantSettlementConfigSheet = ({ open, onClose, merchant }: { open: bool
   );
 };
 
+/* ── Merchant Floating Chat FAB ── */
+const MerchantChatFAB = ({ userId, navigate }: { userId: string | null; navigate: (path: string) => void }) => {
+  const [totalUnread, setTotalUnread] = useState(0);
+  const { conversations } = useChat();
+
+  useEffect(() => {
+    if (!conversations) return;
+    const unread = conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
+    setTotalUnread(unread);
+  }, [conversations]);
+
+  if (!userId) return null;
+
+  return (
+    <motion.button
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.8 }}
+      whileTap={{ scale: 0.9 }}
+      onClick={() => navigate("/?tab=inbox")}
+      className="fixed bottom-6 right-4 z-[60] w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-primary-foreground"
+      style={{ background: "linear-gradient(135deg, hsl(24 90% 50%), hsl(350 65% 38%))" }}
+    >
+      <MessageCircle className="w-6 h-6" />
+      {totalUnread > 0 && (
+        <motion.span
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="absolute -top-1 -right-1 min-w-[20px] h-5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center px-1"
+        >
+          {totalUnread > 99 ? "99+" : totalUnread}
+        </motion.span>
+      )}
+    </motion.button>
+  );
+};
+
 export default MerchantDashboard;
