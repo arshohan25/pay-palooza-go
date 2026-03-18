@@ -1,24 +1,29 @@
 
 
-## Add Yearly Frequency + Save Favorite Cause
+## Plan: Add Biller Categories to API Hub
+
+### What
+
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-**1. Update `process_donation` RPC** (DB migration)
-- Add `yearly` handling in the frequency `IF` block: `v_next_run := v_next_run + interval '1 year'`
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-**2. Update `process-recurring-donations` Edge Function**
-- Add yearly next-run calculation: `nextRun.setFullYear(nextRun.getFullYear() + 1)`
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-**3. Update `src/pages/DonationsPage.tsx`**
-- Change `frequency` state type from `"weekly" | "monthly"` to `"weekly" | "monthly" | "yearly"`
-- Add "Yearly" button to frequency selector (line 344) alongside weekly/monthly
-- **Save favorite cause**: On successful donation, save `selectedCause.id` to `localStorage` (`mfs_fav_donation_cause`). On page load, if a saved cause exists, auto-select it and skip to the amount step (with a small "Change cause" link)
-- Update the PIN confirmation badges to show "Yearly" when applicable
-- Update receipt row to show "Yearly" label
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-**4. Files**
-- **New migration**: Update `process_donation` to handle `yearly`
-- **Modified**: `src/pages/DonationsPage.tsx` — yearly option + favorite cause persistence
-- **Modified**: `supabase/functions/process-recurring-donations/index.ts` — yearly next-run calc
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 

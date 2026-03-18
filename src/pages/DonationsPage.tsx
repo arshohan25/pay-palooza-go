@@ -49,7 +49,7 @@ const DonationsPage = () => {
   const [history, setHistory] = useState<DonationRecord[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [isRecurring, setIsRecurring] = useState(false);
-  const [frequency, setFrequency] = useState<"weekly" | "monthly">("monthly");
+  const [frequency, setFrequency] = useState<"weekly" | "monthly" | "yearly">("monthly");
   const [recurringList, setRecurringList] = useState<RecurringDonation[]>([]);
   const [recurringLoading, setRecurringLoading] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -84,7 +84,15 @@ const DonationsPage = () => {
     setLeaderboardLoading(false);
   };
 
-  useEffect(() => { if (user) { fetchHistory(); fetchRecurring(); } }, [user]);
+  useEffect(() => {
+    if (user) { fetchHistory(); fetchRecurring(); }
+    // Restore favorite cause
+    const favId = localStorage.getItem("mfs_fav_donation_cause");
+    if (favId) {
+      const fav = CAUSES.find(c => c.id === favId);
+      if (fav) { setSelectedCause(fav); setStep("amount"); }
+    }
+  }, [user]);
 
   useEffect(() => {
     if (activeTab === "leaderboard" && leaderboard.length === 0) {
@@ -95,7 +103,7 @@ const DonationsPage = () => {
     }
   }, [activeTab]);
 
-  const handleSelectCause = (cause: typeof CAUSES[0]) => { setSelectedCause(cause); setStep("amount"); };
+  const handleSelectCause = (cause: typeof CAUSES[0]) => { setSelectedCause(cause); setStep("amount"); localStorage.setItem("mfs_fav_donation_cause", cause.id); };
 
   const handleAmountNext = () => {
     const num = parseFloat(amount);
@@ -135,7 +143,7 @@ const DonationsPage = () => {
           { label: "Amount", value: `৳${num.toLocaleString()}` },
           { label: "Date", value: format(now, "dd MMM yyyy, hh:mm a") },
           ...(isAnonymous ? [{ label: "Identity", value: "Anonymous" }] : []),
-          ...(isRecurring ? [{ label: "Recurring", value: frequency === "weekly" ? "Weekly" : "Monthly" }] : []),
+          ...(isRecurring ? [{ label: "Recurring", value: frequency === "weekly" ? "Weekly" : frequency === "yearly" ? "Yearly" : "Monthly" }] : []),
           ...(message ? [{ label: "Message", value: message }] : []),
         ],
         txnId: `DON-${selectedCause!.id.toUpperCase()}-${Date.now().toString(36).toUpperCase()}`,
@@ -143,6 +151,10 @@ const DonationsPage = () => {
 
       setStep("success");
       fireSuccessConfetti();
+      // Save favorite cause for next time
+      if (selectedCause) {
+        localStorage.setItem("mfs_fav_donation_cause", selectedCause.id);
+      }
       fetchHistory();
       if (isRecurring) fetchRecurring();
     } catch (e: any) {
@@ -252,12 +264,13 @@ const DonationsPage = () => {
               {step === "amount" && selectedCause && (
                 <motion.div key="amount" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} transition={{ duration: 0.3 }} className="space-y-6">
                   {/* Compact cause pill */}
-                  <div className="flex justify-center">
-                    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r ${selectedCause.gradient} text-white text-sm font-medium`}>
-                      <selectedCause.icon size={16} />
-                      {selectedCause.name}
-                    </div>
-                  </div>
+                   <div className="flex flex-col items-center gap-1">
+                     <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r ${selectedCause.gradient} text-white text-sm font-medium`}>
+                       <selectedCause.icon size={16} />
+                       {selectedCause.name}
+                     </div>
+                     <button onClick={() => { setStep("cause"); setSelectedCause(null); }} className="text-[11px] text-muted-foreground hover:text-primary transition-colors">Change cause</button>
+                   </div>
 
                   {/* Single editable amount field */}
                   <div className="text-center py-6">
@@ -341,7 +354,7 @@ const DonationsPage = () => {
                     {isRecurring && (
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
                         <div className="flex gap-2">
-                          {(["weekly", "monthly"] as const).map(f => (
+                          {(["weekly", "monthly", "yearly"] as const).map(f => (
                             <button
                               key={f}
                               onClick={() => setFrequency(f)}
@@ -351,7 +364,7 @@ const DonationsPage = () => {
                                   : "bg-muted/30 text-muted-foreground ring-1 ring-border/30"
                               }`}
                             >
-                              {f === "weekly" ? "Weekly" : "Monthly"}
+                              {f === "weekly" ? "Weekly" : f === "monthly" ? "Monthly" : "Yearly"}
                             </button>
                           ))}
                         </div>
@@ -383,7 +396,7 @@ const DonationsPage = () => {
                     {(isAnonymous || isRecurring) && (
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         {isAnonymous && <span className="ring-1 ring-border/40 px-2.5 py-1 rounded-full flex items-center gap-1"><EyeOff size={10} /> Anonymous</span>}
-                        {isRecurring && <span className="ring-1 ring-border/40 px-2.5 py-1 rounded-full flex items-center gap-1"><RefreshCw size={10} /> {frequency === "weekly" ? "Weekly" : "Monthly"}</span>}
+                        {isRecurring && <span className="ring-1 ring-border/40 px-2.5 py-1 rounded-full flex items-center gap-1"><RefreshCw size={10} /> {frequency === "weekly" ? "Weekly" : frequency === "yearly" ? "Yearly" : "Monthly"}</span>}
                       </div>
                     )}
                   </div>
