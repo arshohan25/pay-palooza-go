@@ -1,29 +1,38 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Verification: Product Inquiry Chat Flow
 
-### What
+### Current Status: Fully Implemented
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+The end-to-end flow is correctly wired:
 
-### Changes
+1. **ProductDetailPage** (`handleChatWithMerchant`): Creates a direct conversation with the merchant's `user_id`, sends a message with product metadata (`isProductInquiry: true`, `productName`, `productPrice`, `productImage`, `productEmoji`), then navigates to `/inbox?conv={convId}`
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+2. **use-chat hook** (`sendMessage`): Accepts metadata as 4th argument, stores it as JSON in `chat_messages.metadata` column
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+3. **InboxPage** (`msgToUIMessage`): Detects `isProductInquiry` in metadata, sets message type to `"product"`, extracts all product fields
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+4. **InboxPage** (ProductBubble rendering): Renders a rich card with product image/emoji, name, price, and "Product Inquiry" label
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+5. **Deep-linking**: Reads `?conv=` param to auto-open the correct conversation
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+6. **Unread tracking**: The `useChat` hook tracks `totalUnread` count which powers badge indicators
 
-3. Add the new category icons to the `categoryIcons` map.
+### Testing Limitation
 
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+The current logged-in user (`897da592...`) owns the only merchant store ("Rafiq Electronics"). Tapping Chat on their own products triggers `"This is your own store"` guard (line 98). To test the full flow, you need a **second user account** that is not the merchant owner.
+
+### Recommended Test Steps
+
+1. Log out and create/log in with a second test account
+2. Navigate to Shop, open a product from "Rafiq Electronics"
+3. Tap the Chat button in the bottom bar
+4. Verify: navigates to Inbox with the conversation auto-opened
+5. Verify: a rich product card bubble appears showing product name, emoji, and price
+6. Log back into the merchant account
+7. Verify: the conversation appears with an unread badge and the product inquiry card is visible
+
+### No Code Changes Needed
+
+The implementation is complete and correct. No bugs found in the flow.
 
