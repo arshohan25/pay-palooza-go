@@ -1541,6 +1541,9 @@ export default function AdminDashboard() {
         {/* ═══ SUPPORT DASHBOARD ═══ */}
         {activeTab === "support" && <AdminSupportDashboard />}
 
+        {/* ═══ CHAT MONITOR ═══ */}
+        {activeTab === "chat_monitor" && <AdminChatMonitor />}
+
         {/* ═══ FEATURE LOCKS ═══ */}
         {activeTab === "locks" && <AdminFeatureLocks />}
 
