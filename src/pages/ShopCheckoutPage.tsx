@@ -277,77 +277,15 @@ export default function ShopCheckoutPage() {
       <div className="px-4 pt-4 space-y-4">
         {/* Delivery Address */}
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Delivery Address</p>
-            {addresses.length > 0 && (
-              <button
-                onClick={() => setShowAddressPicker((p) => !p)}
-                className="flex items-center gap-1 text-[11px] font-semibold text-primary"
-              >
-                Change <ChevronRight className="w-3 h-3" />
-              </button>
-            )}
-          </div>
-
-          {selectedAddress ? (
-            <div className="flex items-start gap-3 p-3 rounded-xl border border-primary/20 bg-primary/5">
-              <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-foreground">{selectedAddress.label}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {selectedAddress.recipient_name} · {selectedAddress.phone}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {selectedAddress.address_line}
-                  {selectedAddress.area ? `, ${selectedAddress.area}` : ""}, {selectedAddress.city}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-4">
-              <p className="text-sm text-muted-foreground mb-2">No saved addresses</p>
-              <p className="text-xs text-muted-foreground">
-                Please add an address from your account settings
-              </p>
-            </div>
+          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Delivery Address</p>
+          {user && (
+            <AddressManager
+              userId={user.id}
+              onSelect={(addr) => setSelectedAddress(addr)}
+              selectedId={selectedAddress?.id}
+              compact
+            />
           )}
-
-          <AnimatePresence>
-            {showAddressPicker && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden space-y-2"
-              >
-                {addresses.map((a) => (
-                  <button
-                    key={a.id}
-                    onClick={() => {
-                      setSelectedAddressId(a.id);
-                      setShowAddressPicker(false);
-                    }}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-colors ${
-                      a.id === selectedAddressId
-                        ? "border-primary/30 bg-primary/5"
-                        : "border-border bg-muted/40"
-                    }`}
-                  >
-                    <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-foreground">{a.label}</p>
-                      <p className="text-[11px] text-muted-foreground truncate">
-                        {a.address_line}, {a.city}
-                      </p>
-                    </div>
-                    {a.id === selectedAddressId && (
-                      <CheckCircle2 className="w-4 h-4 text-primary" />
-                    )}
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
 
         {/* Payment Method */}
