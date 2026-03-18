@@ -80,32 +80,15 @@ export default function ShopCheckoutPage() {
     return () => { unsub(); };
   }, []);
 
-  // Load saved addresses and delivery zones
+  // Load delivery zones
   useEffect(() => {
     if (!user) return;
-    const load = async () => {
-      const [{ data: addrData }, { data: zoneData }] = await Promise.all([
-        supabase
-          .from("delivery_addresses")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("is_default", { ascending: false }),
-        supabase
-          .from("delivery_zones")
-          .select("*, courier_providers(name)")
-          .eq("is_active", true),
-      ]);
-      if (addrData && addrData.length > 0) {
-        setAddresses(addrData);
-        const def = addrData.find((a) => a.is_default) || addrData[0];
-        setSelectedAddressId(def.id);
-      }
-      setDeliveryZones((zoneData as any[]) ?? []);
-    };
-    load();
+    supabase
+      .from("delivery_zones")
+      .select("*, courier_providers(name)")
+      .eq("is_active", true)
+      .then(({ data }) => setDeliveryZones((data as any[]) ?? []));
   }, [user]);
-
-  const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
 
   // Match delivery zone by city
   const matchedZone = selectedAddress
