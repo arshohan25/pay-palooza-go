@@ -135,7 +135,7 @@ const DonationsPage = () => {
           { label: "Amount", value: `৳${num.toLocaleString()}` },
           { label: "Date", value: format(now, "dd MMM yyyy, hh:mm a") },
           ...(isAnonymous ? [{ label: "Identity", value: "Anonymous" }] : []),
-          ...(isRecurring ? [{ label: "Recurring", value: frequency === "weekly" ? "Weekly" : "Monthly" }] : []),
+          ...(isRecurring ? [{ label: "Recurring", value: frequency === "weekly" ? "Weekly" : frequency === "yearly" ? "Yearly" : "Monthly" }] : []),
           ...(message ? [{ label: "Message", value: message }] : []),
         ],
         txnId: `DON-${selectedCause!.id.toUpperCase()}-${Date.now().toString(36).toUpperCase()}`,
