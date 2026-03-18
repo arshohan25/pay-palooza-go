@@ -13,7 +13,7 @@ import {
   Bell, Settings, HelpCircle, Landmark, BadgeCheck, Link, Share2,
   ExternalLink, Plus, Trash2, Check, Send, Banknote, Timer,
   ArrowRightLeft, Repeat, HandCoins, CalendarClock, CircleDollarSign, ScanLine,
-  Lock, Delete, Menu, X, AlertTriangle, ChevronDown, Info, Package
+  Lock, Delete, Menu, X, AlertTriangle, ChevronDown, Info, Package, MessageCircle
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ import MerchantAnalyticsTab from "@/components/MerchantAnalyticsTab";
 import MerchantProductsTab from "@/components/MerchantProductsTab";
 import MerchantOrdersTab from "@/components/MerchantOrdersTab";
 import MerchantStoreSettingsTab from "@/components/MerchantStoreSettingsTab";
+import { useChat } from "@/hooks/use-chat";
 
 /* ─── Types ─── */
 type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api" | "store";
@@ -601,6 +602,8 @@ const MerchantBenefitsPage = ({ navigate }: { navigate: (path: string) => void }
 /* ── Overview Tab ── */
 const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll }: { merchant: MerchantInfo | null; balance: number; paymentTxns: TxnRow[]; onRefresh: () => void; onSeeAll: () => void }) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { totalUnread } = useChat();
   const [showSendMoney, setShowSendMoney] = useState(false);
   const [showCashOut, setShowCashOut] = useState(false);
   const [showAddBank, setShowAddBank] = useState(false);
@@ -633,7 +636,6 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll }: 
     if (!merchant) return;
     setQrDemoLoading(true);
     try {
-      // Fetch the merchant's active API key
       const { data: keyData } = await supabase
         .from("merchant_api_keys")
         .select("api_key, app_password")
@@ -667,7 +669,6 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll }: 
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-      // Open QR page in new tab — prefer backend-returned URL for correct host
       const qrUrl = data.qr_page_url || `/pay/qr/${data.session_id}`;
       window.open(qrUrl, "_blank");
       toast({ title: "QR Page Opened", description: "Scan with the EasyPay app to test the payment flow." });
@@ -683,6 +684,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll }: 
     { icon: HandCoins, label: "Cash Out", gradient: "from-emerald-500 to-teal-600", onClick: () => setShowCashOut(true) },
     { icon: Landmark, label: "Add Bank", gradient: "from-amber-500 to-orange-600", onClick: () => setShowAddBank(true) },
     { icon: CalendarClock, label: "Settlement", gradient: "from-purple-500 to-violet-600", onClick: () => setShowSettlementConfig(true) },
+    { icon: MessageCircle, label: "Inquiries", gradient: "from-pink-500 to-rose-600", onClick: () => navigate("/inbox"), badge: totalUnread > 0 ? totalUnread : undefined },
   ];
 
   return (
@@ -694,15 +696,21 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll }: 
             <Zap size={14} className="text-primary" /> Merchant Services
           </h3>
         </div>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-5 gap-2">
           {quickActions.map(a => (
             <motion.button key={a.label} whileTap={{ scale: 0.95 }} onClick={a.onClick}
               className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-card shadow-card border border-border/40 hover:shadow-elevated transition-all press-effect">
-              <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${a.gradient} flex items-center justify-center shadow-sm`}>
-                <a.icon size={18} className="text-white" />
+              <div className="relative">
+                <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${a.gradient} flex items-center justify-center shadow-sm`}>
+                  <a.icon size={18} className="text-white" />
+                </div>
+                {a.badge && a.badge > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-background">
+                    {a.badge > 99 ? "99+" : a.badge}
+                  </span>
+                )}
               </div>
               <span className="text-[10px] font-bold text-foreground leading-tight text-center">{a.label}</span>
-              
             </motion.button>
           ))}
         </div>
