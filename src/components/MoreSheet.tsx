@@ -31,6 +31,7 @@ const MoreSheet = ({ open, onClose, onBankTransfer, onSavings }: MoreSheetProps)
       else if (id === "savings") onSavings();
       else if (id === "careers") navigate("/careers");
       else if (id === "coupons") navigate("/coupons");
+      else if (id === "donations") navigate("/donations");
       else toast.info("Coming soon!");
     }, 200);
   };
