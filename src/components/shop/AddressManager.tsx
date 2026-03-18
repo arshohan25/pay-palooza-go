@@ -51,7 +51,7 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
 
   const openEdit = (addr: SavedAddress | "new") => {
     if (addr === "new") {
-      setForm({ label: "Home", recipient_name: "", phone: "", address_line: "", city: "", area: "", postal_code: "", is_default: addresses.length === 0 });
+      setForm({ label: "Home", recipient_name: "", phone: "", address_line: "", city: "", area: "", is_default: addresses.length === 0 });
     } else {
       setForm({
         label: addr.label, recipient_name: addr.recipient_name, phone: addr.phone,
