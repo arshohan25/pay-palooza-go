@@ -35,9 +35,10 @@ import MerchantProductsTab from "@/components/MerchantProductsTab";
 import MerchantOrdersTab from "@/components/MerchantOrdersTab";
 import MerchantStoreSettingsTab from "@/components/MerchantStoreSettingsTab";
 import { useChat } from "@/hooks/use-chat";
+import InboxPage from "@/pages/InboxPage";
 
 /* ─── Types ─── */
-type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api" | "store";
+type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api" | "store" | "inbox";
 
 interface MerchantInfo {
   id: string;
@@ -75,6 +76,7 @@ const mainTabs: { id: MerchTab; icon: typeof QrCode; label: string }[] = [
   { id: "overview",     icon: BarChart3,    label: "Overview" },
   { id: "products",     icon: Package,      label: "Products" },
   { id: "orders",       icon: Receipt,      label: "Orders" },
+  { id: "inbox",        icon: MessageCircle, label: "Chats" },
   { id: "store",        icon: Store,        label: "Store" },
 ];
 
@@ -397,7 +399,7 @@ const MerchantDashboard = () => {
       <div className="max-w-xl mx-auto px-4 py-4 pb-24">
         <AnimatePresence mode="wait">
           <motion.div key={activeTab} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }}>
-            {activeTab === "overview"     && <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} onRefresh={loadData} onSeeAll={() => setActiveTab("transactions")} />}
+            {activeTab === "overview"     && <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} onRefresh={loadData} onSeeAll={() => setActiveTab("transactions")} onOpenInbox={() => setActiveTab("inbox")} />}
             {activeTab === "products"     && merchant && <MerchantProductsTab merchantId={merchant.id} businessName={merchant.business_name} />}
             {activeTab === "orders"       && merchant && <MerchantOrdersTab merchantId={merchant.id} />}
             {activeTab === "store"        && merchant && <MerchantStoreSettingsTab merchantId={merchant.id} businessName={merchant.business_name} />}
@@ -408,6 +410,7 @@ const MerchantDashboard = () => {
             {activeTab === "settlements"  && <SettlementTab merchant={merchant} paymentTxns={paymentTxns} />}
             {activeTab === "mdr"          && <MDRTab merchant={merchant} paymentTxns={paymentTxns} />}
             {activeTab === "api"          && merchant && <MerchantApiTab merchantId={merchant.id} />}
+            {activeTab === "inbox"        && <InboxPage />}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -468,7 +471,7 @@ const MerchantDashboard = () => {
       </AnimatePresence>
 
       {/* ── Floating Chat FAB ── */}
-      <MerchantChatFAB userId={user?.id ?? null} navigate={navigate} />
+      <MerchantChatFAB userId={user?.id ?? null} onOpenInbox={() => setActiveTab("inbox")} />
     </div>
   );
 };
@@ -603,7 +606,7 @@ const MerchantBenefitsPage = ({ navigate }: { navigate: (path: string) => void }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* ── Overview Tab ── */
-const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll }: { merchant: MerchantInfo | null; balance: number; paymentTxns: TxnRow[]; onRefresh: () => void; onSeeAll: () => void }) => {
+const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll, onOpenInbox }: { merchant: MerchantInfo | null; balance: number; paymentTxns: TxnRow[]; onRefresh: () => void; onSeeAll: () => void; onOpenInbox: () => void }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { totalUnread } = useChat();
@@ -687,7 +690,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll }: 
     { icon: HandCoins, label: "Cash Out", gradient: "from-emerald-500 to-teal-600", onClick: () => setShowCashOut(true) },
     { icon: Landmark, label: "Add Bank", gradient: "from-amber-500 to-orange-600", onClick: () => setShowAddBank(true) },
     { icon: CalendarClock, label: "Settlement", gradient: "from-purple-500 to-violet-600", onClick: () => setShowSettlementConfig(true) },
-    { icon: MessageCircle, label: "Inquiries", gradient: "from-pink-500 to-rose-600", onClick: () => navigate("/?tab=inbox"), badge: totalUnread > 0 ? totalUnread : undefined },
+    { icon: MessageCircle, label: "Inquiries", gradient: "from-pink-500 to-rose-600", onClick: () => onOpenInbox(), badge: totalUnread > 0 ? totalUnread : undefined },
   ];
 
   return (
@@ -2422,7 +2425,7 @@ const MerchantSettlementConfigSheet = ({ open, onClose, merchant }: { open: bool
 };
 
 /* ── Merchant Floating Chat FAB ── */
-const MerchantChatFAB = ({ userId, navigate }: { userId: string | null; navigate: (path: string) => void }) => {
+const MerchantChatFAB = ({ userId, onOpenInbox }: { userId: string | null; onOpenInbox: () => void }) => {
   const [totalUnread, setTotalUnread] = useState(0);
   const { conversations } = useChat();
 
@@ -2440,7 +2443,7 @@ const MerchantChatFAB = ({ userId, navigate }: { userId: string | null; navigate
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.8 }}
       whileTap={{ scale: 0.9 }}
-      onClick={() => navigate("/?tab=inbox")}
+      onClick={() => onOpenInbox()}
       className="fixed bottom-6 right-4 z-[60] w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-primary-foreground"
       style={{ background: "linear-gradient(135deg, hsl(24 90% 50%), hsl(350 65% 38%))" }}
     >
