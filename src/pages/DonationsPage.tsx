@@ -1,17 +1,18 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Heart, GraduationCap, Stethoscope, Droplets, Wheat, Baby, Check, History, Loader2, Trophy, EyeOff, Share2, RefreshCw, Trash2, CalendarClock } from "lucide-react";
+import { ArrowLeft, Heart, GraduationCap, Stethoscope, Droplets, Wheat, Baby, Check, History, Loader2, Trophy, EyeOff, Share2, RefreshCw, Trash2, CalendarClock, Home, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { verifyPin } from "@/lib/verifyPin";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import ShareReceiptSheet, { ReceiptData } from "@/components/ShareReceiptSheet";
 import { format } from "date-fns";
+import { fireSuccessConfetti } from "@/lib/confetti";
+import { springTransition } from "@/lib/transitions";
 
 const CAUSES = [
   { id: "education", name: "Education", icon: GraduationCap, gradient: "from-blue-500 to-indigo-600", emoji: "📚" },
@@ -68,17 +69,14 @@ const DonationsPage = () => {
   const [history, setHistory] = useState<DonationRecord[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
-  // Recurring state
   const [isRecurring, setIsRecurring] = useState(false);
   const [frequency, setFrequency] = useState<"weekly" | "monthly">("monthly");
   const [recurringList, setRecurringList] = useState<RecurringDonation[]>([]);
   const [recurringLoading, setRecurringLoading] = useState(false);
 
-  // Share receipt state
   const [shareOpen, setShareOpen] = useState(false);
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
 
-  // Leaderboard state
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [leaderboardCause, setLeaderboardCause] = useState<string | null>(null);
@@ -157,7 +155,6 @@ const DonationsPage = () => {
 
       if (error) throw error;
 
-      // Record in donations table
       await supabase.from("donations").insert({
         user_id: user!.id,
         cause_name: selectedCause!.name,
@@ -167,7 +164,6 @@ const DonationsPage = () => {
         is_anonymous: isAnonymous,
       });
 
-      // Create recurring schedule if enabled
       if (isRecurring) {
         const nextRun = new Date();
         if (frequency === "weekly") nextRun.setDate(nextRun.getDate() + 7);
@@ -185,7 +181,6 @@ const DonationsPage = () => {
         });
       }
 
-      // Build receipt for sharing
       const now = new Date();
       setReceiptData({
         title: "Donation Receipt",
@@ -203,6 +198,7 @@ const DonationsPage = () => {
       });
 
       setStep("success");
+      fireSuccessConfetti();
       fetchHistory();
       if (isRecurring) fetchRecurring();
     } catch (e: any) {
@@ -240,56 +236,70 @@ const DonationsPage = () => {
 
   const causeForIcon = (name: string) => CAUSES.find(c => c.name === name);
 
-  const MEDAL_COLORS = ["text-yellow-500", "text-slate-400", "text-amber-700"];
+  const MEDAL_BG = ["bg-yellow-500/10 border-yellow-500/30", "bg-slate-400/10 border-slate-400/30", "bg-amber-700/10 border-amber-700/30"];
+  const MEDAL_TEXT = ["text-yellow-500", "text-slate-400", "text-amber-700"];
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-lg border-b border-border">
-        <div className="flex items-center gap-3 px-4 py-3 max-w-md mx-auto">
-          <button onClick={() => step === "cause" ? navigate(-1) : resetFlow()} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center">
+      {/* Premium Header */}
+      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl">
+        <div className="flex items-center gap-3 px-4 py-3.5 max-w-md mx-auto">
+          <button
+            onClick={() => step === "cause" ? navigate(-1) : resetFlow()}
+            className="w-9 h-9 rounded-full bg-muted/60 flex items-center justify-center active:scale-95 transition-transform"
+          >
             <ArrowLeft size={18} className="text-foreground" />
           </button>
-          <h1 className="text-lg font-bold text-foreground">Donations</h1>
+          <div className="flex-1">
+            <h1 className="text-lg font-bold text-foreground tracking-tight">Donations</h1>
+          </div>
+          <Sparkles size={18} className="text-primary/60" />
         </div>
+        <div className="h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
       </div>
 
-      <div className="max-w-md mx-auto px-4 pt-4">
+      <div className="max-w-md mx-auto px-4 pt-3">
         <Tabs defaultValue="donate">
-          <TabsList className="w-full">
-            <TabsTrigger value="donate" className="flex-1">Donate</TabsTrigger>
-            <TabsTrigger value="recurring" className="flex-1" onClick={() => { if (recurringList.length === 0) fetchRecurring(); }}>
-              <RefreshCw size={14} className="mr-1.5" /> Recurring
+          <TabsList className="w-full bg-transparent p-0 h-auto gap-1 mb-4">
+            <TabsTrigger value="donate" className="flex-1 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md bg-muted/50 text-muted-foreground text-xs py-2 transition-all">
+              <Heart size={13} className="mr-1" /> Donate
             </TabsTrigger>
-            <TabsTrigger value="history" className="flex-1">
-              <History size={14} className="mr-1.5" /> History
+            <TabsTrigger value="recurring" className="flex-1 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md bg-muted/50 text-muted-foreground text-xs py-2 transition-all" onClick={() => { if (recurringList.length === 0) fetchRecurring(); }}>
+              <RefreshCw size={13} className="mr-1" /> Recurring
             </TabsTrigger>
-            <TabsTrigger value="leaderboard" className="flex-1" onClick={() => { if (leaderboard.length === 0) fetchLeaderboard(leaderboardCause); }}>
-              <Trophy size={14} className="mr-1.5" /> Top
+            <TabsTrigger value="history" className="flex-1 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md bg-muted/50 text-muted-foreground text-xs py-2 transition-all">
+              <History size={13} className="mr-1" /> History
+            </TabsTrigger>
+            <TabsTrigger value="leaderboard" className="flex-1 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md bg-muted/50 text-muted-foreground text-xs py-2 transition-all" onClick={() => { if (leaderboard.length === 0) fetchLeaderboard(leaderboardCause); }}>
+              <Trophy size={13} className="mr-1" /> Top
             </TabsTrigger>
           </TabsList>
 
           {/* ── Donate Tab ── */}
-          <TabsContent value="donate">
+          <TabsContent value="donate" className="mt-0">
             <AnimatePresence mode="wait">
-              {/* Step 1: Cause */}
+              {/* Step 1: Cause Selection */}
               {step === "cause" && (
-                <motion.div key="cause" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
-                  <p className="text-sm text-muted-foreground mt-3 mb-4">Choose a cause to support</p>
+                <motion.div key="cause" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.3 }}>
+                  <div className="text-center mb-6 mt-2">
+                    <h2 className="text-2xl font-bold text-foreground tracking-tight">Make a Difference</h2>
+                    <p className="text-sm text-muted-foreground mt-1">Choose a cause close to your heart</p>
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     {CAUSES.map((cause, i) => (
                       <motion.button
                         key={cause.id}
-                        initial={{ opacity: 0, y: 16 }}
+                        initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.05 * i }}
+                        transition={{ delay: 0.06 * i, ...springTransition }}
                         onClick={() => handleSelectCause(cause)}
-                        className="flex flex-col items-center gap-3 p-5 rounded-2xl bg-card border border-border shadow-sm hover:shadow-md active:scale-[0.97] transition-all text-center"
+                        className="group flex flex-col items-center gap-3 p-6 rounded-2xl bg-card shadow-sm hover:shadow-lg active:scale-[0.96] transition-all duration-200 text-center relative overflow-hidden"
                       >
-                        <div className={`bg-gradient-to-b ${cause.gradient} w-14 h-14 rounded-2xl flex items-center justify-center text-white`}>
-                          <cause.icon size={24} />
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className={`bg-gradient-to-br ${cause.gradient} w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/10`}>
+                          <cause.icon size={28} />
                         </div>
-                        <p className="text-sm font-bold text-foreground">{cause.name}</p>
+                        <p className="text-sm font-semibold text-foreground">{cause.name}</p>
                       </motion.button>
                     ))}
                   </div>
@@ -298,97 +308,122 @@ const DonationsPage = () => {
 
               {/* Step 2: Amount */}
               {step === "amount" && selectedCause && (
-                <motion.div key="amount" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="space-y-5 mt-4">
-                  <div className="flex items-center gap-3 p-4 rounded-2xl bg-card border border-border">
-                    <div className={`bg-gradient-to-b ${selectedCause.gradient} w-12 h-12 rounded-xl flex items-center justify-center text-white`}>
-                      <selectedCause.icon size={20} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-foreground">{selectedCause.name}</p>
-                      <p className="text-xs text-muted-foreground">Your contribution makes a difference</p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-medium text-foreground mb-2">Select Amount</p>
-                    <div className="grid grid-cols-4 gap-2">
-                      {PRESET_AMOUNTS.map(a => (
-                        <button
-                          key={a}
-                          onClick={() => setAmount(String(a))}
-                          className={`py-2.5 rounded-xl text-sm font-bold border transition-all ${amount === String(a) ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-foreground hover:border-primary/50"}`}
-                        >
-                          ৳{a}
-                        </button>
-                      ))}
+                <motion.div key="amount" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.3 }} className="space-y-5">
+                  {/* Selected cause banner */}
+                  <div className={`bg-gradient-to-r ${selectedCause.gradient} rounded-2xl p-5 text-white relative overflow-hidden`}>
+                    <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/10 blur-xl" />
+                    <div className="flex items-center gap-3 relative z-10">
+                      <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                        <selectedCause.icon size={22} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-lg">{selectedCause.name}</p>
+                        <p className="text-white/70 text-xs">Your contribution matters</p>
+                      </div>
                     </div>
                   </div>
 
-                  <div>
-                    <p className="text-sm font-medium text-foreground mb-1.5">Or enter custom amount</p>
-                    <Input
+                  {/* Amount display */}
+                  <div className="text-center py-4">
+                    <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">Donation Amount</p>
+                    <div className="text-4xl font-bold text-foreground tracking-tight">
+                      ৳{amount || "0"}
+                    </div>
+                  </div>
+
+                  {/* Preset pills */}
+                  <div className="flex gap-2 justify-center">
+                    {PRESET_AMOUNTS.map(a => (
+                      <button
+                        key={a}
+                        onClick={() => setAmount(String(a))}
+                        className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
+                          amount === String(a)
+                            ? "bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-105"
+                            : "bg-muted/60 text-foreground hover:bg-muted"
+                        }`}
+                      >
+                        ৳{a}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Custom amount */}
+                  <div className="relative">
+                    <input
                       type="text"
                       inputMode="numeric"
-                      placeholder="৳ Enter amount"
+                      placeholder="Enter custom amount"
                       value={amount}
                       onChange={e => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
-                      className="text-lg font-semibold"
+                      className="w-full text-center text-lg font-semibold py-3 bg-transparent border-b-2 border-border focus:border-primary outline-none transition-colors text-foreground placeholder:text-muted-foreground/50"
                     />
                   </div>
 
-                  <div>
-                    <p className="text-sm font-medium text-foreground mb-1.5">Message (optional)</p>
-                    <Textarea
-                      placeholder="Leave a kind note…"
-                      value={message}
-                      onChange={e => setMessage(e.target.value.slice(0, 200))}
-                      rows={2}
-                    />
-                  </div>
+                  {/* Message */}
+                  <Textarea
+                    placeholder="Leave a kind note… (optional)"
+                    value={message}
+                    onChange={e => setMessage(e.target.value.slice(0, 200))}
+                    rows={2}
+                    className="rounded-xl bg-muted/30 border-0 focus-visible:ring-1 focus-visible:ring-primary/30 resize-none"
+                  />
 
-                  {/* Anonymous toggle */}
-                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-card border border-border">
-                    <div className="flex items-center gap-2.5">
-                      <EyeOff size={16} className="text-muted-foreground" />
-                      <div>
-                        <p className="text-sm font-medium text-foreground">Donate anonymously</p>
-                        <p className="text-[11px] text-muted-foreground">Your name won't appear on the leaderboard</p>
+                  {/* Toggle rows */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/30">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center">
+                          <EyeOff size={15} className="text-muted-foreground" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">Donate anonymously</p>
+                          <p className="text-[11px] text-muted-foreground">Hidden from leaderboard</p>
+                        </div>
                       </div>
+                      <Switch checked={isAnonymous} onCheckedChange={setIsAnonymous} />
                     </div>
-                    <Switch checked={isAnonymous} onCheckedChange={setIsAnonymous} />
-                  </div>
 
-                  {/* Recurring toggle */}
-                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-card border border-border">
-                    <div className="flex items-center gap-2.5">
-                      <RefreshCw size={16} className="text-muted-foreground" />
-                      <div>
-                        <p className="text-sm font-medium text-foreground">Make this recurring</p>
-                        <p className="text-[11px] text-muted-foreground">Auto-donate on a schedule</p>
+                    <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/30">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center">
+                          <RefreshCw size={15} className="text-muted-foreground" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">Make this recurring</p>
+                          <p className="text-[11px] text-muted-foreground">Auto-donate on schedule</p>
+                        </div>
                       </div>
+                      <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
                     </div>
-                    <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
                   </div>
 
-                  {/* Frequency selector */}
-                  {isRecurring && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="flex gap-2">
-                      {(["weekly", "monthly"] as const).map(f => (
-                        <button
-                          key={f}
-                          onClick={() => setFrequency(f)}
-                          className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-all ${frequency === f ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-foreground"}`}
-                        >
-                          {f === "weekly" ? "Weekly" : "Monthly"}
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
+                  {/* Frequency */}
+                  <AnimatePresence>
+                    {isRecurring && (
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="flex gap-2 overflow-hidden">
+                        {(["weekly", "monthly"] as const).map(f => (
+                          <button
+                            key={f}
+                            onClick={() => setFrequency(f)}
+                            className={`flex-1 py-2.5 rounded-full text-sm font-semibold transition-all ${
+                              frequency === f
+                                ? "bg-primary text-primary-foreground shadow-md"
+                                : "bg-muted/50 text-foreground"
+                            }`}
+                          >
+                            {f === "weekly" ? "Weekly" : "Monthly"}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
+                  {/* Continue button */}
                   <button
                     onClick={handleAmountNext}
                     disabled={!amount || parseFloat(amount) < 10}
-                    className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-bold text-base disabled:opacity-50 transition-all active:scale-[0.98]"
+                    className={`w-full py-3.5 rounded-2xl font-bold text-base disabled:opacity-40 transition-all active:scale-[0.98] bg-gradient-to-r ${selectedCause.gradient} text-white shadow-lg shadow-primary/20`}
                   >
                     Continue — ৳{amount || "0"}
                   </button>
@@ -396,33 +431,59 @@ const DonationsPage = () => {
               )}
 
               {/* Step 3: PIN */}
-              {step === "pin" && (
-                <motion.div key="pin" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="mt-6 space-y-6 text-center">
-                  <div>
-                    <p className="text-muted-foreground text-sm">Donating to</p>
-                    <p className="text-lg font-bold text-foreground">{selectedCause?.name}</p>
-                    <p className="text-2xl font-extrabold text-primary mt-1">৳{parseFloat(amount).toLocaleString()}</p>
-                    {isAnonymous && <p className="text-xs text-muted-foreground mt-1 flex items-center justify-center gap-1"><EyeOff size={12} /> Anonymous</p>}
-                    {isRecurring && <p className="text-xs text-muted-foreground mt-1 flex items-center justify-center gap-1"><RefreshCw size={12} /> {frequency === "weekly" ? "Weekly" : "Monthly"} recurring</p>}
+              {step === "pin" && selectedCause && (
+                <motion.div key="pin" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.3 }} className="mt-4 space-y-8 text-center">
+                  {/* Cause icon */}
+                  <div className="flex flex-col items-center gap-3">
+                    <div className={`w-20 h-20 rounded-3xl bg-gradient-to-br ${selectedCause.gradient} flex items-center justify-center text-white shadow-xl shadow-primary/15`}>
+                      <selectedCause.icon size={34} />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">Donating to</p>
+                      <p className="text-lg font-bold text-foreground mt-0.5">{selectedCause.name}</p>
+                    </div>
+                    <p className="text-3xl font-bold text-foreground">৳{parseFloat(amount).toLocaleString()}</p>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      {isAnonymous && <span className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-full"><EyeOff size={11} /> Anonymous</span>}
+                      {isRecurring && <span className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-full"><RefreshCw size={11} /> {frequency === "weekly" ? "Weekly" : "Monthly"}</span>}
+                    </div>
                   </div>
 
+                  {/* PIN Entry */}
                   <div>
-                    <p className="text-sm font-medium text-foreground mb-2">Enter 4-digit PIN</p>
-                    <Input
+                    <p className="text-sm font-medium text-muted-foreground mb-4">Enter your 4-digit PIN</p>
+                    <div className="flex justify-center gap-3">
+                      {[0, 1, 2, 3].map(i => (
+                        <div
+                          key={i}
+                          className={`w-14 h-14 rounded-2xl border-2 flex items-center justify-center text-2xl font-bold transition-all ${
+                            pin.length > i
+                              ? "border-primary bg-primary/5 text-foreground"
+                              : pin.length === i
+                              ? "border-primary/50 bg-muted/30"
+                              : "border-border bg-muted/20"
+                          }`}
+                        >
+                          {pin.length > i ? "•" : ""}
+                        </div>
+                      ))}
+                    </div>
+                    <input
                       type="password"
                       inputMode="numeric"
                       maxLength={4}
                       value={pin}
                       onChange={e => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                      className="text-center text-2xl tracking-[0.5em] max-w-[200px] mx-auto"
+                      className="opacity-0 absolute w-0 h-0"
                       autoFocus
                     />
                   </div>
 
+                  {/* Confirm button */}
                   <button
                     onClick={handlePinSubmit}
                     disabled={pin.length !== 4 || loading}
-                    className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-bold text-base disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
+                    className={`w-full py-3.5 rounded-2xl font-bold text-base disabled:opacity-40 flex items-center justify-center gap-2 transition-all active:scale-[0.98] bg-gradient-to-r ${selectedCause.gradient} text-white shadow-lg`}
                   >
                     {loading ? <Loader2 size={18} className="animate-spin" /> : <Heart size={18} />}
                     {loading ? "Processing…" : "Confirm Donation"}
@@ -432,32 +493,57 @@ const DonationsPage = () => {
 
               {/* Step 4: Success */}
               {step === "success" && (
-                <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="mt-10 text-center space-y-5">
+                <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={springTransition} className="mt-8 text-center space-y-6">
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.1 }}
-                    className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto"
+                    transition={{ type: "spring", stiffness: 300, damping: 18, delay: 0.15 }}
+                    className={`w-24 h-24 rounded-full bg-gradient-to-br ${selectedCause?.gradient || "from-emerald-500 to-teal-600"} flex items-center justify-center mx-auto shadow-2xl shadow-primary/20`}
                   >
-                    <Check size={40} className="text-emerald-500" />
+                    <Check size={48} className="text-white" strokeWidth={3} />
                   </motion.div>
-                  <div>
-                    <p className="text-xl font-bold text-foreground">Thank You! 💚</p>
-                    <p className="text-muted-foreground text-sm mt-1">
-                      ৳{parseFloat(amount).toLocaleString()} donated to <span className="font-semibold text-foreground">{selectedCause?.name}</span>
+
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                    <p className="text-2xl font-bold text-foreground">Thank You!</p>
+                    <p className="text-muted-foreground text-sm mt-2">
+                      You donated <span className="font-bold text-foreground">৳{parseFloat(amount).toLocaleString()}</span> to
                     </p>
-                    {isAnonymous && <p className="text-xs text-muted-foreground mt-1">🕶️ Donated anonymously</p>}
-                    {isRecurring && <p className="text-xs text-primary mt-1 font-medium">🔄 {frequency === "weekly" ? "Weekly" : "Monthly"} recurring schedule created</p>}
-                  </div>
-                  <div className="flex gap-3 justify-center flex-wrap">
-                    <button onClick={resetFlow} className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold">
-                      Donate Again
+                    <p className="font-semibold text-foreground">{selectedCause?.name}</p>
+                  </motion.div>
+
+                  {(isAnonymous || isRecurring) && (
+                    <div className="flex items-center justify-center gap-2">
+                      {isAnonymous && (
+                        <span className="text-xs bg-muted/60 text-muted-foreground px-3 py-1.5 rounded-full flex items-center gap-1">
+                          <EyeOff size={11} /> Anonymous
+                        </span>
+                      )}
+                      {isRecurring && (
+                        <span className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-full flex items-center gap-1 font-medium">
+                          <RefreshCw size={11} /> {frequency === "weekly" ? "Weekly" : "Monthly"}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2.5 justify-center pt-2">
+                    <button
+                      onClick={resetFlow}
+                      className={`px-5 py-2.5 rounded-full font-semibold text-sm bg-gradient-to-r ${selectedCause?.gradient || "from-primary to-primary"} text-white shadow-md active:scale-95 transition-transform flex items-center gap-1.5`}
+                    >
+                      <Heart size={14} /> Donate Again
                     </button>
-                    <button onClick={() => navigate("/")} className="px-5 py-2.5 rounded-xl bg-muted text-foreground font-semibold flex items-center gap-1.5">
-                      Go Home
+                    <button
+                      onClick={() => navigate("/")}
+                      className="px-5 py-2.5 rounded-full font-semibold text-sm bg-muted/60 text-foreground active:scale-95 transition-transform flex items-center gap-1.5"
+                    >
+                      <Home size={14} /> Home
                     </button>
-                    <button onClick={() => setShareOpen(true)} className="px-5 py-2.5 rounded-xl bg-muted text-foreground font-semibold flex items-center gap-1.5">
-                      <Share2 size={15} /> Share
+                    <button
+                      onClick={() => setShareOpen(true)}
+                      className="px-5 py-2.5 rounded-full font-semibold text-sm bg-muted/60 text-foreground active:scale-95 transition-transform flex items-center gap-1.5"
+                    >
+                      <Share2 size={14} /> Share
                     </button>
                   </div>
                 </motion.div>
@@ -466,22 +552,30 @@ const DonationsPage = () => {
           </TabsContent>
 
           {/* ── Recurring Tab ── */}
-          <TabsContent value="recurring">
+          <TabsContent value="recurring" className="mt-0">
             {recurringLoading ? (
-              <div className="flex justify-center py-12"><Loader2 className="animate-spin text-muted-foreground" /></div>
+              <div className="flex justify-center py-16"><Loader2 className="animate-spin text-muted-foreground" /></div>
             ) : recurringList.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <RefreshCw size={32} className="mx-auto mb-2 opacity-40" />
-                <p className="text-sm">No recurring donations</p>
-                <p className="text-xs mt-1">Set one up in the Donate tab</p>
+              <div className="text-center py-16 text-muted-foreground">
+                <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-3">
+                  <RefreshCw size={28} className="opacity-30" />
+                </div>
+                <p className="text-sm font-medium">No recurring donations</p>
+                <p className="text-xs mt-1 text-muted-foreground/70">Set one up in the Donate tab</p>
               </div>
             ) : (
-              <div className="space-y-2 mt-3">
-                {recurringList.map(r => {
+              <div className="space-y-2.5 mt-1">
+                {recurringList.map((r, i) => {
                   const cause = causeForIcon(r.cause_name);
                   return (
-                    <div key={r.id} className={`flex items-center gap-3 p-3 rounded-xl bg-card border border-border ${!r.is_active ? "opacity-60" : ""}`}>
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${cause ? `bg-gradient-to-b ${cause.gradient} text-white` : "bg-muted"}`}>
+                    <motion.div
+                      key={r.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.04 * i }}
+                      className={`flex items-center gap-3 p-3.5 rounded-2xl bg-card shadow-sm ${!r.is_active ? "opacity-50" : ""}`}
+                    >
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${cause ? `bg-gradient-to-br ${cause.gradient} text-white` : "bg-muted"}`}>
                         {cause ? <cause.icon size={18} /> : (r.cause_icon || "❤️")}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -498,10 +592,10 @@ const DonationsPage = () => {
                         onCheckedChange={() => toggleRecurringActive(r.id, r.is_active)}
                         className="scale-90"
                       />
-                      <button onClick={() => deleteRecurring(r.id)} className="w-7 h-7 rounded-lg bg-destructive/10 flex items-center justify-center">
+                      <button onClick={() => deleteRecurring(r.id)} className="w-7 h-7 rounded-lg bg-destructive/10 flex items-center justify-center active:scale-90 transition-transform">
                         <Trash2 size={14} className="text-destructive" />
                       </button>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
@@ -509,21 +603,30 @@ const DonationsPage = () => {
           </TabsContent>
 
           {/* ── History Tab ── */}
-          <TabsContent value="history">
+          <TabsContent value="history" className="mt-0">
             {historyLoading ? (
-              <div className="flex justify-center py-12"><Loader2 className="animate-spin text-muted-foreground" /></div>
+              <div className="flex justify-center py-16"><Loader2 className="animate-spin text-muted-foreground" /></div>
             ) : history.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Heart size={32} className="mx-auto mb-2 opacity-40" />
-                <p className="text-sm">No donations yet</p>
+              <div className="text-center py-16 text-muted-foreground">
+                <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-3">
+                  <Heart size={28} className="opacity-30" />
+                </div>
+                <p className="text-sm font-medium">No donations yet</p>
+                <p className="text-xs mt-1 text-muted-foreground/70">Your donation history will appear here</p>
               </div>
             ) : (
-              <div className="space-y-2 mt-3">
-                {history.map(d => {
+              <div className="space-y-2.5 mt-1">
+                {history.map((d, i) => {
                   const cause = causeForIcon(d.cause_name);
                   return (
-                    <div key={d.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${cause ? `bg-gradient-to-b ${cause.gradient} text-white` : "bg-muted"}`}>
+                    <motion.div
+                      key={d.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.04 * i }}
+                      className="flex items-center gap-3 p-3.5 rounded-2xl bg-card shadow-sm"
+                    >
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${cause ? `bg-gradient-to-br ${cause.gradient} text-white` : "bg-muted"}`}>
                         {cause ? <cause.icon size={18} /> : (d.cause_icon || "❤️")}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -531,7 +634,7 @@ const DonationsPage = () => {
                         <p className="text-[11px] text-muted-foreground">{format(new Date(d.created_at), "dd MMM yyyy, hh:mm a")}</p>
                       </div>
                       <p className="text-sm font-bold text-foreground">৳{d.amount}</p>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
@@ -539,12 +642,11 @@ const DonationsPage = () => {
           </TabsContent>
 
           {/* ── Leaderboard Tab ── */}
-          <TabsContent value="leaderboard">
-            {/* Cause filter pills */}
+          <TabsContent value="leaderboard" className="mt-0">
             <div className="flex gap-2 overflow-x-auto py-3 no-scrollbar">
               <button
                 onClick={() => { setLeaderboardCause(null); fetchLeaderboard(null); }}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap border transition-all ${leaderboardCause === null ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-foreground"}`}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${leaderboardCause === null ? "bg-primary text-primary-foreground shadow-md" : "bg-muted/50 text-foreground"}`}
               >
                 All Causes
               </button>
@@ -552,7 +654,7 @@ const DonationsPage = () => {
                 <button
                   key={c.id}
                   onClick={() => { setLeaderboardCause(c.name); fetchLeaderboard(c.name); }}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap border transition-all ${leaderboardCause === c.name ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-foreground"}`}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${leaderboardCause === c.name ? "bg-primary text-primary-foreground shadow-md" : "bg-muted/50 text-foreground"}`}
                 >
                   {c.emoji} {c.name}
                 </button>
@@ -560,26 +662,34 @@ const DonationsPage = () => {
             </div>
 
             {leaderboardLoading ? (
-              <div className="flex justify-center py-12"><Loader2 className="animate-spin text-muted-foreground" /></div>
+              <div className="flex justify-center py-16"><Loader2 className="animate-spin text-muted-foreground" /></div>
             ) : leaderboard.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Trophy size={32} className="mx-auto mb-2 opacity-40" />
-                <p className="text-sm">No donations recorded yet</p>
+              <div className="text-center py-16 text-muted-foreground">
+                <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-3">
+                  <Trophy size={28} className="opacity-30" />
+                </div>
+                <p className="text-sm font-medium">No donations recorded yet</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {leaderboard.map((entry, i) => {
                   const cause = causeForIcon(entry.cause_name);
                   return (
-                    <div key={`${entry.donor_name}-${entry.cause_name}-${i}`} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
+                    <motion.div
+                      key={`${entry.donor_name}-${entry.cause_name}-${i}`}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.04 * i }}
+                      className={`flex items-center gap-3 p-3.5 rounded-2xl bg-card shadow-sm ${i < 3 ? `border ${MEDAL_BG[i]}` : ""}`}
+                    >
                       <div className="w-8 text-center">
                         {i < 3 ? (
-                          <Trophy size={20} className={MEDAL_COLORS[i]} />
+                          <Trophy size={20} className={MEDAL_TEXT[i]} />
                         ) : (
                           <span className="text-sm font-bold text-muted-foreground">{i + 1}</span>
                         )}
                       </div>
-                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm ${cause ? `bg-gradient-to-b ${cause.gradient} text-white` : "bg-muted"}`}>
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0 ${cause ? `bg-gradient-to-br ${cause.gradient} text-white` : "bg-muted"}`}>
                         {cause ? <cause.icon size={16} /> : "❤️"}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -591,7 +701,7 @@ const DonationsPage = () => {
                         </p>
                       </div>
                       <p className="text-sm font-bold text-primary">৳{entry.total_amount.toLocaleString()}</p>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
@@ -600,7 +710,6 @@ const DonationsPage = () => {
         </Tabs>
       </div>
 
-      {/* Share Receipt Sheet */}
       {receiptData && (
         <ShareReceiptSheet open={shareOpen} onClose={() => setShareOpen(false)} receipt={receiptData} />
       )}
