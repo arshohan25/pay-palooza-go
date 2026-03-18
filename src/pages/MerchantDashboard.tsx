@@ -76,7 +76,6 @@ const mainTabs: { id: MerchTab; icon: typeof QrCode; label: string }[] = [
   { id: "overview",     icon: BarChart3,    label: "Overview" },
   { id: "products",     icon: Package,      label: "Products" },
   { id: "orders",       icon: Receipt,      label: "Orders" },
-  { id: "inbox",        icon: MessageCircle, label: "Chats" },
   { id: "store",        icon: Store,        label: "Store" },
 ];
 
@@ -395,6 +394,27 @@ const MerchantDashboard = () => {
         </div>
       </div>
 
+      {/* ── Full-screen Inbox Overlay ── */}
+      {activeTab === "inbox" && (
+        <motion.div
+          key="inbox-fullscreen"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[70] bg-background flex flex-col"
+        >
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setActiveTab("overview")}>
+              <ArrowLeft size={18} />
+            </Button>
+            <h2 className="text-sm font-semibold text-foreground">Chats</h2>
+          </div>
+          <div className="flex-1 overflow-auto">
+            <InboxPage />
+          </div>
+        </motion.div>
+      )}
+
       {/* ── Content ── */}
       <div className="max-w-xl mx-auto px-4 py-4 pb-24">
         <AnimatePresence mode="wait">
@@ -410,7 +430,6 @@ const MerchantDashboard = () => {
             {activeTab === "settlements"  && <SettlementTab merchant={merchant} paymentTxns={paymentTxns} />}
             {activeTab === "mdr"          && <MDRTab merchant={merchant} paymentTxns={paymentTxns} />}
             {activeTab === "api"          && merchant && <MerchantApiTab merchantId={merchant.id} />}
-            {activeTab === "inbox"        && <InboxPage />}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -470,8 +489,6 @@ const MerchantDashboard = () => {
         )}
       </AnimatePresence>
 
-      {/* ── Floating Chat FAB ── */}
-      <MerchantChatFAB userId={user?.id ?? null} onOpenInbox={() => setActiveTab("inbox")} />
     </div>
   );
 };
@@ -690,7 +707,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll, on
     { icon: HandCoins, label: "Cash Out", gradient: "from-emerald-500 to-teal-600", onClick: () => setShowCashOut(true) },
     { icon: Landmark, label: "Add Bank", gradient: "from-amber-500 to-orange-600", onClick: () => setShowAddBank(true) },
     { icon: CalendarClock, label: "Settlement", gradient: "from-purple-500 to-violet-600", onClick: () => setShowSettlementConfig(true) },
-    { icon: MessageCircle, label: "Inquiries", gradient: "from-pink-500 to-rose-600", onClick: () => onOpenInbox(), badge: totalUnread > 0 ? totalUnread : undefined },
+    
   ];
 
   return (
@@ -702,7 +719,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll, on
             <Zap size={14} className="text-primary" /> Merchant Services
           </h3>
         </div>
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           {quickActions.map(a => (
             <motion.button key={a.label} whileTap={{ scale: 0.95 }} onClick={a.onClick}
               className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-card shadow-card border border-border/40 hover:shadow-elevated transition-all press-effect">
@@ -710,11 +727,6 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll, on
                 <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${a.gradient} flex items-center justify-center shadow-sm`}>
                   <a.icon size={18} className="text-white" />
                 </div>
-                {a.badge && a.badge > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-background">
-                    {a.badge > 99 ? "99+" : a.badge}
-                  </span>
-                )}
               </div>
               <span className="text-[10px] font-bold text-foreground leading-tight text-center">{a.label}</span>
             </motion.button>
@@ -2421,43 +2433,6 @@ const MerchantSettlementConfigSheet = ({ open, onClose, merchant }: { open: bool
         </Button>
       </motion.div>
     </div>
-  );
-};
-
-/* ── Merchant Floating Chat FAB ── */
-const MerchantChatFAB = ({ userId, onOpenInbox }: { userId: string | null; onOpenInbox: () => void }) => {
-  const [totalUnread, setTotalUnread] = useState(0);
-  const { conversations } = useChat();
-
-  useEffect(() => {
-    if (!conversations) return;
-    const unread = conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
-    setTotalUnread(unread);
-  }, [conversations]);
-
-  if (!userId) return null;
-
-  return (
-    <motion.button
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.8 }}
-      whileTap={{ scale: 0.9 }}
-      onClick={() => onOpenInbox()}
-      className="fixed bottom-6 right-4 z-[60] w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-primary-foreground"
-      style={{ background: "linear-gradient(135deg, hsl(24 90% 50%), hsl(350 65% 38%))" }}
-    >
-      <MessageCircle className="w-6 h-6" />
-      {totalUnread > 0 && (
-        <motion.span
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          className="absolute -top-1 -right-1 min-w-[20px] h-5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center px-1"
-        >
-          {totalUnread > 99 ? "99+" : totalUnread}
-        </motion.span>
-      )}
-    </motion.button>
   );
 };
 
