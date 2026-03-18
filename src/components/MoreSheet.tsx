@@ -68,8 +68,8 @@ const MoreSheet = ({ open, onClose, onBankTransfer, onSavings }: MoreSheetProps)
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.05 * i, duration: 0.3 }}
-                  onClick={() => handleTap(item.id, item.soon)}
-                  className={`flex flex-col items-center gap-3 p-5 rounded-2xl bg-card border border-border shadow-card hover:shadow-elevated active:scale-[0.97] transition-all text-center ${item.soon ? "opacity-60" : ""}`}
+                  onClick={() => handleTap(item.id)}
+                  className="flex flex-col items-center gap-3 p-5 rounded-2xl bg-card border border-border shadow-card hover:shadow-elevated active:scale-[0.97] transition-all text-center"
                 >
                   <div className={`${item.gradient} w-14 h-14 rounded-2xl flex items-center justify-center text-white`}>
                     <item.icon size={24} />
