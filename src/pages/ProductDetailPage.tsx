@@ -326,16 +326,6 @@ export default function ProductDetailPage() {
               </div>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs h-7 rounded-lg"
-                disabled={chattingWithMerchant}
-                onClick={handleChatWithMerchant}
-              >
-                <MessageCircle className="w-3 h-3 mr-1" />
-                Chat
-              </Button>
               {vendorInfo.slug && (
                 <Button variant="outline" size="sm" className="text-xs h-7 rounded-lg" onClick={() => navigate(`/shop/${vendorInfo.slug}`)}>
                   Visit Store <ChevronRight className="w-3 h-3 ml-0.5" />
