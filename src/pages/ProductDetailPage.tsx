@@ -515,13 +515,27 @@ export default function ProductDetailPage() {
         )}
       </div>
 
+      {/* ── Floating Chat FAB ── */}
+      {merchantUserId && merchantUserId !== user?.id && (
+        <button
+          onClick={handleChatWithMerchant}
+          disabled={chattingWithMerchant}
+          className="fixed bottom-20 right-4 z-[60] w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center transition-transform active:scale-90 disabled:opacity-60"
+        >
+          {chattingWithMerchant
+            ? <Loader2 className="w-5 h-5 animate-spin" />
+            : <MessageCircle className="w-5 h-5" />}
+          {/* Online indicator */}
+          {merchantOnline && (
+            <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-background">
+              <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
+            </span>
+          )}
+        </button>
+      )}
+
       {/* ── Fixed bottom bar ── */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-t border-border/50 px-3 py-3 flex items-center gap-2.5 safe-area-bottom">
-        <Button variant="outline" size="icon" className="rounded-xl shrink-0 h-11 w-11"
-          onClick={handleChatWithMerchant}
-          disabled={chattingWithMerchant || product.merchants?.user_id === user?.id}>
-          {chattingWithMerchant ? <Loader2 className="w-5 h-5 animate-spin" /> : <MessageCircle className="w-5 h-5" />}
-        </Button>
         <Button variant="outline" size="lg" className="flex-1 rounded-xl h-11 text-sm font-bold"
           onClick={handleAddToCart} disabled={product.stock <= 0}>
           Add to Cart
