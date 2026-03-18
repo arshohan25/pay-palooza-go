@@ -500,6 +500,7 @@ export default function AdminEcommerceHub() {
       {subTab === "zones" && <AdminDeliveryZones />}
       {subTab === "banners" && <AdminBannerManager />}
       {subTab === "marketing" && <AdminMarketingTools />}
+      {subTab === "returns" && <AdminReturnRequests />}
     </div>
   );
 }
