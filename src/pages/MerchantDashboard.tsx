@@ -394,7 +394,7 @@ const MerchantDashboard = () => {
         </div>
       </div>
 
-      {/* ── Full-screen Inbox Overlay ── */}
+      {/* ── Full-screen Merchant Inbox Overlay ── */}
       {activeTab === "inbox" && (
         <motion.div
           key="inbox-fullscreen"
@@ -403,15 +403,7 @@ const MerchantDashboard = () => {
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[70] bg-background flex flex-col"
         >
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setActiveTab("overview")}>
-              <ArrowLeft size={18} />
-            </Button>
-            <h2 className="text-sm font-semibold text-foreground">Chats</h2>
-          </div>
-          <div className="flex-1 overflow-auto">
-            <InboxPage />
-          </div>
+          <MerchantInbox onBack={() => setActiveTab("overview")} />
         </motion.div>
       )}
 
