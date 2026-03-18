@@ -103,7 +103,7 @@ const DonationsPage = () => {
     }
   }, [activeTab]);
 
-  const handleSelectCause = (cause: typeof CAUSES[0]) => { setSelectedCause(cause); setStep("amount"); };
+  const handleSelectCause = (cause: typeof CAUSES[0]) => { setSelectedCause(cause); setStep("amount"); localStorage.setItem("mfs_fav_donation_cause", cause.id); };
 
   const handleAmountNext = () => {
     const num = parseFloat(amount);
