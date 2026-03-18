@@ -384,6 +384,7 @@ const MessageBubble = ({ msg, contactName, onReact, onCopy, onDelete, onForward,
   const isOrder = msg.type === "order";
   const isVoice = msg.type === "voice";
   const isImage = msg.type === "image";
+  const isProduct = msg.type === "product";
 
   const startLongPress = () => { longPressTimer.current = setTimeout(() => setShowMenu(true), 480); };
   const cancelLongPress = () => { if (longPressTimer.current) clearTimeout(longPressTimer.current); };
