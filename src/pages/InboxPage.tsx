@@ -26,11 +26,13 @@ interface Reaction { emoji: string; count: number; reacted: boolean; }
 interface UIMessage {
   id: string; text: string; time: string; sent: boolean;
   status: "sent" | "delivered" | "read"; seenAt?: string;
-  type?: "text" | "money" | "order" | "voice" | "image";
+  type?: "text" | "money" | "order" | "voice" | "image" | "product";
   amount?: number; txnId?: string; orderId?: string;
   orderStatus?: "Pending" | "Shipped" | "Delivered"; itemCount?: number;
   voiceDuration?: number; imageUrl?: string; reactions?: Reaction[];
   senderId?: string;
+  productName?: string; productPrice?: number; productImage?: string | null;
+  productId?: string; productEmoji?: string;
 }
 
 interface UIContact {
