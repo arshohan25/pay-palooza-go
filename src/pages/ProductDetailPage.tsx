@@ -18,6 +18,7 @@ import WriteReviewForm from "@/components/shop/WriteReviewForm";
 import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { useAuth } from "@/hooks/use-auth";
+import { useOnlinePresence } from "@/hooks/use-online-presence";
 import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
 import { useChat } from "@/hooks/use-chat";
 import { toast } from "sonner";
@@ -57,6 +58,8 @@ export default function ProductDetailPage() {
   const { user } = useAuth();
   const { addViewed } = useRecentlyViewed();
   const { createDirectConversation, sendMessage } = useChat();
+  const { isOnline } = useOnlinePresence(user?.id ?? null);
+
 
   // Track recently viewed
   useEffect(() => {
@@ -77,6 +80,9 @@ export default function ProductDetailPage() {
   const [relatedFromVendor, setRelatedFromVendor] = useState<any[]>([]);
   const [relatedOthers, setRelatedOthers] = useState<any[]>([]);
   const [chattingWithMerchant, setChattingWithMerchant] = useState(false);
+
+  const merchantUserId = product?.merchants?.user_id;
+  const merchantOnline = merchantUserId ? isOnline(merchantUserId) : false;
 
   const handleChatWithMerchant = useCallback(async () => {
     if (!user) {
@@ -307,10 +313,17 @@ export default function ProductDetailPage() {
           <motion.div custom={4} variants={fadeUp} initial="hidden" animate="show"
             className="flex items-center justify-between bg-card border border-border/60 rounded-xl px-3.5 py-2.5">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <div className="relative w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                 <Store className="w-4 h-4 text-primary" />
+                <span className={cn(
+                  "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card",
+                  merchantOnline ? "bg-green-500 animate-pulse" : "bg-muted-foreground/40"
+                )} />
               </div>
-              <span className="text-sm font-semibold text-foreground truncate">{vendorInfo.name}</span>
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-semibold text-foreground truncate">{vendorInfo.name}</span>
+                <span className={cn("text-[10px] leading-tight", merchantOnline ? "text-green-600" : "text-muted-foreground")}>{merchantOnline ? "Online" : "Offline"}</span>
+              </div>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <Button
