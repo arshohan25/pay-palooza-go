@@ -48,6 +48,31 @@ Deno.serve(async (req) => {
       const newBalance = Number(profile.balance) - Number(schedule.amount);
       await supabase.from("profiles").update({ balance: newBalance }).eq("user_id", schedule.user_id);
 
+      // Credit platform treasury
+      const { data: treasury } = await supabase
+        .from("platform_treasury")
+        .select("*")
+        .limit(1)
+        .single();
+
+      if (treasury) {
+        const newTreasuryBalance = Number(treasury.balance) + Number(schedule.amount);
+        await supabase.from("platform_treasury").update({
+          balance: newTreasuryBalance,
+          total_earnings: Number(treasury.total_earnings) + Number(schedule.amount),
+          updated_at: new Date().toISOString(),
+        }).eq("id", treasury.id);
+
+        await supabase.from("treasury_ledger").insert({
+          type: "earning",
+          amount: schedule.amount,
+          balance_after: newTreasuryBalance,
+          counterparty_user_id: schedule.user_id,
+          description: `Recurring Donation: ${schedule.cause_name}`,
+          reference: `RDON-${schedule.cause_name.toUpperCase().replace(/\s+/g, "-")}`,
+        });
+      }
+
       // Record transaction
       await supabase.from("transactions").insert({
         user_id: schedule.user_id,
