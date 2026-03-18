@@ -102,9 +102,16 @@ export default function ProductDetailPage() {
     try {
       const convId = await createDirectConversation(merchantUserId);
       if (convId) {
-        const contextMsg = `Hi, I'm interested in ${product.name} (৳${product.price})`;
-        await sendMessage(convId, contextMsg);
-        navigate("/inbox");
+        // Send product inquiry as a "product" type message with metadata
+        await sendMessage(convId, `Inquiry about ${product.name}`, "text", {
+          productId: product.id,
+          productName: product.name,
+          productPrice: product.price,
+          productImage: product.image_url || product.images?.[0] || null,
+          productEmoji: product.emoji,
+          isProductInquiry: true,
+        });
+        navigate(`/inbox?conv=${convId}`);
       } else {
         toast.error("Could not start conversation");
       }

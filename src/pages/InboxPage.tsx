@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, Send, MoreVertical, Plus,
@@ -25,11 +26,13 @@ interface Reaction { emoji: string; count: number; reacted: boolean; }
 interface UIMessage {
   id: string; text: string; time: string; sent: boolean;
   status: "sent" | "delivered" | "read"; seenAt?: string;
-  type?: "text" | "money" | "order" | "voice" | "image";
+  type?: "text" | "money" | "order" | "voice" | "image" | "product";
   amount?: number; txnId?: string; orderId?: string;
   orderStatus?: "Pending" | "Shipped" | "Delivered"; itemCount?: number;
   voiceDuration?: number; imageUrl?: string; reactions?: Reaction[];
   senderId?: string;
+  productName?: string; productPrice?: number; productImage?: string | null;
+  productId?: string; productEmoji?: string;
 }
 
 interface UIContact {
@@ -155,13 +158,14 @@ function computeMessageStatus(
 function msgToUIMessage(msg: ChatMessage, userId: string, othersReadTimes?: string[]): UIMessage {
   const meta = msg.metadata as Record<string, unknown>;
   const status = computeMessageStatus(msg, userId, othersReadTimes ?? []);
+  const isProduct = meta?.isProductInquiry === true;
   return {
     id: msg.id,
     text: msg.decryptedContent || msg.content,
     time: new Date(msg.created_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
     sent: msg.sender_id === userId,
     status,
-    type: msg.message_type,
+    type: isProduct ? "product" : msg.message_type,
     amount: meta?.amount as number | undefined,
     txnId: meta?.txnId as string | undefined,
     orderId: meta?.orderId as string | undefined,
@@ -171,6 +175,11 @@ function msgToUIMessage(msg: ChatMessage, userId: string, othersReadTimes?: stri
     imageUrl: meta?.imageUrl as string | undefined,
     reactions: [],
     senderId: msg.sender_id,
+    productId: meta?.productId as string | undefined,
+    productName: meta?.productName as string | undefined,
+    productPrice: meta?.productPrice as number | undefined,
+    productImage: meta?.productImage as string | null | undefined,
+    productEmoji: meta?.productEmoji as string | undefined,
   };
 }
 
@@ -375,6 +384,7 @@ const MessageBubble = ({ msg, contactName, onReact, onCopy, onDelete, onForward,
   const isOrder = msg.type === "order";
   const isVoice = msg.type === "voice";
   const isImage = msg.type === "image";
+  const isProduct = msg.type === "product";
 
   const startLongPress = () => { longPressTimer.current = setTimeout(() => setShowMenu(true), 480); };
   const cancelLongPress = () => { if (longPressTimer.current) clearTimeout(longPressTimer.current); };
@@ -444,10 +454,31 @@ const MessageBubble = ({ msg, contactName, onReact, onCopy, onDelete, onForward,
           </div>
         )}
 
+        {isProduct && (
+          <div {...pressHandlers} className={`rounded-2xl border border-border bg-card shadow-card overflow-hidden min-w-[220px] max-w-[260px] select-none ${msg.sent ? "rounded-br-md" : "rounded-bl-md"}`}>
+            {msg.productImage ? (
+              <div className="h-28 bg-muted/30 overflow-hidden">
+                <img src={msg.productImage} alt={msg.productName || "Product"} className="w-full h-full object-cover" />
+              </div>
+            ) : (
+              <div className="h-20 bg-muted/30 flex items-center justify-center">
+                <span className="text-3xl">{msg.productEmoji || "📦"}</span>
+              </div>
+            )}
+            <div className="px-3.5 py-2.5 space-y-1">
+              <p className="text-[12px] font-bold text-foreground leading-tight line-clamp-2">{msg.productName || "Product"}</p>
+              {msg.productPrice != null && (
+                <p className="text-sm font-extrabold text-primary">৳{msg.productPrice.toLocaleString()}</p>
+              )}
+              <p className="text-[10px] text-muted-foreground">Product Inquiry</p>
+            </div>
+          </div>
+        )}
+
         {isVoice && <div {...pressHandlers} className="select-none"><VoiceBubble msg={msg} /></div>}
         {isImage && <div {...pressHandlers} className="select-none"><ImageBubble msg={msg} /></div>}
 
-        {!isMoney && !isOrder && !isVoice && !isImage && (
+        {!isMoney && !isOrder && !isVoice && !isImage && !isProduct && (
           msg.text?.includes("[Old message]") ? (
             <div className={`flex ${msg.sent ? "justify-end" : "justify-start"} py-0.5`}>
               <span className="text-[10px] italic text-muted-foreground/50 px-3">Previous message unavailable</span>
@@ -1091,6 +1122,8 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
   const { user } = useAuth();
   const profileData = useProfile();
   const chat = useChat();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { isOnline, onlineUsers } = useOnlinePresence(user?.id ?? null);
   const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
@@ -1105,6 +1138,22 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
   const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
 
   useEffect(() => { clearInboxCount(); }, []);
+
+  // Deep-link: open conversation from ?conv= query param
+  const deepLinkHandled = useRef(false);
+  useEffect(() => {
+    const convParam = searchParams.get("conv");
+    if (convParam && !deepLinkHandled.current && chat.conversations.length > 0) {
+      deepLinkHandled.current = true;
+      const exists = chat.conversations.find((c) => c.id === convParam);
+      if (exists) {
+        setActiveContactId(convParam);
+        chat.openConversation(convParam);
+      }
+      // Clean up the URL
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, chat.conversations, chat.openConversation, setSearchParams]);
 
   // Convert DB conversations to UI contacts
   const uiContacts: UIContact[] = chat.conversations.map((conv) =>
