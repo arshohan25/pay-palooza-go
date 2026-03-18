@@ -807,11 +807,23 @@ const ChatView = ({
 
   useEffect(() => () => { clearInterval(recordTimer.current!); clearTimeout(micPressTimer.current!); }, []);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    onSendImage(url); e.target.value = "";
+    // Upload to Supabase Storage
+    const ext = file.name.split('.').pop() || 'jpg';
+    const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const { data, error } = await supabase.storage
+      .from('chat_attachments')
+      .upload(path, file, { contentType: file.type });
+    if (error) {
+      toast.error("Failed to upload image");
+      e.target.value = "";
+      return;
+    }
+    const { data: urlData } = supabase.storage.from('chat_attachments').getPublicUrl(data.path);
+    onSendImage(urlData.publicUrl);
+    e.target.value = "";
   };
 
   return (
