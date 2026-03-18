@@ -466,6 +466,9 @@ const MerchantDashboard = () => {
           </>
         )}
       </AnimatePresence>
+
+      {/* ── Floating Chat FAB ── */}
+      <MerchantChatFAB userId={user?.id ?? null} navigate={navigate} />
     </div>
   );
 };
