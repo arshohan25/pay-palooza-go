@@ -23,8 +23,7 @@ const MoreSheet = ({ open, onClose, onBankTransfer, onSavings }: MoreSheetProps)
   const navigate = useNavigate();
   const visibleItems = items;
 
-  const handleTap = (id: string, soon?: boolean) => {
-    if (soon) { toast.info("Coming soon!"); return; }
+  const handleTap = (id: string) => {
     onClose();
     setTimeout(() => {
       if (id === "bank") onBankTransfer();
