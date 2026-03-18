@@ -58,6 +58,7 @@ const DonationsPage = () => {
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [leaderboardCause, setLeaderboardCause] = useState<string | null>(null);
   const [msgExpanded, setMsgExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState("donate");
   const pinRef = useRef<HTMLInputElement>(null);
 
   const fetchHistory = async () => {
