@@ -454,10 +454,31 @@ const MessageBubble = ({ msg, contactName, onReact, onCopy, onDelete, onForward,
           </div>
         )}
 
+        {isProduct && (
+          <div {...pressHandlers} className={`rounded-2xl border border-border bg-card shadow-card overflow-hidden min-w-[220px] max-w-[260px] select-none ${msg.sent ? "rounded-br-md" : "rounded-bl-md"}`}>
+            {msg.productImage ? (
+              <div className="h-28 bg-muted/30 overflow-hidden">
+                <img src={msg.productImage} alt={msg.productName || "Product"} className="w-full h-full object-cover" />
+              </div>
+            ) : (
+              <div className="h-20 bg-muted/30 flex items-center justify-center">
+                <span className="text-3xl">{msg.productEmoji || "📦"}</span>
+              </div>
+            )}
+            <div className="px-3.5 py-2.5 space-y-1">
+              <p className="text-[12px] font-bold text-foreground leading-tight line-clamp-2">{msg.productName || "Product"}</p>
+              {msg.productPrice != null && (
+                <p className="text-sm font-extrabold text-primary">৳{msg.productPrice.toLocaleString()}</p>
+              )}
+              <p className="text-[10px] text-muted-foreground">Product Inquiry</p>
+            </div>
+          </div>
+        )}
+
         {isVoice && <div {...pressHandlers} className="select-none"><VoiceBubble msg={msg} /></div>}
         {isImage && <div {...pressHandlers} className="select-none"><ImageBubble msg={msg} /></div>}
 
-        {!isMoney && !isOrder && !isVoice && !isImage && (
+        {!isMoney && !isOrder && !isVoice && !isImage && !isProduct && (
           msg.text?.includes("[Old message]") ? (
             <div className={`flex ${msg.sent ? "justify-end" : "justify-start"} py-0.5`}>
               <span className="text-[10px] italic text-muted-foreground/50 px-3">Previous message unavailable</span>
