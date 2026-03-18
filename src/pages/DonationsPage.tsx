@@ -84,7 +84,15 @@ const DonationsPage = () => {
     setLeaderboardLoading(false);
   };
 
-  useEffect(() => { if (user) { fetchHistory(); fetchRecurring(); } }, [user]);
+  useEffect(() => {
+    if (user) { fetchHistory(); fetchRecurring(); }
+    // Restore favorite cause
+    const favId = localStorage.getItem("mfs_fav_donation_cause");
+    if (favId) {
+      const fav = CAUSES.find(c => c.id === favId);
+      if (fav) { setSelectedCause(fav); setStep("amount"); }
+    }
+  }, [user]);
 
   useEffect(() => {
     if (activeTab === "leaderboard" && leaderboard.length === 0) {
