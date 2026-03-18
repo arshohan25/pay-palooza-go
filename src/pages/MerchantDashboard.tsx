@@ -108,6 +108,7 @@ const MerchantDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
   const balanceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { totalUnread } = useChat();
 
   const toggleBalance = () => {
     setShowBalance(v => {
