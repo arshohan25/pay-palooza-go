@@ -18,6 +18,7 @@ import WriteReviewForm from "@/components/shop/WriteReviewForm";
 import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { useAuth } from "@/hooks/use-auth";
+import { useOnlinePresence } from "@/hooks/use-online-presence";
 import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
 import { useChat } from "@/hooks/use-chat";
 import { toast } from "sonner";
