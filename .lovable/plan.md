@@ -1,29 +1,29 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Unique Amount Page Redesign
 
-### What
+The amount step (lines 251-372) currently has a clean layout but lacks visual distinction. Here's the plan to give it a truly unique, standout look:
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### Changes — `src/pages/DonationsPage.tsx` (amount step only)
 
-### Changes
+**1. Radial Glow Background**
+- Add a large, blurred radial gradient circle behind the amount display using the selected cause's gradient colors (absolute positioned, `w-48 h-48 blur-3xl opacity-20`). Creates a subtle "aura" effect unique to each cause.
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**2. Circular Amount Display**
+- Replace the flat amount text with a large circular ring container (`w-52 h-52 rounded-full`) with a thin gradient border (using the cause gradient). The amount sits centered inside with the currency symbol above. Gives a "coin" or "target" feel — visually distinctive and memorable.
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+**3. Animated Ring Progress**
+- Add an SVG ring around the circle that fills based on amount relative to max (e.g., 10000). Uses `stroke-dashoffset` animated with framer-motion. Purely decorative but adds life.
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
+**4. Preset Amount Chips — Glass Morphism**
+- Replace flat pills with glass-style chips: `bg-white/10 backdrop-blur-md border border-white/20` in dark mode, `bg-black/5 backdrop-blur-md` in light mode. Selected state fills with the cause gradient. Layout as a horizontal scroll strip with snap behavior.
 
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
+**5. Toggles — Card Style**
+- Wrap anonymous and recurring toggles in individual rounded-2xl cards with subtle gradient left-accent bars (2px wide, using cause color). Feels more structured and premium versus plain rows.
 
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
+**6. CTA — Floating Bottom**
+- Make the continue button sticky at the bottom with a frosted glass background strip (`backdrop-blur-lg bg-background/80`), so it's always visible. Button itself gets a subtle "shine" gradient overlay (a diagonal white-to-transparent stripe animating on hover).
 
 ### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+- `src/pages/DonationsPage.tsx` — amount step visual overhaul only, no logic changes
 
