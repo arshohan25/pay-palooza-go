@@ -100,6 +100,7 @@ import AdminChangelogManager from "@/components/admin/AdminChangelogManager";
 import AdminFestivalThemes from "@/components/admin/AdminFestivalThemes";
 import AdminEcommerceHub from "@/components/admin/AdminEcommerceHub";
 import AdminCareersManager from "@/components/admin/AdminCareersManager";
+import AdminChatMonitor from "@/components/admin/AdminChatMonitor";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -211,6 +212,7 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "mfs_monitor", label: "MFS Monitor", icon: Activity },
       { id: "disputes", label: "Disputes", icon: Scale },
       { id: "support", label: "Support", icon: MessageCircle },
+      { id: "chat_monitor", label: "Chat Monitor", icon: MessageCircle },
       { id: "complaints", label: "Complaints", icon: AlertTriangle },
       { id: "kyc", label: "KYC", icon: ScanFace },
       { id: "orders", label: "Orders", icon: Package },
@@ -1538,6 +1540,9 @@ export default function AdminDashboard() {
 
         {/* ═══ SUPPORT DASHBOARD ═══ */}
         {activeTab === "support" && <AdminSupportDashboard />}
+
+        {/* ═══ CHAT MONITOR ═══ */}
+        {activeTab === "chat_monitor" && <AdminChatMonitor />}
 
         {/* ═══ FEATURE LOCKS ═══ */}
         {activeTab === "locks" && <AdminFeatureLocks />}
