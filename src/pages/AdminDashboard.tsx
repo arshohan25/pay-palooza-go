@@ -100,6 +100,7 @@ import AdminChangelogManager from "@/components/admin/AdminChangelogManager";
 import AdminFestivalThemes from "@/components/admin/AdminFestivalThemes";
 import AdminEcommerceHub from "@/components/admin/AdminEcommerceHub";
 import AdminCareersManager from "@/components/admin/AdminCareersManager";
+import AdminChatMonitor from "@/components/admin/AdminChatMonitor";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
