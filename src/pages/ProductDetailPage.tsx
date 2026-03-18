@@ -57,38 +57,6 @@ export default function ProductDetailPage() {
   const { user } = useAuth();
   const { addViewed } = useRecentlyViewed();
   const { createDirectConversation, sendMessage } = useChat();
-  const [chattingWithMerchant, setChattingWithMerchant] = useState(false);
-
-  const handleChatWithMerchant = useCallback(async () => {
-    if (!user) {
-      toast.error("Please log in to chat with the seller");
-      return;
-    }
-    const merchantUserId = (product?.merchants as any)?.user_id;
-    if (!merchantUserId) {
-      toast.error("Merchant info unavailable");
-      return;
-    }
-    if (merchantUserId === user.id) {
-      toast.info("This is your own store");
-      return;
-    }
-    setChattingWithMerchant(true);
-    try {
-      const convId = await createDirectConversation(merchantUserId);
-      if (convId) {
-        const contextMsg = `Hi, I'm interested in ${product.name} (৳${product.price})`;
-        await sendMessage(convId, contextMsg);
-        navigate("/inbox");
-      } else {
-        toast.error("Could not start conversation");
-      }
-    } catch {
-      toast.error("Failed to start chat");
-    } finally {
-      setChattingWithMerchant(false);
-    }
-  }, [user, product, createDirectConversation, sendMessage, navigate]);
 
   // Track recently viewed
   useEffect(() => {
