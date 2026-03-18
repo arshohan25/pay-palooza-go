@@ -21,8 +21,9 @@ import AdminInventoryAlerts from "./AdminInventoryAlerts";
 import AdminFlashSales from "./AdminFlashSales";
 import AdminCourierProviders from "./AdminCourierProviders";
 import AdminDeliveryZones from "./AdminDeliveryZones";
+import AdminReturnRequests from "./AdminReturnRequests";
 
-type SubTab = "dashboard" | "products" | "stores" | "reviews" | "coupons" | "banners" | "marketing" | "inventory" | "flash_sales" | "couriers" | "zones";
+type SubTab = "dashboard" | "products" | "stores" | "reviews" | "coupons" | "banners" | "marketing" | "inventory" | "flash_sales" | "couriers" | "zones" | "returns";
 
 const SUB_TABS: { key: SubTab; label: string; icon: any }[] = [
   { key: "dashboard", label: "Dashboard", icon: TrendingUp },
