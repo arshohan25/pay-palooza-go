@@ -77,9 +77,6 @@ const MoreSheet = ({ open, onClose, onBankTransfer, onSavings }: MoreSheetProps)
                   <div className="min-w-0">
                     <div className="flex items-center justify-center gap-1.5">
                       <p className="text-sm font-bold text-foreground">{item.label}</p>
-                      {item.soon && (
-                        <span className="text-[9px] font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">Soon</span>
-                      )}
                     </div>
                     <p className="text-[11px] text-muted-foreground mt-1 leading-tight">{item.desc}</p>
                   </div>
