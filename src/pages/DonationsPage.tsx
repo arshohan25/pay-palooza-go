@@ -143,6 +143,10 @@ const DonationsPage = () => {
 
       setStep("success");
       fireSuccessConfetti();
+      // Save favorite cause for next time
+      if (selectedCause) {
+        localStorage.setItem("mfs_fav_donation_cause", selectedCause.id);
+      }
       fetchHistory();
       if (isRecurring) fetchRecurring();
     } catch (e: any) {
