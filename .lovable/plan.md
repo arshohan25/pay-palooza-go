@@ -1,45 +1,29 @@
 
 
-## Fix Chat Error + Add Floating Merchant Chat Button
+## Plan: Add Biller Categories to API Hub
 
-### Problem
-The chat navigation fix (`/?tab=inbox&conv=...`) is in the preview code but may not be deployed to the published URL yet. Additionally, the user wants the merchant chat button as a **floating button** on the bottom-right instead of in the bottom action bar.
+### What
+
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
 ### Changes
 
-#### 1. `src/pages/ProductDetailPage.tsx` — Move chat to floating FAB
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-**Remove** the chat button from the fixed bottom bar (lines 520-524), keeping only "Add to Cart" and "Buy Now".
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-**Add** a floating action button (FAB) positioned `fixed bottom-20 right-4 z-[60]`:
-- Round circle with `MessageCircle` icon
-- Green pulsing dot when merchant is online
-- Hidden when viewing own store (`merchantUserId === user?.id`)
-- Shows `Loader2` spinner while `chattingWithMerchant` is true
-- Calls the same `handleChatWithMerchant` function
+2. After the existing service items (line ~114), add static biller entries grouped by category:
 
-```text
-Bottom bar (simplified):
-┌─────────────────────────────┐
-│  [Add to Cart]  [Buy Now]   │
-└─────────────────────────────┘
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
 
-Floating button (bottom-right):
-                          ● ← green dot
-                        [💬] ← FAB
-```
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
 
-#### 2. No other file changes needed
+3. Add the new category icons to the `categoryIcons` map.
 
-- `Index.tsx` already reads `?tab=inbox` and sets the active tab correctly
-- `handleChatWithMerchant` already navigates to `/?tab=inbox&conv=${convId}`
-- `InboxPage` already parses the `conv` URL param to auto-open conversations
-
-### Chat Flow Rules (already implemented)
-- **Shop chat** (user → vendor): Initiated via the floating FAB on product pages, sends product inquiry metadata, opens in Inbox
-- **Inbox chat** (user → user): P2P messaging initiated from the Inbox tab with phone number search
-
-### Technical Notes
-- FAB uses `z-[60]` to sit above the bottom bar (`z-50`)
-- The published URL needs to be re-published to pick up the navigation fix
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
