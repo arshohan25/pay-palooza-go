@@ -528,7 +528,7 @@ export default function ProductDetailPage() {
             <MessageCircle className="w-5 h-5" />
           )}
           {merchantOnline && !chattingWithMerchant && (
-            <span className="absolute top-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-background animate-pulse" />
+            <span className="absolute top-0 right-0 h-3 w-3 rounded-full bg-emerald-500 border-2 border-background animate-pulse" />
           )}
         </button>
       )}
