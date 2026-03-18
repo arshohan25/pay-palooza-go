@@ -15,7 +15,6 @@ interface SavedAddress {
   address_line: string;
   city: string;
   area: string | null;
-  postal_code: string | null;
   is_default: boolean;
 }
 
@@ -34,7 +33,7 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
   const [editing, setEditing] = useState<SavedAddress | "new" | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    label: "Home", recipient_name: "", phone: "", address_line: "", city: "", area: "", postal_code: "", is_default: false,
+    label: "Home", recipient_name: "", phone: "", address_line: "", city: "", area: "", is_default: false,
   });
 
   const fetchAddresses = async () => {
@@ -52,12 +51,12 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
 
   const openEdit = (addr: SavedAddress | "new") => {
     if (addr === "new") {
-      setForm({ label: "Home", recipient_name: "", phone: "", address_line: "", city: "", area: "", postal_code: "", is_default: addresses.length === 0 });
+      setForm({ label: "Home", recipient_name: "", phone: "", address_line: "", city: "", area: "", is_default: addresses.length === 0 });
     } else {
       setForm({
         label: addr.label, recipient_name: addr.recipient_name, phone: addr.phone,
         address_line: addr.address_line, city: addr.city, area: addr.area || "",
-        postal_code: addr.postal_code || "", is_default: addr.is_default,
+        is_default: addr.is_default,
       });
     }
     setEditing(addr);
@@ -79,7 +78,7 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
         const { error } = await supabase.from("delivery_addresses").insert({
           user_id: userId, label: form.label, recipient_name: form.recipient_name,
           phone: form.phone, address_line: form.address_line, city: form.city,
-          area: form.area || null, postal_code: form.postal_code || null, is_default: form.is_default,
+          area: form.area || null, is_default: form.is_default,
         });
         if (error) throw error;
         toast.success("Address saved");
@@ -87,7 +86,7 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
         const { error } = await supabase.from("delivery_addresses").update({
           label: form.label, recipient_name: form.recipient_name, phone: form.phone,
           address_line: form.address_line, city: form.city,
-          area: form.area || null, postal_code: form.postal_code || null, is_default: form.is_default,
+          area: form.area || null, is_default: form.is_default,
         } as any).eq("id", editing.id);
         if (error) throw error;
         toast.success("Address updated");
@@ -213,10 +212,6 @@ export default function AddressManager({ userId, onSelect, selectedId, compact }
                     <Label className="text-xs">City *</Label>
                     <Input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder="e.g. Dhaka" />
                   </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Postal Code</Label>
-                  <Input value={form.postal_code} onChange={e => setForm(f => ({ ...f, postal_code: e.target.value }))} placeholder="e.g. 1216" />
                 </div>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={form.is_default} onChange={e => setForm(f => ({ ...f, is_default: e.target.checked }))}

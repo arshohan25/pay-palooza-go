@@ -1,14 +1,29 @@
 
 
-## Remove Postal Code from Address Manager
+## Plan: Add Biller Categories to API Hub
 
-### Changes — `src/components/shop/AddressManager.tsx`
+### What
 
-1. Remove `postal_code` from the `SavedAddress` interface (line 19)
-2. Remove `postal_code` from the `form` state initialization (line 36)
-3. Remove `postal_code` from `openEdit` mappings (lines 54, 58)
-4. Remove `postal_code` from `handleSave` insert/update payloads (lines 75, 83)
-5. Remove the Postal Code form field (the `<div>` with Label "Postal Code" and its Input, around line 220)
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-No database migration needed — the column can remain nullable in the table.
+### Changes
+
+**File: `src/components/admin/AdminApiHub.tsx`**
+
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
+
+### Files
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
