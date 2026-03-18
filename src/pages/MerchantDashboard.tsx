@@ -466,6 +466,19 @@ const MerchantDashboard = () => {
           </>
         )}
       </AnimatePresence>
+
+      {/* ── Floating Chat FAB ── */}
+      <button
+        onClick={() => navigate("/?tab=inbox")}
+        className="fixed bottom-6 right-4 z-[60] w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center transition-transform active:scale-90"
+      >
+        <MessageCircle className="w-6 h-6" />
+        {totalUnread > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[20px] h-5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center px-1">
+            {totalUnread > 99 ? "99+" : totalUnread}
+          </span>
+        )}
+      </button>
     </div>
   );
 };
