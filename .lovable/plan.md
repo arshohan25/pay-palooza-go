@@ -1,29 +1,21 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Add Product Inquiry Badge to Merchant Dashboard
 
-### What
-
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+### Approach
+Add a "Buyer Inquiries" card to the Merchant Services quick actions grid on the overview tab, showing the total unread chat count. Tapping it navigates to `/inbox`.
 
 ### Changes
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+**File: `src/pages/MerchantDashboard.tsx`**
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+1. Import `MessageCircle` from lucide-react and `useChat` from `@/hooks/use-chat`
+2. In the `MerchOverview` component, call `useChat()` to get `totalUnread`
+3. Add a 5th quick action card "Inquiries" with `MessageCircle` icon and a badge overlay showing `totalUnread` when > 0
+4. On click, navigate to `/inbox`
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
+The badge will be a small red circle with the count, positioned on the icon (same pattern used in `BottomNav` and `SideNav` for inbox badges).
 
 ### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+- **Modified**: `src/pages/MerchantDashboard.tsx`
 
