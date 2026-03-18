@@ -689,7 +689,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, onRefresh, onSeeAll, on
     { icon: HandCoins, label: "Cash Out", gradient: "from-emerald-500 to-teal-600", onClick: () => setShowCashOut(true) },
     { icon: Landmark, label: "Add Bank", gradient: "from-amber-500 to-orange-600", onClick: () => setShowAddBank(true) },
     { icon: CalendarClock, label: "Settlement", gradient: "from-purple-500 to-violet-600", onClick: () => setShowSettlementConfig(true) },
-    { icon: MessageCircle, label: "Inquiries", gradient: "from-pink-500 to-rose-600", onClick: () => onOpenInbox(), badge: totalUnread > 0 ? totalUnread : undefined },
+    
   ];
 
   return (
