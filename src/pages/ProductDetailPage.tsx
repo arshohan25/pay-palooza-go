@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Heart, ShoppingCart, Star, Store, Share2, Minus, Plus,
   ChevronRight, Truck, ShieldCheck, RefreshCw, Package, Banknote,
-  Clock, ChevronLeft, Tag, MessageCircle,
+  Clock, ChevronLeft, Tag, MessageCircle, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -507,6 +507,11 @@ export default function ProductDetailPage() {
 
       {/* ── Fixed bottom bar ── */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-t border-border/50 px-3 py-3 flex items-center gap-2.5 safe-area-bottom">
+        <Button variant="outline" size="icon" className="rounded-xl shrink-0 h-11 w-11"
+          onClick={handleChatWithMerchant}
+          disabled={chattingWithMerchant || product.merchants?.user_id === user?.id}>
+          {chattingWithMerchant ? <Loader2 className="w-5 h-5 animate-spin" /> : <MessageCircle className="w-5 h-5" />}
+        </Button>
         <Button variant="outline" size="icon" className="rounded-xl shrink-0 h-11 w-11" onClick={() => navigate("/shop/checkout")}>
           <ShoppingCart className="w-5 h-5" />
         </Button>

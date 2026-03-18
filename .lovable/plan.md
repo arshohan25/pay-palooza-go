@@ -1,24 +1,29 @@
 
 
-## Add Chat Button to Bottom Action Bar
+## Plan: Add Biller Categories to API Hub
 
-The screenshot shows you want a chat/message icon button in the bottom fixed bar, next to the cart icon (left side). The chat handler already exists in the component -- it just needs to be wired into the bottom bar.
+### What
 
-### Change: `src/pages/ProductDetailPage.tsx` (lines 508-521)
+Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
 
-Add a `MessageCircle` icon button next to the existing cart icon button in the fixed bottom bar:
+### Changes
 
-```
-[Chat] [Cart]  [  Add to Cart  ] [  Buy Now  ]
-```
+**File: `src/components/admin/AdminApiHub.tsx`**
 
-- Insert a new `Button` with `MessageCircle` icon right next to the shopping cart button
-- Wire it to the existing `handleChatWithMerchant` callback
-- Show a loading spinner when `chattingWithMerchant` is true
-- Disable the button if the product belongs to the current user (self-store check)
+1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
 
-This is a single-line addition -- no new files, no new logic needed since `handleChatWithMerchant` already handles auth guards, conversation creation, context message, and navigation to inbox.
+2. After the existing service items (line ~114), add static biller entries grouped by category:
+
+   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
+   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
+   - **Water**: WASA Dhaka, WASA Chittagong
+   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
+   - **TV / Cable**: Dish TV, Akash DTH
+
+   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
+
+3. Add the new category icons to the `categoryIcons` map.
 
 ### Files
-- **Modified**: `src/pages/ProductDetailPage.tsx` -- add MessageCircle button to fixed bottom bar
+- `src/components/admin/AdminApiHub.tsx` (modify)
 
