@@ -249,70 +249,36 @@ const DonationsPage = () => {
               )}
 
               {/* Step 2: Amount */}
-              {step === "amount" && selectedCause && (() => {
-                const amtNum = parseFloat(amount) || 0;
-                const progress = Math.min(amtNum / 10000, 1);
-                const circumference = 2 * Math.PI * 96;
-                return (
-                <motion.div key="amount" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} transition={{ duration: 0.3 }} className="space-y-5 relative pb-24">
-                  {/* Radial glow background */}
-                  <div className={`absolute top-8 left-1/2 -translate-x-1/2 w-48 h-48 rounded-full bg-gradient-to-br ${selectedCause.gradient} opacity-[0.12] blur-3xl pointer-events-none`} />
-
+              {step === "amount" && selectedCause && (
+                <motion.div key="amount" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} transition={{ duration: 0.3 }} className="space-y-6">
                   {/* Compact cause pill */}
-                  <div className="flex justify-center relative z-10">
-                    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r ${selectedCause.gradient} text-white text-sm font-medium shadow-lg shadow-black/10`}>
+                  <div className="flex justify-center">
+                    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r ${selectedCause.gradient} text-white text-sm font-medium`}>
                       <selectedCause.icon size={16} />
                       {selectedCause.name}
                     </div>
                   </div>
 
-                  {/* Circular amount display with SVG ring */}
-                  <div className="flex justify-center relative z-10 py-4">
-                    <div className="relative w-52 h-52 flex items-center justify-center">
-                      {/* SVG ring progress */}
-                      <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 208 208">
-                        <circle cx="104" cy="104" r="96" fill="none" stroke="hsl(var(--border) / 0.2)" strokeWidth="3" />
-                        <motion.circle
-                          cx="104" cy="104" r="96" fill="none"
-                          strokeWidth="3.5"
-                          strokeLinecap="round"
-                          className={`${selectedCause.gradient.includes('emerald') ? 'stroke-emerald-500' : selectedCause.gradient.includes('blue') ? 'stroke-blue-500' : selectedCause.gradient.includes('rose') ? 'stroke-rose-500' : selectedCause.gradient.includes('amber') ? 'stroke-amber-500' : selectedCause.gradient.includes('violet') ? 'stroke-violet-500' : 'stroke-primary'}`}
-                          initial={{ strokeDashoffset: circumference }}
-                          animate={{ strokeDashoffset: circumference * (1 - progress) }}
-                          transition={{ type: "spring", stiffness: 60, damping: 15 }}
-                          style={{ strokeDasharray: circumference }}
-                        />
-                      </svg>
-                      {/* Inner circle with amount */}
-                      <div className="absolute inset-3 rounded-full bg-card/80 backdrop-blur-sm ring-1 ring-border/30 flex flex-col items-center justify-center">
-                        <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-1">Amount</span>
-                        <span className="text-3xl font-light text-muted-foreground/40">৳</span>
-                        <motion.span
-                          key={amount}
-                          initial={{ scale: 0.9, opacity: 0.5 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                          className="text-4xl font-extrabold text-foreground tabular-nums tracking-tight -mt-1"
-                        >
-                          {amount || "0"}
-                        </motion.span>
-                      </div>
+                  {/* Large amount display */}
+                  <div className="text-center py-6">
+                    <p className="text-xs text-muted-foreground uppercase tracking-[0.2em] mb-3">Amount</p>
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span className="text-3xl font-medium text-muted-foreground/50">৳</span>
+                      <span className="text-5xl font-extrabold text-foreground tabular-nums tracking-tight">{amount || "0"}</span>
                     </div>
                   </div>
 
-                  {/* Glass morphism preset chips — horizontal scroll */}
-                  <div className="flex gap-2.5 justify-center overflow-x-auto snap-x snap-mandatory scrollbar-none px-2 relative z-10">
+                  {/* Preset pills */}
+                  <div className="flex gap-2 justify-center">
                     {PRESET_AMOUNTS.map(a => (
                       <motion.button
                         key={a}
-                        whileTap={{ scale: 0.9 }}
-                        whileHover={{ y: -2 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                        whileTap={{ scale: 0.92 }}
                         onClick={() => setAmount(String(a))}
-                        className={`snap-center shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
+                        className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
                           amount === String(a)
-                            ? `bg-gradient-to-r ${selectedCause.gradient} text-white shadow-lg`
-                            : "bg-foreground/[0.04] backdrop-blur-md text-foreground ring-1 ring-border/30 hover:ring-border/60"
+                            ? `bg-gradient-to-r ${selectedCause.gradient} text-white shadow-lg scale-105`
+                            : "bg-muted/40 text-foreground ring-1 ring-border/40 hover:ring-border"
                         }`}
                       >
                         ৳{a}
@@ -327,11 +293,11 @@ const DonationsPage = () => {
                     placeholder="Custom amount"
                     value={amount}
                     onChange={e => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
-                    className="w-full text-center text-lg font-semibold py-3 bg-muted/20 rounded-2xl border-0 ring-1 ring-border/40 focus:ring-2 focus:ring-primary/40 outline-none transition-all text-foreground placeholder:text-muted-foreground/40 relative z-10"
+                    className="w-full text-center text-lg font-semibold py-3 bg-muted/20 rounded-2xl border-0 ring-1 ring-border/40 focus:ring-2 focus:ring-primary/40 outline-none transition-all text-foreground placeholder:text-muted-foreground/40"
                   />
 
                   {/* Collapsible message */}
-                  <div className="relative z-10">
+                  <div>
                     <button
                       onClick={() => setMsgExpanded(!msgExpanded)}
                       className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 mx-auto"
@@ -353,19 +319,18 @@ const DonationsPage = () => {
                     </AnimatePresence>
                   </div>
 
-                  {/* Toggle cards with accent bars */}
-                  <div className="space-y-2.5 relative z-10">
-                    <div className="flex items-center justify-between py-3 px-4 rounded-2xl bg-card/60 backdrop-blur-sm ring-1 ring-border/30 relative overflow-hidden">
-                      <div className={`absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-gradient-to-b ${selectedCause.gradient}`} />
-                      <div className="flex items-center gap-2.5 pl-2">
+                  {/* Toggle rows */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between py-3 px-1">
+                      <div className="flex items-center gap-2.5">
                         <EyeOff size={15} className="text-muted-foreground" />
                         <span className="text-sm text-foreground">Donate anonymously</span>
                       </div>
                       <Switch checked={isAnonymous} onCheckedChange={setIsAnonymous} />
                     </div>
-                    <div className="flex items-center justify-between py-3 px-4 rounded-2xl bg-card/60 backdrop-blur-sm ring-1 ring-border/30 relative overflow-hidden">
-                      <div className={`absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-gradient-to-b ${selectedCause.gradient}`} />
-                      <div className="flex items-center gap-2.5 pl-2">
+                    <div className="h-px bg-border/30" />
+                    <div className="flex items-center justify-between py-3 px-1">
+                      <div className="flex items-center gap-2.5">
                         <RefreshCw size={15} className="text-muted-foreground" />
                         <span className="text-sm text-foreground">Make this recurring</span>
                       </div>
@@ -376,7 +341,7 @@ const DonationsPage = () => {
                   {/* Frequency */}
                   <AnimatePresence>
                     {isRecurring && (
-                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden relative z-10">
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
                         <div className="flex gap-2">
                           {(["weekly", "monthly"] as const).map(f => (
                             <button
@@ -396,20 +361,16 @@ const DonationsPage = () => {
                     )}
                   </AnimatePresence>
 
-                  {/* Floating sticky CTA */}
-                  <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-lg border-t border-border/20 z-50">
-                    <button
-                      onClick={handleAmountNext}
-                      disabled={!amount || parseFloat(amount) < 10}
-                      className={`w-full py-4 rounded-2xl font-bold text-base disabled:opacity-30 transition-all active:scale-[0.98] bg-gradient-to-r ${selectedCause.gradient} text-white shadow-xl shadow-black/10 relative overflow-hidden group`}
-                    >
-                      <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                      <span className="relative">Continue — ৳{amount || "0"}</span>
-                    </button>
-                  </div>
+                  {/* CTA */}
+                  <button
+                    onClick={handleAmountNext}
+                    disabled={!amount || parseFloat(amount) < 10}
+                    className={`w-full py-4 rounded-2xl font-bold text-base disabled:opacity-30 transition-all active:scale-[0.98] bg-gradient-to-r ${selectedCause.gradient} text-white shadow-xl shadow-black/10`}
+                  >
+                    Continue — ৳{amount || "0"}
+                  </button>
                 </motion.div>
-                );
-              })()}
+              )}
 
               {/* Step 3: PIN */}
               {step === "pin" && selectedCause && (
