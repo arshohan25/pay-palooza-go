@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Lock, ChevronUp, Sparkles, GripVertical, RotateCcw } from "lucide-react";
@@ -286,6 +287,7 @@ interface QuickActionsProps {
 }
 
 const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill, onAddMoney, onRefer, onShop, onBankTransfer, onSavings }: QuickActionsProps) => {
+  const navigate = useNavigate();
   const { t } = useI18n();
   const { isLocked } = useFeatureLocks();
   const { isDisabled: isGloballyDisabled, toggles } = useGlobalToggles();
@@ -418,6 +420,9 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
     if (soon) { toast.info("Coming soon!"); return; }
     if (id === "refer") onRefer();
     else if (id === "savings") onSavings();
+    else if (id === "donations") navigate("/donations");
+    else if (id === "coupons") navigate("/coupons");
+    else if (id === "careers") navigate("/careers");
   };
 
   const filteredMoreServices = visibleMoreServices;
