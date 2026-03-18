@@ -211,6 +211,7 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "mfs_monitor", label: "MFS Monitor", icon: Activity },
       { id: "disputes", label: "Disputes", icon: Scale },
       { id: "support", label: "Support", icon: MessageCircle },
+      { id: "chat_monitor", label: "Chat Monitor", icon: MessageCircle },
       { id: "complaints", label: "Complaints", icon: AlertTriangle },
       { id: "kyc", label: "KYC", icon: ScanFace },
       { id: "orders", label: "Orders", icon: Package },
