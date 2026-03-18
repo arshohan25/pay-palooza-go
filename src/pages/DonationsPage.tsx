@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Heart, GraduationCap, Stethoscope, Droplets, Wheat, Baby, Check, History, Loader2, Trophy, EyeOff, Share2 } from "lucide-react";
+import { ArrowLeft, Heart, GraduationCap, Stethoscope, Droplets, Wheat, Baby, Check, History, Loader2, Trophy, EyeOff, Share2, RefreshCw, Trash2, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -42,6 +42,19 @@ interface LeaderboardEntry {
   cause_name: string;
 }
 
+interface RecurringDonation {
+  id: string;
+  cause_name: string;
+  cause_icon: string | null;
+  amount: number;
+  frequency: string;
+  is_active: boolean;
+  next_run_at: string;
+  last_run_at: string | null;
+  message: string | null;
+  is_anonymous: boolean;
+}
+
 const DonationsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -54,6 +67,12 @@ const DonationsPage = () => {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [history, setHistory] = useState<DonationRecord[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+
+  // Recurring state
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [frequency, setFrequency] = useState<"weekly" | "monthly">("monthly");
+  const [recurringList, setRecurringList] = useState<RecurringDonation[]>([]);
+  const [recurringLoading, setRecurringLoading] = useState(false);
 
   // Share receipt state
   const [shareOpen, setShareOpen] = useState(false);
@@ -77,6 +96,18 @@ const DonationsPage = () => {
     setHistoryLoading(false);
   };
 
+  const fetchRecurring = async () => {
+    if (!user) return;
+    setRecurringLoading(true);
+    const { data } = await supabase
+      .from("recurring_donations")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    setRecurringList((data as RecurringDonation[]) ?? []);
+    setRecurringLoading(false);
+  };
+
   const fetchLeaderboard = async (cause?: string | null) => {
     setLeaderboardLoading(true);
     const { data } = await supabase.rpc("donation_leaderboard", {
@@ -87,7 +118,10 @@ const DonationsPage = () => {
   };
 
   useEffect(() => {
-    if (user) fetchHistory();
+    if (user) {
+      fetchHistory();
+      fetchRecurring();
+    }
   }, [user]);
 
   const handleSelectCause = (cause: typeof CAUSES[0]) => {
@@ -133,6 +167,24 @@ const DonationsPage = () => {
         is_anonymous: isAnonymous,
       });
 
+      // Create recurring schedule if enabled
+      if (isRecurring) {
+        const nextRun = new Date();
+        if (frequency === "weekly") nextRun.setDate(nextRun.getDate() + 7);
+        else nextRun.setMonth(nextRun.getMonth() + 1);
+
+        await supabase.from("recurring_donations").insert({
+          user_id: user!.id,
+          cause_name: selectedCause!.name,
+          cause_icon: selectedCause!.emoji,
+          amount: num,
+          frequency,
+          message: message || null,
+          is_anonymous: isAnonymous,
+          next_run_at: nextRun.toISOString(),
+        });
+      }
+
       // Build receipt for sharing
       const now = new Date();
       setReceiptData({
@@ -144,6 +196,7 @@ const DonationsPage = () => {
           { label: "Amount", value: `৳${num.toLocaleString()}` },
           { label: "Date", value: format(now, "dd MMM yyyy, hh:mm a") },
           ...(isAnonymous ? [{ label: "Identity", value: "Anonymous" }] : []),
+          ...(isRecurring ? [{ label: "Recurring", value: frequency === "weekly" ? "Weekly" : "Monthly" }] : []),
           ...(message ? [{ label: "Message", value: message }] : []),
         ],
         txnId: `DON-${selectedCause!.id.toUpperCase()}-${Date.now().toString(36).toUpperCase()}`,
@@ -151,11 +204,27 @@ const DonationsPage = () => {
 
       setStep("success");
       fetchHistory();
+      if (isRecurring) fetchRecurring();
     } catch (e: any) {
       toast.error(e.message || "Donation failed");
     } finally {
       setLoading(false);
     }
+  };
+
+  const toggleRecurringActive = async (id: string, currentActive: boolean) => {
+    await supabase.from("recurring_donations").update({
+      is_active: !currentActive,
+      updated_at: new Date().toISOString(),
+    }).eq("id", id);
+    setRecurringList(prev => prev.map(r => r.id === id ? { ...r, is_active: !currentActive } : r));
+    toast.success(!currentActive ? "Schedule resumed" : "Schedule paused");
+  };
+
+  const deleteRecurring = async (id: string) => {
+    await supabase.from("recurring_donations").delete().eq("id", id);
+    setRecurringList(prev => prev.filter(r => r.id !== id));
+    toast.success("Schedule deleted");
   };
 
   const resetFlow = () => {
@@ -165,6 +234,8 @@ const DonationsPage = () => {
     setMessage("");
     setPin("");
     setIsAnonymous(false);
+    setIsRecurring(false);
+    setFrequency("monthly");
   };
 
   const causeForIcon = (name: string) => CAUSES.find(c => c.name === name);
@@ -187,6 +258,9 @@ const DonationsPage = () => {
         <Tabs defaultValue="donate">
           <TabsList className="w-full">
             <TabsTrigger value="donate" className="flex-1">Donate</TabsTrigger>
+            <TabsTrigger value="recurring" className="flex-1" onClick={() => { if (recurringList.length === 0) fetchRecurring(); }}>
+              <RefreshCw size={14} className="mr-1.5" /> Recurring
+            </TabsTrigger>
             <TabsTrigger value="history" className="flex-1">
               <History size={14} className="mr-1.5" /> History
             </TabsTrigger>
@@ -284,6 +358,33 @@ const DonationsPage = () => {
                     <Switch checked={isAnonymous} onCheckedChange={setIsAnonymous} />
                   </div>
 
+                  {/* Recurring toggle */}
+                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-card border border-border">
+                    <div className="flex items-center gap-2.5">
+                      <RefreshCw size={16} className="text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Make this recurring</p>
+                        <p className="text-[11px] text-muted-foreground">Auto-donate on a schedule</p>
+                      </div>
+                    </div>
+                    <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
+                  </div>
+
+                  {/* Frequency selector */}
+                  {isRecurring && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="flex gap-2">
+                      {(["weekly", "monthly"] as const).map(f => (
+                        <button
+                          key={f}
+                          onClick={() => setFrequency(f)}
+                          className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-all ${frequency === f ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-foreground"}`}
+                        >
+                          {f === "weekly" ? "Weekly" : "Monthly"}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+
                   <button
                     onClick={handleAmountNext}
                     disabled={!amount || parseFloat(amount) < 10}
@@ -302,6 +403,7 @@ const DonationsPage = () => {
                     <p className="text-lg font-bold text-foreground">{selectedCause?.name}</p>
                     <p className="text-2xl font-extrabold text-primary mt-1">৳{parseFloat(amount).toLocaleString()}</p>
                     {isAnonymous && <p className="text-xs text-muted-foreground mt-1 flex items-center justify-center gap-1"><EyeOff size={12} /> Anonymous</p>}
+                    {isRecurring && <p className="text-xs text-muted-foreground mt-1 flex items-center justify-center gap-1"><RefreshCw size={12} /> {frequency === "weekly" ? "Weekly" : "Monthly"} recurring</p>}
                   </div>
 
                   <div>
@@ -345,6 +447,7 @@ const DonationsPage = () => {
                       ৳{parseFloat(amount).toLocaleString()} donated to <span className="font-semibold text-foreground">{selectedCause?.name}</span>
                     </p>
                     {isAnonymous && <p className="text-xs text-muted-foreground mt-1">🕶️ Donated anonymously</p>}
+                    {isRecurring && <p className="text-xs text-primary mt-1 font-medium">🔄 {frequency === "weekly" ? "Weekly" : "Monthly"} recurring schedule created</p>}
                   </div>
                   <div className="flex gap-3 justify-center">
                     <button onClick={resetFlow} className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold">
@@ -357,6 +460,49 @@ const DonationsPage = () => {
                 </motion.div>
               )}
             </AnimatePresence>
+          </TabsContent>
+
+          {/* ── Recurring Tab ── */}
+          <TabsContent value="recurring">
+            {recurringLoading ? (
+              <div className="flex justify-center py-12"><Loader2 className="animate-spin text-muted-foreground" /></div>
+            ) : recurringList.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <RefreshCw size={32} className="mx-auto mb-2 opacity-40" />
+                <p className="text-sm">No recurring donations</p>
+                <p className="text-xs mt-1">Set one up in the Donate tab</p>
+              </div>
+            ) : (
+              <div className="space-y-2 mt-3">
+                {recurringList.map(r => {
+                  const cause = causeForIcon(r.cause_name);
+                  return (
+                    <div key={r.id} className={`flex items-center gap-3 p-3 rounded-xl bg-card border border-border ${!r.is_active ? "opacity-60" : ""}`}>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${cause ? `bg-gradient-to-b ${cause.gradient} text-white` : "bg-muted"}`}>
+                        {cause ? <cause.icon size={18} /> : (r.cause_icon || "❤️")}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">{r.cause_name}</p>
+                        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                          <CalendarClock size={11} />
+                          <span>{r.frequency === "weekly" ? "Weekly" : "Monthly"}</span>
+                          <span>· Next: {format(new Date(r.next_run_at), "dd MMM")}</span>
+                        </div>
+                      </div>
+                      <p className="text-sm font-bold text-foreground mr-1">৳{r.amount}</p>
+                      <Switch
+                        checked={r.is_active}
+                        onCheckedChange={() => toggleRecurringActive(r.id, r.is_active)}
+                        className="scale-90"
+                      />
+                      <button onClick={() => deleteRecurring(r.id)} className="w-7 h-7 rounded-lg bg-destructive/10 flex items-center justify-center">
+                        <Trash2 size={14} className="text-destructive" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </TabsContent>
 
           {/* ── History Tab ── */}
