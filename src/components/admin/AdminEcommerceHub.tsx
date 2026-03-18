@@ -21,8 +21,9 @@ import AdminInventoryAlerts from "./AdminInventoryAlerts";
 import AdminFlashSales from "./AdminFlashSales";
 import AdminCourierProviders from "./AdminCourierProviders";
 import AdminDeliveryZones from "./AdminDeliveryZones";
+import AdminReturnRequests from "./AdminReturnRequests";
 
-type SubTab = "dashboard" | "products" | "stores" | "reviews" | "coupons" | "banners" | "marketing" | "inventory" | "flash_sales" | "couriers" | "zones";
+type SubTab = "dashboard" | "products" | "stores" | "reviews" | "coupons" | "banners" | "marketing" | "inventory" | "flash_sales" | "couriers" | "zones" | "returns";
 
 const SUB_TABS: { key: SubTab; label: string; icon: any }[] = [
   { key: "dashboard", label: "Dashboard", icon: TrendingUp },
@@ -36,6 +37,7 @@ const SUB_TABS: { key: SubTab; label: string; icon: any }[] = [
   { key: "zones", label: "Delivery Zones", icon: Package },
   { key: "banners", label: "Banners", icon: Image },
   { key: "marketing", label: "Marketing", icon: Megaphone },
+  { key: "returns", label: "Returns", icon: Package },
 ];
 
 /* ═══════════════════════ PRODUCTS TAB ═══════════════════════ */
@@ -498,6 +500,7 @@ export default function AdminEcommerceHub() {
       {subTab === "zones" && <AdminDeliveryZones />}
       {subTab === "banners" && <AdminBannerManager />}
       {subTab === "marketing" && <AdminMarketingTools />}
+      {subTab === "returns" && <AdminReturnRequests />}
     </div>
   );
 }

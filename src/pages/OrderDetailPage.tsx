@@ -4,12 +4,15 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft, Clock, CircleCheck, Truck, Package, XCircle, MapPin,
   CreditCard, Wallet, Star, Loader2, Ban, Shield, Download, Printer,
+  ExternalLink, RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { downloadInvoice, printInvoice } from "@/components/InvoiceGenerator";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useOrderNotifications } from "@/hooks/use-order-notifications";
@@ -31,6 +34,15 @@ const ESCROW_LABELS: Record<string, { label: string; color: string }> = {
   refunded: { label: "Refunded to Wallet", color: "text-blue-600" },
 };
 
+const RETURN_REASONS = [
+  "Defective or damaged product",
+  "Wrong item received",
+  "Product not as described",
+  "Changed my mind",
+  "Quality not satisfactory",
+  "Other",
+];
+
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -40,8 +52,14 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [reviewSheet, setReviewSheet] = useState<{ productId: string; orderId: string } | null>(null);
+  const [courierProvider, setCourierProvider] = useState<any>(null);
+  // Return request state
+  const [returnSheet, setReturnSheet] = useState(false);
+  const [returnReason, setReturnReason] = useState("");
+  const [returnDetails, setReturnDetails] = useState("");
+  const [submittingReturn, setSubmittingReturn] = useState(false);
+  const [existingReturn, setExistingReturn] = useState<any>(null);
 
-  // Real-time updates
   useOrderNotifications((update) => {
     if (update.id === id) {
       setOrder((prev: any) => prev ? { ...prev, status: update.status } : prev);
@@ -56,8 +74,27 @@ export default function OrderDetailPage() {
         supabase.from("orders").select("*").eq("id", id).eq("user_id", user.id).single(),
         supabase.from("order_items").select("*").eq("order_id", id),
       ]);
-      if (orderRes.data) setOrder(orderRes.data);
+      if (orderRes.data) {
+        setOrder(orderRes.data);
+        // Load courier provider if exists
+        if (orderRes.data.courier_provider_id) {
+          const { data: cp } = await supabase
+            .from("courier_providers")
+            .select("*")
+            .eq("id", orderRes.data.courier_provider_id)
+            .single();
+          if (cp) setCourierProvider(cp);
+        }
+      }
       if (itemsRes.data) setItems(itemsRes.data);
+      // Check for existing return request
+      const { data: returnData } = await (supabase as any)
+        .from("return_requests")
+        .select("*")
+        .eq("order_id", id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (returnData) setExistingReturn(returnData);
       setLoading(false);
     };
     load();
@@ -75,6 +112,30 @@ export default function OrderDetailPage() {
       toast.error(e.message || "Failed to cancel order");
     }
     setCancelling(false);
+  };
+
+  const handleReturnRequest = async () => {
+    if (!returnReason || !order || !user) return;
+    setSubmittingReturn(true);
+    try {
+      const { error } = await (supabase as any)
+        .from("return_requests")
+        .insert({
+          order_id: order.id,
+          user_id: user.id,
+          reason: returnReason,
+          details: returnDetails || null,
+        });
+      if (error) throw error;
+      setExistingReturn({ status: "pending", reason: returnReason });
+      setReturnSheet(false);
+      setReturnReason("");
+      setReturnDetails("");
+      toast.success("Return request submitted");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to submit return request");
+    }
+    setSubmittingReturn(false);
   };
 
   if (loading) {
@@ -106,12 +167,19 @@ export default function OrderDetailPage() {
   const currentStepIdx = STATUS_STEPS.findIndex(s => s.key === order.status);
   const isCancelled = order.status === "cancelled";
   const isDelivered = order.status === "delivered";
+  const isShipped = ["shipped", "out_for_delivery", "delivered"].includes(order.status);
   const canCancel = order.status === "processing";
+  const canReturn = isDelivered && !existingReturn;
   const escrow = ESCROW_LABELS[order.escrow_status] ?? null;
   const orderItems = items.length > 0 ? items : (Array.isArray(order.items) ? order.items : []);
   const subtotal = orderItems.reduce((s: number, i: any) => s + (Number(i.price) * Number(i.qty || i.quantity || 1)), 0);
   const couponDiscount = Number(order.coupon_discount) || 0;
   const deliveryFee = Number(order.delivery_fee) || 0;
+
+  // Build tracking URL
+  const trackingUrl = order.tracking_number && courierProvider?.tracking_url_template
+    ? courierProvider.tracking_url_template.replace("{tracking_number}", order.tracking_number)
+    : null;
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -172,6 +240,18 @@ export default function OrderDetailPage() {
                 );
               })}
             </div>
+            {/* Courier Tracking */}
+            {isShipped && order.tracking_number && (
+              <div className="flex items-center gap-2 text-xs bg-muted/50 rounded-xl px-3 py-2">
+                <Truck className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-muted-foreground">Tracking: <span className="font-semibold text-foreground">{order.tracking_number}</span></span>
+                {trackingUrl && (
+                  <a href={trackingUrl} target="_blank" rel="noopener noreferrer" className="ml-auto text-primary flex items-center gap-1 font-semibold hover:underline">
+                    Track <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+            )}
             {order.estimated_delivery && !isDelivered && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-xl px-3 py-2">
                 <Truck className="w-3.5 h-3.5" />
@@ -189,6 +269,22 @@ export default function OrderDetailPage() {
               <p className="text-sm font-bold text-destructive">Order Cancelled</p>
               <p className="text-xs text-muted-foreground mt-0.5">Refund will be processed within 24 hours</p>
             </div>
+          </div>
+        )}
+
+        {/* Return Request Status */}
+        {existingReturn && (
+          <div className={`rounded-2xl border p-4 flex items-center gap-3 ${
+            existingReturn.status === "approved" ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-900/10 dark:border-emerald-800" :
+            existingReturn.status === "rejected" ? "bg-destructive/5 border-destructive/20" :
+            "bg-amber-50 border-amber-200 dark:bg-amber-900/10 dark:border-amber-800"
+          }`}>
+            <RotateCcw className="w-6 h-6 text-muted-foreground shrink-0" />
+            <div>
+              <p className="text-sm font-bold text-foreground">Return {existingReturn.status === "approved" ? "Approved" : existingReturn.status === "rejected" ? "Rejected" : "Requested"}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{existingReturn.reason}</p>
+            </div>
+            <Badge variant="outline" className="shrink-0 capitalize">{existingReturn.status}</Badge>
           </div>
         )}
 
@@ -279,18 +375,25 @@ export default function OrderDetailPage() {
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-3">
           {canCancel && (
-            <Button variant="destructive" className="flex-1" onClick={handleCancel} disabled={cancelling}>
+            <Button variant="destructive" className="w-full" onClick={handleCancel} disabled={cancelling}>
               {cancelling ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Ban className="w-4 h-4 mr-2" />}
               Cancel Order
             </Button>
           )}
-          {isDelivered && orderItems.length > 0 && (
-            <Button variant="outline" className="flex-1" onClick={() => setReviewSheet({ productId: orderItems[0].product_id || orderItems[0].id, orderId: order.id })}>
-              <Star className="w-4 h-4 mr-2" /> Rate & Review
-            </Button>
-          )}
+          <div className="flex gap-3">
+            {isDelivered && orderItems.length > 0 && (
+              <Button variant="outline" className="flex-1" onClick={() => setReviewSheet({ productId: orderItems[0].product_id || orderItems[0].id, orderId: order.id })}>
+                <Star className="w-4 h-4 mr-2" /> Rate & Review
+              </Button>
+            )}
+            {canReturn && (
+              <Button variant="outline" className="flex-1" onClick={() => setReturnSheet(true)}>
+                <RotateCcw className="w-4 h-4 mr-2" /> Request Return
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -307,6 +410,45 @@ export default function OrderDetailPage() {
               onSuccess={() => setReviewSheet(null)}
             />
           )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Return Request Sheet */}
+      <Sheet open={returnSheet} onOpenChange={setReturnSheet}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Request a Return</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 pt-4">
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground mb-2">Reason for return</p>
+              <Select value={returnReason} onValueChange={setReturnReason}>
+                <SelectTrigger><SelectValue placeholder="Select a reason..." /></SelectTrigger>
+                <SelectContent>
+                  {RETURN_REASONS.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground mb-2">Additional details (optional)</p>
+              <Textarea
+                value={returnDetails}
+                onChange={(e) => setReturnDetails(e.target.value)}
+                placeholder="Describe the issue..."
+                rows={3}
+              />
+            </div>
+            <Button
+              className="w-full"
+              disabled={!returnReason || submittingReturn}
+              onClick={handleReturnRequest}
+            >
+              {submittingReturn ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RotateCcw className="w-4 h-4 mr-2" />}
+              Submit Return Request
+            </Button>
+          </div>
         </SheetContent>
       </Sheet>
     </div>

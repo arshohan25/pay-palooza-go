@@ -15,7 +15,7 @@ const items = [
   { id: "savings", icon: Wallet, label: "Savings", desc: "Set goals & grow your money", gradient: "bg-gradient-to-b from-emerald-500 to-teal-600" },
   
   { id: "careers", icon: Briefcase, label: "Careers", desc: "Join our team & grow", gradient: "bg-gradient-to-b from-violet-500 to-purple-600" },
-  { id: "coupons", icon: Ticket, label: "Coupons & Offers", desc: "Exclusive deals & cashback", gradient: "bg-gradient-to-b from-pink-500 to-rose-600", soon: true },
+  { id: "coupons", icon: Ticket, label: "Coupons & Offers", desc: "Exclusive deals & cashback", gradient: "bg-gradient-to-b from-pink-500 to-rose-600" },
   { id: "donations", icon: Heart, label: "Donations", desc: "Support causes you care about", gradient: "bg-gradient-to-b from-red-500 to-rose-700", soon: true },
 ];
 
@@ -30,6 +30,7 @@ const MoreSheet = ({ open, onClose, onBankTransfer, onSavings }: MoreSheetProps)
       if (id === "bank") onBankTransfer();
       else if (id === "savings") onSavings();
       else if (id === "careers") navigate("/careers");
+      else if (id === "coupons") navigate("/coupons");
       else toast.info("Coming soon!");
     }, 200);
   };
