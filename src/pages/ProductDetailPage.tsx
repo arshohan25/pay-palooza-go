@@ -203,6 +203,28 @@ export default function ProductDetailPage() {
     return acc;
   }, {} as Record<string, Variant[]>);
 
+  // Auto-scroll chat to bottom
+  useEffect(() => {
+    if (showInlineChat && chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, showInlineChat, typingUsers]);
+
+  const handleSendInlineChat = useCallback(async () => {
+    if (!chatInput.trim() || !showInlineChat || sendingChat) return;
+    setSendingChat(true);
+    setTyping(false);
+    const text = chatInput.trim();
+    setChatInput("");
+    try {
+      await sendMessage(showInlineChat, text);
+    } catch {
+      toast.error("Failed to send");
+    } finally {
+      setSendingChat(false);
+    }
+  }, [chatInput, showInlineChat, sendingChat, sendMessage, setTyping]);
+
   const handleAddToCart = () => {
     addToCart({ ...product, price: finalPrice, vendor_name: vendorInfo?.name, vendor_slug: vendorInfo?.slug }, qty);
   };
