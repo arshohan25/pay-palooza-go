@@ -60,7 +60,7 @@ export default function ProductDetailPage() {
   const { isWishlisted, toggle: toggleWishlist } = useWishlist();
   const { user } = useAuth();
   const { addViewed } = useRecentlyViewed();
-  const { createDirectConversation, sendMessage, openConversation, closeConversation, messages, messagesLoading } = useChat();
+  const { createDirectConversation, sendMessage, openConversation, closeConversation, messages, messagesLoading, conversations } = useChat();
   const { isOnline } = useOnlinePresence(user?.id ?? null);
 
   const [showInlineChat, setShowInlineChat] = useState<string | null>(null);
