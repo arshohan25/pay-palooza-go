@@ -497,5 +497,6 @@ export default function ShopCheckoutPage() {
           icon={ShoppingCart}
         />
       </div>
+    </div>
   );
 }
