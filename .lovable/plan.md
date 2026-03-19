@@ -1,29 +1,19 @@
 
 
-## Plan: Add Biller Categories to API Hub
+## Add "Chat with seller" label below the FAB
 
-### What
+### What changes
+**File: `src/pages/ProductDetailPage.tsx`** (lines 522-543)
 
-Add static biller integration entries to the API Hub for Electricity, Water, Gas, Internet ISPs, and TV providers. These are displayed as "not_configured" by default since there are no corresponding database tables or secrets yet -- they serve as placeholders showing which biller APIs the platform intends to support.
+Wrap the existing FAB button and a new text label in a flex column container. Add a small animated label reading "Chat with seller" beneath the circular button.
 
-### Changes
+### Implementation
 
-**File: `src/components/admin/AdminApiHub.tsx`**
+Replace the current `motion.button` block with a `motion.div` wrapper containing:
+1. The existing FAB button (unchanged)
+2. A small text label: `<span className="text-[10px] font-medium text-primary bg-card/90 backdrop-blur rounded-full px-2 py-0.5 shadow-sm whitespace-nowrap">Chat with seller</span>`
 
-1. Import additional icons from lucide-react: `Zap` (Electricity), `Droplets` (Water), `Flame` (Gas), `Wifi` (Internet), `Tv` (TV/Cable)
+The wrapper will use `flex flex-col items-center gap-1` and inherit the same fixed positioning (`fixed bottom-20 right-4 z-[60]`). The button loses its fixed positioning since the parent handles it.
 
-2. After the existing service items (line ~114), add static biller entries grouped by category:
-
-   - **Electricity**: DESCO, DPDC, BPDB, NESCO, WZPDCL
-   - **Gas**: Titas Gas, Bakhrabad Gas, Jalalabad Gas
-   - **Water**: WASA Dhaka, WASA Chittagong
-   - **Internet ISPs**: BTCL, Carnival, Amber IT, Link3, DOT Internet
-   - **TV / Cable**: Dish TV, Akash DTH
-
-   All with `status: "not_configured"` and `navigateTo: "gateways"` (or a future billers tab).
-
-3. Add the new category icons to the `categoryIcons` map.
-
-### Files
-- `src/components/admin/AdminApiHub.tsx` (modify)
+The entrance animation stays on the parent `motion.div`.
 
