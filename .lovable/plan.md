@@ -1,32 +1,53 @@
 
+Goal: make the order slider draggable again on mobile checkout.
 
-## Fix: Splash Screen Replaying on Back Navigation
+What I found
+- The checkout page uses `SlideToConfirm` inside a fixed bottom bar in `src/pages/ShopCheckoutPage.tsx`.
+- That bottom bar currently sets `touchAction: "none"` on the entire container.
+- The reusable `SlideToConfirm` component itself does not set any mobile touch-action behavior on its draggable surface/thumb.
+- Other working flows use the same slider inline inside normal content, so the regression is most likely caused by the checkout-specific fixed bar + touch handling, not the order logic itself.
+- Your clarification says the thumb “doesn't move”, so this is a gesture-capture issue before submit logic runs.
 
-### Problem
-When navigating back from pages like Donations or Shop to `/`, the `Index` component remounts from scratch. Since `splashDone` is local state initialized to `false`, the splash screen animation plays every time — unlike other flows that stay within the Index component.
+Implementation plan
+1. Fix touch handling at the slider component level
+- Update `src/components/SlideToConfirm.tsx` so the draggable track/thumb explicitly supports horizontal dragging on mobile.
+- Add mobile-safe gesture styles to the actual interactive elements instead of relying on a parent wrapper.
+- Keep the component reusable so the same fix benefits checkout and other flows.
 
-### Solution
-**File: `src/pages/Index.tsx`**
+2. Remove the checkout-specific touch blocker
+- Update `src/pages/ShopCheckoutPage.tsx` to stop applying `touchAction: "none"` on the full fixed bottom bar.
+- Keep the sticky/fixed positioning, safe-area padding, and visibility fix.
 
-Change the `splashDone` initial state to check a session-level flag so the splash only plays once per browser session:
+3. Add a tap fallback for checkout reliability
+- Extend `SlideToConfirm` with an optional fallback interaction for touch devices:
+  - either click-to-confirm when fully disabled conditions are cleared, or
+  - a small “continue” fallback button shown only if drag cannot initialize.
+- I’ll keep the default UX as slide-first, but make checkout resilient if some Android browsers block Framer Motion drag.
 
-```tsx
-// Before
-const [splashDone, setSplashDone] = useState(false);
+4. Preserve reset behavior
+- Keep the existing reset behavior when PIN is wrong / processing changes.
+- Ensure the slider still snaps back cleanly on failed PIN or failed order placement.
 
-// After  
-const [splashDone, setSplashDone] = useState(() => sessionStorage.getItem("splashDone") === "1");
-```
+5. Verify impact scope in code
+- Check all current `SlideToConfirm` usages and keep them compatible.
+- Avoid changing payment/order backend logic unless needed; this looks UI-gesture specific.
 
-And when splash completes, persist the flag:
+Files to update
+- `src/components/SlideToConfirm.tsx`
+- `src/pages/ShopCheckoutPage.tsx`
 
-```tsx
-// Before
-<SplashScreen onDone={() => setSplashDone(true)} />
+Technical details
+- Likely root cause: `touch-action` is applied to the whole fixed checkout bar instead of the draggable element, which can prevent pointer/drag behavior on some mobile browsers.
+- Planned slider-level changes:
+  - apply `touch-action: pan-y` or `none` on the draggable surface/thumb
+  - add `WebkitUserSelect: "none"` / `userSelect: "none"`
+  - keep `drag="x"` and constraints, but make pointer capture more explicit
+- Planned checkout changes:
+  - remove container-wide `touchAction: "none"`
+  - keep fixed bottom layout and safe-area spacing
+- Optional resilience:
+  - add a non-drag fallback only when necessary so placing an order is never blocked by browser gesture quirks
 
-// After
-<SplashScreen onDone={() => { sessionStorage.setItem("splashDone", "1"); setSplashDone(true); }} />
-```
-
-This ensures the splash only shows once per session (first app load), and navigating back from Donations, Shop, etc. goes straight to the home content.
-
+Expected result
+- After entering the 4-digit PIN, the order slider should visibly move with touch on mobile and allow the order to be placed normally.
+- Checkout should keep the sticky bottom CTA without breaking drag behavior.
