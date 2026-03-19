@@ -1,11 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Heart, ShoppingCart, Star, Store, Share2, Minus, Plus,
   ChevronRight, Truck, ShieldCheck, RefreshCw, Package, Banknote,
-  Clock, ChevronLeft, Tag, MessageCircle, Loader2,
+  Clock, ChevronLeft, Tag, MessageCircle, Loader2, Send, Check, CheckCheck, Eye,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTypingIndicator } from "@/hooks/use-typing-indicator";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -57,9 +60,14 @@ export default function ProductDetailPage() {
   const { isWishlisted, toggle: toggleWishlist } = useWishlist();
   const { user } = useAuth();
   const { addViewed } = useRecentlyViewed();
-  const { createDirectConversation, sendMessage } = useChat();
+  const { createDirectConversation, sendMessage, openConversation, closeConversation, messages, messagesLoading, conversations } = useChat();
   const { isOnline } = useOnlinePresence(user?.id ?? null);
 
+  const [showInlineChat, setShowInlineChat] = useState<string | null>(null);
+  const [chatInput, setChatInput] = useState("");
+  const [sendingChat, setSendingChat] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const { typingUsers, setTyping } = useTypingIndicator(showInlineChat, user?.id ?? null, user?.user_metadata?.name || "User");
 
   // Track recently viewed
   useEffect(() => {
@@ -114,7 +122,8 @@ export default function ProductDetailPage() {
           productEmoji: product.emoji,
           isProductInquiry: true,
         });
-        navigate(`/?tab=inbox&conv=${convId}`);
+        await openConversation(convId);
+        setShowInlineChat(convId);
       } else {
         toast.error("Could not start conversation");
       }
@@ -123,7 +132,7 @@ export default function ProductDetailPage() {
     } finally {
       setChattingWithMerchant(false);
     }
-  }, [user, product, createDirectConversation, sendMessage, navigate]);
+  }, [user, product, createDirectConversation, sendMessage, openConversation]);
 
   // ── Data loading (unchanged logic) ──
   useEffect(() => {
@@ -179,6 +188,28 @@ export default function ProductDetailPage() {
     setSwipeDir(dir);
     setImgIdx((p) => (p + dir + images.length) % images.length);
   }, [images.length]);
+
+  // Auto-scroll chat to bottom
+  useEffect(() => {
+    if (showInlineChat && chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, showInlineChat, typingUsers]);
+
+  const handleSendInlineChat = useCallback(async () => {
+    if (!chatInput.trim() || !showInlineChat || sendingChat) return;
+    setSendingChat(true);
+    setTyping(false);
+    const text = chatInput.trim();
+    setChatInput("");
+    try {
+      await sendMessage(showInlineChat, text);
+    } catch {
+      toast.error("Failed to send");
+    } finally {
+      setSendingChat(false);
+    }
+  }, [chatInput, showInlineChat, sendingChat, sendMessage, setTyping]);
 
   if (loading) return <LoadingSkeleton />;
   if (!product) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Product not found</p></div>;
@@ -537,6 +568,132 @@ export default function ProductDetailPage() {
           Buy Now
         </Button>
       </div>
+
+      {/* ── Inline Chat Overlay ── */}
+      <AnimatePresence>
+        {showInlineChat && (
+          <motion.div
+            initial={{ opacity: 0, y: "100%" }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: "100%" }}
+            transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+            className="fixed inset-0 z-[70] bg-background flex flex-col"
+          >
+            {/* Chat Header */}
+            <div className="flex items-center gap-3 px-3 py-2.5 border-b border-border/50 bg-card/90 backdrop-blur-xl shrink-0">
+              <Button variant="ghost" size="icon" className="rounded-full shrink-0" onClick={() => { setShowInlineChat(null); closeConversation(); }}>
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div className="relative w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <Store className="w-4 h-4 text-primary" />
+                <span className={cn("absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card", merchantOnline ? "bg-emerald-500" : "bg-muted-foreground/40")} />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-semibold text-foreground truncate">{vendorInfo?.name || "Seller"}</span>
+                <span className={cn("text-[10px]", merchantOnline ? "text-emerald-600" : "text-muted-foreground")}>
+                  {typingUsers.length > 0 ? "typing..." : merchantOnline ? "Online" : "Offline"}
+                </span>
+              </div>
+            </div>
+
+            {/* Product Context Banner */}
+            <div className="flex items-center gap-2.5 px-4 py-2 bg-muted/30 border-b border-border/30 shrink-0">
+              <span className="text-lg">{product.emoji || "📦"}</span>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-foreground truncate">{product.name}</p>
+                <p className="text-[11px] text-primary font-bold">৳{product.price?.toLocaleString()}</p>
+              </div>
+            </div>
+
+            {/* Messages */}
+            <ScrollArea className="flex-1">
+              <div className="px-3 py-3 space-y-2">
+                {messagesLoading ? (
+                  <div className="flex items-center justify-center py-10">
+                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : messages.length === 0 ? (
+                  <p className="text-center text-xs text-muted-foreground py-10">No messages yet</p>
+                ) : (
+                  messages.map((msg) => {
+                    const isMine = msg.sender_id === user?.id;
+                    const isProductCard = (msg.metadata as any)?.isProductInquiry;
+                    const convParticipants = conversations?.find(c => c.id === showInlineChat)?.participants || [];
+                    const otherRead = convParticipants
+                      .filter(p => p.user_id !== user?.id)
+                      .some(p => p.last_read_at && new Date(p.last_read_at) >= new Date(msg.created_at));
+
+                    return (
+                      <div key={msg.id} className={cn("flex", isMine ? "justify-end" : "justify-start")}>
+                        <div className={cn(
+                          "max-w-[80%] rounded-2xl px-3.5 py-2 text-sm relative",
+                          isMine
+                            ? "bg-primary text-primary-foreground rounded-br-md"
+                            : "bg-muted text-foreground rounded-bl-md"
+                        )}>
+                          {isProductCard ? (
+                            <div className="space-y-1">
+                              <p className="text-xs opacity-80">Product inquiry</p>
+                              <div className="flex items-center gap-2">
+                                <span className="text-base">{(msg.metadata as any)?.productEmoji || "📦"}</span>
+                                <div>
+                                  <p className="text-xs font-semibold">{(msg.metadata as any)?.productName}</p>
+                                  <p className="text-[11px] font-bold">৳{(msg.metadata as any)?.productPrice?.toLocaleString()}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="whitespace-pre-wrap break-words">{msg.decryptedContent || msg.content}</p>
+                          )}
+                          <div className={cn("flex items-center gap-1 mt-0.5", isMine ? "justify-end" : "justify-start")}>
+                            <span className="text-[9px] opacity-60">
+                              {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                            {isMine && (
+                              otherRead
+                                ? <Eye className="w-2.5 h-2.5 opacity-70" />
+                                : <CheckCheck className="w-2.5 h-2.5 opacity-50" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                {typingUsers.length > 0 && (
+                  <div className="flex justify-start">
+                    <div className="bg-muted rounded-2xl rounded-bl-md px-3.5 py-2">
+                      <span className="text-xs text-muted-foreground italic">{typingUsers[0]} is typing…</span>
+                    </div>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+            </ScrollArea>
+
+            {/* Input Bar */}
+            <div className="flex items-center gap-2 px-3 py-2.5 border-t border-border/50 bg-card/90 backdrop-blur-xl shrink-0 safe-area-bottom">
+              <Input
+                value={chatInput}
+                onChange={(e) => { setChatInput(e.target.value); setTyping(true); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey && chatInput.trim()) {
+                    e.preventDefault();
+                    handleSendInlineChat();
+                  }
+                }}
+                placeholder="Type a message..."
+                className="flex-1 rounded-full h-10 bg-muted/50 border-border/50"
+              />
+              <Button size="icon" className="rounded-full h-10 w-10 shrink-0"
+                disabled={!chatInput.trim() || sendingChat}
+                onClick={handleSendInlineChat}>
+                {sendingChat ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
