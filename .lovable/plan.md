@@ -1,39 +1,27 @@
 
 
-## Create a Second Test Merchant Account with Sample Products
+## Move Chat Option to Bottom Bar
 
-### What needs to happen
+### Change
+**File: `src/pages/ProductDetailPage.tsx`**
 
-Create a new user account, assign merchant role, create merchant record, vendor store, and sample products — all via database inserts.
+1. **Remove** the floating FAB block (lines 521-549) entirely
+2. **Modify** the fixed bottom bar (line 552+) to include a chat button on the left side of "Add to Cart":
 
-### Steps
+```tsx
+<div className="fixed bottom-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-t border-border/50 px-3 py-3 flex items-center gap-2.5 safe-area-bottom">
+  {merchantUserId && merchantUserId !== user?.id && (
+    <Button variant="outline" size="icon" className="rounded-xl h-11 w-11 shrink-0 relative"
+      onClick={handleChatWithMerchant} disabled={chattingWithMerchant}>
+      {chattingWithMerchant ? <Loader2 className="w-5 h-5 animate-spin" /> : <MessageCircle className="w-5 h-5" />}
+      <span className={cn("absolute top-1 right-1 w-2.5 h-2.5 rounded-full border-2 border-card",
+        merchantOnline ? "bg-emerald-500" : "bg-muted-foreground/40")} />
+    </Button>
+  )}
+  <Button variant="outline" size="lg" className="flex-1 rounded-xl h-11 text-sm font-bold" ...>Add to Cart</Button>
+  <Button size="lg" className="flex-1 rounded-xl h-11 text-sm font-bold" ...>Buy Now</Button>
+</div>
+```
 
-#### Step 1: Create a new auth user
-- Use `signUpWithPhonePassword` pattern via the app's auth system
-- Phone: `01712345678`, random PIN
-- This creates a profile automatically via the `handle_new_user` trigger
-
-#### Step 2: Insert merchant-related records (via insert tool)
-After the user is created:
-1. **user_roles**: Assign `merchant` role
-2. **merchants**: Create merchant record (business_name: "TechBD Store", category: retail, status: active)
-3. **vendor_stores**: Create store (store_name: "TechBD Store", slug: "techbd-store")
-4. **merchant_products**: Insert 4 sample products:
-   - Smart Watch Pro — ৳3,500
-   - Portable Bluetooth Speaker — ৳1,800  
-   - LED Desk Lamp — ৳950
-   - Phone Case (Premium Leather) — ৳450
-
-Each product will have descriptions, categories, emojis, stock, and ratings to look realistic.
-
-#### Step 3: Update the profile name
-- Set name to "Kamal Hossain" on the new profile
-
-### Result
-You'll have a second merchant with 4 products visible in the Shop. When you browse those products logged in as a different user (e.g., your current account), the "Chat with seller" FAB will appear, allowing you to test the full customer-to-merchant chat flow.
-
-### Technical details
-- The new merchant user will be created via an edge function or direct auth signup call
-- All data inserts use the Supabase insert tool for `user_roles`, `merchants`, `vendor_stores`, `merchant_products`
-- No schema changes needed — all tables already exist
+The chat button becomes a compact icon button with the online indicator dot, sitting to the left of "Add to Cart" in the sticky bottom bar. No floating element needed.
 
