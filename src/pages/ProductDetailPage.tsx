@@ -189,20 +189,6 @@ export default function ProductDetailPage() {
     setImgIdx((p) => (p + dir + images.length) % images.length);
   }, [images.length]);
 
-  if (loading) return <LoadingSkeleton />;
-  if (!product) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Product not found</p></div>;
-
-  const finalPrice = product.price + (selectedVariant?.price_adjustment || 0);
-  const discount = product.original_price ? Math.round(((product.original_price - product.price) / product.original_price) * 100) : 0;
-  const savings = product.original_price ? product.original_price - product.price : 0;
-  const stockPct = product.stock <= 20 ? Math.max(5, (product.stock / 20) * 100) : 100;
-
-  const variantGroups = variants.reduce((acc, v) => {
-    if (!acc[v.variant_name]) acc[v.variant_name] = [];
-    acc[v.variant_name].push(v);
-    return acc;
-  }, {} as Record<string, Variant[]>);
-
   // Auto-scroll chat to bottom
   useEffect(() => {
     if (showInlineChat && chatEndRef.current) {
@@ -224,6 +210,20 @@ export default function ProductDetailPage() {
       setSendingChat(false);
     }
   }, [chatInput, showInlineChat, sendingChat, sendMessage, setTyping]);
+
+  if (loading) return <LoadingSkeleton />;
+  if (!product) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Product not found</p></div>;
+
+  const finalPrice = product.price + (selectedVariant?.price_adjustment || 0);
+  const discount = product.original_price ? Math.round(((product.original_price - product.price) / product.original_price) * 100) : 0;
+  const savings = product.original_price ? product.original_price - product.price : 0;
+  const stockPct = product.stock <= 20 ? Math.max(5, (product.stock / 20) * 100) : 100;
+
+  const variantGroups = variants.reduce((acc, v) => {
+    if (!acc[v.variant_name]) acc[v.variant_name] = [];
+    acc[v.variant_name].push(v);
+    return acc;
+  }, {} as Record<string, Variant[]>);
 
   const handleAddToCart = () => {
     addToCart({ ...product, price: finalPrice, vendor_name: vendorInfo?.name, vendor_slug: vendorInfo?.slug }, qty);
