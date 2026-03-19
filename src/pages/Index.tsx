@@ -358,7 +358,7 @@ const Index = () => {
 
   // Show splash first, then onboarding (once), then auth/home
   if (!splashDone) {
-    return <SplashScreen onDone={() => setSplashDone(true)} />;
+    return <SplashScreen onDone={() => { sessionStorage.setItem("splashDone", "1"); setSplashDone(true); }} />;
   }
 
   if (!onboardingDone || replayOnboarding) {
