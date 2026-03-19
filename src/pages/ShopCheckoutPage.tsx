@@ -482,11 +482,14 @@ export default function ShopCheckoutPage() {
       </div>
 
       {/* Fixed bottom Slide to Confirm */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border px-4 py-3">
+      <div
+        className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border px-4 py-3"
+        style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))", touchAction: "none" }}
+      >
         <SlideToConfirm
           onConfirm={handleCheckout}
           label={`Place Order · ৳${orderTotal.toLocaleString()}`}
-          gradient="bg-gradient-to-r from-primary to-primary/80"
+          gradient="gradient-primary"
           disabled={
             pin.length < 4 ||
             !selectedAddress ||
