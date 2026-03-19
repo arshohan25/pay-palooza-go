@@ -264,7 +264,7 @@ export default function ShopCheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-8">
+    <div className="min-h-screen bg-background pb-28">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-card border-b border-border px-4 py-3 flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
@@ -479,7 +479,10 @@ export default function ShopCheckoutPage() {
           />
         </div>
 
-        {/* Slide to Confirm */}
+      </div>
+
+      {/* Fixed bottom Slide to Confirm */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border px-4 py-3">
         <SlideToConfirm
           onConfirm={handleCheckout}
           label={`Place Order · ৳${orderTotal.toLocaleString()}`}
