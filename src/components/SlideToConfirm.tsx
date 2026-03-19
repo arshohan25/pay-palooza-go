@@ -146,6 +146,7 @@ const SlideToConfirm = forwardRef<HTMLDivElement, SlideToConfirmProps>(({
         dragConstraints={trackRef}
         dragElastic={0.05}
         dragMomentum={false}
+        dragListener={true}
         style={{
           x,
           position: "absolute",
@@ -153,6 +154,9 @@ const SlideToConfirm = forwardRef<HTMLDivElement, SlideToConfirmProps>(({
           left: PADDING,
           width: THUMB,
           height: THUMB,
+          touchAction: "none",
+          WebkitUserSelect: "none",
+          userSelect: "none",
         }}
         onDragStart={() => {
           setIsDragging(true);
