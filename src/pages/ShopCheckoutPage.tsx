@@ -484,7 +484,7 @@ export default function ShopCheckoutPage() {
       {/* Fixed bottom Slide to Confirm */}
       <div
         className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border px-4 py-3"
-        style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))", touchAction: "none" }}
+        style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))" }}
       >
         <SlideToConfirm
           onConfirm={handleCheckout}
