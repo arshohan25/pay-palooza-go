@@ -1,37 +1,32 @@
 
 
-## Open Chat Inline on Product Page
+## Fix: Splash Screen Replaying on Back Navigation
 
-### What changes
-**File: `src/pages/ProductDetailPage.tsx`**
+### Problem
+When navigating back from pages like Donations or Shop to `/`, the `Index` component remounts from scratch. Since `splashDone` is local state initialized to `false`, the splash screen animation plays every time — unlike other flows that stay within the Index component.
 
-Instead of navigating to `/?tab=inbox&conv=${convId}`, open the chat directly on the product page as a full-screen overlay (same pattern as MerchantDashboard's chat overlay).
+### Solution
+**File: `src/pages/Index.tsx`**
 
-### Implementation
+Change the `splashDone` initial state to check a session-level flag so the splash only plays once per browser session:
 
-1. **Add state**: `showInlineChat` (string | null) to hold the active conversation ID, plus local message state.
+```tsx
+// Before
+const [splashDone, setSplashDone] = useState(false);
 
-2. **Create an inline chat panel** rendered as an `AnimatePresence` overlay (`fixed inset-0 z-[70]`) containing:
-   - Header with back button (closes overlay), customer/merchant name, online indicator
-   - Product context banner (product name, price, emoji)
-   - Messages list using `useChat().messages` + `openConversation()`
-   - Input bar with send button
-   - Uses the same `useChat` hook already imported
+// After  
+const [splashDone, setSplashDone] = useState(() => sessionStorage.getItem("splashDone") === "1");
+```
 
-3. **Modify `handleChatWithMerchant`**:
-   - After creating conversation and sending the inquiry message, instead of `navigate(...)`, set `showInlineChat` to the conversation ID
-   - Call `openConversation(convId)` to load messages
+And when splash completes, persist the flag:
 
-4. **Chat overlay behavior**:
-   - Back button sets `showInlineChat` to null (returns to product page)
-   - Auto-scrolls to bottom on new messages
-   - Typing indicator support via existing `useTypingIndicator` hook
-   - Message bubbles with sent/delivered/read status (reuse same pattern from InboxPage/MerchantInbox)
+```tsx
+// Before
+<SplashScreen onDone={() => setSplashDone(true)} />
 
-5. **Imports to add**: `useTypingIndicator` from hooks, `Input` from ui
+// After
+<SplashScreen onDone={() => { sessionStorage.setItem("splashDone", "1"); setSplashDone(true); }} />
+```
 
-### Technical notes
-- The `useChat` hook is already imported and provides `messages`, `openConversation`, `sendMessage`, `messagesLoading`
-- Pattern mirrors MerchantDashboard's `MerchantInbox` overlay approach
-- No navigation away from the product page — chat opens and closes in-place
+This ensures the splash only shows once per session (first app load), and navigating back from Donations, Shop, etc. goes straight to the home content.
 
