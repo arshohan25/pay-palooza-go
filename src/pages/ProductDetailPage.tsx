@@ -518,38 +518,16 @@ export default function ProductDetailPage() {
         )}
       </div>
 
-      {/* ── Floating Chat FAB ── */}
-      {merchantUserId && merchantUserId !== user?.id && (
-        <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.5 }}
-          className="fixed bottom-20 right-4 z-[60] flex flex-col items-center gap-1"
-        >
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={handleChatWithMerchant}
-            disabled={chattingWithMerchant}
-            className="relative w-14 h-14 rounded-full shadow-lg flex items-center justify-center gradient-primary text-primary-foreground disabled:opacity-60"
-          >
-            {chattingWithMerchant ? (
-              <Loader2 className="w-6 h-6 animate-spin" />
-            ) : (
-              <MessageCircle className="w-6 h-6" />
-            )}
-            <span className={cn(
-              "absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full border-2 border-card",
-              merchantOnline ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/40"
-            )} />
-          </motion.button>
-          <span className="text-[10px] font-medium text-primary bg-card/90 backdrop-blur rounded-full px-2 py-0.5 shadow-sm whitespace-nowrap">
-            Chat with seller
-          </span>
-        </motion.div>
-      )}
-
       {/* ── Fixed bottom bar ── */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-t border-border/50 px-3 py-3 flex items-center gap-2.5 safe-area-bottom">
+        {merchantUserId && merchantUserId !== user?.id && (
+          <Button variant="outline" size="icon" className="rounded-xl h-11 w-11 shrink-0 relative"
+            onClick={handleChatWithMerchant} disabled={chattingWithMerchant}>
+            {chattingWithMerchant ? <Loader2 className="w-5 h-5 animate-spin" /> : <MessageCircle className="w-5 h-5" />}
+            <span className={cn("absolute top-1 right-1 w-2.5 h-2.5 rounded-full border-2 border-card",
+              merchantOnline ? "bg-emerald-500" : "bg-muted-foreground/40")} />
+          </Button>
+        )}
         <Button variant="outline" size="lg" className="flex-1 rounded-xl h-11 text-sm font-bold"
           onClick={handleAddToCart} disabled={product.stock <= 0}>
           Add to Cart
