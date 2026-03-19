@@ -52,7 +52,7 @@ const Index = () => {
   const { isAuthenticated, loading: authLoading, signOut, user } = useAuth();
   const { status: kycStatus, rejectionReason } = useKycStatus();
   const [showKycFlow, setShowKycFlow] = useState(false);
-  const [splashDone, setSplashDone]           = useState(false);
+  const [splashDone, setSplashDone]           = useState(() => sessionStorage.getItem("splashDone") === "1");
   const [onboardingDone, setOnboardingDone]  = useState(() => hasSeenOnboarding());
   const [replayOnboarding, setReplayOnboarding] = useState(false);
   const [activeTab, setActiveTab]         = useState("home");
