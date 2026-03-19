@@ -60,9 +60,14 @@ export default function ProductDetailPage() {
   const { isWishlisted, toggle: toggleWishlist } = useWishlist();
   const { user } = useAuth();
   const { addViewed } = useRecentlyViewed();
-  const { createDirectConversation, sendMessage } = useChat();
+  const { createDirectConversation, sendMessage, openConversation, closeConversation, messages, messagesLoading } = useChat();
   const { isOnline } = useOnlinePresence(user?.id ?? null);
 
+  const [showInlineChat, setShowInlineChat] = useState<string | null>(null);
+  const [chatInput, setChatInput] = useState("");
+  const [sendingChat, setSendingChat] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const { typingUsers, setTyping } = useTypingIndicator(showInlineChat, user?.id ?? null, user?.user_metadata?.name || "User");
 
   // Track recently viewed
   useEffect(() => {
