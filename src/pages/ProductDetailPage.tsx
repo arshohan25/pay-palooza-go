@@ -100,7 +100,10 @@ export default function ProductDetailPage() {
     }
     setChattingWithMerchant(true);
     try {
-      const convId = await createDirectConversation(merchantUserId);
+      const convId = await createDirectConversation(merchantUserId, {
+        context: "merchant_inquiry",
+        merchant_id: (product?.merchants as any)?.id || merchantUserId,
+      });
       if (convId) {
         // Send product inquiry as a "product" type message with metadata
         await sendMessage(convId, `Inquiry about ${product.name}`, "text", {

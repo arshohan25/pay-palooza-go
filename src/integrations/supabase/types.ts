@@ -431,6 +431,7 @@ export type Database = {
           created_at: string
           group_icon: string | null
           id: string
+          metadata: Json | null
           name: string | null
           status: string
           type: Database["public"]["Enums"]["chat_type"]
@@ -441,6 +442,7 @@ export type Database = {
           created_at?: string
           group_icon?: string | null
           id?: string
+          metadata?: Json | null
           name?: string | null
           status?: string
           type?: Database["public"]["Enums"]["chat_type"]
@@ -451,6 +453,7 @@ export type Database = {
           created_at?: string
           group_icon?: string | null
           id?: string
+          metadata?: Json | null
           name?: string | null
           status?: string
           type?: Database["public"]["Enums"]["chat_type"]
@@ -4057,10 +4060,12 @@ export type Database = {
         Args: { p_referee_id: string }
         Returns: undefined
       }
-      create_direct_chat_request: {
-        Args: { p_other_user_id: string }
-        Returns: string
-      }
+      create_direct_chat_request:
+        | { Args: { p_other_user_id: string }; Returns: string }
+        | {
+            Args: { p_metadata?: Json; p_other_user_id: string }
+            Returns: string
+          }
       credit_cashback: {
         Args: {
           p_amount: number

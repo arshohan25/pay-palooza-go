@@ -31,6 +31,7 @@ export interface ChatConversation {
   status: "pending" | "accepted";
   created_at: string;
   updated_at: string;
+  metadata?: Record<string, unknown> | null;
   participants: ChatParticipant[];
   lastMessage?: ChatMessage | null;
   unreadCount: number;
@@ -194,6 +195,7 @@ export function useChat() {
         status: (conv.status ?? "accepted") as "pending" | "accepted",
         created_at: conv.created_at,
         updated_at: conv.updated_at,
+        metadata: (conv as any).metadata as Record<string, unknown> | null,
         participants: parts,
         lastMessage: lastMessages.get(conv.id) ?? null,
         unreadCount: unreadCounts.get(conv.id) ?? 0,
@@ -525,12 +527,17 @@ export function useChat() {
 
   // ── Create direct conversation ──────────────────────────────────────
   const createDirectConversation = useCallback(
-    async (otherUserId: string) => {
+    async (otherUserId: string, metadata?: Record<string, unknown>) => {
       if (!user) return null;
+
+      const rpcParams: Record<string, unknown> = { p_other_user_id: otherUserId };
+      if (metadata) {
+        rpcParams.p_metadata = metadata;
+      }
 
       const { data, error } = await supabase.rpc(
         "create_direct_chat_request" as any,
-        { p_other_user_id: otherUserId }
+        rpcParams
       );
 
       if (error || !data) {
