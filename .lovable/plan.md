@@ -1,27 +1,37 @@
 
 
-## Move Chat Option to Bottom Bar
+## Open Chat Inline on Product Page
 
-### Change
+### What changes
 **File: `src/pages/ProductDetailPage.tsx`**
 
-1. **Remove** the floating FAB block (lines 521-549) entirely
-2. **Modify** the fixed bottom bar (line 552+) to include a chat button on the left side of "Add to Cart":
+Instead of navigating to `/?tab=inbox&conv=${convId}`, open the chat directly on the product page as a full-screen overlay (same pattern as MerchantDashboard's chat overlay).
 
-```tsx
-<div className="fixed bottom-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-t border-border/50 px-3 py-3 flex items-center gap-2.5 safe-area-bottom">
-  {merchantUserId && merchantUserId !== user?.id && (
-    <Button variant="outline" size="icon" className="rounded-xl h-11 w-11 shrink-0 relative"
-      onClick={handleChatWithMerchant} disabled={chattingWithMerchant}>
-      {chattingWithMerchant ? <Loader2 className="w-5 h-5 animate-spin" /> : <MessageCircle className="w-5 h-5" />}
-      <span className={cn("absolute top-1 right-1 w-2.5 h-2.5 rounded-full border-2 border-card",
-        merchantOnline ? "bg-emerald-500" : "bg-muted-foreground/40")} />
-    </Button>
-  )}
-  <Button variant="outline" size="lg" className="flex-1 rounded-xl h-11 text-sm font-bold" ...>Add to Cart</Button>
-  <Button size="lg" className="flex-1 rounded-xl h-11 text-sm font-bold" ...>Buy Now</Button>
-</div>
-```
+### Implementation
 
-The chat button becomes a compact icon button with the online indicator dot, sitting to the left of "Add to Cart" in the sticky bottom bar. No floating element needed.
+1. **Add state**: `showInlineChat` (string | null) to hold the active conversation ID, plus local message state.
+
+2. **Create an inline chat panel** rendered as an `AnimatePresence` overlay (`fixed inset-0 z-[70]`) containing:
+   - Header with back button (closes overlay), customer/merchant name, online indicator
+   - Product context banner (product name, price, emoji)
+   - Messages list using `useChat().messages` + `openConversation()`
+   - Input bar with send button
+   - Uses the same `useChat` hook already imported
+
+3. **Modify `handleChatWithMerchant`**:
+   - After creating conversation and sending the inquiry message, instead of `navigate(...)`, set `showInlineChat` to the conversation ID
+   - Call `openConversation(convId)` to load messages
+
+4. **Chat overlay behavior**:
+   - Back button sets `showInlineChat` to null (returns to product page)
+   - Auto-scrolls to bottom on new messages
+   - Typing indicator support via existing `useTypingIndicator` hook
+   - Message bubbles with sent/delivered/read status (reuse same pattern from InboxPage/MerchantInbox)
+
+5. **Imports to add**: `useTypingIndicator` from hooks, `Input` from ui
+
+### Technical notes
+- The `useChat` hook is already imported and provides `messages`, `openConversation`, `sendMessage`, `messagesLoading`
+- Pattern mirrors MerchantDashboard's `MerchantInbox` overlay approach
+- No navigation away from the product page — chat opens and closes in-place
 
