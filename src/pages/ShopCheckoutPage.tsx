@@ -479,7 +479,10 @@ export default function ShopCheckoutPage() {
           />
         </div>
 
-        {/* Slide to Confirm */}
+      </div>
+
+      {/* Fixed bottom Slide to Confirm */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border px-4 py-3">
         <SlideToConfirm
           onConfirm={handleCheckout}
           label={`Place Order · ৳${orderTotal.toLocaleString()}`}
@@ -494,6 +497,5 @@ export default function ShopCheckoutPage() {
           icon={ShoppingCart}
         />
       </div>
-    </div>
   );
 }
