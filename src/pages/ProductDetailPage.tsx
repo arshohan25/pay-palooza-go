@@ -520,26 +520,32 @@ export default function ProductDetailPage() {
 
       {/* ── Floating Chat FAB ── */}
       {merchantUserId && merchantUserId !== user?.id && (
-        <motion.button
+        <motion.div
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.5 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={handleChatWithMerchant}
-          disabled={chattingWithMerchant}
-          className="fixed bottom-20 right-4 z-[60] w-14 h-14 rounded-full shadow-lg flex items-center justify-center gradient-primary text-primary-foreground disabled:opacity-60"
+          className="fixed bottom-20 right-4 z-[60] flex flex-col items-center gap-1"
         >
-          {chattingWithMerchant ? (
-            <Loader2 className="w-6 h-6 animate-spin" />
-          ) : (
-            <MessageCircle className="w-6 h-6" />
-          )}
-          {/* Online indicator */}
-          <span className={cn(
-            "absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full border-2 border-card",
-            merchantOnline ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/40"
-          )} />
-        </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={handleChatWithMerchant}
+            disabled={chattingWithMerchant}
+            className="relative w-14 h-14 rounded-full shadow-lg flex items-center justify-center gradient-primary text-primary-foreground disabled:opacity-60"
+          >
+            {chattingWithMerchant ? (
+              <Loader2 className="w-6 h-6 animate-spin" />
+            ) : (
+              <MessageCircle className="w-6 h-6" />
+            )}
+            <span className={cn(
+              "absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full border-2 border-card",
+              merchantOnline ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/40"
+            )} />
+          </motion.button>
+          <span className="text-[10px] font-medium text-primary bg-card/90 backdrop-blur rounded-full px-2 py-0.5 shadow-sm whitespace-nowrap">
+            Chat with seller
+          </span>
+        </motion.div>
       )}
 
       {/* ── Fixed bottom bar ── */}
