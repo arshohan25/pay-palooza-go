@@ -31,6 +31,7 @@ export interface ChatConversation {
   status: "pending" | "accepted";
   created_at: string;
   updated_at: string;
+  metadata?: Record<string, unknown> | null;
   participants: ChatParticipant[];
   lastMessage?: ChatMessage | null;
   unreadCount: number;
