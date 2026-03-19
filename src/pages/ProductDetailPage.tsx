@@ -122,7 +122,8 @@ export default function ProductDetailPage() {
           productEmoji: product.emoji,
           isProductInquiry: true,
         });
-        navigate(`/?tab=inbox&conv=${convId}`);
+        await openConversation(convId);
+        setShowInlineChat(convId);
       } else {
         toast.error("Could not start conversation");
       }
@@ -131,7 +132,7 @@ export default function ProductDetailPage() {
     } finally {
       setChattingWithMerchant(false);
     }
-  }, [user, product, createDirectConversation, sendMessage, navigate]);
+  }, [user, product, createDirectConversation, sendMessage, openConversation]);
 
   // ── Data loading (unchanged logic) ──
   useEffect(() => {
