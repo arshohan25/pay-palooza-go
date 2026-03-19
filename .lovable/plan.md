@@ -1,19 +1,39 @@
 
 
-## Add "Chat with seller" label below the FAB
+## Create a Second Test Merchant Account with Sample Products
 
-### What changes
-**File: `src/pages/ProductDetailPage.tsx`** (lines 522-543)
+### What needs to happen
 
-Wrap the existing FAB button and a new text label in a flex column container. Add a small animated label reading "Chat with seller" beneath the circular button.
+Create a new user account, assign merchant role, create merchant record, vendor store, and sample products — all via database inserts.
 
-### Implementation
+### Steps
 
-Replace the current `motion.button` block with a `motion.div` wrapper containing:
-1. The existing FAB button (unchanged)
-2. A small text label: `<span className="text-[10px] font-medium text-primary bg-card/90 backdrop-blur rounded-full px-2 py-0.5 shadow-sm whitespace-nowrap">Chat with seller</span>`
+#### Step 1: Create a new auth user
+- Use `signUpWithPhonePassword` pattern via the app's auth system
+- Phone: `01712345678`, random PIN
+- This creates a profile automatically via the `handle_new_user` trigger
 
-The wrapper will use `flex flex-col items-center gap-1` and inherit the same fixed positioning (`fixed bottom-20 right-4 z-[60]`). The button loses its fixed positioning since the parent handles it.
+#### Step 2: Insert merchant-related records (via insert tool)
+After the user is created:
+1. **user_roles**: Assign `merchant` role
+2. **merchants**: Create merchant record (business_name: "TechBD Store", category: retail, status: active)
+3. **vendor_stores**: Create store (store_name: "TechBD Store", slug: "techbd-store")
+4. **merchant_products**: Insert 4 sample products:
+   - Smart Watch Pro — ৳3,500
+   - Portable Bluetooth Speaker — ৳1,800  
+   - LED Desk Lamp — ৳950
+   - Phone Case (Premium Leather) — ৳450
 
-The entrance animation stays on the parent `motion.div`.
+Each product will have descriptions, categories, emojis, stock, and ratings to look realistic.
+
+#### Step 3: Update the profile name
+- Set name to "Kamal Hossain" on the new profile
+
+### Result
+You'll have a second merchant with 4 products visible in the Shop. When you browse those products logged in as a different user (e.g., your current account), the "Chat with seller" FAB will appear, allowing you to test the full customer-to-merchant chat flow.
+
+### Technical details
+- The new merchant user will be created via an edge function or direct auth signup call
+- All data inserts use the Supabase insert tool for `user_roles`, `merchants`, `vendor_stores`, `merchant_products`
+- No schema changes needed — all tables already exist
 
