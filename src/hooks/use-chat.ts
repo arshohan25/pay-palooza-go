@@ -527,12 +527,17 @@ export function useChat() {
 
   // ── Create direct conversation ──────────────────────────────────────
   const createDirectConversation = useCallback(
-    async (otherUserId: string) => {
+    async (otherUserId: string, metadata?: Record<string, unknown>) => {
       if (!user) return null;
+
+      const rpcParams: Record<string, unknown> = { p_other_user_id: otherUserId };
+      if (metadata) {
+        rpcParams.p_metadata = metadata;
+      }
 
       const { data, error } = await supabase.rpc(
         "create_direct_chat_request" as any,
-        { p_other_user_id: otherUserId }
+        rpcParams
       );
 
       if (error || !data) {

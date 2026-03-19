@@ -1167,8 +1167,12 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
     }
   }, [searchParams, chat.conversations, chat.openConversation, setSearchParams]);
 
-  // Convert DB conversations to UI contacts
-  const uiContacts: UIContact[] = chat.conversations.map((conv) =>
+  // Convert DB conversations to UI contacts — exclude merchant inquiry conversations
+  const personalConversations = chat.conversations.filter((conv) => {
+    const meta = conv.metadata as Record<string, unknown> | null;
+    return !meta || meta.context !== "merchant_inquiry";
+  });
+  const uiContacts: UIContact[] = personalConversations.map((conv) =>
     convToUIContact(conv, user?.id ?? "", isOnline)
   );
 

@@ -75,8 +75,16 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Build customer chat list from conversations
+  // Filter to merchant inquiry conversations only
+  const merchantConversations = useMemo(() => {
+    return conversations.filter((conv) => {
+      const meta = conv.metadata as Record<string, unknown> | null;
+      return meta?.context === "merchant_inquiry";
+    });
+  }, [conversations]);
+
   const customerChats: CustomerChat[] = useMemo(() => {
-    return conversations
+    return merchantConversations
       .map((conv) => {
         const others = conv.participants.filter(p => p.user_id !== userId);
         if (others.length === 0) return null;
@@ -108,7 +116,7 @@ const MerchantInbox = ({ onBack }: { onBack: () => void }) => {
       })
       .filter(Boolean)
       .sort((a, b) => (b as CustomerChat).lastTimestamp - (a as CustomerChat).lastTimestamp) as CustomerChat[];
-  }, [conversations, userId]);
+  }, [merchantConversations, userId]);
 
   // Filtered chats
   const filteredChats = useMemo(() => {
