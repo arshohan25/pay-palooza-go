@@ -195,6 +195,7 @@ export function useChat() {
         status: (conv.status ?? "accepted") as "pending" | "accepted",
         created_at: conv.created_at,
         updated_at: conv.updated_at,
+        metadata: (conv as any).metadata as Record<string, unknown> | null,
         participants: parts,
         lastMessage: lastMessages.get(conv.id) ?? null,
         unreadCount: unreadCounts.get(conv.id) ?? 0,
