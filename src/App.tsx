@@ -25,6 +25,7 @@ import SuperDistributorCreateDistributor from "./pages/SuperDistributorCreateDis
 import MerchantDashboard from "./pages/MerchantDashboard";
 import CheckoutPage from "./pages/CheckoutPage";
 import DynamicQrPage from "./pages/DynamicQrPage";
+import PayPage from "./pages/PayPage";
 import NotFound from "./pages/NotFound";
 import TeamLoginPage from "./pages/TeamLoginPage";
 import RoleInstallPage from "./pages/RoleInstallPage";
@@ -69,6 +70,7 @@ const App = () => (
                 <Route path="/merchant" element={<RoleGuard roles={["merchant", "admin"]}><MerchantDashboard /></RoleGuard>} />
                 <Route path="/checkout/:sessionId" element={<CheckoutPage />} />
                 <Route path="/pay/qr/:sessionId" element={<DynamicQrPage />} />
+                <Route path="/pay" element={<PayPage />} />
                 <Route path="/team-login" element={<TeamLoginPage />} />
                 <Route path="/install" element={<RoleInstallPage />} />
                 <Route path="/install/:role" element={<RoleInstallPage />} />
