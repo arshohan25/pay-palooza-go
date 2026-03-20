@@ -88,6 +88,7 @@ const PayPage = () => {
             {amount && <p className="text-2xl font-bold text-foreground">৳{parseFloat(amount).toLocaleString()}</p>}
             <p className="text-sm text-muted-foreground">Merchant: <span className="font-medium text-foreground">{merchantCode}</span></p>
             {note && <p className="text-xs text-muted-foreground">{note}</p>}
+            {ref && <p className="text-xs text-muted-foreground">Ref: <span className="font-mono font-medium text-foreground">{ref}</span></p>}
           </div>
           {qrDataUrl && (
             <a href={qrDataUrl} download={`pay-${merchantCode}.png`} className="flex items-center gap-2 text-sm text-primary font-medium hover:underline">
