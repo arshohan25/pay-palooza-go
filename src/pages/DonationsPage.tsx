@@ -34,6 +34,8 @@ interface DonationRecord { id: string; cause_name: string; cause_icon: string | 
 interface LeaderboardEntry { donor_name: string; total_amount: number; donation_count: number; cause_name: string; }
 interface RecurringDonation { id: string; cause_name: string; cause_icon: string | null; amount: number; frequency: string; is_active: boolean; next_run_at: string; last_run_at: string | null; message: string | null; is_anonymous: boolean; }
 
+interface CauseFund { cause_name: string; total_raised: number; donor_count: number; }
+
 const spring = { type: "spring" as const, stiffness: 500, damping: 32 };
 
 const DonationsPage = () => {
