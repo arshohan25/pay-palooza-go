@@ -1653,6 +1653,9 @@ export default function AdminDashboard() {
         {/* ═══ AI FRAUD DETECTION ═══ */}
         {activeTab === "ai_fraud" && <AdminAiFraudDetection />}
 
+        {/* ═══ AUTO RULES ═══ */}
+        {activeTab === "auto_rules" && <AdminFraudAutoRules />}
+
         {/* ═══ GEO TRACKING ═══ */}
         {activeTab === "geo_tracking" && <AdminGeoTracking />}
 
