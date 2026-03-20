@@ -227,6 +227,49 @@ export default function AdminFraudAlerts() {
     }
   };
 
+  const handleEscalate = async (alert: FraudAlert) => {
+    const newLevel = Math.min(alert.escalation_level + 1, 3);
+    let newSla: string;
+    if (newLevel === 3) {
+      newSla = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    } else {
+      const remaining = alert.sla_deadline ? new Date(alert.sla_deadline).getTime() - Date.now() : 3600000;
+      newSla = new Date(Date.now() + Math.max(remaining / 2, 900000)).toISOString();
+    }
+    const { error } = await supabase.from("fraud_alerts").update({
+      escalation_level: newLevel,
+      escalated_at: new Date().toISOString(),
+      sla_deadline: newSla,
+    } as any).eq("id", alert.id);
+    if (error) { toast.error("Failed to escalate"); return; }
+    toast.success(`Escalated to L${newLevel}`);
+    loadAlerts();
+  };
+
+  const handleAssign = async (alertId: string, memberId: string) => {
+    const { error } = await supabase.from("fraud_alerts").update({
+      assigned_to_team_member: memberId || null,
+    } as any).eq("id", alertId);
+    if (error) { toast.error("Failed to assign"); return; }
+    toast.success("Assigned");
+    loadAlerts();
+  };
+
+  const getSlaStatus = (alert: FraudAlert) => {
+    if (!alert.sla_deadline || alert.status === "resolved" || alert.status === "false_positive") return null;
+    const deadline = new Date(alert.sla_deadline).getTime();
+    const now = Date.now();
+    const remaining = deadline - now;
+    if (remaining <= 0) return { label: "SLA Breached", color: "bg-red-500 text-white" };
+    const mins = Math.floor(remaining / 60000);
+    const hours = Math.floor(mins / 60);
+    if (hours > 0) return { label: `${hours}h ${mins % 60}m left`, color: remaining < 1800000 ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" : "bg-muted text-muted-foreground" };
+    return { label: `${mins}m left`, color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" };
+  };
+
+  const ESCALATION_LABELS: Record<number, string> = { 1: "L1", 2: "L2", 3: "L3-Critical" };
+  const ESCALATION_COLORS: Record<number, string> = { 1: "bg-muted text-muted-foreground", 2: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300", 3: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" };
+
   const filteredAlerts = filterStatus === "all"
     ? alerts
     : alerts.filter(a => a.status === filterStatus);
