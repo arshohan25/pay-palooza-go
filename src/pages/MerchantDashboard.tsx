@@ -1592,7 +1592,7 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
   const baseUrl = window.location.origin;
   const merchantCode = merchant?.qr_code_data || `MRC-${merchant?.id?.slice(0, 8) || "UNKNOWN"}`;
 
-  const generateLink = () => {
+  const generateLink = async () => {
     const id = Math.random().toString(36).slice(2, 10).toUpperCase();
     const parsedAmount = amount ? parseFloat(amount) : null;
 
@@ -1611,17 +1611,23 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
 
     const url = `${baseUrl}/pay?${params.toString()}`;
 
+    let qrDataUrl = "";
+    try {
+      qrDataUrl = await QRCode.toDataURL(url, { width: 250, margin: 2, errorCorrectionLevel: "H" });
+    } catch {}
+
     setLinks(prev => [{
       id,
       amount: parsedAmount,
       note: note.trim(),
       createdAt: new Date(),
       url,
+      qrDataUrl,
     }, ...prev]);
 
     setAmount("");
     setNote("");
-    toast({ title: "Payment link created!", description: "Share it with your customer" });
+    toast({ title: "Payment link created!", description: "Share or let customers scan the QR" });
   };
 
   const copyLink = (link: typeof links[0]) => {
