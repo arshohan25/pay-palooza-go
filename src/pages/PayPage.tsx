@@ -499,7 +499,7 @@ const PayPage = () => {
           {step === "otp" && (
             <motion.div key="otp" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className="px-6 pb-6 space-y-5">
+              className="px-6 pb-6 space-y-5 text-center">
               <StepDots current="otp" />
               <div className="text-center">
                 <p className="text-sm font-bold text-foreground">Enter verification code</p>
