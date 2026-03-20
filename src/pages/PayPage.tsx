@@ -115,34 +115,49 @@ const PayPage = () => {
   useEffect(() => {
     if (!merchantCode) { setStep("not_found"); return; }
     (async () => {
-      const { data } = await supabase.rpc("resolve_transfer_recipient", {
-        p_identifier: merchantCode,
-        p_flow: "payment",
-      });
-      const result = typeof data === "string" ? JSON.parse(data) : data;
-      if (!result?.recipient_phone) { setStep("not_found"); return; }
+      try {
+        const { data, error } = await supabase.rpc("resolve_transfer_recipient", {
+          p_identifier: merchantCode,
+          p_flow: "payment",
+        });
+        if (error) { setStep("not_found"); return; }
+        const result = typeof data === "string" ? JSON.parse(data) : data;
+        if (!result?.recipient_phone) { setStep("not_found"); return; }
 
-      // Get merchant details
-      const { data: merch } = await supabase
-        .from("merchants")
-        .select("id, business_name, category, phone, user_id")
-        .eq("merchant_code", merchantCode)
-        .eq("status", "active")
-        .maybeSingle();
+        // Try to get merchant business name from merchants table via user_id lookup
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("user_id, name, phone")
+          .eq("phone", result.recipient_phone)
+          .maybeSingle();
 
-      if (merch) {
-        setMerchant(merch);
-      } else {
-        // Fallback: use resolved info
+        let businessName = result.recipient_name || merchantCode;
+        let category = "";
+
+        if (profile?.user_id) {
+          const { data: merch } = await supabase
+            .from("merchants")
+            .select("id, business_name, category, user_id")
+            .eq("user_id", profile.user_id)
+            .eq("status", "active")
+            .maybeSingle();
+          if (merch) {
+            businessName = merch.business_name;
+            category = merch.category || "";
+          }
+        }
+
         setMerchant({
           id: "",
-          business_name: result.recipient_name || merchantCode,
-          category: "",
+          business_name: businessName,
+          category,
           phone: result.recipient_phone,
-          user_id: "",
+          user_id: profile?.user_id || "",
         });
+        setStep("ready");
+      } catch {
+        setStep("not_found");
       }
-      setStep("ready");
     })();
   }, [merchantCode]);
 
