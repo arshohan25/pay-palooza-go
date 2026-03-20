@@ -1720,10 +1720,10 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
             <Sparkles size={14} className="text-primary" /> How It Works
           </h3>
           <div className="space-y-3">
-            {[
-              { step: "1", title: "Create a link", desc: "Set amount & note, generate a unique payment link" },
-              { step: "2", title: "Share with customer", desc: "Send via SMS, WhatsApp, email, or any messenger" },
-              { step: "3", title: "Get paid instantly", desc: "Customer pays through the link, money hits your account" },
+             {[
+              { step: "1", title: "Create a link", desc: "Set amount & note, generate a unique payment link with QR" },
+              { step: "2", title: "Share or show QR", desc: "Customer scans QR in-app or opens the link to pay manually" },
+              { step: "3", title: "Get paid instantly", desc: "Customer pays through QR scan or gateway, money hits your account" },
             ].map(s => (
               <div key={s.step} className="flex items-start gap-3">
                 <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
