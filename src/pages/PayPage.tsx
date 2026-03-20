@@ -1,10 +1,9 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import PaymentFlow from "@/components/PaymentFlow";
 import GuestCheckoutFlow from "@/components/GuestCheckoutFlow";
 import { Button } from "@/components/ui/button";
-import { LogIn, CreditCard, QrCode, Keyboard, ArrowLeft, Download, Smartphone } from "lucide-react";
+import { LogIn, CreditCard, QrCode, ArrowLeft, Download, Smartphone } from "lucide-react";
 import QRCode from "qrcode";
 
 const PayPage = () => {
