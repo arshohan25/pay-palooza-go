@@ -356,6 +356,13 @@ export default function AdminFraudAlerts() {
                         <Badge variant="secondary" className={`text-[10px] ${STATUS_COLORS[alert.status]}`}>
                           {alert.status === "false_positive" ? "dismissed" : alert.status}
                         </Badge>
+                        <Badge variant="secondary" className={`text-[10px] ${ESCALATION_COLORS[alert.escalation_level] || ""}`}>
+                          {ESCALATION_LABELS[alert.escalation_level] || `L${alert.escalation_level}`}
+                        </Badge>
+                        {(() => {
+                          const sla = getSlaStatus(alert);
+                          return sla ? <Badge variant="secondary" className={`text-[10px] ${sla.color}`}>{sla.label}</Badge> : null;
+                        })()}
                       </div>
                       <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
                         <span className="flex items-center gap-1">
