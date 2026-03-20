@@ -13,6 +13,11 @@ const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 
 type Step = "loading" | "ready" | "phone" | "otp" | "pin" | "processing" | "success" | "error" | "not_found";
 
+const formatDateTime = (d: Date) => {
+  return d.toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric" }) +
+    " · " + d.toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" });
+};
+
 interface MerchantInfo {
   id: string;
   business_name: string;
