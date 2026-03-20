@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { Brain, ShieldAlert, TrendingUp, AlertTriangle, Activity, Zap, Eye, RefreshCw, Search, Lock } from "lucide-react";
+import { Brain, ShieldAlert, TrendingUp, AlertTriangle, Activity, Zap, Eye, RefreshCw, Search, Lock, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 interface RiskProfile {

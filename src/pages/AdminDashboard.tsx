@@ -299,6 +299,7 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
     pro: true,
     items: [
       { id: "ai_fraud", label: "AI Fraud", icon: ShieldCheck },
+      { id: "auto_rules", label: "Auto Rules", icon: Bot },
       { id: "geo_tracking", label: "Geo Track", icon: Building2 },
       { id: "smart_routing", label: "Routing", icon: CreditCard },
       { id: "liquidity", label: "Liquidity", icon: TrendingUp },
