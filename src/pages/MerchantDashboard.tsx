@@ -257,7 +257,7 @@ const MerchantDashboard = () => {
           background: "radial-gradient(circle, hsl(0 0% 100%) 0%, transparent 70%)"
         }} />
 
-        <div className="relative max-w-xl mx-auto text-primary-foreground">
+        <div className="relative  text-primary-foreground">
           <div className="flex items-center justify-between mb-5">
             <button onClick={() => navigate("/")} className="tap-target w-10 h-10 rounded-xl glass-hero flex items-center justify-center">
               <ArrowLeft size={18} />
@@ -326,7 +326,7 @@ const MerchantDashboard = () => {
       </header>
 
       {/* ── Quick Stats Grid ── */}
-      <div className="max-w-xl mx-auto px-4 -mt-6 relative z-10">
+      <div className=" px-4 -mt-6 relative z-10">
         <motion.div
           variants={stagger.container} initial="hidden" animate="show"
           className="grid grid-cols-3 gap-2.5"
@@ -367,7 +367,7 @@ const MerchantDashboard = () => {
       </div>
 
       {/* ── Tab strip ── */}
-      <div className="max-w-xl mx-auto px-4 mt-3">
+      <div className=" px-4 mt-3">
         <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-2 bg-muted/50 rounded-2xl p-1.5">
           {mainTabs.map(t => {
             const active = activeTab === t.id;
@@ -408,7 +408,7 @@ const MerchantDashboard = () => {
       )}
 
       {/* ── Content ── */}
-      <div className="max-w-xl mx-auto px-4 py-4 pb-24">
+      <div className=" px-4 py-4 pb-24">
         <AnimatePresence mode="wait">
           <motion.div key={activeTab} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }}>
             {activeTab === "overview"     && <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} onRefresh={loadData} onSeeAll={() => setActiveTab("transactions")} onOpenInbox={() => setActiveTab("inbox")} />}
@@ -519,7 +519,7 @@ const MerchantBenefitsPage = ({ navigate }: { navigate: (path: string) => void }
           background: "radial-gradient(circle, hsl(36 95% 65%) 0%, transparent 70%)"
         }} />
 
-        <div className="relative max-w-xl mx-auto text-primary-foreground">
+        <div className="relative  text-primary-foreground">
           <button onClick={() => navigate("/")} className="tap-target w-10 h-10 rounded-xl glass-hero flex items-center justify-center mb-8">
             <ArrowLeft size={18} />
           </button>
@@ -540,7 +540,7 @@ const MerchantBenefitsPage = ({ navigate }: { navigate: (path: string) => void }
         </div>
       </header>
 
-      <div className="max-w-xl mx-auto px-4 -mt-8 relative z-10 pb-24 space-y-6">
+      <div className=" px-4 -mt-8 relative z-10 pb-24 space-y-6">
         {/* Stats strip */}
         <motion.div
           initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
