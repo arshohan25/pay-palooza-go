@@ -470,7 +470,7 @@ const PayPage = () => {
           {step === "phone" && (
             <motion.div key="phone" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className="px-6 pb-6 space-y-4">
+              className="px-6 pb-6 space-y-4 text-center">
               <StepDots current="phone" />
               <div className="text-center">
                 <p className="text-sm font-bold text-foreground">Enter your phone number</p>
