@@ -135,7 +135,7 @@ const QrModal = ({
           exit={{ opacity: 0, scale: 0.92, y: 20 }}
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-xs bg-card/95 backdrop-blur-xl border border-border/50 rounded-3xl p-6 space-y-5 shadow-2xl"
+          className="w-full max-w-xs bg-card/95 backdrop-blur-xl border border-border/50 rounded-3xl p-6 space-y-5 shadow-2xl text-center"
         >
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-foreground">Scan to Pay</h3>
