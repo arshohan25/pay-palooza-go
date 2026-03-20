@@ -26,6 +26,7 @@ import MerchantDashboard from "./pages/MerchantDashboard";
 import CheckoutPage from "./pages/CheckoutPage";
 import DynamicQrPage from "./pages/DynamicQrPage";
 import NotFound from "./pages/NotFound";
+import PayPage from "./pages/PayPage";
 import TeamLoginPage from "./pages/TeamLoginPage";
 import RoleInstallPage from "./pages/RoleInstallPage";
 import ShopPage from "./pages/ShopPage";
