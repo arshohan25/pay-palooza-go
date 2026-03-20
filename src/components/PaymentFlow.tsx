@@ -123,6 +123,7 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId, prefilledAmoun
     prefilledResolved.current = true;
     const autoResolve = async () => {
       setMerchantIdInput(prefilledMerchantId);
+      if (prefilledNote) setNote(prefilledNote);
       setValidating(true);
       setError("");
       const validation = await validateMerchantExists(prefilledMerchantId);
@@ -133,7 +134,12 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId, prefilledAmoun
       }
       setResolvedMerchantPhone(validation.phone || "");
       setMerchant({ id: "prefilled", name: validation.name || "Merchant", merchantId: prefilledMerchantId, category: "Payment", initials: "MR", gradient: "gradient-payment" });
-      goTo("amount");
+      if (prefilledAmount) {
+        setAmount(prefilledAmount);
+        goTo("pin");
+      } else {
+        goTo("amount");
+      }
     };
     autoResolve();
   }, [prefilledMerchantId]);
