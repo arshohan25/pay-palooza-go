@@ -352,6 +352,8 @@ const PayPage = () => {
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Payment failed");
+      setSuccessTxnId(result.txn_id || `TXN${Date.now().toString(36).toUpperCase()}`);
+      setSuccessTime(new Date());
       setStep("success");
       fireSuccessConfetti();
       haptics.success();
