@@ -476,6 +476,34 @@ export default function AdminFraudAlerts() {
                             </div>
                           )}
 
+                          {/* Assignment & Escalation row */}
+                          {(alert.status === "open" || alert.status === "investigating") && (
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <div className="flex items-center gap-2">
+                                <UserCheck className="w-3.5 h-3.5 text-muted-foreground" />
+                                <Select
+                                  value={alert.assigned_to_team_member || "unassigned"}
+                                  onValueChange={v => handleAssign(alert.id, v === "unassigned" ? "" : v)}
+                                >
+                                  <SelectTrigger className="h-8 w-40 text-xs">
+                                    <SelectValue placeholder="Assign to…" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                                    {teamMembers.map(tm => (
+                                      <SelectItem key={tm.id} value={tm.id}>{tm.username}{tm.department ? ` (${tm.department})` : ""}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              {alert.escalation_level < 3 && (
+                                <Button size="sm" variant="outline" className="text-xs h-8 gap-1.5" onClick={() => handleEscalate(alert)}>
+                                  <ArrowUp className="w-3.5 h-3.5" /> Escalate to L{alert.escalation_level + 1}
+                                </Button>
+                              )}
+                            </div>
+                          )}
+
                           {/* Action buttons */}
                           {(alert.status === "open" || alert.status === "investigating") && (
                             <div className="flex items-center gap-2 flex-wrap">
