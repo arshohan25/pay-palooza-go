@@ -106,6 +106,8 @@ const PayPage = () => {
         <PaymentFlow
           onClose={() => setMode("choose")}
           prefilledMerchantId={merchantCode}
+          prefilledAmount={amount || undefined}
+          prefilledNote={note || ref ? `${note}${note && ref ? " | " : ""}${ref ? `Ref: ${ref}` : ""}`.trim() : undefined}
         />
       </div>
     );
