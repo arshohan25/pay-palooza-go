@@ -1584,7 +1584,7 @@ const MDRTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null; paym
 
 /* ── Payment Links Tab ── */
 const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any }) => {
-  const [links, setLinks] = useState<{ id: string; amount: number | null; note: string; createdAt: Date; url: string }[]>([]);
+  const [links, setLinks] = useState<{ id: string; amount: number | null; note: string; createdAt: Date; url: string; qrDataUrl: string }[]>([]);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
