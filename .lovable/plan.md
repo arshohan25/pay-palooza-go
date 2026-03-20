@@ -1,26 +1,43 @@
 
 
-## Make All Merchant Dashboard Features Open Full-Screen
+## Redesign Payment Link Page — Premium Mobile-First
 
-### Problem
-Currently, only the "Inbox" tab opens as a full-screen overlay. All other features (Products, Orders, Store, Analytics, Transactions, QR, API, Pay Links, Settlements, MDR) render below the header/stats/tabs, which takes up valuable screen space.
+### What changes
 
-### Solution
-When any tab other than "overview" is active, render it as a full-screen overlay (like the inbox already does), with a back button to return to the overview. The header, stats grid, and tab strip will be completely hidden.
+1. **Remove "Pay from Wallet" option** — EasyPay is a mobile app, so browser-based wallet login isn't available on payment links. Remove the authenticated wallet pay button and `handleWalletPay` logic entirely.
 
-### Changes to `src/pages/MerchantDashboard.tsx`
+2. **Remove "Show Dynamic QR" from ready screen** — Instead, always show a QR popup/modal. The Dynamic QR button moves to below the merchant header as a secondary action (available to everyone, not just authenticated users). Tapping it opens a centered modal/dialog with the QR code.
 
-1. **Wrap all non-overview tabs in full-screen overlays**: Replace the current content section (lines ~411-427) so that when `activeTab !== "overview"`, the selected tab component renders in a `fixed inset-0 z-[70] bg-background` container — identical to how the inbox works.
+3. **Dynamic QR in a proper modal overlay** — Replace the inline QR section with a fixed fullscreen backdrop modal containing the QR code, merchant info, amount, and a close button. Premium glassmorphism style.
 
-2. **Add a consistent back-header** to each full-screen view: A top bar with a back arrow and the tab's label (e.g. "Products", "Analytics"), so users can return to the overview.
+4. **Premium redesign of entire flow** — Elevate every step with:
+   - Subtle gradient background with animated floating shapes
+   - Glassmorphism card (backdrop-blur-xl, frosted border)
+   - Refined typography hierarchy
+   - Step progress indicator (dots) for Phone → OTP → PIN
+   - Smoother spring animations between steps
+   - Premium success screen with gradient ring animation
+   - Refined error screen
 
-3. **Keep the overview tab rendering normally** within the existing layout (header + stats + tabs visible).
+### Changes to `src/pages/PayPage.tsx`
 
-4. **Menu drawer items** already call `setActiveTab(...)` and close the menu — they will now automatically trigger full-screen mode.
+**Remove:**
+- `isAuthenticated` / `user` usage from `useAuth` (keep import for potential future use but don't gate features)
+- `handleWalletPay` function
+- "Pay from Wallet" button block (lines 368-379)
+- "Show Dynamic QR" button from ready screen (lines 355-366)
+- Inline QR section at bottom (lines 478-488)
 
-### Technical Details
-- The full-screen container pattern already exists for `inbox` (lines 397-408). We extend this to all other tabs.
-- Each full-screen view gets: `<div className="fixed inset-0 z-[70] bg-background flex flex-col">` with a header bar containing back button + title, then the tab content in a scrollable area.
-- The main tab strip buttons for Products/Orders/Store will also trigger full-screen since they set `activeTab`.
-- No new files needed — single file edit to `MerchantDashboard.tsx`.
+**Add/Replace:**
+- Background: animated gradient with subtle floating orbs
+- Card: `backdrop-blur-xl bg-card/80 border-white/10` glassmorphism
+- Ready screen: Single "Pay with Phone & PIN" as the primary CTA button (not a list item), plus a secondary "Show QR Code" text button below
+- QR Modal: `fixed inset-0 z-50 bg-black/60 backdrop-blur-sm` overlay with centered white card containing QR, merchant name, amount
+- Step indicator: 3 dots showing progress through Phone → OTP → PIN
+- Remove auth-gating from QR generation (QR encodes payment URL, available to all)
+- Processing: refined pulsing animation
+- Success: gradient checkmark with glow effect
+- Footer: subtle "Secured by EasyPay" with lock icon
+
+### No other files change — single file rewrite of PayPage.tsx.
 
