@@ -1,23 +1,15 @@
 
 
-## Center-Align All Text on Payment Page (/pay)
+## Fix: Center-align QR Modal Title
 
-### Changes to `src/pages/PayPage.tsx`
+The "Scan to Pay" heading in the QR modal is left-aligned while all other text is centered.
 
-Add `text-center` to all container divs that don't already have it, ensuring every text element is horizontally centered:
+### Change
 
-1. **Phone input step** (line 473) — add `text-center` to the wrapper div
-2. **OTP step** (line 502) — already has `text-center` on inner div, ensure wrapper also centered
-3. **PIN step** (line 522) — already has `text-center` on inner div, ensure wrapper also centered
-4. **Processing step** (line 543) — already centered via flex
-5. **Error message texts** — already `text-center`
-6. **Ref/Note lines** (lines 442-443) — these lack `text-center`; add it
-7. **Dev OTP line** (line 509) — already centered
+**`src/pages/PayPage.tsx`** — In the `QrModal` component, the title `<h3>` element needs `text-center` added to its className, or the parent flex container arrangement needs adjustment so the title centers properly.
 
-Specific lines to update:
-- Line 442: `<p className="text-[10px] text-muted-foreground mt-1.5 font-mono">` → add `text-center`
-- Line 443: `<p className="text-[10px] text-muted-foreground font-mono">` → add `text-center`
-- Lines 450, 473, 502, 522: ensure all step wrapper divs include `text-center` alongside `space-y-*`
+The parent div already has `text-center` from the previous fix, but the title row uses `flex items-center justify-between` which overrides text centering. The fix is to change the title row to center the text while keeping the close button positioned absolutely.
 
-Single file change: `src/pages/PayPage.tsx`
+### Specific edit
+- Change the QR modal header from a `flex justify-between` layout to a centered layout with the close button positioned absolutely on the right.
 
