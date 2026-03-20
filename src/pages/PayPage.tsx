@@ -447,7 +447,7 @@ const PayPage = () => {
           {/* ─── Ready ─── */}
           {step === "ready" && (
             <motion.div key="ready" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="px-6 pb-6 space-y-3">
+              className="px-6 pb-6 space-y-3 text-center">
               <Button
                 onClick={() => { setStep("phone"); setPhone(""); setOtp(""); setPin(""); setErrorMsg(""); }}
                 className="w-full rounded-2xl h-13 text-sm font-bold shadow-lg shadow-primary/20 active:scale-[0.97] transition-transform"
