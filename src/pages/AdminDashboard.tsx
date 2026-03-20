@@ -60,6 +60,7 @@ import AdminNotificationSender from "@/components/admin/AdminNotificationSender"
 import TeamOnboardingChecklist from "@/components/admin/TeamOnboardingChecklist";
 import AdminMerchantManagement from "@/components/admin/AdminMerchantManagement";
 import AdminSavingsManagement from "@/components/admin/AdminSavingsManagement";
+import AdminDonationFunds from "@/components/admin/AdminDonationFunds";
 import AdminFundRequests from "@/components/admin/AdminFundRequests";
 import AdminSettlements from "@/components/admin/AdminSettlements";
 import AdminBankReconciliation from "@/components/admin/AdminBankReconciliation";
