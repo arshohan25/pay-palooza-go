@@ -2,7 +2,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import GuestCheckoutFlow from "@/components/GuestCheckoutFlow";
-import { LogIn, QrCode, ArrowLeft, Download, Smartphone, ChevronRight, Shield } from "lucide-react";
+import { QrCode, ArrowLeft, Download, Smartphone, ChevronRight, Shield } from "lucide-react";
 import QRCode from "qrcode";
 
 const PayPage = () => {
