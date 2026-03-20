@@ -1,26 +1,21 @@
+## Add Dynamic QR Code to Payment Links
 
+### Summary
 
-## Make All Merchant Dashboard Features Open Full-Screen
+When a merchant generates a payment link, also generate and display a dynamic QR code for that link so customers can scan it directly instead of clicking a URL.
 
-### Problem
-Currently, only the "Inbox" tab opens as a full-screen overlay. All other features (Products, Orders, Store, Analytics, Transactions, QR, API, Pay Links, Settlements, MDR) render below the header/stats/tabs, which takes up valuable screen space.
+### Changes to `src/pages/MerchantDashboard.tsx` — `PayLinksTab` component
 
-### Solution
-When any tab other than "overview" is active, render it as a full-screen overlay (like the inbox already does), with a back button to return to the overview. The header, stats grid, and tab strip will be completely hidden.
-
-### Changes to `src/pages/MerchantDashboard.tsx`
-
-1. **Wrap all non-overview tabs in full-screen overlays**: Replace the current content section (lines ~411-427) so that when `activeTab !== "overview"`, the selected tab component renders in a `fixed inset-0 z-[70] bg-background` container — identical to how the inbox works.
-
-2. **Add a consistent back-header** to each full-screen view: A top bar with a back arrow and the tab's label (e.g. "Products", "Analytics"), so users can return to the overview.
-
-3. **Keep the overview tab rendering normally** within the existing layout (header + stats + tabs visible).
-
-4. **Menu drawer items** already call `setActiveTab(...)` and close the menu — they will now automatically trigger full-screen mode.
+1. **Import QRCode library** — add `import QRCode from "qrcode"` (already a project dependency)
+2. **User can Choose Scan QR or Pay Manual** — User can choose option how to pay, 1. scan qr through app or 2. Pay normal using get way as like enter number otp and pin confirmation
+3. **Add QR data URL to link state** — extend the link type to include `qrDataUrl: string`
+4. **Generate QR on link creation** — after building the payment URL in `generateLink()`, call `QRCode.toDataURL(url, { width: 200, margin: 2 })` and store the result in the link object
+5. **Display QR in each link card** — between the URL preview and the action buttons, render the QR code image centered in a white rounded container with a "Scan to Pay" label
+6. **Add "Download QR" button** — alongside Copy/Share buttons, add a download button that saves the QR as a PNG image
 
 ### Technical Details
-- The full-screen container pattern already exists for `inbox` (lines 397-408). We extend this to all other tabs.
-- Each full-screen view gets: `<div className="fixed inset-0 z-[70] bg-background flex flex-col">` with a header bar containing back button + title, then the tab content in a scrollable area.
-- The main tab strip buttons for Products/Orders/Store will also trigger full-screen since they set `activeTab`.
-- No new files needed — single file edit to `MerchantDashboard.tsx`.
 
+- Uses the existing `qrcode` npm package (already used in `DynamicQrPage.tsx` and `qrWithLogo.ts`)
+- QR encodes the full payment URL (e.g. `https://domain/pay?merchant=MRC-XXX&ref=ABC&amount=500`)
+- QR generation is async (`toDataURL` returns a promise), so `generateLink` becomes async
+- Download uses a temporary `<a>` element with `download` attribute
