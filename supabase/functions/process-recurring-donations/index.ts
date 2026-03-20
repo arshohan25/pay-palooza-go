@@ -74,27 +74,28 @@ Deno.serve(async (req) => {
       }
 
       // Upsert per-cause fund tracking
-      await supabase.from("donation_cause_funds").upsert(
-        {
+      const { data: existingFund } = await supabase
+        .from("donation_cause_funds")
+        .select("id, balance, total_raised, donor_count")
+        .eq("cause_name", schedule.cause_name)
+        .maybeSingle();
+
+      if (existingFund) {
+        await supabase.from("donation_cause_funds").update({
+          balance: Number(existingFund.balance) + Number(schedule.amount),
+          total_raised: Number(existingFund.total_raised) + Number(schedule.amount),
+          donor_count: existingFund.donor_count + 1,
+          cause_icon: schedule.cause_icon || existingFund.cause_icon,
+          updated_at: new Date().toISOString(),
+        }).eq("id", existingFund.id);
+      } else {
+        await supabase.from("donation_cause_funds").insert({
           cause_name: schedule.cause_name,
           cause_icon: schedule.cause_icon,
           balance: Number(schedule.amount),
           total_raised: Number(schedule.amount),
           donor_count: 1,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "cause_name", ignoreDuplicates: false }
-      );
-      // Increment existing row properly via RPC-style raw update
-      const { data: existingFund } = await supabase
-        .from("donation_cause_funds")
-        .select("balance, total_raised, donor_count")
-        .eq("cause_name", schedule.cause_name)
-        .single();
-
-      if (existingFund && (existingFund.total_raised > Number(schedule.amount))) {
-        // Row existed before upsert overwrote it — already handled by DB trigger
-        // The upsert above created the row if new; for existing rows we need to use the RPC approach
+        });
       }
 
       // Record transaction
