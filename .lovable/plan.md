@@ -1,43 +1,37 @@
 
 
-## Redesign Payment Link Page — Premium Mobile-First
+## Fix: Incorrect PIN on Guest Checkout
 
-### What changes
+### Root Cause
+The `checkout-guest` Edge Function only tries to authenticate with `{phone}@easypay.app`. However, some users registered with fallback email domains (`@example.com`, `@easypay.local`). When `signInWithPassword` fails on the primary domain, the function returns "Incorrect PIN" even though the PIN is correct.
 
-1. **Remove "Pay from Wallet" option** — EasyPay is a mobile app, so browser-based wallet login isn't available on payment links. Remove the authenticated wallet pay button and `handleWalletPay` logic entirely.
+The client-side `signIn()` in `src/lib/auth.ts` already handles this by looping through multiple domains — the edge function needs the same logic.
 
-2. **Remove "Show Dynamic QR" from ready screen** — Instead, always show a QR popup/modal. The Dynamic QR button moves to below the merchant header as a secondary action (available to everyone, not just authenticated users). Tapping it opens a centered modal/dialog with the QR code.
+### Fix in `supabase/functions/checkout-guest/index.ts`
 
-3. **Dynamic QR in a proper modal overlay** — Replace the inline QR section with a fixed fullscreen backdrop modal containing the QR code, merchant info, amount, and a close button. Premium glassmorphism style.
+**Replace the single-domain PIN check (lines 79-86)** with a multi-domain loop:
 
-4. **Premium redesign of entire flow** — Elevate every step with:
-   - Subtle gradient background with animated floating shapes
-   - Glassmorphism card (backdrop-blur-xl, frosted border)
-   - Refined typography hierarchy
-   - Step progress indicator (dots) for Phone → OTP → PIN
-   - Smoother spring animations between steps
-   - Premium success screen with gradient ring animation
-   - Refined error screen
+```typescript
+// 3. Verify PIN via auth — try all known email domains
+const password = `${pin}EP`;
+const emailDomains = ["easypay.app", "example.com", "easypay.local"];
+let authPassed = false;
 
-### Changes to `src/pages/PayPage.tsx`
+for (const domain of emailDomains) {
+  const { error } = await supabaseAdmin.auth.signInWithPassword({
+    email: `${cleanPhone}@${domain}`,
+    password,
+  });
+  if (!error) { authPassed = true; break; }
+}
 
-**Remove:**
-- `isAuthenticated` / `user` usage from `useAuth` (keep import for potential future use but don't gate features)
-- `handleWalletPay` function
-- "Pay from Wallet" button block (lines 368-379)
-- "Show Dynamic QR" button from ready screen (lines 355-366)
-- Inline QR section at bottom (lines 478-488)
+if (!authPassed) {
+  return jsonRes({ error: "Incorrect PIN" }, 400);
+}
+```
 
-**Add/Replace:**
-- Background: animated gradient with subtle floating orbs
-- Card: `backdrop-blur-xl bg-card/80 border-white/10` glassmorphism
-- Ready screen: Single "Pay with Phone & PIN" as the primary CTA button (not a list item), plus a secondary "Show QR Code" text button below
-- QR Modal: `fixed inset-0 z-50 bg-black/60 backdrop-blur-sm` overlay with centered white card containing QR, merchant name, amount
-- Step indicator: 3 dots showing progress through Phone → OTP → PIN
-- Remove auth-gating from QR generation (QR encodes payment URL, available to all)
-- Processing: refined pulsing animation
-- Success: gradient checkmark with glow effect
-- Footer: subtle "Secured by EasyPay" with lock icon
+This mirrors the client-side fallback logic and ensures users registered under any domain can authenticate correctly.
 
-### No other files change — single file rewrite of PayPage.tsx.
+### Single file change
+- `supabase/functions/checkout-guest/index.ts` — multi-domain PIN verification loop
 
