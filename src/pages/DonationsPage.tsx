@@ -264,6 +264,11 @@ const DonationsPage = () => {
                         <div>
                           <p className="text-sm font-semibold text-foreground leading-tight">{cause.name}</p>
                           <p className="text-[11px] text-muted-foreground mt-0.5">{cause.desc}</p>
+                          {causeFunds[cause.name] && (
+                            <p className="text-[10px] text-primary font-medium mt-1">
+                              ৳{Number(causeFunds[cause.name].total_raised).toLocaleString()} raised
+                            </p>
+                          )}
                         </div>
                       </motion.button>
                     ))}
