@@ -87,8 +87,16 @@ const DonationsPage = () => {
     setLeaderboardLoading(false);
   };
 
+  const fetchCauseFunds = async () => {
+    const { data } = await supabase.from("donation_cause_funds").select("cause_name, total_raised, donor_count");
+    const map: Record<string, CauseFund> = {};
+    (data ?? []).forEach((f: any) => { map[f.cause_name] = f; });
+    setCauseFunds(map);
+  };
+
   useEffect(() => {
     if (user) { fetchHistory(); fetchRecurring(); }
+    fetchCauseFunds();
     // Restore favorite cause
     const favId = localStorage.getItem("mfs_fav_donation_cause");
     if (favId) {
