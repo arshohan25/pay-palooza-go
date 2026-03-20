@@ -573,9 +573,9 @@ const PayPage = () => {
           {step === "success" && (
             <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              className="px-6 pb-8 pt-2 text-center space-y-4">
+              className="px-5 pb-6 pt-2 text-center space-y-4">
+              {/* Animated check icon */}
               <div className="relative w-20 h-20 mx-auto">
-                {/* Gradient glow ring */}
                 <motion.div
                   className="absolute inset-0 rounded-full"
                   style={{ background: "conic-gradient(from 0deg, hsl(var(--primary)/0.4), hsl(var(--primary)/0.1), hsl(var(--primary)/0.4))" }}
@@ -589,11 +589,93 @@ const PayPage = () => {
                   </motion.div>
                 </div>
               </div>
+
               <div>
                 <h2 className="text-xl font-bold text-foreground">Payment Successful!</h2>
                 <p className="text-sm text-muted-foreground mt-1">৳{fmt(amountParam)} paid to {merchant?.business_name}</p>
               </div>
-              <Button variant="outline" onClick={() => navigate("/")} className="rounded-2xl h-11 px-6 font-semibold mt-2">Go Home</Button>
+
+              {/* Receipt Card */}
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                className="rounded-2xl border border-border bg-muted/30 text-left overflow-hidden"
+              >
+                <div className="divide-y divide-border/60">
+                  <div className="flex justify-between items-center px-4 py-2.5">
+                    <span className="text-xs text-muted-foreground">Amount</span>
+                    <span className="text-sm font-bold text-foreground">৳{fmt(amountParam)}</span>
+                  </div>
+                  <div className="flex justify-between items-center px-4 py-2.5">
+                    <span className="text-xs text-muted-foreground">Merchant</span>
+                    <span className="text-xs font-semibold text-foreground truncate max-w-[55%] text-right">{merchant?.business_name}</span>
+                  </div>
+                  {refParam && (
+                    <div className="flex justify-between items-center px-4 py-2.5">
+                      <span className="text-xs text-muted-foreground">Reference</span>
+                      <span className="text-xs font-semibold text-foreground truncate max-w-[55%] text-right">{refParam}</span>
+                    </div>
+                  )}
+                  {description && (
+                    <div className="flex justify-between items-center px-4 py-2.5">
+                      <span className="text-xs text-muted-foreground">Note</span>
+                      <span className="text-xs font-semibold text-foreground truncate max-w-[55%] text-right">{description}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center px-4 py-2.5">
+                    <span className="text-xs text-muted-foreground">Date</span>
+                    <span className="text-xs font-semibold text-foreground">{successTime ? formatDateTime(successTime) : "—"}</span>
+                  </div>
+                  <div className="flex justify-between items-center px-4 py-2.5">
+                    <span className="text-xs text-muted-foreground">Fee</span>
+                    <span className="text-xs font-semibold text-primary">Free</span>
+                  </div>
+                </div>
+                {/* Transaction ID footer */}
+                <div className="flex items-center justify-between px-4 py-2.5 border-t border-border/60 bg-muted/40">
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-semibold">Transaction ID</p>
+                    <p className="text-xs font-mono font-bold text-primary break-all mt-0.5 leading-snug">{successTxnId || "—"}</p>
+                  </div>
+                  <motion.button
+                    whileTap={{ scale: 0.85 }}
+                    onClick={async () => {
+                      try { await navigator.clipboard.writeText(successTxnId || ""); } catch {}
+                      haptics.light();
+                      setCopiedTxn(true);
+                      setTimeout(() => setCopiedTxn(false), 2000);
+                    }}
+                    className="ml-2 shrink-0 w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {copiedTxn ? <CheckCircle2 size={13} className="text-primary" /> : <Copy size={13} />}
+                  </motion.button>
+                </div>
+              </motion.div>
+
+              {/* Action Buttons */}
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.45, duration: 0.35 }}
+                className="flex flex-col gap-2 pt-1"
+              >
+                {redirectParam && (
+                  <Button
+                    onClick={() => { window.location.href = redirectParam; }}
+                    className="rounded-2xl h-11 font-semibold gap-2 w-full"
+                  >
+                    <ExternalLink size={15} /> Return to Merchant
+                  </Button>
+                )}
+                <Button
+                  variant={redirectParam ? "outline" : "default"}
+                  onClick={() => navigate("/")}
+                  className="rounded-2xl h-11 font-semibold gap-2 w-full"
+                >
+                  <Home size={15} /> Go Home
+                </Button>
+              </motion.div>
             </motion.div>
           )}
 
