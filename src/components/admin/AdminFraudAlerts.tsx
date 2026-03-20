@@ -30,6 +30,16 @@ interface FraudAlert {
   resolved_at: string | null;
   resolution_notes: string | null;
   created_at: string;
+  escalation_level: number;
+  sla_deadline: string | null;
+  escalated_at: string | null;
+  assigned_to_team_member: string | null;
+}
+
+interface TeamMember {
+  id: string;
+  username: string;
+  department: string | null;
 }
 
 interface UserProfile {
