@@ -192,8 +192,9 @@ export default function AdminAiFraudDetection() {
   const statCards = [
     { icon: ShieldAlert, label: "Total Alerts", value: alertStats.total, color: "bg-primary" },
     { icon: AlertTriangle, label: "Open", value: alertStats.open, color: "bg-destructive" },
-    { icon: Zap, label: "Critical", value: alertStats.critical, color: "bg-red-600" },
+    { icon: Zap, label: "Active Critical", value: alertStats.critical, color: "bg-red-600" },
     { icon: Activity, label: "Resolved", value: alertStats.resolved, color: "bg-emerald-500" },
+    ...(alertStats.slaBreached > 0 ? [{ icon: Clock, label: "SLA Breached", value: alertStats.slaBreached, color: "bg-orange-500" }] : []),
   ];
 
   return (
