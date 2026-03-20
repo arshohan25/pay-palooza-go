@@ -265,7 +265,7 @@ const PayPage = () => {
     setStep("processing");
     haptics.medium();
     try {
-      const verified = await verifyPin(pin, user.email || "");
+      const verified = await verifyPin(pin);
       if (!verified) throw new Error("Incorrect PIN");
 
       const { data, error } = await supabase.rpc("transfer_money", {
