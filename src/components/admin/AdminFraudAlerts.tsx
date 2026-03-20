@@ -80,6 +80,7 @@ export default function AdminFraudAlerts() {
   const [alerts, setAlerts] = useState<FraudAlert[]>([]);
   const { visible, flash } = useRealtimeIndicator();
   const [profiles, setProfiles] = useState<Map<string, UserProfile>>(new Map());
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
