@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Store, CheckCircle2, XCircle, QrCode, Shield, Lock, X, ArrowLeft } from "lucide-react";
+import { Store, CheckCircle2, XCircle, QrCode, Shield, Lock, X, ArrowLeft, Copy, ExternalLink, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
