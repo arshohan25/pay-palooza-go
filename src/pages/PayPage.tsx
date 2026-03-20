@@ -161,8 +161,7 @@ const PayPage = () => {
               <ChevronRight className="w-4 h-4 text-muted-foreground/50 group-hover:text-primary/60 transition-colors shrink-0" />
             </button>
 
-            {user ? (
-              <button
+            <button
                 onClick={() => setMode("qr")}
                 className="group w-full flex items-center gap-4 p-4 rounded-2xl bg-background/50 border border-border/30 hover:border-primary/30 hover:bg-primary/5 active:scale-[0.98] transition-all duration-200 text-left"
               >
@@ -175,7 +174,6 @@ const PayPage = () => {
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground/50 group-hover:text-primary/60 transition-colors shrink-0" />
               </button>
-            )}
           </div>
         </div>
 
