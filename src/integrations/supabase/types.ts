@@ -1054,6 +1054,39 @@ export type Database = {
           },
         ]
       }
+      donation_cause_funds: {
+        Row: {
+          balance: number
+          cause_icon: string | null
+          cause_name: string
+          created_at: string
+          donor_count: number
+          id: string
+          total_raised: number
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          cause_icon?: string | null
+          cause_name: string
+          created_at?: string
+          donor_count?: number
+          id?: string
+          total_raised?: number
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          cause_icon?: string | null
+          cause_name?: string
+          created_at?: string
+          donor_count?: number
+          id?: string
+          total_raised?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       donations: {
         Row: {
           amount: number

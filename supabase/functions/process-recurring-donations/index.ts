@@ -73,6 +73,31 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Upsert per-cause fund tracking
+      const { data: existingFund } = await supabase
+        .from("donation_cause_funds")
+        .select("id, balance, total_raised, donor_count")
+        .eq("cause_name", schedule.cause_name)
+        .maybeSingle();
+
+      if (existingFund) {
+        await supabase.from("donation_cause_funds").update({
+          balance: Number(existingFund.balance) + Number(schedule.amount),
+          total_raised: Number(existingFund.total_raised) + Number(schedule.amount),
+          donor_count: existingFund.donor_count + 1,
+          cause_icon: schedule.cause_icon || existingFund.cause_icon,
+          updated_at: new Date().toISOString(),
+        }).eq("id", existingFund.id);
+      } else {
+        await supabase.from("donation_cause_funds").insert({
+          cause_name: schedule.cause_name,
+          cause_icon: schedule.cause_icon,
+          balance: Number(schedule.amount),
+          total_raised: Number(schedule.amount),
+          donor_count: 1,
+        });
+      }
+
       // Record transaction
       await supabase.from("transactions").insert({
         user_id: schedule.user_id,

@@ -34,6 +34,8 @@ interface DonationRecord { id: string; cause_name: string; cause_icon: string | 
 interface LeaderboardEntry { donor_name: string; total_amount: number; donation_count: number; cause_name: string; }
 interface RecurringDonation { id: string; cause_name: string; cause_icon: string | null; amount: number; frequency: string; is_active: boolean; next_run_at: string; last_run_at: string | null; message: string | null; is_anonymous: boolean; }
 
+interface CauseFund { cause_name: string; total_raised: number; donor_count: number; }
+
 const spring = { type: "spring" as const, stiffness: 500, damping: 32 };
 
 const DonationsPage = () => {
@@ -59,6 +61,7 @@ const DonationsPage = () => {
   const [leaderboardCause, setLeaderboardCause] = useState<string | null>(null);
   const [msgExpanded, setMsgExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState("donate");
+  const [causeFunds, setCauseFunds] = useState<Record<string, CauseFund>>({});
   const pinRef = useRef<HTMLInputElement>(null);
 
   const fetchHistory = async () => {
@@ -84,8 +87,16 @@ const DonationsPage = () => {
     setLeaderboardLoading(false);
   };
 
+  const fetchCauseFunds = async () => {
+    const { data } = await supabase.from("donation_cause_funds").select("cause_name, total_raised, donor_count");
+    const map: Record<string, CauseFund> = {};
+    (data ?? []).forEach((f: any) => { map[f.cause_name] = f; });
+    setCauseFunds(map);
+  };
+
   useEffect(() => {
     if (user) { fetchHistory(); fetchRecurring(); }
+    fetchCauseFunds();
     // Restore favorite cause
     const favId = localStorage.getItem("mfs_fav_donation_cause");
     if (favId) {
@@ -253,6 +264,11 @@ const DonationsPage = () => {
                         <div>
                           <p className="text-sm font-semibold text-foreground leading-tight">{cause.name}</p>
                           <p className="text-[11px] text-muted-foreground mt-0.5">{cause.desc}</p>
+                          {causeFunds[cause.name] && (
+                            <p className="text-[10px] text-primary font-medium mt-1">
+                              ৳{Number(causeFunds[cause.name].total_raised).toLocaleString()} raised
+                            </p>
+                          )}
                         </div>
                       </motion.button>
                     ))}

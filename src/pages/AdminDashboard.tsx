@@ -9,7 +9,7 @@ import {
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings, FileText,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
   Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck, Image, Bell, Shield, Star, Building2, Megaphone, CalendarClock,
-  ShoppingBag,
+  ShoppingBag, Heart,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,6 +60,7 @@ import AdminNotificationSender from "@/components/admin/AdminNotificationSender"
 import TeamOnboardingChecklist from "@/components/admin/TeamOnboardingChecklist";
 import AdminMerchantManagement from "@/components/admin/AdminMerchantManagement";
 import AdminSavingsManagement from "@/components/admin/AdminSavingsManagement";
+import AdminDonationFunds from "@/components/admin/AdminDonationFunds";
 import AdminFundRequests from "@/components/admin/AdminFundRequests";
 import AdminSettlements from "@/components/admin/AdminSettlements";
 import AdminBankReconciliation from "@/components/admin/AdminBankReconciliation";
@@ -232,6 +233,7 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "float_mgmt", label: "Float Mgmt", icon: Wallet },
       { id: "revenue", label: "Revenue", icon: TrendingUp },
       { id: "savings", label: "Savings", icon: Wallet },
+      { id: "donation_funds", label: "Donation Funds", icon: Heart },
       { id: "auto_save", label: "Auto-Save", icon: CalendarClock },
       { id: "deposit_accounts", label: "Deposit Accts", icon: CreditCard },
       { id: "commission_ledger", label: "Commission Log", icon: Coins },
@@ -1615,6 +1617,9 @@ export default function AdminDashboard() {
 
         {/* ═══ SAVINGS ═══ */}
         {activeTab === "savings" && <AdminSavingsManagement />}
+
+        {/* ═══ DONATION FUNDS ═══ */}
+        {activeTab === "donation_funds" && <AdminDonationFunds />}
 
         {/* ═══ SETTLEMENTS ═══ */}
         {activeTab === "settlements" && <AdminSettlements />}
