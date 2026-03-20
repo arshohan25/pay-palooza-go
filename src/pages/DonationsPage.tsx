@@ -90,7 +90,7 @@ const DonationsPage = () => {
     const favId = localStorage.getItem("mfs_fav_donation_cause");
     if (favId) {
       const fav = CAUSES.find(c => c.id === favId);
-      if (fav) { setSelectedCause(fav); setStep("amount"); }
+      if (fav) { setSelectedCause(fav); }
     }
   }, [user]);
 
