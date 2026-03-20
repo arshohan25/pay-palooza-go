@@ -1618,6 +1618,9 @@ export default function AdminDashboard() {
         {/* ═══ SAVINGS ═══ */}
         {activeTab === "savings" && <AdminSavingsManagement />}
 
+        {/* ═══ DONATION FUNDS ═══ */}
+        {activeTab === "donation_funds" && <AdminDonationFunds />}
+
         {/* ═══ SETTLEMENTS ═══ */}
         {activeTab === "settlements" && <AdminSettlements />}
 
