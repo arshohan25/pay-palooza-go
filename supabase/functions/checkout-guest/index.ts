@@ -76,12 +76,20 @@ Deno.serve(async (req) => {
       return jsonRes({ error: "Account not found or inactive" }, 400);
     }
 
-    // 3. Verify PIN via auth
-    const email = `${cleanPhone}@easypay.app`;
+    // 3. Verify PIN via auth — try all known email domains
     const password = `${pin}EP`;
+    const emailDomains = ["easypay.app", "example.com", "easypay.local"];
+    let authPassed = false;
 
-    const { error: authError } = await supabaseAdmin.auth.signInWithPassword({ email, password });
-    if (authError) {
+    for (const domain of emailDomains) {
+      const { error } = await supabaseAdmin.auth.signInWithPassword({
+        email: `${cleanPhone}@${domain}`,
+        password,
+      });
+      if (!error) { authPassed = true; break; }
+    }
+
+    if (!authPassed) {
       return jsonRes({ error: "Incorrect PIN" }, 400);
     }
 
