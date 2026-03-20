@@ -84,19 +84,6 @@ const PayPage = () => {
     );
   }
 
-  // ── Manual payment screen (logged in only) ────────────────
-  if (user && mode === "manual") {
-    return (
-      <div className="min-h-screen bg-background">
-        <PaymentFlow
-          onClose={() => setMode("choose")}
-          prefilledMerchantId={merchantCode}
-          prefilledAmount={amount || undefined}
-          prefilledNote={note || ref ? `${note}${note && ref ? " | " : ""}${ref ? `Ref: ${ref}` : ""}`.trim() : undefined}
-        />
-      </div>
-    );
-  }
 
   // ── Choice screen ─────────────────────────────────────────
   return (
