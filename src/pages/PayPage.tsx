@@ -37,6 +37,19 @@ const PayPage = () => {
     );
   }
 
+  // Unauthenticated users go straight to guest checkout
+  if (!user && !loading) {
+    return (
+      <GuestCheckoutFlow
+        merchantCode={merchantCode}
+        amount={amount}
+        note={note}
+        reference={ref}
+        onClose={() => navigate("/")}
+      />
+    );
+  }
+
   if (mode === "guest") {
     return (
       <GuestCheckoutFlow
