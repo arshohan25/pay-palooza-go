@@ -50,6 +50,7 @@ const PayPage = () => {
             )}
             {note && <p className="text-muted-foreground text-sm">{note}</p>}
             <p className="text-muted-foreground">Merchant: <span className="font-medium text-foreground">{merchantCode}</span></p>
+            {ref && <p className="text-muted-foreground text-xs">Ref: <span className="font-mono font-medium text-foreground">{ref}</span></p>}
           </div>
           <p className="text-sm text-muted-foreground">Please log in to your account to complete this payment.</p>
           <Button
