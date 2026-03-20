@@ -64,6 +64,17 @@ const Index = () => {
       setActiveTab(tabParam);
     }
   }, [searchParams]);
+
+  // Handle redirect param after login
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const redirectPath = searchParams.get("redirect");
+    if (redirectPath) {
+      // Clean the redirect param and navigate
+      setSearchParams({}, { replace: true });
+      navigate(redirectPath, { replace: true });
+    }
+  }, [isAuthenticated, searchParams, navigate]);
   const handleTabChange = useCallback((tab: string) => {
     if (tab === "scan") {
       setShowScanPay(true);
