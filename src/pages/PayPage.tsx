@@ -16,8 +16,9 @@ const PayPage = () => {
   const merchantCode = searchParams.get("merchant") || "";
   const amount = searchParams.get("amount") || "";
   const note = searchParams.get("note") || "";
+  const ref = searchParams.get("ref") || "";
 
-  const paymentUrl = `${window.location.origin}/pay?merchant=${encodeURIComponent(merchantCode)}${amount ? `&amount=${encodeURIComponent(amount)}` : ""}${note ? `&note=${encodeURIComponent(note)}` : ""}`;
+  const paymentUrl = `${window.location.origin}/pay?merchant=${encodeURIComponent(merchantCode)}${amount ? `&amount=${encodeURIComponent(amount)}` : ""}${note ? `&note=${encodeURIComponent(note)}` : ""}${ref ? `&ref=${encodeURIComponent(ref)}` : ""}`;
 
   useEffect(() => {
     if (mode === "qr") {
@@ -49,6 +50,7 @@ const PayPage = () => {
             )}
             {note && <p className="text-muted-foreground text-sm">{note}</p>}
             <p className="text-muted-foreground">Merchant: <span className="font-medium text-foreground">{merchantCode}</span></p>
+            {ref && <p className="text-muted-foreground text-xs">Ref: <span className="font-mono font-medium text-foreground">{ref}</span></p>}
           </div>
           <p className="text-sm text-muted-foreground">Please log in to your account to complete this payment.</p>
           <Button
@@ -86,6 +88,7 @@ const PayPage = () => {
             {amount && <p className="text-2xl font-bold text-foreground">৳{parseFloat(amount).toLocaleString()}</p>}
             <p className="text-sm text-muted-foreground">Merchant: <span className="font-medium text-foreground">{merchantCode}</span></p>
             {note && <p className="text-xs text-muted-foreground">{note}</p>}
+            {ref && <p className="text-xs text-muted-foreground">Ref: <span className="font-mono font-medium text-foreground">{ref}</span></p>}
           </div>
           {qrDataUrl && (
             <a href={qrDataUrl} download={`pay-${merchantCode}.png`} className="flex items-center gap-2 text-sm text-primary font-medium hover:underline">
@@ -104,6 +107,8 @@ const PayPage = () => {
         <PaymentFlow
           onClose={() => setMode("choose")}
           prefilledMerchantId={merchantCode}
+          prefilledAmount={amount || undefined}
+          prefilledNote={note || ref ? `${note}${note && ref ? " | " : ""}${ref ? `Ref: ${ref}` : ""}`.trim() : undefined}
         />
       </div>
     );
@@ -126,6 +131,7 @@ const PayPage = () => {
             Merchant: <span className="font-semibold text-foreground">{merchantCode}</span>
           </p>
           {note && <p className="text-sm text-muted-foreground italic">"{note}"</p>}
+          {ref && <p className="text-xs text-muted-foreground">Ref: <span className="font-mono font-semibold text-foreground">{ref}</span></p>}
         </div>
 
         {/* Method cards */}

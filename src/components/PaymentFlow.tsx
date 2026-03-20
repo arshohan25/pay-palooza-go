@@ -97,9 +97,9 @@ const PinInput = ({ pin, onChange, error }: PinInputProps) => (
 );
 
 // ─── PaymentFlow ──────────────────────────────────────────────────────────────
-interface PaymentFlowProps { onClose: () => void; onDynamicQr?: (session: { sessionId: string; merchantId?: string; amount?: number; ref?: string | null }) => void; prefilledMerchantId?: string; }
+interface PaymentFlowProps { onClose: () => void; onDynamicQr?: (session: { sessionId: string; merchantId?: string; amount?: number; ref?: string | null }) => void; prefilledMerchantId?: string; prefilledAmount?: string; prefilledNote?: string; }
 
-const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowProps) => {
+const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId, prefilledAmount, prefilledNote }: PaymentFlowProps) => {
   const { t } = useI18n();
   const [step, setStep]           = useState<Step>("merchant");
   const [direction, setDirection] = useState(1);
@@ -123,6 +123,7 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
     prefilledResolved.current = true;
     const autoResolve = async () => {
       setMerchantIdInput(prefilledMerchantId);
+      if (prefilledNote) setNote(prefilledNote);
       setValidating(true);
       setError("");
       const validation = await validateMerchantExists(prefilledMerchantId);
@@ -133,7 +134,12 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
       }
       setResolvedMerchantPhone(validation.phone || "");
       setMerchant({ id: "prefilled", name: validation.name || "Merchant", merchantId: prefilledMerchantId, category: "Payment", initials: "MR", gradient: "gradient-payment" });
-      goTo("amount");
+      if (prefilledAmount) {
+        setAmount(prefilledAmount);
+        goTo("pin");
+      } else {
+        goTo("amount");
+      }
     };
     autoResolve();
   }, [prefilledMerchantId]);
