@@ -1,36 +1,57 @@
 
 
-## Fix Payment URL Issues
+## Guest Payment via Link (No Login Required)
 
-After reviewing the payment URL `/pay?merchant=MRC-RAFIQ-001&ref=KXNCNESY&amount=100`, I found several bugs:
+### Problem
+The `/pay` page currently blocks unauthenticated users with a "Log In to Pay" screen. The user wants anyone with the payment link to pay directly using their phone number + OTP + PIN — no login/signup required.
 
-### Issues Found
+### Architecture
 
-1. **`ref` parameter is ignored** — The URL contains `ref=KXNCNESY` but PayPage never reads it or passes it anywhere.
+The existing `checkout-pay` edge function already supports phone + OTP + PIN payment (no auth session), but requires a `merchant_payment_sessions` record. The `/pay` page currently only has a merchant code (e.g. `MRC-RAFIQ-001`), not a session ID.
 
-2. **Amount not pre-filled in manual pay** — When choosing "Pay Manually", only `merchantCode` is passed to `PaymentFlow`. The `amount` from the URL is lost — the user has to re-enter it manually.
+```text
+Guest Payment Flow:
+┌─────────────┐    ┌──────────────────┐    ┌─────────────┐    ┌────────────┐
+│ Payment Link │───▶│ Enter Phone      │───▶│ Enter OTP   │───▶│ Enter PIN  │
+│ Summary      │    │ + Request OTP    │    │ (6 digits)  │    │ (4 digits) │
+└─────────────┘    └──────────────────┘    └─────────────┘    └────────────┘
+                          │                       │                  │
+                   send-otp function        (client-side)    checkout-guest
+                                                              edge function
+```
 
-3. **Login redirect doesn't work** — The "Log In to Pay" button navigates to `/?redirect=/pay?merchant=...` but the Index/Auth page never reads the `redirect` param, so after login users land on the home page instead of returning to the payment link.
+### Changes
 
-4. **Note not passed to PaymentFlow** — The `note` query param is displayed on the choice screen but not forwarded into the payment flow.
+**1. New Edge Function: `supabase/functions/checkout-guest/index.ts`**
+- Accepts: `merchant_code`, `amount`, `phone`, `otp_code`, `pin`, `note`, `ref`
+- Resolves merchant from code via the merchants table (matching `merchant_id` field)
+- Verifies OTP from `otp_codes` table
+- Verifies PIN via `signInWithPassword`
+- Checks payer balance, executes wallet-to-wallet transfer
+- Records transactions for both payer and merchant
+- No auth required (uses service role key server-side)
 
-### Plan
+**2. New Component: `src/components/GuestCheckoutFlow.tsx`**
+- Multi-step form: Phone → OTP → PIN → Processing → Success/Error
+- Step 1: Shows payment summary (merchant, amount, ref), phone input, "Send OTP" button
+- Step 2: 6-digit OTP input with resend timer
+- Step 3: 4-digit PIN input
+- Calls `send-otp` with purpose `"payment"`, then `checkout-guest` to complete
+- Success screen with receipt details
 
-**File 1: `src/components/PaymentFlow.tsx`**
-- Add `prefilledAmount` and `prefilledNote` optional props to `PaymentFlowProps`
-- When `prefilledAmount` is provided alongside a valid prefilled merchant, auto-set the amount and skip to the PIN step
-- When `prefilledNote` is provided, auto-set the note field
+**3. Update: `src/pages/PayPage.tsx`**
+- Remove the login-required gate for unauthenticated users
+- When `!user`: show the choice screen with two options:
+  - "Pay as Guest" → renders `GuestCheckoutFlow` (phone + OTP + PIN)
+  - "Log In to Pay" → existing redirect to auth page
+- When `user`: existing flow unchanged (QR / Manual with PaymentFlow)
 
-**File 2: `src/pages/PayPage.tsx`**
-- Read the `ref` search param and display it on the summary screens
-- Pass `amount` and `note` to `PaymentFlow` as `prefilledAmount` and `prefilledNote`
-- Fix the login redirect: change the "Log In to Pay" button to navigate to `/auth?redirect=...` (or whichever route handles login) so users return to the pay page after authentication
+**4. Config: `supabase/config.toml`** 
+- Add `[functions.checkout-guest]` with `verify_jwt = false`
 
-**File 3: `src/pages/AuthPage.tsx` or `src/pages/Index.tsx`**
-- Handle the `redirect` query parameter after successful login — navigate to the redirect URL instead of the default home page
-
-### Technical Notes
-- `PaymentFlow` already has the `prefilledMerchantId` pattern; `prefilledAmount` will follow the same approach in the existing `useEffect` that resolves the merchant
-- The redirect flow will use `navigate()` after detecting a successful auth state change
-- The `ref` param will be shown as a reference/order ID on the payment summary for user context
+### Security
+- OTP verification prevents unauthorized payments
+- PIN verification via Supabase Auth ensures only the account holder can pay
+- Rate limiting on OTP requests (existing: 5/hour)
+- Service role key used server-side only, never exposed to client
 
