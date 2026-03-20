@@ -439,8 +439,8 @@ const PayPage = () => {
               <span className="text-xs font-medium text-muted-foreground ml-1.5">BDT</span>
             </motion.p>
           )}
-          {refParam && <p className="text-[10px] text-muted-foreground mt-1.5 font-mono">Ref: {refParam}</p>}
-          {noteParam && <p className="text-[10px] text-muted-foreground font-mono">Note: {noteParam}</p>}
+          {refParam && <p className="text-[10px] text-muted-foreground mt-1.5 font-mono text-center">Ref: {refParam}</p>}
+          {noteParam && <p className="text-[10px] text-muted-foreground font-mono text-center">Note: {noteParam}</p>}
         </div>
 
         <AnimatePresence mode="wait">
