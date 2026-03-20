@@ -233,6 +233,7 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "float_mgmt", label: "Float Mgmt", icon: Wallet },
       { id: "revenue", label: "Revenue", icon: TrendingUp },
       { id: "savings", label: "Savings", icon: Wallet },
+      { id: "donation_funds", label: "Donation Funds", icon: Heart },
       { id: "auto_save", label: "Auto-Save", icon: CalendarClock },
       { id: "deposit_accounts", label: "Deposit Accts", icon: CreditCard },
       { id: "commission_ledger", label: "Commission Log", icon: Coins },
