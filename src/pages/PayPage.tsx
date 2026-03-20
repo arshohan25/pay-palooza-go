@@ -130,6 +130,7 @@ const PayPage = () => {
             Merchant: <span className="font-semibold text-foreground">{merchantCode}</span>
           </p>
           {note && <p className="text-sm text-muted-foreground italic">"{note}"</p>}
+          {ref && <p className="text-xs text-muted-foreground">Ref: <span className="font-mono font-semibold text-foreground">{ref}</span></p>}
         </div>
 
         {/* Method cards */}
