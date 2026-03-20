@@ -1,14 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
 import { motion, AnimatePresence } from "framer-motion";
-import { Store, CheckCircle2, XCircle, QrCode, Wallet, Shield, Lock } from "lucide-react";
+import { Store, CheckCircle2, XCircle, QrCode, Shield, Lock, X, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { haptics } from "@/lib/haptics";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { playPaymentSuccess, playPaymentError } from "@/lib/sounds";
-import { verifyPin } from "@/lib/verifyPin";
 import QRCode from "qrcode";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
@@ -22,6 +20,33 @@ interface MerchantInfo {
   phone: string;
   user_id: string;
 }
+
+const STEP_INDEX: Record<string, number> = { phone: 0, otp: 1, pin: 2 };
+
+/* ─── Step Progress Dots ────────────────────────────────────── */
+const StepDots = ({ current }: { current: string }) => {
+  const idx = STEP_INDEX[current] ?? -1;
+  const labels = ["Phone", "OTP", "PIN"];
+  return (
+    <div className="flex items-center justify-center gap-2 mb-5">
+      {labels.map((label, i) => (
+        <div key={label} className="flex items-center gap-2">
+          <div className="flex flex-col items-center gap-1">
+            <motion.div
+              className={`w-2.5 h-2.5 rounded-full transition-colors duration-300 ${
+                i < idx ? "bg-primary" : i === idx ? "bg-primary shadow-[0_0_10px_hsl(var(--primary)/0.6)]" : "bg-muted-foreground/20"
+              }`}
+              animate={i === idx ? { scale: [1, 1.3, 1] } : {}}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            />
+            <span className={`text-[9px] font-medium ${i <= idx ? "text-primary" : "text-muted-foreground/40"}`}>{label}</span>
+          </div>
+          {i < 2 && <div className={`w-8 h-px mb-3 ${i < idx ? "bg-primary/60" : "bg-muted-foreground/15"}`} />}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 /* ─── PIN Input ──────────────────────────────────────────────── */
 const PinInput = ({ value, onChange, length = 4 }: { value: string; onChange: (v: string) => void; length?: number }) => {
@@ -37,7 +62,7 @@ const PinInput = ({ value, onChange, length = 4 }: { value: string; onChange: (v
               key={i}
               className={`w-14 h-14 rounded-2xl flex items-center justify-center backdrop-blur-sm transition-all duration-300
                 ${isFilled ? "bg-primary/15 border-2 border-primary shadow-[0_0_20px_-4px_hsl(var(--primary)/0.5)]"
-                  : isActive ? "bg-muted/80 border-2 border-primary/50" : "bg-muted/50 border-2 border-border/60"}`}
+                  : isActive ? "bg-background/60 border-2 border-primary/50" : "bg-background/30 border-2 border-border/40"}`}
               animate={isFilled ? { scale: [0.75, 1.1, 1] } : {}}
               transition={{ type: "spring", stiffness: 500, damping: 18 }}
             >
@@ -47,7 +72,7 @@ const PinInput = ({ value, onChange, length = 4 }: { value: string; onChange: (v
               ) : isActive ? (
                 <motion.div className="w-0.5 h-6 bg-primary/60 rounded-full" animate={{ opacity: [1, 0.2] }}
                   transition={{ duration: 0.7, repeat: Infinity, ease: "easeInOut" }} />
-              ) : <div className="w-3 h-3 rounded-full bg-border/40" />}
+              ) : <div className="w-3 h-3 rounded-full bg-border/30" />}
             </motion.div>
           );
         })}
@@ -72,7 +97,7 @@ const OtpInput = ({ value, onChange, length = 6 }: { value: string; onChange: (v
           return (
             <motion.div key={i}
               className={`w-12 h-14 rounded-2xl flex items-center justify-center text-xl font-black backdrop-blur-sm transition-all duration-300
-                ${isFilled ? "bg-primary/15 border-2 border-primary text-foreground" : isActive ? "bg-muted/80 border-2 border-primary/60" : "bg-muted/50 border-2 border-border/60"}`}
+                ${isFilled ? "bg-primary/15 border-2 border-primary text-foreground" : isActive ? "bg-background/60 border-2 border-primary/60" : "bg-background/30 border-2 border-border/40"}`}
               animate={isFilled ? { scale: [0.8, 1.08, 1] } : {}}
               transition={{ type: "spring", stiffness: 500, damping: 20 }}
             >
@@ -90,10 +115,83 @@ const OtpInput = ({ value, onChange, length = 6 }: { value: string; onChange: (v
   );
 };
 
+/* ─── QR Modal ───────────────────────────────────────────────── */
+const QrModal = ({
+  open, onClose, qrDataUrl, merchantName, amount,
+}: { open: boolean; onClose: () => void; qrDataUrl: string | null; merchantName: string; amount: number }) => (
+  <AnimatePresence>
+    {open && (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.25 }}
+        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.92, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.92, y: 20 }}
+          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+          onClick={(e) => e.stopPropagation()}
+          className="w-full max-w-xs bg-card/95 backdrop-blur-xl border border-border/50 rounded-3xl p-6 space-y-5 shadow-2xl"
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-foreground">Scan to Pay</h3>
+            <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted/50 flex items-center justify-center active:scale-95 transition-transform">
+              <X size={14} className="text-muted-foreground" />
+            </button>
+          </div>
+
+          <div className="flex flex-col items-center gap-4">
+            <div className="bg-white rounded-2xl p-3 shadow-sm">
+              {qrDataUrl ? (
+                <img src={qrDataUrl} alt="Payment QR" className="w-52 h-52" style={{ imageRendering: "pixelated" }} />
+              ) : (
+                <div className="w-52 h-52 flex items-center justify-center">
+                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full" />
+                </div>
+              )}
+            </div>
+            <div className="text-center space-y-1">
+              <p className="text-sm font-bold text-foreground">{merchantName}</p>
+              {amount > 0 && <p className="text-lg font-extrabold text-primary">৳{fmt(amount)}</p>}
+              <p className="text-[10px] text-muted-foreground">Open <span className="font-semibold">EasyPay</span> app → Scan QR</p>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
+
+/* ─── Floating Orbs Background ───────────────────────────────── */
+const FloatingOrbs = () => (
+  <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+    <motion.div
+      className="absolute w-72 h-72 rounded-full bg-primary/[0.04] blur-3xl"
+      animate={{ x: [0, 40, -20, 0], y: [0, -30, 20, 0] }}
+      transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+      style={{ top: "-10%", right: "-15%" }}
+    />
+    <motion.div
+      className="absolute w-56 h-56 rounded-full bg-accent/[0.06] blur-3xl"
+      animate={{ x: [0, -30, 15, 0], y: [0, 25, -15, 0] }}
+      transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+      style={{ bottom: "5%", left: "-10%" }}
+    />
+  </div>
+);
+
+/* ════════════════════════════════════════════════════════════════ */
+/*                         PAY PAGE                               */
+/* ════════════════════════════════════════════════════════════════ */
+
 const PayPage = () => {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
 
   const merchantCode = params.get("merchant") || "";
   const refParam = params.get("ref") || "";
@@ -124,7 +222,6 @@ const PayPage = () => {
         const result = typeof data === "string" ? JSON.parse(data) : data;
         if (!result?.recipient_phone) { setStep("not_found"); return; }
 
-        // Try to get merchant business name from merchants table via user_id lookup
         const { data: profile } = await supabase
           .from("profiles")
           .select("user_id, name, phone")
@@ -161,15 +258,17 @@ const PayPage = () => {
     })();
   }, [merchantCode]);
 
-  // Generate QR for authenticated users
+  // Generate QR when modal opens
   useEffect(() => {
     if (!merchant || !showQr) return;
+    const url = `${window.location.origin}/pay?merchant=${merchantCode}&amount=${amountParam}${refParam ? `&ref=${refParam}` : ""}${noteParam ? `&note=${noteParam}` : ""}`;
     const payload = JSON.stringify({
       type: "easypay_pay",
       merchant: merchantCode,
       amount: amountParam,
       ref: refParam || null,
       note: noteParam || null,
+      url,
     });
     QRCode.toDataURL(payload, { width: 280, margin: 2, color: { dark: "#0f172a", light: "#ffffff" } })
       .then(setQrDataUrl);
@@ -258,239 +357,268 @@ const PayPage = () => {
     }
   }, [otp, pin, phone, merchant, amountParam, description, refParam]);
 
-  // Authenticated wallet pay
-  const handleWalletPay = useCallback(async () => {
-    if (pin.length < 4 || !merchant || !user) return;
-    setErrorMsg("");
-    setStep("processing");
-    haptics.medium();
-    try {
-      const verified = await verifyPin(pin);
-      if (!verified) throw new Error("Incorrect PIN");
-
-      const { data, error } = await supabase.rpc("transfer_money", {
-        p_recipient_phone: merchant.phone,
-        p_amount: amountParam,
-        p_fee: 0,
-        p_type: "payment" as any,
-        p_description: description || `Payment to ${merchant.business_name}`,
-        p_reference: refParam || null,
-        p_recipient_name: merchant.business_name,
-        p_recipient_type: "receive" as any,
-      });
-      if (error) throw new Error(error.message);
-      setStep("success");
-      fireSuccessConfetti();
-      haptics.success();
-      playPaymentSuccess();
-    } catch (err: any) {
-      setErrorMsg(err.message || "Payment failed");
-      setPin("");
-      if (err.message?.toLowerCase().includes("pin")) setStep("pin");
-      else setStep("error");
-      haptics.error();
-      playPaymentError();
-    }
-  }, [pin, merchant, user, amountParam, description, refParam]);
-
+  /* ─── Loading ─── */
   if (step === "loading") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-10 h-10 border-3 border-primary/30 border-t-primary rounded-full" />
-      </div>
-    );
-  }
-
-  if (step === "not_found") {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-3">
-          <XCircle className="w-12 h-12 text-destructive mx-auto" />
-          <h2 className="text-lg font-bold text-foreground">Merchant Not Found</h2>
-          <p className="text-sm text-muted-foreground">The merchant code "{merchantCode}" could not be resolved.</p>
-          <Button variant="outline" onClick={() => navigate("/")} className="mt-4">Go Home</Button>
+        <FloatingOrbs />
+        <motion.div className="flex flex-col items-center gap-4">
+          <div className="relative w-14 h-14">
+            <motion.div className="absolute inset-0 rounded-full border-2 border-primary/20" />
+            <motion.div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary"
+              animate={{ rotate: 360 }} transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }} />
+          </div>
+          <p className="text-xs text-muted-foreground font-medium">Loading payment…</p>
         </motion.div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="w-full max-w-sm bg-card rounded-3xl shadow-xl border border-border overflow-hidden">
-
-        {/* Merchant Header */}
-        <div className="bg-gradient-to-br from-primary/8 via-card to-accent/5 px-6 pt-6 pb-5 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-primary/12 flex items-center justify-center mx-auto mb-3">
-            <Store className="w-7 h-7 text-primary" />
+  /* ─── Not Found ─── */
+  if (step === "not_found") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <FloatingOrbs />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full max-w-sm bg-card/90 backdrop-blur-xl border border-border/40 rounded-3xl p-8 text-center space-y-4 shadow-xl">
+          <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
+            <XCircle className="w-8 h-8 text-destructive/70" />
           </div>
-          {merchant && <h1 className="text-lg font-bold text-foreground">{merchant.business_name}</h1>}
-          {merchant?.category && <p className="text-xs text-muted-foreground capitalize mt-0.5">{merchant.category.replace(/_/g, " ")}</p>}
-          {amountParam > 0 && (
-            <p className="text-3xl font-extrabold text-foreground mt-2">
-              ৳{fmt(amountParam)} <span className="text-sm font-medium text-muted-foreground">BDT</span>
+          <h2 className="text-lg font-bold text-foreground">Merchant Not Found</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            The merchant code "<span className="font-mono font-semibold text-foreground/70">{merchantCode}</span>" could not be resolved.
+          </p>
+          <Button variant="outline" onClick={() => navigate("/")} className="rounded-2xl mt-2 h-11 px-6">Go Home</Button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  const showStepDots = ["phone", "otp", "pin"].includes(step);
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+      <FloatingOrbs />
+
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-sm bg-card/90 backdrop-blur-xl border border-border/40 rounded-3xl shadow-xl overflow-hidden"
+      >
+        {/* ─── Merchant Header ─── */}
+        <div className="relative px-6 pt-7 pb-6 text-center">
+          {/* Subtle top glow */}
+          <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-primary/[0.06] to-transparent rounded-t-3xl" />
+
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.15, type: "spring", stiffness: 300, damping: 20 }}
+            className="relative w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-3"
+          >
+            <Store className="w-7 h-7 text-primary" />
+          </motion.div>
+
+          {merchant && (
+            <motion.h1 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+              className="text-lg font-bold text-foreground">
+              {merchant.business_name}
+            </motion.h1>
+          )}
+          {merchant?.category && (
+            <p className="text-[11px] text-muted-foreground capitalize mt-0.5 tracking-wide">
+              {merchant.category.replace(/_/g, " ")}
             </p>
           )}
-          {refParam && <p className="text-xs text-muted-foreground mt-1">Ref: {refParam}</p>}
-          {noteParam && <p className="text-xs text-muted-foreground">Note: {noteParam}</p>}
+          {amountParam > 0 && (
+            <motion.p initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.25 }}
+              className="text-3xl font-extrabold text-foreground mt-3 tracking-tight">
+              ৳{fmt(amountParam)}
+              <span className="text-xs font-medium text-muted-foreground ml-1.5">BDT</span>
+            </motion.p>
+          )}
+          {refParam && <p className="text-[10px] text-muted-foreground mt-1.5 font-mono">Ref: {refParam}</p>}
+          {noteParam && <p className="text-[10px] text-muted-foreground font-mono">Note: {noteParam}</p>}
         </div>
 
         <AnimatePresence mode="wait">
-          {/* ─── Ready: Choose payment method ─── */}
+          {/* ─── Ready ─── */}
           {step === "ready" && (
-            <motion.div key="ready" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 space-y-3">
-              <button onClick={() => { setStep("phone"); setPhone(""); setOtp(""); setPin(""); setErrorMsg(""); }}
-                className="w-full flex items-center gap-3 p-4 rounded-2xl bg-muted/50 border border-border/60 hover:bg-muted transition-colors active:scale-[0.98]">
-                <div className="w-10 h-10 rounded-xl bg-primary/12 flex items-center justify-center">
-                  <Shield className="w-5 h-5 text-primary" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-semibold text-foreground">Pay with Phone & PIN</p>
-                  <p className="text-[11px] text-muted-foreground">No login required</p>
-                </div>
+            <motion.div key="ready" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="px-6 pb-6 space-y-3">
+              <Button
+                onClick={() => { setStep("phone"); setPhone(""); setOtp(""); setPin(""); setErrorMsg(""); }}
+                className="w-full rounded-2xl h-13 text-sm font-bold shadow-lg shadow-primary/20 active:scale-[0.97] transition-transform"
+              >
+                <Shield size={18} className="mr-2" />
+                Pay with Phone & PIN
+              </Button>
+
+              <button
+                onClick={() => setShowQr(true)}
+                className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-primary hover:text-primary/80 active:scale-[0.97] transition-all"
+              >
+                <QrCode size={14} />
+                Show QR Code
               </button>
-
-              {isAuthenticated && (
-                <button onClick={() => setShowQr(true)}
-                  className="w-full flex items-center gap-3 p-4 rounded-2xl bg-muted/50 border border-border/60 hover:bg-muted transition-colors active:scale-[0.98]">
-                  <div className="w-10 h-10 rounded-xl bg-primary/12 flex items-center justify-center">
-                    <QrCode className="w-5 h-5 text-primary" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-semibold text-foreground">Show Dynamic QR</p>
-                    <p className="text-[11px] text-muted-foreground">Scan with EasyPay app</p>
-                  </div>
-                </button>
-              )}
-
-              {isAuthenticated && (
-                <button onClick={() => { setStep("pin"); setPin(""); setErrorMsg(""); }}
-                  className="w-full flex items-center gap-3 p-4 rounded-2xl bg-primary/8 border border-primary/20 hover:bg-primary/12 transition-colors active:scale-[0.98]">
-                  <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
-                    <Wallet className="w-5 h-5 text-primary" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-semibold text-foreground">Pay from Wallet</p>
-                    <p className="text-[11px] text-muted-foreground">Quick pay with PIN</p>
-                  </div>
-                </button>
-              )}
             </motion.div>
           )}
 
-          {/* ─── Phone step ─── */}
+          {/* ─── Phone ─── */}
           {step === "phone" && (
-            <motion.div key="phone" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-6 space-y-4">
+            <motion.div key="phone" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="px-6 pb-6 space-y-4">
+              <StepDots current="phone" />
               <div className="text-center">
-                <p className="text-sm font-semibold text-foreground">Enter your phone number</p>
-                <p className="text-xs text-muted-foreground mt-1">We'll send a verification code</p>
+                <p className="text-sm font-bold text-foreground">Enter your phone number</p>
+                <p className="text-[11px] text-muted-foreground mt-1">We'll send a verification code</p>
               </div>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">+880</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-semibold">+880</span>
                 <input type="tel" inputMode="numeric" maxLength={11} value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
                   placeholder="01XXXXXXXXX"
-                  className="w-full pl-16 pr-4 py-3.5 rounded-2xl bg-muted/50 border border-border/60 text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full pl-16 pr-4 py-3.5 rounded-2xl bg-background/50 border border-border/40 text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/40 backdrop-blur-sm transition-shadow"
                   autoFocus />
               </div>
               {errorMsg && <p className="text-xs text-destructive text-center">{errorMsg}</p>}
-              <Button onClick={handleSendOtp} disabled={phone.length < 11} className="w-full rounded-2xl h-12 font-semibold">
+              <Button onClick={handleSendOtp} disabled={phone.length < 11} className="w-full rounded-2xl h-12 font-bold active:scale-[0.97] transition-transform">
                 Send OTP
               </Button>
-              <button onClick={() => { setStep("ready"); setErrorMsg(""); }} className="w-full text-xs text-muted-foreground hover:text-foreground py-1">← Back</button>
+              <button onClick={() => { setStep("ready"); setErrorMsg(""); }}
+                className="w-full flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground py-1 active:scale-[0.97] transition-all">
+                <ArrowLeft size={12} /> Back
+              </button>
             </motion.div>
           )}
 
-          {/* ─── OTP step ─── */}
+          {/* ─── OTP ─── */}
           {step === "otp" && (
-            <motion.div key="otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-6 space-y-5">
+            <motion.div key="otp" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="px-6 pb-6 space-y-5">
+              <StepDots current="otp" />
               <div className="text-center">
-                <p className="text-sm font-semibold text-foreground">Enter verification code</p>
-                <p className="text-xs text-muted-foreground mt-1">Sent to +880{phone}</p>
+                <p className="text-sm font-bold text-foreground">Enter verification code</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Sent to +880{phone}</p>
               </div>
               <OtpInput value={otp} onChange={setOtp} />
-              {devOtp && <p className="text-xs text-center text-muted-foreground/60">Dev OTP: {devOtp}</p>}
+              {devOtp && <p className="text-[10px] text-center text-muted-foreground/50 font-mono">Dev OTP: {devOtp}</p>}
               {errorMsg && <p className="text-xs text-destructive text-center">{errorMsg}</p>}
-              <button onClick={() => { setStep("phone"); setOtp(""); setErrorMsg(""); }} className="w-full text-xs text-muted-foreground hover:text-foreground py-1">← Change number</button>
+              <button onClick={() => { setStep("phone"); setOtp(""); setErrorMsg(""); }}
+                className="w-full flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground py-1 active:scale-[0.97] transition-all">
+                <ArrowLeft size={12} /> Change number
+              </button>
             </motion.div>
           )}
 
-          {/* ─── PIN step ─── */}
+          {/* ─── PIN ─── */}
           {step === "pin" && (
-            <motion.div key="pin" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-6 space-y-5">
+            <motion.div key="pin" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="px-6 pb-6 space-y-5">
+              <StepDots current="pin" />
               <div className="text-center">
-                <Lock className="w-6 h-6 text-primary mx-auto mb-2" />
-                <p className="text-sm font-semibold text-foreground">Enter your PIN</p>
-                <p className="text-xs text-muted-foreground mt-1">4-digit security PIN</p>
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
+                  <Lock className="w-5 h-5 text-primary" />
+                </div>
+                <p className="text-sm font-bold text-foreground">Enter your PIN</p>
+                <p className="text-[11px] text-muted-foreground mt-1">4-digit security PIN</p>
               </div>
-              <PinInput value={pin} onChange={(v) => { setPin(v); if (v.length === 4) { isAuthenticated ? handleWalletPay() : handleGuestPay(); } }} />
+              <PinInput value={pin} onChange={setPin} />
               {errorMsg && <p className="text-xs text-destructive text-center">{errorMsg}</p>}
-              <button onClick={() => { setStep(isAuthenticated && !otp ? "ready" : "otp"); setPin(""); setErrorMsg(""); }}
-                className="w-full text-xs text-muted-foreground hover:text-foreground py-1">← Back</button>
+              <button onClick={() => { setStep("otp"); setPin(""); setErrorMsg(""); }}
+                className="w-full flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground py-1 active:scale-[0.97] transition-all">
+                <ArrowLeft size={12} /> Back
+              </button>
             </motion.div>
           )}
 
           {/* ─── Processing ─── */}
           {step === "processing" && (
-            <motion.div key="processing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 flex flex-col items-center gap-4">
-              <div className="relative w-16 h-16">
+            <motion.div key="processing" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className="px-6 pb-8 pt-2 flex flex-col items-center gap-5">
+              <div className="relative w-20 h-20">
                 {[0, 1, 2].map((i) => (
-                  <motion.div key={i} className="absolute inset-0 rounded-full border-2 border-primary/30"
-                    animate={{ scale: [1, 2], opacity: [0.5, 0] }}
-                    transition={{ duration: 1.6, repeat: Infinity, delay: i * 0.4, ease: "easeOut" }} />
+                  <motion.div key={i} className="absolute inset-0 rounded-full border-2 border-primary/25"
+                    animate={{ scale: [1, 2.2], opacity: [0.5, 0] }}
+                    transition={{ duration: 1.8, repeat: Infinity, delay: i * 0.45, ease: "easeOut" }} />
                 ))}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <motion.div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center"
-                    animate={{ scale: [1, 1.06, 1] }} transition={{ duration: 1.2, repeat: Infinity }}>
-                    <Lock size={14} className="text-primary-foreground" />
+                  <motion.div className="w-10 h-10 rounded-full bg-primary/15 backdrop-blur-sm flex items-center justify-center"
+                    animate={{ scale: [1, 1.08, 1] }} transition={{ duration: 1.2, repeat: Infinity }}>
+                    <Lock size={16} className="text-primary" />
                   </motion.div>
                 </div>
               </div>
-              <p className="text-sm font-medium text-muted-foreground">Processing payment…</p>
+              <p className="text-sm font-semibold text-muted-foreground">Processing payment…</p>
             </motion.div>
           )}
 
           {/* ─── Success ─── */}
           {step === "success" && (
-            <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="p-8 text-center space-y-4">
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.1 }}>
-                <CheckCircle2 className="w-16 h-16 text-primary mx-auto" />
-              </motion.div>
-              <h2 className="text-xl font-bold text-foreground">Payment Successful!</h2>
-              <p className="text-sm text-muted-foreground">৳{fmt(amountParam)} paid to {merchant?.business_name}</p>
-              <Button variant="outline" onClick={() => navigate("/")} className="mt-2 rounded-2xl">Go Home</Button>
+            <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              className="px-6 pb-8 pt-2 text-center space-y-4">
+              <div className="relative w-20 h-20 mx-auto">
+                {/* Gradient glow ring */}
+                <motion.div
+                  className="absolute inset-0 rounded-full"
+                  style={{ background: "conic-gradient(from 0deg, hsl(var(--primary)/0.4), hsl(var(--primary)/0.1), hsl(var(--primary)/0.4))" }}
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                />
+                <div className="absolute inset-[3px] rounded-full bg-card flex items-center justify-center">
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 12, delay: 0.15 }}>
+                    <CheckCircle2 className="w-10 h-10 text-primary" />
+                  </motion.div>
+                </div>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-foreground">Payment Successful!</h2>
+                <p className="text-sm text-muted-foreground mt-1">৳{fmt(amountParam)} paid to {merchant?.business_name}</p>
+              </div>
+              <Button variant="outline" onClick={() => navigate("/")} className="rounded-2xl h-11 px-6 font-semibold mt-2">Go Home</Button>
             </motion.div>
           )}
 
           {/* ─── Error ─── */}
           {step === "error" && (
-            <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 text-center space-y-4">
-              <XCircle className="w-14 h-14 text-destructive/60 mx-auto" />
+            <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className="px-6 pb-8 pt-2 text-center space-y-4">
+              <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
+                <XCircle className="w-8 h-8 text-destructive/70" />
+              </div>
               <h2 className="text-lg font-bold text-foreground">Payment Failed</h2>
-              <p className="text-sm text-muted-foreground">{errorMsg || "Something went wrong"}</p>
-              <Button variant="outline" onClick={() => { setStep("ready"); setPin(""); setOtp(""); setErrorMsg(""); }} className="rounded-2xl">Try Again</Button>
+              <p className="text-sm text-muted-foreground leading-relaxed">{errorMsg || "Something went wrong"}</p>
+              <Button variant="outline"
+                onClick={() => { setStep("ready"); setPin(""); setOtp(""); setErrorMsg(""); }}
+                className="rounded-2xl h-11 px-6 font-semibold">
+                Try Again
+              </Button>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* QR Overlay */}
-        {showQr && qrDataUrl && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="p-6 border-t border-border/50 space-y-4">
-            <div className="bg-white rounded-2xl p-4 mx-auto w-fit shadow-sm">
-              <img src={qrDataUrl} alt="Payment QR" className="w-56 h-56" />
-            </div>
-            <p className="text-center text-xs text-muted-foreground">Scan with <span className="font-semibold text-foreground">EasyPay</span> app</p>
-            <Button variant="ghost" size="sm" onClick={() => setShowQr(false)} className="w-full text-xs">Close QR</Button>
-          </motion.div>
-        )}
-
-        <div className="px-6 pb-5 pt-2 text-center">
-          <p className="text-[10px] text-muted-foreground/60">Powered by EasyPay</p>
+        {/* ─── Footer ─── */}
+        <div className="px-6 pb-5 pt-1 flex items-center justify-center gap-1.5">
+          <Lock size={10} className="text-muted-foreground/40" />
+          <p className="text-[10px] text-muted-foreground/40 font-medium">Secured by EasyPay</p>
         </div>
       </motion.div>
+
+      {/* ─── QR Modal ─── */}
+      <QrModal
+        open={showQr}
+        onClose={() => setShowQr(false)}
+        qrDataUrl={qrDataUrl}
+        merchantName={merchant?.business_name || ""}
+        amount={amountParam}
+      />
     </div>
   );
 };
