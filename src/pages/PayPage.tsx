@@ -18,7 +18,7 @@ const PayPage = () => {
   const note = searchParams.get("note") || "";
   const ref = searchParams.get("ref") || "";
 
-  const paymentUrl = `${window.location.origin}/pay?merchant=${encodeURIComponent(merchantCode)}${amount ? `&amount=${encodeURIComponent(amount)}` : ""}${note ? `&note=${encodeURIComponent(note)}` : ""}`;
+  const paymentUrl = `${window.location.origin}/pay?merchant=${encodeURIComponent(merchantCode)}${amount ? `&amount=${encodeURIComponent(amount)}` : ""}${note ? `&note=${encodeURIComponent(note)}` : ""}${ref ? `&ref=${encodeURIComponent(ref)}` : ""}`;
 
   useEffect(() => {
     if (mode === "qr") {
