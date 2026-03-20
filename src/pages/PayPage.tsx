@@ -203,6 +203,7 @@ const PayPage = () => {
   const noteParam = params.get("note") || "";
   const amountParam = parseFloat(params.get("amount") || "0");
   const description = [refParam, noteParam].filter(Boolean).join(" — ");
+  const redirectParam = params.get("redirect") || "";
 
   const [step, setStep] = useState<Step>("loading");
   const [merchant, setMerchant] = useState<MerchantInfo | null>(null);
@@ -213,6 +214,9 @@ const PayPage = () => {
   const [devOtp, setDevOtp] = useState("");
   const [showQr, setShowQr] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [successTxnId, setSuccessTxnId] = useState<string | null>(null);
+  const [successTime, setSuccessTime] = useState<Date | null>(null);
+  const [copiedTxn, setCopiedTxn] = useState(false);
 
   // Resolve merchant
   useEffect(() => {
