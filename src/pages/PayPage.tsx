@@ -137,9 +137,9 @@ const QrModal = ({
           onClick={(e) => e.stopPropagation()}
           className="w-full max-w-xs bg-card/95 backdrop-blur-xl border border-border/50 rounded-3xl p-6 space-y-5 shadow-2xl text-center"
         >
-          <div className="flex items-center justify-between">
+          <div className="relative flex items-center justify-center">
             <h3 className="text-sm font-bold text-foreground">Scan to Pay</h3>
-            <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted/50 flex items-center justify-center active:scale-95 transition-transform">
+            <button onClick={onClose} className="absolute right-0 w-8 h-8 rounded-full bg-muted/50 flex items-center justify-center active:scale-95 transition-transform">
               <X size={14} className="text-muted-foreground" />
             </button>
           </div>
