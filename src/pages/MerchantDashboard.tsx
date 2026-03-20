@@ -1777,6 +1777,14 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                     <p className="text-[9px] text-muted-foreground font-mono truncate">{link.url}</p>
                   </div>
 
+                  {/* QR Code */}
+                  {link.qrDataUrl && (
+                    <div className="flex flex-col items-center gap-2 py-3 mb-2.5 bg-white rounded-xl border border-border/30">
+                      <img src={link.qrDataUrl} alt="Payment QR" className="w-40 h-40 rounded-lg" />
+                      <p className="text-[10px] font-semibold text-muted-foreground">Scan to Pay</p>
+                    </div>
+                  )}
+
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
@@ -1798,6 +1806,21 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                     >
                       <Share2 size={12} className="mr-1" /> Share
                     </Button>
+                    {link.qrDataUrl && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 rounded-lg text-[11px] px-3"
+                        onClick={() => {
+                          const a = document.createElement("a");
+                          a.href = link.qrDataUrl;
+                          a.download = `payment-qr-${link.id}.png`;
+                          a.click();
+                        }}
+                      >
+                        <Download size={12} />
+                      </Button>
+                    )}
                   </div>
 
                   <p className="text-[8px] text-muted-foreground mt-2 text-right">
