@@ -1584,7 +1584,7 @@ const MDRTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null; paym
 
 /* ── Payment Links Tab ── */
 const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any }) => {
-  const [links, setLinks] = useState<{ id: string; amount: number | null; note: string; createdAt: Date; url: string }[]>([]);
+  const [links, setLinks] = useState<{ id: string; amount: number | null; note: string; createdAt: Date; url: string; qrDataUrl: string }[]>([]);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -1592,7 +1592,7 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
   const baseUrl = window.location.origin;
   const merchantCode = merchant?.qr_code_data || `MRC-${merchant?.id?.slice(0, 8) || "UNKNOWN"}`;
 
-  const generateLink = () => {
+  const generateLink = async () => {
     const id = Math.random().toString(36).slice(2, 10).toUpperCase();
     const parsedAmount = amount ? parseFloat(amount) : null;
 
@@ -1611,17 +1611,23 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
 
     const url = `${baseUrl}/pay?${params.toString()}`;
 
+    let qrDataUrl = "";
+    try {
+      qrDataUrl = await QRCode.toDataURL(url, { width: 250, margin: 2, errorCorrectionLevel: "H" });
+    } catch {}
+
     setLinks(prev => [{
       id,
       amount: parsedAmount,
       note: note.trim(),
       createdAt: new Date(),
       url,
+      qrDataUrl,
     }, ...prev]);
 
     setAmount("");
     setNote("");
-    toast({ title: "Payment link created!", description: "Share it with your customer" });
+    toast({ title: "Payment link created!", description: "Share or let customers scan the QR" });
   };
 
   const copyLink = (link: typeof links[0]) => {
@@ -1714,10 +1720,10 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
             <Sparkles size={14} className="text-primary" /> How It Works
           </h3>
           <div className="space-y-3">
-            {[
-              { step: "1", title: "Create a link", desc: "Set amount & note, generate a unique payment link" },
-              { step: "2", title: "Share with customer", desc: "Send via SMS, WhatsApp, email, or any messenger" },
-              { step: "3", title: "Get paid instantly", desc: "Customer pays through the link, money hits your account" },
+             {[
+              { step: "1", title: "Create a link", desc: "Set amount & note, generate a unique payment link with QR" },
+              { step: "2", title: "Share or show QR", desc: "Customer scans QR in-app or opens the link to pay manually" },
+              { step: "3", title: "Get paid instantly", desc: "Customer pays through QR scan or gateway, money hits your account" },
             ].map(s => (
               <div key={s.step} className="flex items-start gap-3">
                 <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -1771,6 +1777,14 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                     <p className="text-[9px] text-muted-foreground font-mono truncate">{link.url}</p>
                   </div>
 
+                  {/* QR Code */}
+                  {link.qrDataUrl && (
+                    <div className="flex flex-col items-center gap-2 py-3 mb-2.5 bg-white rounded-xl border border-border/30">
+                      <img src={link.qrDataUrl} alt="Payment QR" className="w-40 h-40 rounded-lg" />
+                      <p className="text-[10px] font-semibold text-muted-foreground">Scan to Pay</p>
+                    </div>
+                  )}
+
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
@@ -1792,6 +1806,21 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                     >
                       <Share2 size={12} className="mr-1" /> Share
                     </Button>
+                    {link.qrDataUrl && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 rounded-lg text-[11px] px-3"
+                        onClick={() => {
+                          const a = document.createElement("a");
+                          a.href = link.qrDataUrl;
+                          a.download = `payment-qr-${link.id}.png`;
+                          a.click();
+                        }}
+                      >
+                        <Download size={12} />
+                      </Button>
+                    )}
                   </div>
 
                   <p className="text-[8px] text-muted-foreground mt-2 text-right">
