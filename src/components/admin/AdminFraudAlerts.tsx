@@ -90,14 +90,14 @@ export default function AdminFraudAlerts() {
 
   const loadAlerts = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("fraud_alerts")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(100);
+    const [alertsRes, teamRes] = await Promise.all([
+      supabase.from("fraud_alerts").select("*").order("created_at", { ascending: false }).limit(100),
+      supabase.from("team_members").select("id, username, department"),
+    ]);
 
-    const alertList = (data ?? []) as FraudAlert[];
+    const alertList = (alertsRes.data ?? []) as FraudAlert[];
     setAlerts(alertList);
+    setTeamMembers((teamRes.data ?? []) as TeamMember[]);
 
     // Fetch profiles for all user_ids in alerts
     const userIds = [...new Set(alertList.map(a => a.user_id))];
