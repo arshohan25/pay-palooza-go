@@ -16,6 +16,7 @@ const PayPage = () => {
   const merchantCode = searchParams.get("merchant") || "";
   const amount = searchParams.get("amount") || "";
   const note = searchParams.get("note") || "";
+  const ref = searchParams.get("ref") || "";
 
   const paymentUrl = `${window.location.origin}/pay?merchant=${encodeURIComponent(merchantCode)}${amount ? `&amount=${encodeURIComponent(amount)}` : ""}${note ? `&note=${encodeURIComponent(note)}` : ""}`;
 
