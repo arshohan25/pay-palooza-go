@@ -25,6 +25,7 @@ import SuperDistributorCreateDistributor from "./pages/SuperDistributorCreateDis
 import MerchantDashboard from "./pages/MerchantDashboard";
 import CheckoutPage from "./pages/CheckoutPage";
 import DynamicQrPage from "./pages/DynamicQrPage";
+import PayPage from "./pages/PayPage";
 import NotFound from "./pages/NotFound";
 import TeamLoginPage from "./pages/TeamLoginPage";
 import RoleInstallPage from "./pages/RoleInstallPage";
