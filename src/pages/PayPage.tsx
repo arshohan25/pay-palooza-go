@@ -2,15 +2,16 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import PaymentFlow from "@/components/PaymentFlow";
+import GuestCheckoutFlow from "@/components/GuestCheckoutFlow";
 import { Button } from "@/components/ui/button";
-import { LogIn, CreditCard, QrCode, Keyboard, ArrowLeft, Download } from "lucide-react";
+import { LogIn, CreditCard, QrCode, Keyboard, ArrowLeft, Download, Smartphone } from "lucide-react";
 import QRCode from "qrcode";
 
 const PayPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const [mode, setMode] = useState<"choose" | "qr" | "manual">("choose");
+  const [mode, setMode] = useState<"choose" | "qr" | "manual" | "guest">("choose");
   const [qrDataUrl, setQrDataUrl] = useState("");
 
   const merchantCode = searchParams.get("merchant") || "";
@@ -36,37 +37,21 @@ const PayPage = () => {
     );
   }
 
-  if (!user) {
+  // ── Guest checkout flow ───────────────────────────────────
+  if (mode === "guest") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-6">
-        <div className="text-center space-y-6 max-w-sm">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-            <CreditCard className="w-8 h-8 text-primary" />
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-2xl font-bold text-foreground">Payment Request</h1>
-            {amount && (
-              <p className="text-3xl font-bold text-primary">৳{parseFloat(amount).toLocaleString()}</p>
-            )}
-            {note && <p className="text-muted-foreground text-sm">{note}</p>}
-            <p className="text-muted-foreground">Merchant: <span className="font-medium text-foreground">{merchantCode}</span></p>
-            {ref && <p className="text-muted-foreground text-xs">Ref: <span className="font-mono font-medium text-foreground">{ref}</span></p>}
-          </div>
-          <p className="text-sm text-muted-foreground">Please log in to your account to complete this payment.</p>
-          <Button
-            onClick={() => navigate(`/?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
-            className="w-full h-12 rounded-xl font-bold"
-          >
-            <LogIn className="w-4 h-4 mr-2" />
-            Log In to Pay
-          </Button>
-        </div>
-      </div>
+      <GuestCheckoutFlow
+        merchantCode={merchantCode}
+        amount={amount}
+        note={note}
+        reference={ref}
+        onClose={() => setMode("choose")}
+      />
     );
   }
 
-  // ── QR screen ─────────────────────────────────────────────
-  if (mode === "qr") {
+  // ── QR screen (logged in only) ────────────────────────────
+  if (user && mode === "qr") {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <div className="flex items-center gap-3 px-4 pt-[env(safe-area-inset-top,12px)] mt-3 mb-2">
@@ -100,8 +85,8 @@ const PayPage = () => {
     );
   }
 
-  // ── Manual payment screen ─────────────────────────────────
-  if (mode === "manual") {
+  // ── Manual payment screen (logged in only) ────────────────
+  if (user && mode === "manual") {
     return (
       <div className="min-h-screen bg-background">
         <PaymentFlow
@@ -136,31 +121,62 @@ const PayPage = () => {
 
         {/* Method cards */}
         <div className="space-y-3">
+          {/* Guest pay — always visible */}
           <button
-            onClick={() => setMode("qr")}
+            onClick={() => setMode("guest")}
             className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card border border-border shadow-sm hover:shadow-md active:scale-[0.98] transition-all text-left"
           >
             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <QrCode className="w-6 h-6 text-primary" />
+              <Smartphone className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <p className="font-semibold text-foreground text-sm">Show Dynamic QR</p>
-              <p className="text-xs text-muted-foreground">Display QR code to scan with EasyPay app</p>
+              <p className="font-semibold text-foreground text-sm">Pay with Phone & PIN</p>
+              <p className="text-xs text-muted-foreground">Verify via OTP, no login required</p>
             </div>
           </button>
 
-          <button
-            onClick={() => setMode("manual")}
-            className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card border border-border shadow-sm hover:shadow-md active:scale-[0.98] transition-all text-left"
-          >
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <Keyboard className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <p className="font-semibold text-foreground text-sm">Pay Manually</p>
-              <p className="text-xs text-muted-foreground">Enter details & confirm with PIN</p>
-            </div>
-          </button>
+          {user ? (
+            <>
+              <button
+                onClick={() => setMode("qr")}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card border border-border shadow-sm hover:shadow-md active:scale-[0.98] transition-all text-left"
+              >
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <QrCode className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground text-sm">Show Dynamic QR</p>
+                  <p className="text-xs text-muted-foreground">Display QR code to scan with EasyPay app</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setMode("manual")}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card border border-border shadow-sm hover:shadow-md active:scale-[0.98] transition-all text-left"
+              >
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Keyboard className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground text-sm">Pay Manually</p>
+                  <p className="text-xs text-muted-foreground">Enter details & confirm with PIN</p>
+                </div>
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => navigate(`/?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
+              className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card border border-border shadow-sm hover:shadow-md active:scale-[0.98] transition-all text-left"
+            >
+              <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                <LogIn className="w-6 h-6 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="font-semibold text-foreground text-sm">Log In to Pay</p>
+                <p className="text-xs text-muted-foreground">Access full payment options with your account</p>
+              </div>
+            </button>
+          )}
         </div>
       </div>
     </div>
