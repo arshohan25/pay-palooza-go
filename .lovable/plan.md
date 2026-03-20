@@ -1,21 +1,32 @@
-## Add Dynamic QR Code to Payment Links
+## Payment Link Page — Two Payment Options
 
 ### Summary
 
-When a merchant generates a payment link, also generate and display a dynamic QR code for that link so customers can scan it directly instead of clicking a URL.
+Redesign the `/pay` page so when a logged-in customer opens a payment link, they see the payment details (merchant, amount, note) and two clear options:
 
-### Changes to `src/pages/MerchantDashboard.tsx` — `PayLinksTab` component
+1. **Scan QR in App** — displays a dynamic QR code on-screen (generated from the payment URL) that can be scanned via the EasyPay app's QR scanner
+2. **Pay Manually** — launches the existing `PaymentFlow` with merchant ID and amount pre-filled
 
-1. **Import QRCode library** — add `import QRCode from "qrcode"` (already a project dependency)
-2. **User can Choose Scan QR or Pay Manual** — User can choose option how to pay, 1. scan qr through app or 2. Pay normal using get way as like enter number otp and pin confirmation
-3. **Add QR data URL to link state** — extend the link type to include `qrDataUrl: string`
-4. **Generate QR on link creation** — after building the payment URL in `generateLink()`, call `QRCode.toDataURL(url, { width: 200, margin: 2 })` and store the result in the link object
-5. **Display QR in each link card** — between the URL preview and the action buttons, render the QR code image centered in a white rounded container with a "Scan to Pay" label
-6. **Add "Download QR" button** — alongside Copy/Share buttons, add a download button that saves the QR as a PNG image
+### Changes to `src/pages/PayPage.tsx`
+
+1. **Add a "choose method" state** — new state `mode: "choose" | "qr" | "manual"`, default `"choose"`
+2. **Choice screen** (when `mode === "choose"`):
+  - Payment summary card: merchant code, amount (large), note
+  - Two option cards/buttons:
+    - **"Scan QR"** — icon + description, sets `mode = "qr"`
+    - **"Pay Manually"** — icon + description, sets `mode = "manual"`
+3. **QR screen** (when `mode === "qr"`):
+  - Back button to return to choice screen
+  - Generate a Dynamic QR code from the full payment URL using `QRCode.toDataURL()` (same pattern as merchant dashboard)
+  - Display Dynamic QR centered with "Scan with EasyPay App" label
+  - Show amount and merchant info below QR
+4. **Manual screen** (when `mode === "manual"`):
+  - Render `PaymentFlow` with `prefilledMerchantId={merchantCode}` as it currently does
+  - `onClose` returns to choice screen or closes
 
 ### Technical Details
 
-- Uses the existing `qrcode` npm package (already used in `DynamicQrPage.tsx` and `qrWithLogo.ts`)
-- QR encodes the full payment URL (e.g. `https://domain/pay?merchant=MRC-XXX&ref=ABC&amount=500`)
-- QR generation is async (`toDataURL` returns a promise), so `generateLink` becomes async
-- Download uses a temporary `<a>` element with `download` attribute
+- Uses `qrcode` library (already in project) to generate QR data URL from the payment link URL itself
+- QR encodes: `${window.location.origin}/pay?merchant=X&amount=Y&note=Z`
+- No new files needed — single file edit to `PayPage.tsx`
+- Unauthenticated flow (login prompt) remains unchanged
