@@ -439,15 +439,15 @@ const PayPage = () => {
               <span className="text-xs font-medium text-muted-foreground ml-1.5">BDT</span>
             </motion.p>
           )}
-          {refParam && <p className="text-[10px] text-muted-foreground mt-1.5 font-mono">Ref: {refParam}</p>}
-          {noteParam && <p className="text-[10px] text-muted-foreground font-mono">Note: {noteParam}</p>}
+          {refParam && <p className="text-[10px] text-muted-foreground mt-1.5 font-mono text-center">Ref: {refParam}</p>}
+          {noteParam && <p className="text-[10px] text-muted-foreground font-mono text-center">Note: {noteParam}</p>}
         </div>
 
         <AnimatePresence mode="wait">
           {/* ─── Ready ─── */}
           {step === "ready" && (
             <motion.div key="ready" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="px-6 pb-6 space-y-3">
+              className="px-6 pb-6 space-y-3 text-center">
               <Button
                 onClick={() => { setStep("phone"); setPhone(""); setOtp(""); setPin(""); setErrorMsg(""); }}
                 className="w-full rounded-2xl h-13 text-sm font-bold shadow-lg shadow-primary/20 active:scale-[0.97] transition-transform"
@@ -470,7 +470,7 @@ const PayPage = () => {
           {step === "phone" && (
             <motion.div key="phone" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className="px-6 pb-6 space-y-4">
+              className="px-6 pb-6 space-y-4 text-center">
               <StepDots current="phone" />
               <div className="text-center">
                 <p className="text-sm font-bold text-foreground">Enter your phone number</p>
@@ -499,7 +499,7 @@ const PayPage = () => {
           {step === "otp" && (
             <motion.div key="otp" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className="px-6 pb-6 space-y-5">
+              className="px-6 pb-6 space-y-5 text-center">
               <StepDots current="otp" />
               <div className="text-center">
                 <p className="text-sm font-bold text-foreground">Enter verification code</p>
@@ -519,7 +519,7 @@ const PayPage = () => {
           {step === "pin" && (
             <motion.div key="pin" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className="px-6 pb-6 space-y-5">
+              className="px-6 pb-6 space-y-5 text-center">
               <StepDots current="pin" />
               <div className="text-center">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
