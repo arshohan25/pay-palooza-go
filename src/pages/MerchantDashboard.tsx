@@ -394,37 +394,51 @@ const MerchantDashboard = () => {
         </div>
       </div>
 
-      {/* ── Full-screen Merchant Inbox Overlay ── */}
-      {activeTab === "inbox" && (
-        <motion.div
-          key="inbox-fullscreen"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[70] bg-background flex flex-col"
-        >
-          <MerchantInbox onBack={() => setActiveTab("overview")} />
-        </motion.div>
+      {/* ── Overview Content ── */}
+      {activeTab === "overview" && (
+        <div className="px-4 py-4 pb-24">
+          <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} onRefresh={loadData} onSeeAll={() => setActiveTab("transactions")} onOpenInbox={() => setActiveTab("inbox")} />
+        </div>
       )}
 
-      {/* ── Content ── */}
-      <div className=" px-4 py-4 pb-24">
-        <AnimatePresence mode="wait">
-          <motion.div key={activeTab} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25 }}>
-            {activeTab === "overview"     && <MerchOverview merchant={merchant} balance={balance} paymentTxns={paymentTxns} onRefresh={loadData} onSeeAll={() => setActiveTab("transactions")} onOpenInbox={() => setActiveTab("inbox")} />}
-            {activeTab === "products"     && merchant && <MerchantProductsTab merchantId={merchant.id} businessName={merchant.business_name} />}
-            {activeTab === "orders"       && merchant && <MerchantOrdersTab merchantId={merchant.id} />}
-            {activeTab === "store"        && merchant && <MerchantStoreSettingsTab merchantId={merchant.id} businessName={merchant.business_name} />}
-            {activeTab === "qr"           && <QRTab merchant={merchant} toast={toast} />}
-            {activeTab === "analytics"    && merchant && <MerchantAnalyticsTab merchantId={merchant.id} />}
-            {activeTab === "paylinks"     && <PayLinksTab merchant={merchant} toast={toast} />}
-            {activeTab === "transactions" && <TxnTab txns={paymentTxns} />}
-            {activeTab === "settlements"  && <SettlementTab merchant={merchant} paymentTxns={paymentTxns} />}
-            {activeTab === "mdr"          && <MDRTab merchant={merchant} paymentTxns={paymentTxns} />}
-            {activeTab === "api"          && merchant && <MerchantApiTab merchantId={merchant.id} />}
+      {/* ── Full-screen overlay for all non-overview tabs ── */}
+      <AnimatePresence>
+        {activeTab !== "overview" && (
+          <motion.div
+            key={`fullscreen-${activeTab}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[70] bg-background flex flex-col"
+          >
+            {/* Back header (skip for inbox which has its own) */}
+            {activeTab !== "inbox" && (
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50 bg-background shrink-0">
+                <button onClick={() => setActiveTab("overview")} className="tap-target w-9 h-9 rounded-xl bg-muted/50 flex items-center justify-center">
+                  <ArrowLeft size={16} className="text-foreground" />
+                </button>
+                <h2 className="text-sm font-bold text-foreground">
+                  {[...mainTabs, ...menuItems].find(t => t.id === activeTab)?.label || "Back"}
+                </h2>
+              </div>
+            )}
+            <div className="flex-1 overflow-y-auto">
+              {activeTab === "inbox"        && <MerchantInbox onBack={() => setActiveTab("overview")} />}
+              {activeTab === "products"     && merchant && <div className="px-4 py-4"><MerchantProductsTab merchantId={merchant.id} businessName={merchant.business_name} /></div>}
+              {activeTab === "orders"       && merchant && <div className="px-4 py-4"><MerchantOrdersTab merchantId={merchant.id} /></div>}
+              {activeTab === "store"        && merchant && <div className="px-4 py-4"><MerchantStoreSettingsTab merchantId={merchant.id} businessName={merchant.business_name} /></div>}
+              {activeTab === "qr"           && <div className="px-4 py-4"><QRTab merchant={merchant} toast={toast} /></div>}
+              {activeTab === "analytics"    && merchant && <div className="px-4 py-4"><MerchantAnalyticsTab merchantId={merchant.id} /></div>}
+              {activeTab === "paylinks"     && <div className="px-4 py-4"><PayLinksTab merchant={merchant} toast={toast} /></div>}
+              {activeTab === "transactions" && <div className="px-4 py-4"><TxnTab txns={paymentTxns} /></div>}
+              {activeTab === "settlements"  && <div className="px-4 py-4"><SettlementTab merchant={merchant} paymentTxns={paymentTxns} /></div>}
+              {activeTab === "mdr"          && <div className="px-4 py-4"><MDRTab merchant={merchant} paymentTxns={paymentTxns} /></div>}
+              {activeTab === "api"          && merchant && <div className="px-4 py-4"><MerchantApiTab merchantId={merchant.id} /></div>}
+            </div>
           </motion.div>
-        </AnimatePresence>
-      </div>
+        )}
+      </AnimatePresence>
 
       {/* ── Hamburger Menu Drawer ── */}
       <AnimatePresence>
