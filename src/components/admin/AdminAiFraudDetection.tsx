@@ -38,7 +38,7 @@ export default function AdminAiFraudDetection() {
   const [subTab, setSubTab] = useState<"overview" | "profiles" | "patterns" | "velocity">("overview");
   const [loading, setLoading] = useState(true);
   const [riskProfiles, setRiskProfiles] = useState<RiskProfile[]>([]);
-  const [alertStats, setAlertStats] = useState({ total: 0, open: 0, critical: 0, resolved: 0 });
+  const [alertStats, setAlertStats] = useState({ total: 0, open: 0, critical: 0, resolved: 0, slaBreached: 0 });
   const [velocityAlerts, setVelocityAlerts] = useState<any[]>([]);
   const [patterns, setPatterns] = useState<{ label: string; count: number; severity: string }[]>([]);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
