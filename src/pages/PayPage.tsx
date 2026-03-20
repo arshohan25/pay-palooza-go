@@ -175,20 +175,6 @@ const PayPage = () => {
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground/50 group-hover:text-primary/60 transition-colors shrink-0" />
               </button>
-            ) : (
-              <button
-                onClick={() => navigate(`/?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
-                className="group w-full flex items-center gap-4 p-4 rounded-2xl bg-background/50 border border-border/30 hover:border-border/60 active:scale-[0.98] transition-all duration-200 text-left"
-              >
-                <div className="w-11 h-11 rounded-xl bg-muted/60 group-hover:bg-muted/80 flex items-center justify-center shrink-0 transition-colors">
-                  <LogIn className="w-5 h-5 text-muted-foreground" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-foreground text-sm">Log In to Pay</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Full payment options with account</p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground/50 transition-colors shrink-0" />
-              </button>
             )}
           </div>
         </div>
