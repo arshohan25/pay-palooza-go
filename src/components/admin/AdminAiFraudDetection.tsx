@@ -98,11 +98,14 @@ export default function AdminAiFraudDetection() {
       const profiles = profilesRes.data ?? [];
       const devices = devicesRes.data ?? [];
 
+      const activeCritical = alerts.filter(a => a.severity === "critical" && (a.status === "open" || a.status === "investigating")).length;
+      const slaBreached = alerts.filter(a => (a as any).sla_deadline && new Date((a as any).sla_deadline) < now && (a.status === "open" || a.status === "investigating")).length;
       setAlertStats({
         total: alerts.length,
         open: alerts.filter(a => a.status === "open").length,
-        critical: alerts.filter(a => a.severity === "critical").length,
+        critical: activeCritical,
         resolved: alerts.filter(a => a.status === "resolved").length,
+        slaBreached,
       });
 
       const userTxnCounts: Record<string, number> = {};
