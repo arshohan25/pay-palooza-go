@@ -1,37 +1,23 @@
 
 
-## Fix: Incorrect PIN on Guest Checkout
+## Center-Align All Text on Payment Page (/pay)
 
-### Root Cause
-The `checkout-guest` Edge Function only tries to authenticate with `{phone}@easypay.app`. However, some users registered with fallback email domains (`@example.com`, `@easypay.local`). When `signInWithPassword` fails on the primary domain, the function returns "Incorrect PIN" even though the PIN is correct.
+### Changes to `src/pages/PayPage.tsx`
 
-The client-side `signIn()` in `src/lib/auth.ts` already handles this by looping through multiple domains — the edge function needs the same logic.
+Add `text-center` to all container divs that don't already have it, ensuring every text element is horizontally centered:
 
-### Fix in `supabase/functions/checkout-guest/index.ts`
+1. **Phone input step** (line 473) — add `text-center` to the wrapper div
+2. **OTP step** (line 502) — already has `text-center` on inner div, ensure wrapper also centered
+3. **PIN step** (line 522) — already has `text-center` on inner div, ensure wrapper also centered
+4. **Processing step** (line 543) — already centered via flex
+5. **Error message texts** — already `text-center`
+6. **Ref/Note lines** (lines 442-443) — these lack `text-center`; add it
+7. **Dev OTP line** (line 509) — already centered
 
-**Replace the single-domain PIN check (lines 79-86)** with a multi-domain loop:
+Specific lines to update:
+- Line 442: `<p className="text-[10px] text-muted-foreground mt-1.5 font-mono">` → add `text-center`
+- Line 443: `<p className="text-[10px] text-muted-foreground font-mono">` → add `text-center`
+- Lines 450, 473, 502, 522: ensure all step wrapper divs include `text-center` alongside `space-y-*`
 
-```typescript
-// 3. Verify PIN via auth — try all known email domains
-const password = `${pin}EP`;
-const emailDomains = ["easypay.app", "example.com", "easypay.local"];
-let authPassed = false;
-
-for (const domain of emailDomains) {
-  const { error } = await supabaseAdmin.auth.signInWithPassword({
-    email: `${cleanPhone}@${domain}`,
-    password,
-  });
-  if (!error) { authPassed = true; break; }
-}
-
-if (!authPassed) {
-  return jsonRes({ error: "Incorrect PIN" }, 400);
-}
-```
-
-This mirrors the client-side fallback logic and ensures users registered under any domain can authenticate correctly.
-
-### Single file change
-- `supabase/functions/checkout-guest/index.ts` — multi-domain PIN verification loop
+Single file change: `src/pages/PayPage.tsx`
 
