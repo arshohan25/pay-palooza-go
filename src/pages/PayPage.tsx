@@ -519,7 +519,7 @@ const PayPage = () => {
           {step === "pin" && (
             <motion.div key="pin" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className="px-6 pb-6 space-y-5">
+              className="px-6 pb-6 space-y-5 text-center">
               <StepDots current="pin" />
               <div className="text-center">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
