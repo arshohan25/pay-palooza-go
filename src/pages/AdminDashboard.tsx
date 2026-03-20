@@ -9,7 +9,7 @@ import {
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings, FileText,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
   Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck, Image, Bell, Shield, Star, Building2, Megaphone, CalendarClock,
-  ShoppingBag, Heart,
+  ShoppingBag, Heart, Bot,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -102,6 +102,7 @@ import AdminFestivalThemes from "@/components/admin/AdminFestivalThemes";
 import AdminEcommerceHub from "@/components/admin/AdminEcommerceHub";
 import AdminCareersManager from "@/components/admin/AdminCareersManager";
 import AdminChatMonitor from "@/components/admin/AdminChatMonitor";
+import AdminFraudAutoRules from "@/components/admin/AdminFraudAutoRules";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -299,6 +300,7 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
     pro: true,
     items: [
       { id: "ai_fraud", label: "AI Fraud", icon: ShieldCheck },
+      { id: "auto_rules", label: "Auto Rules", icon: Bot },
       { id: "geo_tracking", label: "Geo Track", icon: Building2 },
       { id: "smart_routing", label: "Routing", icon: CreditCard },
       { id: "liquidity", label: "Liquidity", icon: TrendingUp },
@@ -1650,6 +1652,9 @@ export default function AdminDashboard() {
 
         {/* ═══ AI FRAUD DETECTION ═══ */}
         {activeTab === "ai_fraud" && <AdminAiFraudDetection />}
+
+        {/* ═══ AUTO RULES ═══ */}
+        {activeTab === "auto_rules" && <AdminFraudAutoRules />}
 
         {/* ═══ GEO TRACKING ═══ */}
         {activeTab === "geo_tracking" && <AdminGeoTracking />}

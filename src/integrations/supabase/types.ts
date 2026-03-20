@@ -1319,42 +1319,136 @@ export type Database = {
       fraud_alerts: {
         Row: {
           assigned_to: string | null
+          assigned_to_team_member: string | null
           created_at: string
           details: Json | null
+          escalated_at: string | null
+          escalation_level: number
           id: string
           resolution_notes: string | null
           resolved_at: string | null
           rule_triggered: string
           severity: Database["public"]["Enums"]["alert_severity"]
+          sla_deadline: string | null
           status: Database["public"]["Enums"]["alert_status"]
           transaction_id: string | null
           user_id: string
         }
         Insert: {
           assigned_to?: string | null
+          assigned_to_team_member?: string | null
           created_at?: string
           details?: Json | null
+          escalated_at?: string | null
+          escalation_level?: number
           id?: string
           resolution_notes?: string | null
           resolved_at?: string | null
           rule_triggered: string
           severity?: Database["public"]["Enums"]["alert_severity"]
+          sla_deadline?: string | null
           status?: Database["public"]["Enums"]["alert_status"]
           transaction_id?: string | null
           user_id: string
         }
         Update: {
           assigned_to?: string | null
+          assigned_to_team_member?: string | null
           created_at?: string
           details?: Json | null
+          escalated_at?: string | null
+          escalation_level?: number
           id?: string
           resolution_notes?: string | null
           resolved_at?: string | null
           rule_triggered?: string
           severity?: Database["public"]["Enums"]["alert_severity"]
+          sla_deadline?: string | null
           status?: Database["public"]["Enums"]["alert_status"]
           transaction_id?: string | null
           user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fraud_alerts_assigned_to_team_member_fkey"
+            columns: ["assigned_to_team_member"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fraud_auto_rule_logs: {
+        Row: {
+          action_taken: string
+          created_at: string
+          id: string
+          metric_value: number
+          rule_id: string
+          user_id: string
+        }
+        Insert: {
+          action_taken: string
+          created_at?: string
+          id?: string
+          metric_value?: number
+          rule_id: string
+          user_id: string
+        }
+        Update: {
+          action_taken?: string
+          created_at?: string
+          id?: string
+          metric_value?: number
+          rule_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fraud_auto_rule_logs_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "fraud_auto_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fraud_auto_rules: {
+        Row: {
+          action: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          lock_duration: string
+          metric: string
+          name: string
+          threshold: number
+          updated_at: string
+        }
+        Insert: {
+          action?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          lock_duration?: string
+          metric: string
+          name: string
+          threshold?: number
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          lock_duration?: string
+          metric?: string
+          name?: string
+          threshold?: number
+          updated_at?: string
         }
         Relationships: []
       }

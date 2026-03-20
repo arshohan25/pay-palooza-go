@@ -6,12 +6,14 @@ import {
   AlertTriangle, ShieldAlert, Shield, ShieldCheck, ShieldX, ShieldOff,
   Smartphone, Globe, MapPin, Phone, Hash, Clock, User, ChevronDown, ChevronUp,
   Eye, CheckCircle, XCircle, Lock, RefreshCw, Fingerprint, Wifi, Monitor,
+  ArrowUp, UserCheck,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
@@ -30,6 +32,16 @@ interface FraudAlert {
   resolved_at: string | null;
   resolution_notes: string | null;
   created_at: string;
+  escalation_level: number;
+  sla_deadline: string | null;
+  escalated_at: string | null;
+  assigned_to_team_member: string | null;
+}
+
+interface TeamMember {
+  id: string;
+  username: string;
+  department: string | null;
 }
 
 interface UserProfile {
@@ -70,6 +82,7 @@ export default function AdminFraudAlerts() {
   const [alerts, setAlerts] = useState<FraudAlert[]>([]);
   const { visible, flash } = useRealtimeIndicator();
   const [profiles, setProfiles] = useState<Map<string, UserProfile>>(new Map());
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -79,14 +92,14 @@ export default function AdminFraudAlerts() {
 
   const loadAlerts = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("fraud_alerts")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(100);
+    const [alertsRes, teamRes] = await Promise.all([
+      supabase.from("fraud_alerts").select("*").order("created_at", { ascending: false }).limit(100),
+      supabase.from("team_members").select("id, username, department"),
+    ]);
 
-    const alertList = (data ?? []) as FraudAlert[];
+    const alertList = (alertsRes.data ?? []) as FraudAlert[];
     setAlerts(alertList);
+    setTeamMembers((teamRes.data ?? []) as TeamMember[]);
 
     // Fetch profiles for all user_ids in alerts
     const userIds = [...new Set(alertList.map(a => a.user_id))];
@@ -214,6 +227,49 @@ export default function AdminFraudAlerts() {
     }
   };
 
+  const handleEscalate = async (alert: FraudAlert) => {
+    const newLevel = Math.min(alert.escalation_level + 1, 3);
+    let newSla: string;
+    if (newLevel === 3) {
+      newSla = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    } else {
+      const remaining = alert.sla_deadline ? new Date(alert.sla_deadline).getTime() - Date.now() : 3600000;
+      newSla = new Date(Date.now() + Math.max(remaining / 2, 900000)).toISOString();
+    }
+    const { error } = await supabase.from("fraud_alerts").update({
+      escalation_level: newLevel,
+      escalated_at: new Date().toISOString(),
+      sla_deadline: newSla,
+    } as any).eq("id", alert.id);
+    if (error) { toast.error("Failed to escalate"); return; }
+    toast.success(`Escalated to L${newLevel}`);
+    loadAlerts();
+  };
+
+  const handleAssign = async (alertId: string, memberId: string) => {
+    const { error } = await supabase.from("fraud_alerts").update({
+      assigned_to_team_member: memberId || null,
+    } as any).eq("id", alertId);
+    if (error) { toast.error("Failed to assign"); return; }
+    toast.success("Assigned");
+    loadAlerts();
+  };
+
+  const getSlaStatus = (alert: FraudAlert) => {
+    if (!alert.sla_deadline || alert.status === "resolved" || alert.status === "false_positive") return null;
+    const deadline = new Date(alert.sla_deadline).getTime();
+    const now = Date.now();
+    const remaining = deadline - now;
+    if (remaining <= 0) return { label: "SLA Breached", color: "bg-red-500 text-white" };
+    const mins = Math.floor(remaining / 60000);
+    const hours = Math.floor(mins / 60);
+    if (hours > 0) return { label: `${hours}h ${mins % 60}m left`, color: remaining < 1800000 ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" : "bg-muted text-muted-foreground" };
+    return { label: `${mins}m left`, color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" };
+  };
+
+  const ESCALATION_LABELS: Record<number, string> = { 1: "L1", 2: "L2", 3: "L3-Critical" };
+  const ESCALATION_COLORS: Record<number, string> = { 1: "bg-muted text-muted-foreground", 2: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300", 3: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" };
+
   const filteredAlerts = filterStatus === "all"
     ? alerts
     : alerts.filter(a => a.status === filterStatus);
@@ -300,6 +356,13 @@ export default function AdminFraudAlerts() {
                         <Badge variant="secondary" className={`text-[10px] ${STATUS_COLORS[alert.status]}`}>
                           {alert.status === "false_positive" ? "dismissed" : alert.status}
                         </Badge>
+                        <Badge variant="secondary" className={`text-[10px] ${ESCALATION_COLORS[alert.escalation_level] || ""}`}>
+                          {ESCALATION_LABELS[alert.escalation_level] || `L${alert.escalation_level}`}
+                        </Badge>
+                        {(() => {
+                          const sla = getSlaStatus(alert);
+                          return sla ? <Badge variant="secondary" className={`text-[10px] ${sla.color}`}>{sla.label}</Badge> : null;
+                        })()}
                       </div>
                       <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
                         <span className="flex items-center gap-1">
@@ -410,6 +473,34 @@ export default function AdminFraudAlerts() {
                             <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-3 text-sm">
                               <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 mb-1">Resolution Notes</p>
                               <p className="text-foreground">{alert.resolution_notes}</p>
+                            </div>
+                          )}
+
+                          {/* Assignment & Escalation row */}
+                          {(alert.status === "open" || alert.status === "investigating") && (
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <div className="flex items-center gap-2">
+                                <UserCheck className="w-3.5 h-3.5 text-muted-foreground" />
+                                <Select
+                                  value={alert.assigned_to_team_member || "unassigned"}
+                                  onValueChange={v => handleAssign(alert.id, v === "unassigned" ? "" : v)}
+                                >
+                                  <SelectTrigger className="h-8 w-40 text-xs">
+                                    <SelectValue placeholder="Assign to…" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                                    {teamMembers.map(tm => (
+                                      <SelectItem key={tm.id} value={tm.id}>{tm.username}{tm.department ? ` (${tm.department})` : ""}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              {alert.escalation_level < 3 && (
+                                <Button size="sm" variant="outline" className="text-xs h-8 gap-1.5" onClick={() => handleEscalate(alert)}>
+                                  <ArrowUp className="w-3.5 h-3.5" /> Escalate to L{alert.escalation_level + 1}
+                                </Button>
+                              )}
                             </div>
                           )}
 

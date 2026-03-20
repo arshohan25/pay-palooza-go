@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { Brain, ShieldAlert, TrendingUp, AlertTriangle, Activity, Zap, Eye, RefreshCw, Search, Lock } from "lucide-react";
+import { Brain, ShieldAlert, TrendingUp, AlertTriangle, Activity, Zap, Eye, RefreshCw, Search, Lock, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 interface RiskProfile {
@@ -38,7 +38,7 @@ export default function AdminAiFraudDetection() {
   const [subTab, setSubTab] = useState<"overview" | "profiles" | "patterns" | "velocity">("overview");
   const [loading, setLoading] = useState(true);
   const [riskProfiles, setRiskProfiles] = useState<RiskProfile[]>([]);
-  const [alertStats, setAlertStats] = useState({ total: 0, open: 0, critical: 0, resolved: 0 });
+  const [alertStats, setAlertStats] = useState({ total: 0, open: 0, critical: 0, resolved: 0, slaBreached: 0 });
   const [velocityAlerts, setVelocityAlerts] = useState<any[]>([]);
   const [patterns, setPatterns] = useState<{ label: string; count: number; severity: string }[]>([]);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -98,11 +98,14 @@ export default function AdminAiFraudDetection() {
       const profiles = profilesRes.data ?? [];
       const devices = devicesRes.data ?? [];
 
+      const activeCritical = alerts.filter(a => a.severity === "critical" && (a.status === "open" || a.status === "investigating")).length;
+      const slaBreached = alerts.filter(a => (a as any).sla_deadline && new Date((a as any).sla_deadline) < now && (a.status === "open" || a.status === "investigating")).length;
       setAlertStats({
         total: alerts.length,
         open: alerts.filter(a => a.status === "open").length,
-        critical: alerts.filter(a => a.severity === "critical").length,
+        critical: activeCritical,
         resolved: alerts.filter(a => a.status === "resolved").length,
+        slaBreached,
       });
 
       const userTxnCounts: Record<string, number> = {};
@@ -189,8 +192,9 @@ export default function AdminAiFraudDetection() {
   const statCards = [
     { icon: ShieldAlert, label: "Total Alerts", value: alertStats.total, color: "bg-primary" },
     { icon: AlertTriangle, label: "Open", value: alertStats.open, color: "bg-destructive" },
-    { icon: Zap, label: "Critical", value: alertStats.critical, color: "bg-red-600" },
+    { icon: Zap, label: "Active Critical", value: alertStats.critical, color: "bg-red-600" },
     { icon: Activity, label: "Resolved", value: alertStats.resolved, color: "bg-emerald-500" },
+    ...(alertStats.slaBreached > 0 ? [{ icon: Clock, label: "SLA Breached", value: alertStats.slaBreached, color: "bg-orange-500" }] : []),
   ];
 
   return (
