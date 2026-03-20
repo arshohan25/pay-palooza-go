@@ -10,7 +10,7 @@ const PayPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const [mode, setMode] = useState<"choose" | "qr" | "manual" | "guest">("choose");
+  const [mode, setMode] = useState<"choose" | "qr" | "guest">("choose");
   const [qrDataUrl, setQrDataUrl] = useState("");
 
   const merchantCode = searchParams.get("merchant") || "";
