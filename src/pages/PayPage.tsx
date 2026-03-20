@@ -1,17 +1,16 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import PaymentFlow from "@/components/PaymentFlow";
 import GuestCheckoutFlow from "@/components/GuestCheckoutFlow";
 import { Button } from "@/components/ui/button";
-import { LogIn, CreditCard, QrCode, Keyboard, ArrowLeft, Download, Smartphone } from "lucide-react";
+import { LogIn, CreditCard, QrCode, ArrowLeft, Download, Smartphone } from "lucide-react";
 import QRCode from "qrcode";
 
 const PayPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const [mode, setMode] = useState<"choose" | "qr" | "manual" | "guest">("choose");
+  const [mode, setMode] = useState<"choose" | "qr" | "guest">("choose");
   const [qrDataUrl, setQrDataUrl] = useState("");
 
   const merchantCode = searchParams.get("merchant") || "";
@@ -85,19 +84,6 @@ const PayPage = () => {
     );
   }
 
-  // ── Manual payment screen (logged in only) ────────────────
-  if (user && mode === "manual") {
-    return (
-      <div className="min-h-screen bg-background">
-        <PaymentFlow
-          onClose={() => setMode("choose")}
-          prefilledMerchantId={merchantCode}
-          prefilledAmount={amount || undefined}
-          prefilledNote={note || ref ? `${note}${note && ref ? " | " : ""}${ref ? `Ref: ${ref}` : ""}`.trim() : undefined}
-        />
-      </div>
-    );
-  }
 
   // ── Choice screen ─────────────────────────────────────────
   return (
@@ -150,18 +136,6 @@ const PayPage = () => {
                 </div>
               </button>
 
-              <button
-                onClick={() => setMode("manual")}
-                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card border border-border shadow-sm hover:shadow-md active:scale-[0.98] transition-all text-left"
-              >
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <Keyboard className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <p className="font-semibold text-foreground text-sm">Pay Manually</p>
-                  <p className="text-xs text-muted-foreground">Enter details & confirm with PIN</p>
-                </div>
-              </button>
             </>
           ) : (
             <button
