@@ -213,7 +213,7 @@ const DynamicQrPage = () => {
           {status === "pending" && (
             <motion.div key="pending" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-3 space-y-2">
               {qrDataUrl && (
-                <div className="bg-white rounded-2xl p-3 mx-auto w-fit shadow-sm">
+                <div className="bg-white rounded-2xl p-2 mx-auto w-fit shadow-sm">
                   <img src={qrDataUrl} alt="Payment QR Code" className="w-56 h-56" />
                 </div>
               )}
