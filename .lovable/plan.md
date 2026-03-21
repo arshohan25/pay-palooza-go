@@ -1,25 +1,41 @@
 
 
-## Tighten Dynamic QR Page Spacing
+## Merchant Dashboard — Potential Enhancements
 
-### Problem
-The QR payment page has excessive vertical gaps between elements (header, QR code, status indicators, button, footer), making it feel loose rather than premium and compact.
+The dashboard already covers core merchant needs well. Here are high-value additions ranked by impact:
 
-### Changes in `src/pages/DynamicQrPage.tsx`
+### 1. Today's Snapshot Card (High Impact)
+Add a "Today" summary card between Quick Actions and Revenue cards showing:
+- Today's transaction count
+- Today's revenue
+- Comparison vs yesterday (% up/down arrow)
+- Peak hour indicator
 
-1. **Header section (line 200)**: Reduce padding from `px-6 pt-6 pb-4` → `px-5 pt-5 pb-3`; icon margin `mb-3` → `mb-2`; amount `mt-1` → `mt-0.5`
+This data is already computed (`todayRevenue`, `todayTxns`, `peakLabel`) but not displayed on the overview.
 
-2. **Pending content area (line 214)**: Reduce from `p-6 space-y-5` → `p-4 space-y-3` to tighten QR + status cluster
+### 2. Customer Insights Mini-Card
+Show unique customers count and repeat customer rate on the overview — data already partially computed (`uniqueCustomers`) but not rendered.
 
-3. **QR container (line 216)**: Reduce padding from `p-4` → `p-3`; shrink QR image from `w-64 h-64` → `w-56 h-56`
+### 3. Weekly Revenue Sparkline
+The `last7` array is computed but not shown on overview. Add a compact 7-day bar chart below revenue cards for at-a-glance trend.
 
-4. **Footer "Powered by" (line 269)**: Reduce from `px-6 pb-5 pt-2` → `px-5 pb-3 pt-1`
+### 4. Notification/Inbox Badge on Overview
+Show unread message count prominently — `totalUnread` from `useChat()` is fetched but only used in the menu. Add a visible badge or card.
 
-5. **Completed/Expired states (lines 250, 261)**: Reduce `p-8 space-y-4` → `p-5 space-y-3`
+### 5. Quick-Access Refund Button
+For merchants handling disputes — a "Refund" quick action.
 
-### Result
-Tighter, more cohesive card with a premium compact feel — no wasted vertical space.
+---
 
-### File Modified
-- `src/pages/DynamicQrPage.tsx`
+### Recommendation
+Items 1-3 use **already-computed data** that's sitting unused. Adding them would be zero-cost in terms of queries and would make the overview feel more informative and alive.
+
+### Files Modified
+- `src/pages/MerchantDashboard.tsx` — MerchOverview component only
+
+### Scope
+- Add "Today's Performance" card with revenue, count, vs-yesterday delta, peak hour
+- Render the existing `last7` data as a compact mini bar chart
+- Show unique customers count
+- All data already available — no new queries needed
 
