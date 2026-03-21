@@ -50,6 +50,8 @@ interface MerchantInfo {
   bank_name: string | null;
   bank_account_number: string | null;
   bank_routing: string | null;
+  bank_account_holder: string | null;
+  bank_branch: string | null;
   trade_license: string | null;
   qr_code_data: string | null;
 }
