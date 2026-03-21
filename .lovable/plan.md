@@ -1,22 +1,25 @@
 
 
-## Hide Scrollbars Globally
+## Tighten Dynamic QR Page Spacing
 
-The project already hides scrollbars on `html` and `body` (lines 7-15 of `src/index.css`). To remove scrollbars from **all** scrollable elements (drawers, menus, scroll areas, etc.), add a universal rule.
+### Problem
+The QR payment page has excessive vertical gaps between elements (header, QR code, status indicators, button, footer), making it feel loose rather than premium and compact.
 
-### Change in `src/index.css`
+### Changes in `src/pages/DynamicQrPage.tsx`
 
-After the existing `body::-webkit-scrollbar` block (line 15), add a universal scrollbar-hiding rule:
+1. **Header section (line 200)**: Reduce padding from `px-6 pt-6 pb-4` → `px-5 pt-5 pb-3`; icon margin `mb-3` → `mb-2`; amount `mt-1` → `mt-0.5`
 
-```css
-*::-webkit-scrollbar {
-  display: none;
-}
-* {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-```
+2. **Pending content area (line 214)**: Reduce from `p-6 space-y-5` → `p-4 space-y-3` to tighten QR + status cluster
 
-This hides scrollbars on every element while preserving scroll functionality. One file, one change.
+3. **QR container (line 216)**: Reduce padding from `p-4` → `p-3`; shrink QR image from `w-64 h-64` → `w-56 h-56`
+
+4. **Footer "Powered by" (line 269)**: Reduce from `px-6 pb-5 pt-2` → `px-5 pb-3 pt-1`
+
+5. **Completed/Expired states (lines 250, 261)**: Reduce `p-8 space-y-4` → `p-5 space-y-3`
+
+### Result
+Tighter, more cohesive card with a premium compact feel — no wasted vertical space.
+
+### File Modified
+- `src/pages/DynamicQrPage.tsx`
 
