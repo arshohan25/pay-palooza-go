@@ -36,7 +36,27 @@ interface Product {
   updated_at: string;
 }
 
-const CATEGORIES = ["General", "Electronics", "Fashion", "Home", "Food", "Services", "Health", "Sports"];
+const CATEGORIES = [
+  "Accessories", "Agriculture", "Air Conditioning", "Animal Feed", "Apparel", "Aquarium", "Art Supplies",
+  "Automotive", "Baby & Kids", "Bags", "Bakery", "Batteries", "Beauty", "Bedding", "Beverages",
+  "Bicycles", "Books", "Building Materials", "Cameras", "Candles", "Catering", "Ceramics",
+  "Cleaning Supplies", "Clothing", "Computers", "Confectionery", "Cosmetics", "Crafts",
+  "Curtains & Blinds", "Dairy", "Decor", "Dental", "Desserts", "Digital Products", "Drones",
+  "Education", "Electrical", "Electronics", "Eyewear", "Fabric", "Farm Produce", "Fashion",
+  "Fertilizers", "Fitness", "Flooring", "Flowers", "Food", "Footwear", "Frozen Foods",
+  "Furniture", "Gadgets", "Games", "Garden", "General", "Gift Cards", "Gifts", "Grocery",
+  "Hair Care", "Handcraft", "Hardware", "Health", "Herbs", "Home Appliances", "Home Decor",
+  "Hygiene", "Ice Cream", "Industrial", "Insurance", "Interior Design", "Jewelry",
+  "Kids Toys", "Kitchen", "Laundry", "Leather", "Lighting", "Lingerie", "Luggage", "Luxury",
+  "Makeup", "Marine", "Mattresses", "Meat", "Medical Devices", "Medicine", "Men's Fashion",
+  "Mobile Accessories", "Music", "Nursery", "Office Supplies", "Organic", "Outdoor",
+  "Paint", "Party Supplies", "Perfume", "Pet Care", "Photography", "Plumbing", "Poultry",
+  "Printing", "Puzzles", "Real Estate", "Recycling", "Restaurants", "Safety Equipment",
+  "Salon", "Seafood", "Security", "Shoes", "Skincare", "Snacks", "Solar", "Spices",
+  "Sports", "Stationery", "Storage", "Supplements", "Tailoring", "Tea & Coffee",
+  "Textiles", "Tools", "Toys", "Travel", "Uniforms", "Vegetables", "Veterinary",
+  "Watches", "Water", "Wedding", "Wellness", "Women's Fashion", "Woodwork", "Yoga",
+];
 const EMOJIS = ["📦", "🎧", "⌚", "👕", "🍔", "💊", "🏠", "📱", "💻", "🎮", "☕", "🎁", "👟", "🔧", "📷", "💡", "🧴", "🎂"];
 const BADGES = [
   { label: "None", value: "", color: "" },
