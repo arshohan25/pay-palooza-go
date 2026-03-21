@@ -63,12 +63,16 @@ async function buildDoc(order: InvoiceOrder): Promise<jsPDF> {
   // ── Logo + Company Info (left) ──
   let logoBottom = 22;
   if (logo) {
-    try { doc.addImage(logo, "PNG", ml, 9, 18, 18); logoBottom = 28; } catch { /* skip */ }
+    try { doc.addImage(logo, "PNG", ml, 10, 12, 12); logoBottom = 24; } catch { /* skip */ }
   }
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(BRAND.r, BRAND.g, BRAND.b);
+  doc.text("EasyPay", ml, logoBottom + 4);
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(MID.r, MID.g, MID.b);
-  doc.text("EasyPay Digital Financial Services", ml, logoBottom + 4);
+  doc.text("Digital Financial Services", ml + doc.getTextWidth("EasyPay "), logoBottom + 4);
   doc.text("Dhaka, Bangladesh", ml, logoBottom + 8);
 
   // ── Document Title + Meta (right) ──

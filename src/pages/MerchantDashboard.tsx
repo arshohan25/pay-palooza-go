@@ -1435,9 +1435,12 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
     doc.rect(0, 0, pw, 5, "F");
 
     // ── Logo + Company ──
-    if (logo) { try { doc.addImage(logo, "PNG", ml, 9, 18, 18); } catch { /* skip */ } }
+    if (logo) { try { doc.addImage(logo, "PNG", ml, 10, 12, 12); } catch { /* skip */ } }
+    doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(BR.r, BR.g, BR.b);
+    doc.text("EasyPay", ml, 26);
+    const epW = doc.getTextWidth("EasyPay ");
     doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(MD.r, MD.g, MD.b);
-    doc.text("EasyPay Digital Financial Services", ml, 26);
+    doc.text("Digital Financial Services", ml + epW, 26);
     doc.text("Dhaka, Bangladesh", ml, 30);
 
     // ── Title + Meta (right) ──
