@@ -499,7 +499,7 @@ const PayPage = () => {
               <StepDots current="otp" />
               <div className="text-center">
                 <p className="text-sm font-bold text-foreground">Enter verification code</p>
-                <p className="text-[11px] text-muted-foreground mt-1">Sent to +880{phone}</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Sent to {phone}</p>
               </div>
               <OtpInput value={otp} onChange={setOtp} />
               {devOtp && <p className="text-[10px] text-center text-muted-foreground/50 font-mono">Dev OTP: {devOtp}</p>}
