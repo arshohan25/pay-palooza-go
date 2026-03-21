@@ -556,7 +556,7 @@ const MerchantDashboard = () => {
               {activeTab === "refunds"      && merchant && <div className="px-4 py-4"><MerchantRefundsTab merchantId={merchant.id} /></div>}
               {activeTab === "staff"        && <div className="px-4 py-4"><MerchantStaffTab /></div>}
               {activeTab === "customers"    && merchant && <div className="px-4 py-4"><MerchantCustomersTab merchantId={merchant.id} /></div>}
-              {activeTab === "coupons"      && <div className="px-4 py-4"><MerchantCouponsTab /></div>}
+              {activeTab === "coupons"      && merchant && <div className="px-4 py-4"><MerchantCouponsTab merchantId={merchant.id} /></div>}
               {activeTab === "payouts"      && <div className="px-4 py-4"><MerchantPayoutsTab /></div>}
             </div>
           </motion.div>
