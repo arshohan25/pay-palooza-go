@@ -36,7 +36,27 @@ interface Product {
   updated_at: string;
 }
 
-const CATEGORIES = ["General", "Electronics", "Fashion", "Home", "Food", "Services", "Health", "Sports"];
+const CATEGORIES = [
+  "Accessories", "Agriculture", "Air Conditioning", "Animal Feed", "Apparel", "Aquarium", "Art Supplies",
+  "Automotive", "Baby & Kids", "Bags", "Bakery", "Batteries", "Beauty", "Bedding", "Beverages",
+  "Bicycles", "Books", "Building Materials", "Cameras", "Candles", "Catering", "Ceramics",
+  "Cleaning Supplies", "Clothing", "Computers", "Confectionery", "Cosmetics", "Crafts",
+  "Curtains & Blinds", "Dairy", "Decor", "Dental", "Desserts", "Digital Products", "Drones",
+  "Education", "Electrical", "Electronics", "Eyewear", "Fabric", "Farm Produce", "Fashion",
+  "Fertilizers", "Fitness", "Flooring", "Flowers", "Food", "Footwear", "Frozen Foods",
+  "Furniture", "Gadgets", "Games", "Garden", "General", "Gift Cards", "Gifts", "Grocery",
+  "Hair Care", "Handcraft", "Hardware", "Health", "Herbs", "Home Appliances", "Home Decor",
+  "Hygiene", "Ice Cream", "Industrial", "Insurance", "Interior Design", "Jewelry",
+  "Kids Toys", "Kitchen", "Laundry", "Leather", "Lighting", "Lingerie", "Luggage", "Luxury",
+  "Makeup", "Marine", "Mattresses", "Meat", "Medical Devices", "Medicine", "Men's Fashion",
+  "Mobile Accessories", "Music", "Nursery", "Office Supplies", "Organic", "Outdoor",
+  "Paint", "Party Supplies", "Perfume", "Pet Care", "Photography", "Plumbing", "Poultry",
+  "Printing", "Puzzles", "Real Estate", "Recycling", "Restaurants", "Safety Equipment",
+  "Salon", "Seafood", "Security", "Shoes", "Skincare", "Snacks", "Solar", "Spices",
+  "Sports", "Stationery", "Storage", "Supplements", "Tailoring", "Tea & Coffee",
+  "Textiles", "Tools", "Toys", "Travel", "Uniforms", "Vegetables", "Veterinary",
+  "Watches", "Water", "Wedding", "Wellness", "Women's Fashion", "Woodwork", "Yoga",
+];
 const EMOJIS = ["📦", "🎧", "⌚", "👕", "🍔", "💊", "🏠", "📱", "💻", "🎮", "☕", "🎁", "👟", "🔧", "📷", "💡", "🧴", "🎂"];
 const BADGES = [
   { label: "None", value: "", color: "" },
@@ -46,6 +66,96 @@ const BADGES = [
   { label: "TOP PICK", value: "TOP PICK", color: "#00BCD4" },
 ];
 const MAX_IMAGES = 4;
+
+function CategorySearchSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [customMode, setCustomMode] = useState(false);
+  const [customValue, setCustomValue] = useState("");
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  const filtered = CATEGORIES.filter(c => c.toLowerCase().includes(search.toLowerCase()));
+
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setCustomMode(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={containerRef} className="relative mt-1.5">
+      <button
+        type="button"
+        onClick={() => { setOpen(!open); setSearch(""); setCustomMode(false); }}
+        className="w-full h-10 rounded-xl border border-input bg-background px-3 text-sm text-left flex items-center justify-between"
+      >
+        <span className={value ? "text-foreground" : "text-muted-foreground"}>{value || "Select category"}</span>
+        <Search className="w-3.5 h-3.5 text-muted-foreground" />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl shadow-lg z-[90] overflow-hidden">
+          <div className="p-2 border-b border-border">
+            <Input
+              placeholder="Search categories..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="h-8 text-sm rounded-lg"
+              autoFocus
+            />
+          </div>
+          <div className="max-h-48 overflow-y-auto">
+            {filtered.map(c => (
+              <button
+                key={c}
+                type="button"
+                className={`w-full px-3 py-2 text-sm text-left hover:bg-muted/50 transition-colors ${c === value ? "bg-primary/10 text-primary font-medium" : "text-foreground"}`}
+                onClick={() => { onChange(c); setOpen(false); }}
+              >
+                {c}
+              </button>
+            ))}
+            {filtered.length === 0 && !customMode && (
+              <p className="px-3 py-2 text-xs text-muted-foreground">No match found</p>
+            )}
+            {!customMode ? (
+              <button
+                type="button"
+                className="w-full px-3 py-2 text-sm text-left text-primary font-medium hover:bg-muted/50 border-t border-border"
+                onClick={() => { setCustomMode(true); setCustomValue(search); }}
+              >
+                ＋ Add Custom Category
+              </button>
+            ) : (
+              <div className="p-2 border-t border-border flex gap-2">
+                <Input
+                  placeholder="Custom category name"
+                  value={customValue}
+                  onChange={e => setCustomValue(e.target.value)}
+                  className="h-8 text-sm rounded-lg flex-1"
+                  autoFocus
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 text-xs"
+                  disabled={!customValue.trim()}
+                  onClick={() => { onChange(customValue.trim()); setOpen(false); setCustomMode(false); }}
+                >
+                  Add
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Video URL helpers
 const getYouTubeId = (url: string): string | null => {
@@ -565,13 +675,10 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
               </div>
               <div>
                 <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Category</label>
-                <select
+                <CategorySearchSelect
                   value={form.category}
-                  onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                  className="mt-1.5 w-full h-10 rounded-xl border border-input bg-background px-3 text-sm"
-                >
-                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+                  onChange={(val) => setForm(f => ({ ...f, category: val }))}
+                />
               </div>
             </div>
 
