@@ -154,10 +154,27 @@ const MerchantDashboard = () => {
   const { toast } = useToast();
   const { isDisabled } = useGlobalToggles();
 
-  const visibleMenuItems = useMemo(() =>
-    menuItems.filter(item => !item.toggleKey || !isDisabled(item.toggleKey)),
-    [isDisabled]
+  // Staff role-based tab restrictions
+  const staffAllowedTabs = useMemo<Set<MerchTab> | null>(() => {
+    if (!isStaff) return null; // no restriction for merchant owners
+    switch (staffRole) {
+      case "Manager": return null; // full read access
+      case "Cashier": return new Set<MerchTab>(["overview", "orders", "products"]);
+      case "Viewer": return new Set<MerchTab>(["overview"]);
+      default: return new Set<MerchTab>(["overview"]);
+    }
+  }, [isStaff, staffRole]);
+
+  const visibleMainTabs = useMemo(() =>
+    staffAllowedTabs ? mainTabs.filter(t => staffAllowedTabs.has(t.id)) : mainTabs,
+    [staffAllowedTabs]
   );
+
+  const visibleMenuItems = useMemo(() => {
+    let items = menuItems.filter(item => !item.toggleKey || !isDisabled(item.toggleKey));
+    if (staffAllowedTabs) items = items.filter(item => staffAllowedTabs.has(item.id));
+    return items;
+  }, [isDisabled, staffAllowedTabs]);
 
   const [activeTab, setActiveTab] = useState<MerchTab>("overview");
   const [merchant, setMerchant] = useState<MerchantInfo | null>(null);
