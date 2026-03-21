@@ -1536,16 +1536,6 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
             </div>
           )}
 
-          {/* Search bar */}
-          <div className="relative mb-3">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search by name, phone, or reference..."
-              className="pl-9 h-9 text-xs"
-            />
-          </div>
 
           {/* Summary */}
           <div className="grid grid-cols-3 gap-2 mb-3">
