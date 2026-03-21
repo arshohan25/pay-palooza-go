@@ -1,29 +1,14 @@
 
 
-## Redesign QR Modal to Match DynamicQrPage Style
+## Fix: Balance Card — Only Balance Area Should Be Tappable
 
-Redesign the `QrModal` component inside `src/pages/PayPage.tsx` (lines 136-189) to match the premium glassmorphism aesthetic of the DynamicQrPage — centered popup card instead of bottom sheet feel, with gradient background, merchant icon, and refined layout.
+**Problem**: The balance toggle `motion.button` sits inside a `flex-1 min-w-0` div that stretches across most of the card. Because the button inherits this full width, tapping anywhere on the left ~75% of the card triggers the balance show/hide — making it feel like the whole card is interactive.
 
-### Changes to `src/pages/PayPage.tsx` — QrModal component only
+**Fix in `src/components/BalanceCard.tsx`**:
 
-**Layout**: Center the modal card with generous padding, matching DynamicQrPage's `max-w-sm rounded-3xl` card
+1. Change the balance toggle `motion.button` (line 148) from `className="flex items-center group"` to `className="flex items-center group w-fit"` — this constrains the button's clickable area to only the visible pill/balance text, not the full flex width.
 
-**Header**: 
-- Remove the thin gradient top bar
-- Add "Scan to Pay" title centered with close button absolute-right (keep existing)
+2. That's it — single class addition. The QR, Copy, Add Money, and Share buttons already have their own isolated click handlers and will continue working independently.
 
-**QR section**:
-- Larger QR container: white `rounded-2xl p-4 shadow-lg` with `w-64 h-64` QR image (matching DynamicQrPage)
-- More breathing room around the QR
-
-**Merchant info below QR**:
-- Merchant name in bold (`text-base font-bold`)
-- Taka symbol (৳) as a standalone icon-like element in primary color
-- "Open EasyPay app → Scan QR" instruction text
-
-**Card styling**: 
-- `bg-card/90 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-2xl shadow-primary/5`
-- Matches the DynamicQrPage glassmorphism card
-
-**No backend changes** — only JSX/styling within the QrModal component.
+**No backend changes.**
 
