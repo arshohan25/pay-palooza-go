@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Store, CheckCircle2, AlertCircle, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { verifyPin } from "@/lib/verifyPin";
+
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
 import { playPaymentSuccess, playPaymentError } from "@/lib/sounds";
