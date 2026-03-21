@@ -1468,13 +1468,24 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
       <motion.div variants={stagger.item}>
         <Card className="p-4 border-0 shadow-card">
           {/* Mode toggle */}
-          <div className="flex gap-1.5 mb-3">
-            <button onClick={() => setFilterMode("month")} className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${filterMode === "month" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-              <Calendar size={12} className="inline mr-1 -mt-0.5" />Monthly
-            </button>
-            <button onClick={() => setFilterMode("range")} className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${filterMode === "range" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-              <CalendarClock size={12} className="inline mr-1 -mt-0.5" />Custom Range
-            </button>
+          <div className="flex items-center gap-1.5 mb-3">
+            <div className="flex bg-muted p-0.5 rounded-lg">
+              <button onClick={() => setFilterMode("month")} className={`px-3 py-1.5 rounded-md text-[11px] font-semibold transition-colors ${filterMode === "month" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                <Calendar size={12} className="inline mr-1 -mt-0.5" />Monthly
+              </button>
+              <button onClick={() => setFilterMode("range")} className={`px-3 py-1.5 rounded-md text-[11px] font-semibold transition-colors ${filterMode === "range" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                <CalendarClock size={12} className="inline mr-1 -mt-0.5" />Custom Range
+              </button>
+            </div>
+            <div className="relative ml-auto w-[42%] min-w-[110px]">
+              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search..."
+                className="pl-8 h-8 text-xs rounded-full bg-background"
+              />
+            </div>
           </div>
 
           {filterMode === "month" ? (
