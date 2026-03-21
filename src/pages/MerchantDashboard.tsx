@@ -2371,7 +2371,6 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
   const copyLink = (link: PaymentLink) => {
     navigator.clipboard.writeText(buildUrl(link));
     setCopiedId(link.id);
-    toast({ title: "Link copied!", description: "Payment link copied to clipboard" });
     setTimeout(() => setCopiedId(null), 2000);
   };
 
