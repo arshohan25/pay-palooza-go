@@ -190,54 +190,54 @@ const DynamicQrPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-2">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm bg-card rounded-3xl shadow-xl border border-border overflow-hidden"
+        className="w-full max-w-sm bg-card rounded-2xl shadow-xl border border-border overflow-hidden"
       >
         {/* Header */}
-        <div className="bg-gradient-to-br from-primary/10 via-card to-accent/5 px-3 pt-4 pb-1 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-primary/15 flex items-center justify-center mx-auto mb-1.5">
-            <Store className="w-7 h-7 text-primary" />
+        <div className="bg-gradient-to-br from-primary/10 via-card to-accent/5 px-3 pt-3 pb-0.5 text-center">
+          <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center mx-auto mb-1">
+            <Store className="w-6 h-6 text-primary" />
           </div>
-          {merchantName && <h1 className="text-lg font-bold text-foreground">{merchantName}</h1>}
-          {merchantCategory && <p className="text-xs text-muted-foreground capitalize">{merchantCategory.replace(/_/g, " ")}</p>}
-          <p className="text-3xl font-extrabold text-foreground">
-            ৳{fmt(amount)} <span className="text-sm font-medium text-muted-foreground">{currency}</span>
+          {merchantName && <h1 className="text-base font-bold text-foreground">{merchantName}</h1>}
+          {merchantCategory && <p className="text-[11px] text-muted-foreground capitalize">{merchantCategory.replace(/_/g, " ")}</p>}
+          <p className="text-2xl font-extrabold text-foreground mt-0.5">
+            ৳{fmt(amount)} <span className="text-xs font-medium text-muted-foreground">{currency}</span>
           </p>
-          {reference && <p className="text-xs text-muted-foreground mt-1">Ref: {reference}</p>}
+          {reference && <p className="text-[11px] text-muted-foreground mt-0.5">Ref: {reference}</p>}
         </div>
 
         <AnimatePresence mode="wait">
           {status === "pending" && (
-            <motion.div key="pending" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-2 py-2 space-y-1.5">
+            <motion.div key="pending" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-2 py-1.5 space-y-1">
               {qrDataUrl && (
-                <div className="bg-white rounded-2xl p-2 mx-auto w-fit shadow-sm">
-                  <img src={qrDataUrl} alt="Payment QR Code" className="w-56 h-56" />
+                <div className="bg-white rounded-xl p-1.5 mx-auto w-fit shadow-sm">
+                  <img src={qrDataUrl} alt="Payment QR Code" className="w-48 h-48" />
                 </div>
               )}
-              <p className="text-center text-sm text-muted-foreground">
+              <p className="text-center text-xs text-muted-foreground">
                 Scan with <span className="font-semibold text-foreground">EasyPay</span> app to pay
               </p>
-              <div className="flex items-center justify-center gap-2">
-                <Clock className="w-4 h-4 text-muted-foreground" />
-                <span className={`text-sm font-mono font-bold ${secondsLeft <= 60 ? "text-destructive" : "text-muted-foreground"}`}>
+              <div className="flex items-center justify-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className={`text-xs font-mono font-bold ${secondsLeft <= 60 ? "text-destructive" : "text-muted-foreground"}`}>
                   {fmtTime(secondsLeft)}
                 </span>
               </div>
-              <div className="flex items-center justify-center gap-2">
+              <div className="flex items-center justify-center gap-1.5">
                 <motion.div
-                  className="w-2 h-2 rounded-full bg-primary"
+                  className="w-1.5 h-1.5 rounded-full bg-primary"
                   animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
                   transition={{ duration: 1.5, repeat: Infinity }}
                 />
-                <span className="text-xs text-muted-foreground">Waiting for payment…</span>
+                <span className="text-[11px] text-muted-foreground">Waiting for payment…</span>
               </div>
               {isAuthenticated && (
                 <button
                   onClick={() => setShowPaySheet(true)}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm"
                 >
                   <Wallet className="w-4 h-4" />
                   Pay with EasyPay
@@ -266,7 +266,7 @@ const DynamicQrPage = () => {
           )}
         </AnimatePresence>
 
-        <div className="px-5 pb-3 pt-1 text-center">
+        <div className="px-3 pb-1.5 pt-0.5 text-center">
           <p className="text-[10px] text-muted-foreground/60">Powered by EasyPay</p>
         </div>
       </motion.div>
