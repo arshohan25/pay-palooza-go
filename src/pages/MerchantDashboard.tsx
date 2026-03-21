@@ -1409,32 +1409,91 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
     const { default: autoTable } = await import("jspdf-autotable");
     const doc = new jsPDF({ unit: "mm", format: "a4" });
     const pw = doc.internal.pageSize.getWidth();
-    const m = 15;
+    const ph = doc.internal.pageSize.getHeight();
+    const ml = 15;
+    const mr = pw - 15;
+    const BR = { r: 14, g: 165, b: 100 };
+    const GBG = { r: 248, g: 249, b: 250 };
+    const DK = { r: 30, g: 30, b: 30 };
+    const MD = { r: 120, g: 120, b: 120 };
+    const LT = { r: 180, g: 180, b: 180 };
 
-    doc.setFillColor(14, 165, 100);
-    doc.rect(0, 0, pw, 34, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18); doc.setFont("helvetica", "bold");
-    doc.text(filterMode === "range" ? "Custom Range Statement" : "Monthly Statement", m, 16);
-    doc.setFontSize(10); doc.setFont("helvetica", "normal");
-    doc.text(merchant?.business_name || "Merchant", m, 24);
-    doc.text(filterMode === "range" && dateRange.from && dateRange.to
+    // Load logo
+    let logo: string | null = null;
+    try {
+      const res = await fetch("/icons/easypay-logo.png");
+      const blob = await res.blob();
+      logo = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+    } catch { /* skip */ }
+
+    // ── Accent strip ──
+    doc.setFillColor(BR.r, BR.g, BR.b);
+    doc.rect(0, 0, pw, 5, "F");
+
+    // ── Logo + Company ──
+    if (logo) { try { doc.addImage(logo, "PNG", ml, 10, 28, 10); } catch { /* skip */ } }
+    doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(MD.r, MD.g, MD.b);
+    doc.text("EasyPay Digital Financial Services", ml, 26);
+    doc.text("Dhaka, Bangladesh", ml, 30);
+
+    // ── Title + Meta (right) ──
+    doc.setFontSize(18); doc.setFont("helvetica", "bold"); doc.setTextColor(BR.r, BR.g, BR.b);
+    doc.text("ACCOUNT STATEMENT", mr, 16, { align: "right" });
+    doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.setTextColor(DK.r, DK.g, DK.b);
+    const periodText = filterMode === "range" && dateRange.from && dateRange.to
       ? `${format(dateRange.from, "dd MMM yyyy")} – ${format(dateRange.to, "dd MMM yyyy")}`
-      : monthLabel, m, 30);
-    doc.text(`Generated: ${new Date().toLocaleDateString("en-BD")}`, pw - m, 24, { align: "right" });
+      : monthLabel;
+    doc.text(`Period: ${periodText}`, mr, 22, { align: "right" });
+    doc.text(`Generated: ${new Date().toLocaleDateString("en-BD")}`, mr, 27, { align: "right" });
 
-    let y = 44;
-    doc.setTextColor(30, 30, 30); doc.setFontSize(11); doc.setFont("helvetica", "bold");
-    doc.text("Summary", m, y); y += 7;
-    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-    doc.text(`Total Transactions: ${summary.count}`, m, y); y += 5;
-    doc.text(`Incoming: ৳${fmt(summary.incoming)}`, m, y); y += 5;
-    doc.text(`Outgoing: ৳${fmt(summary.outgoing)}`, m, y); y += 5;
-    doc.text(`Net: ৳${fmt(summary.incoming - summary.outgoing)}`, m, y); y += 10;
+    // ── Green separator ──
+    let y = 36;
+    doc.setDrawColor(BR.r, BR.g, BR.b); doc.setLineWidth(0.6);
+    doc.line(ml, y, mr, y);
+    y += 6;
 
+    // ── Account Info Block ──
+    doc.setFillColor(GBG.r, GBG.g, GBG.b);
+    doc.roundedRect(ml, y, mr - ml, 14, 2, 2, "F");
+    doc.setFontSize(7); doc.setTextColor(MD.r, MD.g, MD.b);
+    doc.text("ACCOUNT HOLDER", ml + 5, y + 5);
+    doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(DK.r, DK.g, DK.b);
+    doc.text(merchant?.business_name || "Merchant", ml + 5, y + 11);
+    y += 20;
+
+    // ── Summary Grid (4 cells) ──
+    const cellW = (mr - ml - 9) / 4;
+    const net = summary.incoming - summary.outgoing;
+    const summaryData = [
+      { label: "Transactions", value: String(summary.count) },
+      { label: "Incoming", value: `৳${fmt(summary.incoming)}` },
+      { label: "Outgoing", value: `৳${fmt(summary.outgoing)}` },
+      { label: "Net Balance", value: `৳${fmt(net)}` },
+    ];
+    summaryData.forEach((cell, i) => {
+      const cx = ml + i * (cellW + 3);
+      doc.setFillColor(GBG.r, GBG.g, GBG.b);
+      doc.roundedRect(cx, y, cellW, 16, 1.5, 1.5, "F");
+      doc.setFontSize(7); doc.setFont("helvetica", "normal"); doc.setTextColor(MD.r, MD.g, MD.b);
+      doc.text(cell.label, cx + cellW / 2, y + 5, { align: "center" });
+      doc.setFontSize(10); doc.setFont("helvetica", "bold");
+      if (cell.label === "Net Balance") {
+        doc.setTextColor(net >= 0 ? BR.r : 200, net >= 0 ? BR.g : 50, net >= 0 ? BR.b : 50);
+      } else {
+        doc.setTextColor(DK.r, DK.g, DK.b);
+      }
+      doc.text(cell.value, cx + cellW / 2, y + 12, { align: "center" });
+    });
+    y += 24;
+
+    // ── Transaction Table ──
     autoTable(doc, {
       startY: y,
-      margin: { left: m, right: m },
+      margin: { left: ml, right: 15 },
       head: [["Date", "Type", "Description", "Amount", "Fee", "Status"]],
       body: filtered.map(tx => {
         const isIn = MERCHANT_INCOMING_TYPES.has(tx.type);
@@ -1447,16 +1506,27 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
           tx.status,
         ];
       }),
-      theme: "striped",
-      headStyles: { fillColor: [14, 165, 100], textColor: 255, fontStyle: "bold", fontSize: 8 },
-      bodyStyles: { fontSize: 8, textColor: [30, 30, 30] },
+      theme: "grid",
+      headStyles: { fillColor: [BR.r, BR.g, BR.b], textColor: 255, fontStyle: "bold", fontSize: 8, cellPadding: 2.5 },
+      bodyStyles: { fontSize: 8, textColor: [DK.r, DK.g, DK.b], cellPadding: 2.5, lineColor: [230, 230, 230], lineWidth: 0.3 },
+      alternateRowStyles: { fillColor: [GBG.r, GBG.g, GBG.b] },
+      columnStyles: {
+        3: { halign: "right" },
+        4: { halign: "right" },
+      },
     });
 
+    // ── Footer on every page ──
     const pages = (doc as any).internal.getNumberOfPages();
     for (let i = 1; i <= pages; i++) {
       doc.setPage(i);
-      doc.setFontSize(8); doc.setTextColor(160, 160, 160);
-      doc.text(`Page ${i} of ${pages}`, pw / 2, doc.internal.pageSize.getHeight() - 10, { align: "center" });
+      const fy = ph - 18;
+      doc.setDrawColor(230, 230, 230); doc.setLineWidth(0.3);
+      doc.line(ml, fy, mr, fy);
+      doc.setFontSize(7); doc.setFont("helvetica", "normal"); doc.setTextColor(LT.r, LT.g, LT.b);
+      doc.text("This is a computer-generated statement and does not require a signature.", pw / 2, fy + 4, { align: "center" });
+      doc.text("EasyPay Digital Financial Services · Dhaka, Bangladesh", pw / 2, fy + 8, { align: "center" });
+      doc.text(`Page ${i} of ${pages}`, pw / 2, fy + 12, { align: "center" });
     }
 
     doc.save(`${exportLabel}.pdf`);
