@@ -850,7 +850,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
             </div>
             <div className="flex-1 min-w-0">
               <h4 className="text-sm font-bold text-foreground">Dynamic QR Payments</h4>
-              <p className="text-[10px] text-muted-foreground mt-0.5">Generate a QR code that customers scan to pay instantly — like UPI</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Generate a QR code that customers scan to pay instantly</p>
             </div>
             <Button
               size="sm"
