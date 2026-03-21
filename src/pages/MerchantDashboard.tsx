@@ -747,6 +747,11 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
   const todayTxns = paymentTxns.filter(t => new Date(t.created_at).toDateString() === new Date().toDateString());
   const todayRevenue = todayTxns.reduce((s, t) => s + t.amount, 0);
 
+  const yesterdayDate = new Date(); yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterdayTxns = paymentTxns.filter(t => new Date(t.created_at).toDateString() === yesterdayDate.toDateString());
+  const yesterdayRevenue = yesterdayTxns.reduce((s, t) => s + t.amount, 0);
+  const revenueDelta = yesterdayRevenue > 0 ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue * 100) : (todayRevenue > 0 ? 100 : 0);
+
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (6 - i));
     const dayStr = d.toDateString();
