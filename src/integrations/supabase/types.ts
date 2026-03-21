@@ -2030,6 +2030,7 @@ export type Database = {
           merchant_id: string
           metadata: Json | null
           payer_user_id: string | null
+          payment_link_id: string | null
           reference: string | null
           status: string
           success_url: string | null
@@ -2053,6 +2054,7 @@ export type Database = {
           merchant_id: string
           metadata?: Json | null
           payer_user_id?: string | null
+          payment_link_id?: string | null
           reference?: string | null
           status?: string
           success_url?: string | null
@@ -2076,6 +2078,7 @@ export type Database = {
           merchant_id?: string
           metadata?: Json | null
           payer_user_id?: string | null
+          payment_link_id?: string | null
           reference?: string | null
           status?: string
           success_url?: string | null
@@ -2097,6 +2100,13 @@ export type Database = {
             columns: ["merchant_id"]
             isOneToOne: false
             referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchant_payment_sessions_payment_link_id_fkey"
+            columns: ["payment_link_id"]
+            isOneToOne: false
+            referencedRelation: "payment_links"
             referencedColumns: ["id"]
           },
         ]
@@ -2544,6 +2554,9 @@ export type Database = {
           id: string
           is_active: boolean
           max_uses: number | null
+          merchant_code: string | null
+          merchant_id: string | null
+          note: string | null
           short_code: string
           title: string
           used_count: number
@@ -2558,6 +2571,9 @@ export type Database = {
           id?: string
           is_active?: boolean
           max_uses?: number | null
+          merchant_code?: string | null
+          merchant_id?: string | null
+          note?: string | null
           short_code: string
           title: string
           used_count?: number
@@ -2572,11 +2588,22 @@ export type Database = {
           id?: string
           is_active?: boolean
           max_uses?: number | null
+          merchant_code?: string | null
+          merchant_id?: string | null
+          note?: string | null
           short_code?: string
           title?: string
           used_count?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "payment_links_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payment_sessions: {
         Row: {
