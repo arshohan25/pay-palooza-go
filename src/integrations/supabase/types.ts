@@ -4342,6 +4342,10 @@ export type Database = {
         Returns: Json
       }
       release_escrow: { Args: { p_order_id: string }; Returns: Json }
+      resolve_payment_merchant: {
+        Args: { p_identifier: string }
+        Returns: Json
+      }
       resolve_transfer_recipient: {
         Args: { p_flow: string; p_identifier: string }
         Returns: Json

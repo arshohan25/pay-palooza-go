@@ -94,14 +94,15 @@ Deno.serve(async (req) => {
     }
 
     // 4. Look up recipient
-    const { data: recipient } = await supabaseAdmin
+    const { data: recipient, error: recipientErr } = await supabaseAdmin
       .from("profiles")
       .select("user_id, balance, name, phone")
       .eq("phone", cleanRecipient)
       .eq("status", "active")
-      .single();
+      .maybeSingle();
 
-    if (!recipient) {
+    if (recipientErr || !recipient) {
+      console.error("Recipient lookup failed:", { cleanRecipient, recipientErr });
       return jsonRes({ error: "Recipient not found" }, 400);
     }
 
