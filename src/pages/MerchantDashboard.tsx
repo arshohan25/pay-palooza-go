@@ -1435,7 +1435,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
     doc.rect(0, 0, pw, 5, "F");
 
     // ── Logo + Company ──
-    if (logo) { try { doc.addImage(logo, "PNG", ml, 10, 28, 10); } catch { /* skip */ } }
+    if (logo) { try { doc.addImage(logo, "PNG", ml, 9, 18, 18); } catch { /* skip */ } }
     doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(MD.r, MD.g, MD.b);
     doc.text("EasyPay Digital Financial Services", ml, 26);
     doc.text("Dhaka, Bangladesh", ml, 30);
@@ -1470,9 +1470,9 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
     const net = summary.incoming - summary.outgoing;
     const summaryData = [
       { label: "Transactions", value: String(summary.count) },
-      { label: "Incoming", value: `৳${fmt(summary.incoming)}` },
-      { label: "Outgoing", value: `৳${fmt(summary.outgoing)}` },
-      { label: "Net Balance", value: `৳${fmt(net)}` },
+      { label: "Incoming", value: `Tk ${fmt(summary.incoming)}` },
+      { label: "Outgoing", value: `Tk ${fmt(summary.outgoing)}` },
+      { label: "Net Balance", value: `Tk ${fmt(net)}` },
     ];
     summaryData.forEach((cell, i) => {
       const cx = ml + i * (cellW + 3);
@@ -1501,8 +1501,8 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
           new Date(tx.created_at).toLocaleDateString("en-BD", { day: "numeric", month: "short" }),
           (MERCH_TX_CONFIG[tx.type] || MERCH_TX_CONFIG.payment).label,
           getMerchTxHeadline(tx),
-          `${isIn ? "+" : "-"}৳${fmt(tx.amount)}`,
-          tx.fee > 0 ? `৳${fmt(tx.fee)}` : "—",
+          `${isIn ? "+" : "-"}Tk ${fmt(tx.amount)}`,
+          tx.fee > 0 ? `Tk ${fmt(tx.fee)}` : "—",
           tx.status,
         ];
       }),

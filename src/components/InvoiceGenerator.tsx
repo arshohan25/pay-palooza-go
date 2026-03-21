@@ -63,7 +63,7 @@ async function buildDoc(order: InvoiceOrder): Promise<jsPDF> {
   // ── Logo + Company Info (left) ──
   let logoBottom = 22;
   if (logo) {
-    try { doc.addImage(logo, "PNG", ml, 10, 28, 10); logoBottom = 22; } catch { /* skip */ }
+    try { doc.addImage(logo, "PNG", ml, 9, 18, 18); logoBottom = 28; } catch { /* skip */ }
   }
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
@@ -135,8 +135,8 @@ async function buildDoc(order: InvoiceOrder): Promise<jsPDF> {
     return [
       { content: item.name || item.product_name || "Item", styles: { fontStyle: "bold" as const } },
       String(qty),
-      `৳${fmt(price)}`,
-      `৳${fmt(price * qty)}`,
+      `Tk ${fmt(price)}`,
+      `Tk ${fmt(price * qty)}`,
     ];
   });
 
@@ -196,20 +196,20 @@ async function buildDoc(order: InvoiceOrder): Promise<jsPDF> {
   doc.setTextColor(MID.r, MID.g, MID.b);
   doc.text("Subtotal", lx, sy + 2);
   doc.setTextColor(DARK.r, DARK.g, DARK.b);
-  doc.text(`৳${fmt(subtotal)}`, vx, sy + 2, { align: "right" });
+  doc.text(`Tk ${fmt(subtotal)}`, vx, sy + 2, { align: "right" });
   sy += 7;
 
   if (coupon > 0) {
     doc.setTextColor(BRAND.r, BRAND.g, BRAND.b);
     doc.text("Coupon Discount", lx, sy + 2);
-    doc.text(`-৳${fmt(coupon)}`, vx, sy + 2, { align: "right" });
+    doc.text(`-Tk ${fmt(coupon)}`, vx, sy + 2, { align: "right" });
     sy += 7;
   }
 
   doc.setTextColor(MID.r, MID.g, MID.b);
   doc.text("Delivery Fee", lx, sy + 2);
   doc.setTextColor(DARK.r, DARK.g, DARK.b);
-  doc.text(delivery > 0 ? `৳${fmt(delivery)}` : "Free", vx, sy + 2, { align: "right" });
+  doc.text(delivery > 0 ? `Tk ${fmt(delivery)}` : "Free", vx, sy + 2, { align: "right" });
   sy += 5;
 
   // Divider inside summary box
@@ -223,7 +223,7 @@ async function buildDoc(order: InvoiceOrder): Promise<jsPDF> {
   doc.setFont("helvetica", "bold");
   doc.setTextColor(BRAND.r, BRAND.g, BRAND.b);
   doc.text("TOTAL", lx, sy + 2);
-  doc.text(`৳${fmt(Number(order.total))}`, vx, sy + 2, { align: "right" });
+  doc.text(`Tk ${fmt(Number(order.total))}`, vx, sy + 2, { align: "right" });
 
   // ── Footer ──
   const footerY = ph - 20;
