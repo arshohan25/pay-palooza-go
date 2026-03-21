@@ -209,7 +209,7 @@ async function buildDoc(order: InvoiceOrder): Promise<jsPDF> {
   doc.setTextColor(MID.r, MID.g, MID.b);
   doc.text("Delivery Fee", lx, sy + 2);
   doc.setTextColor(DARK.r, DARK.g, DARK.b);
-  doc.text(delivery > 0 ? `৳${fmt(delivery)}` : "Free", vx, sy + 2, { align: "right" });
+  doc.text(delivery > 0 ? `Tk ${fmt(delivery)}` : "Free", vx, sy + 2, { align: "right" });
   sy += 5;
 
   // Divider inside summary box
