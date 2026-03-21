@@ -59,6 +59,7 @@ interface MerchantInfo {
 
 interface TxnRow {
   id: string;
+  short_id: string;
   type: string;
   amount: number;
   fee: number;
@@ -70,6 +71,38 @@ interface TxnRow {
   reference: string | null;
   balance_after: number | null;
   created_at: string;
+}
+
+/* Flow-aware transaction display config */
+const MERCHANT_INCOMING_TYPES = new Set(["payment", "receive", "addmoney", "cashin"]);
+
+const MERCH_TX_CONFIG: Record<string, { label: string; icon: typeof CreditCard; iconColor: string; iconBg: string }> = {
+  payment:      { label: "Received Payment",  icon: CreditCard,     iconColor: "text-emerald-600", iconBg: "bg-emerald-500/10" },
+  receive:      { label: "Received",           icon: ArrowDownRight, iconColor: "text-emerald-600", iconBg: "bg-emerald-500/10" },
+  addmoney:     { label: "Added Money",        icon: Plus,           iconColor: "text-blue-600",    iconBg: "bg-blue-500/10" },
+  cashin:       { label: "Cash In",            icon: Banknote,       iconColor: "text-emerald-600", iconBg: "bg-emerald-500/10" },
+  send:         { label: "Send Money",         icon: Send,           iconColor: "text-pink-600",    iconBg: "bg-pink-500/10" },
+  cashout:      { label: "Cash Out",           icon: ArrowUpRight,   iconColor: "text-orange-600",  iconBg: "bg-orange-500/10" },
+  banktransfer: { label: "Bank Transfer",      icon: Landmark,       iconColor: "text-indigo-600",  iconBg: "bg-indigo-500/10" },
+  recharge:     { label: "Mobile Recharge",    icon: Smartphone,     iconColor: "text-cyan-600",    iconBg: "bg-cyan-500/10" },
+  paybill:      { label: "Bill Payment",       icon: Receipt,        iconColor: "text-amber-600",   iconBg: "bg-amber-500/10" },
+};
+
+function getMerchTxHeadline(tx: TxnRow): string {
+  const isIncoming = MERCHANT_INCOMING_TYPES.has(tx.type);
+  const name = tx.recipient_name || tx.recipient_phone || "";
+  switch (tx.type) {
+    case "payment":      return name ? `Received Payment from ${name}` : "Received Payment";
+    case "receive":      return name ? `Received from ${name}` : "Received";
+    case "addmoney":     return "Added Money";
+    case "cashin":       return "Cash In";
+    case "send":         return name ? `Send Money to ${name}` : "Send Money";
+    case "cashout":      return "Cash Out";
+    case "banktransfer": return name ? `Bank Transfer to ${name}` : "Bank Transfer";
+    case "recharge":     return name ? `Recharge ${name}` : "Mobile Recharge";
+    case "paybill":      return name ? `Bill Pay — ${name}` : "Bill Payment";
+    default:             return tx.description || tx.type;
+  }
 }
 
 /* ─── Helpers ─── */
