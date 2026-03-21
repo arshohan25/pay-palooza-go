@@ -203,7 +203,7 @@ const DynamicQrPage = () => {
           </div>
           {merchantName && <h1 className="text-lg font-bold text-foreground">{merchantName}</h1>}
           {merchantCategory && <p className="text-xs text-muted-foreground capitalize">{merchantCategory.replace(/_/g, " ")}</p>}
-          <p className="text-3xl font-extrabold text-foreground mt-0.5">
+          <p className="text-3xl font-extrabold text-foreground">
             ৳{fmt(amount)} <span className="text-sm font-medium text-muted-foreground">{currency}</span>
           </p>
           {reference && <p className="text-xs text-muted-foreground mt-1">Ref: {reference}</p>}
