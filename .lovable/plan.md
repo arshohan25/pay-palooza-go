@@ -1,11 +1,8 @@
 
 
-## Redesign Dynamic QR Card
+## Reduce Generate QR Button Size
 
-### Changes to `src/pages/MerchantDashboard.tsx` (lines 880-898)
+### Change — `src/pages/MerchantDashboard.tsx` (line 891)
 
-- **Icon**: Reduce container from `w-14 h-14` to `w-10 h-10`, icon from 26 to 18, corners from `rounded-2xl` to `rounded-xl`
-- **Title**: Keep "Dynamic QR" on its own line
-- **Description**: Break into two lines — line 1: "Generate a QR code that customers", line 2: "scan to pay instantly"
-- **Button**: Keep as-is (pill shape, Generate QR)
+Reduce button from `h-10 px-5 text-[12px]` to `h-8 px-3 text-[11px]` and icon from 14 to 12, giving more breathing room in the card.
 
