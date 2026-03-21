@@ -820,10 +820,17 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-      const qrUrl = data.qr_page_url || `/pay/qr/${data.session_id}`;
-      window.open(qrUrl, "_blank");
-      toast({ title: "QR Page Opened", description: `৳${amt} payment QR is ready for customers.` });
+      const qrPath = data.qr_page_url || `/pay/qr/${data.session_id}`;
+      const fullUrl = `${window.location.origin}${qrPath}`;
+      const qrDataUrl = await QRCode.toDataURL(fullUrl, { width: 300, margin: 2 });
+      setGeneratedQrDataUrl(qrDataUrl);
+      setGeneratedQrLink(fullUrl);
+      setGeneratedQrAmount(`৳${amt}`);
+      setGeneratedQrRef(qrReference.trim() || `QR-${Date.now().toString(36).toUpperCase()}`);
+      setShowQrPopup(true);
       setShowQrGenerate(false);
+      navigator.clipboard.writeText(fullUrl).catch(() => {});
+      toast({ title: "✅ QR Code Ready!", description: fullUrl });
       setQrAmount("");
       setQrReference("");
     } catch (err: any) {
