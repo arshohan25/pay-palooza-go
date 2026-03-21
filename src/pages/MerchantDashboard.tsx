@@ -41,6 +41,11 @@ import MerchantOrdersTab from "@/components/MerchantOrdersTab";
 import MerchantStoreSettingsTab from "@/components/MerchantStoreSettingsTab";
 import { useChat } from "@/hooks/use-chat";
 import MerchantInbox from "@/components/MerchantInbox";
+import MerchantRefundsTab from "@/components/merchant/MerchantRefundsTab";
+import MerchantStaffTab from "@/components/merchant/MerchantStaffTab";
+import MerchantCustomersTab from "@/components/merchant/MerchantCustomersTab";
+import MerchantCouponsTab from "@/components/merchant/MerchantCouponsTab";
+import MerchantPayoutsTab from "@/components/merchant/MerchantPayoutsTab";
 
 /* ─── Types ─── */
 type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api" | "store" | "inbox";
