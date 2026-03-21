@@ -1443,7 +1443,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
         <Card className="p-4 border-0 shadow-card">
           <div className="flex items-center justify-between mb-3">
             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setMonthOffset(o => o - 1)}>
-              <ArrowLeft size={16} />
+              <ChevronLeft size={16} />
             </Button>
             <span className="text-sm font-bold text-foreground">{monthLabel}</span>
             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" disabled={monthOffset >= 0} onClick={() => setMonthOffset(o => o + 1)}>
