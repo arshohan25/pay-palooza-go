@@ -1423,7 +1423,7 @@ const TxnTab = ({ txns }: { txns: TxnRow[] }) => {
 
       {/* Transaction Detail Sheet */}
       <Sheet open={!!selectedTx} onOpenChange={o => { if (!o) setSelectedTx(null); }}>
-        <SheetContent side="bottom" className="rounded-t-3xl px-5 pb-8 pt-2 max-h-[85vh] overflow-y-auto">
+        <SheetContent side="bottom" className="z-[80] rounded-t-3xl px-5 pb-8 pt-2 max-h-[85vh] overflow-y-auto">
           <SheetHeader className="mb-4">
             <SheetTitle className="text-base font-bold text-foreground">Transaction Details</SheetTitle>
           </SheetHeader>
