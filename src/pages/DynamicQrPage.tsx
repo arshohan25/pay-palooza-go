@@ -197,13 +197,13 @@ const DynamicQrPage = () => {
         className="w-full max-w-sm bg-card rounded-3xl shadow-xl border border-border overflow-hidden"
       >
         {/* Header */}
-        <div className="bg-gradient-to-br from-primary/10 via-card to-accent/5 px-6 pt-6 pb-4 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-primary/15 flex items-center justify-center mx-auto mb-3">
+        <div className="bg-gradient-to-br from-primary/10 via-card to-accent/5 px-5 pt-5 pb-3 text-center">
+          <div className="w-12 h-12 rounded-2xl bg-primary/15 flex items-center justify-center mx-auto mb-2">
             <Store className="w-7 h-7 text-primary" />
           </div>
           {merchantName && <h1 className="text-lg font-bold text-foreground">{merchantName}</h1>}
           {merchantCategory && <p className="text-xs text-muted-foreground capitalize">{merchantCategory.replace(/_/g, " ")}</p>}
-          <p className="text-3xl font-extrabold text-foreground mt-1">
+          <p className="text-3xl font-extrabold text-foreground mt-0.5">
             ৳{fmt(amount)} <span className="text-sm font-medium text-muted-foreground">{currency}</span>
           </p>
           {reference && <p className="text-xs text-muted-foreground mt-1">Ref: {reference}</p>}
@@ -211,10 +211,10 @@ const DynamicQrPage = () => {
 
         <AnimatePresence mode="wait">
           {status === "pending" && (
-            <motion.div key="pending" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 space-y-5">
+            <motion.div key="pending" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-4 space-y-3">
               {qrDataUrl && (
-                <div className="bg-white rounded-2xl p-4 mx-auto w-fit shadow-sm">
-                  <img src={qrDataUrl} alt="Payment QR Code" className="w-64 h-64" />
+                <div className="bg-white rounded-2xl p-3 mx-auto w-fit shadow-sm">
+                  <img src={qrDataUrl} alt="Payment QR Code" className="w-56 h-56" />
                 </div>
               )}
               <p className="text-center text-sm text-muted-foreground">
@@ -247,7 +247,7 @@ const DynamicQrPage = () => {
           )}
 
           {status === "completed" && (
-            <motion.div key="completed" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="p-8 text-center space-y-4">
+            <motion.div key="completed" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="p-5 text-center space-y-3">
               <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.1 }}>
                 <CheckCircle2 className="w-16 h-16 text-primary mx-auto" />
               </motion.div>
@@ -258,7 +258,7 @@ const DynamicQrPage = () => {
           )}
 
           {status === "expired" && (
-            <motion.div key="expired" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 text-center space-y-4">
+            <motion.div key="expired" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-5 text-center space-y-3">
               <XCircle className="w-14 h-14 text-destructive/60 mx-auto" />
               <h2 className="text-lg font-bold text-foreground">Session Expired</h2>
               <p className="text-sm text-muted-foreground">This payment session has expired.</p>
@@ -266,7 +266,7 @@ const DynamicQrPage = () => {
           )}
         </AnimatePresence>
 
-        <div className="px-6 pb-5 pt-2 text-center">
+        <div className="px-5 pb-3 pt-1 text-center">
           <p className="text-[10px] text-muted-foreground/60">Powered by EasyPay</p>
         </div>
       </motion.div>
