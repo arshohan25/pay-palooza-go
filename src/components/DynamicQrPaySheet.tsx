@@ -65,71 +65,15 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
     haptics.medium();
 
     try {
-      // Verify PIN locally
-      const valid = await verifyPin(pin);
-      if (!valid) {
-        setErrorMsg("Incorrect PIN");
-        setPin("");
-        setStep("pin");
-        haptics.error();
-        return;
-      }
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      if (!authSession?.access_token) throw new Error("Not authenticated");
 
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const { data: profile } = await supabase.from("profiles").select("phone, name, balance").eq("user_id", user.id).single();
-      if (!profile) throw new Error("Profile not found");
-      if (profile.balance < amount) throw new Error("Insufficient balance");
-
-      // Load session to get merchant details
-      const { data: session } = await supabase
-        .from("merchant_payment_sessions")
-        .select("merchant_id, description, reference")
-        .eq("id", sessionId)
-        .single();
-      if (!session) throw new Error("Session not found");
-
-      const { data: merchant } = await supabase.from("merchants").select("user_id, business_name").eq("id", session.merchant_id).single();
-      if (!merchant) throw new Error("Merchant not found");
-
-      const { data: merchantProfile } = await supabase.from("profiles").select("phone").eq("user_id", merchant.user_id).single();
-      if (!merchantProfile) throw new Error("Merchant profile not found");
-
-      // Use transfer_money RPC
-      const { data: result, error: txErr } = await supabase.rpc("transfer_money", {
-        p_recipient_phone: merchantProfile.phone,
-        p_amount: amount,
-        p_fee: 0,
-        p_type: "payment" as any,
-        p_description: session.description || `Payment to ${merchant.business_name}`,
-        p_reference: session.reference || sessionId,
-        p_recipient_name: merchant.business_name,
-        p_recipient_type: "payment" as any,
+      const { data, error } = await supabase.functions.invoke("checkout-pay", {
+        body: { session_id: sessionId, pin, source: "qr" },
       });
 
-      if (txErr) throw new Error(txErr.message);
-
-      // Update session status
-      await supabase
-        .from("merchant_payment_sessions")
-        .update({
-          status: "completed",
-          payer_user_id: user.id,
-          customer_phone: profile.phone,
-          completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", sessionId);
-
-      // Trigger webhook (fire & forget)
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      fetch(`https://${projectId}.supabase.co/functions/v1/merchant-payment-webhook`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionId }),
-      }).catch(() => {});
+      if (error) throw new Error(error.message || "Payment failed");
+      if (data?.error) throw new Error(data.error);
 
       setStep("success");
       fireSuccessConfetti();
@@ -141,7 +85,7 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
       haptics.error();
       playPaymentError();
     }
-  }, [pin, amount, sessionId]);
+  }, [pin, sessionId]);
 
   // Auto-submit PIN
   useEffect(() => {
