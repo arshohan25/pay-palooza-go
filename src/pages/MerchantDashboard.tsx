@@ -874,11 +874,10 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
             <Button
               size="sm"
               className="h-9 text-[11px] font-bold gap-1.5 shrink-0"
-              onClick={handleTestDynamicQR}
-              disabled={qrDemoLoading}
+              onClick={() => setShowQrGenerate(true)}
             >
-              {qrDemoLoading ? <RefreshCw size={13} className="animate-spin" /> : <ScanLine size={13} />}
-              Test QR
+              <ScanLine size={13} />
+              Generate QR
             </Button>
           </div>
         </Card>
