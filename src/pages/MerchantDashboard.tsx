@@ -1451,7 +1451,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
       ? `${format(dateRange.from, "dd MMM yyyy")} – ${format(dateRange.to, "dd MMM yyyy")}`
       : monthLabel;
     doc.text(`Period: ${periodText}`, mr, 22, { align: "right" });
-    doc.text(`Generated: ${new Date().toLocaleDateString("en-BD")}`, mr, 27, { align: "right" });
+    doc.text(`Generated: ${format(new Date(), "dd MMM yyyy")}`, mr, 27, { align: "right" });
 
     // ── Green separator ──
     let y = 36;
