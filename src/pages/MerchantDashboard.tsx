@@ -1323,6 +1323,9 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
   const [selectedTx, setSelectedTx] = useState<TxnRow | null>(null);
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [filterMode, setFilterMode] = useState<"month" | "range">("month");
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
+  const [searchQuery, setSearchQuery] = useState("");
 
   const targetMonth = useMemo(() => {
     const d = new Date();
@@ -1331,13 +1334,31 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
   }, [monthOffset]);
 
   const filtered = useMemo(() => {
-    const start = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), 1);
-    const end = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0, 23, 59, 59, 999);
-    return txns.filter(t => {
-      const d = new Date(t.created_at);
-      return d >= start && d <= end;
-    });
-  }, [txns, targetMonth]);
+    let list = txns;
+    if (filterMode === "month") {
+      const start = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), 1);
+      const end = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0, 23, 59, 59, 999);
+      list = list.filter(t => { const d = new Date(t.created_at); return d >= start && d <= end; });
+    } else if (dateRange.from && dateRange.to) {
+      const endOfDay = new Date(dateRange.to);
+      endOfDay.setHours(23, 59, 59, 999);
+      list = list.filter(t => {
+        const d = new Date(t.created_at);
+        return isWithinInterval(d, { start: dateRange.from!, end: endOfDay });
+      });
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(t =>
+        t.recipient_name?.toLowerCase().includes(q) ||
+        t.recipient_phone?.includes(q) ||
+        t.reference?.toLowerCase().includes(q) ||
+        t.description?.toLowerCase().includes(q) ||
+        t.short_id?.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [txns, targetMonth, filterMode, dateRange, searchQuery]);
 
   const summary = useMemo(() => {
     let incoming = 0, outgoing = 0;
@@ -1349,6 +1370,10 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
   }, [filtered]);
 
   const monthLabel = targetMonth.toLocaleDateString("en-BD", { month: "long", year: "numeric" });
+
+  const exportLabel = filterMode === "range" && dateRange.from && dateRange.to
+    ? `Statement_${format(dateRange.from, "yyyy-MM-dd")}_to_${format(dateRange.to, "yyyy-MM-dd")}`
+    : `Statement_${monthLabel.replace(/ /g, "_")}`;
 
   const copyId = (val: string) => {
     navigator.clipboard.writeText(val);
@@ -1374,7 +1399,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `Statement_${monthLabel.replace(/ /g, "_")}.csv`; a.click();
+    a.href = url; a.download = `${exportLabel}.csv`; a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -1386,18 +1411,18 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
     const pw = doc.internal.pageSize.getWidth();
     const m = 15;
 
-    // Header
     doc.setFillColor(14, 165, 100);
     doc.rect(0, 0, pw, 34, "F");
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(18); doc.setFont("helvetica", "bold");
-    doc.text("Monthly Statement", m, 16);
+    doc.text(filterMode === "range" ? "Custom Range Statement" : "Monthly Statement", m, 16);
     doc.setFontSize(10); doc.setFont("helvetica", "normal");
     doc.text(merchant?.business_name || "Merchant", m, 24);
-    doc.text(monthLabel, m, 30);
+    doc.text(filterMode === "range" && dateRange.from && dateRange.to
+      ? `${format(dateRange.from, "dd MMM yyyy")} – ${format(dateRange.to, "dd MMM yyyy")}`
+      : monthLabel, m, 30);
     doc.text(`Generated: ${new Date().toLocaleDateString("en-BD")}`, pw - m, 24, { align: "right" });
 
-    // Summary
     let y = 44;
     doc.setTextColor(30, 30, 30); doc.setFontSize(11); doc.setFont("helvetica", "bold");
     doc.text("Summary", m, y); y += 7;
@@ -1407,7 +1432,6 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
     doc.text(`Outgoing: ৳${fmt(summary.outgoing)}`, m, y); y += 5;
     doc.text(`Net: ৳${fmt(summary.incoming - summary.outgoing)}`, m, y); y += 10;
 
-    // Table
     autoTable(doc, {
       startY: y,
       margin: { left: m, right: m },
@@ -1428,7 +1452,6 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
       bodyStyles: { fontSize: 8, textColor: [30, 30, 30] },
     });
 
-    // Footer
     const pages = (doc as any).internal.getNumberOfPages();
     for (let i = 1; i <= pages; i++) {
       doc.setPage(i);
@@ -1436,26 +1459,81 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
       doc.text(`Page ${i} of ${pages}`, pw / 2, doc.internal.pageSize.getHeight() - 10, { align: "center" });
     }
 
-    doc.save(`Statement_${monthLabel.replace(/ /g, "_")}.pdf`);
+    doc.save(`${exportLabel}.pdf`);
   };
 
   return (
     <motion.div variants={stagger.container} initial="hidden" animate="show" className="space-y-4">
-      {/* Month navigation */}
+      {/* Filter controls */}
       <motion.div variants={stagger.item}>
         <Card className="p-4 border-0 shadow-card">
-          <div className="flex items-center justify-between mb-3">
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setMonthOffset(o => o - 1)}>
-              <ChevronLeft size={16} />
-            </Button>
-            <span className="text-sm font-bold text-foreground">{monthLabel}</span>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" disabled={monthOffset >= 0} onClick={() => setMonthOffset(o => o + 1)}>
-              <ChevronRight size={16} />
-            </Button>
+          {/* Mode toggle */}
+          <div className="flex gap-1.5 mb-3">
+            <button onClick={() => setFilterMode("month")} className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${filterMode === "month" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+              <Calendar size={12} className="inline mr-1 -mt-0.5" />Monthly
+            </button>
+            <button onClick={() => setFilterMode("range")} className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${filterMode === "range" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+              <CalendarClock size={12} className="inline mr-1 -mt-0.5" />Custom Range
+            </button>
           </div>
-          <div className="flex gap-1.5 justify-center mb-3">
-            <button onClick={() => setMonthOffset(0)} className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-colors ${monthOffset === 0 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>This Month</button>
-            <button onClick={() => setMonthOffset(-1)} className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-colors ${monthOffset === -1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>Last Month</button>
+
+          {filterMode === "month" ? (
+            <>
+              <div className="flex items-center justify-between mb-3">
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setMonthOffset(o => o - 1)}>
+                  <ChevronLeft size={16} />
+                </Button>
+                <span className="text-sm font-bold text-foreground">{monthLabel}</span>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" disabled={monthOffset >= 0} onClick={() => setMonthOffset(o => o + 1)}>
+                  <ChevronRight size={16} />
+                </Button>
+              </div>
+              <div className="flex gap-1.5 justify-center mb-3">
+                <button onClick={() => setMonthOffset(0)} className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-colors ${monthOffset === 0 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>This Month</button>
+                <button onClick={() => setMonthOffset(-1)} className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-colors ${monthOffset === -1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>Last Month</button>
+              </div>
+            </>
+          ) : (
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={`w-full justify-start text-left text-xs font-normal h-9 ${!dateRange.from && "text-muted-foreground"}`}>
+                    <Calendar size={13} className="mr-1.5 shrink-0" />
+                    {dateRange.from ? format(dateRange.from, "dd MMM yyyy") : "From date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 z-[100]" align="start">
+                  <Calendar mode="single" selected={dateRange.from} onSelect={(d) => setDateRange(prev => ({ ...prev, from: d }))} disabled={(d) => d > new Date()} className="p-3 pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={`w-full justify-start text-left text-xs font-normal h-9 ${!dateRange.to && "text-muted-foreground"}`}>
+                    <Calendar size={13} className="mr-1.5 shrink-0" />
+                    {dateRange.to ? format(dateRange.to, "dd MMM yyyy") : "To date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 z-[100]" align="start">
+                  <Calendar mode="single" selected={dateRange.to} onSelect={(d) => setDateRange(prev => ({ ...prev, to: d }))} disabled={(d) => d > new Date() || (dateRange.from ? d < dateRange.from : false)} className="p-3 pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+              {(dateRange.from || dateRange.to) && (
+                <Button variant="ghost" size="sm" className="col-span-2 text-xs text-muted-foreground h-7" onClick={() => setDateRange({ from: undefined, to: undefined })}>
+                  <X size={12} className="mr-1" /> Clear dates
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Search bar */}
+          <div className="relative mb-3">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search by name, phone, or reference..."
+              className="pl-9 h-9 text-xs"
+            />
           </div>
 
           {/* Summary */}
@@ -1505,8 +1583,10 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
               >
                 <Receipt size={28} className="text-muted-foreground" />
               </motion.div>
-              <p className="text-sm font-semibold text-foreground">No transactions this month</p>
-              <p className="text-xs text-muted-foreground mt-1">Try selecting a different month</p>
+              <p className="text-sm font-semibold text-foreground">No transactions found</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {searchQuery ? "Try a different search term" : "Try selecting a different period"}
+              </p>
             </motion.div>
           ) : (
             <div className="space-y-1">
