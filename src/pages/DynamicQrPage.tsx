@@ -198,7 +198,7 @@ const DynamicQrPage = () => {
       >
         {/* Header */}
         <div className="bg-gradient-to-br from-primary/10 via-card to-accent/5 px-5 pt-4 pb-2 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-primary/15 flex items-center justify-center mx-auto mb-2">
+          <div className="w-12 h-12 rounded-2xl bg-primary/15 flex items-center justify-center mx-auto mb-1.5">
             <Store className="w-7 h-7 text-primary" />
           </div>
           {merchantName && <h1 className="text-lg font-bold text-foreground">{merchantName}</h1>}
