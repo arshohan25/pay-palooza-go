@@ -146,7 +146,7 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
             <div className="flex-1 min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-55 mb-1.5">{t("availableBalance")}</p>
               <motion.button
-                className="flex items-center group"
+                className="flex items-center group w-fit"
                 onClick={handleToggleBalance}
                 whileTap={{ scale: 0.97 }}
                 aria-label={showBalance ? "Hide balance" : t("tapToSeeBalance")}
