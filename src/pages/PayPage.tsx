@@ -223,42 +223,19 @@ const PayPage = () => {
     if (!merchantCode) { setStep("not_found"); return; }
     (async () => {
       try {
-        const { data, error } = await supabase.rpc("resolve_transfer_recipient", {
+        const { data, error } = await supabase.rpc("resolve_payment_merchant", {
           p_identifier: merchantCode,
-          p_flow: "payment",
         });
         if (error) { setStep("not_found"); return; }
         const result = typeof data === "string" ? JSON.parse(data) : data;
-        if (!result?.recipient_phone) { setStep("not_found"); return; }
-
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("user_id, name, phone")
-          .eq("phone", result.recipient_phone)
-          .maybeSingle();
-
-        let businessName = result.recipient_name || merchantCode;
-        let category = "";
-
-        if (profile?.user_id) {
-          const { data: merch } = await supabase
-            .from("merchants")
-            .select("id, business_name, category, user_id")
-            .eq("user_id", profile.user_id)
-            .eq("status", "active")
-            .maybeSingle();
-          if (merch) {
-            businessName = merch.business_name;
-            category = merch.category || "";
-          }
-        }
+        if (!result?.found || !result?.recipient_phone) { setStep("not_found"); return; }
 
         setMerchant({
-          id: "",
-          business_name: businessName,
-          category,
+          id: result.merchant_id || "",
+          business_name: result.recipient_name || merchantCode,
+          category: result.category || "",
           phone: result.recipient_phone,
-          user_id: profile?.user_id || "",
+          user_id: "",
         });
         setStep("ready");
       } catch {
