@@ -1503,7 +1503,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 z-[100]" align="start">
-                  <Calendar mode="single" selected={dateRange.from} onSelect={(d) => setDateRange(prev => ({ ...prev, from: d }))} disabled={(d) => d > new Date()} className="p-3 pointer-events-auto" />
+                  <CalendarPicker mode="single" selected={dateRange.from} onSelect={(d) => setDateRange(prev => ({ ...prev, from: d }))} disabled={(d) => d > new Date()} className="p-3 pointer-events-auto" />
                 </PopoverContent>
               </Popover>
               <Popover>
