@@ -1,16 +1,13 @@
 
 
-## Remove Unnecessary Space from QR Page
+## Add Toast on Link Copy
 
-### Changes to `src/pages/DynamicQrPage.tsx`
+### Change — `src/pages/MerchantDashboard.tsx`
 
-**Header section (line 200):** Reduce padding from `pt-5 pb-3` to `pt-4 pb-2` and icon margin from `mb-2` to `mb-1.5`.
+Two clipboard copy actions currently lack toast feedback:
 
-**Pending content (line 214):** Reduce spacing from `p-4 space-y-3` to `p-3 space-y-2`.
+1. **Line 836** (after QR generation): `navigator.clipboard.writeText(fullUrl).catch(() => {})` — add toast: "Link copied!"
+2. **Lines 1134-1136** (Copy Payment Link button): add toast after clipboard write: "Payment link copied to clipboard"
 
-**QR container (line 216):** Reduce padding from `p-3` to `p-2`.
-
-**Amount text (line 206):** Remove `mt-0.5` margin.
-
-These small reductions will tighten the card without changing the design.
+Both will use the existing `toast()` import already in the file.
 
