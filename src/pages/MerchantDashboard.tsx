@@ -124,7 +124,7 @@ const mainTabs: { id: MerchTab; icon: typeof QrCode; label: string }[] = [
   { id: "orders",       icon: Receipt,      label: "Orders" },
 ];
 
-const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: string }[] = [
+const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: string; toggleKey?: string }[] = [
   { id: "store",        icon: Store,        label: "Store Settings",   desc: "Customize your storefront" },
   { id: "analytics",    icon: PieChart,     label: "Analytics",        desc: "Insights, revenue & customers" },
   { id: "transactions", icon: ArrowUpDown,  label: "History",          desc: "View all transactions" },
@@ -133,6 +133,11 @@ const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: strin
   { id: "paylinks",     icon: Link,         label: "Pay Links",        desc: "Create & share payment links" },
   { id: "settlements",  icon: BanknoteIcon, label: "Settlement",       desc: "Bank payouts & schedule" },
   { id: "mdr",          icon: Percent,      label: "Fees & Charges",   desc: "MDR rates & fee breakdown" },
+  { id: "refunds",      icon: Undo2,        label: "Refunds",          desc: "Issue & track customer refunds", toggleKey: "merchant_refunds" },
+  { id: "staff",        icon: Users,        label: "Staff",            desc: "Manage employee access",         toggleKey: "merchant_staff" },
+  { id: "customers",    icon: Users,        label: "Customers",        desc: "Customer directory & insights",  toggleKey: "merchant_customers" },
+  { id: "coupons",      icon: Ticket,       label: "Coupons",          desc: "Create store discount codes",    toggleKey: "merchant_coupons" },
+  { id: "payouts",      icon: Landmark,     label: "Payouts",          desc: "Request bank withdrawals",       toggleKey: "merchant_payouts" },
 ];
 
 const stagger = {
