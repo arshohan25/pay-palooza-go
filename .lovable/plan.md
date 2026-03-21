@@ -1,22 +1,36 @@
 
 
-## Change Date Format to "31 Jan 2026" Style
+## Redesign Products/Orders Tab Navigation
 
-### What
-Update all date formatting in the PDF generation code (both invoice and account statement) to use the `"dd MMM yyyy"` format (e.g., "31 Jan 2026") instead of locale-based `"en-BD"` formatting.
+### What Changes
+When the user clicks **Products** or **Orders**, instead of a full-screen overlay with a back-arrow header, the content will slide up from the bottom with a fade animation, and the **tab strip** (Overview | Products | Orders) will move to the top as a sticky header — so the user can switch tabs without going "back."
 
-### Changes
+### Technical Changes in `src/pages/MerchantDashboard.tsx`
 
-**`src/components/InvoiceGenerator.tsx`**
-- Line 85-87: Change `toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric" })` → use `date-fns` `format(date, "dd MMM yyyy")` for the invoice date
-- Line 243: Change footer `toLocaleString("en-BD")` → `format(new Date(), "dd MMM yyyy, hh:mm a")`
-- Add `import { format } from "date-fns"` at top
+1. **Separate Products/Orders from other overlay tabs**: Products and Orders will no longer use the generic full-screen overlay (lines 446-480). Instead, they get their own `AnimatePresence` block with a bottom-to-top fade-slide animation.
 
-**`src/pages/MerchantDashboard.tsx`** (PDF export only)
-- Line 1454: Change `toLocaleDateString("en-BD")` → `format(new Date(), "dd MMM yyyy")` for "Generated" line
-- Line 1504: Change `toLocaleDateString("en-BD", { day: "numeric", month: "short" })` → `format(new Date(tx.created_at), "dd MMM yyyy")` for transaction table date column
+2. **Tab strip as header in Products/Orders view**: When `activeTab` is `"products"` or `"orders"`, render a fixed overlay that has:
+   - The tab strip at the top (same 3 tabs: Overview, Products, Orders) as a sticky header with a subtle border-bottom
+   - The selected tab's content below, animated with `initial={{ opacity: 0, y: 40 }}` → `animate={{ opacity: 1, y: 0 }}`
 
-### Files Modified
-- `src/components/InvoiceGenerator.tsx`
+3. **Keep existing behavior for other tabs** (transactions, settlements, analytics, etc.) — they continue using the current full-screen overlay with back arrow.
+
+4. **Animation**: Use `motion.div` with:
+   - Overlay container: fade in from bottom (`y: "100%"` → `y: 0`) 
+   - Content inside: subtle fade-up (`opacity: 0, y: 20` → `opacity: 1, y: 0`)
+
+### Layout Structure (Products/Orders active)
+```text
+┌─────────────────────────┐
+│ [Overview] [Products*] [Orders] │  ← tab strip as header
+├─────────────────────────┤
+│                         │
+│   Products/Orders       │  ← scrollable content with fade-up
+│   content here          │
+│                         │
+└─────────────────────────┘
+```
+
+### File Modified
 - `src/pages/MerchantDashboard.tsx`
 
