@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { format } from "date-fns";
 
 export interface InvoiceOrder {
   order_num: string;
@@ -82,9 +83,7 @@ async function buildDoc(order: InvoiceOrder): Promise<jsPDF> {
   doc.text("INVOICE", mr, 16, { align: "right" });
 
   const invNum = `INV-${order.order_num?.replace("#", "") || "000"}`;
-  const invDate = new Date(order.created_at).toLocaleDateString("en-BD", {
-    day: "numeric", month: "short", year: "numeric",
-  });
+  const invDate = format(new Date(order.created_at), "dd MMM yyyy");
 
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
@@ -240,7 +239,7 @@ async function buildDoc(order: InvoiceOrder): Promise<jsPDF> {
   doc.setTextColor(LIGHT.r, LIGHT.g, LIGHT.b);
   doc.text("This is a computer-generated document and does not require a signature.", pw / 2, footerY + 5, { align: "center" });
   doc.text("EasyPay Digital Financial Services · Dhaka, Bangladesh", pw / 2, footerY + 9, { align: "center" });
-  doc.text(`Generated: ${new Date().toLocaleString("en-BD")}`, pw / 2, footerY + 13, { align: "center" });
+  doc.text(`Generated: ${format(new Date(), "dd MMM yyyy, hh:mm a")}`, pw / 2, footerY + 13, { align: "center" });
 
   return doc;
 }
