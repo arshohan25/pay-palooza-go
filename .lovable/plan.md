@@ -1,32 +1,30 @@
 
 
-## Fix: "Merchant profile not found" in Dynamic QR Payment
+## Show QR Popup + Toast After Generate QR
 
-### Root Cause
-The `DynamicQrPaySheet.tsx` payment flow (line 97) queries the **merchant's** profile to get their phone number:
-```tsx
-const { data: merchantProfile } = await supabase.from("profiles").select("phone").eq("user_id", merchant.user_id).single();
-```
+### What
+After generating a QR session, instead of opening a new tab, show a success toast with the session link and display an in-dashboard QR code popup (glassmorphism style, z-[80]) with the QR image, amount, reference, and a copy-link button.
 
-But the RLS policy on `profiles` only allows users to read **their own** row (`auth.uid() = user_id`). So when a payer (different user) tries to look up the merchant's profile, it returns `null` → "Merchant profile not found".
+### Changes — `src/pages/MerchantDashboard.tsx`
 
-### Solution
-Move the payment logic to the **`checkout-pay` edge function** (server-side, service-role client) which already handles this correctly and bypasses RLS. The client-side `DynamicQrPaySheet` should call this edge function instead of doing direct DB queries.
+1. **Add state**: `generatedSessionId` (string), `generatedQrDataUrl` (string), `showQrPopup` (boolean) to track the generated session and its QR image.
 
-Alternatively, add a minimal RLS policy allowing authenticated users to read only the `phone` column of other profiles — but this is less secure.
+2. **Update `handleGenerateQR`** (lines 818-821):
+   - Remove `window.open(qrUrl, "_blank")`
+   - Generate a QR code data URL using the `qrcode` library (already used in DynamicQrPage): `QRCode.toDataURL(fullUrl, { width: 280 })`
+   - Set the generated state and open the popup
+   - Show a toast with the payment link and a "Copied!" action
 
-**Recommended approach**: Refactor `DynamicQrPaySheet.tsx` to call the `checkout-pay` edge function.
+3. **Add QR Popup component** (after the Generate QR Sheet, before closing `</motion.div>`):
+   - A `Dialog` or custom overlay at z-[80] showing:
+     - QR code image (white bg, rounded-2xl container)
+     - Amount + reference display
+     - Copy link button
+     - Close button
+   - Styled to match the glassmorphism aesthetic from the QR page
 
-### Changes
+4. **Add import**: `import QRCode from "qrcode"` at the top of the file.
 
-**1. `src/components/DynamicQrPaySheet.tsx`**
-- Replace the direct Supabase queries (lines 78-130) with a single call to the `checkout-pay` edge function
-- Send `sessionId`, `pin`, and payer info to the edge function
-- The edge function already uses a service-role client that can read any profile
-
-**2. `supabase/functions/checkout-pay/index.ts`**
-- Add support for a `source: "qr"` parameter so the edge function knows it's a QR-based payment
-- Ensure it handles the same transfer logic currently in the client component
-
-This keeps all sensitive cross-user queries server-side where RLS doesn't block them.
+### File Modified
+- `src/pages/MerchantDashboard.tsx`
 
