@@ -2436,16 +2436,33 @@ const MerchantCashOutSheet = ({ open, onClose, onSuccess }: { open: boolean; onC
 /* ── Merchant Add Bank Sheet ── */
 const MerchantAddBankSheet = ({ open, onClose, merchant }: { open: boolean; onClose: () => void; merchant: MerchantInfo | null }) => {
   const { toast } = useToast();
+  const { banks: platformBanks, loading: banksLoading } = usePlatformBanks();
   const [bankName, setBankName] = useState(merchant?.bank_name || "");
+  const [accHolder, setAccHolder] = useState(merchant?.bank_account_holder || "");
   const [accNumber, setAccNumber] = useState(merchant?.bank_account_number || "");
+  const [branch, setBranch] = useState(merchant?.bank_branch || "");
   const [routing, setRouting] = useState(merchant?.bank_routing || "");
   const [saving, setSaving] = useState(false);
+  const [bankOpen, setBankOpen] = useState(false);
+  const [bankSearch, setBankSearch] = useState("");
+  const [saveDetails, setSaveDetails] = useState(true);
 
-  const banks = ["Dutch-Bangla Bank", "Islami Bank", "BRAC Bank", "City Bank", "Eastern Bank", "Prime Bank", "Sonali Bank", "Janata Bank", "Agrani Bank", "Pubali Bank"];
+  const filteredBanks = platformBanks.filter(b =>
+    b.name.toLowerCase().includes(bankSearch.toLowerCase()) ||
+    b.short_code.toLowerCase().includes(bankSearch.toLowerCase())
+  );
 
   const handleSave = async () => {
-    if (!bankName || !accNumber || accNumber.length < 8) {
-      toast({ title: "Incomplete details", description: "Please fill in bank name and account number", variant: "destructive" });
+    if (!bankName) {
+      toast({ title: "Select a bank", description: "Please choose a bank from the list", variant: "destructive" });
+      return;
+    }
+    if (!accHolder.trim()) {
+      toast({ title: "Account holder required", description: "Please enter the account holder name", variant: "destructive" });
+      return;
+    }
+    if (!accNumber || accNumber.length < 8) {
+      toast({ title: "Invalid account number", description: "Account number must be at least 8 digits", variant: "destructive" });
       return;
     }
     setSaving(true);
@@ -2454,9 +2471,11 @@ const MerchantAddBankSheet = ({ open, onClose, merchant }: { open: boolean; onCl
         bank_name: bankName,
         bank_account_number: accNumber,
         bank_routing: routing || null,
-      }).eq("id", merchant?.id || "");
+        bank_account_holder: accHolder.trim(),
+        bank_branch: branch.trim() || null,
+      } as any).eq("id", merchant?.id || "");
       if (error) throw error;
-      toast({ title: "Bank Added!", description: `${bankName} · ****${accNumber.slice(-4)} linked for auto-settlement (1% fee)` });
+      toast({ title: "Bank Linked!", description: `${bankName} · ****${accNumber.slice(-4)} linked for settlement` });
       onClose();
     } catch (e: any) {
       toast({ title: "Failed", description: e.message || "Could not save bank details", variant: "destructive" });
@@ -2467,50 +2486,152 @@ const MerchantAddBankSheet = ({ open, onClose, merchant }: { open: boolean; onCl
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={onClose}>
-      <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", bounce: 0.15 }}
-        className="w-full max-w-xl bg-card rounded-t-3xl p-6 space-y-4" onClick={e => e.stopPropagation()}>
-        <div className="w-12 h-1 bg-muted rounded-full mx-auto" />
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-            <Landmark size={18} className="text-white" />
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end justify-center" onClick={onClose}>
+      <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", bounce: 0.12, duration: 0.5 }}
+        className="w-full max-w-xl bg-card rounded-t-3xl p-6 pb-8 max-h-[92vh] overflow-y-auto scrollbar-none" onClick={e => e.stopPropagation()}>
+        <div className="w-12 h-1 bg-muted rounded-full mx-auto mb-5" />
+
+        {/* Header */}
+        <div className="flex items-center gap-3.5 mb-6">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
+            <Landmark size={20} className="text-white" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-foreground">Add Bank Account</h3>
-            <p className="text-[11px] text-muted-foreground">For auto-settlement · 1% transfer fee</p>
+            <h3 className="text-lg font-bold text-foreground">Link Bank Account</h3>
+            <p className="text-xs text-muted-foreground">For auto-settlement · 1% transfer fee</p>
           </div>
         </div>
 
-        <div>
-          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Bank Name</label>
-          <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto scrollbar-none">
-            {banks.map(b => (
-              <button key={b} onClick={() => setBankName(b)}
-                className={`text-[11px] font-medium py-2 px-2.5 rounded-xl border transition-all text-left ${bankName === b ? "border-primary bg-primary/10 text-primary" : "border-border/50 text-foreground hover:bg-muted/30"}`}>{b}</button>
-            ))}
+        <div className="space-y-5">
+          {/* Bank Name — Searchable dropdown */}
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Bank Name *</label>
+            <div className="relative">
+              <button
+                onClick={() => setBankOpen(!bankOpen)}
+                className={`w-full h-12 rounded-xl border bg-background px-4 text-left flex items-center justify-between transition-all ${bankName ? "text-foreground" : "text-muted-foreground"} ${bankOpen ? "border-primary ring-2 ring-primary/20" : "border-input hover:border-primary/50"}`}
+              >
+                <span className="text-sm truncate">{bankName || "Select a bank..."}</span>
+                <ChevronDown size={16} className={`shrink-0 ml-2 transition-transform ${bankOpen ? "rotate-180" : ""}`} />
+              </button>
+              <AnimatePresence>
+                {bankOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+                    className="absolute z-50 mt-1.5 w-full bg-popover border border-border rounded-xl shadow-xl overflow-hidden"
+                  >
+                    <div className="p-2 border-b border-border/50">
+                      <div className="relative">
+                        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <input
+                          autoFocus
+                          placeholder="Search banks..."
+                          value={bankSearch}
+                          onChange={e => setBankSearch(e.target.value)}
+                          className="w-full h-9 pl-8 pr-3 rounded-lg bg-muted/50 border-0 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+                        />
+                      </div>
+                    </div>
+                    <div className="max-h-52 overflow-y-auto scrollbar-none py-1">
+                      {filteredBanks.length === 0 && (
+                        <p className="text-xs text-muted-foreground text-center py-4">No banks found</p>
+                      )}
+                      {filteredBanks.map(b => (
+                        <button
+                          key={b.id}
+                          onClick={() => { setBankName(b.name); setBankOpen(false); setBankSearch(""); }}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/50 transition-colors ${bankName === b.name ? "bg-primary/5" : ""}`}
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            <span className="text-[9px] font-bold text-primary">{b.short_code.slice(0, 4)}</span>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-medium text-foreground truncate">{b.name}</p>
+                            <p className="text-[10px] text-muted-foreground">{b.short_code}</p>
+                          </div>
+                          {bankName === b.name && <Check size={14} className="text-primary shrink-0" />}
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
-        </div>
 
-        <div>
-          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Account Number</label>
-          <Input placeholder="Enter account number" value={accNumber} onChange={e => setAccNumber(e.target.value.replace(/\D/g, "").slice(0, 20))} className="h-12 rounded-xl" inputMode="numeric" />
-        </div>
+          {/* Account Holder Name */}
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Account Holder Name *</label>
+            <Input
+              placeholder="Full name as per bank"
+              value={accHolder}
+              onChange={e => setAccHolder(e.target.value)}
+              className="h-12 rounded-xl"
+            />
+          </div>
 
-        <div>
-          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Routing Number (Optional)</label>
-          <Input placeholder="Enter routing number" value={routing} onChange={e => setRouting(e.target.value.replace(/\D/g, "").slice(0, 9))} className="h-12 rounded-xl" inputMode="numeric" />
-        </div>
+          {/* Account Number */}
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Account Number *</label>
+            <Input
+              placeholder="Enter account number"
+              value={accNumber}
+              onChange={e => setAccNumber(e.target.value.replace(/\D/g, "").slice(0, 20))}
+              className="h-12 rounded-xl"
+              inputMode="numeric"
+            />
+          </div>
 
-        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
-          <p className="text-[10px] text-amber-700 dark:text-amber-300 font-medium flex items-start gap-2">
-            <Shield size={12} className="shrink-0 mt-0.5" />
-            A 1% fee applies when funds are auto-settled to your bank. Settlements process on your configured schedule.
-          </p>
-        </div>
+          {/* Branch Name */}
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Branch Name <span className="normal-case text-muted-foreground/60">(Optional)</span></label>
+            <Input
+              placeholder="e.g. Motijheel, Gulshan"
+              value={branch}
+              onChange={e => setBranch(e.target.value)}
+              className="h-12 rounded-xl"
+            />
+          </div>
 
-        <Button onClick={handleSave} disabled={saving} className="w-full h-12 rounded-xl text-sm font-bold" style={{ background: "linear-gradient(135deg, hsl(36 95% 50%), hsl(24 90% 45%))" }}>
-          {saving ? "Saving..." : "Link Bank Account"}
-        </Button>
+          {/* Routing Number */}
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Routing Number <span className="normal-case text-muted-foreground/60">(Optional)</span></label>
+            <Input
+              placeholder="9-digit routing number"
+              value={routing}
+              onChange={e => setRouting(e.target.value.replace(/\D/g, "").slice(0, 9))}
+              className="h-12 rounded-xl"
+              inputMode="numeric"
+            />
+          </div>
+
+          {/* Save checkbox */}
+          <label className="flex items-center gap-3 py-2 cursor-pointer select-none">
+            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${saveDetails ? "bg-primary border-primary" : "border-muted-foreground/30"}`}
+              onClick={() => setSaveDetails(!saveDetails)}>
+              {saveDetails && <Check size={12} className="text-primary-foreground" />}
+            </div>
+            <span className="text-xs text-foreground">Save details for faster future settlements</span>
+          </label>
+
+          {/* Fee notice */}
+          <div className="p-3.5 rounded-xl bg-amber-500/8 border border-amber-500/15">
+            <p className="text-[11px] text-amber-700 dark:text-amber-300 font-medium flex items-start gap-2.5">
+              <Info size={14} className="shrink-0 mt-0.5 text-amber-500" />
+              A 1% fee applies when funds are auto-settled to your bank. Settlements process on your configured schedule.
+            </p>
+          </div>
+
+          {/* Submit */}
+          <Button
+            onClick={handleSave}
+            disabled={saving || !bankName || !accHolder.trim() || accNumber.length < 8}
+            className="w-full h-13 rounded-xl text-sm font-bold shadow-lg shadow-amber-500/20 disabled:opacity-50"
+            style={{ background: "linear-gradient(135deg, hsl(36 95% 50%), hsl(24 90% 45%))" }}
+          >
+            {saving ? "Linking..." : "Link Bank Account"}
+          </Button>
+        </div>
       </motion.div>
     </div>
   );
