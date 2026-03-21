@@ -769,11 +769,18 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
   const peakHour = hourCounts.indexOf(Math.max(...hourCounts));
   const peakLabel = `${peakHour % 12 || 12}${peakHour < 12 ? "AM" : "PM"}`;
 
-  const [qrDemoLoading, setQrDemoLoading] = useState(false);
+  const [qrGenerateLoading, setQrGenerateLoading] = useState(false);
+  const [showQrGenerate, setShowQrGenerate] = useState(false);
+  const [qrAmount, setQrAmount] = useState("");
+  const [qrReference, setQrReference] = useState("");
 
-  const handleTestDynamicQR = async () => {
-    if (!merchant) return;
-    setQrDemoLoading(true);
+  const handleGenerateQR = async () => {
+    const amt = parseFloat(qrAmount);
+    if (!merchant || !amt || amt < 1 || amt > 1000000) {
+      toast({ title: "Invalid Amount", description: "Enter an amount between ৳1 and ৳10,00,000.", variant: "destructive" });
+      return;
+    }
+    setQrGenerateLoading(true);
     try {
       const { data: keyData } = await supabase
         .from("merchant_api_keys")
@@ -785,7 +792,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
 
       if (!keyData) {
         toast({ title: "No API Key", description: "Request API access from the API tab first.", variant: "destructive" });
-        setQrDemoLoading(false);
+        setQrGenerateLoading(false);
         return;
       }
 
@@ -799,9 +806,9 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
         },
         body: JSON.stringify({
           action: "create_session",
-          amount: 100,
-          reference: `DEMO-${Date.now().toString(36).toUpperCase()}`,
-          description: "Dynamic QR Test Payment",
+          amount: amt,
+          reference: qrReference.trim() || `QR-${Date.now().toString(36).toUpperCase()}`,
+          description: `Payment of ৳${amt}`,
         }),
       });
 
@@ -810,11 +817,14 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
 
       const qrUrl = data.qr_page_url || `/pay/qr/${data.session_id}`;
       window.open(qrUrl, "_blank");
-      toast({ title: "QR Page Opened", description: "Scan with the EasyPay app to test the payment flow." });
+      toast({ title: "QR Page Opened", description: `৳${amt} payment QR is ready for customers.` });
+      setShowQrGenerate(false);
+      setQrAmount("");
+      setQrReference("");
     } catch (err: any) {
-      toast({ title: "Demo Failed", description: err.message, variant: "destructive" });
+      toast({ title: "Generation Failed", description: err.message, variant: "destructive" });
     } finally {
-      setQrDemoLoading(false);
+      setQrGenerateLoading(false);
     }
   };
 
