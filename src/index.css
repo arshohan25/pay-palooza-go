@@ -4,13 +4,12 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Hide body scrollbar globally (mobile-first PWA) ───────────────────────── */
-html, body {
+/* ── Hide scrollbars globally (mobile-first PWA) ───────────────────────────── */
+* {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
-html::-webkit-scrollbar,
-body::-webkit-scrollbar {
+*::-webkit-scrollbar {
   display: none;
 }
 
