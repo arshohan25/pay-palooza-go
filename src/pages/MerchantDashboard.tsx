@@ -877,20 +877,21 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
 
       {/* Dynamic QR Demo Card */}
       <motion.div variants={stagger.item}>
-        <Card className="rounded-2xl p-5 border-0 shadow-sm bg-gradient-to-br from-primary/5 via-card to-primary/8">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
-              <QrCode size={26} className="text-primary" />
+        <Card className="p-4 border-0 shadow-card bg-gradient-to-r from-primary/5 to-primary/10">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm shrink-0">
+              <QrCode size={22} className="text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-[15px] font-bold text-foreground leading-snug">Dynamic QR Payments</h4>
-              <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">Generate a QR code that customers scan to pay instantly</p>
+              <h4 className="text-sm font-bold text-foreground">Dynamic QR Payments</h4>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Generate a QR code that customers scan to pay instantly</p>
             </div>
             <Button
-              className="rounded-full h-10 px-6 text-[12px] font-bold gap-2 shrink-0 shadow-sm"
+              size="sm"
+              className="h-9 text-[11px] font-bold gap-1.5 shrink-0"
               onClick={() => setShowQrGenerate(true)}
             >
-              <ScanLine size={14} />
+              <ScanLine size={13} />
               Generate QR
             </Button>
           </div>

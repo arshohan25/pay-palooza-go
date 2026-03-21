@@ -1,17 +1,29 @@
 
 
-## Redesign Dynamic QR Payments Card
+## Show QR Popup + Toast After Generate QR
 
-The uploaded image shows a cleaner, more spacious card design with a teal/green QR icon on the left, bolder typography, and a pill-shaped "Generate QR" button on the right. I will update the existing card (lines 878-898) to match this reference.
+### What
+After generating a QR session, instead of opening a new tab, show a success toast with the session link and display an in-dashboard QR code popup (glassmorphism style, z-[80]) with the QR image, amount, reference, and a copy-link button.
 
-### Changes — `src/pages/MerchantDashboard.tsx` (lines 878-898)
+### Changes — `src/pages/MerchantDashboard.tsx`
 
-Replace the current card with:
-- **Layout**: Wider card with more padding (p-5), subtle green gradient background (`from-primary/5 via-card to-primary/8`)
-- **Icon**: Larger rounded-2xl icon container (w-14 h-14) with a softer green gradient, using `QrCode` icon at size 26
-- **Text**: Title bumped to `text-[15px] font-bold`, description to `text-[11px]` with slightly more line height
-- **Button**: Pill-shaped (`rounded-full`), taller (`h-10`), with bolder text and the `ScanLine` icon — matching the green pill button in the reference image
-- **Overall feel**: More whitespace, rounder corners (`rounded-2xl` on the card), softer shadow
+1. **Add state**: `generatedSessionId` (string), `generatedQrDataUrl` (string), `showQrPopup` (boolean) to track the generated session and its QR image.
+
+2. **Update `handleGenerateQR`** (lines 818-821):
+   - Remove `window.open(qrUrl, "_blank")`
+   - Generate a QR code data URL using the `qrcode` library (already used in DynamicQrPage): `QRCode.toDataURL(fullUrl, { width: 280 })`
+   - Set the generated state and open the popup
+   - Show a toast with the payment link and a "Copied!" action
+
+3. **Add QR Popup component** (after the Generate QR Sheet, before closing `</motion.div>`):
+   - A `Dialog` or custom overlay at z-[80] showing:
+     - QR code image (white bg, rounded-2xl container)
+     - Amount + reference display
+     - Copy link button
+     - Close button
+   - Styled to match the glassmorphism aesthetic from the QR page
+
+4. **Add import**: `import QRCode from "qrcode"` at the top of the file.
 
 ### File Modified
 - `src/pages/MerchantDashboard.tsx`
