@@ -202,7 +202,7 @@ async function buildDoc(order: InvoiceOrder): Promise<jsPDF> {
   if (coupon > 0) {
     doc.setTextColor(BRAND.r, BRAND.g, BRAND.b);
     doc.text("Coupon Discount", lx, sy + 2);
-    doc.text(`-৳${fmt(coupon)}`, vx, sy + 2, { align: "right" });
+    doc.text(`-Tk ${fmt(coupon)}`, vx, sy + 2, { align: "right" });
     sy += 7;
   }
 
