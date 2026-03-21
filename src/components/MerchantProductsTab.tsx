@@ -429,7 +429,7 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
 
       {/* Add/Edit Sheet */}
       <Sheet open={showSheet} onOpenChange={setShowSheet}>
-        <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto">
+        <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto z-[80]" overlayClassName="z-[80]">
           <SheetHeader>
             <SheetTitle>{editing ? "Edit Product" : "Add Product"}</SheetTitle>
           </SheetHeader>
