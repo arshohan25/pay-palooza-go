@@ -1028,6 +1028,48 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
       <MerchantCashOutSheet open={showCashOut} onClose={() => setShowCashOut(false)} onSuccess={onRefresh} />
       <MerchantAddBankSheet open={showAddBank} onClose={() => setShowAddBank(false)} merchant={merchant} />
       <MerchantSettlementConfigSheet open={showSettlementConfig} onClose={() => setShowSettlementConfig(false)} merchant={merchant} />
+
+      {/* Generate QR Sheet */}
+      <Sheet open={showQrGenerate} onOpenChange={setShowQrGenerate}>
+        <SheetContent side="bottom" className="z-[80] rounded-t-2xl" overlayClassName="z-[80]">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <QrCode size={18} className="text-primary" /> Generate Payment QR
+            </SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Amount (৳) *</label>
+              <Input
+                type="number"
+                placeholder="e.g. 500"
+                value={qrAmount}
+                onChange={e => setQrAmount(e.target.value)}
+                min={1}
+                max={1000000}
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Reference (optional)</label>
+              <Input
+                placeholder="e.g. INV-001"
+                value={qrReference}
+                onChange={e => setQrReference(e.target.value)}
+                maxLength={100}
+              />
+            </div>
+            <Button
+              className="w-full font-bold gap-2"
+              onClick={handleGenerateQR}
+              disabled={qrGenerateLoading || !qrAmount || parseFloat(qrAmount) < 1}
+            >
+              {qrGenerateLoading ? <RefreshCw size={15} className="animate-spin" /> : <ScanLine size={15} />}
+              Generate QR
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </motion.div>
   );
 };
