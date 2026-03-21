@@ -584,7 +584,7 @@ const MerchantDashboard = () => {
                 </button>
               </div>
               <div className="flex-1 p-3 space-y-1.5 overflow-y-auto">
-                {menuItems.map(item => (
+                {visibleMenuItems.map(item => (
                   <button
                     key={item.id}
                     onClick={() => { setActiveTab(item.id); setShowMenu(false); }}
