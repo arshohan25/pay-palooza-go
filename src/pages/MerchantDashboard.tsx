@@ -830,7 +830,6 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
       setShowQrPopup(true);
       setShowQrGenerate(false);
       navigator.clipboard.writeText(fullUrl).catch(() => {});
-      toast({ title: "✅ QR Code Ready!", description: fullUrl });
       setQrAmount("");
       setQrReference("");
     } catch (err: any) {
