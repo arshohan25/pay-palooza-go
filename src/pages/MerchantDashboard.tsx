@@ -390,40 +390,42 @@ const MerchantDashboard = () => {
             </div>
           </div>
 
-          {/* Balance hero — tap to reveal, 5s auto-hide */}
-          <div className="glass-hero rounded-2xl p-4 w-full">
-            <div className="flex items-center justify-between gap-3">
-              <motion.button
-                type="button"
-                whileTap={{ scale: 0.98 }}
-                onClick={toggleBalance}
-                className="w-fit max-w-full text-left"
-                aria-label={showBalance ? "Hide balance" : "Tap to see balance"}
-              >
-                <p className="text-[11px] font-medium text-white/60 uppercase tracking-wider">Available Balance</p>
-                <AnimatePresence mode="wait">
-                  {showBalance ? (
-                    <motion.p key="bal" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="text-3xl font-black tracking-tight mt-0.5 flex items-center gap-2">
-                      ৳{fmt(balance)}
-                      <EyeOff size={14} className="opacity-50" />
-                    </motion.p>
-                  ) : (
-                    <motion.div key="hidden" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="flex items-center gap-2 mt-1.5 bg-white/10 rounded-xl px-3 py-1.5 w-fit">
-                      <Eye size={13} className="opacity-80" />
-                      <span className="text-[12px] font-semibold opacity-90">Tap to see balance</span>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.button>
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setActiveTab("qr")}
-                className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0 active:bg-white/20 transition-colors"
-              >
-                <QrCode size={22} />
-              </motion.button>
+          {/* Balance hero — hidden for staff, tap to reveal for owners */}
+          {!isStaff && (
+            <div className="glass-hero rounded-2xl p-4 w-full">
+              <div className="flex items-center justify-between gap-3">
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.98 }}
+                  onClick={toggleBalance}
+                  className="w-fit max-w-full text-left"
+                  aria-label={showBalance ? "Hide balance" : "Tap to see balance"}
+                >
+                  <p className="text-[11px] font-medium text-white/60 uppercase tracking-wider">Available Balance</p>
+                  <AnimatePresence mode="wait">
+                    {showBalance ? (
+                      <motion.p key="bal" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="text-3xl font-black tracking-tight mt-0.5 flex items-center gap-2">
+                        ৳{fmt(balance)}
+                        <EyeOff size={14} className="opacity-50" />
+                      </motion.p>
+                    ) : (
+                      <motion.div key="hidden" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="flex items-center gap-2 mt-1.5 bg-white/10 rounded-xl px-3 py-1.5 w-fit">
+                        <Eye size={13} className="opacity-80" />
+                        <span className="text-[12px] font-semibold opacity-90">Tap to see balance</span>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setActiveTab("qr")}
+                  className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0 active:bg-white/20 transition-colors"
+                >
+                  <QrCode size={22} />
+                </motion.button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </header>
 
