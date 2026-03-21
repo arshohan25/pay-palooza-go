@@ -1,73 +1,84 @@
 
-Problem now: the payment page is resolving the merchant correctly, but the final guest checkout still fails inside the backend payment function.
+Problem now
 
-What I verified:
-- The payment link exists and is active:
-  - short code: `252RWNS4`
-  - merchant code: `MRC-RAFIQ-001`
-- The merchant exists and is active:
-  - `Rafiq Electronics`
-- The merchant profile also exists and is active:
-  - phone: `01909709954`
-  - user_id matches the merchant
-- The frontend merchant resolver works now:
-  - `resolve_payment_merchant('MRC-RAFIQ-001')` returns the correct merchant
-- The failure is now strictly in `checkout-guest`
+The merchant and payment link are valid. The failure is inside `checkout-guest`, but not because the records are missing.
 
-Root cause:
-- `checkout-guest` is still trying to resolve the recipient primarily from the client-sent `recipient_phone`
-- Even though the payment link already tells us exactly which merchant should receive the money, the function only uses the link as a fallback
-- In your failing request, logs show:
-  - phone lookup failed
-  - payment-link fallback started
-  - final result still ended as `Recipient not found`
-- So the bug is no longer “merchant not found”; it is “recipient resolution in checkout is not authoritative and not traceable enough”
+What I verified
+- `payment_links.short_code = 252RWNS4` exists and is active
+- `payment_links.merchant_id = 9cb25e4d-cfe8-4881-8d8c-54bb41ce94e6`
+- merchant `Rafiq Electronics` exists and is active
+- merchant profile exists and is active with phone `01909709954`
+- `resolve_payment_merchant('MRC-RAFIQ-001')` works correctly
+
+Actual root cause
+
+`checkout-guest` starts with a service-role database client, but then uses this same client for:
+
+```text
+supabaseAdmin.auth.signInWithPassword(...)
+```
+
+That signs the client into the payer account and replaces the service-role session for subsequent queries on that client.
+
+So after PIN verification, later reads are no longer running as full backend access:
+- `payment_links` lookup gets blocked by RLS and returns no row
+- merchant profile lookup gets blocked by RLS and returns null
+- phone fallback also gets blocked by RLS and returns null
+
+This exactly matches the logs:
+```text
+payment link exists in DB
+but function logs "No active payment link"
+
+merchant lookup by id works
+but recipient_phone is undefined
+
+phone fallback runs
+but final result is still Recipient not found
+```
 
 Implementation plan
 
-1. Make link-based recipient resolution authoritative
-- In `checkout-guest`, if `reference` is present:
-  - load the active `payment_links` row by `short_code`
-  - resolve the merchant from `payment_links.merchant_id` first
-  - fetch the recipient profile by merchant `user_id`
-- Only use `recipient_phone` as a fallback for non-link/manual payment flows
+1. Split auth verification from database access
+- Keep one client strictly for backend data reads/writes
+- Create a separate auth-only client for `signInWithPassword`
+- Never use the auth-verified client for payment link/profile/transaction queries
 
-2. Stop trusting the client for recipient identity
-- Treat `recipient_phone` as display/input convenience only
-- For payment-link flows, the backend should decide the real recipient from backend records, not from the request body
-- This removes the current mismatch/fallback problem entirely
+2. Keep all recipient resolution on the backend DB client
+- Resolve `reference -> payment_links -> merchant_id -> merchants -> profiles`
+- Use `recipient_phone` only for true non-link/manual flows
+- Ensure all post-auth reads still run through the backend DB client
 
-3. Tighten logging so the next failure is obvious
-- Log each resolution stage separately:
-  - payment link found or not
-  - merchant found or not
-  - merchant profile found or not
-  - exact IDs used (`payment_link_id`, `merchant_id`, `merchant_user_id`)
-- Return a more specific backend error instead of the generic `Recipient not found`
+3. Add one explicit debug log to confirm client separation
+- Log when PIN auth succeeds
+- Log that recipient resolution is running with backend lookup path
+- Log whether the payment link was found before and after PIN verification is removed from the shared client path
 
-4. Small frontend hardening
-- In `src/pages/PayPage.tsx`, optionally send `merchant_id` from the resolver result along with the request
-- Backend should still verify it against the payment link before using it
-- This gives one more stable identifier for debugging and validation
-
-Technical details
-```text
-Current bad flow:
-client recipient_phone -> profile lookup
-   if that fails -> payment_links fallback
-   if any fallback stage silently returns null -> "Recipient not found"
-
-Planned safe flow:
-reference(short_code) -> payment_links -> merchant_id -> merchants.user_id -> profiles
-only if no reference exists:
-  recipient_phone -> profiles
-```
+4. Small cleanup in `checkout-guest`
+- Reorder the flow so recipient resolution does not depend on the auth client at all
+- Keep transaction inserts and balance updates on the backend DB client only
+- Return a more specific error if the payment link exists but the merchant profile is missing
 
 Files to update
 - `supabase/functions/checkout-guest/index.ts`
-- `src/pages/PayPage.tsx` (minor request hardening only)
+
+Technical details
+```text
+Current broken flow:
+service-role client
+  -> verify OTP
+  -> signInWithPassword on same client
+  -> client session becomes payer user
+  -> payment_links / profiles queries now hit RLS
+  -> false "Recipient not found"
+
+Planned safe flow:
+dbClient (service-role) -> OTP + payment_links + merchants + profiles + transactions
+authClient (separate)   -> signInWithPassword only
+```
 
 Expected outcome
-- `/pay?merchant=MRC-RAFIQ-001&ref=252RWNS4&amount=1` should complete using the merchant tied to the payment link
-- The backend will no longer depend on fragile phone-based recipient matching for payment-link payments
-- If anything still fails, the logs will identify the exact missing lookup stage instead of masking everything as “Recipient not found”
+- `/pay?merchant=MRC-RAFIQ-001&ref=252RWNS4&amount=1` should stop failing with the fake recipient error
+- payment link lookup should succeed consistently
+- merchant profile should resolve correctly
+- the remaining failure, if any, will be the real one instead of an RLS side effect
