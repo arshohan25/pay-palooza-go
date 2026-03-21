@@ -888,7 +888,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
             </div>
             <Button
               size="sm"
-              className="h-10 px-5 text-[12px] font-bold gap-2 shrink-0 rounded-full"
+              className="h-8 px-3 text-[11px] font-bold gap-2 shrink-0 rounded-full"
               onClick={() => setShowQrGenerate(true)}
             >
               <ScanLine size={14} />
