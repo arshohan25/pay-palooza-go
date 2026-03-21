@@ -373,7 +373,12 @@ const MerchantDashboard = () => {
                 <h1 className="text-xl font-extrabold tracking-tight truncate">{merchant?.business_name || "Merchant"}</h1>
                 <BadgeCheck size={18} className="text-white/80 shrink-0" />
               </div>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                {isStaff && (
+                  <Badge className="text-[9px] bg-blue-400/30 border-blue-300/30 text-blue-100 backdrop-blur-sm">
+                    <Users size={8} className="mr-0.5" />Staff · {staffRole}
+                  </Badge>
+                )}
                 <Badge className="text-[9px] bg-white/15 border-white/20 text-white capitalize backdrop-blur-sm">{merchant?.category || "retail"}</Badge>
                 <Badge className="text-[9px] bg-white/15 border-white/20 text-white backdrop-blur-sm">
                   <Zap size={8} className="mr-0.5" />{merchant?.settlement_frequency || "T+1"}
