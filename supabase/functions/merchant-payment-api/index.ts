@@ -167,9 +167,15 @@ Deno.serve(async (req) => {
 
       if (sessErr) { statusCode = 500; errorMessage = sessErr.message; await logRequest(); return json({ error: sessErr.message }, 500); }
 
-      // Derive base URL: prefer request origin (caller's host), then SITE_URL env, then fallback
+      // Derive app URL: avoid iframe/editor hosts that produce unusable public links
       const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/+$/, "") || "";
-      const baseUrl = origin || Deno.env.get("SITE_URL") || `https://${Deno.env.get("SUPABASE_URL")?.replace("https://", "").replace(".supabase.co", "")}-preview.lovable.app`;
+      const normalizedOrigin = origin.replace(/\/+$/, "");
+      const isEditorHost = normalizedOrigin.includes("lovableproject.com");
+      const baseUrl = (
+        (!isEditorHost && normalizedOrigin) ||
+        Deno.env.get("SITE_URL") ||
+        "https://pay-palooza-go.lovable.app"
+      );
       const checkoutUrl = `${baseUrl}/checkout/${session.id}`;
       const qrPageUrl = `${baseUrl}/pay/qr/${session.id}`;
 

@@ -821,7 +821,11 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
       if (data.error) throw new Error(data.error);
 
       const qrPath = data.qr_page_url || `/pay/qr/${data.session_id}`;
-      const fullUrl = qrPath.startsWith("http") ? qrPath : `${window.location.origin}${qrPath}`;
+      const fallbackBaseUrl = "https://pay-palooza-go.lovable.app";
+      const normalizedUrl = typeof qrPath === "string" && qrPath.startsWith("http")
+        ? qrPath.replace(/^https?:\/\/[^/]*lovableproject\.com/i, fallbackBaseUrl)
+        : `${fallbackBaseUrl}${String(qrPath).startsWith("/") ? qrPath : `/${qrPath}`}`;
+      const fullUrl = normalizedUrl;
       const qrDataUrl = await QRCode.toDataURL(fullUrl, { width: 300, margin: 2 });
       setGeneratedQrDataUrl(qrDataUrl);
       setGeneratedQrLink(fullUrl);
