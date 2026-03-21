@@ -4366,6 +4366,18 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_merchant_customers: {
+        Args: { p_merchant_id: string }
+        Returns: {
+          customer_name: string
+          customer_phone: string
+          customer_user_id: string
+          last_order_at: string
+          order_count: number
+          tier: string
+          total_spent: number
+        }[]
+      }
       get_public_session_info: { Args: { p_session_id: string }; Returns: Json }
       get_shop_products: {
         Args: never
