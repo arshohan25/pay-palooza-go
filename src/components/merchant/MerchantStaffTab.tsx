@@ -1,39 +1,97 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Users, Plus, Shield } from "lucide-react";
-
-const mockStaff = [
-  { id: "1", name: "Rahim Uddin", phone: "01712345678", role: "Manager", active: true },
-  { id: "2", name: "Fatema Begum", phone: "01898765432", role: "Cashier", active: true },
-  { id: "3", name: "Sumon Das", phone: "01556781234", role: "Viewer", active: false },
-];
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Users, Plus, Shield, Trash2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/sonner";
 
 const roleColors: Record<string, string> = {
   Manager: "bg-primary/10 text-primary border-primary/20",
   Cashier: "bg-blue-500/10 text-blue-700 border-blue-200",
-  Viewer:  "bg-muted text-muted-foreground border-border",
+  Viewer: "bg-muted text-muted-foreground border-border",
 };
 
-export default function MerchantStaffTab() {
+const roles = ["Manager", "Cashier", "Viewer"] as const;
+
+interface Props { merchantId: string; }
+
+export default function MerchantStaffTab({ merchantId }: Props) {
+  const [staff, setStaff] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [role, setRole] = useState<string>("Cashier");
+  const [saving, setSaving] = useState(false);
+
+  const fetchStaff = async () => {
+    const { data } = await supabase
+      .from("merchant_staff")
+      .select("*")
+      .eq("merchant_id", merchantId)
+      .order("created_at", { ascending: false });
+    setStaff(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchStaff();
+    const channel = supabase
+      .channel("merchant_staff_rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "merchant_staff", filter: `merchant_id=eq.${merchantId}` }, () => fetchStaff())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [merchantId]);
+
+  const handleAdd = async () => {
+    if (!name.trim() || !phone.trim()) { toast.error("Name and phone are required"); return; }
+    setSaving(true);
+    const { error } = await supabase.from("merchant_staff").insert({ merchant_id: merchantId, name: name.trim(), phone: phone.trim(), role });
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Staff added");
+    setShowAdd(false); setName(""); setPhone(""); setRole("Cashier");
+  };
+
+  const toggleActive = async (id: string, current: boolean) => {
+    const { error } = await supabase.from("merchant_staff").update({ is_active: !current }).eq("id", id);
+    if (error) toast.error(error.message);
+  };
+
+  const deleteStaff = async (id: string) => {
+    const { error } = await supabase.from("merchant_staff").delete().eq("id", id);
+    if (error) toast.error(error.message); else toast.success("Staff removed");
+  };
+
+  const activeCount = staff.filter(s => s.is_active).length;
+
+  if (loading) return <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-bold text-foreground flex items-center gap-2">
           <Users size={18} className="text-primary" /> Staff Accounts
         </h3>
-        <Button size="sm" className="h-8 text-xs">
+        <Button size="sm" className="h-8 text-xs" onClick={() => setShowAdd(true)}>
           <Plus size={13} className="mr-1" /> Add Staff
         </Button>
       </div>
 
+      <div className="grid grid-cols-2 gap-2">
+        <Card className="border-0 shadow-elevated"><CardContent className="p-3 text-center"><p className="text-lg font-bold text-foreground">{staff.length}</p><p className="text-[10px] text-muted-foreground">Total Staff</p></CardContent></Card>
+        <Card className="border-0 shadow-elevated"><CardContent className="p-3 text-center"><p className="text-lg font-bold text-emerald-600">{activeCount}</p><p className="text-[10px] text-muted-foreground">Active</p></CardContent></Card>
+      </div>
+
       <Card className="border-0 shadow-elevated">
         <CardContent className="p-4 space-y-1">
-          <div className="flex items-center gap-2">
-            <Shield size={14} className="text-primary" />
-            <p className="text-xs font-semibold text-foreground">Role Permissions</p>
-          </div>
+          <div className="flex items-center gap-2"><Shield size={14} className="text-primary" /><p className="text-xs font-semibold text-foreground">Role Permissions</p></div>
           <div className="grid grid-cols-3 gap-2 text-[10px] text-muted-foreground">
             <div><p className="font-semibold text-foreground">Manager</p><p>Full access, manage staff</p></div>
             <div><p className="font-semibold text-foreground">Cashier</p><p>Process orders, view products</p></div>
@@ -42,29 +100,51 @@ export default function MerchantStaffTab() {
         </CardContent>
       </Card>
 
-      <div className="space-y-2">
-        {mockStaff.map(s => (
-          <Card key={s.id} className="border-0 shadow-elevated">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-muted/60 flex items-center justify-center text-sm font-bold text-foreground">
-                    {s.name.charAt(0)}
+      {staff.length === 0 ? (
+        <Card className="border-0 shadow-elevated"><CardContent className="p-8 text-center text-muted-foreground text-xs">No staff added yet. Tap "Add Staff" to get started.</CardContent></Card>
+      ) : (
+        <div className="space-y-2">
+          {staff.map(s => (
+            <Card key={s.id} className="border-0 shadow-elevated">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-muted/60 flex items-center justify-center text-sm font-bold text-foreground">{s.name.charAt(0)}</div>
+                    <div>
+                      <p className="text-xs font-bold text-foreground">{s.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{s.phone}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs font-bold text-foreground">{s.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{s.phone}</p>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className={`text-[9px] ${roleColors[s.role] || ""}`}>{s.role}</Badge>
+                    <Switch checked={s.is_active} onCheckedChange={() => toggleActive(s.id, s.is_active)} />
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteStaff(s.id)}><Trash2 size={13} /></Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Badge variant="outline" className={`text-[9px] ${roleColors[s.role]}`}>{s.role}</Badge>
-                  <Switch checked={s.active} />
-                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Sheet open={showAdd} onOpenChange={setShowAdd}>
+        <SheetContent side="bottom" className="rounded-t-2xl z-[80]" overlayClassName="z-[80]">
+          <SheetHeader><SheetTitle>Add Staff Member</SheetTitle></SheetHeader>
+          <div className="space-y-4 mt-4">
+            <div><Label className="text-xs">Name</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Staff name" /></div>
+            <div><Label className="text-xs">Phone</Label><Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="01XXXXXXXXX" /></div>
+            <div>
+              <Label className="text-xs">Role</Label>
+              <div className="flex gap-2 mt-1">
+                {roles.map(r => (
+                  <Button key={r} size="sm" variant={role === r ? "default" : "outline"} className="text-xs flex-1" onClick={() => setRole(r)}>{r}</Button>
+                ))}
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            </div>
+            <Button className="w-full" disabled={saving} onClick={handleAdd}>{saving ? "Adding..." : "Add Staff"}</Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
