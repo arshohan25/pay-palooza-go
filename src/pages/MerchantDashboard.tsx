@@ -4,6 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { usePhoneValidation } from "@/hooks/use-phone-validation";
 import { useAuth } from "@/hooks/use-auth";
+import { useStaffAccess } from "@/hooks/use-staff-access";
 import { supabase } from "@/integrations/supabase/client";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { motion, AnimatePresence } from "framer-motion";
