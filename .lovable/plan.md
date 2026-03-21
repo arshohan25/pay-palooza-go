@@ -1,14 +1,16 @@
 
 
-## Fix Mismatched Month Navigation Arrows
-
-The left arrow currently uses `ArrowLeft` (←) while the right uses `ChevronRight` (›). Both should use matching chevron icons.
+## Move "Store" from Main Tabs to Hamburger Menu
 
 ### Change in `src/pages/MerchantDashboard.tsx`
 
-**Line 1446**: Replace `<ArrowLeft size={16} />` with `<ChevronLeft size={16} />`
+**1. Remove "Store" from `mainTabs` array (line 115)**
+- Delete `{ id: "store", icon: Store, label: "Store" }` from `mainTabs`
 
-Also ensure `ChevronLeft` is imported from lucide-react (it may already be, but needs verification).
+**2. Add "Store" to `menuItems` array (line 118)**
+- Insert `{ id: "store", icon: Store, label: "Store Settings", desc: "Customize your storefront" }` into `menuItems` (e.g. as the first item or after Analytics)
+
+No other changes needed — the full-screen overlay rendering for `activeTab === "store"` and the hamburger menu drawer already handle all `menuItems` dynamically.
 
 ### Files modified
 - `src/pages/MerchantDashboard.tsx`
