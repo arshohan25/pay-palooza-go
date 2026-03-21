@@ -488,7 +488,7 @@ const MerchantDashboard = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
+                  transition={{ duration: 0.35 }}
                   className="px-4 py-4"
                 >
                   {activeTab === "products" && merchant && <MerchantProductsTab merchantId={merchant.id} businessName={merchant.business_name} />}
