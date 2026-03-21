@@ -17,10 +17,15 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { session_id, phone, otp_code, pin } = await req.json();
+    const { session_id, phone, otp_code, pin, source } = await req.json();
 
-    if (!session_id || !phone || !otp_code || !pin) {
+    const isQrFlow = source === "qr";
+
+    if (!session_id || !pin) {
       return jsonRes({ error: "Missing required fields" }, 400);
+    }
+    if (!isQrFlow && (!phone || !otp_code)) {
+      return jsonRes({ error: "Missing required fields for OTP flow" }, 400);
     }
 
     if (!/^\d{4}$/.test(pin)) {
