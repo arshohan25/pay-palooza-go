@@ -205,6 +205,21 @@ const MerchantDashboard = () => {
   const loadData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
+
+    // If user is staff (not merchant owner), load the merchant they're linked to
+    if (isStaff && staffMerchantId && !staffLoading) {
+      const [merchRes, profileRes] = await Promise.all([
+        supabase.from("merchants").select("*").eq("id", staffMerchantId).single(),
+        supabase.from("profiles").select("balance").eq("user_id", user.id).single(),
+      ]);
+      setIsMerchant(true); // treat as merchant for rendering
+      setBalance(profileRes.data?.balance ?? 0);
+      setMerchant(merchRes.data as MerchantInfo | null);
+      setTxns([]); // staff don't see owner's transactions
+      setLoading(false);
+      return;
+    }
+
     const [roleRes, profileRes, merchRes, txnRes] = await Promise.all([
       supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "merchant"),
       supabase.from("profiles").select("balance").eq("user_id", user.id).single(),
@@ -216,7 +231,7 @@ const MerchantDashboard = () => {
     setMerchant(merchRes.data as MerchantInfo | null);
     setTxns((txnRes.data ?? []) as TxnRow[]);
     setLoading(false);
-  }, [user]);
+  }, [user, isStaff, staffMerchantId, staffLoading]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
