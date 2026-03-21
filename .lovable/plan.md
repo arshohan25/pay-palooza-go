@@ -1,15 +1,22 @@
 
 
-## Slow Down Products/Orders Overlay Animations
+## Fix Hamburger Menu Bottom Items Not Accessible
 
-### What
-The slide-up overlay and content fade animations are too fast. Increase durations for a smoother feel.
+### Problem
+The right-side hamburger menu drawer has 8 menu items that overflow the visible area on a 638px viewport. The content area (`flex-1 p-3`) doesn't scroll, so bottom items like "Settlement" and "Fees & Charges" are cut off.
 
-### Changes in `src/pages/MerchantDashboard.tsx`
+### Fix in `src/pages/MerchantDashboard.tsx`
 
-1. **Line 453** — Overlay slide-up: change `duration: 0.45` → `duration: 0.65` (slower spring)
-2. **Line 491** — Inner content fade-up: change `duration: 0.2` → `duration: 0.35`
+**Line 559**: Add `overflow-y-auto` to the menu items container so it scrolls when content overflows:
+
+```
+// Before
+<div className="flex-1 p-3 space-y-1.5">
+
+// After
+<div className="flex-1 p-3 space-y-1.5 overflow-y-auto">
+```
 
 ### File Modified
-- `src/pages/MerchantDashboard.tsx`
+- `src/pages/MerchantDashboard.tsx` (1 line change)
 
