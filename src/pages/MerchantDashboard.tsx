@@ -679,6 +679,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
   const [showCashOut, setShowCashOut] = useState(false);
   const [showAddBank, setShowAddBank] = useState(false);
   const [showSettlementConfig, setShowSettlementConfig] = useState(false);
+  const [overviewSelectedTx, setOverviewSelectedTx] = useState<TxnRow | null>(null);
 
   const totalRevenue = paymentTxns.reduce((s, t) => s + t.amount, 0);
   const mdrDeducted = Math.round(totalRevenue * (merchant?.mdr_rate ?? 0.015));
