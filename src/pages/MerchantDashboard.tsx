@@ -769,11 +769,18 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
   const peakHour = hourCounts.indexOf(Math.max(...hourCounts));
   const peakLabel = `${peakHour % 12 || 12}${peakHour < 12 ? "AM" : "PM"}`;
 
-  const [qrDemoLoading, setQrDemoLoading] = useState(false);
+  const [qrGenerateLoading, setQrGenerateLoading] = useState(false);
+  const [showQrGenerate, setShowQrGenerate] = useState(false);
+  const [qrAmount, setQrAmount] = useState("");
+  const [qrReference, setQrReference] = useState("");
 
-  const handleTestDynamicQR = async () => {
-    if (!merchant) return;
-    setQrDemoLoading(true);
+  const handleGenerateQR = async () => {
+    const amt = parseFloat(qrAmount);
+    if (!merchant || !amt || amt < 1 || amt > 1000000) {
+      toast({ title: "Invalid Amount", description: "Enter an amount between ৳1 and ৳10,00,000.", variant: "destructive" });
+      return;
+    }
+    setQrGenerateLoading(true);
     try {
       const { data: keyData } = await supabase
         .from("merchant_api_keys")
@@ -785,7 +792,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
 
       if (!keyData) {
         toast({ title: "No API Key", description: "Request API access from the API tab first.", variant: "destructive" });
-        setQrDemoLoading(false);
+        setQrGenerateLoading(false);
         return;
       }
 
@@ -799,9 +806,9 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
         },
         body: JSON.stringify({
           action: "create_session",
-          amount: 100,
-          reference: `DEMO-${Date.now().toString(36).toUpperCase()}`,
-          description: "Dynamic QR Test Payment",
+          amount: amt,
+          reference: qrReference.trim() || `QR-${Date.now().toString(36).toUpperCase()}`,
+          description: `Payment of ৳${amt}`,
         }),
       });
 
@@ -810,11 +817,14 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
 
       const qrUrl = data.qr_page_url || `/pay/qr/${data.session_id}`;
       window.open(qrUrl, "_blank");
-      toast({ title: "QR Page Opened", description: "Scan with the EasyPay app to test the payment flow." });
+      toast({ title: "QR Page Opened", description: `৳${amt} payment QR is ready for customers.` });
+      setShowQrGenerate(false);
+      setQrAmount("");
+      setQrReference("");
     } catch (err: any) {
-      toast({ title: "Demo Failed", description: err.message, variant: "destructive" });
+      toast({ title: "Generation Failed", description: err.message, variant: "destructive" });
     } finally {
-      setQrDemoLoading(false);
+      setQrGenerateLoading(false);
     }
   };
 
@@ -864,11 +874,10 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
             <Button
               size="sm"
               className="h-9 text-[11px] font-bold gap-1.5 shrink-0"
-              onClick={handleTestDynamicQR}
-              disabled={qrDemoLoading}
+              onClick={() => setShowQrGenerate(true)}
             >
-              {qrDemoLoading ? <RefreshCw size={13} className="animate-spin" /> : <ScanLine size={13} />}
-              Test QR
+              <ScanLine size={13} />
+              Generate QR
             </Button>
           </div>
         </Card>
@@ -1019,6 +1028,48 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
       <MerchantCashOutSheet open={showCashOut} onClose={() => setShowCashOut(false)} onSuccess={onRefresh} />
       <MerchantAddBankSheet open={showAddBank} onClose={() => setShowAddBank(false)} merchant={merchant} />
       <MerchantSettlementConfigSheet open={showSettlementConfig} onClose={() => setShowSettlementConfig(false)} merchant={merchant} />
+
+      {/* Generate QR Sheet */}
+      <Sheet open={showQrGenerate} onOpenChange={setShowQrGenerate}>
+        <SheetContent side="bottom" className="z-[80] rounded-t-2xl" overlayClassName="z-[80]">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <QrCode size={18} className="text-primary" /> Generate Payment QR
+            </SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Amount (৳) *</label>
+              <Input
+                type="number"
+                placeholder="e.g. 500"
+                value={qrAmount}
+                onChange={e => setQrAmount(e.target.value)}
+                min={1}
+                max={1000000}
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Reference (optional)</label>
+              <Input
+                placeholder="e.g. INV-001"
+                value={qrReference}
+                onChange={e => setQrReference(e.target.value)}
+                maxLength={100}
+              />
+            </div>
+            <Button
+              className="w-full font-bold gap-2"
+              onClick={handleGenerateQR}
+              disabled={qrGenerateLoading || !qrAmount || parseFloat(qrAmount) < 1}
+            >
+              {qrGenerateLoading ? <RefreshCw size={15} className="animate-spin" /> : <ScanLine size={15} />}
+              Generate QR
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </motion.div>
   );
 };
