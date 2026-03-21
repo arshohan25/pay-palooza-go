@@ -31,29 +31,30 @@ Deno.serve(async (req) => {
     if (!phone || !otp_code || !pin || !amount) {
       return jsonRes({ error: "Missing required fields" }, 400);
     }
-
     if (!/^\d{4}$/.test(pin)) {
       return jsonRes({ error: "PIN must be 4 digits" }, 400);
     }
-
     if (amount <= 0 || amount > 100000) {
       return jsonRes({ error: "Amount must be between ৳1 and ৳100,000" }, 400);
     }
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // DB client – service-role, never touched by signInWithPassword
+    const dbClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    // Auth client – separate instance, used ONLY for PIN verification
+    const authClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
     const cleanPhone = String(phone).replace(/\D/g, "").replace(/^88/, "");
-    const cleanRecipient = String(recipient_phone ?? "")
-      .replace(/\D/g, "")
-      .replace(/^88/, "");
+    const cleanRecipient = String(recipient_phone ?? "").replace(/\D/g, "").replace(/^88/, "");
     const cleanReference = typeof reference === "string" ? reference.trim().toUpperCase() : "";
     const safeMerchantId = typeof clientMerchantId === "string" ? clientMerchantId.trim() : "";
 
+    // ── 1. Verify OTP ──
     const now = new Date().toISOString();
-    const { data: otpRow, error: otpErr } = await supabaseAdmin
+    const { data: otpRow, error: otpErr } = await dbClient
       .from("otp_codes")
       .select("*")
       .eq("phone", cleanPhone)
@@ -68,10 +69,10 @@ Deno.serve(async (req) => {
     if (otpErr || !otpRow) {
       return jsonRes({ error: "Invalid or expired OTP" }, 400);
     }
+    await dbClient.from("otp_codes").update({ verified: true }).eq("id", otpRow.id);
 
-    await supabaseAdmin.from("otp_codes").update({ verified: true }).eq("id", otpRow.id);
-
-    const { data: payer } = await supabaseAdmin
+    // ── 2. Lookup payer profile ──
+    const { data: payer } = await dbClient
       .from("profiles")
       .select("user_id, balance, name, phone")
       .eq("phone", cleanPhone)
@@ -82,12 +83,13 @@ Deno.serve(async (req) => {
       return jsonRes({ error: "Account not found or inactive" }, 400);
     }
 
+    // ── 3. Verify PIN on the SEPARATE auth client ──
     const password = `${pin}EP`;
     const emailDomains = ["easypay.app", "example.com", "easypay.local"];
     let authPassed = false;
 
     for (const domain of emailDomains) {
-      const { error } = await supabaseAdmin.auth.signInWithPassword({
+      const { error } = await authClient.auth.signInWithPassword({
         email: `${cleanPhone}@${domain}`,
         password,
       });
@@ -100,92 +102,83 @@ Deno.serve(async (req) => {
     if (!authPassed) {
       return jsonRes({ error: "Incorrect PIN" }, 400);
     }
+    console.log("[checkout-guest] PIN verified for", cleanPhone);
 
+    // ── 4. Resolve recipient (all queries on dbClient – unaffected by auth) ──
     let recipient: { user_id: string; balance: number; name: string | null; phone: string } | null = null;
     let resolvedMerchantId: string | null = null;
 
+    // Priority 1: payment link reference
     if (cleanReference) {
-      console.log("[checkout-guest] Resolving via normalized reference:", cleanReference);
+      console.log("[checkout-guest] Resolving via reference:", cleanReference);
 
-      const { data: paymentLink, error: linkErr } = await supabaseAdmin
+      const { data: paymentLink, error: linkErr } = await dbClient
         .from("payment_links")
         .select("id, merchant_id, merchant_code, short_code, is_active")
         .eq("short_code", cleanReference)
         .eq("is_active", true)
         .maybeSingle();
 
-      if (linkErr) {
-        console.error("[checkout-guest] payment link lookup error:", linkErr);
-      }
+      if (linkErr) console.error("[checkout-guest] payment_links lookup error:", linkErr);
 
       if (paymentLink) {
         resolvedMerchantId = paymentLink.merchant_id ?? null;
-        console.log("[checkout-guest] Payment link found:", {
-          payment_link_id: paymentLink.id,
-          short_code: paymentLink.short_code,
+        console.log("[checkout-guest] Payment link matched:", {
+          id: paymentLink.id,
           merchant_id: paymentLink.merchant_id,
-          merchant_code: paymentLink.merchant_code,
         });
       } else {
-        console.warn("[checkout-guest] No active payment link for normalized short_code:", cleanReference);
+        console.warn("[checkout-guest] No active payment link for short_code:", cleanReference);
       }
     }
 
+    // Priority 2: client-sent merchant_id fallback
     if (!resolvedMerchantId && safeMerchantId) {
       resolvedMerchantId = safeMerchantId;
-      console.log("[checkout-guest] Falling back to client merchant_id:", safeMerchantId);
+      console.log("[checkout-guest] Using client merchant_id fallback:", safeMerchantId);
     }
 
+    // Merchant → profile resolution
     if (resolvedMerchantId) {
-      const { data: merchantRow, error: merchantErr } = await supabaseAdmin
+      const { data: merchantRow, error: merchantErr } = await dbClient
         .from("merchants")
-        .select("id, user_id, qr_code_data")
+        .select("id, user_id")
         .eq("id", resolvedMerchantId)
         .eq("status", "active")
         .maybeSingle();
 
-      if (merchantErr) {
-        console.error("[checkout-guest] merchant lookup by id error:", merchantErr);
-      }
+      if (merchantErr) console.error("[checkout-guest] merchant lookup error:", merchantErr);
 
       if (merchantRow?.user_id) {
-        const { data: merchantProfile, error: profileErr } = await supabaseAdmin
+        const { data: merchantProfile, error: profileErr } = await dbClient
           .from("profiles")
           .select("user_id, balance, name, phone")
           .eq("user_id", merchantRow.user_id)
           .eq("status", "active")
           .maybeSingle();
 
-        if (profileErr) {
-          console.error("[checkout-guest] merchant profile lookup error:", profileErr);
-        }
-
+        if (profileErr) console.error("[checkout-guest] merchant profile error:", profileErr);
         recipient = merchantProfile;
-        console.log("[checkout-guest] Recipient resolved from merchant_id:", {
+        console.log("[checkout-guest] Recipient from merchant:", {
           merchant_id: merchantRow.id,
-          merchant_user_id: merchantRow.user_id,
-          recipient_phone: merchantProfile?.phone,
+          user_id: merchantRow.user_id,
+          phone: merchantProfile?.phone,
         });
       } else {
-        console.error("[checkout-guest] Active merchant not found for merchant_id:", resolvedMerchantId);
+        console.error("[checkout-guest] No active merchant for id:", resolvedMerchantId);
       }
     }
 
+    // Priority 3: direct phone fallback (non-link flows)
     if (!recipient && cleanRecipient) {
-      console.log("[checkout-guest] Fallback: phone lookup for", cleanRecipient);
-
-      const { data: recipientByPhone, error: recipientErr } = await supabaseAdmin
+      console.log("[checkout-guest] Phone fallback for", cleanRecipient);
+      const { data: byPhone } = await dbClient
         .from("profiles")
         .select("user_id, balance, name, phone")
         .eq("phone", cleanRecipient)
         .eq("status", "active")
         .maybeSingle();
-
-      if (recipientErr) {
-        console.error("[checkout-guest] phone fallback error:", recipientErr);
-      }
-
-      recipient = recipientByPhone;
+      recipient = byPhone;
     }
 
     if (!recipient) {
@@ -200,27 +193,27 @@ Deno.serve(async (req) => {
     if (payer.user_id === recipient.user_id) {
       return jsonRes({ error: "Cannot pay yourself" }, 400);
     }
-
     if (payer.balance < amount) {
       return jsonRes({ error: "Insufficient balance" }, 400);
     }
 
+    // ── 5. Execute transfer ──
     const payerNewBalance = payer.balance - amount;
     const recipientNewBalance = recipient.balance + amount;
 
-    const { error: debitErr } = await supabaseAdmin
+    const { error: debitErr } = await dbClient
       .from("profiles")
       .update({ balance: payerNewBalance })
       .eq("user_id", payer.user_id);
     if (debitErr) throw debitErr;
 
-    const { error: creditErr } = await supabaseAdmin
+    const { error: creditErr } = await dbClient
       .from("profiles")
       .update({ balance: recipientNewBalance })
       .eq("user_id", recipient.user_id);
     if (creditErr) throw creditErr;
 
-    const { data: merch } = await supabaseAdmin
+    const { data: merch } = await dbClient
       .from("merchants")
       .select("business_name")
       .eq("user_id", recipient.user_id)
@@ -230,7 +223,7 @@ Deno.serve(async (req) => {
     const recipientName = merch?.business_name || recipient.name || recipient.phone;
     const payerName = payer.name || cleanPhone;
 
-    await supabaseAdmin.from("transactions").insert({
+    await dbClient.from("transactions").insert({
       user_id: payer.user_id,
       type: "payment",
       amount,
@@ -243,7 +236,7 @@ Deno.serve(async (req) => {
       status: "completed",
     });
 
-    await supabaseAdmin.from("transactions").insert({
+    await dbClient.from("transactions").insert({
       user_id: recipient.user_id,
       type: "payment",
       amount,
@@ -256,8 +249,9 @@ Deno.serve(async (req) => {
       status: "completed",
     });
 
+    // Update payment link usage
     if (cleanReference) {
-      const { data: linkRow } = await supabaseAdmin
+      const { data: linkRow } = await dbClient
         .from("payment_links")
         .select("id, used_count")
         .eq("short_code", cleanReference)
@@ -265,7 +259,7 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (linkRow) {
-        await supabaseAdmin
+        await dbClient
           .from("payment_links")
           .update({ used_count: (linkRow.used_count || 0) + 1 })
           .eq("id", linkRow.id);
