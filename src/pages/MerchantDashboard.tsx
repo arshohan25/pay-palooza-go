@@ -1269,6 +1269,7 @@ const TxnTab = ({ txns }: { txns: TxnRow[] }) => {
   const [filter, setFilter] = useState<"all" | "today" | "week">("all");
   const [selectedTx, setSelectedTx] = useState<TxnRow | null>(null);
   const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
 
   const filtered = useMemo(() => {
     const now = new Date();
@@ -1280,9 +1281,10 @@ const TxnTab = ({ txns }: { txns: TxnRow[] }) => {
     return txns;
   }, [txns, filter]);
 
-  const copyRef = (ref: string) => {
-    navigator.clipboard.writeText(ref);
-    toast({ title: "Copied", description: ref });
+  const copyId = (val: string) => {
+    navigator.clipboard.writeText(val);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   return (
@@ -1319,35 +1321,51 @@ const TxnTab = ({ txns }: { txns: TxnRow[] }) => {
             </motion.div>
           ) : (
             <div className="space-y-1">
-              {filtered.map(tx => (
-                <button key={tx.id} onClick={() => setSelectedTx(tx)} className="w-full flex items-center justify-between py-2.5 px-2.5 rounded-xl hover:bg-muted/30 transition-colors text-left">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                      <CreditCard size={14} className="text-emerald-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-foreground">{tx.recipient_name || "Customer"}</p>
-                      <div className="flex items-center gap-1">
-                        <p className="text-[9px] text-muted-foreground">{tx.reference} · {tx.recipient_phone || "—"}</p>
+              {filtered.map(tx => {
+                const isIncoming = MERCHANT_INCOMING_TYPES.has(tx.type);
+                const cfg = MERCH_TX_CONFIG[tx.type] || MERCH_TX_CONFIG.payment;
+                const TxIcon = cfg.icon;
+                const headline = getMerchTxHeadline(tx);
+
+                return (
+                  <button key={tx.id} onClick={() => setSelectedTx(tx)} className="w-full flex items-center justify-between py-2.5 px-2.5 rounded-xl hover:bg-muted/30 transition-colors text-left">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className={`w-9 h-9 rounded-xl ${cfg.iconBg} flex items-center justify-center shrink-0`}>
+                        <TxIcon size={14} className={cfg.iconColor} />
                       </div>
-                      {tx.fee > 0 && (
-                        <p className="text-[9px] font-medium text-amber-600 dark:text-amber-400">Fee: ৳{fmt(tx.fee)}</p>
-                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-foreground truncate">{headline}</p>
+                        <div className="flex items-center gap-1">
+                          <p className="text-[9px] text-muted-foreground">{cfg.label} · {tx.recipient_phone || "—"}</p>
+                        </div>
+                        {tx.status === "pending" && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 mt-0.5">
+                            <Clock size={9} /> PENDING
+                          </span>
+                        )}
+                        {tx.status === "failed" && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-destructive/10 text-destructive mt-0.5">
+                            <AlertTriangle size={9} /> FAILED
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right flex items-center gap-2">
-                    <div>
-                      <p className="text-xs font-bold text-emerald-600">+৳{fmt(tx.amount)}</p>
-                      <p className="text-[9px] text-muted-foreground">
-                        {new Date(tx.created_at).toLocaleDateString("en-BD", { month: "short", day: "numeric" })}
-                        {" "}
-                        {new Date(tx.created_at).toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" })}
-                      </p>
+                    <div className="text-right flex items-center gap-2 shrink-0">
+                      <div>
+                        <p className={`text-xs font-bold ${isIncoming ? "text-emerald-600" : "text-foreground"}`}>
+                          {isIncoming ? "+" : "−"}৳{fmt(tx.amount)}
+                        </p>
+                        <p className="text-[9px] text-muted-foreground">
+                          {new Date(tx.created_at).toLocaleDateString("en-BD", { month: "short", day: "numeric" })}
+                          {" "}
+                          {new Date(tx.created_at).toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      </div>
+                      <ChevronRight size={14} className="text-muted-foreground" />
                     </div>
-                    <ChevronRight size={14} className="text-muted-foreground" />
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           )}
         </Card>
@@ -1359,64 +1377,93 @@ const TxnTab = ({ txns }: { txns: TxnRow[] }) => {
           <SheetHeader className="mb-4">
             <SheetTitle className="text-base font-bold text-foreground">Transaction Details</SheetTitle>
           </SheetHeader>
-          {selectedTx && (
-            <div className="space-y-4">
-              {/* Amount */}
-              <div className="text-center py-3">
-                <p className="text-3xl font-black text-emerald-600">+৳{fmt(selectedTx.amount)}</p>
-                <Badge variant="outline" className="mt-2 text-[10px] capitalize">{selectedTx.status}</Badge>
-              </div>
+          {selectedTx && (() => {
+            const isIncoming = MERCHANT_INCOMING_TYPES.has(selectedTx.type);
+            const cfg = MERCH_TX_CONFIG[selectedTx.type] || MERCH_TX_CONFIG.payment;
+            const TxIcon = cfg.icon;
+            const headline = getMerchTxHeadline(selectedTx);
+            const txId = selectedTx.short_id || selectedTx.id.slice(0, 12).toUpperCase();
 
-              {/* Info rows */}
-              <div className="bg-muted/40 rounded-2xl p-4 space-y-2.5 text-xs">
-                {[
-                  { label: "Customer", value: selectedTx.recipient_name || "—" },
-                  { label: "Phone", value: selectedTx.recipient_phone || "—" },
-                  { label: "Type", value: selectedTx.type },
-                  { label: "Date", value: new Date(selectedTx.created_at).toLocaleString("en-BD", { dateStyle: "medium", timeStyle: "short" }) },
-                ].map(r => (
-                  <div key={r.label} className="flex justify-between">
-                    <span className="text-muted-foreground">{r.label}</span>
-                    <span className="font-semibold text-foreground capitalize">{r.value}</span>
+            return (
+              <div className="space-y-4">
+                {/* Header icon + amount */}
+                <div className="flex flex-col items-center py-3">
+                  <div className={`w-14 h-14 rounded-2xl ${cfg.iconBg} flex items-center justify-center mb-3`}>
+                    <TxIcon size={22} className={cfg.iconColor} />
                   </div>
-                ))}
-                {selectedTx.reference && (
+                  <p className={`text-3xl font-black ${isIncoming ? "text-emerald-600" : "text-foreground"}`}>
+                    {isIncoming ? "+" : "−"}৳{fmt(selectedTx.amount)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">{headline}</p>
+                  <Badge variant="outline" className="mt-2 text-[10px] capitalize">{selectedTx.status}</Badge>
+                </div>
+
+                {/* Info rows */}
+                <div className="bg-muted/40 rounded-2xl p-4 space-y-2.5 text-xs">
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Reference</span>
-                    <button onClick={() => copyRef(selectedTx.reference!)} className="flex items-center gap-1 font-mono font-semibold text-foreground">
-                      {selectedTx.reference} <Copy size={11} className="text-muted-foreground" />
+                    <span className="text-muted-foreground">Transaction ID</span>
+                    <button onClick={() => copyId(selectedTx.short_id || selectedTx.id)} className="flex items-center gap-1 font-mono font-semibold text-foreground">
+                      {txId} {copied ? <CheckCircle2 size={11} className="text-primary" /> : <Copy size={11} className="text-muted-foreground" />}
                     </button>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Type</span>
+                    <span className="font-semibold text-foreground">{cfg.label}</span>
+                  </div>
+                  {selectedTx.recipient_name && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{isIncoming ? "From" : "To"}</span>
+                      <span className="font-semibold text-foreground">{selectedTx.recipient_name}</span>
+                    </div>
+                  )}
+                  {selectedTx.recipient_phone && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Phone</span>
+                      <span className="font-semibold text-foreground">{selectedTx.recipient_phone}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Date</span>
+                    <span className="font-semibold text-foreground">{new Date(selectedTx.created_at).toLocaleString("en-BD", { dateStyle: "medium", timeStyle: "short" })}</span>
+                  </div>
+                  {selectedTx.reference && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Reference</span>
+                      <button onClick={() => copyId(selectedTx.reference!)} className="flex items-center gap-1 font-mono font-semibold text-foreground">
+                        {selectedTx.reference} <Copy size={11} className="text-muted-foreground" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Fee breakdown */}
+                {selectedTx.fee > 0 && (
+                  <div className="bg-amber-50 dark:bg-amber-950/30 p-4 rounded-2xl border border-amber-200 dark:border-amber-800 space-y-2 text-xs">
+                    <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">Fee Breakdown</p>
+                    <div className="flex justify-between">
+                      <span className="text-amber-800 dark:text-amber-300">Principal</span>
+                      <span className="font-semibold text-amber-900 dark:text-amber-200">৳{fmt(selectedTx.amount)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-amber-800 dark:text-amber-300">Fee</span>
+                      <span className="font-semibold text-amber-900 dark:text-amber-200">৳{fmt(selectedTx.fee)}</span>
+                    </div>
+                    <div className="border-t border-amber-300 dark:border-amber-700 pt-2 flex justify-between font-bold">
+                      <span className="text-amber-900 dark:text-amber-100">Total</span>
+                      <span className="text-amber-900 dark:text-amber-100">৳{fmt(selectedTx.amount + selectedTx.fee)}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Balance after */}
+                {selectedTx.balance_after !== null && (
+                  <div className="text-center text-[11px] text-muted-foreground">
+                    Balance after: <span className="font-bold text-foreground">৳{fmt(selectedTx.balance_after)}</span>
                   </div>
                 )}
               </div>
-
-              {/* Fee breakdown */}
-              {selectedTx.fee > 0 && (
-                <div className="bg-amber-50 dark:bg-amber-950/30 p-4 rounded-2xl border border-amber-200 dark:border-amber-800 space-y-2 text-xs">
-                  <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">Fee Breakdown</p>
-                  <div className="flex justify-between">
-                    <span className="text-amber-800 dark:text-amber-300">Principal</span>
-                    <span className="font-semibold text-amber-900 dark:text-amber-200">৳{fmt(selectedTx.amount)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-amber-800 dark:text-amber-300">Fee</span>
-                    <span className="font-semibold text-amber-900 dark:text-amber-200">৳{fmt(selectedTx.fee)}</span>
-                  </div>
-                  <div className="border-t border-amber-300 dark:border-amber-700 pt-2 flex justify-between font-bold">
-                    <span className="text-amber-900 dark:text-amber-100">Total</span>
-                    <span className="text-amber-900 dark:text-amber-100">৳{fmt(selectedTx.amount + selectedTx.fee)}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Balance after */}
-              {selectedTx.balance_after !== null && (
-                <div className="text-center text-[11px] text-muted-foreground">
-                  Balance after: <span className="font-bold text-foreground">৳{fmt(selectedTx.balance_after)}</span>
-                </div>
-              )}
-            </div>
-          )}
+            );
+          })()}
         </SheetContent>
       </Sheet>
     </motion.div>
