@@ -585,13 +585,10 @@ const MerchantProductsTab = ({ merchantId, businessName }: Props) => {
               </div>
               <div>
                 <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Category</label>
-                <select
+                <CategorySearchSelect
                   value={form.category}
-                  onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                  className="mt-1.5 w-full h-10 rounded-xl border border-input bg-background px-3 text-sm"
-                >
-                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+                  onChange={(val) => setForm(f => ({ ...f, category: val }))}
+                />
               </div>
             </div>
 
