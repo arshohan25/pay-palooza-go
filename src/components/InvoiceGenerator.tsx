@@ -63,7 +63,7 @@ async function buildDoc(order: InvoiceOrder): Promise<jsPDF> {
   // ── Logo + Company Info (left) ──
   let logoBottom = 22;
   if (logo) {
-    try { doc.addImage(logo, "PNG", ml, 10, 28, 10); logoBottom = 22; } catch { /* skip */ }
+    try { doc.addImage(logo, "PNG", ml, 9, 18, 18); logoBottom = 28; } catch { /* skip */ }
   }
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
