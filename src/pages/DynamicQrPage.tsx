@@ -266,7 +266,7 @@ const DynamicQrPage = () => {
           )}
         </AnimatePresence>
 
-        <div className="px-6 pb-5 pt-2 text-center">
+        <div className="px-5 pb-3 pt-1 text-center">
           <p className="text-[10px] text-muted-foreground/60">Powered by EasyPay</p>
         </div>
       </motion.div>
