@@ -211,33 +211,33 @@ const DynamicQrPage = () => {
 
         <AnimatePresence mode="wait">
           {status === "pending" && (
-            <motion.div key="pending" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-2 py-2 space-y-1.5">
+            <motion.div key="pending" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-2 py-1.5 space-y-1">
               {qrDataUrl && (
-                <div className="bg-white rounded-2xl p-2 mx-auto w-fit shadow-sm">
-                  <img src={qrDataUrl} alt="Payment QR Code" className="w-56 h-56" />
+                <div className="bg-white rounded-xl p-1.5 mx-auto w-fit shadow-sm">
+                  <img src={qrDataUrl} alt="Payment QR Code" className="w-48 h-48" />
                 </div>
               )}
-              <p className="text-center text-sm text-muted-foreground">
+              <p className="text-center text-xs text-muted-foreground">
                 Scan with <span className="font-semibold text-foreground">EasyPay</span> app to pay
               </p>
-              <div className="flex items-center justify-center gap-2">
-                <Clock className="w-4 h-4 text-muted-foreground" />
-                <span className={`text-sm font-mono font-bold ${secondsLeft <= 60 ? "text-destructive" : "text-muted-foreground"}`}>
+              <div className="flex items-center justify-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className={`text-xs font-mono font-bold ${secondsLeft <= 60 ? "text-destructive" : "text-muted-foreground"}`}>
                   {fmtTime(secondsLeft)}
                 </span>
               </div>
-              <div className="flex items-center justify-center gap-2">
+              <div className="flex items-center justify-center gap-1.5">
                 <motion.div
-                  className="w-2 h-2 rounded-full bg-primary"
+                  className="w-1.5 h-1.5 rounded-full bg-primary"
                   animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
                   transition={{ duration: 1.5, repeat: Infinity }}
                 />
-                <span className="text-xs text-muted-foreground">Waiting for payment…</span>
+                <span className="text-[11px] text-muted-foreground">Waiting for payment…</span>
               </div>
               {isAuthenticated && (
                 <button
                   onClick={() => setShowPaySheet(true)}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm"
                 >
                   <Wallet className="w-4 h-4" />
                   Pay with EasyPay
