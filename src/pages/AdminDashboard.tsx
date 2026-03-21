@@ -1646,7 +1646,12 @@ export default function AdminDashboard() {
         {activeTab === "security" && <AdminSecurityCenter />}
 
         {/* ═══ SYSTEM SETTINGS ═══ */}
-        {activeTab === "sys_settings" && <AdminSystemSettings />}
+        {activeTab === "sys_settings" && (
+          <div className="space-y-8">
+            <AdminSystemSettings />
+            <AdminBankListManager />
+          </div>
+        )}
 
         {/* ═══ LOYALTY POINTS ═══ */}
         {activeTab === "loyalty" && <AdminLoyaltyPoints />}
