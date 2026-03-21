@@ -821,7 +821,7 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
       if (data.error) throw new Error(data.error);
 
       const qrPath = data.qr_page_url || `/pay/qr/${data.session_id}`;
-      const fullUrl = `${window.location.origin}${qrPath}`;
+      const fullUrl = qrPath.startsWith("http") ? qrPath : `${window.location.origin}${qrPath}`;
       const qrDataUrl = await QRCode.toDataURL(fullUrl, { width: 300, margin: 2 });
       setGeneratedQrDataUrl(qrDataUrl);
       setGeneratedQrLink(fullUrl);
