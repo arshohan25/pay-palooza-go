@@ -226,7 +226,12 @@ const PayPage = () => {
         const { data, error } = await supabase.rpc("resolve_payment_merchant", {
           p_identifier: merchantCode,
         });
-        if (error) { setStep("not_found"); return; }
+        if (error) {
+          console.error("resolve_payment_merchant RPC error:", error);
+          setErrorMsg("Could not connect to payment service. Please try again.");
+          setStep("error");
+          return;
+        }
         const result = typeof data === "string" ? JSON.parse(data) : data;
         if (!result?.found || !result?.recipient_phone) { setStep("not_found"); return; }
 
@@ -238,8 +243,10 @@ const PayPage = () => {
           user_id: "",
         });
         setStep("ready");
-      } catch {
-        setStep("not_found");
+      } catch (e) {
+        console.error("resolve_payment_merchant exception:", e);
+        setErrorMsg("Something went wrong. Please try again.");
+        setStep("error");
       }
     })();
   }, [merchantCode]);
