@@ -1,22 +1,22 @@
 
 
-## Fix Hamburger Menu Bottom Items Not Accessible
+## Hide Scrollbars Globally
 
-### Problem
-The right-side hamburger menu drawer has 8 menu items that overflow the visible area on a 638px viewport. The content area (`flex-1 p-3`) doesn't scroll, so bottom items like "Settlement" and "Fees & Charges" are cut off.
+The project already hides scrollbars on `html` and `body` (lines 7-15 of `src/index.css`). To remove scrollbars from **all** scrollable elements (drawers, menus, scroll areas, etc.), add a universal rule.
 
-### Fix in `src/pages/MerchantDashboard.tsx`
+### Change in `src/index.css`
 
-**Line 559**: Add `overflow-y-auto` to the menu items container so it scrolls when content overflows:
+After the existing `body::-webkit-scrollbar` block (line 15), add a universal scrollbar-hiding rule:
 
+```css
+*::-webkit-scrollbar {
+  display: none;
+}
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
 ```
-// Before
-<div className="flex-1 p-3 space-y-1.5">
 
-// After
-<div className="flex-1 p-3 space-y-1.5 overflow-y-auto">
-```
-
-### File Modified
-- `src/pages/MerchantDashboard.tsx` (1 line change)
+This hides scrollbars on every element while preserving scroll functionality. One file, one change.
 
