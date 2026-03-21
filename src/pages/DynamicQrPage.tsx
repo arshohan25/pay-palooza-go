@@ -3,8 +3,9 @@ import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Clock, XCircle, Store, RefreshCw, Shield } from "lucide-react";
+import { CheckCircle2, Clock, XCircle, Store, RefreshCw, Wallet } from "lucide-react";
 import QRCode from "qrcode";
+import DynamicQrPaySheet from "@/components/DynamicQrPaySheet";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 const fmtTime = (s: number) =>
@@ -43,6 +44,7 @@ const DynamicQrPage = () => {
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
+  const [showPaySheet, setShowPaySheet] = useState(false);
   const expiresRef = useRef<number>(0);
 
   const fetchSession = useCallback(async () => {
@@ -73,6 +75,7 @@ const DynamicQrPage = () => {
       setReference(session.reference);
       setSuccessUrl(session.success_url);
 
+      // Merchant name: prefer RPC field, fallback to metadata
       const name = session.merchant_name
         || (typeof session.metadata?.merchant_name === "string" ? session.metadata.merchant_name : "");
       setMerchantName(name);
@@ -93,7 +96,7 @@ const DynamicQrPage = () => {
         amount: session.amount,
         ref: session.reference || null,
       });
-      const url = await QRCode.toDataURL(qrPayload, { width: 280, margin: 2, color: { dark: "#0f172a", light: "#ffffff" } });
+      const url = await QRCode.toDataURL(qrPayload, { width: 320, margin: 2, color: { dark: "#0f172a", light: "#ffffff" } });
       setQrDataUrl(url);
       setStatus("pending");
     } catch (err) {
@@ -146,223 +149,138 @@ const DynamicQrPage = () => {
     setRetrying(false);
   };
 
-  /* ── Gradient mesh background ── */
-  const Background = () => (
-    <div className="fixed inset-0 -z-10 overflow-hidden">
-      <div className="absolute inset-0 bg-background" />
-      <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-primary/5 blur-3xl" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-accent/5 blur-3xl" />
-      <div
-        className="absolute inset-0 opacity-[0.015]"
-        style={{
-          backgroundImage: "radial-gradient(circle at 1px 1px, hsl(var(--foreground)) 1px, transparent 0)",
-          backgroundSize: "32px 32px",
-        }}
-      />
-    </div>
-  );
-
-  /* ── Glass card wrapper ── */
-  const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 24, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className={`w-full max-w-sm bg-card/90 backdrop-blur-2xl border border-border/20 rounded-3xl shadow-2xl shadow-primary/5 overflow-hidden ${className}`}
-    >
-      {children}
-    </motion.div>
-  );
-
-  /* ── Loading ── */
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Background />
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-10 h-10 border-2 border-primary/20 border-t-primary rounded-full"
-        />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-10 h-10 border-3 border-primary/30 border-t-primary rounded-full" />
       </div>
     );
   }
 
-  /* ── Not found ── */
   if (status === "not_found") {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <Background />
-        <GlassCard>
-          <div className="p-8 text-center space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto">
-              <XCircle className="w-8 h-8 text-destructive" />
-            </div>
-            <h2 className="text-lg font-bold text-foreground">Session Not Found</h2>
-            <p className="text-sm text-muted-foreground">This payment session does not exist or has been removed.</p>
-          </div>
-          <div className="border-t border-border/10 px-6 py-4 text-center">
-            <p className="text-[10px] text-muted-foreground/50 flex items-center justify-center gap-1">
-              <Shield className="w-3 h-3" /> Secured by EasyPay
-            </p>
-          </div>
-        </GlassCard>
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="text-center space-y-3">
+          <XCircle className="w-12 h-12 text-destructive mx-auto" />
+          <h2 className="text-lg font-bold text-foreground">Session Not Found</h2>
+          <p className="text-sm text-muted-foreground">This payment session does not exist or has been removed.</p>
+        </div>
       </div>
     );
   }
 
-  /* ── Error ── */
   if (status === "error") {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <Background />
-        <GlassCard>
-          <div className="p-8 text-center space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto">
-              <XCircle className="w-8 h-8 text-destructive" />
-            </div>
-            <h2 className="text-lg font-bold text-foreground">Something Went Wrong</h2>
-            <p className="text-sm text-muted-foreground">Could not load this payment session.</p>
-            <button
-              onClick={handleRetry}
-              disabled={retrying}
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50 transition-all hover:shadow-lg hover:shadow-primary/20"
-            >
-              <RefreshCw className={`w-4 h-4 ${retrying ? "animate-spin" : ""}`} />
-              Retry
-            </button>
-          </div>
-          <div className="border-t border-border/10 px-6 py-4 text-center">
-            <p className="text-[10px] text-muted-foreground/50 flex items-center justify-center gap-1">
-              <Shield className="w-3 h-3" /> Secured by EasyPay
-            </p>
-          </div>
-        </GlassCard>
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="text-center space-y-3">
+          <XCircle className="w-12 h-12 text-destructive mx-auto" />
+          <h2 className="text-lg font-bold text-foreground">Something Went Wrong</h2>
+          <p className="text-sm text-muted-foreground">Could not load this payment session. Please try again.</p>
+          <button
+            onClick={handleRetry}
+            disabled={retrying}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold mt-2 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${retrying ? "animate-spin" : ""}`} />
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
 
-  /* ── Main (pending / completed / expired) ── */
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Background />
-      <GlassCard>
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-sm bg-card rounded-3xl shadow-xl border border-border overflow-hidden"
+      >
         {/* Header */}
-        <div className="px-6 pt-7 pb-5 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-3 ring-1 ring-primary/10">
+        <div className="bg-gradient-to-br from-primary/10 via-card to-accent/5 px-6 pt-6 pb-4 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-primary/15 flex items-center justify-center mx-auto mb-3">
             <Store className="w-7 h-7 text-primary" />
           </div>
-          {merchantName && (
-            <h1 className="text-lg font-bold text-foreground tracking-tight">{merchantName}</h1>
-          )}
-          {merchantCategory && (
-            <p className="text-xs text-muted-foreground capitalize mt-0.5">
-              {merchantCategory.replace(/_/g, " ")}
-            </p>
-          )}
-          <div className="mt-3 flex items-baseline justify-center gap-1.5">
-            <span className="text-3xl font-extrabold text-foreground tracking-tight">
-              ৳{fmt(amount)}
-            </span>
-            <span className="text-[10px] font-medium text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-full">
-              {currency}
-            </span>
-          </div>
-          {reference && (
-            <p className="text-xs text-muted-foreground/70 mt-2">Ref: {reference}</p>
-          )}
+          {merchantName && <h1 className="text-lg font-bold text-foreground">{merchantName}</h1>}
+          {merchantCategory && <p className="text-xs text-muted-foreground capitalize">{merchantCategory.replace(/_/g, " ")}</p>}
+          <p className="text-3xl font-extrabold text-foreground mt-1">
+            ৳{fmt(amount)} <span className="text-sm font-medium text-muted-foreground">{currency}</span>
+          </p>
+          {reference && <p className="text-xs text-muted-foreground mt-1">Ref: {reference}</p>}
         </div>
 
-        {/* Thin divider */}
-        <div className="mx-6 h-px bg-border/10" />
-
         <AnimatePresence mode="wait">
-          {/* ── Pending ── */}
           {status === "pending" && (
-            <motion.div
-              key="pending"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="px-6 pt-5 pb-6 space-y-5"
-            >
+            <motion.div key="pending" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 space-y-5">
               {qrDataUrl && (
-                <div className="bg-white rounded-2xl p-5 mx-auto w-fit shadow-sm shadow-black/5">
-                  <img src={qrDataUrl} alt="Payment QR Code" className="w-56 h-56" />
+                <div className="bg-white rounded-2xl p-4 mx-auto w-fit shadow-sm">
+                  <img src={qrDataUrl} alt="Payment QR Code" className="w-64 h-64" />
                 </div>
               )}
               <p className="text-center text-sm text-muted-foreground">
                 Scan with <span className="font-semibold text-foreground">EasyPay</span> app to pay
               </p>
               <div className="flex items-center justify-center gap-2">
-                <Clock className="w-4 h-4 text-muted-foreground/70" />
-                <span
-                  className={`text-sm font-mono font-bold tracking-wider ${
-                    secondsLeft <= 60 ? "text-destructive" : "text-muted-foreground"
-                  }`}
-                >
+                <Clock className="w-4 h-4 text-muted-foreground" />
+                <span className={`text-sm font-mono font-bold ${secondsLeft <= 60 ? "text-destructive" : "text-muted-foreground"}`}>
                   {fmtTime(secondsLeft)}
                 </span>
               </div>
               <div className="flex items-center justify-center gap-2">
                 <motion.div
-                  className="w-1.5 h-1.5 rounded-full bg-primary"
-                  animate={{ scale: [1, 1.6, 1], opacity: [0.4, 1, 0.4] }}
+                  className="w-2 h-2 rounded-full bg-primary"
+                  animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
                   transition={{ duration: 1.5, repeat: Infinity }}
                 />
-                <span className="text-xs text-muted-foreground/70">Waiting for payment…</span>
+                <span className="text-xs text-muted-foreground">Waiting for payment…</span>
               </div>
-            </motion.div>
-          )}
-
-          {/* ── Completed ── */}
-          {status === "completed" && (
-            <motion.div
-              key="completed"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="px-6 pt-6 pb-8 text-center space-y-4"
-            >
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.1 }}
-                className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto"
-              >
-                <CheckCircle2 className="w-10 h-10 text-primary" />
-              </motion.div>
-              <h2 className="text-xl font-bold text-foreground">Payment Received!</h2>
-              <p className="text-sm text-muted-foreground">৳{fmt(amount)} paid successfully</p>
-              {successUrl && (
-                <p className="text-xs text-muted-foreground/60">Redirecting…</p>
+              {isAuthenticated && (
+                <button
+                  onClick={() => setShowPaySheet(true)}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm"
+                >
+                  <Wallet className="w-4 h-4" />
+                  Pay with EasyPay
+                </button>
               )}
             </motion.div>
           )}
 
-          {/* ── Expired ── */}
+          {status === "completed" && (
+            <motion.div key="completed" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="p-8 text-center space-y-4">
+              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.1 }}>
+                <CheckCircle2 className="w-16 h-16 text-primary mx-auto" />
+              </motion.div>
+              <h2 className="text-xl font-bold text-foreground">Payment Received!</h2>
+              <p className="text-sm text-muted-foreground">৳{fmt(amount)} paid successfully</p>
+              {successUrl && <p className="text-xs text-muted-foreground">Redirecting…</p>}
+            </motion.div>
+          )}
+
           {status === "expired" && (
-            <motion.div
-              key="expired"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="px-6 pt-6 pb-8 text-center space-y-4"
-            >
-              <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto">
-                <XCircle className="w-8 h-8 text-destructive/60" />
-              </div>
+            <motion.div key="expired" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 text-center space-y-4">
+              <XCircle className="w-14 h-14 text-destructive/60 mx-auto" />
               <h2 className="text-lg font-bold text-foreground">Session Expired</h2>
               <p className="text-sm text-muted-foreground">This payment session has expired.</p>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Footer */}
-        <div className="border-t border-border/10 px-6 py-4 text-center">
-          <p className="text-[10px] text-muted-foreground/50 flex items-center justify-center gap-1">
-            <Shield className="w-3 h-3" /> Secured by EasyPay
-          </p>
+        <div className="px-6 pb-5 pt-2 text-center">
+          <p className="text-[10px] text-muted-foreground/60">Powered by EasyPay</p>
         </div>
-      </GlassCard>
+      </motion.div>
+
+      {sessionId && (
+        <DynamicQrPaySheet
+          open={showPaySheet}
+          onClose={() => { setShowPaySheet(false); fetchSession(); }}
+          sessionId={sessionId}
+          merchantId={merchantId}
+          amount={amount}
+          ref_={reference}
+        />
+      )}
     </div>
   );
 };
