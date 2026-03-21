@@ -1470,9 +1470,9 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
     const net = summary.incoming - summary.outgoing;
     const summaryData = [
       { label: "Transactions", value: String(summary.count) },
-      { label: "Incoming", value: `৳${fmt(summary.incoming)}` },
-      { label: "Outgoing", value: `৳${fmt(summary.outgoing)}` },
-      { label: "Net Balance", value: `৳${fmt(net)}` },
+      { label: "Incoming", value: `Tk ${fmt(summary.incoming)}` },
+      { label: "Outgoing", value: `Tk ${fmt(summary.outgoing)}` },
+      { label: "Net Balance", value: `Tk ${fmt(net)}` },
     ];
     summaryData.forEach((cell, i) => {
       const cx = ml + i * (cellW + 3);
