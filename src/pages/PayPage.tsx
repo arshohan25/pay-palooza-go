@@ -320,6 +320,7 @@ const PayPage = () => {
     haptics.medium();
     try {
       const cleanPhone = phone.replace(/\D/g, "");
+      const safeReference = refParam.trim().toUpperCase();
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const res = await fetch(`https://${projectId}.supabase.co/functions/v1/checkout-guest`, {
         method: "POST",
@@ -331,7 +332,7 @@ const PayPage = () => {
           recipient_phone: merchant.phone,
           amount: amountParam,
           description: description || `Payment to ${merchant.business_name}`,
-          reference: refParam || null,
+          reference: safeReference || null,
           merchant_id: merchant.id || null,
         }),
       });
