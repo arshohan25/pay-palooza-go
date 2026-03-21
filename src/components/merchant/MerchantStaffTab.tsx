@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Plus, Shield, Trash2 } from "lucide-react";
+import { Users, Plus, Shield, Trash2, LinkIcon, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 
@@ -52,10 +52,14 @@ export default function MerchantStaffTab({ merchantId }: Props) {
   const handleAdd = async () => {
     if (!name.trim() || !phone.trim()) { toast.error("Name and phone are required"); return; }
     setSaving(true);
-    const { error } = await supabase.from("merchant_staff").insert({ merchant_id: merchantId, name: name.trim(), phone: phone.trim(), role });
+    const { data, error } = await supabase.from("merchant_staff").insert({ merchant_id: merchantId, name: name.trim(), phone: phone.trim(), role }).select().single();
     setSaving(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Staff added");
+    if (data?.user_id) {
+      toast.success("Staff added & linked to EasyPay account");
+    } else {
+      toast.success("Staff added (not yet on EasyPay)");
+    }
     setShowAdd(false); setName(""); setPhone(""); setRole("Cashier");
   };
 
@@ -70,6 +74,7 @@ export default function MerchantStaffTab({ merchantId }: Props) {
   };
 
   const activeCount = staff.filter(s => s.is_active).length;
+  const linkedCount = staff.filter(s => s.user_id).length;
 
   if (loading) return <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>;
 
@@ -84,9 +89,10 @@ export default function MerchantStaffTab({ merchantId }: Props) {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <Card className="border-0 shadow-elevated"><CardContent className="p-3 text-center"><p className="text-lg font-bold text-foreground">{staff.length}</p><p className="text-[10px] text-muted-foreground">Total Staff</p></CardContent></Card>
         <Card className="border-0 shadow-elevated"><CardContent className="p-3 text-center"><p className="text-lg font-bold text-emerald-600">{activeCount}</p><p className="text-[10px] text-muted-foreground">Active</p></CardContent></Card>
+        <Card className="border-0 shadow-elevated"><CardContent className="p-3 text-center"><p className="text-lg font-bold text-blue-600">{linkedCount}</p><p className="text-[10px] text-muted-foreground">Linked</p></CardContent></Card>
       </div>
 
       <Card className="border-0 shadow-elevated">
@@ -111,7 +117,18 @@ export default function MerchantStaffTab({ merchantId }: Props) {
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-muted/60 flex items-center justify-center text-sm font-bold text-foreground">{s.name.charAt(0)}</div>
                     <div>
-                      <p className="text-xs font-bold text-foreground">{s.name}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs font-bold text-foreground">{s.name}</p>
+                        {s.user_id ? (
+                          <Badge variant="outline" className="text-[8px] px-1 py-0 bg-emerald-500/10 text-emerald-600 border-emerald-200">
+                            <LinkIcon size={8} className="mr-0.5" />Linked
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[8px] px-1 py-0 bg-amber-500/10 text-amber-600 border-amber-200">
+                            <AlertTriangle size={8} className="mr-0.5" />Not on EasyPay
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-[10px] text-muted-foreground">{s.phone}</p>
                     </div>
                   </div>
@@ -141,6 +158,7 @@ export default function MerchantStaffTab({ merchantId }: Props) {
                 ))}
               </div>
             </div>
+            <p className="text-[10px] text-muted-foreground">If the phone matches an EasyPay user, they'll get staff access to your merchant dashboard.</p>
             <Button className="w-full" disabled={saving} onClick={handleAdd}>{saving ? "Adding..." : "Add Staff"}</Button>
           </div>
         </SheetContent>

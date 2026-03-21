@@ -2332,6 +2332,7 @@ export type Database = {
           phone: string
           role: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -2342,6 +2343,7 @@ export type Database = {
           phone: string
           role?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -2352,6 +2354,7 @@ export type Database = {
           phone?: string
           role?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -4499,6 +4502,14 @@ export type Database = {
           updated_at: string
           vendor_name: string
           video_url: string
+        }[]
+      }
+      get_staff_merchant_access: {
+        Args: { p_user_id: string }
+        Returns: {
+          business_name: string
+          merchant_id: string
+          staff_role: string
         }[]
       }
       has_role: {

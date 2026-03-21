@@ -4,6 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { usePhoneValidation } from "@/hooks/use-phone-validation";
 import { useAuth } from "@/hooks/use-auth";
+import { useStaffAccess } from "@/hooks/use-staff-access";
 import { supabase } from "@/integrations/supabase/client";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { motion, AnimatePresence } from "framer-motion";
@@ -148,14 +149,32 @@ const stagger = {
 /* ═══════════════════════════════════════════════════════════════════════════ */
 const MerchantDashboard = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { isStaff, staffRole, merchantId: staffMerchantId, merchantName: staffMerchantName, loading: staffLoading } = useStaffAccess();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isDisabled } = useGlobalToggles();
 
-  const visibleMenuItems = useMemo(() =>
-    menuItems.filter(item => !item.toggleKey || !isDisabled(item.toggleKey)),
-    [isDisabled]
+  // Staff role-based tab restrictions
+  const staffAllowedTabs = useMemo<Set<MerchTab> | null>(() => {
+    if (!isStaff) return null; // no restriction for merchant owners
+    switch (staffRole) {
+      case "Manager": return null; // full read access
+      case "Cashier": return new Set<MerchTab>(["overview", "orders", "products"]);
+      case "Viewer": return new Set<MerchTab>(["overview"]);
+      default: return new Set<MerchTab>(["overview"]);
+    }
+  }, [isStaff, staffRole]);
+
+  const visibleMainTabs = useMemo(() =>
+    staffAllowedTabs ? mainTabs.filter(t => staffAllowedTabs.has(t.id)) : mainTabs,
+    [staffAllowedTabs]
   );
+
+  const visibleMenuItems = useMemo(() => {
+    let items = menuItems.filter(item => !item.toggleKey || !isDisabled(item.toggleKey));
+    if (staffAllowedTabs) items = items.filter(item => staffAllowedTabs.has(item.id));
+    return items;
+  }, [isDisabled, staffAllowedTabs]);
 
   const [activeTab, setActiveTab] = useState<MerchTab>("overview");
   const [merchant, setMerchant] = useState<MerchantInfo | null>(null);
@@ -186,6 +205,21 @@ const MerchantDashboard = () => {
   const loadData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
+
+    // If user is staff (not merchant owner), load the merchant they're linked to
+    if (isStaff && staffMerchantId && !staffLoading) {
+      const [merchRes, profileRes] = await Promise.all([
+        supabase.from("merchants").select("*").eq("id", staffMerchantId).single(),
+        supabase.from("profiles").select("balance").eq("user_id", user.id).single(),
+      ]);
+      setIsMerchant(true); // treat as merchant for rendering
+      setBalance(profileRes.data?.balance ?? 0);
+      setMerchant(merchRes.data as MerchantInfo | null);
+      setTxns([]); // staff don't see owner's transactions
+      setLoading(false);
+      return;
+    }
+
     const [roleRes, profileRes, merchRes, txnRes] = await Promise.all([
       supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "merchant"),
       supabase.from("profiles").select("balance").eq("user_id", user.id).single(),
@@ -197,7 +231,7 @@ const MerchantDashboard = () => {
     setMerchant(merchRes.data as MerchantInfo | null);
     setTxns((txnRes.data ?? []) as TxnRow[]);
     setLoading(false);
-  }, [user]);
+  }, [user, isStaff, staffMerchantId, staffLoading]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -274,7 +308,7 @@ const MerchantDashboard = () => {
 
   const paymentTxns = useMemo(() => txns.filter(t => t.type === "payment"), [txns]);
 
-  if (authLoading || loading) {
+  if (authLoading || staffLoading || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -339,7 +373,12 @@ const MerchantDashboard = () => {
                 <h1 className="text-xl font-extrabold tracking-tight truncate">{merchant?.business_name || "Merchant"}</h1>
                 <BadgeCheck size={18} className="text-white/80 shrink-0" />
               </div>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                {isStaff && (
+                  <Badge className="text-[9px] bg-blue-400/30 border-blue-300/30 text-blue-100 backdrop-blur-sm">
+                    <Users size={8} className="mr-0.5" />Staff · {staffRole}
+                  </Badge>
+                )}
                 <Badge className="text-[9px] bg-white/15 border-white/20 text-white capitalize backdrop-blur-sm">{merchant?.category || "retail"}</Badge>
                 <Badge className="text-[9px] bg-white/15 border-white/20 text-white backdrop-blur-sm">
                   <Zap size={8} className="mr-0.5" />{merchant?.settlement_frequency || "T+1"}
@@ -351,40 +390,42 @@ const MerchantDashboard = () => {
             </div>
           </div>
 
-          {/* Balance hero — tap to reveal, 5s auto-hide */}
-          <div className="glass-hero rounded-2xl p-4 w-full">
-            <div className="flex items-center justify-between gap-3">
-              <motion.button
-                type="button"
-                whileTap={{ scale: 0.98 }}
-                onClick={toggleBalance}
-                className="w-fit max-w-full text-left"
-                aria-label={showBalance ? "Hide balance" : "Tap to see balance"}
-              >
-                <p className="text-[11px] font-medium text-white/60 uppercase tracking-wider">Available Balance</p>
-                <AnimatePresence mode="wait">
-                  {showBalance ? (
-                    <motion.p key="bal" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="text-3xl font-black tracking-tight mt-0.5 flex items-center gap-2">
-                      ৳{fmt(balance)}
-                      <EyeOff size={14} className="opacity-50" />
-                    </motion.p>
-                  ) : (
-                    <motion.div key="hidden" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="flex items-center gap-2 mt-1.5 bg-white/10 rounded-xl px-3 py-1.5 w-fit">
-                      <Eye size={13} className="opacity-80" />
-                      <span className="text-[12px] font-semibold opacity-90">Tap to see balance</span>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.button>
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setActiveTab("qr")}
-                className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0 active:bg-white/20 transition-colors"
-              >
-                <QrCode size={22} />
-              </motion.button>
+          {/* Balance hero — hidden for staff, tap to reveal for owners */}
+          {!isStaff && (
+            <div className="glass-hero rounded-2xl p-4 w-full">
+              <div className="flex items-center justify-between gap-3">
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.98 }}
+                  onClick={toggleBalance}
+                  className="w-fit max-w-full text-left"
+                  aria-label={showBalance ? "Hide balance" : "Tap to see balance"}
+                >
+                  <p className="text-[11px] font-medium text-white/60 uppercase tracking-wider">Available Balance</p>
+                  <AnimatePresence mode="wait">
+                    {showBalance ? (
+                      <motion.p key="bal" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="text-3xl font-black tracking-tight mt-0.5 flex items-center gap-2">
+                        ৳{fmt(balance)}
+                        <EyeOff size={14} className="opacity-50" />
+                      </motion.p>
+                    ) : (
+                      <motion.div key="hidden" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="flex items-center gap-2 mt-1.5 bg-white/10 rounded-xl px-3 py-1.5 w-fit">
+                        <Eye size={13} className="opacity-80" />
+                        <span className="text-[12px] font-semibold opacity-90">Tap to see balance</span>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setActiveTab("qr")}
+                  className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0 active:bg-white/20 transition-colors"
+                >
+                  <QrCode size={22} />
+                </motion.button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </header>
 
@@ -432,7 +473,7 @@ const MerchantDashboard = () => {
       {/* ── Tab strip ── */}
       <div className=" px-4 mt-3">
         <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-2 bg-muted/50 rounded-2xl p-1.5">
-          {mainTabs.map(t => {
+          {visibleMainTabs.map(t => {
             const active = activeTab === t.id;
             return (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
@@ -478,7 +519,7 @@ const MerchantDashboard = () => {
             {/* Sticky tab header */}
             <div className="shrink-0 bg-background border-b border-border/50 px-4 pt-3 pb-2">
               <div className="flex gap-1.5 bg-muted/50 rounded-2xl p-1.5">
-                {mainTabs.map(t => {
+                {visibleMainTabs.map(t => {
                   const active = activeTab === t.id;
                   return (
                     <button key={t.id} onClick={() => setActiveTab(t.id)}
