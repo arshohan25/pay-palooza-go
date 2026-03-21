@@ -37,31 +37,50 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const cleanPhone = phone.replace(/\D/g, "").replace(/^(88)/, "");
+    let cleanPhone: string;
 
-    // 1. Verify OTP
-    const now = new Date().toISOString();
-    const { data: otpRow, error: otpErr } = await supabaseAdmin
-      .from("otp_codes")
-      .select("*")
-      .eq("phone", cleanPhone)
-      .eq("code", otp_code)
-      .eq("purpose", "payment")
-      .eq("verified", false)
-      .gte("expires_at", now)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    if (isQrFlow) {
+      // For QR flow: extract user from Authorization header
+      const authHeader = req.headers.get("authorization")?.replace("Bearer ", "");
+      if (!authHeader) return jsonRes({ error: "Not authenticated" }, 401);
 
-    if (otpErr || !otpRow) {
-      return jsonRes({ error: "Invalid or expired OTP" }, 400);
+      const { data: { user }, error: userErr } = await supabaseAdmin.auth.getUser(authHeader);
+      if (userErr || !user) return jsonRes({ error: "Invalid auth token" }, 401);
+
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("phone")
+        .eq("user_id", user.id)
+        .single();
+      if (!profile?.phone) return jsonRes({ error: "Profile not found" }, 400);
+      cleanPhone = profile.phone;
+    } else {
+      cleanPhone = phone.replace(/\D/g, "").replace(/^(88)/, "");
+
+      // 1. Verify OTP
+      const now = new Date().toISOString();
+      const { data: otpRow, error: otpErr } = await supabaseAdmin
+        .from("otp_codes")
+        .select("*")
+        .eq("phone", cleanPhone)
+        .eq("code", otp_code)
+        .eq("purpose", "payment")
+        .eq("verified", false)
+        .gte("expires_at", now)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (otpErr || !otpRow) {
+        return jsonRes({ error: "Invalid or expired OTP" }, 400);
+      }
+
+      // Mark OTP as verified
+      await supabaseAdmin
+        .from("otp_codes")
+        .update({ verified: true })
+        .eq("id", otpRow.id);
     }
-
-    // Mark OTP as verified
-    await supabaseAdmin
-      .from("otp_codes")
-      .update({ verified: true })
-      .eq("id", otpRow.id);
 
     // 2. Load payment session
     const { data: session, error: sessErr } = await supabaseAdmin
