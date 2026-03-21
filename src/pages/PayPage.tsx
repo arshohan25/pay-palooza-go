@@ -473,12 +473,11 @@ const PayPage = () => {
                 <p className="text-sm font-bold text-foreground">Enter your phone number</p>
                 <p className="text-[11px] text-muted-foreground mt-1">We'll send a verification code</p>
               </div>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-semibold">+880</span>
+              <div>
                 <input type="tel" inputMode="numeric" maxLength={11} value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
                   placeholder="01XXXXXXXXX"
-                  className="w-full pl-16 pr-4 py-3.5 rounded-2xl bg-background/50 border border-border/40 text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/40 backdrop-blur-sm transition-shadow"
+                  className="w-full px-6 py-3.5 rounded-2xl bg-background/50 border border-border/40 text-foreground text-center text-lg font-semibold tracking-widest placeholder:text-center placeholder:text-muted-foreground placeholder:font-medium placeholder:text-base placeholder:tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/30 backdrop-blur-sm transition-all"
                   autoFocus />
               </div>
               {errorMsg && <p className="text-xs text-destructive text-center">{errorMsg}</p>}
@@ -500,7 +499,7 @@ const PayPage = () => {
               <StepDots current="otp" />
               <div className="text-center">
                 <p className="text-sm font-bold text-foreground">Enter verification code</p>
-                <p className="text-[11px] text-muted-foreground mt-1">Sent to +880{phone}</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Sent to {phone}</p>
               </div>
               <OtpInput value={otp} onChange={setOtp} />
               {devOtp && <p className="text-[10px] text-center text-muted-foreground/50 font-mono">Dev OTP: {devOtp}</p>}
