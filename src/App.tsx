@@ -67,7 +67,7 @@ const App = () => (
                 <Route path="/distributor/create-agent" element={<RoleGuard roles={["distributor", "admin"]}><DistributorCreateAgent /></RoleGuard>} />
                 <Route path="/super-distributor" element={<RoleGuard roles={["super_distributor", "admin"]}><SuperDistributorDashboard /></RoleGuard>} />
                 <Route path="/super-distributor/create-distributor" element={<RoleGuard roles={["super_distributor", "admin"]}><SuperDistributorCreateDistributor /></RoleGuard>} />
-                <Route path="/merchant" element={<RoleGuard roles={["merchant", "admin"]}><MerchantDashboard /></RoleGuard>} />
+                <Route path="/merchant" element={<RoleGuard roles={["merchant", "admin"]} allowStaff><MerchantDashboard /></RoleGuard>} />
                 <Route path="/checkout/:sessionId" element={<CheckoutPage />} />
                 <Route path="/pay/qr/:sessionId" element={<DynamicQrPage />} />
                 <Route path="/pay" element={<PayPage />} />
