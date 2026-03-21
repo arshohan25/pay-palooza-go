@@ -94,15 +94,87 @@ Deno.serve(async (req) => {
     }
 
     // 4. Look up recipient
-    const { data: recipient, error: recipientErr } = await supabaseAdmin
+    let recipient: { user_id: string; balance: number; name: string | null; phone: string } | null = null;
+
+    const { data: recipientByPhone, error: recipientErr } = await supabaseAdmin
       .from("profiles")
       .select("user_id, balance, name, phone")
       .eq("phone", cleanRecipient)
       .eq("status", "active")
       .maybeSingle();
 
-    if (recipientErr || !recipient) {
-      console.error("Recipient lookup failed:", { cleanRecipient, recipientErr });
+    if (recipientErr) {
+      console.error("Recipient phone lookup error:", { cleanRecipient, recipientErr });
+      return jsonRes({ error: "Recipient lookup failed" }, 500);
+    }
+
+    recipient = recipientByPhone;
+
+    // Fallback: resolve merchant recipient from payment link reference
+    if (!recipient && reference) {
+      console.warn("Recipient not found by phone, trying payment link fallback:", { cleanRecipient, reference });
+
+      const { data: paymentLink, error: linkErr } = await supabaseAdmin
+        .from("payment_links")
+        .select("merchant_id, merchant_code")
+        .eq("short_code", reference)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (linkErr) {
+        console.error("Payment link lookup error:", { reference, linkErr });
+      }
+
+      let merchantUserId: string | null = null;
+
+      if (paymentLink?.merchant_id) {
+        const { data: merchantRow, error: merchantErr } = await supabaseAdmin
+          .from("merchants")
+          .select("user_id")
+          .eq("id", paymentLink.merchant_id)
+          .eq("status", "active")
+          .maybeSingle();
+
+        if (merchantErr) {
+          console.error("Merchant lookup by merchant_id error:", { paymentLink, merchantErr });
+        }
+
+        merchantUserId = merchantRow?.user_id ?? null;
+      }
+
+      if (!merchantUserId && paymentLink?.merchant_code) {
+        const { data: merchantByCode, error: merchantByCodeErr } = await supabaseAdmin
+          .from("merchants")
+          .select("user_id")
+          .eq("qr_code_data", paymentLink.merchant_code)
+          .eq("status", "active")
+          .maybeSingle();
+
+        if (merchantByCodeErr) {
+          console.error("Merchant lookup by merchant_code error:", { paymentLink, merchantByCodeErr });
+        }
+
+        merchantUserId = merchantByCode?.user_id ?? null;
+      }
+
+      if (merchantUserId) {
+        const { data: recipientFromMerchant, error: recipientFromMerchantErr } = await supabaseAdmin
+          .from("profiles")
+          .select("user_id, balance, name, phone")
+          .eq("user_id", merchantUserId)
+          .eq("status", "active")
+          .maybeSingle();
+
+        if (recipientFromMerchantErr) {
+          console.error("Recipient fallback profile lookup error:", { merchantUserId, recipientFromMerchantErr });
+        }
+
+        recipient = recipientFromMerchant;
+      }
+    }
+
+    if (!recipient) {
+      console.error("Recipient lookup failed:", { cleanRecipient, reference });
       return jsonRes({ error: "Recipient not found" }, 400);
     }
 
