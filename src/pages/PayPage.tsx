@@ -152,35 +152,43 @@ const QrModal = ({
           exit={{ opacity: 0, scale: 0.92, y: 20 }}
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-xs bg-card/95 backdrop-blur-2xl border border-border/30 rounded-3xl overflow-hidden shadow-2xl"
+          className="w-full max-w-sm bg-card/90 backdrop-blur-2xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl shadow-primary/5"
         >
-          {/* Gradient header bar */}
-          <div className="h-1 w-full bg-gradient-to-r from-primary/60 via-primary to-primary/60" />
-          <div className="p-5 space-y-4">
-            <div className="relative flex items-center justify-center">
-              <h3 className="text-sm font-bold text-foreground">Scan to Pay</h3>
-              <button onClick={onClose} className="absolute right-0 w-7 h-7 rounded-full bg-muted/60 flex items-center justify-center active:scale-95 transition-transform">
-                <X size={13} className="text-muted-foreground" />
-              </button>
+          {/* Header */}
+          <div className="bg-gradient-to-br from-primary/10 via-card to-accent/5 px-6 pt-6 pb-4 text-center relative">
+            <button onClick={onClose} className="absolute right-4 top-4 w-7 h-7 rounded-full bg-muted/60 flex items-center justify-center active:scale-95 transition-transform">
+              <X size={13} className="text-muted-foreground" />
+            </button>
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-3 ring-2 ring-primary/10">
+              <Store className="w-7 h-7 text-primary" />
             </div>
+            <h3 className="text-lg font-bold text-foreground">Scan to Pay</h3>
+            {merchantName && <p className="text-xs text-muted-foreground mt-0.5">{merchantName}</p>}
+            {amount > 0 && (
+              <p className="text-3xl font-extrabold text-foreground mt-1">
+                ৳{fmt(amount)} <span className="text-sm font-medium text-muted-foreground bg-muted/30 px-2 py-0.5 rounded-full">BDT</span>
+              </p>
+            )}
+          </div>
 
-            <div className="flex flex-col items-center gap-3">
-              <div className="bg-white rounded-2xl p-3 shadow-sm">
-                {qrDataUrl ? (
-                  <img src={qrDataUrl} alt="Payment QR" className="w-48 h-48" style={{ imageRendering: "pixelated" }} />
-                ) : (
-                  <div className="w-48 h-48 flex items-center justify-center">
-                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full" />
-                  </div>
-                )}
-              </div>
-              <div className="text-center space-y-0.5">
-                <p className="text-sm font-bold text-foreground">{merchantName}</p>
-                {amount > 0 && <p className="text-lg font-extrabold text-primary">৳{fmt(amount)}</p>}
-                <p className="text-[10px] text-muted-foreground">Open <span className="font-semibold">EasyPay</span> app → Scan QR</p>
-              </div>
+          <div className="p-6 space-y-5">
+            <div className="bg-white rounded-2xl p-4 mx-auto w-fit shadow-lg">
+              {qrDataUrl ? (
+                <img src={qrDataUrl} alt="Payment QR" className="w-64 h-64" style={{ imageRendering: "pixelated" }} />
+              ) : (
+                <div className="w-64 h-64 flex items-center justify-center">
+                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full" />
+                </div>
+              )}
             </div>
+            <p className="text-center text-sm text-muted-foreground">
+              Open <span className="font-semibold text-foreground">EasyPay</span> app → Scan QR
+            </p>
+          </div>
+
+          <div className="px-6 pb-5 pt-2 text-center border-t border-border/20">
+            <p className="text-[10px] text-muted-foreground/60">Powered by EasyPay</p>
           </div>
         </motion.div>
       </motion.div>
