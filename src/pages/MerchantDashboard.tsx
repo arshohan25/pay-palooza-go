@@ -870,39 +870,6 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
         </Card>
       </motion.div>
 
-      {/* Today's Performance Card */}
-      <motion.div variants={stagger.item}>
-        <Card className="p-4 border-0 shadow-card">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Target size={15} className="text-primary" />
-            </div>
-            <h3 className="text-sm font-bold text-foreground">Today's Performance</h3>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="text-center p-2.5 rounded-xl bg-muted/40">
-              <p className="text-lg font-extrabold text-foreground">৳{fmt(todayRevenue)}</p>
-              <p className="text-[9px] text-muted-foreground font-medium mt-0.5">Revenue</p>
-              {revenueDelta !== 0 && (
-                <span className={`text-[9px] font-bold flex items-center justify-center gap-0.5 mt-1 ${revenueDelta >= 0 ? "text-emerald-600" : "text-red-500"}`}>
-                  {revenueDelta >= 0 ? <ArrowUpRight size={9} /> : <ArrowDownRight size={9} />}
-                  {Math.abs(revenueDelta).toFixed(0)}% vs yesterday
-                </span>
-              )}
-            </div>
-            <div className="text-center p-2.5 rounded-xl bg-muted/40">
-              <p className="text-lg font-extrabold text-foreground">{todayTxns.length}</p>
-              <p className="text-[9px] text-muted-foreground font-medium mt-0.5">Transactions</p>
-            </div>
-            <div className="text-center p-2.5 rounded-xl bg-muted/40">
-              <p className="text-lg font-extrabold text-foreground">{peakLabel}</p>
-              <p className="text-[9px] text-muted-foreground font-medium mt-0.5">Peak Hour</p>
-            </div>
-          </div>
-        </Card>
-      </motion.div>
-
-      {/* Weekly Revenue Sparkline */}
       <motion.div variants={stagger.item}>
         <Card className="p-4 border-0 shadow-card">
           <div className="flex items-center justify-between mb-3">
