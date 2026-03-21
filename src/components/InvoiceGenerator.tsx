@@ -135,8 +135,8 @@ async function buildDoc(order: InvoiceOrder): Promise<jsPDF> {
     return [
       { content: item.name || item.product_name || "Item", styles: { fontStyle: "bold" as const } },
       String(qty),
-      `৳${fmt(price)}`,
-      `৳${fmt(price * qty)}`,
+      `Tk ${fmt(price)}`,
+      `Tk ${fmt(price * qty)}`,
     ];
   });
 
