@@ -1,83 +1,72 @@
 
 
-## Complete Staff & Payouts Flow
+## Link Existing Users as Merchant Staff
 
-### Overview
-Create two new database tables (`merchant_staff` and `merchant_payouts`) with RLS, then rewrite both stub components to use real data with CRUD operations and real-time subscriptions.
+### What Changes
+
+**Goal**: When a merchant adds staff by phone number, the system resolves that phone to an existing EasyPay user. That user then sees a "Staff" indicator and can access a **read-only view** of the merchant dashboard based on their role.
 
 ---
 
 ### 1. Database Migration
 
-**`merchant_staff` table:**
-- `id` UUID PK
-- `merchant_id` UUID references merchants(id)
-- `name` TEXT NOT NULL
-- `phone` TEXT NOT NULL
-- `role` TEXT NOT NULL (Manager/Cashier/Viewer) — validated via trigger
-- `is_active` BOOLEAN DEFAULT true
-- `created_at` / `updated_at` TIMESTAMPTZ
+**Add `user_id` column to `merchant_staff`:**
+```sql
+ALTER TABLE merchant_staff ADD COLUMN user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+```
 
-**`merchant_payouts` table:**
-- `id` UUID PK
-- `merchant_id` UUID references merchants(id)
-- `amount` NUMERIC NOT NULL
-- `bank_name` TEXT
-- `account_number` TEXT
-- `account_holder` TEXT
-- `status` TEXT DEFAULT 'pending' (pending/completed/rejected) — validated via trigger
-- `admin_note` TEXT
-- `reviewed_by` UUID
-- `reviewed_at` TIMESTAMPTZ
-- `reference` TEXT (auto-generated PO-XXXXX)
-- `created_at` / `updated_at` TIMESTAMPTZ
+**Create a `resolve_staff_user` trigger** that auto-populates `user_id` by looking up the phone in `profiles`:
+- On INSERT/UPDATE of `phone`, find matching `profiles.user_id`
+- Set `merchant_staff.user_id` accordingly (NULL if not found — staff entry still saved)
 
-**RLS Policies:**
-- Merchants can SELECT/INSERT/UPDATE/DELETE their own staff (matched via merchant_id → merchants.user_id)
-- Merchants can SELECT/INSERT their own payouts
-- Admins can SELECT/UPDATE all payouts via `has_role()`
+**Create `get_staff_merchant_access(p_user_id UUID)` SECURITY DEFINER RPC:**
+- Returns the merchant_id, merchant business_name, and staff role for any active staff records linked to the given user_id
+- Used by the app to detect if the logged-in user is staff somewhere
 
-**Admin RPC — `process_merchant_payout`:**
-- On approve: debit merchant wallet, record transaction, update payout status, notify merchant
-- On reject: update status with admin note, notify merchant
-- Audit log entry
-
-**Enable realtime** on both tables.
+**RLS update**: Add a policy so linked staff users can SELECT their own `merchant_staff` row.
 
 ---
 
-### 2. Rewrite `MerchantStaffTab.tsx`
+### 2. Update `MerchantStaffTab.tsx`
 
-- Accept `merchantId` prop
-- Fetch staff from `merchant_staff` filtered by merchant_id
-- Realtime subscription for live updates
-- **Add Staff Sheet**: name, phone, role (Manager/Cashier/Viewer) selector
-- **Staff List**: toggle active/inactive via `is_active` update, delete option
-- Role permissions info card (kept from current UI)
-- Summary: Total staff, Active count
+- When adding staff, after insert, show whether the phone was matched to an existing user (resolved badge vs "Not on EasyPay" warning)
+- Display a "Linked" badge next to staff entries where `user_id` is not null
+- Keep existing CRUD (toggle active, delete, role assignment)
 
 ---
 
-### 3. Rewrite `MerchantPayoutsTab.tsx`
+### 3. Staff Access to Merchant Dashboard
 
-- Accept `merchantId` prop
-- Fetch payouts from `merchant_payouts` filtered by merchant_id
-- Realtime subscription for live updates
-- **Request Payout Sheet**: amount input, auto-populated bank details from merchant record, submit creates pending payout
-- **Payout List**: summary cards (Total/Pending/Paid), status badges, filter by status
-- Empty state when no payouts exist
+**Update `MerchantDashboard.tsx`:**
+- On load, if the user doesn't have a `merchant` role, call `get_staff_merchant_access` RPC
+- If staff access exists, load the merchant dashboard in a **restricted mode** based on role:
+  - **Manager**: Full read access to all tabs
+  - **Cashier**: Orders + Products tabs only
+  - **Viewer**: Overview only (read-only)
+- Show a "Staff" badge in the header with role name
+- Hide menu items the staff role doesn't have access to
+
+**Update `App.tsx` route guard:**
+- The `/merchant` route currently requires `merchant` or `admin` role
+- Add logic: also allow access if `get_staff_merchant_access` returns a result for the user (staff of any merchant)
+- This means we need a new check — either extend `RoleGuard` or create a `MerchantOrStaffGuard` wrapper
 
 ---
 
-### 4. Update `MerchantDashboard.tsx`
+### 4. Staff Detection Hook — `use-staff-access.ts`
 
-- Pass `merchantId` to both `MerchantStaffTab` and `MerchantPayoutsTab`
+New hook that:
+- Calls `get_staff_merchant_access` for the current user
+- Caches the result
+- Returns `{ merchantId, merchantName, staffRole, isStaff, loading }`
+- Used by both the route guard and MerchantDashboard
 
 ---
 
 ### Files Changed
-1. **Database migration** — two tables, RLS, validation triggers, admin RPC, realtime
-2. **`src/components/merchant/MerchantStaffTab.tsx`** — full rewrite
-3. **`src/components/merchant/MerchantPayoutsTab.tsx`** — full rewrite
-4. **`src/pages/MerchantDashboard.tsx`** — pass merchantId props
+1. **Database migration** — `user_id` column, resolve trigger, RPC, RLS policy
+2. **`src/hooks/use-staff-access.ts`** — new hook
+3. **`src/components/merchant/MerchantStaffTab.tsx`** — show linked status
+4. **`src/pages/MerchantDashboard.tsx`** — staff restricted mode, role-based tab filtering
+5. **`src/App.tsx`** — update `/merchant` route to allow staff access
 
