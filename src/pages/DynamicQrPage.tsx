@@ -247,7 +247,7 @@ const DynamicQrPage = () => {
           )}
 
           {status === "completed" && (
-            <motion.div key="completed" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="p-8 text-center space-y-4">
+            <motion.div key="completed" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="p-5 text-center space-y-3">
               <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.1 }}>
                 <CheckCircle2 className="w-16 h-16 text-primary mx-auto" />
               </motion.div>
