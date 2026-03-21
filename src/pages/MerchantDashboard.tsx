@@ -879,12 +879,12 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
       <motion.div variants={stagger.item}>
         <Card className="p-5 border-0 shadow-sm rounded-2xl bg-gradient-to-br from-primary/5 via-card to-primary/8">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
-              <QrCode size={26} className="text-primary" />
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <QrCode size={18} className="text-primary" />
             </div>
             <div className="flex-1 min-w-0">
               <h4 className="text-[15px] font-bold text-foreground leading-tight">Dynamic QR</h4>
-              <p className="text-[11px] text-muted-foreground mt-1 leading-snug">Generate a QR code that customers scan to pay instantly</p>
+              <p className="text-[11px] text-muted-foreground mt-1 leading-snug">Generate a QR code that customers<br />scan to pay instantly</p>
             </div>
             <Button
               size="sm"
