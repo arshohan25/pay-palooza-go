@@ -83,9 +83,7 @@ async function buildDoc(order: InvoiceOrder): Promise<jsPDF> {
   doc.text("INVOICE", mr, 16, { align: "right" });
 
   const invNum = `INV-${order.order_num?.replace("#", "") || "000"}`;
-  const invDate = new Date(order.created_at).toLocaleDateString("en-BD", {
-    day: "numeric", month: "short", year: "numeric",
-  });
+  const invDate = format(new Date(order.created_at), "dd MMM yyyy");
 
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
