@@ -471,7 +471,7 @@ const MerchantDashboard = () => {
       {/* ── Tab strip ── */}
       <div className=" px-4 mt-3">
         <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-2 bg-muted/50 rounded-2xl p-1.5">
-          {mainTabs.map(t => {
+          {visibleMainTabs.map(t => {
             const active = activeTab === t.id;
             return (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
