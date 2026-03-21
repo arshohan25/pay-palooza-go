@@ -258,7 +258,7 @@ const DynamicQrPage = () => {
           )}
 
           {status === "expired" && (
-            <motion.div key="expired" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 text-center space-y-4">
+            <motion.div key="expired" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-5 text-center space-y-3">
               <XCircle className="w-14 h-14 text-destructive/60 mx-auto" />
               <h2 className="text-lg font-bold text-foreground">Session Expired</h2>
               <p className="text-sm text-muted-foreground">This payment session has expired.</p>
