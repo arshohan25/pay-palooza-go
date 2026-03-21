@@ -1583,17 +1583,72 @@ const MDRTab = ({ merchant, paymentTxns }: { merchant: MerchantInfo | null; paym
 };
 
 /* ── Payment Links Tab ── */
+interface PaymentLink {
+  id: string;
+  short_code: string;
+  amount: number | null;
+  note: string | null;
+  is_active: boolean;
+  used_count: number;
+  created_at: string;
+  merchant_id: string | null;
+  merchant_code: string | null;
+  total_collected?: number;
+}
+
 const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any }) => {
-  const [links, setLinks] = useState<{ id: string; amount: number | null; note: string; createdAt: Date; url: string }[]>([]);
+  const [links, setLinks] = useState<PaymentLink[]>([]);
+  const [loading, setLoading] = useState(true);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [linkPayments, setLinkPayments] = useState<Record<string, any[]>>({});
+  const { user } = useAuth();
 
   const baseUrl = window.location.origin;
   const merchantCode = merchant?.qr_code_data || `MRC-${merchant?.id?.slice(0, 8) || "UNKNOWN"}`;
 
-  const generateLink = () => {
-    const id = Math.random().toString(36).slice(2, 10).toUpperCase();
+  // Load links from DB
+  const fetchLinks = useCallback(async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("payment_links")
+      .select("*")
+      .eq("created_by", user.id)
+      .order("created_at", { ascending: false });
+    if (!error && data) {
+      setLinks(data.map(d => ({
+        id: d.id,
+        short_code: d.short_code,
+        amount: d.amount ? Number(d.amount) : null,
+        note: d.note ?? d.description,
+        is_active: d.is_active,
+        used_count: d.used_count,
+        created_at: d.created_at,
+        merchant_id: d.merchant_id,
+        merchant_code: d.merchant_code,
+      })));
+    }
+    setLoading(false);
+  }, [user]);
+
+  useEffect(() => { fetchLinks(); }, [fetchLinks]);
+
+  // Realtime subscription
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel("payment_links_realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "payment_links", filter: `created_by=eq.${user.id}` }, () => {
+        fetchLinks();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, fetchLinks]);
+
+  const generateLink = async () => {
+    if (!user || !merchant) return;
     const parsedAmount = amount ? parseFloat(amount) : null;
 
     if (parsedAmount !== null && (isNaN(parsedAmount) || parsedAmount <= 0)) {
@@ -1605,45 +1660,85 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
       return;
     }
 
-    const params = new URLSearchParams({ merchant: merchantCode, ref: id });
-    if (parsedAmount) params.set("amount", parsedAmount.toString());
-    if (note.trim()) params.set("note", note.trim());
+    const shortCode = Math.random().toString(36).slice(2, 10).toUpperCase();
 
-    const url = `${baseUrl}/pay?${params.toString()}`;
-
-    setLinks(prev => [{
-      id,
+    const { error } = await supabase.from("payment_links").insert({
+      title: note.trim() || (parsedAmount ? `৳${parsedAmount} Payment` : "Open Payment"),
+      short_code: shortCode,
       amount: parsedAmount,
-      note: note.trim(),
-      createdAt: new Date(),
-      url,
-    }, ...prev]);
+      note: note.trim() || null,
+      description: note.trim() || null,
+      merchant_id: merchant.id,
+      merchant_code: merchantCode,
+      created_by: user.id,
+      is_active: true,
+    });
+
+    if (error) {
+      toast({ title: "Failed to create link", description: error.message, variant: "destructive" });
+      return;
+    }
 
     setAmount("");
     setNote("");
     toast({ title: "Payment link created!", description: "Share it with your customer" });
+    fetchLinks();
   };
 
-  const copyLink = (link: typeof links[0]) => {
-    navigator.clipboard.writeText(link.url);
+  const buildUrl = (link: PaymentLink) => {
+    const code = link.merchant_code || merchantCode;
+    const params = new URLSearchParams({ merchant: code, ref: link.short_code });
+    if (link.amount) params.set("amount", link.amount.toString());
+    if (link.note) params.set("note", link.note);
+    return `${baseUrl}/pay?${params.toString()}`;
+  };
+
+  const copyLink = (link: PaymentLink) => {
+    navigator.clipboard.writeText(buildUrl(link));
     setCopiedId(link.id);
     toast({ title: "Link copied!", description: "Payment link copied to clipboard" });
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const shareLink = async (link: typeof links[0]) => {
+  const shareLink = async (link: PaymentLink) => {
+    const url = buildUrl(link);
     const text = `Pay ${merchant?.business_name || "merchant"}${link.amount ? ` ৳${fmt(link.amount)}` : ""}${link.note ? ` — ${link.note}` : ""}`;
     if (navigator.share) {
-      try {
-        await navigator.share({ title: "Payment Link", text, url: link.url });
-      } catch {}
+      try { await navigator.share({ title: "Payment Link", text, url }); } catch {}
     } else {
       copyLink(link);
     }
   };
 
-  const removeLink = (id: string) => {
-    setLinks(prev => prev.filter(l => l.id !== id));
+  const toggleActive = async (link: PaymentLink) => {
+    const newActive = !link.is_active;
+    await supabase.from("payment_links").update({ is_active: newActive }).eq("id", link.id);
+    toast({ title: newActive ? "Link reactivated" : "Link revoked", description: newActive ? "Customers can pay again" : "This link will no longer accept payments" });
+    fetchLinks();
+  };
+
+  const removeLink = async (id: string) => {
+    await supabase.from("payment_links").delete().eq("id", id);
+    toast({ title: "Link deleted" });
+    fetchLinks();
+  };
+
+  const loadLinkPayments = async (linkId: string, shortCode: string) => {
+    if (linkPayments[linkId]) {
+      setExpandedId(expandedId === linkId ? null : linkId);
+      return;
+    }
+    // Find payments matching this link's reference
+    const { data } = await supabase
+      .from("transactions")
+      .select("id, amount, created_at, recipient_name, short_id")
+      .eq("reference", shortCode)
+      .eq("type", "payment")
+      .eq("status", "completed")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    setLinkPayments(prev => ({ ...prev, [linkId]: data || [] }));
+    setExpandedId(expandedId === linkId ? null : linkId);
   };
 
   return (
@@ -1734,7 +1829,11 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
       </motion.div>
 
       {/* Generated links */}
-      {links.length > 0 && (
+      {loading ? (
+        <Card className="p-8 border-0 shadow-card flex items-center justify-center">
+          <RefreshCw size={16} className="animate-spin text-muted-foreground" />
+        </Card>
+      ) : links.length > 0 ? (
         <motion.div variants={stagger.item}>
           <Card className="p-4 border-0 shadow-card">
             <div className="flex items-center justify-between mb-3">
@@ -1747,7 +1846,7 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                   key={link.id}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="p-3.5 rounded-xl bg-muted/30 border border-border/50"
+                  className={`p-3.5 rounded-xl border ${link.is_active ? "bg-muted/30 border-border/50" : "bg-destructive/5 border-destructive/20 opacity-70"}`}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1 min-w-0">
@@ -1755,20 +1854,32 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                         <span className="text-xs font-bold text-foreground">
                           {link.amount ? `৳${fmt(link.amount)}` : "Open Amount"}
                         </span>
-                        <Badge variant="secondary" className="text-[8px]">#{link.id}</Badge>
+                        <Badge variant={link.is_active ? "secondary" : "destructive"} className="text-[8px]">
+                          {link.is_active ? "Active" : "Revoked"}
+                        </Badge>
+                        {link.used_count > 0 && (
+                          <Badge variant="outline" className="text-[8px] text-primary border-primary/30">
+                            {link.used_count} paid
+                          </Badge>
+                        )}
                       </div>
                       {link.note && (
                         <p className="text-[10px] text-muted-foreground truncate">{link.note}</p>
                       )}
                     </div>
-                    <button onClick={() => removeLink(link.id)} className="tap-target text-muted-foreground hover:text-destructive transition-colors">
-                      <Trash2 size={13} />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => toggleActive(link)} className="tap-target text-muted-foreground hover:text-primary transition-colors" title={link.is_active ? "Revoke" : "Reactivate"}>
+                        {link.is_active ? <Lock size={13} /> : <CheckCircle2 size={13} />}
+                      </button>
+                      <button onClick={() => removeLink(link.id)} className="tap-target text-muted-foreground hover:text-destructive transition-colors">
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </div>
 
                   {/* URL preview */}
                   <div className="bg-background/60 rounded-lg p-2 mb-2.5">
-                    <p className="text-[9px] text-muted-foreground font-mono truncate">{link.url}</p>
+                    <p className="text-[9px] text-muted-foreground font-mono truncate">{buildUrl(link)}</p>
                   </div>
 
                   <div className="flex gap-2">
@@ -1777,6 +1888,7 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                       size="sm"
                       className="flex-1 h-9 rounded-lg text-[11px]"
                       onClick={() => copyLink(link)}
+                      disabled={!link.is_active}
                     >
                       {copiedId === link.id ? (
                         <><Check size={12} className="mr-1 text-primary" /> Copied!</>
@@ -1789,20 +1901,64 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
                       size="sm"
                       className="flex-1 h-9 rounded-lg text-[11px]"
                       onClick={() => shareLink(link)}
+                      disabled={!link.is_active}
                     >
                       <Share2 size={12} className="mr-1" /> Share
                     </Button>
                   </div>
 
+                  {/* Payment tracking */}
+                  <button
+                    onClick={() => loadLinkPayments(link.id, link.short_code)}
+                    className="w-full mt-2 flex items-center justify-between text-[10px] text-muted-foreground hover:text-foreground transition-colors py-1"
+                  >
+                    <span className="flex items-center gap-1">
+                      <Receipt size={10} /> {link.used_count} payment{link.used_count !== 1 ? "s" : ""} received
+                    </span>
+                    <ChevronDown size={10} className={`transition-transform ${expandedId === link.id ? "rotate-180" : ""}`} />
+                  </button>
+
+                  <AnimatePresence>
+                    {expandedId === link.id && linkPayments[link.id] && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        {linkPayments[link.id].length === 0 ? (
+                          <p className="text-[10px] text-muted-foreground text-center py-3">No payments yet</p>
+                        ) : (
+                          <div className="mt-1 space-y-1.5">
+                            {linkPayments[link.id].map((txn: any) => (
+                              <div key={txn.id} className="flex items-center justify-between bg-background/60 rounded-lg px-2.5 py-2">
+                                <div>
+                                  <p className="text-[10px] font-semibold text-foreground">৳{fmt(txn.amount)}</p>
+                                  <p className="text-[8px] text-muted-foreground">{txn.recipient_name || "Customer"}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-[8px] text-muted-foreground">
+                                    {new Date(txn.created_at).toLocaleDateString("en-BD", { day: "numeric", month: "short" })}
+                                  </p>
+                                  <p className="text-[7px] text-muted-foreground font-mono">{txn.short_id}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
                   <p className="text-[8px] text-muted-foreground mt-2 text-right">
-                    Created {link.createdAt.toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" })}
+                    Created {new Date(link.created_at).toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric" })}
                   </p>
                 </motion.div>
               ))}
             </div>
           </Card>
         </motion.div>
-      )}
+      ) : null}
 
       {/* Benefits */}
       <motion.div variants={stagger.item}>

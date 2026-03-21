@@ -164,6 +164,22 @@ Deno.serve(async (req) => {
       status: "completed",
     });
 
+    // 8. Increment used_count on payment link if reference matches a short_code
+    if (reference) {
+      const { data: linkRow } = await supabaseAdmin
+        .from("payment_links")
+        .select("id, used_count")
+        .eq("short_code", reference)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (linkRow) {
+        await supabaseAdmin
+          .from("payment_links")
+          .update({ used_count: (linkRow.used_count || 0) + 1 })
+          .eq("id", linkRow.id);
+      }
+    }
+
     return jsonRes({ success: true, message: "Payment completed" });
   } catch (err) {
     console.error("checkout-guest error:", err);
