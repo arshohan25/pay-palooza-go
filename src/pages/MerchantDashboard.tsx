@@ -112,10 +112,10 @@ const mainTabs: { id: MerchTab; icon: typeof QrCode; label: string }[] = [
   { id: "overview",     icon: BarChart3,    label: "Overview" },
   { id: "products",     icon: Package,      label: "Products" },
   { id: "orders",       icon: Receipt,      label: "Orders" },
-  { id: "store",        icon: Store,        label: "Store" },
 ];
 
 const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: string }[] = [
+  { id: "store",        icon: Store,        label: "Store Settings",   desc: "Customize your storefront" },
   { id: "analytics",    icon: PieChart,     label: "Analytics",        desc: "Insights, revenue & customers" },
   { id: "transactions", icon: ArrowUpDown,  label: "History",          desc: "View all transactions" },
   { id: "qr",           icon: QrCode,       label: "QR Code",          desc: "Your merchant QR code" },
