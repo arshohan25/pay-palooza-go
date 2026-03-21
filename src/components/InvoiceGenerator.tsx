@@ -223,7 +223,7 @@ async function buildDoc(order: InvoiceOrder): Promise<jsPDF> {
   doc.setFont("helvetica", "bold");
   doc.setTextColor(BRAND.r, BRAND.g, BRAND.b);
   doc.text("TOTAL", lx, sy + 2);
-  doc.text(`৳${fmt(Number(order.total))}`, vx, sy + 2, { align: "right" });
+  doc.text(`Tk ${fmt(Number(order.total))}`, vx, sy + 2, { align: "right" });
 
   // ── Footer ──
   const footerY = ph - 20;

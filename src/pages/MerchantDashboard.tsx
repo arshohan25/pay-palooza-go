@@ -1501,8 +1501,8 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
           new Date(tx.created_at).toLocaleDateString("en-BD", { day: "numeric", month: "short" }),
           (MERCH_TX_CONFIG[tx.type] || MERCH_TX_CONFIG.payment).label,
           getMerchTxHeadline(tx),
-          `${isIn ? "+" : "-"}৳${fmt(tx.amount)}`,
-          tx.fee > 0 ? `৳${fmt(tx.fee)}` : "—",
+          `${isIn ? "+" : "-"}Tk ${fmt(tx.amount)}`,
+          tx.fee > 0 ? `Tk ${fmt(tx.fee)}` : "—",
           tx.status,
         ];
       }),
