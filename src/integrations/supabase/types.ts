@@ -2199,7 +2199,9 @@ export type Database = {
       }
       merchants: {
         Row: {
+          bank_account_holder: string | null
           bank_account_number: string | null
+          bank_branch: string | null
           bank_name: string | null
           bank_routing: string | null
           business_name: string
@@ -2215,7 +2217,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          bank_account_holder?: string | null
           bank_account_number?: string | null
+          bank_branch?: string | null
           bank_name?: string | null
           bank_routing?: string | null
           business_name: string
@@ -2231,7 +2235,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          bank_account_holder?: string | null
           bank_account_number?: string | null
+          bank_branch?: string | null
           bank_name?: string | null
           bank_routing?: string | null
           business_name?: string
@@ -2713,6 +2719,33 @@ export type Database = {
           title?: string
           type?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_banks: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          short_code: string
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          short_code: string
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          short_code?: string
+          sort_order?: number | null
         }
         Relationships: []
       }
