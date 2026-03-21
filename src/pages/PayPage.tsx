@@ -332,6 +332,7 @@ const PayPage = () => {
           amount: amountParam,
           description: description || `Payment to ${merchant.business_name}`,
           reference: refParam || null,
+          merchant_id: merchant.id || null,
         }),
       });
       const result = await res.json();
