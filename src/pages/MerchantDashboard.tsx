@@ -1133,7 +1133,6 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
                 className="w-full gap-2 text-xs font-bold"
                 onClick={() => {
                   navigator.clipboard.writeText(generatedQrLink).catch(() => {});
-                  toast({ title: "Link Copied!", description: generatedQrLink });
                 }}
               >
                 <Copy size={13} /> Copy Payment Link
@@ -2372,7 +2371,6 @@ const PayLinksTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast
   const copyLink = (link: PaymentLink) => {
     navigator.clipboard.writeText(buildUrl(link));
     setCopiedId(link.id);
-    toast({ title: "Link copied!", description: "Payment link copied to clipboard" });
     setTimeout(() => setCopiedId(null), 2000);
   };
 
