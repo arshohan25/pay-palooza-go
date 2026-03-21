@@ -517,7 +517,7 @@ const MerchantDashboard = () => {
             {/* Sticky tab header */}
             <div className="shrink-0 bg-background border-b border-border/50 px-4 pt-3 pb-2">
               <div className="flex gap-1.5 bg-muted/50 rounded-2xl p-1.5">
-                {mainTabs.map(t => {
+                {visibleMainTabs.map(t => {
                   const active = activeTab === t.id;
                   return (
                     <button key={t.id} onClick={() => setActiveTab(t.id)}
