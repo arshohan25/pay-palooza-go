@@ -832,36 +832,85 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
             <h3 className="text-sm font-bold text-foreground">Recent Activity</h3>
             <button onClick={onSeeAll} className="text-[10px] font-semibold text-primary hover:underline">See All</button>
           </div>
-          {paymentTxns.length === 0 ? (
+          {allTxns.length === 0 ? (
             <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
               <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
                 <CreditCard className="w-7 h-7 text-muted-foreground" />
               </motion.div>
-              <p className="text-sm font-semibold text-foreground">No payments yet</p>
-              <p className="text-xs text-muted-foreground mt-1">Payments will appear here</p>
+              <p className="text-sm font-semibold text-foreground">No activity yet</p>
+              <p className="text-xs text-muted-foreground mt-1">Transactions will appear here</p>
             </motion.div>
           ) : (
             <div className="space-y-1">
-              {paymentTxns.slice(0, 5).map(tx => (
-                <div key={tx.id} className="flex items-center justify-between py-2.5 px-2 rounded-xl hover:bg-muted/30 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                      <CreditCard size={15} className="text-emerald-600" />
+              {allTxns.slice(0, 5).map(tx => {
+                const cfg = MERCH_TX_CONFIG[tx.type] || MERCH_TX_CONFIG.payment;
+                const TxIcon = cfg.icon;
+                const isIncoming = MERCHANT_INCOMING_TYPES.has(tx.type);
+                return (
+                  <button key={tx.id} onClick={() => setOverviewSelectedTx(tx)} className="w-full flex items-center justify-between py-2.5 px-2 rounded-xl hover:bg-muted/30 transition-colors text-left">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-xl ${cfg.iconBg} flex items-center justify-center`}>
+                        <TxIcon size={15} className={cfg.iconColor} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-foreground truncate max-w-[160px]">{getMerchTxHeadline(tx)}</p>
+                        <p className="text-[9px] text-muted-foreground">{cfg.label}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs font-semibold text-foreground">{tx.recipient_name || "Customer"}</p>
-                      <p className="text-[9px] text-muted-foreground">{tx.reference || "Payment"}</p>
+                    <div className="text-right">
+                      <p className={`text-xs font-bold ${isIncoming ? "text-emerald-600" : "text-foreground"}`}>{isIncoming ? "+" : "−"}৳{fmt(tx.amount)}</p>
+                      <p className="text-[9px] text-muted-foreground">{new Date(tx.created_at).toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" })}</p>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs font-bold text-emerald-600">+৳{fmt(tx.amount)}</p>
-                    <p className="text-[9px] text-muted-foreground">{new Date(tx.created_at).toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" })}</p>
-                  </div>
-                </div>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           )}
         </Card>
+
+        {/* Overview detail sheet */}
+        <Sheet open={!!overviewSelectedTx} onOpenChange={(o) => { if (!o) setOverviewSelectedTx(null); }}>
+          <SheetContent side="bottom" className="rounded-t-3xl max-h-[85vh] overflow-y-auto px-5 pb-8">
+            <SheetHeader>
+              <SheetTitle>{overviewSelectedTx ? getMerchTxHeadline(overviewSelectedTx) : "Transaction"}</SheetTitle>
+            </SheetHeader>
+            {overviewSelectedTx && (() => {
+              const tx = overviewSelectedTx;
+              const cfg = MERCH_TX_CONFIG[tx.type] || MERCH_TX_CONFIG.payment;
+              const TxIcon = cfg.icon;
+              const isIncoming = MERCHANT_INCOMING_TYPES.has(tx.type);
+              return (
+                <div className="mt-4 space-y-5">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className={`w-14 h-14 rounded-2xl ${cfg.iconBg} flex items-center justify-center`}>
+                      <TxIcon size={24} className={cfg.iconColor} />
+                    </div>
+                    <p className={`text-2xl font-extrabold ${isIncoming ? "text-emerald-600" : "text-foreground"}`}>{isIncoming ? "+" : "−"}৳{fmt(tx.amount)}</p>
+                    <Badge variant={tx.status === "completed" ? "default" : "secondary"} className="text-[10px]">{tx.status}</Badge>
+                  </div>
+                  <div className="space-y-2 text-xs">
+                    {tx.short_id && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Transaction ID</span>
+                        <button onClick={() => { navigator.clipboard.writeText(tx.short_id); }} className="flex items-center gap-1 font-mono text-foreground">
+                          {tx.short_id} <Copy size={10} className="text-muted-foreground" />
+                        </button>
+                      </div>
+                    )}
+                    <div className="flex justify-between"><span className="text-muted-foreground">Type</span><span className="font-medium">{cfg.label}</span></div>
+                    {tx.recipient_name && <div className="flex justify-between"><span className="text-muted-foreground">{isIncoming ? "From" : "To"}</span><span className="font-medium">{tx.recipient_name}</span></div>}
+                    {tx.recipient_phone && <div className="flex justify-between"><span className="text-muted-foreground">Phone</span><span className="font-medium">{tx.recipient_phone}</span></div>}
+                    {tx.reference && <div className="flex justify-between"><span className="text-muted-foreground">Reference</span><span className="font-medium">{tx.reference}</span></div>}
+                    <div className="flex justify-between"><span className="text-muted-foreground">Date</span><span className="font-medium">{new Date(tx.created_at).toLocaleString("en-BD")}</span></div>
+                    {tx.fee > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Fee</span><span className="font-medium">৳{fmt(tx.fee)}</span></div>}
+                    {tx.balance_after != null && <div className="flex justify-between"><span className="text-muted-foreground">Balance After</span><span className="font-medium">৳{fmt(tx.balance_after)}</span></div>}
+                    {tx.description && <div className="flex justify-between"><span className="text-muted-foreground">Note</span><span className="font-medium">{tx.description}</span></div>}
+                  </div>
+                </div>
+              );
+            })()}
+          </SheetContent>
+        </Sheet>
       </motion.div>
 
       {/* Modals */}
