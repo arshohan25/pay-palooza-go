@@ -442,9 +442,67 @@ const MerchantDashboard = () => {
         </div>
       )}
 
-      {/* ── Full-screen overlay for all non-overview tabs ── */}
+      {/* ── Products / Orders slide-up overlay with tab header ── */}
       <AnimatePresence>
-        {activeTab !== "overview" && (
+        {(activeTab === "products" || activeTab === "orders") && (
+          <motion.div
+            key="products-orders-overlay"
+            initial={{ y: "100%", opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: "100%", opacity: 0 }}
+            transition={{ type: "spring", bounce: 0.12, duration: 0.45 }}
+            className="fixed inset-0 z-[70] bg-background flex flex-col"
+          >
+            {/* Sticky tab header */}
+            <div className="shrink-0 bg-background border-b border-border/50 px-4 pt-3 pb-2">
+              <div className="flex gap-1.5 bg-muted/50 rounded-2xl p-1.5">
+                {mainTabs.map(t => {
+                  const active = activeTab === t.id;
+                  return (
+                    <button key={t.id} onClick={() => setActiveTab(t.id)}
+                      className={`relative flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all press-effect flex-1 justify-center ${
+                        active ? "text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {active && (
+                        <motion.div
+                          layoutId="activeTabOverlay"
+                          className="absolute inset-0 rounded-xl"
+                          style={{ background: "linear-gradient(135deg, hsl(24 90% 50%), hsl(350 65% 38%))" }}
+                          transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+                        />
+                      )}
+                      <span className="relative z-10 flex items-center gap-1.5">
+                        <t.icon size={13} />{t.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {/* Tab content with fade-up */}
+            <div className="flex-1 overflow-y-auto">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="px-4 py-4"
+                >
+                  {activeTab === "products" && merchant && <MerchantProductsTab merchantId={merchant.id} businessName={merchant.business_name} />}
+                  {activeTab === "orders" && merchant && <MerchantOrdersTab merchantId={merchant.id} />}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Full-screen overlay for other non-overview tabs ── */}
+      <AnimatePresence>
+        {activeTab !== "overview" && activeTab !== "products" && activeTab !== "orders" && (
           <motion.div
             key={`fullscreen-${activeTab}`}
             initial={{ opacity: 0 }}
@@ -453,7 +511,6 @@ const MerchantDashboard = () => {
             transition={{ duration: 0.2 }}
             className="fixed inset-0 z-[70] bg-background flex flex-col"
           >
-            {/* Back header (skip for inbox which has its own) */}
             {activeTab !== "inbox" && (
               <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50 bg-background shrink-0">
                 <button onClick={() => setActiveTab("overview")} className="tap-target w-9 h-9 rounded-xl bg-muted/50 flex items-center justify-center">
@@ -466,8 +523,6 @@ const MerchantDashboard = () => {
             )}
             <div className="flex-1 overflow-y-auto">
               {activeTab === "inbox"        && <MerchantInbox onBack={() => setActiveTab("overview")} />}
-              {activeTab === "products"     && merchant && <div className="px-4 py-4"><MerchantProductsTab merchantId={merchant.id} businessName={merchant.business_name} /></div>}
-              {activeTab === "orders"       && merchant && <div className="px-4 py-4"><MerchantOrdersTab merchantId={merchant.id} /></div>}
               {activeTab === "store"        && merchant && <div className="px-4 py-4"><MerchantStoreSettingsTab merchantId={merchant.id} businessName={merchant.business_name} /></div>}
               {activeTab === "qr"           && <div className="px-4 py-4"><QRTab merchant={merchant} toast={toast} /></div>}
               {activeTab === "analytics"    && merchant && <div className="px-4 py-4"><MerchantAnalyticsTab merchantId={merchant.id} /></div>}
