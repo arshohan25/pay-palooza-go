@@ -556,7 +556,7 @@ const MerchantDashboard = () => {
                   <X size={16} className="text-muted-foreground" />
                 </button>
               </div>
-              <div className="flex-1 p-3 space-y-1.5">
+              <div className="flex-1 p-3 space-y-1.5 overflow-y-auto">
                 {menuItems.map(item => (
                   <button
                     key={item.id}
