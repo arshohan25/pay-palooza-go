@@ -1,27 +1,22 @@
 
 
-## Fix Logo Aspect Ratio & Taka Symbol in PDF
+## Change Date Format to "31 Jan 2026" Style
 
-### Problems Identified
-1. **Garbled Taka symbol (৳)**: jsPDF's built-in Helvetica font doesn't include Bengali Unicode characters, so `৳` renders as garbage. Need to replace `৳` with the ASCII text "BDT " or "Tk " prefix which Helvetica can render.
-2. **Logo distortion**: Currently rendered at 28×10mm which squishes it. Need to adjust to a more natural aspect ratio like 22×12mm or similar.
+### What
+Update all date formatting in the PDF generation code (both invoice and account statement) to use the `"dd MMM yyyy"` format (e.g., "31 Jan 2026") instead of locale-based `"en-BD"` formatting.
 
-### Changes in `src/pages/MerchantDashboard.tsx` (exportPDF)
+### Changes
 
-1. **Fix Taka symbol** — Replace all `৳` occurrences in the PDF generation with `"Tk "` (standard abbreviation) which renders correctly in Helvetica:
-   - Summary grid values: `Tk ${fmt(...)}` instead of `৳${fmt(...)}`
-   - Transaction table Amount column: `${isIn ? "+" : "-"}Tk ${fmt(tx.amount)}`
-   - Transaction table Fee column: `Tk ${fmt(tx.fee)}`
+**`src/components/InvoiceGenerator.tsx`**
+- Line 85-87: Change `toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric" })` → use `date-fns` `format(date, "dd MMM yyyy")` for the invoice date
+- Line 243: Change footer `toLocaleString("en-BD")` → `format(new Date(), "dd MMM yyyy, hh:mm a")`
+- Add `import { format } from "date-fns"` at top
 
-2. **Fix logo dimensions** — Change `doc.addImage(logo, "PNG", ml, 10, 28, 10)` to `doc.addImage(logo, "PNG", ml, 9, 18, 18)` for a squarer aspect ratio matching the actual logo shape.
-
-### Changes in `src/components/InvoiceGenerator.tsx` (buildDoc)
-
-Same fixes applied:
-1. Replace all `৳` with `Tk ` in the PDF text output
-2. Fix logo dimensions from `28×10` to `18×18`
+**`src/pages/MerchantDashboard.tsx`** (PDF export only)
+- Line 1454: Change `toLocaleDateString("en-BD")` → `format(new Date(), "dd MMM yyyy")` for "Generated" line
+- Line 1504: Change `toLocaleDateString("en-BD", { day: "numeric", month: "short" })` → `format(new Date(tx.created_at), "dd MMM yyyy")` for transaction table date column
 
 ### Files Modified
-- `src/pages/MerchantDashboard.tsx`
 - `src/components/InvoiceGenerator.tsx`
+- `src/pages/MerchantDashboard.tsx`
 
