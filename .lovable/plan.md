@@ -1,35 +1,37 @@
 
 
-## Add Date Range Picker & Search Bar to Merchant Transaction History
+## Move Search Bar Inline with Filter Mode Toggle
 
-### Overview
-Enhance the `TxnTab` component in `src/pages/MerchantDashboard.tsx` with two new features: a custom date range picker and a search bar for filtering transactions.
+### Change
+Reposition the search bar from its own full-width row below the filter controls to sit **inline on the right side** of the Monthly/Custom Range toggle buttons. This creates a cleaner, more compact header with better use of horizontal space.
 
-### Changes in `src/pages/MerchantDashboard.tsx`
+### Layout (before → after)
+```text
+BEFORE:
+┌─────────────────────────────┐
+│ [Monthly] [Custom Range]    │
+│ ← March 2026 →             │
+│ [This Month] [Last Month]  │
+│ [🔍 Search by name...]     │  ← full-width row
+│ 29 Txns | ৳135K | ৳93K     │
+└─────────────────────────────┘
 
-**1. Add filter mode toggle & new state**
-- Add `filterMode` state: `"month" | "range"`
-- Add `dateRange` state: `{ from: Date | undefined; to: Date | undefined }`
-- Add `searchQuery` state (string)
-- Toggle buttons ("Monthly" / "Custom Range") above the existing month nav
+AFTER:
+┌──────────────────────────────────┐
+│ [Monthly] [Custom Range]  [🔍___]│  ← search moved inline
+│ ← March 2026 →                  │
+│ [This Month] [Last Month]       │
+│ 29 Txns | ৳135K | ৳93K          │
+└──────────────────────────────────┘
+```
 
-**2. Custom date range UI**
-- When `filterMode === "range"`, replace the month nav arrows with two date picker popovers (From / To) using the existing `Calendar`, `Popover`, `PopoverTrigger`, `PopoverContent` components
-- Include a "Clear" button to reset the range
-- Add `CalendarIcon` to lucide imports
+### Technical details in `src/pages/MerchantDashboard.tsx`
 
-**3. Search bar**
-- Add an `Input` with a `Search` icon below the filter controls, above the summary stats
-- Placeholder: "Search by name, phone, or reference..."
-- Filters `filtered` results further by matching `searchQuery` against `recipient_name`, `recipient_phone`, `reference`, `description`, and `short_id` (case-insensitive)
+**Line 1471**: Change the mode toggle row from `flex gap-1.5 mb-3` to `flex items-center gap-1.5 mb-3` and add the search input as a right-aligned element inside it using `ml-auto`.
 
-**4. Update filtering logic**
-- Wrap existing month-based filtering and new range-based filtering in a single `useMemo` that respects `filterMode`
-- Chain the search filter on top of the date-filtered results
-- Summary stats and exports use the final search-filtered list
-
-**5. Update export filenames**
-- When in range mode, use date range in filename instead of month label (e.g. `Statement_2026-03-01_to_2026-03-15`)
+- The search input becomes a compact expandable field (~40% width) with rounded-full styling, sitting to the right of the toggle buttons.
+- Remove the standalone search `div` block (lines 1528-1537).
+- The search field uses a smaller placeholder on mobile ("Search...") to fit the compact space.
 
 ### Files modified
 - `src/pages/MerchantDashboard.tsx`
