@@ -1082,6 +1082,73 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* QR Code Popup */}
+      <AnimatePresence>
+        {showQrPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowQrPopup(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 400, damping: 28 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-xs bg-card/95 backdrop-blur-xl border border-border/50 rounded-3xl shadow-elevated p-6 space-y-4"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <CheckCircle2 size={16} className="text-primary" /> Payment QR Ready
+                </h3>
+                <button onClick={() => setShowQrPopup(false)} className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors">
+                  <X size={14} className="text-muted-foreground" />
+                </button>
+              </div>
+
+              {/* QR Image */}
+              <div className="flex justify-center">
+                <div className="bg-white rounded-2xl p-3 shadow-sm">
+                  {generatedQrDataUrl && <img src={generatedQrDataUrl} alt="Payment QR" className="w-56 h-56" />}
+                </div>
+              </div>
+
+              {/* Amount & Reference */}
+              <div className="text-center space-y-1">
+                <p className="text-2xl font-extrabold text-foreground tracking-tight">{generatedQrAmount}</p>
+                {generatedQrRef && <p className="text-xs text-muted-foreground font-medium">Ref: {generatedQrRef}</p>}
+              </div>
+
+              {/* Copy Link Button */}
+              <Button
+                variant="outline"
+                className="w-full gap-2 text-xs font-bold"
+                onClick={() => {
+                  navigator.clipboard.writeText(generatedQrLink).catch(() => {});
+                  toast({ title: "Link Copied!", description: generatedQrLink });
+                }}
+              >
+                <Copy size={13} /> Copy Payment Link
+              </Button>
+
+              {/* Open in new tab */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full gap-2 text-xs text-muted-foreground"
+                onClick={() => window.open(generatedQrLink, "_blank")}
+              >
+                <ExternalLink size={13} /> Open in New Tab
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
