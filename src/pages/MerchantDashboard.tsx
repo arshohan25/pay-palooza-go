@@ -7,7 +7,7 @@ import {
   ArrowLeft, RefreshCw, QrCode, BarChart3, Wallet, Clock,
   Shield, Building2, Store, TrendingUp, DollarSign, Copy,
   CheckCircle2, Calendar, ArrowUpDown, Download, CreditCard,
-  Percent, Receipt, ChevronRight, Eye, EyeOff, BanknoteIcon, Users,
+  Percent, Receipt, ChevronLeft, ChevronRight, Eye, EyeOff, BanknoteIcon, Users,
   Zap, Gift, Star, ShieldCheck, Smartphone, Globe, TrendingDown,
   Target, Award, Sparkles, ArrowUpRight, ArrowDownRight, PieChart,
   Bell, Settings, HelpCircle, Landmark, BadgeCheck, Link, Share2,
