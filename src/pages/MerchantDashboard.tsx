@@ -360,7 +360,7 @@ const MerchantDashboard = () => {
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.9 }}
-                onClick={handleTestDynamicQR}
+                onClick={() => setActiveTab("qr")}
                 className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0 active:bg-white/20 transition-colors"
               >
                 <QrCode size={22} />
