@@ -1420,10 +1420,13 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
 
     // Fetch merchant application for address details
     let appData: { owner_name?: string; business_address?: string; contact_number?: string; contact_email?: string } = {};
-    if (merchant?.id) {
-      const { data } = await supabase.from("merchant_applications").select("owner_name, business_address, contact_number, contact_email").eq("user_id", merchant?.id ? (await supabase.from("merchants").select("user_id").eq("id", merchant.id).single()).data?.user_id || "" : "").eq("status", "approved").order("created_at", { ascending: false }).limit(1).maybeSingle();
-      if (data) appData = data;
-    }
+    try {
+      const { data: merchRow } = await supabase.from("merchants").select("user_id").eq("id", merchant?.id || "").single();
+      if (merchRow?.user_id) {
+        const { data } = await supabase.from("merchant_applications").select("owner_name, business_address, contact_number, contact_email").eq("user_id", merchRow.user_id).eq("status", "approved").order("created_at", { ascending: false }).limit(1).maybeSingle();
+        if (data) appData = data;
+      }
+    } catch { /* skip */ }
 
     // Load logo
     let logo: string | null = null;
