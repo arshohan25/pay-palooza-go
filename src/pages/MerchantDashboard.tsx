@@ -48,7 +48,7 @@ import MerchantCouponsTab from "@/components/merchant/MerchantCouponsTab";
 import MerchantPayoutsTab from "@/components/merchant/MerchantPayoutsTab";
 
 /* ─── Types ─── */
-type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api" | "store" | "inbox";
+type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api" | "store" | "inbox" | "refunds" | "staff" | "customers" | "coupons" | "payouts";
 
 interface MerchantInfo {
   id: string;
