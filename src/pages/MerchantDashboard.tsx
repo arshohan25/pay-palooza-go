@@ -5,6 +5,7 @@ import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { usePhoneValidation } from "@/hooks/use-phone-validation";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, RefreshCw, QrCode, BarChart3, Wallet, Clock,
@@ -16,7 +17,8 @@ import {
   Bell, Settings, HelpCircle, Landmark, BadgeCheck, Link, Share2,
   ExternalLink, Plus, Trash2, Check, Send, Banknote, Timer,
   ArrowRightLeft, Repeat, HandCoins, CalendarClock, CircleDollarSign, ScanLine,
-  Lock, Delete, Menu, X, AlertTriangle, ChevronDown, Info, Package, MessageCircle, Search
+  Lock, Delete, Menu, X, AlertTriangle, ChevronDown, Info, Package, MessageCircle, Search,
+  Undo2, Ticket
 } from "lucide-react";
 import { usePlatformBanks } from "@/hooks/use-platform-banks";
 import { Input } from "@/components/ui/input";
@@ -40,9 +42,14 @@ import MerchantOrdersTab from "@/components/MerchantOrdersTab";
 import MerchantStoreSettingsTab from "@/components/MerchantStoreSettingsTab";
 import { useChat } from "@/hooks/use-chat";
 import MerchantInbox from "@/components/MerchantInbox";
+import MerchantRefundsTab from "@/components/merchant/MerchantRefundsTab";
+import MerchantStaffTab from "@/components/merchant/MerchantStaffTab";
+import MerchantCustomersTab from "@/components/merchant/MerchantCustomersTab";
+import MerchantCouponsTab from "@/components/merchant/MerchantCouponsTab";
+import MerchantPayoutsTab from "@/components/merchant/MerchantPayoutsTab";
 
 /* ─── Types ─── */
-type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api" | "store" | "inbox";
+type MerchTab = "overview" | "qr" | "products" | "orders" | "transactions" | "settlements" | "mdr" | "paylinks" | "analytics" | "api" | "store" | "inbox" | "refunds" | "staff" | "customers" | "coupons" | "payouts";
 
 interface MerchantInfo {
   id: string;
@@ -117,7 +124,7 @@ const mainTabs: { id: MerchTab; icon: typeof QrCode; label: string }[] = [
   { id: "orders",       icon: Receipt,      label: "Orders" },
 ];
 
-const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: string }[] = [
+const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: string; toggleKey?: string }[] = [
   { id: "store",        icon: Store,        label: "Store Settings",   desc: "Customize your storefront" },
   { id: "analytics",    icon: PieChart,     label: "Analytics",        desc: "Insights, revenue & customers" },
   { id: "transactions", icon: ArrowUpDown,  label: "History",          desc: "View all transactions" },
@@ -126,6 +133,11 @@ const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: strin
   { id: "paylinks",     icon: Link,         label: "Pay Links",        desc: "Create & share payment links" },
   { id: "settlements",  icon: BanknoteIcon, label: "Settlement",       desc: "Bank payouts & schedule" },
   { id: "mdr",          icon: Percent,      label: "Fees & Charges",   desc: "MDR rates & fee breakdown" },
+  { id: "refunds",      icon: Undo2,        label: "Refunds",          desc: "Issue & track customer refunds", toggleKey: "merchant_refunds" },
+  { id: "staff",        icon: Users,        label: "Staff",            desc: "Manage employee access",         toggleKey: "merchant_staff" },
+  { id: "customers",    icon: Users,        label: "Customers",        desc: "Customer directory & insights",  toggleKey: "merchant_customers" },
+  { id: "coupons",      icon: Ticket,       label: "Coupons",          desc: "Create store discount codes",    toggleKey: "merchant_coupons" },
+  { id: "payouts",      icon: Landmark,     label: "Payouts",          desc: "Request bank withdrawals",       toggleKey: "merchant_payouts" },
 ];
 
 const stagger = {
@@ -138,6 +150,12 @@ const MerchantDashboard = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isDisabled } = useGlobalToggles();
+
+  const visibleMenuItems = useMemo(() =>
+    menuItems.filter(item => !item.toggleKey || !isDisabled(item.toggleKey)),
+    [isDisabled]
+  );
 
   const [activeTab, setActiveTab] = useState<MerchTab>("overview");
   const [merchant, setMerchant] = useState<MerchantInfo | null>(null);
@@ -535,6 +553,11 @@ const MerchantDashboard = () => {
               {activeTab === "settlements"  && <div className="px-4 py-4"><SettlementTab merchant={merchant} paymentTxns={paymentTxns} /></div>}
               {activeTab === "mdr"          && <div className="px-4 py-4"><MDRTab merchant={merchant} paymentTxns={paymentTxns} /></div>}
               {activeTab === "api"          && merchant && <div className="px-4 py-4"><MerchantApiTab merchantId={merchant.id} /></div>}
+              {activeTab === "refunds"      && <div className="px-4 py-4"><MerchantRefundsTab /></div>}
+              {activeTab === "staff"        && <div className="px-4 py-4"><MerchantStaffTab /></div>}
+              {activeTab === "customers"    && <div className="px-4 py-4"><MerchantCustomersTab /></div>}
+              {activeTab === "coupons"      && <div className="px-4 py-4"><MerchantCouponsTab /></div>}
+              {activeTab === "payouts"      && <div className="px-4 py-4"><MerchantPayoutsTab /></div>}
             </div>
           </motion.div>
         )}
@@ -561,7 +584,7 @@ const MerchantDashboard = () => {
                 </button>
               </div>
               <div className="flex-1 p-3 space-y-1.5 overflow-y-auto">
-                {menuItems.map(item => (
+                {visibleMenuItems.map(item => (
                   <button
                     key={item.id}
                     onClick={() => { setActiveTab(item.id); setShowMenu(false); }}
