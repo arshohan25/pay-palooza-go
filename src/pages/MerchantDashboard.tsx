@@ -150,6 +150,13 @@ const MerchantDashboard = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isDisabled } = useGlobalToggles();
+
+  const visibleMenuItems = useMemo(() =>
+    menuItems.filter(item => !item.toggleKey || !isDisabled(item.toggleKey)),
+    [isDisabled]
+  );
+  const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState<MerchTab>("overview");
   const [merchant, setMerchant] = useState<MerchantInfo | null>(null);
