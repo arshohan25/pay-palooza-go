@@ -239,7 +239,7 @@ async function buildDoc(order: InvoiceOrder): Promise<jsPDF> {
   doc.setTextColor(LIGHT.r, LIGHT.g, LIGHT.b);
   doc.text("This is a computer-generated document and does not require a signature.", pw / 2, footerY + 5, { align: "center" });
   doc.text("EasyPay Digital Financial Services · Dhaka, Bangladesh", pw / 2, footerY + 9, { align: "center" });
-  doc.text(`Generated: ${new Date().toLocaleString("en-BD")}`, pw / 2, footerY + 13, { align: "center" });
+  doc.text(`Generated: ${format(new Date(), "dd MMM yyyy, hh:mm a")}`, pw / 2, footerY + 13, { align: "center" });
 
   return doc;
 }

@@ -1501,7 +1501,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
       body: filtered.map(tx => {
         const isIn = MERCHANT_INCOMING_TYPES.has(tx.type);
         return [
-          new Date(tx.created_at).toLocaleDateString("en-BD", { day: "numeric", month: "short" }),
+          format(new Date(tx.created_at), "dd MMM yyyy"),
           (MERCH_TX_CONFIG[tx.type] || MERCH_TX_CONFIG.payment).label,
           getMerchTxHeadline(tx),
           `${isIn ? "+" : "-"}Tk ${fmt(tx.amount)}`,
