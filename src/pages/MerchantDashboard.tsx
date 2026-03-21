@@ -469,7 +469,7 @@ const MerchantDashboard = () => {
               {activeTab === "qr"           && <div className="px-4 py-4"><QRTab merchant={merchant} toast={toast} /></div>}
               {activeTab === "analytics"    && merchant && <div className="px-4 py-4"><MerchantAnalyticsTab merchantId={merchant.id} /></div>}
               {activeTab === "paylinks"     && <div className="px-4 py-4"><PayLinksTab merchant={merchant} toast={toast} /></div>}
-              {activeTab === "transactions" && <div className="px-4 py-4"><TxnTab txns={txns} /></div>}
+              {activeTab === "transactions" && <div className="px-4 py-4"><TxnTab txns={txns} merchant={merchant} /></div>}
               {activeTab === "settlements"  && <div className="px-4 py-4"><SettlementTab merchant={merchant} paymentTxns={paymentTxns} /></div>}
               {activeTab === "mdr"          && <div className="px-4 py-4"><MDRTab merchant={merchant} paymentTxns={paymentTxns} /></div>}
               {activeTab === "api"          && merchant && <div className="px-4 py-4"><MerchantApiTab merchantId={merchant.id} /></div>}
@@ -1315,21 +1315,37 @@ const QRTab = ({ merchant, toast }: { merchant: MerchantInfo | null; toast: any 
 };
 
 /* ── Transactions Tab ── */
-const TxnTab = ({ txns }: { txns: TxnRow[] }) => {
-  const [filter, setFilter] = useState<"all" | "today" | "week">("all");
+const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | null }) => {
+  const [monthOffset, setMonthOffset] = useState(0);
   const [selectedTx, setSelectedTx] = useState<TxnRow | null>(null);
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
 
+  const targetMonth = useMemo(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + monthOffset);
+    return d;
+  }, [monthOffset]);
+
   const filtered = useMemo(() => {
-    const now = new Date();
-    if (filter === "today") return txns.filter(t => new Date(t.created_at).toDateString() === now.toDateString());
-    if (filter === "week") {
-      const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
-      return txns.filter(t => new Date(t.created_at) >= weekAgo);
+    const start = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), 1);
+    const end = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0, 23, 59, 59, 999);
+    return txns.filter(t => {
+      const d = new Date(t.created_at);
+      return d >= start && d <= end;
+    });
+  }, [txns, targetMonth]);
+
+  const summary = useMemo(() => {
+    let incoming = 0, outgoing = 0;
+    for (const t of filtered) {
+      if (MERCHANT_INCOMING_TYPES.has(t.type)) incoming += t.amount;
+      else outgoing += t.amount;
     }
-    return txns;
-  }, [txns, filter]);
+    return { count: filtered.length, incoming, outgoing };
+  }, [filtered]);
+
+  const monthLabel = targetMonth.toLocaleDateString("en-BD", { month: "long", year: "numeric" });
 
   const copyId = (val: string) => {
     navigator.clipboard.writeText(val);
@@ -1337,20 +1353,140 @@ const TxnTab = ({ txns }: { txns: TxnRow[] }) => {
     setTimeout(() => setCopied(false), 1500);
   };
 
+  const exportCSV = () => {
+    if (filtered.length === 0) { toast({ title: "No data to export" }); return; }
+    const headers = ["ID", "Type", "Description", "Amount", "Fee", "Status", "Date", "Phone", "Reference"];
+    const rows = filtered.map(tx => [
+      tx.short_id || tx.id.slice(0, 12),
+      (MERCH_TX_CONFIG[tx.type] || MERCH_TX_CONFIG.payment).label,
+      getMerchTxHeadline(tx),
+      String(tx.amount),
+      String(tx.fee),
+      tx.status,
+      new Date(tx.created_at).toLocaleString("en-BD"),
+      tx.recipient_phone || "",
+      tx.reference || "",
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `Statement_${monthLabel.replace(/ /g, "_")}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportPDF = async () => {
+    if (filtered.length === 0) { toast({ title: "No data to export" }); return; }
+    const { default: jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
+    const pw = doc.internal.pageSize.getWidth();
+    const m = 15;
+
+    // Header
+    doc.setFillColor(14, 165, 100);
+    doc.rect(0, 0, pw, 34, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18); doc.setFont("helvetica", "bold");
+    doc.text("Monthly Statement", m, 16);
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    doc.text(merchant?.business_name || "Merchant", m, 24);
+    doc.text(monthLabel, m, 30);
+    doc.text(`Generated: ${new Date().toLocaleDateString("en-BD")}`, pw - m, 24, { align: "right" });
+
+    // Summary
+    let y = 44;
+    doc.setTextColor(30, 30, 30); doc.setFontSize(11); doc.setFont("helvetica", "bold");
+    doc.text("Summary", m, y); y += 7;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+    doc.text(`Total Transactions: ${summary.count}`, m, y); y += 5;
+    doc.text(`Incoming: ৳${fmt(summary.incoming)}`, m, y); y += 5;
+    doc.text(`Outgoing: ৳${fmt(summary.outgoing)}`, m, y); y += 5;
+    doc.text(`Net: ৳${fmt(summary.incoming - summary.outgoing)}`, m, y); y += 10;
+
+    // Table
+    autoTable(doc, {
+      startY: y,
+      margin: { left: m, right: m },
+      head: [["Date", "Type", "Description", "Amount", "Fee", "Status"]],
+      body: filtered.map(tx => {
+        const isIn = MERCHANT_INCOMING_TYPES.has(tx.type);
+        return [
+          new Date(tx.created_at).toLocaleDateString("en-BD", { day: "numeric", month: "short" }),
+          (MERCH_TX_CONFIG[tx.type] || MERCH_TX_CONFIG.payment).label,
+          getMerchTxHeadline(tx),
+          `${isIn ? "+" : "-"}৳${fmt(tx.amount)}`,
+          tx.fee > 0 ? `৳${fmt(tx.fee)}` : "—",
+          tx.status,
+        ];
+      }),
+      theme: "striped",
+      headStyles: { fillColor: [14, 165, 100], textColor: 255, fontStyle: "bold", fontSize: 8 },
+      bodyStyles: { fontSize: 8, textColor: [30, 30, 30] },
+    });
+
+    // Footer
+    const pages = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8); doc.setTextColor(160, 160, 160);
+      doc.text(`Page ${i} of ${pages}`, pw / 2, doc.internal.pageSize.getHeight() - 10, { align: "center" });
+    }
+
+    doc.save(`Statement_${monthLabel.replace(/ /g, "_")}.pdf`);
+  };
+
   return (
     <motion.div variants={stagger.container} initial="hidden" animate="show" className="space-y-4">
+      {/* Month navigation */}
       <motion.div variants={stagger.item}>
         <Card className="p-4 border-0 shadow-card">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-foreground">All Transactions</h3>
-            <div className="flex gap-1">
-              {(["all", "today", "week"] as const).map(f => (
-                <button key={f} onClick={() => setFilter(f)} className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors ${filter === f ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-                  {f === "all" ? "All" : f === "today" ? "Today" : "Week"}
-                </button>
-              ))}
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setMonthOffset(o => o - 1)}>
+              <ArrowLeft size={16} />
+            </Button>
+            <span className="text-sm font-bold text-foreground">{monthLabel}</span>
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" disabled={monthOffset >= 0} onClick={() => setMonthOffset(o => o + 1)}>
+              <ChevronRight size={16} />
+            </Button>
+          </div>
+          <div className="flex gap-1.5 justify-center mb-3">
+            <button onClick={() => setMonthOffset(0)} className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-colors ${monthOffset === 0 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>This Month</button>
+            <button onClick={() => setMonthOffset(-1)} className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-colors ${monthOffset === -1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>Last Month</button>
+          </div>
+
+          {/* Summary */}
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="bg-muted/40 rounded-xl p-2.5 text-center">
+              <p className="text-sm font-bold text-foreground">{summary.count}</p>
+              <p className="text-[9px] text-muted-foreground font-medium">Transactions</p>
+            </div>
+            <div className="bg-emerald-500/10 rounded-xl p-2.5 text-center">
+              <p className="text-sm font-bold text-emerald-600">৳{fmt(summary.incoming)}</p>
+              <p className="text-[9px] text-muted-foreground font-medium">Incoming</p>
+            </div>
+            <div className="bg-pink-500/10 rounded-xl p-2.5 text-center">
+              <p className="text-sm font-bold text-pink-600">৳{fmt(summary.outgoing)}</p>
+              <p className="text-[9px] text-muted-foreground font-medium">Outgoing</p>
             </div>
           </div>
+
+          {/* Export buttons */}
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5" onClick={exportPDF}>
+              <Download size={13} /> PDF Statement
+            </Button>
+            <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5" onClick={exportCSV}>
+              <Download size={13} /> CSV Export
+            </Button>
+          </div>
+        </Card>
+      </motion.div>
+
+      {/* Transaction list */}
+      <motion.div variants={stagger.item}>
+        <Card className="p-4 border-0 shadow-card">
+          <h3 className="text-sm font-bold text-foreground mb-3">Transactions</h3>
 
           {filtered.length === 0 ? (
             <motion.div
@@ -1366,8 +1502,8 @@ const TxnTab = ({ txns }: { txns: TxnRow[] }) => {
               >
                 <Receipt size={28} className="text-muted-foreground" />
               </motion.div>
-              <p className="text-sm font-semibold text-foreground">No transactions found</p>
-              <p className="text-xs text-muted-foreground mt-1">Merchant transactions will appear here</p>
+              <p className="text-sm font-semibold text-foreground">No transactions this month</p>
+              <p className="text-xs text-muted-foreground mt-1">Try selecting a different month</p>
             </motion.div>
           ) : (
             <div className="space-y-1">
@@ -1436,7 +1572,6 @@ const TxnTab = ({ txns }: { txns: TxnRow[] }) => {
 
             return (
               <div className="space-y-4">
-                {/* Header icon + amount */}
                 <div className="flex flex-col items-center py-3">
                   <div className={`w-14 h-14 rounded-2xl ${cfg.iconBg} flex items-center justify-center mb-3`}>
                     <TxIcon size={22} className={cfg.iconColor} />
@@ -1448,7 +1583,6 @@ const TxnTab = ({ txns }: { txns: TxnRow[] }) => {
                   <Badge variant="outline" className="mt-2 text-[10px] capitalize">{selectedTx.status}</Badge>
                 </div>
 
-                {/* Info rows */}
                 <div className="bg-muted/40 rounded-2xl p-4 space-y-2.5 text-xs">
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Transaction ID</span>
@@ -1486,7 +1620,6 @@ const TxnTab = ({ txns }: { txns: TxnRow[] }) => {
                   )}
                 </div>
 
-                {/* Fee breakdown */}
                 {selectedTx.fee > 0 && (
                   <div className="bg-amber-50 dark:bg-amber-950/30 p-4 rounded-2xl border border-amber-200 dark:border-amber-800 space-y-2 text-xs">
                     <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">Fee Breakdown</p>
@@ -1505,7 +1638,6 @@ const TxnTab = ({ txns }: { txns: TxnRow[] }) => {
                   </div>
                 )}
 
-                {/* Balance after */}
                 {selectedTx.balance_after !== null && (
                   <div className="text-center text-[11px] text-muted-foreground">
                     Balance after: <span className="font-bold text-foreground">৳{fmt(selectedTx.balance_after)}</span>
