@@ -1134,7 +1134,9 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
                 variant="outline"
                 className="w-full gap-2 text-xs font-bold"
                 onClick={() => {
-                  navigator.clipboard.writeText(generatedQrLink).catch(() => {});
+                  navigator.clipboard.writeText(generatedQrLink).then(() => {
+                    toast({ title: "Link copied!", description: "Payment link copied to clipboard." });
+                  }).catch(() => {});
                 }}
               >
                 <Copy size={13} /> Copy Payment Link
