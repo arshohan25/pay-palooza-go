@@ -190,11 +190,11 @@ const DynamicQrPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-2">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm bg-card rounded-3xl shadow-xl border border-border overflow-hidden"
+        className="w-full max-w-sm bg-card rounded-2xl shadow-xl border border-border overflow-hidden"
       >
         {/* Header */}
         <div className="bg-gradient-to-br from-primary/10 via-card to-accent/5 px-3 pt-4 pb-1 text-center">
