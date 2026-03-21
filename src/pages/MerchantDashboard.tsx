@@ -156,7 +156,6 @@ const MerchantDashboard = () => {
     menuItems.filter(item => !item.toggleKey || !isDisabled(item.toggleKey)),
     [isDisabled]
   );
-  const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState<MerchTab>("overview");
   const [merchant, setMerchant] = useState<MerchantInfo | null>(null);
