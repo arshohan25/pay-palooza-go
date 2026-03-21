@@ -70,6 +70,7 @@ import AdminAgentHub from "@/components/admin/AdminAgentHub";
 import AdminWalletSystem from "@/components/admin/AdminWalletSystem";
 import AdminSecurityCenter from "@/components/admin/AdminSecurityCenter";
 import AdminSystemSettings from "@/components/admin/AdminSystemSettings";
+import AdminBankListManager from "@/components/admin/AdminBankListManager";
 import AdminLoyaltyPoints from "@/components/admin/AdminLoyaltyPoints";
 import AdminAiFraudDetection from "@/components/admin/AdminAiFraudDetection";
 import AdminGeoTracking from "@/components/admin/AdminGeoTracking";
