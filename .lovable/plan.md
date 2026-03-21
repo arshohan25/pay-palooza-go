@@ -1,66 +1,73 @@
 
-Problem identified: the public merchant resolver function is broken, not the payment link itself.
+Problem now: the payment page is resolving the merchant correctly, but the final guest checkout still fails inside the backend payment function.
 
-What’s happening now:
-- Your payment link exists and is active:
+What I verified:
+- The payment link exists and is active:
   - short code: `252RWNS4`
   - merchant code: `MRC-RAFIQ-001`
-- The merchant also exists and is active:
+- The merchant exists and is active:
   - `Rafiq Electronics`
-- But the new backend function `resolve_payment_merchant()` crashes before it can return the merchant.
+- The merchant profile also exists and is active:
+  - phone: `01909709954`
+  - user_id matches the merchant
+- The frontend merchant resolver works now:
+  - `resolve_payment_merchant('MRC-RAFIQ-001')` returns the correct merchant
+- The failure is now strictly in `checkout-guest`
 
 Root cause:
-- The function was written against columns that do not exist in your current database schema:
-  - it uses `merchants.qr_code` but the real column is `merchants.qr_code_data`
-  - it uses `profiles.wallet_id` but `profiles` has no `wallet_id` column
-- Because the RPC throws an error, `src/pages/PayPage.tsx` falls back to the “Merchant Not Found” screen.
+- `checkout-guest` is still trying to resolve the recipient primarily from the client-sent `recipient_phone`
+- Even though the payment link already tells us exactly which merchant should receive the money, the function only uses the link as a fallback
+- In your failing request, logs show:
+  - phone lookup failed
+  - payment-link fallback started
+  - final result still ended as `Recipient not found`
+- So the bug is no longer “merchant not found”; it is “recipient resolution in checkout is not authoritative and not traceable enough”
 
-Fix plan
+Implementation plan
 
-1. Repair the backend resolver function
-- Update `resolve_payment_merchant(p_identifier text)` to use `merchants.qr_code_data`
-- Remove the invalid `profiles.wallet_id` lookup
-- If wallet-style IDs must still work, use the existing `generate_wallet_id_from_phone(phone)` function instead of a missing column
-- Keep phone-based merchant resolution as a fallback
+1. Make link-based recipient resolution authoritative
+- In `checkout-guest`, if `reference` is present:
+  - load the active `payment_links` row by `short_code`
+  - resolve the merchant from `payment_links.merchant_id` first
+  - fetch the recipient profile by merchant `user_id`
+- Only use `recipient_phone` as a fallback for non-link/manual payment flows
 
-2. Make the resolver match the actual app data model
-- Merchant code lookup should resolve against `qr_code_data`
-- Returned payload should still include:
-  - `found`
-  - `recipient_phone`
-  - `recipient_name`
-  - `merchant_id`
-  - `category`
+2. Stop trusting the client for recipient identity
+- Treat `recipient_phone` as display/input convenience only
+- For payment-link flows, the backend should decide the real recipient from backend records, not from the request body
+- This removes the current mismatch/fallback problem entirely
 
-3. Improve `/pay` failure handling
-- In `src/pages/PayPage.tsx`, distinguish between:
-  - “merchant not found”
-  - “merchant lookup failed”
-- This prevents real backend errors from being shown as a fake “not found” state
+3. Tighten logging so the next failure is obvious
+- Log each resolution stage separately:
+  - payment link found or not
+  - merchant found or not
+  - merchant profile found or not
+  - exact IDs used (`payment_link_id`, `merchant_id`, `merchant_user_id`)
+- Return a more specific backend error instead of the generic `Recipient not found`
 
-4. Verify the exact broken link
-- Re-test resolution for:
-  - `MRC-RAFIQ-001`
-  - `252RWNS4`-based pay URL flow
-- Confirm the page loads the merchant and proceeds to OTP/PIN instead of the error card
+4. Small frontend hardening
+- In `src/pages/PayPage.tsx`, optionally send `merchant_id` from the resolver result along with the request
+- Backend should still verify it against the payment link before using it
+- This gives one more stable identifier for debugging and validation
 
 Technical details
 ```text
-Current broken references:
-- merchants.qr_code        -> should be merchants.qr_code_data
-- profiles.wallet_id       -> column does not exist
+Current bad flow:
+client recipient_phone -> profile lookup
+   if that fails -> payment_links fallback
+   if any fallback stage silently returns null -> "Recipient not found"
 
-Safer wallet-ID fallback:
-- compare UPPER(generate_wallet_id_from_phone(profiles.phone))
-  instead of reading profiles.wallet_id
+Planned safe flow:
+reference(short_code) -> payment_links -> merchant_id -> merchants.user_id -> profiles
+only if no reference exists:
+  recipient_phone -> profiles
 ```
 
-Files / areas to update
-- `supabase/migrations/...` create a corrective migration for `resolve_payment_merchant`
-- `src/pages/PayPage.tsx` improve RPC error handling
+Files to update
+- `supabase/functions/checkout-guest/index.ts`
+- `src/pages/PayPage.tsx` (minor request hardening only)
 
 Expected outcome
-- `/pay?merchant=MRC-RAFIQ-001&ref=252RWNS4&amount=1` resolves correctly
-- The merchant page opens normally
-- Active payment links remain valid until revoked/deleted
-- Real backend failures are surfaced more accurately instead of showing “Merchant Not Found”
+- `/pay?merchant=MRC-RAFIQ-001&ref=252RWNS4&amount=1` should complete using the merchant tied to the payment link
+- The backend will no longer depend on fragile phone-based recipient matching for payment-link payments
+- If anything still fails, the logs will identify the exact missing lookup stage instead of masking everything as “Recipient not found”
