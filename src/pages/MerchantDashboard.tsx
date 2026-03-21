@@ -1418,6 +1418,16 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
     const MD = { r: 120, g: 120, b: 120 };
     const LT = { r: 180, g: 180, b: 180 };
 
+    // Fetch merchant application for address details
+    let appData: { owner_name?: string; business_address?: string; contact_number?: string; contact_email?: string } = {};
+    try {
+      const { data: merchRow } = await supabase.from("merchants").select("user_id").eq("id", merchant?.id || "").single();
+      if (merchRow?.user_id) {
+        const { data } = await supabase.from("merchant_applications").select("owner_name, business_address, contact_number, contact_email").eq("user_id", merchRow.user_id).eq("status", "approved").order("created_at", { ascending: false }).limit(1).maybeSingle();
+        if (data) appData = data;
+      }
+    } catch { /* skip */ }
+
     // Load logo
     let logo: string | null = null;
     try {
@@ -1459,14 +1469,26 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
     doc.line(ml, y, mr, y);
     y += 6;
 
-    // ── Account Info Block ──
+    // ── Account Info Block (with full address) ──
+    const infoLines: string[] = [];
+    if (appData.owner_name) infoLines.push(appData.owner_name);
+    if (appData.business_address) infoLines.push(appData.business_address);
+    if (appData.contact_number) infoLines.push(appData.contact_number);
+    if (appData.contact_email) infoLines.push(appData.contact_email);
+    const infoBoxH = 14 + infoLines.length * 4.5;
     doc.setFillColor(GBG.r, GBG.g, GBG.b);
-    doc.roundedRect(ml, y, mr - ml, 14, 2, 2, "F");
+    doc.roundedRect(ml, y, mr - ml, infoBoxH, 2, 2, "F");
     doc.setFontSize(7); doc.setTextColor(MD.r, MD.g, MD.b);
     doc.text("ACCOUNT HOLDER", ml + 5, y + 5);
     doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(DK.r, DK.g, DK.b);
     doc.text(merchant?.business_name || "Merchant", ml + 5, y + 11);
-    y += 20;
+    let infoY = y + 16;
+    doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(MD.r, MD.g, MD.b);
+    infoLines.forEach(line => {
+      doc.text(line, ml + 5, infoY);
+      infoY += 4.5;
+    });
+    y += infoBoxH + 6;
 
     // ── Summary Grid (4 cells) ──
     const cellW = (mr - ml - 9) / 4;
