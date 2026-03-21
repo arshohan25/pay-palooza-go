@@ -747,6 +747,11 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
   const todayTxns = paymentTxns.filter(t => new Date(t.created_at).toDateString() === new Date().toDateString());
   const todayRevenue = todayTxns.reduce((s, t) => s + t.amount, 0);
 
+  const yesterdayDate = new Date(); yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterdayTxns = paymentTxns.filter(t => new Date(t.created_at).toDateString() === yesterdayDate.toDateString());
+  const yesterdayRevenue = yesterdayTxns.reduce((s, t) => s + t.amount, 0);
+  const revenueDelta = yesterdayRevenue > 0 ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue * 100) : (todayRevenue > 0 ? 100 : 0);
+
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (6 - i));
     const dayStr = d.toDateString();
@@ -865,7 +870,73 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
         </Card>
       </motion.div>
 
-      {/* Revenue cards */}
+      {/* Today's Performance Card */}
+      <motion.div variants={stagger.item}>
+        <Card className="p-4 border-0 shadow-card">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Target size={15} className="text-primary" />
+            </div>
+            <h3 className="text-sm font-bold text-foreground">Today's Performance</h3>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="text-center p-2.5 rounded-xl bg-muted/40">
+              <p className="text-lg font-extrabold text-foreground">৳{fmt(todayRevenue)}</p>
+              <p className="text-[9px] text-muted-foreground font-medium mt-0.5">Revenue</p>
+              {revenueDelta !== 0 && (
+                <span className={`text-[9px] font-bold flex items-center justify-center gap-0.5 mt-1 ${revenueDelta >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                  {revenueDelta >= 0 ? <ArrowUpRight size={9} /> : <ArrowDownRight size={9} />}
+                  {Math.abs(revenueDelta).toFixed(0)}% vs yesterday
+                </span>
+              )}
+            </div>
+            <div className="text-center p-2.5 rounded-xl bg-muted/40">
+              <p className="text-lg font-extrabold text-foreground">{todayTxns.length}</p>
+              <p className="text-[9px] text-muted-foreground font-medium mt-0.5">Transactions</p>
+            </div>
+            <div className="text-center p-2.5 rounded-xl bg-muted/40">
+              <p className="text-lg font-extrabold text-foreground">{peakLabel}</p>
+              <p className="text-[9px] text-muted-foreground font-medium mt-0.5">Peak Hour</p>
+            </div>
+          </div>
+        </Card>
+      </motion.div>
+
+      {/* Weekly Revenue Sparkline */}
+      <motion.div variants={stagger.item}>
+        <Card className="p-4 border-0 shadow-card">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <BarChart3 size={15} className="text-primary" />
+              </div>
+              <h3 className="text-sm font-bold text-foreground">Last 7 Days</h3>
+            </div>
+            <p className="text-[10px] text-muted-foreground font-medium">{uniqueCustomers} unique customer{uniqueCustomers !== 1 ? "s" : ""}</p>
+          </div>
+          <div className="flex items-end gap-1.5 h-20">
+            {last7.map((d, i) => {
+              const h = Math.max((d.amount / maxDay) * 100, 4);
+              const isToday = i === 6;
+              return (
+                <div key={d.day} className="flex-1 flex flex-col items-center gap-1">
+                  <span className="text-[8px] font-bold text-muted-foreground">{d.amount > 0 ? `৳${fmt(d.amount)}` : ""}</span>
+                  <div className="w-full flex justify-center" style={{ height: "48px" }}>
+                    <motion.div
+                      initial={{ height: 0 }}
+                      animate={{ height: `${h}%` }}
+                      transition={{ delay: i * 0.05, duration: 0.4, ease: "easeOut" }}
+                      className={`w-full max-w-[28px] rounded-t-md ${isToday ? "bg-primary" : "bg-primary/25"}`}
+                    />
+                  </div>
+                  <span className={`text-[9px] font-semibold ${isToday ? "text-primary" : "text-muted-foreground"}`}>{d.day}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      </motion.div>
+
       <motion.div variants={stagger.item} className="grid grid-cols-2 gap-3">
         {[
           { label: "Total Revenue", value: `৳${fmt(totalRevenue)}`, icon: DollarSign, iconBg: "bg-emerald-500/10", iconColor: "text-emerald-600" },
