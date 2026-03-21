@@ -5,6 +5,7 @@ import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { usePhoneValidation } from "@/hooks/use-phone-validation";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, RefreshCw, QrCode, BarChart3, Wallet, Clock,
