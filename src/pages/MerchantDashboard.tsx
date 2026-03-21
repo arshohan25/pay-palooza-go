@@ -295,13 +295,15 @@ const MerchantDashboard = () => {
           </div>
 
           {/* Balance hero — tap to reveal, 5s auto-hide */}
-          <motion.button
-            whileTap={{ scale: 0.98 }}
-            onClick={toggleBalance}
-            className="glass-hero rounded-2xl p-4 w-full text-left"
-          >
-            <div className="flex items-center justify-between">
-              <div>
+          <div className="glass-hero rounded-2xl p-4 w-full">
+            <div className="flex items-center justify-between gap-3">
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.98 }}
+                onClick={toggleBalance}
+                className="w-fit max-w-full text-left"
+                aria-label={showBalance ? "Hide balance" : "Tap to see balance"}
+              >
                 <p className="text-[11px] font-medium text-white/60 uppercase tracking-wider">Available Balance</p>
                 <AnimatePresence mode="wait">
                   {showBalance ? (
@@ -316,12 +318,12 @@ const MerchantDashboard = () => {
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
-              <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center">
+              </motion.button>
+              <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
                 <Wallet size={22} />
               </div>
             </div>
-          </motion.button>
+          </div>
         </div>
       </header>
 
