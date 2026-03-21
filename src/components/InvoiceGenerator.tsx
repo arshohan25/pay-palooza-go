@@ -196,7 +196,7 @@ async function buildDoc(order: InvoiceOrder): Promise<jsPDF> {
   doc.setTextColor(MID.r, MID.g, MID.b);
   doc.text("Subtotal", lx, sy + 2);
   doc.setTextColor(DARK.r, DARK.g, DARK.b);
-  doc.text(`৳${fmt(subtotal)}`, vx, sy + 2, { align: "right" });
+  doc.text(`Tk ${fmt(subtotal)}`, vx, sy + 2, { align: "right" });
   sy += 7;
 
   if (coupon > 0) {
