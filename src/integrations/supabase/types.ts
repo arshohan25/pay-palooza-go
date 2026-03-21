@@ -2197,6 +2197,75 @@ export type Database = {
           },
         ]
       }
+      merchant_refunds: {
+        Row: {
+          admin_note: string | null
+          amount: number
+          created_at: string
+          customer_name: string | null
+          customer_user_id: string | null
+          id: string
+          merchant_id: string
+          order_id: string | null
+          order_num: string | null
+          reason: string
+          refund_type: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_note?: string | null
+          amount: number
+          created_at?: string
+          customer_name?: string | null
+          customer_user_id?: string | null
+          id?: string
+          merchant_id: string
+          order_id?: string | null
+          order_num?: string | null
+          reason: string
+          refund_type?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_note?: string | null
+          amount?: number
+          created_at?: string
+          customer_name?: string | null
+          customer_user_id?: string | null
+          id?: string
+          merchant_id?: string
+          order_id?: string | null
+          order_num?: string | null
+          reason?: string
+          refund_type?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_refunds_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchant_refunds_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchants: {
         Row: {
           bank_account_holder: string | null
@@ -4360,6 +4429,10 @@ export type Database = {
           p_is_recurring?: boolean
           p_message?: string
         }
+        Returns: Json
+      }
+      process_merchant_refund: {
+        Args: { p_action: string; p_admin_note?: string; p_refund_id: string }
         Returns: Json
       }
       record_transaction: {
