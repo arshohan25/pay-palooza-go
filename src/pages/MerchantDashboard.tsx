@@ -773,6 +773,11 @@ const MerchOverview = ({ merchant, balance, paymentTxns, allTxns, onRefresh, onS
   const [showQrGenerate, setShowQrGenerate] = useState(false);
   const [qrAmount, setQrAmount] = useState("");
   const [qrReference, setQrReference] = useState("");
+  const [showQrPopup, setShowQrPopup] = useState(false);
+  const [generatedQrDataUrl, setGeneratedQrDataUrl] = useState("");
+  const [generatedQrLink, setGeneratedQrLink] = useState("");
+  const [generatedQrAmount, setGeneratedQrAmount] = useState("");
+  const [generatedQrRef, setGeneratedQrRef] = useState("");
 
   const handleGenerateQR = async () => {
     const amt = parseFloat(qrAmount);
