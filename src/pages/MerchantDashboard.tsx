@@ -450,7 +450,7 @@ const MerchantDashboard = () => {
             initial={{ y: "100%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: "100%", opacity: 0 }}
-            transition={{ type: "spring", bounce: 0.12, duration: 0.45 }}
+            transition={{ type: "spring", bounce: 0.12, duration: 0.65 }}
             className="fixed inset-0 z-[70] bg-background flex flex-col"
           >
             {/* Sticky tab header */}
