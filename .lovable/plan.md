@@ -1,15 +1,24 @@
 
 
-## Add QR Button Shortcut on Merchant Balance Card
+## Replace "Test QR" with Real "Generate QR" Flow
 
-### What
-Replace the static Wallet icon on the merchant dashboard's balance hero card with a QR Code shortcut button that triggers the Dynamic QR payment flow.
+### Problem
+The Dynamic QR card button says "Test QR" and creates a hardcoded ৳100 demo session. It should let the merchant enter a real amount and reference to generate a production QR.
 
 ### Changes — `src/pages/MerchantDashboard.tsx`
 
-1. **Replace Wallet icon with QR button** (around line 361): Change the `div` containing the `<Wallet>` icon to a `motion.button` with a `<QrCode>` icon that calls `handleTestDynamicQR` on tap.
+1. **Add state for a QR generation dialog**: `showQrGenerate` (boolean), `qrAmount` (string), `qrReference` (string).
 
-2. **Add `QrCode` to imports**: Add `QrCode` to the existing lucide-react import.
+2. **Replace `handleTestDynamicQR`** with `handleGenerateQR` that uses the user-entered amount and reference instead of hardcoded `amount: 100` and `DEMO-...` reference.
 
-The button will keep the same rounded glass styling (`bg-white/10 rounded-xl`) but become interactive with a tap animation, giving merchants one-tap access to generate a payment QR directly from the balance card.
+3. **Change button label** from "Test QR" to "Generate QR" (line 871).
+
+4. **On button click**: Open a small dialog/sheet (z-[80]) with:
+   - Amount input (required)
+   - Reference input (optional)
+   - "Generate" confirm button
+   - On confirm, call the same `merchant-payment-api` endpoint with the real amount/reference, then open the QR page.
+
+### File Modified
+- `src/pages/MerchantDashboard.tsx`
 
