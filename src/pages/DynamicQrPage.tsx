@@ -197,16 +197,16 @@ const DynamicQrPage = () => {
         className="w-full max-w-sm bg-card rounded-2xl shadow-xl border border-border overflow-hidden"
       >
         {/* Header */}
-        <div className="bg-gradient-to-br from-primary/10 via-card to-accent/5 px-3 pt-4 pb-1 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-primary/15 flex items-center justify-center mx-auto mb-1.5">
-            <Store className="w-7 h-7 text-primary" />
+        <div className="bg-gradient-to-br from-primary/10 via-card to-accent/5 px-3 pt-3 pb-0.5 text-center">
+          <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center mx-auto mb-1">
+            <Store className="w-6 h-6 text-primary" />
           </div>
-          {merchantName && <h1 className="text-lg font-bold text-foreground">{merchantName}</h1>}
-          {merchantCategory && <p className="text-xs text-muted-foreground capitalize">{merchantCategory.replace(/_/g, " ")}</p>}
-          <p className="text-3xl font-extrabold text-foreground">
-            ৳{fmt(amount)} <span className="text-sm font-medium text-muted-foreground">{currency}</span>
+          {merchantName && <h1 className="text-base font-bold text-foreground">{merchantName}</h1>}
+          {merchantCategory && <p className="text-[11px] text-muted-foreground capitalize">{merchantCategory.replace(/_/g, " ")}</p>}
+          <p className="text-2xl font-extrabold text-foreground mt-0.5">
+            ৳{fmt(amount)} <span className="text-xs font-medium text-muted-foreground">{currency}</span>
           </p>
-          {reference && <p className="text-xs text-muted-foreground mt-1">Ref: {reference}</p>}
+          {reference && <p className="text-[11px] text-muted-foreground mt-0.5">Ref: {reference}</p>}
         </div>
 
         <AnimatePresence mode="wait">
