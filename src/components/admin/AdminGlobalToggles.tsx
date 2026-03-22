@@ -96,6 +96,13 @@ const SECTIONS = [
     matcher: (key: string) => key.startsWith("distributor_"),
     prefixHint: "distributor_",
   },
+  {
+    id: "super_distributor",
+    label: "Super Distributor",
+    icon: Crown,
+    matcher: (key: string) => key.startsWith("super_distributor_"),
+    prefixHint: "super_distributor_",
+  },
 ];
 
 const OTHER_SECTION = { id: "other", label: "Other", icon: Settings2, prefixHint: "" };

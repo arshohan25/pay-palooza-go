@@ -269,18 +269,20 @@ const SuperDistributorDashboard = () => {
   const todayTxns = recentTxns.filter(t => new Date(t.created_at).toDateString() === new Date().toDateString());
   const todayVolume = todayTxns.reduce((s, t) => s + t.amount, 0);
 
+  const { isDisabled } = useGlobalToggles();
+
   const quickActions = [
-    { icon: UserPlus, label: "Create Dist.", bg: "rgba(156,39,176,0.12)", ring: "1px solid rgba(156,39,176,0.25)", path: "/super-distributor/create-distributor" },
-    { icon: Send, label: "Float Send", bg: "rgba(33,150,243,0.12)", ring: "1px solid rgba(33,150,243,0.25)", action: "float" as const },
-    { icon: Network, label: "Distributors", bg: "rgba(76,175,80,0.12)", ring: "1px solid rgba(76,175,80,0.25)", action: "distributors" as const },
-    { icon: ListChecks, label: "Dist Txns", bg: "rgba(103,58,183,0.12)", ring: "1px solid rgba(103,58,183,0.25)", action: "distTxns" as const },
-    { icon: Banknote, label: "Settle", bg: "rgba(0,150,136,0.12)", ring: "1px solid rgba(0,150,136,0.25)", action: "settle" as const },
-    { icon: FileBarChart, label: "Reconcile", bg: "rgba(255,152,0,0.12)", ring: "1px solid rgba(255,152,0,0.25)", action: "reconcile" as const },
-    { icon: BarChart3, label: "Analytics", bg: "rgba(0,188,212,0.12)", ring: "1px solid rgba(0,188,212,0.25)", action: "analytics" as const },
-    { icon: History, label: "History", bg: "rgba(255,193,7,0.12)", ring: "1px solid rgba(255,193,7,0.25)", action: "history" as const },
-    { icon: AlertTriangle, label: "Alerts", bg: "rgba(244,67,54,0.12)", ring: "1px solid rgba(244,67,54,0.25)", action: "alerts" as const },
-    { icon: Headphones, label: "Support", bg: "rgba(120,120,140,0.12)", ring: "1px solid rgba(120,120,140,0.25)", action: "support" as const },
-  ];
+    { icon: UserPlus, label: "Create Dist.", bg: "rgba(156,39,176,0.12)", ring: "1px solid rgba(156,39,176,0.25)", path: "/super-distributor/create-distributor", toggleKey: "super_distributor_create" },
+    { icon: Send, label: "Float Send", bg: "rgba(33,150,243,0.12)", ring: "1px solid rgba(33,150,243,0.25)", action: "float" as const, toggleKey: "super_distributor_float_send" },
+    { icon: Network, label: "Distributors", bg: "rgba(76,175,80,0.12)", ring: "1px solid rgba(76,175,80,0.25)", action: "distributors" as const, toggleKey: "super_distributor_distributors" },
+    { icon: ListChecks, label: "Dist Txns", bg: "rgba(103,58,183,0.12)", ring: "1px solid rgba(103,58,183,0.25)", action: "distTxns" as const, toggleKey: "super_distributor_dist_txns" },
+    { icon: Banknote, label: "Settle", bg: "rgba(0,150,136,0.12)", ring: "1px solid rgba(0,150,136,0.25)", action: "settle" as const, toggleKey: "super_distributor_settle" },
+    { icon: FileBarChart, label: "Reconcile", bg: "rgba(255,152,0,0.12)", ring: "1px solid rgba(255,152,0,0.25)", action: "reconcile" as const, toggleKey: "super_distributor_reconcile" },
+    { icon: BarChart3, label: "Analytics", bg: "rgba(0,188,212,0.12)", ring: "1px solid rgba(0,188,212,0.25)", action: "analytics" as const, toggleKey: "super_distributor_analytics" },
+    { icon: History, label: "History", bg: "rgba(255,193,7,0.12)", ring: "1px solid rgba(255,193,7,0.25)", action: "history" as const, toggleKey: "super_distributor_history" },
+    { icon: AlertTriangle, label: "Alerts", bg: "rgba(244,67,54,0.12)", ring: "1px solid rgba(244,67,54,0.25)", action: "alerts" as const, toggleKey: "super_distributor_alerts" },
+    { icon: Headphones, label: "Support", bg: "rgba(120,120,140,0.12)", ring: "1px solid rgba(120,120,140,0.25)", action: "support" as const, toggleKey: "super_distributor_support" },
+  ].filter(a => !a.toggleKey || !isDisabled(a.toggleKey));
 
   const handleQuickAction = (item: typeof quickActions[0]) => {
     if ("path" in item && item.path) {
