@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Camera, QrCode, ShieldCheck, BarChart3, Settings,
