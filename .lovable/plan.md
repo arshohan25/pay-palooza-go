@@ -1,24 +1,32 @@
 
 
-## ✅ Add Toggle Keys to Agent & Distributor Dashboard Features (Completed)
+## Add Dashboard Analytics Charts to Admin Overview
 
-All 21 agent and distributor feature toggles have been added and are now controllable from the Admin Global Toggles panel.
+### What
+Add interactive charts to the Admin Dashboard overview tab showing daily, weekly, and monthly transaction activity. Currently the overview only has stat cards and a transaction table — no visual analytics.
 
-### Files Modified
-- `src/pages/AgentDashboard.tsx` — 8 quick actions with toggleKey + filtering
-- `src/components/AgentMenuDrawer.tsx` — 5 menu items with toggleKey + filtering
-- `src/pages/DistributorDashboard.tsx` — 8 quick actions with toggleKey + filtering
+### Changes
 
-### Database
-21 rows inserted into `global_feature_toggles` (agent_* x13, distributor_* x8)
+#### 1. New component: `src/components/admin/AdminOverviewCharts.tsx`
+A self-contained component that fetches transaction data and renders 3 chart sections using Recharts (already in the project):
 
-## ✅ Add Toggle Keys to Super Distributor Dashboard (Completed)
+- **Daily Transaction Trend** (last 14 days) — Bar chart showing volume + line overlay for count
+- **Weekly Summary** (last 8 weeks) — Grouped bar chart comparing volume across transaction types
+- **Monthly Overview** (last 6 months) — Area chart for cumulative volume + count trend
+- **User Signups Trend** (last 14 days) — Line chart from profiles table `created_at`
+- **Active Hours Heatmap** — Simple bar chart showing transaction count by hour of day (today)
 
-All 10 super distributor feature toggles have been added and are now controllable from the Admin Global Toggles panel under a dedicated "Super Distributor" section.
+Data source: `transactions` table (status = completed) + `profiles` table for signups. Uses a period toggle (Daily / Weekly / Monthly) to switch views.
 
-### Files Modified
-- `src/pages/SuperDistributorDashboard.tsx` — 10 quick actions with toggleKey + filtering
-- `src/components/admin/AdminGlobalToggles.tsx` — Added Super Distributor section with Crown icon
+#### 2. `src/pages/AdminDashboard.tsx`
+- Import `AdminOverviewCharts`
+- Insert `<AdminOverviewCharts />` in the overview tab between the stat cards grid and the Recent Transactions table (around line 1041)
 
-### Database
-10 rows inserted into `global_feature_toggles` (super_distributor_* x10)
+### Technical Details
+- Queries: `supabase.from("transactions").select("type, amount, fee, created_at").eq("status", "completed")` with date filters
+- Signup query: `supabase.from("profiles").select("created_at")` with date filter
+- Charts: `BarChart`, `LineChart`, `AreaChart` from recharts (already installed)
+- Period state managed locally with toggle buttons
+- Loading skeleton while data fetches
+- Responsive grid: 1 col mobile, 2 col desktop
+
