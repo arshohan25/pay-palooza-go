@@ -105,6 +105,9 @@ import AdminEcommerceHub from "@/components/admin/AdminEcommerceHub";
 import AdminCareersManager from "@/components/admin/AdminCareersManager";
 import AdminChatMonitor from "@/components/admin/AdminChatMonitor";
 import AdminFraudAutoRules from "@/components/admin/AdminFraudAutoRules";
+import AdminLoanManagement from "@/components/admin/AdminLoanManagement";
+import AdminInsuranceManagement from "@/components/admin/AdminInsuranceManagement";
+import AdminGiftCardManagement from "@/components/admin/AdminGiftCardManagement";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -307,6 +310,14 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
       { id: "smart_routing", label: "Routing", icon: CreditCard },
       { id: "liquidity", label: "Liquidity", icon: TrendingUp },
       { id: "live_monitor", label: "Live Monitor", icon: Activity },
+    ],
+  },
+  {
+    label: "Services",
+    items: [
+      { id: "loans", label: "Loans", icon: CreditCard },
+      { id: "insurance_mgmt", label: "Insurance", icon: Shield },
+      { id: "gift_cards_mgmt", label: "Gift Cards", icon: Gift },
     ],
   },
   {
@@ -1744,6 +1755,11 @@ export default function AdminDashboard() {
         {activeTab === "festival_themes" && <AdminFestivalThemes />}
 
         {/* ═══ E-COMMERCE ═══ */}
+        {/* ═══ SERVICES ═══ */}
+        {activeTab === "loans" && <AdminLoanManagement />}
+        {activeTab === "insurance_mgmt" && <AdminInsuranceManagement />}
+        {activeTab === "gift_cards_mgmt" && <AdminGiftCardManagement />}
+
         {activeTab === "ecommerce" && <AdminEcommerceHub />}
 
         {/* ═══ CAREERS ═══ */}
