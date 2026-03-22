@@ -22,6 +22,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "rec
 import { haptics } from "@/lib/haptics";
 import SupportChat from "@/components/SupportChat";
 import TransactionHistory from "./TransactionHistory";
+import { useGlobalToggles } from "@/hooks/use-global-toggles";
 
 /* ─── Types ─── */
 interface DistRow {
