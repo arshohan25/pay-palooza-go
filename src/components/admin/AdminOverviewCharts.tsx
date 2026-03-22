@@ -2,10 +2,10 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BarChart3, TrendingUp, Users, Clock } from "lucide-react";
+import { BarChart3, TrendingUp, Users, Clock, PieChart as PieIcon, DollarSign, CheckCircle, Building2 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, AreaChart, Area, ComposedChart,
+  LineChart, Line, AreaChart, Area, ComposedChart, PieChart, Pie, Cell, Legend,
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { subDays, subWeeks, subMonths, format, startOfWeek, startOfMonth, getHours } from "date-fns";
@@ -19,6 +19,14 @@ interface TxnRow {
   created_at: string;
 }
 
+interface StatusRow {
+  status: string;
+}
+
+interface CreatedAtRow {
+  created_at: string;
+}
+
 const tooltipStyle = {
   backgroundColor: "hsl(var(--card))",
   border: "1px solid hsl(var(--border))",
@@ -26,10 +34,30 @@ const tooltipStyle = {
   color: "hsl(var(--foreground))",
 };
 
+const TYPE_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--destructive))",
+  "hsl(160, 60%, 45%)",
+  "hsl(40, 80%, 50%)",
+  "hsl(280, 60%, 55%)",
+  "hsl(200, 70%, 50%)",
+  "hsl(20, 80%, 55%)",
+  "hsl(320, 60%, 50%)",
+];
+
+const STATUS_COLORS = {
+  completed: "hsl(160, 60%, 45%)",
+  failed: "hsl(var(--destructive))",
+  pending: "hsl(40, 80%, 50%)",
+};
+
 export default function AdminOverviewCharts() {
   const [period, setPeriod] = useState<Period>("daily");
   const [txns, setTxns] = useState<TxnRow[]>([]);
   const [signups, setSignups] = useState<string[]>([]);
+  const [statusData, setStatusData] = useState<StatusRow[]>([]);
+  const [agentDates, setAgentDates] = useState<string[]>([]);
+  const [merchantDates, setMerchantDates] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,7 +65,7 @@ export default function AdminOverviewCharts() {
       setLoading(true);
       const since = subMonths(new Date(), 6).toISOString();
 
-      const [txnRes, signupRes] = await Promise.all([
+      const [txnRes, signupRes, statusRes, agentRes, merchantRes] = await Promise.all([
         supabase
           .from("transactions")
           .select("type, amount, fee, created_at")
@@ -51,10 +79,30 @@ export default function AdminOverviewCharts() {
           .gte("created_at", subDays(new Date(), 14).toISOString())
           .order("created_at", { ascending: true })
           .limit(1000),
+        supabase
+          .from("transactions")
+          .select("status")
+          .gte("created_at", since)
+          .limit(1000),
+        supabase
+          .from("agents")
+          .select("created_at")
+          .gte("created_at", since)
+          .order("created_at", { ascending: true })
+          .limit(1000),
+        supabase
+          .from("merchants")
+          .select("created_at")
+          .gte("created_at", since)
+          .order("created_at", { ascending: true })
+          .limit(1000),
       ]);
 
       setTxns((txnRes.data as TxnRow[]) ?? []);
       setSignups((signupRes.data ?? []).map((r: any) => r.created_at));
+      setStatusData((statusRes.data as StatusRow[]) ?? []);
+      setAgentDates((agentRes.data ?? []).map((r: any) => r.created_at));
+      setMerchantDates((merchantRes.data ?? []).map((r: any) => r.created_at));
       setLoading(false);
     };
     load();
@@ -62,12 +110,12 @@ export default function AdminOverviewCharts() {
 
   // Daily data (last 14 days)
   const dailyData = useMemo(() => {
-    const map = new Map<string, { count: number; volume: number }>();
+    const map = new Map<string, { count: number; volume: number; fees: number }>();
     const cutoff = subDays(new Date(), 14);
     txns.filter(t => new Date(t.created_at) >= cutoff).forEach(t => {
       const day = t.created_at.slice(0, 10);
-      const prev = map.get(day) ?? { count: 0, volume: 0 };
-      map.set(day, { count: prev.count + 1, volume: prev.volume + t.amount });
+      const prev = map.get(day) ?? { count: 0, volume: 0, fees: 0 };
+      map.set(day, { count: prev.count + 1, volume: prev.volume + t.amount, fees: prev.fees + t.fee });
     });
     return Array.from(map.entries()).map(([date, v]) => ({
       date: format(new Date(date), "MMM dd"),
@@ -77,23 +125,23 @@ export default function AdminOverviewCharts() {
 
   // Weekly data (last 8 weeks)
   const weeklyData = useMemo(() => {
-    const map = new Map<string, { count: number; volume: number }>();
+    const map = new Map<string, { count: number; volume: number; fees: number }>();
     const cutoff = subWeeks(new Date(), 8);
     txns.filter(t => new Date(t.created_at) >= cutoff).forEach(t => {
       const week = format(startOfWeek(new Date(t.created_at), { weekStartsOn: 0 }), "MMM dd");
-      const prev = map.get(week) ?? { count: 0, volume: 0 };
-      map.set(week, { count: prev.count + 1, volume: prev.volume + t.amount });
+      const prev = map.get(week) ?? { count: 0, volume: 0, fees: 0 };
+      map.set(week, { count: prev.count + 1, volume: prev.volume + t.amount, fees: prev.fees + t.fee });
     });
     return Array.from(map.entries()).map(([date, v]) => ({ date, ...v }));
   }, [txns]);
 
   // Monthly data (last 6 months)
   const monthlyData = useMemo(() => {
-    const map = new Map<string, { count: number; volume: number }>();
+    const map = new Map<string, { count: number; volume: number; fees: number }>();
     txns.forEach(t => {
       const month = format(startOfMonth(new Date(t.created_at)), "MMM yy");
-      const prev = map.get(month) ?? { count: 0, volume: 0 };
-      map.set(month, { count: prev.count + 1, volume: prev.volume + t.amount });
+      const prev = map.get(month) ?? { count: 0, volume: 0, fees: 0 };
+      map.set(month, { count: prev.count + 1, volume: prev.volume + t.amount, fees: prev.fees + t.fee });
     });
     return Array.from(map.entries()).map(([date, v]) => ({ date, ...v }));
   }, [txns]);
@@ -122,12 +170,75 @@ export default function AdminOverviewCharts() {
     return hours;
   }, [txns]);
 
+  // Transaction type breakdown (donut)
+  const typeBreakdown = useMemo(() => {
+    const map = new Map<string, number>();
+    txns.forEach(t => {
+      map.set(t.type, (map.get(t.type) ?? 0) + 1);
+    });
+    return Array.from(map.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [txns]);
+
+  // Revenue / fees trend (follows period toggle)
+  const feeData = useMemo(() => {
+    if (period === "daily") return dailyData;
+    if (period === "weekly") return weeklyData;
+    return monthlyData;
+  }, [period, dailyData, weeklyData, monthlyData]);
+
+  // Success vs Failed ratio (donut)
+  const statusBreakdown = useMemo(() => {
+    const map = new Map<string, number>();
+    statusData.forEach(s => {
+      map.set(s.status, (map.get(s.status) ?? 0) + 1);
+    });
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+  }, [statusData]);
+
+  const successRate = useMemo(() => {
+    const total = statusData.length;
+    if (total === 0) return 0;
+    const completed = statusData.filter(s => s.status === "completed").length;
+    return Math.round((completed / total) * 100);
+  }, [statusData]);
+
+  // Agent & Merchant growth (cumulative)
+  const growthData = useMemo(() => {
+    const map = new Map<string, { agents: number; merchants: number }>();
+    const allDates = [...agentDates, ...merchantDates].map(d =>
+      format(startOfMonth(new Date(d)), "MMM yy")
+    );
+    const uniqueMonths = [...new Set(allDates)];
+
+    agentDates.forEach(d => {
+      const m = format(startOfMonth(new Date(d)), "MMM yy");
+      const prev = map.get(m) ?? { agents: 0, merchants: 0 };
+      map.set(m, { ...prev, agents: prev.agents + 1 });
+    });
+    merchantDates.forEach(d => {
+      const m = format(startOfMonth(new Date(d)), "MMM yy");
+      const prev = map.get(m) ?? { agents: 0, merchants: 0 };
+      map.set(m, { ...prev, merchants: prev.merchants + 1 });
+    });
+
+    let cumAgents = 0;
+    let cumMerchants = 0;
+    return uniqueMonths.sort().map(month => {
+      const v = map.get(month) ?? { agents: 0, merchants: 0 };
+      cumAgents += v.agents;
+      cumMerchants += v.merchants;
+      return { month, agents: cumAgents, merchants: cumMerchants };
+    });
+  }, [agentDates, merchantDates]);
+
   const chartData = period === "daily" ? dailyData : period === "weekly" ? weeklyData : monthlyData;
 
   if (loading) {
     return (
       <div className="grid md:grid-cols-2 gap-4">
-        {[1, 2, 3, 4].map(i => (
+        {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
           <Card key={i} className="border-0 shadow-[var(--shadow-card)]">
             <CardHeader className="pb-2"><Skeleton className="h-5 w-40" /></CardHeader>
             <CardContent><Skeleton className="h-48 w-full" /></CardContent>
@@ -136,6 +247,9 @@ export default function AdminOverviewCharts() {
       </div>
     );
   }
+
+  const renderDonutLabel = ({ name, percent }: { name: string; percent: number }) =>
+    percent > 0.05 ? `${name} ${(percent * 100).toFixed(0)}%` : "";
 
   return (
     <div className="space-y-4">
@@ -215,6 +329,69 @@ export default function AdminOverviewCharts() {
           </CardContent>
         </Card>
 
+        {/* Transaction Type Breakdown (Donut) */}
+        <Card className="border-0 shadow-[var(--shadow-card)]">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <PieIcon className="w-4 h-4 text-violet-500" />
+              Transaction Type Breakdown
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={typeBreakdown}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={2}
+                    dataKey="value"
+                    label={renderDonutLabel}
+                  >
+                    {typeBreakdown.map((_, i) => (
+                      <Cell key={i} fill={TYPE_COLORS[i % TYPE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Legend wrapperStyle={{ fontSize: 10 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Revenue & Fees Trend */}
+        <Card className="border-0 shadow-[var(--shadow-card)]">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-emerald-500" />
+              Revenue & Fees Trend
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={feeData}>
+                  <defs>
+                    <linearGradient id="feeGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(160, 60%, 45%)" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(160, 60%, 45%)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="date" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
+                  <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`৳${v.toLocaleString()}`, "Fees"]} />
+                  <Area type="monotone" dataKey="fees" stroke="hsl(160, 60%, 45%)" fill="url(#feeGrad)" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* User Signups */}
         <Card className="border-0 shadow-[var(--shadow-card)]">
           <CardHeader className="pb-2">
@@ -256,6 +433,70 @@ export default function AdminOverviewCharts() {
                   <Tooltip contentStyle={tooltipStyle} />
                   <Bar dataKey="count" fill="hsl(40, 80%, 50%)" radius={[3, 3, 0, 0]} />
                 </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Success vs Failed Ratio (Donut) */}
+        <Card className="border-0 shadow-[var(--shadow-card)]">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-emerald-500" />
+              Success vs Failed Ratio
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-48 relative">
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                <span className="text-2xl font-bold text-foreground">{successRate}%</span>
+              </div>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={statusBreakdown}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={75}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {statusBreakdown.map((entry) => (
+                      <Cell
+                        key={entry.name}
+                        fill={STATUS_COLORS[entry.name as keyof typeof STATUS_COLORS] ?? "hsl(var(--muted))"}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Legend wrapperStyle={{ fontSize: 10 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Agent & Merchant Growth */}
+        <Card className="border-0 shadow-[var(--shadow-card)]">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-violet-500" />
+              Agent & Merchant Growth
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={growthData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
+                  <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} allowDecimals={false} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Line type="monotone" dataKey="agents" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} name="Agents" />
+                  <Line type="monotone" dataKey="merchants" stroke="hsl(280, 60%, 55%)" strokeWidth={2} dot={{ r: 3 }} name="Merchants" />
+                  <Legend wrapperStyle={{ fontSize: 10 }} />
+                </LineChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
