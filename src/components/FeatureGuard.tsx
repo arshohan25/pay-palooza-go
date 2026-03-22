@@ -18,16 +18,17 @@ interface FeatureGuardProps {
  * background KYC revalidation to prevent active flows from being unmounted.
  */
 const FeatureGuard = ({ featureKey, onClose, children }: FeatureGuardProps) => {
-  const { isDisabled } = useGlobalToggles();
+  const { isDisabled, isHidden } = useGlobalToggles();
   const { isLocked } = useFeatureLocks();
   const { status: kycStatus, loading: kycLoading } = useKycStatus();
   const hasResolved = useRef(false);
 
   const globalOff = isDisabled(featureKey);
+  const globalHidden = isHidden(featureKey);
   const lockStatus = isLocked(featureKey);
   // Only evaluate KYC block when loading is complete
   const kycBlocked = !kycLoading && kycStatus !== "verified";
-  const blocked = !kycLoading && (globalOff || lockStatus.locked || kycBlocked);
+  const blocked = !kycLoading && (globalOff || globalHidden || lockStatus.locked || kycBlocked);
 
   useEffect(() => {
     if (kycLoading) return; // Wait for KYC + auth to fully resolve
@@ -37,7 +38,9 @@ const FeatureGuard = ({ featureKey, onClose, children }: FeatureGuardProps) => {
       if (hasResolved.current) return;
 
       let reason: string;
-      if (lockStatus.locked) {
+      if (globalHidden) {
+        reason = "This feature is currently unavailable.";
+      } else if (lockStatus.locked) {
         reason = lockStatus.reason || "This feature is currently restricted for your account.";
       } else if (globalOff) {
         reason = "This feature is currently unavailable.";

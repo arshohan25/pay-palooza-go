@@ -1,7 +1,9 @@
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Landmark, Wallet, Ticket, Heart, X, Briefcase, HandCoins, Shield, Gift } from "lucide-react";
 import { toast } from "sonner";
+import { useGlobalToggles } from "@/hooks/use-global-toggles";
 
 interface MoreSheetProps {
   open: boolean;
@@ -9,6 +11,17 @@ interface MoreSheetProps {
   onBankTransfer: () => void;
   onSavings: () => void;
 }
+
+const FEATURE_KEY_MAP: Record<string, string> = {
+  bank: "bank_transfer",
+  savings: "savings",
+  loan: "loan",
+  insurance: "insurance",
+  giftcards: "gift_cards",
+  careers: "careers",
+  coupons: "coupons",
+  donations: "donations",
+};
 
 const items = [
   { id: "bank", icon: Landmark, label: "Bank Transfer", desc: "Transfer to any bank account", gradient: "bg-gradient-to-b from-blue-500 to-indigo-600" },
@@ -23,7 +36,15 @@ const items = [
 
 const MoreSheet = ({ open, onClose, onBankTransfer, onSavings }: MoreSheetProps) => {
   const navigate = useNavigate();
-  const visibleItems = items;
+  const { isHidden } = useGlobalToggles();
+
+  const visibleItems = useMemo(
+    () => items.filter(item => {
+      const fk = FEATURE_KEY_MAP[item.id];
+      return !fk || !isHidden(fk);
+    }),
+    [isHidden]
+  );
 
   const handleTap = (id: string) => {
     onClose();

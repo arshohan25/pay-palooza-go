@@ -290,7 +290,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   const navigate = useNavigate();
   const { t } = useI18n();
   const { isLocked } = useFeatureLocks();
-  const { isDisabled: isGloballyDisabled, toggles } = useGlobalToggles();
+  const { isDisabled: isGloballyDisabled, isHidden: isGloballyHidden, toggles } = useGlobalToggles();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [ripples, setRipples] = useState<Record<string, RippleState | null>>({});
   const rippleCounterRef = useRef(0);
@@ -378,8 +378,11 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
       const toggle = toggles.find((t) => t.feature_key === slot.featureKey);
       return { ...slot, label: toggle?.label || slot.label };
     });
-    return [...moreServices, ...enabledSlots];
-  }, [toggles]);
+    // Filter out hidden features from both regular services and slots
+    return [...moreServices, ...enabledSlots].filter(
+      (item) => !isGloballyHidden(item.featureKey)
+    );
+  }, [toggles, isGloballyHidden]);
 
   const triggerRipple = useCallback((id: string, e: React.MouseEvent | React.TouchEvent) => {
     const el = (e.currentTarget as HTMLElement).querySelector("[data-ripple-container]") as HTMLElement;
@@ -453,7 +456,10 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <SortableContext items={sortableOrder} strategy={rectSortingStrategy}>
           <div className={`grid gap-x-2 sm:gap-x-3 ${compactMode ? "gap-y-3" : "gap-y-5"} ${gridCols === 3 ? "grid-cols-3" : "grid-cols-4"}`}>
-            {orderedActions.map((action, index) => {
+            {orderedActions.filter(action => {
+              const fk = FEATURE_MAP[action.id];
+              return !fk || !isGloballyHidden(fk);
+            }).map((action, index) => {
               const isHov = hoveredId === action.id;
               const ripple = ripples[action.id];
               const label = t(action.labelKey);

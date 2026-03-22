@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import {
   ToggleRight, ToggleLeft, Loader2, Plus, Pencil, Trash2, Save,
   Power, PowerOff, Wallet, Zap, ShoppingBag, Store, UserCog, Box,
-  UserCheck, Building2, Settings2, Crown,
+  UserCheck, Building2, Settings2, Crown, Eye, EyeOff, EyeClosed,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,7 @@ interface FeatureToggle {
   description: string | null;
   is_enabled: boolean;
   sort_order: number;
+  visibility: string; // 'visible' | 'disabled' | 'hidden'
 }
 
 const SECTIONS = [
@@ -166,6 +167,19 @@ export default function AdminGlobalToggles() {
     return () => { supabase.removeChannel(ch); };
   }, [load]);
 
+  const setVisibility = async (t: FeatureToggle, visibility: string) => {
+    const isEnabled = visibility === 'visible';
+    const { error } = await supabase
+      .from("global_feature_toggles")
+      .update({ visibility, is_enabled: isEnabled } as any)
+      .eq("id", t.id);
+    if (error) toast.error("Failed to update");
+    else {
+      const labels: Record<string, string> = { visible: "Visible", disabled: "Disabled (greyed out)", hidden: "Hidden" };
+      toast.success(`${t.label} → ${labels[visibility] || visibility}`);
+    }
+  };
+
   const toggleFeature = async (t: FeatureToggle) => {
     const { error } = await supabase
       .from("global_feature_toggles")
@@ -252,27 +266,51 @@ export default function AdminGlobalToggles() {
 
   const renderToggleList = (items: FeatureToggle[]) => (
     <div className="divide-y divide-border">
-      {items.map((t) => (
-        <div key={t.id} className="px-2 sm:px-4 py-2.5 hover:bg-muted/30 transition-colors">
-          <div className="flex items-center gap-1.5">
-            <ToggleRight className={`w-3.5 h-3.5 shrink-0 ${t.is_enabled ? "text-emerald-500" : "text-muted-foreground"}`} />
-            <p className="text-sm font-medium text-foreground truncate flex-1 min-w-0">{t.label}</p>
-            <Switch checked={t.is_enabled} onCheckedChange={() => toggleFeature(t)} className="shrink-0" />
-          </div>
-          {t.description && <p className="text-xs text-muted-foreground truncate mt-0.5 pl-5">{t.description}</p>}
-          <div className="flex items-center justify-between mt-1 pl-5">
-            <p className="text-[10px] font-mono text-muted-foreground/60 truncate flex-1 min-w-0">{t.feature_key}</p>
-            <div className="flex items-center shrink-0">
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openEdit(t)}>
-                <Pencil className="w-3 h-3" />
-              </Button>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => setDeleteToggle(t)}>
-                <Trash2 className="w-3 h-3" />
-              </Button>
+      {items.map((t) => {
+        const vis = t.visibility || 'visible';
+        return (
+          <div key={t.id} className="px-2 sm:px-4 py-2.5 hover:bg-muted/30 transition-colors">
+            <div className="flex items-center gap-1.5">
+              {vis === 'visible' ? (
+                <Eye className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
+              ) : vis === 'disabled' ? (
+                <EyeOff className="w-3.5 h-3.5 shrink-0 text-amber-500" />
+              ) : (
+                <EyeClosed className="w-3.5 h-3.5 shrink-0 text-destructive" />
+              )}
+              <p className="text-sm font-medium text-foreground truncate flex-1 min-w-0">{t.label}</p>
+              <Select value={vis} onValueChange={(val) => setVisibility(t, val)}>
+                <SelectTrigger className="w-[110px] h-7 text-[11px] shrink-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="visible">
+                    <span className="flex items-center gap-1.5"><Eye className="w-3 h-3 text-emerald-500" /> Visible</span>
+                  </SelectItem>
+                  <SelectItem value="disabled">
+                    <span className="flex items-center gap-1.5"><EyeOff className="w-3 h-3 text-amber-500" /> Disabled</span>
+                  </SelectItem>
+                  <SelectItem value="hidden">
+                    <span className="flex items-center gap-1.5"><EyeClosed className="w-3 h-3 text-destructive" /> Hidden</span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {t.description && <p className="text-xs text-muted-foreground truncate mt-0.5 pl-5">{t.description}</p>}
+            <div className="flex items-center justify-between mt-1 pl-5">
+              <p className="text-[10px] font-mono text-muted-foreground/60 truncate flex-1 min-w-0">{t.feature_key}</p>
+              <div className="flex items-center shrink-0">
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openEdit(t)}>
+                  <Pencil className="w-3 h-3" />
+                </Button>
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => setDeleteToggle(t)}>
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 
