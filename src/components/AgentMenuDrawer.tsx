@@ -37,6 +37,7 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
   const { user, signOut } = useAuth();
   const profile = useProfile();
   const navigate = useNavigate();
+  const { isDisabled } = useGlobalToggles();
 
   const [qrOpen, setQrOpen] = useState(false);
   const [avatarSheetOpen, setAvatarSheetOpen] = useState(false);
