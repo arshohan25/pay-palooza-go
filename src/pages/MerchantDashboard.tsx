@@ -126,14 +126,14 @@ const mainTabs: { id: MerchTab; icon: typeof QrCode; label: string; toggleKey?: 
 ];
 
 const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: string; toggleKey?: string }[] = [
-  { id: "store",        icon: Store,        label: "Store Settings",   desc: "Customize your storefront" },
-  { id: "analytics",    icon: PieChart,     label: "Analytics",        desc: "Insights, revenue & customers" },
-  { id: "transactions", icon: ArrowUpDown,  label: "History",          desc: "View all transactions" },
-  { id: "qr",           icon: QrCode,       label: "QR Code",          desc: "Your merchant QR code" },
-  { id: "api",          icon: Globe,        label: "API Integration",  desc: "API keys, webhooks & docs" },
-  { id: "paylinks",     icon: Link,         label: "Pay Links",        desc: "Create & share payment links" },
-  { id: "settlements",  icon: BanknoteIcon, label: "Settlement",       desc: "Bank payouts & schedule" },
-  { id: "mdr",          icon: Percent,      label: "Fees & Charges",   desc: "MDR rates & fee breakdown" },
+  { id: "store",        icon: Store,        label: "Store Settings",   desc: "Customize your storefront",      toggleKey: "merchant_store_settings" },
+  { id: "analytics",    icon: PieChart,     label: "Analytics",        desc: "Insights, revenue & customers",  toggleKey: "merchant_analytics" },
+  { id: "transactions", icon: ArrowUpDown,  label: "History",          desc: "View all transactions",          toggleKey: "merchant_transactions" },
+  { id: "qr",           icon: QrCode,       label: "QR Code",          desc: "Your merchant QR code",          toggleKey: "merchant_qr" },
+  { id: "api",          icon: Globe,        label: "API Integration",  desc: "API keys, webhooks & docs",      toggleKey: "merchant_api" },
+  { id: "paylinks",     icon: Link,         label: "Pay Links",        desc: "Create & share payment links",   toggleKey: "merchant_paylinks" },
+  { id: "settlements",  icon: BanknoteIcon, label: "Settlement",       desc: "Bank payouts & schedule",        toggleKey: "merchant_settlements" },
+  { id: "mdr",          icon: Percent,      label: "Fees & Charges",   desc: "MDR rates & fee breakdown",      toggleKey: "merchant_mdr" },
   { id: "refunds",      icon: Undo2,        label: "Refunds",          desc: "Issue & track customer refunds", toggleKey: "merchant_refunds" },
   { id: "staff",        icon: Users,        label: "Staff",            desc: "Manage employee access",         toggleKey: "merchant_staff" },
   { id: "customers",    icon: Users,        label: "Customers",        desc: "Customer directory & insights",  toggleKey: "merchant_customers" },
