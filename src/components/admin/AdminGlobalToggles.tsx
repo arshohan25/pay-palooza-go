@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import {
   ToggleRight, ToggleLeft, Loader2, Plus, Pencil, Trash2, Save,
   Power, PowerOff, Wallet, Zap, ShoppingBag, Store, UserCog, Box,
-  UserCheck, Building2, Settings2,
+  UserCheck, Building2, Settings2, Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
