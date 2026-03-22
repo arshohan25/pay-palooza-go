@@ -269,80 +269,56 @@ export default function AdminGlobalToggles() {
     </div>
   );
 
-  const allSections = [...SECTIONS, OTHER_SECTION];
-  const visibleSections = allSections.filter((s) => (groups[s.id]?.length ?? 0) > 0);
+      {/* Horizontal Tab Bar */}
+      <ScrollArea className="w-full">
+        <div className="flex gap-1.5 pb-2">
+          {visibleSections.map((section) => {
+            const items = groups[section.id] ?? [];
+            const offCount = items.filter((t) => !t.is_enabled).length;
+            const Icon = section.icon;
+            const isActive = currentSection === section.id;
 
-  return (
-    <div className="w-full space-y-4">
-      {/* Header */}
-      <div className="space-y-3">
-        <div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-base sm:text-lg font-bold text-foreground">Global Feature Toggles</h3>
-            {disabledCount > 0 && (
-              <Badge variant="destructive" className="text-[10px] px-1.5 py-0">{disabledCount} off</Badge>
-            )}
-          </div>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Enable or disable features globally</p>
-          <RealtimeUpdateIndicator visible={visible} />
+            return (
+              <button
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 border ${
+                  isActive
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card text-muted-foreground border-border hover:bg-muted/60"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {section.label}
+                <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${isActive ? "bg-primary-foreground/20 text-primary-foreground" : ""}`}>
+                  {items.length}
+                </Badge>
+                {offCount > 0 && (
+                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                    {offCount} off
+                  </Badge>
+                )}
+              </button>
+            );
+          })}
         </div>
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <Button variant="outline" size="sm" onClick={() => setBulkAction("enable")} disabled={enabledCount === toggles.length || toggles.length === 0} className="gap-1 text-[11px] h-7 px-2">
-            <Power className="w-3 h-3" /> All On
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setBulkAction("disable")} disabled={disabledCount === toggles.length || toggles.length === 0} className="gap-1 text-destructive hover:text-destructive text-[11px] h-7 px-2">
-            <PowerOff className="w-3 h-3" /> All Off
-          </Button>
-          <Button onClick={openAdd} className="gap-1 h-7 px-2 text-[11px]" size="sm">
-            <Plus className="w-3.5 h-3.5" /> Add
-          </Button>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
+
+      {/* Active Section Content */}
+      {currentSection && (groups[currentSection]?.length ?? 0) > 0 ? (
+        <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
+          {renderToggleList(groups[currentSection])}
         </div>
-      </div>
-
-      {/* Sectioned Accordion */}
-      <div className="space-y-2">
-        {visibleSections.map((section) => {
-          const items = groups[section.id] ?? [];
-          const offCount = items.filter((t) => !t.is_enabled).length;
-          const Icon = section.icon;
-          const isOpen = openSections[section.id] ?? true;
-
-          return (
-            <Collapsible key={section.id} open={isOpen} onOpenChange={() => toggleSection(section.id)}>
-              <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
-                <CollapsibleTrigger asChild>
-                  <button className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-muted/40 transition-colors text-left">
-                    <Icon className="w-4 h-4 text-primary shrink-0" />
-                    <span className="text-sm font-semibold text-foreground flex-1">{section.label}</span>
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
-                      {items.length}
-                    </Badge>
-                    {offCount > 0 && (
-                      <Badge variant="destructive" className="text-[10px] px-1.5 py-0 shrink-0">
-                        {offCount} off
-                      </Badge>
-                    )}
-                    <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  {renderToggleList(items)}
-                </CollapsibleContent>
-              </div>
-            </Collapsible>
-          );
-        })}
-
-        {visibleSections.length === 0 && (
-          <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="flex flex-col items-center justify-center py-8 text-center">
-            <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
-              <ToggleLeft className="w-7 h-7 text-muted-foreground" />
-            </motion.div>
-            <p className="text-sm font-semibold text-foreground">No toggles yet</p>
-            <p className="text-xs text-muted-foreground mt-1">Add a toggle to get started</p>
+      ) : (
+        <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="flex flex-col items-center justify-center py-8 text-center">
+          <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+            <ToggleLeft className="w-7 h-7 text-muted-foreground" />
           </motion.div>
-        )}
-      </div>
+          <p className="text-sm font-semibold text-foreground">No toggles yet</p>
+          <p className="text-xs text-muted-foreground mt-1">Add a toggle to get started</p>
+        </motion.div>
+      )}
 
       {/* Edit / Add Dialog */}
       <Dialog open={!!editToggle || addOpen} onOpenChange={(o) => { if (!o) { setEditToggle(null); setAddOpen(false); } }}>
