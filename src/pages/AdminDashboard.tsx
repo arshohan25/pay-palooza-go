@@ -313,6 +313,14 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
     ],
   },
   {
+    label: "Services",
+    items: [
+      { id: "loans", label: "Loans", icon: CreditCard },
+      { id: "insurance_mgmt", label: "Insurance", icon: Shield },
+      { id: "gift_cards_mgmt", label: "Gift Cards", icon: Gift },
+    ],
+  },
+  {
     label: "E-Commerce",
     items: [
       { id: "ecommerce", label: "E-Commerce", icon: ShoppingBag },
