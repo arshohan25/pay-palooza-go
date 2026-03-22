@@ -275,11 +275,8 @@ export default function AdminGlobalToggles() {
       {/* Header */}
       <div className="space-y-3">
         <div>
-          <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-base sm:text-lg font-bold text-foreground">Global Feature Toggles</h3>
-            {disabledCount > 0 && (
-              <Badge variant="destructive" className="text-[10px] px-1.5 py-0">{disabledCount} off</Badge>
-            )}
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Enable or disable features globally</p>
           <RealtimeUpdateIndicator visible={visible} />
