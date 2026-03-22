@@ -4666,6 +4666,7 @@ export type Database = {
       }
       is_phone_registered: { Args: { p_phone: string }; Returns: boolean }
       normalize_bd_phone: { Args: { p_raw: string }; Returns: string }
+      notify_insurance_expiry: { Args: never; Returns: number }
       place_shop_order: {
         Args: {
           p_coupon_discount?: number
