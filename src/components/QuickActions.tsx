@@ -378,8 +378,11 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
       const toggle = toggles.find((t) => t.feature_key === slot.featureKey);
       return { ...slot, label: toggle?.label || slot.label };
     });
-    return [...moreServices, ...enabledSlots];
-  }, [toggles]);
+    // Filter out hidden features from both regular services and slots
+    return [...moreServices, ...enabledSlots].filter(
+      (item) => !isGloballyHidden(item.featureKey)
+    );
+  }, [toggles, isGloballyHidden]);
 
   const triggerRipple = useCallback((id: string, e: React.MouseEvent | React.TouchEvent) => {
     const el = (e.currentTarget as HTMLElement).querySelector("[data-ripple-container]") as HTMLElement;
