@@ -58,6 +58,7 @@ import AdminLimitManager from "@/components/admin/AdminLimitManager";
 import AdminTeamManagement from "@/components/admin/AdminTeamManagement";
 import AdminNotificationSender from "@/components/admin/AdminNotificationSender";
 import TeamOnboardingChecklist from "@/components/admin/TeamOnboardingChecklist";
+import AdminOverviewCharts from "@/components/admin/AdminOverviewCharts";
 import AdminMerchantManagement from "@/components/admin/AdminMerchantManagement";
 import AdminSavingsManagement from "@/components/admin/AdminSavingsManagement";
 import AdminDonationFunds from "@/components/admin/AdminDonationFunds";
@@ -1039,6 +1040,8 @@ export default function AdminDashboard() {
               <StatCard icon={Award} label="Rewards Paid" value={`৳${stats.totalRewardsPaid.toLocaleString()}`} color="bg-amber-500" onClick={() => setActiveTab("referrals")} />
               <StatCard icon={Wallet} label="Pending Funds" value={pendingFundCount > 0 ? `${pendingFundCount} / ৳${pendingFundAmount.toLocaleString()}` : "0"} color="bg-rose-500" onClick={() => setActiveTab("fund_requests")} />
             </div>
+
+            <AdminOverviewCharts />
 
             <Card className="border-0 shadow-[var(--shadow-card)]">
               <CardHeader className="pb-2">
