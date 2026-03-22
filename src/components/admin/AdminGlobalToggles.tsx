@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import {
   ToggleRight, ToggleLeft, Loader2, Plus, Pencil, Trash2, Save,
   Power, PowerOff, Wallet, Zap, ShoppingBag, Store, UserCog, Box,
-  UserCheck, Building2, Settings2, ChevronDown,
+  UserCheck, Building2, Settings2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -133,6 +133,12 @@ export default function AdminGlobalToggles() {
   const disabledCount = toggles.filter((t) => !t.is_enabled).length;
   const enabledCount = toggles.filter((t) => t.is_enabled).length;
 
+  const allSections = [...SECTIONS, OTHER_SECTION];
+  const visibleSections = allSections.filter((s) => (groups[s.id]?.length ?? 0) > 0);
+  const currentSection = activeSection && visibleSections.some(s => s.id === activeSection)
+    ? activeSection
+    : visibleSections[0]?.id ?? "";
+
   const load = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -192,7 +198,7 @@ export default function AdminGlobalToggles() {
       else { toast.success("Toggle updated"); setEditToggle(null); }
     } else {
       if (!editKey.trim()) { toast.error("Feature key is required"); setSaving(false); return; }
-      const section = [...SECTIONS, OTHER_SECTION].find((s) => s.id === addSection);
+      const section = allSections.find((s) => s.id === addSection);
       const prefix = section?.prefixHint && !editKey.startsWith(section.prefixHint)
         ? section.prefixHint
         : "";
@@ -230,11 +236,6 @@ export default function AdminGlobalToggles() {
     setBulkAction(null);
   };
 
-  const visibleSections = allSections.filter((s) => (groups[s.id]?.length ?? 0) > 0);
-  const currentSection = activeSection && visibleSections.some(s => s.id === activeSection)
-    ? activeSection
-    : visibleSections[0]?.id ?? "";
-
   if (loading) {
     return (
       <div className="flex justify-center py-16">
@@ -268,6 +269,33 @@ export default function AdminGlobalToggles() {
       ))}
     </div>
   );
+
+  return (
+    <div className="w-full space-y-4">
+      {/* Header */}
+      <div className="space-y-3">
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-base sm:text-lg font-bold text-foreground">Global Feature Toggles</h3>
+            {disabledCount > 0 && (
+              <Badge variant="destructive" className="text-[10px] px-1.5 py-0">{disabledCount} off</Badge>
+            )}
+          </div>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Enable or disable features globally</p>
+          <RealtimeUpdateIndicator visible={visible} />
+        </div>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <Button variant="outline" size="sm" onClick={() => setBulkAction("enable")} disabled={enabledCount === toggles.length || toggles.length === 0} className="gap-1 text-[11px] h-7 px-2">
+            <Power className="w-3 h-3" /> All On
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setBulkAction("disable")} disabled={disabledCount === toggles.length || toggles.length === 0} className="gap-1 text-destructive hover:text-destructive text-[11px] h-7 px-2">
+            <PowerOff className="w-3 h-3" /> All Off
+          </Button>
+          <Button onClick={openAdd} className="gap-1 h-7 px-2 text-[11px]" size="sm">
+            <Plus className="w-3.5 h-3.5" /> Add
+          </Button>
+        </div>
+      </div>
 
       {/* Horizontal Tab Bar */}
       <ScrollArea className="w-full">
@@ -345,7 +373,7 @@ export default function AdminGlobalToggles() {
                   <Input placeholder="e.g. send_money" value={editKey} onChange={(e) => setEditKey(e.target.value)} />
                   {addSection !== "other" && (
                     <p className="text-[10px] text-muted-foreground">
-                      Prefix auto-applied: <span className="font-mono">{[...SECTIONS, OTHER_SECTION].find((s) => s.id === addSection)?.prefixHint}</span>
+                      Prefix auto-applied: <span className="font-mono">{allSections.find((s) => s.id === addSection)?.prefixHint}</span>
                     </p>
                   )}
                 </div>
