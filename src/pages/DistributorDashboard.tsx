@@ -70,6 +70,7 @@ const DistributorDashboard = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isDisabled } = useGlobalToggles();
 
   const [distInfo, setDistInfo] = useState<DistInfo | null>(null);
   const [balance, setBalance] = useState(0);
