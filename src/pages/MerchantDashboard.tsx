@@ -119,10 +119,10 @@ function getMerchTxHeadline(tx: TxnRow): string {
 /* ─── Helpers ─── */
 const fmt = (n: number) => new Intl.NumberFormat("en-BD").format(n);
 
-const mainTabs: { id: MerchTab; icon: typeof QrCode; label: string }[] = [
+const mainTabs: { id: MerchTab; icon: typeof QrCode; label: string; toggleKey?: string }[] = [
   { id: "overview",     icon: BarChart3,    label: "Overview" },
-  { id: "products",     icon: Package,      label: "Products" },
-  { id: "orders",       icon: Receipt,      label: "Orders" },
+  { id: "products",     icon: Package,      label: "Products",  toggleKey: "merchant_products" },
+  { id: "orders",       icon: Receipt,      label: "Orders",    toggleKey: "merchant_orders" },
 ];
 
 const menuItems: { id: MerchTab; icon: typeof QrCode; label: string; desc: string; toggleKey?: string }[] = [
