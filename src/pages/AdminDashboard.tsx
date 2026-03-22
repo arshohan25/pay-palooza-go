@@ -1041,6 +1041,8 @@ export default function AdminDashboard() {
               <StatCard icon={Wallet} label="Pending Funds" value={pendingFundCount > 0 ? `${pendingFundCount} / ৳${pendingFundAmount.toLocaleString()}` : "0"} color="bg-rose-500" onClick={() => setActiveTab("fund_requests")} />
             </div>
 
+            <AdminOverviewCharts />
+
             <Card className="border-0 shadow-[var(--shadow-card)]">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
