@@ -1794,6 +1794,7 @@ export type Database = {
       }
       loan_applications: {
         Row: {
+          admin_notes: string | null
           amount: number
           applied_at: string
           created_at: string
@@ -1809,6 +1810,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          admin_notes?: string | null
           amount: number
           applied_at?: string
           created_at?: string
@@ -1824,6 +1826,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          admin_notes?: string | null
           amount?: number
           applied_at?: string
           created_at?: string

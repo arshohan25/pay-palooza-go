@@ -1,0 +1,1 @@
+ALTER TABLE public.loan_applications ADD COLUMN IF NOT EXISTS admin_notes text;
