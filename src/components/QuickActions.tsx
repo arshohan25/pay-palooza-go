@@ -423,6 +423,9 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
     else if (id === "donations") navigate("/donations");
     else if (id === "coupons") navigate("/coupons");
     else if (id === "careers") navigate("/careers");
+    else if (id === "loan") navigate("/loan");
+    else if (id === "insurance") navigate("/insurance");
+    else if (id === "giftcards") navigate("/giftcards");
   };
 
   const filteredMoreServices = visibleMoreServices;
