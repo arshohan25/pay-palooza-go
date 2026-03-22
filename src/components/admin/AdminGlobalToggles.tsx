@@ -30,6 +30,7 @@ interface FeatureToggle {
   description: string | null;
   is_enabled: boolean;
   sort_order: number;
+  visibility: string; // 'visible' | 'disabled' | 'hidden'
 }
 
 const SECTIONS = [
