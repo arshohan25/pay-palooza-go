@@ -167,6 +167,19 @@ export default function AdminGlobalToggles() {
     return () => { supabase.removeChannel(ch); };
   }, [load]);
 
+  const setVisibility = async (t: FeatureToggle, visibility: string) => {
+    const isEnabled = visibility === 'visible';
+    const { error } = await supabase
+      .from("global_feature_toggles")
+      .update({ visibility, is_enabled: isEnabled } as any)
+      .eq("id", t.id);
+    if (error) toast.error("Failed to update");
+    else {
+      const labels: Record<string, string> = { visible: "Visible", disabled: "Disabled (greyed out)", hidden: "Hidden" };
+      toast.success(`${t.label} → ${labels[visibility] || visibility}`);
+    }
+  };
+
   const toggleFeature = async (t: FeatureToggle) => {
     const { error } = await supabase
       .from("global_feature_toggles")
