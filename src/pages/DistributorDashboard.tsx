@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -69,6 +70,7 @@ const DistributorDashboard = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isDisabled } = useGlobalToggles();
 
   const [distInfo, setDistInfo] = useState<DistInfo | null>(null);
   const [balance, setBalance] = useState(0);
@@ -298,15 +300,15 @@ const DistributorDashboard = () => {
   const todayVolume = todayTxns.reduce((s, t) => s + t.amount, 0);
 
   const quickActions = [
-    { icon: UserPlus, label: "Create Agent", bg: "rgba(156,39,176,0.12)", ring: "1px solid rgba(156,39,176,0.25)", path: "/distributor/create-agent" },
-    { icon: Send, label: "Float Send", bg: "rgba(33,150,243,0.12)", ring: "1px solid rgba(33,150,243,0.25)", action: "float" as const },
-    { icon: Users, label: "Agents", bg: "rgba(76,175,80,0.12)", ring: "1px solid rgba(76,175,80,0.25)", action: "agents" as const },
-    { icon: ListChecks, label: "Agent Txns", bg: "rgba(103,58,183,0.12)", ring: "1px solid rgba(103,58,183,0.25)", action: "agentTxns" as const },
-    { icon: Banknote, label: "Settle", bg: "rgba(0,150,136,0.12)", ring: "1px solid rgba(0,150,136,0.25)", action: "settle" as const },
-    { icon: TrendingUp, label: "Earnings", bg: "rgba(0,188,212,0.12)", ring: "1px solid rgba(0,188,212,0.25)", action: "earnings" as const },
-    { icon: History, label: "History", bg: "rgba(255,193,7,0.12)", ring: "1px solid rgba(255,193,7,0.25)", action: "history" as const },
-    { icon: Headphones, label: "Support", bg: "rgba(120,120,140,0.12)", ring: "1px solid rgba(120,120,140,0.25)", action: "support" as const },
-  ];
+    { icon: UserPlus, label: "Create Agent", bg: "rgba(156,39,176,0.12)", ring: "1px solid rgba(156,39,176,0.25)", path: "/distributor/create-agent", toggleKey: "distributor_create_agent" },
+    { icon: Send, label: "Float Send", bg: "rgba(33,150,243,0.12)", ring: "1px solid rgba(33,150,243,0.25)", action: "float" as const, toggleKey: "distributor_float_send" },
+    { icon: Users, label: "Agents", bg: "rgba(76,175,80,0.12)", ring: "1px solid rgba(76,175,80,0.25)", action: "agents" as const, toggleKey: "distributor_agents" },
+    { icon: ListChecks, label: "Agent Txns", bg: "rgba(103,58,183,0.12)", ring: "1px solid rgba(103,58,183,0.25)", action: "agentTxns" as const, toggleKey: "distributor_agent_txns" },
+    { icon: Banknote, label: "Settle", bg: "rgba(0,150,136,0.12)", ring: "1px solid rgba(0,150,136,0.25)", action: "settle" as const, toggleKey: "distributor_settle" },
+    { icon: TrendingUp, label: "Earnings", bg: "rgba(0,188,212,0.12)", ring: "1px solid rgba(0,188,212,0.25)", action: "earnings" as const, toggleKey: "distributor_earnings" },
+    { icon: History, label: "History", bg: "rgba(255,193,7,0.12)", ring: "1px solid rgba(255,193,7,0.25)", action: "history" as const, toggleKey: "distributor_history" },
+    { icon: Headphones, label: "Support", bg: "rgba(120,120,140,0.12)", ring: "1px solid rgba(120,120,140,0.25)", action: "support" as const, toggleKey: "distributor_support" },
+  ].filter(a => !a.toggleKey || !isDisabled(a.toggleKey));
 
 
   const handleQuickAction = (item: typeof quickActions[0]) => {
