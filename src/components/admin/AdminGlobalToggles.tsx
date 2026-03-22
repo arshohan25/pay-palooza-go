@@ -127,7 +127,7 @@ export default function AdminGlobalToggles() {
   const [deleteToggle, setDeleteToggle] = useState<FeatureToggle | null>(null);
   const [bulkAction, setBulkAction] = useState<"enable" | "disable" | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+  const [activeSection, setActiveSection] = useState<string>("");
 
   const groups = useMemo(() => groupToggles(toggles), [toggles]);
   const disabledCount = toggles.filter((t) => !t.is_enabled).length;
