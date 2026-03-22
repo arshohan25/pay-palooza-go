@@ -1,45 +1,79 @@
 
 
-## Enhance Admin Overview Charts
+## Complete Remaining User App Flows + Admin Toggle Control
 
-### What's Currently There
-- Transaction Volume & Count (daily/weekly/monthly toggle)
-- Cumulative Volume (6 months area chart)
-- User Signups (14 days line chart)
-- Active Hours Today (bar chart)
-
-### What to Add (4 new charts)
-
-#### 1. Transaction Type Breakdown (Donut Chart)
-- PieChart showing distribution of transaction types (send, receive, cashout, addmoney, bill_pay, etc.)
-- Uses existing `txns` data, grouped by `type` field
-- Color-coded with legend
-
-#### 2. Revenue & Fees Trend (Area Chart)
-- Shows total fees earned over time (daily/weekly/monthly, follows the period toggle)
-- Uses the `fee` field from the already-fetched transaction data
-- Gradient fill area chart
-
-#### 3. Success vs Failed Ratio (Donut Chart)
-- Fetch transactions WITHOUT the `status = completed` filter (add a second query for failed/pending counts)
-- Show completed vs failed vs pending as a donut with percentages
-- Summary text showing success rate %
-
-#### 4. Agent & Merchant Growth (Line Chart)
-- Fetch `agents.created_at` and `merchants.created_at` over the last 6 months
-- Dual-line chart showing cumulative registrations over time
+### Summary
+Three user-facing features are marked "Coming soon" with no actual implementation: **Loan**, **Insurance**, and **Gift Cards**. Additionally, **Coupons** is marked `soon: true` in QuickActions even though it has a working page. This plan builds out all three missing flows as functional pages and wires them into the toggle system.
 
 ### Changes
 
-**`src/components/admin/AdminOverviewCharts.tsx`**
-- Add 2 new queries in the `useEffect`: `agents` created_at + `merchants` created_at + transactions (all statuses for success/fail ratio)
-- Add 4 new `useMemo` computations for the new chart data
-- Add 4 new chart cards to the grid (total becomes 8 charts in a 2-col grid)
-- Import `PieChart, Pie, Cell, Legend` from recharts
+#### 1. Fix Coupons — Remove `soon: true`
+- In `QuickActions.tsx`, change coupons from `soon: true` to `soon: false` and wire the tap handler to navigate to `/coupons`
 
-### Technical Details
-- All new data comes from tables already queried elsewhere in the admin dashboard (no new RLS concerns)
-- The type breakdown and fee trend reuse the existing `txns` state — no extra fetch needed
-- Only 2 additional queries: agents + a separate transactions query without status filter
-- Responsive: 2-col on desktop, 1-col on mobile (existing grid)
+#### 2. Create Loan Application Flow (`src/pages/LoanPage.tsx`)
+- Simple loan application page with:
+  - Loan amount selector (preset amounts: ৳1000, ৳5000, ৳10000, ৳25000, ৳50000)
+  - Tenure picker (30/60/90/180 days)
+  - Interest rate display and EMI calculator
+  - Eligibility check (based on transaction history count)
+  - Application submission (stores in a new `loan_applications` table)
+  - Application status tracker showing pending/approved/rejected/disbursed
+- Route: `/loan`, accessible from QuickActions
+
+#### 3. Create Insurance Flow (`src/pages/InsurancePage.tsx`)
+- Insurance marketplace page with:
+  - Plan categories: Life, Health, Accident, Device Protection
+  - Plan cards with coverage amount, premium, and duration
+  - Plan detail view with benefits list
+  - Purchase flow: select plan → confirm details → PIN → success
+  - Stores in a new `insurance_policies` table
+- Route: `/insurance`, accessible from QuickActions
+
+#### 4. Create Gift Cards Flow (`src/pages/GiftCardsPage.tsx`)
+- Gift card purchase and redemption page with:
+  - Browse available gift card brands/categories
+  - Select denomination (৳100, ৳250, ৳500, ৳1000, ৳2000)
+  - Purchase flow with PIN confirmation
+  - "My Gift Cards" section showing purchased cards with codes
+  - Share gift card via copy/share
+  - Stores in a new `gift_cards` table
+- Route: `/giftcards`, accessible from QuickActions
+
+#### 5. Wire into QuickActions (`src/components/QuickActions.tsx`)
+- Change `soon: true` to `soon: false` for loan, insurance, giftcards, coupons
+- Add navigation handlers for all four in `handleMoreService`
+
+#### 6. Wire into MoreSheet (`src/components/MoreSheet.tsx`)
+- Add Loan, Insurance, Gift Cards items with proper icons and navigation
+
+#### 7. Add Routes (`src/App.tsx`)
+- Add `/loan`, `/insurance`, `/giftcards` routes
+
+#### 8. Database Migration
+Create 3 new tables:
+
+**`loan_applications`**: id, user_id, amount, tenure_days, interest_rate, emi_amount, status (pending/approved/rejected/disbursed/repaid), applied_at, reviewed_at, notes
+
+**`insurance_policies`**: id, user_id, plan_type, plan_name, coverage_amount, premium, duration_months, status (active/expired/cancelled/claimed), purchased_at, expires_at
+
+**`gift_cards`**: id, purchaser_id, recipient_phone, brand, denomination, code, status (active/redeemed/expired), purchased_at, redeemed_at, redeemed_by
+
+All with RLS policies (users see only their own records, admins see all).
+
+#### 9. Add Toggle Keys (Database Insert)
+Insert 3 rows into `global_feature_toggles`:
+- `loan` → "Loan"
+- `insurance` → "Insurance"  
+- `gift_cards` → "Gift Cards"
+
+(These already exist in `FEATURE_MAP` and the toggles table likely has some — will use `ON CONFLICT DO NOTHING`)
+
+#### 10. Update Admin Global Toggles
+Ensure `loan`, `insurance`, `gift_cards` keys are recognized and grouped properly in `AdminGlobalToggles.tsx` (they should already fall under the "Services" section matcher).
+
+### Technical Notes
+- All three flows follow existing patterns: header with back button, card-based content, motion animations, PIN confirmation for purchases
+- Each flow is self-contained with local state, fetching from its own table
+- RLS: `user_id = auth.uid()` for user access, `has_role(auth.uid(), 'admin')` for admin access
+- Toggle filtering already works via `useGlobalToggles` in QuickActions — just needs `soon: false`
 
