@@ -7,14 +7,14 @@ import { toast } from "sonner";
 import {
   ToggleRight, ToggleLeft, Loader2, Plus, Pencil, Trash2, Save,
   Power, PowerOff, Wallet, Zap, ShoppingBag, Store, UserCog, Box,
-  UserCheck, Building2, Settings2, ChevronDown,
+  UserCheck, Building2, Settings2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -127,11 +127,17 @@ export default function AdminGlobalToggles() {
   const [deleteToggle, setDeleteToggle] = useState<FeatureToggle | null>(null);
   const [bulkAction, setBulkAction] = useState<"enable" | "disable" | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+  const [activeSection, setActiveSection] = useState<string>("");
 
   const groups = useMemo(() => groupToggles(toggles), [toggles]);
   const disabledCount = toggles.filter((t) => !t.is_enabled).length;
   const enabledCount = toggles.filter((t) => t.is_enabled).length;
+
+  const allSections = [...SECTIONS, OTHER_SECTION];
+  const visibleSections = allSections.filter((s) => (groups[s.id]?.length ?? 0) > 0);
+  const currentSection = activeSection && visibleSections.some(s => s.id === activeSection)
+    ? activeSection
+    : visibleSections[0]?.id ?? "";
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -192,7 +198,7 @@ export default function AdminGlobalToggles() {
       else { toast.success("Toggle updated"); setEditToggle(null); }
     } else {
       if (!editKey.trim()) { toast.error("Feature key is required"); setSaving(false); return; }
-      const section = [...SECTIONS, OTHER_SECTION].find((s) => s.id === addSection);
+      const section = allSections.find((s) => s.id === addSection);
       const prefix = section?.prefixHint && !editKey.startsWith(section.prefixHint)
         ? section.prefixHint
         : "";
@@ -230,9 +236,6 @@ export default function AdminGlobalToggles() {
     setBulkAction(null);
   };
 
-  const toggleSection = (id: string) =>
-    setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }));
-
   if (loading) {
     return (
       <div className="flex justify-center py-16">
@@ -267,9 +270,6 @@ export default function AdminGlobalToggles() {
     </div>
   );
 
-  const allSections = [...SECTIONS, OTHER_SECTION];
-  const visibleSections = allSections.filter((s) => (groups[s.id]?.length ?? 0) > 0);
-
   return (
     <div className="w-full space-y-4">
       {/* Header */}
@@ -297,50 +297,56 @@ export default function AdminGlobalToggles() {
         </div>
       </div>
 
-      {/* Sectioned Accordion */}
-      <div className="space-y-2">
-        {visibleSections.map((section) => {
-          const items = groups[section.id] ?? [];
-          const offCount = items.filter((t) => !t.is_enabled).length;
-          const Icon = section.icon;
-          const isOpen = openSections[section.id] ?? true;
+      {/* Horizontal Tab Bar */}
+      <ScrollArea className="w-full">
+        <div className="flex gap-1.5 pb-2">
+          {visibleSections.map((section) => {
+            const items = groups[section.id] ?? [];
+            const offCount = items.filter((t) => !t.is_enabled).length;
+            const Icon = section.icon;
+            const isActive = currentSection === section.id;
 
-          return (
-            <Collapsible key={section.id} open={isOpen} onOpenChange={() => toggleSection(section.id)}>
-              <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
-                <CollapsibleTrigger asChild>
-                  <button className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-muted/40 transition-colors text-left">
-                    <Icon className="w-4 h-4 text-primary shrink-0" />
-                    <span className="text-sm font-semibold text-foreground flex-1">{section.label}</span>
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
-                      {items.length}
-                    </Badge>
-                    {offCount > 0 && (
-                      <Badge variant="destructive" className="text-[10px] px-1.5 py-0 shrink-0">
-                        {offCount} off
-                      </Badge>
-                    )}
-                    <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  {renderToggleList(items)}
-                </CollapsibleContent>
-              </div>
-            </Collapsible>
-          );
-        })}
+            return (
+              <button
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 border ${
+                  isActive
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card text-muted-foreground border-border hover:bg-muted/60"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {section.label}
+                <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${isActive ? "bg-primary-foreground/20 text-primary-foreground" : ""}`}>
+                  {items.length}
+                </Badge>
+                {offCount > 0 && (
+                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                    {offCount} off
+                  </Badge>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
 
-        {visibleSections.length === 0 && (
-          <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="flex flex-col items-center justify-center py-8 text-center">
-            <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
-              <ToggleLeft className="w-7 h-7 text-muted-foreground" />
-            </motion.div>
-            <p className="text-sm font-semibold text-foreground">No toggles yet</p>
-            <p className="text-xs text-muted-foreground mt-1">Add a toggle to get started</p>
+      {/* Active Section Content */}
+      {currentSection && (groups[currentSection]?.length ?? 0) > 0 ? (
+        <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
+          {renderToggleList(groups[currentSection])}
+        </div>
+      ) : (
+        <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="flex flex-col items-center justify-center py-8 text-center">
+          <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+            <ToggleLeft className="w-7 h-7 text-muted-foreground" />
           </motion.div>
-        )}
-      </div>
+          <p className="text-sm font-semibold text-foreground">No toggles yet</p>
+          <p className="text-xs text-muted-foreground mt-1">Add a toggle to get started</p>
+        </motion.div>
+      )}
 
       {/* Edit / Add Dialog */}
       <Dialog open={!!editToggle || addOpen} onOpenChange={(o) => { if (!o) { setEditToggle(null); setAddOpen(false); } }}>
@@ -367,7 +373,7 @@ export default function AdminGlobalToggles() {
                   <Input placeholder="e.g. send_money" value={editKey} onChange={(e) => setEditKey(e.target.value)} />
                   {addSection !== "other" && (
                     <p className="text-[10px] text-muted-foreground">
-                      Prefix auto-applied: <span className="font-mono">{[...SECTIONS, OTHER_SECTION].find((s) => s.id === addSection)?.prefixHint}</span>
+                      Prefix auto-applied: <span className="font-mono">{allSections.find((s) => s.id === addSection)?.prefixHint}</span>
                     </p>
                   )}
                 </div>
