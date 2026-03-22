@@ -1,79 +1,46 @@
 
 
-## Complete Remaining User App Flows + Admin Toggle Control
+## Add "Hide Feature" Mode to Admin Global Toggles
 
 ### Summary
-Three user-facing features are marked "Coming soon" with no actual implementation: **Loan**, **Insurance**, and **Gift Cards**. Additionally, **Coupons** is marked `soon: true` in QuickActions even though it has a working page. This plan builds out all three missing flows as functional pages and wires them into the toggle system.
+Currently, disabled features appear greyed out with 50% opacity. This adds a third state: **hidden**, which completely removes the feature from the user app (not visible at all).
 
-### Changes
+### Database Change
+Add a `visibility` column to `global_feature_toggles`:
 
-#### 1. Fix Coupons — Remove `soon: true`
-- In `QuickActions.tsx`, change coupons from `soon: true` to `soon: false` and wire the tap handler to navigate to `/coupons`
+```sql
+ALTER TABLE public.global_feature_toggles
+ADD COLUMN visibility text NOT NULL DEFAULT 'visible';
+-- Values: 'visible' (normal), 'disabled' (greyed out), 'hidden' (completely removed)
+```
 
-#### 2. Create Loan Application Flow (`src/pages/LoanPage.tsx`)
-- Simple loan application page with:
-  - Loan amount selector (preset amounts: ৳1000, ৳5000, ৳10000, ৳25000, ৳50000)
-  - Tenure picker (30/60/90/180 days)
-  - Interest rate display and EMI calculator
-  - Eligibility check (based on transaction history count)
-  - Application submission (stores in a new `loan_applications` table)
-  - Application status tracker showing pending/approved/rejected/disbursed
-- Route: `/loan`, accessible from QuickActions
+### Hook Changes (`src/hooks/use-global-toggles.ts`)
+- Add `isHidden(featureKey)` function that returns `true` when `visibility = 'hidden'`
+- Update `isDisabled` to also return `true` when `visibility = 'disabled'`
+- Expose `visibility` in the toggle data
 
-#### 3. Create Insurance Flow (`src/pages/InsurancePage.tsx`)
-- Insurance marketplace page with:
-  - Plan categories: Life, Health, Accident, Device Protection
-  - Plan cards with coverage amount, premium, and duration
-  - Plan detail view with benefits list
-  - Purchase flow: select plan → confirm details → PIN → success
-  - Stores in a new `insurance_policies` table
-- Route: `/insurance`, accessible from QuickActions
+### User App Changes (`src/components/QuickActions.tsx`)
+- **Main grid actions**: Filter out actions where `isHidden(featureKey)` is true (completely remove from DOM)
+- **More services section**: Filter out hidden services from `visibleMoreServices`
+- Keep existing greyed-out behavior for `isDisabled` (not hidden)
 
-#### 4. Create Gift Cards Flow (`src/pages/GiftCardsPage.tsx`)
-- Gift card purchase and redemption page with:
-  - Browse available gift card brands/categories
-  - Select denomination (৳100, ৳250, ৳500, ৳1000, ৳2000)
-  - Purchase flow with PIN confirmation
-  - "My Gift Cards" section showing purchased cards with codes
-  - Share gift card via copy/share
-  - Stores in a new `gift_cards` table
-- Route: `/giftcards`, accessible from QuickActions
+### More Sheet (`src/components/MoreSheet.tsx`)
+- Filter out items where `isHidden` returns true
 
-#### 5. Wire into QuickActions (`src/components/QuickActions.tsx`)
-- Change `soon: true` to `soon: false` for loan, insurance, giftcards, coupons
-- Add navigation handlers for all four in `handleMoreService`
+### Admin UI Changes (`src/components/admin/AdminGlobalToggles.tsx`)
+- Replace the simple on/off Switch with a 3-state control:
+  - **Visible** (green) — feature is live
+  - **Disabled** (yellow) — greyed out, shows toast on tap
+  - **Hidden** (red) — completely removed from user app
+- Use a small segmented Select or 3-dot toggle per feature row
+- Update toggle mutation to set `visibility` instead of just `is_enabled`
+- Keep `is_enabled` in sync: `visible` → enabled, `disabled`/`hidden` → not enabled (backward compatibility)
 
-#### 6. Wire into MoreSheet (`src/components/MoreSheet.tsx`)
-- Add Loan, Insurance, Gift Cards items with proper icons and navigation
-
-#### 7. Add Routes (`src/App.tsx`)
-- Add `/loan`, `/insurance`, `/giftcards` routes
-
-#### 8. Database Migration
-Create 3 new tables:
-
-**`loan_applications`**: id, user_id, amount, tenure_days, interest_rate, emi_amount, status (pending/approved/rejected/disbursed/repaid), applied_at, reviewed_at, notes
-
-**`insurance_policies`**: id, user_id, plan_type, plan_name, coverage_amount, premium, duration_months, status (active/expired/cancelled/claimed), purchased_at, expires_at
-
-**`gift_cards`**: id, purchaser_id, recipient_phone, brand, denomination, code, status (active/redeemed/expired), purchased_at, redeemed_at, redeemed_by
-
-All with RLS policies (users see only their own records, admins see all).
-
-#### 9. Add Toggle Keys (Database Insert)
-Insert 3 rows into `global_feature_toggles`:
-- `loan` → "Loan"
-- `insurance` → "Insurance"  
-- `gift_cards` → "Gift Cards"
-
-(These already exist in `FEATURE_MAP` and the toggles table likely has some — will use `ON CONFLICT DO NOTHING`)
-
-#### 10. Update Admin Global Toggles
-Ensure `loan`, `insurance`, `gift_cards` keys are recognized and grouped properly in `AdminGlobalToggles.tsx` (they should already fall under the "Services" section matcher).
-
-### Technical Notes
-- All three flows follow existing patterns: header with back button, card-based content, motion animations, PIN confirmation for purchases
-- Each flow is self-contained with local state, fetching from its own table
-- RLS: `user_id = auth.uid()` for user access, `has_role(auth.uid(), 'admin')` for admin access
-- Toggle filtering already works via `useGlobalToggles` in QuickActions — just needs `soon: false`
+### Files Modified
+1. **Migration** — add `visibility` column
+2. `src/hooks/use-global-toggles.ts` — add `isHidden()` 
+3. `src/components/QuickActions.tsx` — filter hidden features from grid and more section
+4. `src/components/MoreSheet.tsx` — filter hidden features
+5. `src/components/admin/AdminGlobalToggles.tsx` — 3-state visibility control per toggle
+6. `src/components/FeatureGuard.tsx` — block hidden features too
 
