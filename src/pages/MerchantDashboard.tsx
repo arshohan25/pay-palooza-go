@@ -165,10 +165,11 @@ const MerchantDashboard = () => {
     }
   }, [isStaff, staffRole]);
 
-  const visibleMainTabs = useMemo(() =>
-    staffAllowedTabs ? mainTabs.filter(t => staffAllowedTabs.has(t.id)) : mainTabs,
-    [staffAllowedTabs]
-  );
+  const visibleMainTabs = useMemo(() => {
+    let tabs = mainTabs.filter(t => !t.toggleKey || !isDisabled(t.toggleKey));
+    if (staffAllowedTabs) tabs = tabs.filter(t => staffAllowedTabs.has(t.id));
+    return tabs;
+  }, [staffAllowedTabs, isDisabled]);
 
   const visibleMenuItems = useMemo(() => {
     let items = menuItems.filter(item => !item.toggleKey || !isDisabled(item.toggleKey));
