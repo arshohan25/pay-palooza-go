@@ -1755,6 +1755,11 @@ export default function AdminDashboard() {
         {activeTab === "festival_themes" && <AdminFestivalThemes />}
 
         {/* ═══ E-COMMERCE ═══ */}
+        {/* ═══ SERVICES ═══ */}
+        {activeTab === "loans" && <AdminLoanManagement />}
+        {activeTab === "insurance_mgmt" && <AdminInsuranceManagement />}
+        {activeTab === "gift_cards_mgmt" && <AdminGiftCardManagement />}
+
         {activeTab === "ecommerce" && <AdminEcommerceHub />}
 
         {/* ═══ CAREERS ═══ */}
