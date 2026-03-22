@@ -38,7 +38,9 @@ const FeatureGuard = ({ featureKey, onClose, children }: FeatureGuardProps) => {
       if (hasResolved.current) return;
 
       let reason: string;
-      if (lockStatus.locked) {
+      if (globalHidden) {
+        reason = "This feature is currently unavailable.";
+      } else if (lockStatus.locked) {
         reason = lockStatus.reason || "This feature is currently restricted for your account.";
       } else if (globalOff) {
         reason = "This feature is currently unavailable.";

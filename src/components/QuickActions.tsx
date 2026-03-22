@@ -456,7 +456,10 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <SortableContext items={sortableOrder} strategy={rectSortingStrategy}>
           <div className={`grid gap-x-2 sm:gap-x-3 ${compactMode ? "gap-y-3" : "gap-y-5"} ${gridCols === 3 ? "grid-cols-3" : "grid-cols-4"}`}>
-            {orderedActions.map((action, index) => {
+            {orderedActions.filter(action => {
+              const fk = FEATURE_MAP[action.id];
+              return !fk || !isGloballyHidden(fk);
+            }).map((action, index) => {
               const isHov = hoveredId === action.id;
               const ripple = ripples[action.id];
               const label = t(action.labelKey);
