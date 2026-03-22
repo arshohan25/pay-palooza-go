@@ -1520,6 +1520,51 @@ export type Database = {
           },
         ]
       }
+      gift_cards: {
+        Row: {
+          brand: string
+          code: string
+          created_at: string
+          denomination: number
+          id: string
+          purchased_at: string
+          purchaser_id: string
+          recipient_phone: string | null
+          redeemed_at: string | null
+          redeemed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          brand: string
+          code?: string
+          created_at?: string
+          denomination: number
+          id?: string
+          purchased_at?: string
+          purchaser_id: string
+          recipient_phone?: string | null
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          brand?: string
+          code?: string
+          created_at?: string
+          denomination?: number
+          id?: string
+          purchased_at?: string
+          purchaser_id?: string
+          recipient_phone?: string | null
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       global_feature_toggles: {
         Row: {
           created_at: string
@@ -1550,6 +1595,51 @@ export type Database = {
           label?: string
           sort_order?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      insurance_policies: {
+        Row: {
+          coverage_amount: number
+          created_at: string
+          duration_months: number
+          expires_at: string | null
+          id: string
+          plan_name: string
+          plan_type: string
+          premium: number
+          purchased_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          coverage_amount: number
+          created_at?: string
+          duration_months: number
+          expires_at?: string | null
+          id?: string
+          plan_name: string
+          plan_type: string
+          premium: number
+          purchased_at?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          coverage_amount?: number
+          created_at?: string
+          duration_months?: number
+          expires_at?: string | null
+          id?: string
+          plan_name?: string
+          plan_type?: string
+          premium?: number
+          purchased_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1694,6 +1784,54 @@ export type Database = {
           reviewer_notes?: string | null
           selfie_url?: string | null
           status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      loan_applications: {
+        Row: {
+          amount: number
+          applied_at: string
+          created_at: string
+          emi_amount: number
+          id: string
+          interest_rate: number
+          notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          tenure_days: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          applied_at?: string
+          created_at?: string
+          emi_amount?: number
+          id?: string
+          interest_rate?: number
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          tenure_days: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          applied_at?: string
+          created_at?: string
+          emi_amount?: number
+          id?: string
+          interest_rate?: number
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          tenure_days?: number
           updated_at?: string
           user_id?: string
         }

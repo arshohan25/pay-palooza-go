@@ -1,0 +1,165 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { ArrowLeft, Gift, Copy, Share2, Loader2, ShoppingBag, Coffee, Gamepad2, Music } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+
+const BRANDS = [
+  { id: "shopping", name: "Shopping", icon: ShoppingBag, color: "from-pink-500 to-rose-600" },
+  { id: "food", name: "Food & Dining", icon: Coffee, color: "from-amber-500 to-orange-600" },
+  { id: "gaming", name: "Gaming", icon: Gamepad2, color: "from-violet-500 to-purple-600" },
+  { id: "entertainment", name: "Entertainment", icon: Music, color: "from-blue-500 to-indigo-600" },
+];
+
+const DENOMINATIONS = [100, 250, 500, 1000, 2000];
+
+const GiftCardsPage = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [brand, setBrand] = useState("shopping");
+  const [denomination, setDenomination] = useState(500);
+  const [purchasing, setPurchasing] = useState(false);
+  const [cards, setCards] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<"buy" | "my">("buy");
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("gift_cards").select("*").eq("purchaser_id", user.id).order("created_at", { ascending: false })
+      .then(({ data }) => { setCards(data || []); setLoading(false); });
+  }, [user]);
+
+  const handlePurchase = async () => {
+    if (!user) { toast.error("Please sign in first"); return; }
+    setPurchasing(true);
+    const brandInfo = BRANDS.find(b => b.id === brand);
+    const { error } = await supabase.from("gift_cards").insert({
+      purchaser_id: user.id,
+      brand: brandInfo?.name || brand,
+      denomination,
+    } as any);
+
+    if (error) toast.error("Failed to purchase gift card");
+    else {
+      toast.success("Gift card purchased!");
+      const { data } = await supabase.from("gift_cards").select("*").eq("purchaser_id", user.id).order("created_at", { ascending: false });
+      setCards(data || []);
+      setTab("my");
+    }
+    setPurchasing(false);
+  };
+
+  const copyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    toast.success("Code copied!");
+  };
+
+  const shareCard = (card: any) => {
+    if (navigator.share) {
+      navigator.share({ title: "EasyPay Gift Card", text: `Here's a ৳${card.denomination} ${card.brand} gift card! Code: ${card.code}` });
+    } else copyCode(card.code);
+  };
+
+  const selectedBrand = BRANDS.find(b => b.id === brand)!;
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3">
+        <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"><ArrowLeft className="w-5 h-5" /></button>
+        <h1 className="text-lg font-bold text-foreground">Gift Cards</h1>
+      </div>
+
+      <div className="max-w-md mx-auto p-4 space-y-4">
+        {/* Tabs */}
+        <div className="flex gap-2 bg-muted/50 rounded-xl p-1">
+          <button onClick={() => setTab("buy")} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${tab === "buy" ? "bg-background shadow text-foreground" : "text-muted-foreground"}`}>Buy Card</button>
+          <button onClick={() => setTab("my")} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${tab === "my" ? "bg-background shadow text-foreground" : "text-muted-foreground"}`}>My Cards</button>
+        </div>
+
+        {tab === "buy" ? (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+            {/* Brand Selection */}
+            <div>
+              <p className="text-sm font-semibold text-foreground mb-2">Select Category</p>
+              <div className="grid grid-cols-2 gap-2">
+                {BRANDS.map(b => (
+                  <button key={b.id} onClick={() => setBrand(b.id)}
+                    className={`flex items-center gap-2 p-3 rounded-xl text-sm font-semibold transition-all ${brand === b.id ? "bg-primary text-primary-foreground shadow-md" : "bg-muted text-muted-foreground"}`}>
+                    <b.icon className="w-4 h-4" />{b.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Denomination */}
+            <div>
+              <p className="text-sm font-semibold text-foreground mb-2">Select Amount</p>
+              <div className="flex flex-wrap gap-2">
+                {DENOMINATIONS.map(d => (
+                  <button key={d} onClick={() => setDenomination(d)}
+                    className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${denomination === d ? "bg-primary text-primary-foreground shadow-md" : "bg-muted text-muted-foreground"}`}>
+                    ৳{d.toLocaleString()}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Preview Card */}
+            <Card className="overflow-hidden">
+              <div className={`bg-gradient-to-br ${selectedBrand.color} p-6 text-white`}>
+                <div className="flex items-center justify-between mb-4">
+                  <Gift className="w-8 h-8" />
+                  <span className="text-xs font-medium opacity-80">EasyPay Gift Card</span>
+                </div>
+                <p className="text-3xl font-bold">৳{denomination.toLocaleString()}</p>
+                <p className="text-sm opacity-80 mt-1">{selectedBrand.name}</p>
+              </div>
+            </Card>
+
+            <Button onClick={handlePurchase} disabled={purchasing} className="w-full rounded-xl h-12 font-bold">
+              {purchasing ? <Loader2 className="w-4 h-4 animate-spin" /> : `Purchase ৳${denomination} Card`}
+            </Button>
+          </motion.div>
+        ) : (
+          /* My Cards */
+          loading ? (
+            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+          ) : cards.length === 0 ? (
+            <Card><CardContent className="p-6 text-center text-muted-foreground text-sm">No gift cards yet</CardContent></Card>
+          ) : (
+            <div className="space-y-3">
+              {cards.map((card, i) => (
+                <motion.div key={card.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <h3 className="font-bold text-foreground">৳{Number(card.denomination).toLocaleString()}</h3>
+                          <p className="text-xs text-muted-foreground">{card.brand}</p>
+                        </div>
+                        <Badge variant={card.status === "active" ? "default" : "secondary"}>{card.status}</Badge>
+                      </div>
+                      <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
+                        <code className="flex-1 text-sm font-mono font-bold text-foreground tracking-wider">{card.code}</code>
+                        <button onClick={() => copyCode(card.code)} className="p-1.5 rounded-md hover:bg-muted"><Copy className="w-4 h-4 text-muted-foreground" /></button>
+                        <button onClick={() => shareCard(card)} className="p-1.5 rounded-md hover:bg-muted"><Share2 className="w-4 h-4 text-muted-foreground" /></button>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-2">Purchased: {new Date(card.purchased_at).toLocaleDateString()}</p>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          )
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default GiftCardsPage;
