@@ -51,6 +51,7 @@ const stagger = {
 const AgentDashboard = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { isDisabled } = useGlobalToggles();
 
   const [agentInfo, setAgentInfo] = useState<AgentInfo | null>(null);
   const [balance, setBalance] = useState(0);
