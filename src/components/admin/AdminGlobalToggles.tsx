@@ -1,17 +1,21 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { toast } from "sonner";
-import { ToggleRight, ToggleLeft, Loader2, Plus, Pencil, Trash2, Save, X, Power, PowerOff, UserCog, Settings2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  ToggleRight, ToggleLeft, Loader2, Plus, Pencil, Trash2, Save,
+  Power, PowerOff, Wallet, Zap, ShoppingBag, Store, UserCog, Box,
+  UserCheck, Building2, Settings2, ChevronDown,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -29,6 +33,86 @@ interface FeatureToggle {
   sort_order: number;
 }
 
+const SECTIONS = [
+  {
+    id: "wallet",
+    label: "Wallet & Transfers",
+    icon: Wallet,
+    matcher: (key: string) =>
+      ["send_money", "cash_out", "cash_in", "add_money", "payment", "bank_transfer"].some(
+        (k) => key === k || key.startsWith(k + "_")
+      ),
+    prefixHint: "send_money",
+  },
+  {
+    id: "services",
+    label: "Services",
+    icon: Zap,
+    matcher: (key: string) =>
+      ["mobile_recharge", "pay_bill", "savings", "donations", "loan", "insurance", "gift_cards", "drive_offers"].some(
+        (k) => key === k || key.startsWith(k + "_")
+      ),
+    prefixHint: "mobile_recharge",
+  },
+  {
+    id: "shopping",
+    label: "Shopping",
+    icon: ShoppingBag,
+    matcher: (key: string) =>
+      ["shop", "coupons", "qr_scan", "refer"].some((k) => key === k || key.startsWith(k + "_")),
+    prefixHint: "shop",
+  },
+  {
+    id: "merchant",
+    label: "Merchant",
+    icon: Store,
+    matcher: (key: string) => key.startsWith("merchant_"),
+    prefixHint: "merchant_",
+  },
+  {
+    id: "account",
+    label: "Account",
+    icon: UserCog,
+    matcher: (key: string) => key.startsWith("account_"),
+    prefixHint: "account_",
+  },
+  {
+    id: "reserved",
+    label: "Reserved Slots",
+    icon: Box,
+    matcher: (key: string) => key.startsWith("feature_slot_"),
+    prefixHint: "feature_slot_",
+  },
+  {
+    id: "agent",
+    label: "Agent",
+    icon: UserCheck,
+    matcher: (key: string) => key.startsWith("agent_"),
+    prefixHint: "agent_",
+  },
+  {
+    id: "distributor",
+    label: "Distributor",
+    icon: Building2,
+    matcher: (key: string) => key.startsWith("distributor_"),
+    prefixHint: "distributor_",
+  },
+];
+
+const OTHER_SECTION = { id: "other", label: "Other", icon: Settings2, prefixHint: "" };
+
+function groupToggles(toggles: FeatureToggle[]) {
+  const groups: Record<string, FeatureToggle[]> = {};
+  SECTIONS.forEach((s) => (groups[s.id] = []));
+  groups[OTHER_SECTION.id] = [];
+
+  toggles.forEach((t) => {
+    const section = SECTIONS.find((s) => s.matcher(t.feature_key));
+    groups[section ? section.id : OTHER_SECTION.id].push(t);
+  });
+  return groups;
+}
+
 export default function AdminGlobalToggles() {
   const [toggles, setToggles] = useState<FeatureToggle[]>([]);
   const { visible, flash } = useRealtimeIndicator();
@@ -38,17 +122,16 @@ export default function AdminGlobalToggles() {
   const [editLabel, setEditLabel] = useState("");
   const [editKey, setEditKey] = useState("");
   const [editDesc, setEditDesc] = useState("");
+  const [addSection, setAddSection] = useState("other");
   const [saving, setSaving] = useState(false);
   const [deleteToggle, setDeleteToggle] = useState<FeatureToggle | null>(null);
   const [bulkAction, setBulkAction] = useState<"enable" | "disable" | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
-  const accountToggles = toggles.filter(t => t.feature_key.startsWith("account_"));
-  const generalToggles = toggles.filter(t => !t.feature_key.startsWith("account_"));
-  const disabledCount = toggles.filter(t => !t.is_enabled).length;
-  const enabledCount = toggles.filter(t => t.is_enabled).length;
-  const accountDisabledCount = accountToggles.filter(t => !t.is_enabled).length;
-  const generalDisabledCount = generalToggles.filter(t => !t.is_enabled).length;
+  const groups = useMemo(() => groupToggles(toggles), [toggles]);
+  const disabledCount = toggles.filter((t) => !t.is_enabled).length;
+  const enabledCount = toggles.filter((t) => t.is_enabled).length;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -93,6 +176,7 @@ export default function AdminGlobalToggles() {
     setEditLabel("");
     setEditKey("");
     setEditDesc("");
+    setAddSection("other");
     setAddOpen(true);
   };
 
@@ -108,9 +192,14 @@ export default function AdminGlobalToggles() {
       else { toast.success("Toggle updated"); setEditToggle(null); }
     } else {
       if (!editKey.trim()) { toast.error("Feature key is required"); setSaving(false); return; }
+      const section = [...SECTIONS, OTHER_SECTION].find((s) => s.id === addSection);
+      const prefix = section?.prefixHint && !editKey.startsWith(section.prefixHint)
+        ? section.prefixHint
+        : "";
+      const finalKey = (prefix + editKey).toLowerCase().replace(/\s+/g, "_");
       const { error } = await supabase
         .from("global_feature_toggles")
-        .insert({ feature_key: editKey.toLowerCase().replace(/\s+/g, "_"), label: editLabel, description: editDesc || null, sort_order: toggles.length + 1 } as any);
+        .insert({ feature_key: finalKey, label: editLabel, description: editDesc || null, sort_order: toggles.length + 1 } as any);
       if (error) {
         if (error.code === "23505") toast.error("Feature key already exists");
         else toast.error("Failed to create");
@@ -141,6 +230,9 @@ export default function AdminGlobalToggles() {
     setBulkAction(null);
   };
 
+  const toggleSection = (id: string) =>
+    setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }));
+
   if (loading) {
     return (
       <div className="flex justify-center py-16">
@@ -150,52 +242,43 @@ export default function AdminGlobalToggles() {
   }
 
   const renderToggleList = (items: FeatureToggle[]) => (
-    <div className="w-full rounded-lg bg-card shadow-[var(--shadow-card)]">
-      <div className="divide-y divide-border">
-        {items.map(t => (
-          <div key={t.id} className="px-2 sm:px-4 py-2.5 hover:bg-muted/30 transition-colors">
-            <div className="flex items-center gap-1.5">
-              <ToggleRight className={`w-3.5 h-3.5 shrink-0 ${t.is_enabled ? "text-emerald-500" : "text-muted-foreground"}`} />
-              <p className="text-sm font-medium text-foreground truncate flex-1 min-w-0">{t.label}</p>
-              <Switch checked={t.is_enabled} onCheckedChange={() => toggleFeature(t)} className="shrink-0" />
-            </div>
-            {t.description && <p className="text-xs text-muted-foreground truncate mt-0.5 pl-5">{t.description}</p>}
-            <div className="flex items-center justify-between mt-1 pl-5">
-              <p className="text-[10px] font-mono text-muted-foreground/60 truncate flex-1 min-w-0">{t.feature_key}</p>
-              <div className="flex items-center shrink-0">
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openEdit(t)}>
-                  <Pencil className="w-3 h-3" />
-                </Button>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => setDeleteToggle(t)}>
-                  <Trash2 className="w-3 h-3" />
-                </Button>
-              </div>
+    <div className="divide-y divide-border">
+      {items.map((t) => (
+        <div key={t.id} className="px-2 sm:px-4 py-2.5 hover:bg-muted/30 transition-colors">
+          <div className="flex items-center gap-1.5">
+            <ToggleRight className={`w-3.5 h-3.5 shrink-0 ${t.is_enabled ? "text-emerald-500" : "text-muted-foreground"}`} />
+            <p className="text-sm font-medium text-foreground truncate flex-1 min-w-0">{t.label}</p>
+            <Switch checked={t.is_enabled} onCheckedChange={() => toggleFeature(t)} className="shrink-0" />
+          </div>
+          {t.description && <p className="text-xs text-muted-foreground truncate mt-0.5 pl-5">{t.description}</p>}
+          <div className="flex items-center justify-between mt-1 pl-5">
+            <p className="text-[10px] font-mono text-muted-foreground/60 truncate flex-1 min-w-0">{t.feature_key}</p>
+            <div className="flex items-center shrink-0">
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openEdit(t)}>
+                <Pencil className="w-3 h-3" />
+              </Button>
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => setDeleteToggle(t)}>
+                <Trash2 className="w-3 h-3" />
+              </Button>
             </div>
           </div>
-        ))}
-      </div>
-      {items.length === 0 && (
-        <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col items-center justify-center py-8 text-center">
-          <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
-            <ToggleLeft className="w-7 h-7 text-muted-foreground" />
-          </motion.div>
-          <p className="text-sm font-semibold text-foreground">No toggles in this section</p>
-          <p className="text-xs text-muted-foreground mt-1">Add a toggle to get started</p>
-        </motion.div>
-      )}
+        </div>
+      ))}
     </div>
   );
 
+  const allSections = [...SECTIONS, OTHER_SECTION];
+  const visibleSections = allSections.filter((s) => (groups[s.id]?.length ?? 0) > 0);
+
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-4">
+      {/* Header */}
       <div className="space-y-3">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-base sm:text-lg font-bold text-foreground">Global Feature Toggles</h3>
             {disabledCount > 0 && (
-              <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
-                {disabledCount} off
-              </Badge>
+              <Badge variant="destructive" className="text-[10px] px-1.5 py-0">{disabledCount} off</Badge>
             )}
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Enable or disable features globally</p>
@@ -214,31 +297,50 @@ export default function AdminGlobalToggles() {
         </div>
       </div>
 
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className="w-full grid grid-cols-2 mb-4 h-9">
-          <TabsTrigger value="general" className="gap-1 text-xs px-2">
-            <Settings2 className="w-3 h-3 shrink-0" />
-            <span className="truncate">General</span>
-            {generalDisabledCount > 0 && (
-              <Badge variant="destructive" className="text-[9px] px-1 py-0 ml-0.5 shrink-0">{generalDisabledCount}</Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="account" className="gap-1 text-xs px-2">
-            <UserCog className="w-3 h-3 shrink-0" />
-            <span className="truncate">Account</span>
-            {accountDisabledCount > 0 && (
-              <Badge variant="destructive" className="text-[9px] px-1 py-0 ml-0.5 shrink-0">{accountDisabledCount}</Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
+      {/* Sectioned Accordion */}
+      <div className="space-y-2">
+        {visibleSections.map((section) => {
+          const items = groups[section.id] ?? [];
+          const offCount = items.filter((t) => !t.is_enabled).length;
+          const Icon = section.icon;
+          const isOpen = openSections[section.id] ?? true;
 
-        <TabsContent value="general">
-          {renderToggleList(generalToggles)}
-        </TabsContent>
-        <TabsContent value="account">
-          {renderToggleList(accountToggles)}
-        </TabsContent>
-      </Tabs>
+          return (
+            <Collapsible key={section.id} open={isOpen} onOpenChange={() => toggleSection(section.id)}>
+              <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
+                <CollapsibleTrigger asChild>
+                  <button className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-muted/40 transition-colors text-left">
+                    <Icon className="w-4 h-4 text-primary shrink-0" />
+                    <span className="text-sm font-semibold text-foreground flex-1">{section.label}</span>
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
+                      {items.length}
+                    </Badge>
+                    {offCount > 0 && (
+                      <Badge variant="destructive" className="text-[10px] px-1.5 py-0 shrink-0">
+                        {offCount} off
+                      </Badge>
+                    )}
+                    <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  {renderToggleList(items)}
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
+          );
+        })}
+
+        {visibleSections.length === 0 && (
+          <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="flex flex-col items-center justify-center py-8 text-center">
+            <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+              <ToggleLeft className="w-7 h-7 text-muted-foreground" />
+            </motion.div>
+            <p className="text-sm font-semibold text-foreground">No toggles yet</p>
+            <p className="text-xs text-muted-foreground mt-1">Add a toggle to get started</p>
+          </motion.div>
+        )}
+      </div>
 
       {/* Edit / Add Dialog */}
       <Dialog open={!!editToggle || addOpen} onOpenChange={(o) => { if (!o) { setEditToggle(null); setAddOpen(false); } }}>
@@ -248,18 +350,36 @@ export default function AdminGlobalToggles() {
           </DialogHeader>
           <div className="space-y-4 py-2">
             {!editToggle && (
-              <div className="space-y-2">
-                <Label>Feature Key</Label>
-                <Input placeholder="e.g. send_money" value={editKey} onChange={e => setEditKey(e.target.value)} />
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label>Section</Label>
+                  <Select value={addSection} onValueChange={setAddSection}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {allSections.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Feature Key</Label>
+                  <Input placeholder="e.g. send_money" value={editKey} onChange={(e) => setEditKey(e.target.value)} />
+                  {addSection !== "other" && (
+                    <p className="text-[10px] text-muted-foreground">
+                      Prefix auto-applied: <span className="font-mono">{[...SECTIONS, OTHER_SECTION].find((s) => s.id === addSection)?.prefixHint}</span>
+                    </p>
+                  )}
+                </div>
+              </>
             )}
             <div className="space-y-2">
               <Label>Label</Label>
-              <Input value={editLabel} onChange={e => setEditLabel(e.target.value)} placeholder="e.g. Send Money" />
+              <Input value={editLabel} onChange={(e) => setEditLabel(e.target.value)} placeholder="e.g. Send Money" />
             </div>
             <div className="space-y-2">
               <Label>Description (optional)</Label>
-              <Input value={editDesc} onChange={e => setEditDesc(e.target.value)} placeholder="Short description…" />
+              <Input value={editDesc} onChange={(e) => setEditDesc(e.target.value)} placeholder="Short description…" />
             </div>
           </div>
           <DialogFooter>
@@ -277,15 +397,11 @@ export default function AdminGlobalToggles() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remove "{deleteToggle?.label}"?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete this feature toggle.
-            </AlertDialogDescription>
+            <AlertDialogDescription>This will permanently delete this feature toggle.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
-            </AlertDialogAction>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
