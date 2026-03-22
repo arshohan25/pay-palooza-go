@@ -1,19 +1,15 @@
 
 
-## Convert Global Toggles to Horizontal Tab Menu
+## Polish Global Toggles Tab Bar
 
-### Change
-Replace the vertical collapsible accordion layout with a **horizontal scrollable tab bar** where each section (Wallet, Services, Merchant, Agent, etc.) is a tab. Clicking a tab shows only that section's toggles below.
+### Changes — Single file: `AdminGlobalToggles.tsx`
 
-### Implementation — Single file change
+1. **Unified background**: Wrap all tab buttons in a single rounded container with `bg-muted/50 rounded-xl p-1` so they sit on one shared background strip (like a segmented control)
+2. **Remove "off" badges**: Delete the red `{offCount} off` destructive badges from each tab and from the header
+3. **Smooth tab-switch animation**: Use `framer-motion` `AnimatePresence` + `motion.div` with fade+slide for the toggle list content area when switching sections. Add `layoutId` on the active tab indicator for a sliding highlight effect
 
-**File**: `src/components/admin/AdminGlobalToggles.tsx`
-
-1. Remove `Collapsible` imports and `openSections` state
-2. Add `activeSection` state (defaults to first visible section)
-3. Replace the accordion render with:
-   - A horizontally scrollable tab bar (`overflow-x-auto flex gap-2`) with pill-style buttons for each visible section (icon + label + count badge)
-   - Active tab highlighted with primary color
-   - Below the tabs, render `renderToggleList()` for only the active section's toggles
-4. Keep all existing CRUD, bulk actions, dialogs unchanged
+### Visual result
+- Tabs appear as pills inside one cohesive bar (shared background)
+- No red "off" markers cluttering the tabs
+- Switching tabs animates content smoothly (fade + subtle vertical slide)
 
