@@ -296,10 +296,9 @@ export default function AdminGlobalToggles() {
 
       {/* Horizontal Tab Bar */}
       <ScrollArea className="w-full">
-        <div className="flex gap-1.5 pb-2">
+        <div className="flex gap-1 p-1 bg-muted/50 rounded-xl">
           {visibleSections.map((section) => {
             const items = groups[section.id] ?? [];
-            const offCount = items.filter((t) => !t.is_enabled).length;
             const Icon = section.icon;
             const isActive = currentSection === section.id;
 
@@ -307,22 +306,26 @@ export default function AdminGlobalToggles() {
               <button
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 border ${
+                className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${
                   isActive
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-card text-muted-foreground border-border hover:bg-muted/60"
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:text-foreground/70"
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
-                {section.label}
-                <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${isActive ? "bg-primary-foreground/20 text-primary-foreground" : ""}`}>
-                  {items.length}
-                </Badge>
-                {offCount > 0 && (
-                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
-                    {offCount} off
-                  </Badge>
+                {isActive && (
+                  <motion.div
+                    layoutId="active-toggle-tab"
+                    className="absolute inset-0 bg-background rounded-lg shadow-sm border border-border"
+                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                  />
                 )}
+                <span className="relative flex items-center gap-1.5">
+                  <Icon className="w-3.5 h-3.5" />
+                  {section.label}
+                  <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${isActive ? "" : "opacity-60"}`}>
+                    {items.length}
+                  </Badge>
+                </span>
               </button>
             );
           })}
@@ -331,19 +334,34 @@ export default function AdminGlobalToggles() {
       </ScrollArea>
 
       {/* Active Section Content */}
-      {currentSection && (groups[currentSection]?.length ?? 0) > 0 ? (
-        <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
-          {renderToggleList(groups[currentSection])}
-        </div>
-      ) : (
-        <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="flex flex-col items-center justify-center py-8 text-center">
-          <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
-            <ToggleLeft className="w-7 h-7 text-muted-foreground" />
+      <AnimatePresence mode="wait">
+        {currentSection && (groups[currentSection]?.length ?? 0) > 0 ? (
+          <motion.div
+            key={currentSection}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
+            className="rounded-lg border border-border bg-card shadow-sm overflow-hidden"
+          >
+            {renderToggleList(groups[currentSection])}
           </motion.div>
-          <p className="text-sm font-semibold text-foreground">No toggles yet</p>
-          <p className="text-xs text-muted-foreground mt-1">Add a toggle to get started</p>
-        </motion.div>
-      )}
+        ) : (
+          <motion.div
+            key="empty"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="flex flex-col items-center justify-center py-8 text-center"
+          >
+            <div className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-3">
+              <ToggleLeft className="w-7 h-7 text-muted-foreground" />
+            </div>
+            <p className="text-sm font-semibold text-foreground">No toggles yet</p>
+            <p className="text-xs text-muted-foreground mt-1">Add a toggle to get started</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Edit / Add Dialog */}
       <Dialog open={!!editToggle || addOpen} onOpenChange={(o) => { if (!o) { setEditToggle(null); setAddOpen(false); } }}>
