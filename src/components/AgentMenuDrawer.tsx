@@ -100,12 +100,12 @@ const AgentMenuDrawer = ({ open, onClose, agentInfo, recentTxns }: AgentMenuDraw
   };
 
   const menuItems = [
-    { icon: Camera, label: "Edit Avatar", action: () => openAfterClose(() => setAvatarSheetOpen(true)) },
-    { icon: QrCode, label: "Share QR", action: () => openAfterClose(() => setQrOpen(true)) },
-    { icon: ShieldCheck, label: "Customer KYC", action: () => openAfterClose(() => setKycSheetOpen(true)) },
-    { icon: BarChart3, label: "Analytics", action: () => { onClose(); navigate("/agent/analytics"); } },
-    { icon: Settings, label: "Settings", action: () => { onClose(); toast.info("Settings coming soon"); } },
-  ];
+    { icon: Camera, label: "Edit Avatar", action: () => openAfterClose(() => setAvatarSheetOpen(true)), toggleKey: "agent_edit_avatar" },
+    { icon: QrCode, label: "Share QR", action: () => openAfterClose(() => setQrOpen(true)), toggleKey: "agent_share_qr" },
+    { icon: ShieldCheck, label: "Customer KYC", action: () => openAfterClose(() => setKycSheetOpen(true)), toggleKey: "agent_customer_kyc" },
+    { icon: BarChart3, label: "Analytics", action: () => { onClose(); navigate("/agent/analytics"); }, toggleKey: "agent_analytics" },
+    { icon: Settings, label: "Settings", action: () => { onClose(); toast.info("Settings coming soon"); }, toggleKey: "agent_settings" },
+  ].filter(item => !item.toggleKey || !isDisabled(item.toggleKey));
 
   const bottomItems = [
     { icon: Home, label: "Back to Home", action: () => { onClose(); navigate("/"); } },
