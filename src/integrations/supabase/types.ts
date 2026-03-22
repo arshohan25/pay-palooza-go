@@ -1575,6 +1575,7 @@ export type Database = {
           label: string
           sort_order: number
           updated_at: string
+          visibility: string
         }
         Insert: {
           created_at?: string
@@ -1585,6 +1586,7 @@ export type Database = {
           label: string
           sort_order?: number
           updated_at?: string
+          visibility?: string
         }
         Update: {
           created_at?: string
@@ -1595,6 +1597,7 @@ export type Database = {
           label?: string
           sort_order?: number
           updated_at?: string
+          visibility?: string
         }
         Relationships: []
       }

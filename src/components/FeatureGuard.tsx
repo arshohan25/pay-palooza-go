@@ -18,7 +18,7 @@ interface FeatureGuardProps {
  * background KYC revalidation to prevent active flows from being unmounted.
  */
 const FeatureGuard = ({ featureKey, onClose, children }: FeatureGuardProps) => {
-  const { isDisabled } = useGlobalToggles();
+  const { isDisabled, isHidden } = useGlobalToggles();
   const { isLocked } = useFeatureLocks();
   const { status: kycStatus, loading: kycLoading } = useKycStatus();
   const hasResolved = useRef(false);
