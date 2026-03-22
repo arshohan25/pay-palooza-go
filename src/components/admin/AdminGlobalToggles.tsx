@@ -230,8 +230,10 @@ export default function AdminGlobalToggles() {
     setBulkAction(null);
   };
 
-  const toggleSection = (id: string) =>
-    setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }));
+  const visibleSections = allSections.filter((s) => (groups[s.id]?.length ?? 0) > 0);
+  const currentSection = activeSection && visibleSections.some(s => s.id === activeSection)
+    ? activeSection
+    : visibleSections[0]?.id ?? "";
 
   if (loading) {
     return (
