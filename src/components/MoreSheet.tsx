@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Landmark, Wallet, Ticket, Heart, X, Briefcase } from "lucide-react";
+import { Landmark, Wallet, Ticket, Heart, X, Briefcase, HandCoins, Shield, Gift } from "lucide-react";
 import { toast } from "sonner";
 
 interface MoreSheetProps {
@@ -13,8 +13,10 @@ interface MoreSheetProps {
 const items = [
   { id: "bank", icon: Landmark, label: "Bank Transfer", desc: "Transfer to any bank account", gradient: "bg-gradient-to-b from-blue-500 to-indigo-600" },
   { id: "savings", icon: Wallet, label: "Savings", desc: "Set goals & grow your money", gradient: "bg-gradient-to-b from-emerald-500 to-teal-600" },
-  
-  { id: "careers", icon: Briefcase, label: "Careers", desc: "Join our team & grow", gradient: "bg-gradient-to-b from-violet-500 to-purple-600" },
+  { id: "loan", icon: HandCoins, label: "Loan", desc: "Quick personal loans", gradient: "bg-gradient-to-b from-amber-500 to-orange-600" },
+  { id: "insurance", icon: Shield, label: "Insurance", desc: "Protect what matters", gradient: "bg-gradient-to-b from-violet-500 to-purple-600" },
+  { id: "giftcards", icon: Gift, label: "Gift Cards", desc: "Send & redeem gifts", gradient: "bg-gradient-to-b from-orange-400 to-red-500" },
+  { id: "careers", icon: Briefcase, label: "Careers", desc: "Join our team & grow", gradient: "bg-gradient-to-b from-slate-500 to-slate-700" },
   { id: "coupons", icon: Ticket, label: "Coupons & Offers", desc: "Exclusive deals & cashback", gradient: "bg-gradient-to-b from-pink-500 to-rose-600" },
   { id: "donations", icon: Heart, label: "Donations", desc: "Support causes you care about", gradient: "bg-gradient-to-b from-red-500 to-rose-700" },
 ];
