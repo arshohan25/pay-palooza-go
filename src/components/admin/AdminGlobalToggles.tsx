@@ -295,43 +295,40 @@ export default function AdminGlobalToggles() {
       </div>
 
       {/* Horizontal Tab Bar */}
-      <ScrollArea className="w-full">
-        <div className="flex gap-1 p-1 bg-muted/50 rounded-xl">
-          {visibleSections.map((section) => {
-            const items = groups[section.id] ?? [];
-            const Icon = section.icon;
-            const isActive = currentSection === section.id;
+      <div className="flex flex-wrap gap-0 p-1 bg-muted/50 rounded-xl">
+        {visibleSections.map((section) => {
+          const items = groups[section.id] ?? [];
+          const Icon = section.icon;
+          const isActive = currentSection === section.id;
 
-            return (
-              <button
-                key={section.id}
-                onClick={() => setActiveSection(section.id)}
-                className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${
-                  isActive
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground/70"
-                }`}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="active-toggle-tab"
-                    className="absolute inset-0 bg-background rounded-lg shadow-sm border border-border"
-                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                  />
-                )}
-                <span className="relative flex items-center gap-1.5">
-                  <Icon className="w-3.5 h-3.5" />
-                  {section.label}
-                  <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${isActive ? "" : "opacity-60"}`}>
-                    {items.length}
-                  </Badge>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+          return (
+            <button
+              key={section.id}
+              onClick={() => setActiveSection(section.id)}
+              className={`relative flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                isActive
+                  ? "text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground/70"
+              }`}
+            >
+              {isActive && (
+                <motion.div
+                  layoutId="active-toggle-tab"
+                  className="absolute inset-0 bg-primary rounded-lg shadow-sm"
+                  transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                />
+              )}
+              <span className="relative z-10 flex items-center gap-1">
+                <Icon className="w-3.5 h-3.5" />
+                {section.label}
+                <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${isActive ? "bg-primary-foreground/20 text-primary-foreground" : "opacity-60"}`}>
+                  {items.length}
+                </Badge>
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
       {/* Active Section Content */}
       <AnimatePresence mode="wait">
