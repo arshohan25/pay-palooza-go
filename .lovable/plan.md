@@ -1,33 +1,29 @@
 
 
-## Admin Dashboard Drag & Drop Navigation Reordering
+## Drag & Drop Reorderable Analytics Charts
 
 ### Summary
-Enable admins to drag-and-drop reorder both **nav groups** (sections) and **individual items within groups** in the sidebar. The custom order persists in localStorage so it survives reloads.
+Make the 8 analytics chart cards in the Admin Overview tab drag-and-drop reorderable. The custom order persists in localStorage.
 
 ### Approach
 
-1. **Convert `NAV_GROUPS` from a constant to state** — initialize from localStorage (key: `admin_nav_order`), falling back to the default `NAV_GROUPS` definition.
+1. **Define chart panel IDs** — assign each of the 8 chart cards a stable ID (e.g., `txn_volume`, `cumulative`, `type_breakdown`, `revenue_fees`, `signups`, `active_hours`, `success_ratio`, `growth`).
 
-2. **Create `AdminNavReorder` component** — a modal/sheet with two levels of drag-and-drop using `@dnd-kit` (already in the project):
-   - **Outer sortable**: Reorder entire groups (Overview, Operations, etc.)
-   - **Inner sortable**: Reorder items within each group
-   - "Reset to Default" button to restore original order
-   - "Save" button that writes to localStorage and closes
+2. **Add sortable state** — wrap the grid in a `DndContext` + `SortableContext` from `@dnd-kit`. Each chart card becomes a sortable item with a small drag handle in the card header.
 
-3. **Add "Rearrange" toggle button** in sidebar header — pencil/grip icon that opens the reorder modal.
+3. **Refactor chart rendering** — extract each chart into a keyed render function/map so they can be rendered in dynamic order based on the `panelOrder` state array.
 
-4. **Persist order in localStorage** — store as JSON array of `{ label, items: string[] }`. On load, merge with the master `NAV_GROUPS` to handle any new items added in future updates (new items append to their default group).
+4. **Persist order** — save the array of panel IDs to `localStorage` (key: `admin_chart_order`). Load on mount, falling back to the default order.
+
+5. **Reset button** — add a small "Reset layout" button next to the period toggle.
 
 ### Technical Details
 
-- Uses nested `DndContext` + `SortableContext` from `@dnd-kit` (already a dependency)
-- `DEFAULT_NAV_GROUPS` remains as the immutable reference
-- `navGroups` state in `AdminDashboard` is the live, reorderable copy
-- `NAV_ITEMS` is derived from `navGroups` instead of `NAV_GROUPS`
-- The reorder UI shows group headers as draggable cards, with nested draggable items inside each
+- Uses `@dnd-kit/core` + `@dnd-kit/sortable` (already installed)
+- Each card wrapped in a `SortableChartCard` component that adds a `GripVertical` drag handle
+- The grid layout (`grid md:grid-cols-2`) is preserved; only the order of children changes
+- localStorage key: `admin_chart_order`, stores `string[]` of panel IDs
 
-### Files Modified
-1. `src/components/admin/AdminNavReorder.tsx` — new component with nested drag-and-drop UI
-2. `src/pages/AdminDashboard.tsx` — convert `NAV_GROUPS` to state, add rearrange button, import reorder component
+### File Modified
+1. `src/components/admin/AdminOverviewCharts.tsx` — add drag-and-drop sorting to the chart grid
 
