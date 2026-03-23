@@ -1,11 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useRealtimeStatus } from "@/hooks/use-realtime-status";
-import { Activity, CheckCircle, AlertTriangle, Wifi, RefreshCw, Server } from "lucide-react";
+import { Activity, CheckCircle, AlertTriangle, Wifi, RefreshCw, Server, GripVertical, RotateCcw } from "lucide-react";
+import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface HealthCheck {
   name: string;
@@ -13,17 +16,70 @@ interface HealthCheck {
   detail: string;
 }
 
+const DEFAULT_ORDER = ["health_checks", "recent_errors"];
+const LS_KEY = "admin_health_panel_order";
+
+function loadOrder(): string[] {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length === DEFAULT_ORDER.length && DEFAULT_ORDER.every(id => parsed.includes(id))) return parsed;
+    }
+  } catch {}
+  return DEFAULT_ORDER;
+}
+
+function SortablePanel({ id, children }: { id: string; children: ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 50 : undefined, opacity: isDragging ? 0.7 : 1 }}
+      className="relative group"
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="absolute top-3 right-3 z-10 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing hover:bg-muted"
+        aria-label="Drag to reorder"
+      >
+        <GripVertical className="w-4 h-4 text-muted-foreground" />
+      </button>
+      {children}
+    </div>
+  );
+}
+
 export default function AdminSystemHealth() {
   const [checks, setChecks] = useState<HealthCheck[]>([]);
   const [recentErrors, setRecentErrors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { status: wsStatus } = useRealtimeStatus();
+  const [panelOrder, setPanelOrder] = useState<string[]>(loadOrder);
+
+  const isCustomOrder = JSON.stringify(panelOrder) !== JSON.stringify(DEFAULT_ORDER);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setPanelOrder(prev => {
+        const next = arrayMove(prev, prev.indexOf(active.id as string), prev.indexOf(over.id as string));
+        localStorage.setItem(LS_KEY, JSON.stringify(next));
+        return next;
+      });
+    }
+  };
+
+  const resetOrder = () => {
+    setPanelOrder(DEFAULT_ORDER);
+    localStorage.removeItem(LS_KEY);
+  };
 
   const runChecks = useCallback(async () => {
     setLoading(true);
     const results: HealthCheck[] = [];
 
-    // 1. DB connectivity
     const dbStart = Date.now();
     const { error: dbErr } = await supabase.from("profiles").select("id", { count: "exact", head: true });
     const dbMs = Date.now() - dbStart;
@@ -33,14 +89,12 @@ export default function AdminSystemHealth() {
       detail: dbErr ? dbErr.message : `${dbMs}ms response`,
     });
 
-    // 2. Realtime
     results.push({
       name: "Realtime WebSocket",
       status: wsStatus === "connected" ? "ok" : wsStatus === "connecting" ? "warn" : "error",
       detail: wsStatus,
     });
 
-    // 3. Edge function health
     try {
       const start = Date.now();
       const res = await supabase.functions.invoke("check-api-status", { body: {} });
@@ -54,7 +108,6 @@ export default function AdminSystemHealth() {
       results.push({ name: "Edge Functions", status: "error", detail: "Unreachable" });
     }
 
-    // 4. Recent error count
     const hourAgo = new Date(Date.now() - 3600000).toISOString();
     const { count } = await supabase.from("audit_logs").select("id", { count: "exact", head: true })
       .gte("created_at", hourAgo).or("action.ilike.%error%,action.ilike.%fail%");
@@ -66,7 +119,6 @@ export default function AdminSystemHealth() {
 
     setChecks(results);
 
-    // Load recent error logs
     const { data: errLogs } = await supabase.from("audit_logs").select("id, action, entity_type, created_at, actor_id")
       .or("action.ilike.%error%,action.ilike.%fail%").order("created_at", { ascending: false }).limit(20);
     setRecentErrors(errLogs ?? []);
@@ -81,8 +133,8 @@ export default function AdminSystemHealth() {
 
   if (loading) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
 
-  return (
-    <div className="space-y-4">
+  const panels: Record<string, ReactNode> = {
+    health_checks: (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card><CardContent className="p-4 flex items-center gap-3">
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${overallStatus === "Healthy" ? "bg-emerald-500/10" : overallStatus === "Warning" ? "bg-amber-500/10" : "bg-destructive/10"}`}>
@@ -97,7 +149,8 @@ export default function AdminSystemHealth() {
           </CardContent></Card>
         ))}
       </div>
-
+    ),
+    recent_errors: (
       <Card>
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <CardTitle className="text-sm flex items-center gap-2"><Activity className="w-4 h-4" />Recent Errors</CardTitle>
@@ -123,6 +176,29 @@ export default function AdminSystemHealth() {
           </ScrollArea>
         </CardContent>
       </Card>
+    ),
+  };
+
+  return (
+    <div className="space-y-4">
+      {isCustomOrder && (
+        <div className="flex justify-end">
+          <Button variant="ghost" size="sm" onClick={resetOrder} className="text-xs gap-1">
+            <RotateCcw className="w-3 h-3" /> Reset layout
+          </Button>
+        </div>
+      )}
+      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={panelOrder} strategy={verticalListSortingStrategy}>
+          <div className="space-y-4">
+            {panelOrder.map(id => (
+              <SortablePanel key={id} id={id}>
+                {panels[id]}
+              </SortablePanel>
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
     </div>
   );
 }
