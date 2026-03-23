@@ -2651,6 +2651,16 @@ export default function AdminDashboard() {
           }}
         />
       )}
+      <AdminNavReorder
+        open={showReorder}
+        onOpenChange={setShowReorder}
+        groups={navGroups}
+        defaultGroups={DEFAULT_NAV_GROUPS}
+        onSave={(updated) => {
+          setNavGroups(updated);
+          saveNavOrder(updated);
+        }}
+      />
     </div>
   );
 }
