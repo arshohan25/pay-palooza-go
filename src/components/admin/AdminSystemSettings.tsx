@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,91 +6,24 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Settings, Globe, Wrench, AlertTriangle, DollarSign, Shield, Clock, Receipt, Zap, GripVertical, RotateCcw } from "lucide-react";
+import { Settings, Globe, Wrench, AlertTriangle, DollarSign, Shield, Clock, Receipt, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { SortableContext, horizontalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-
-const LS_KEY = "admin_system_tabs_order";
-const DEFAULT_TABS = [
-  { id: "app", label: "App Config" },
-  { id: "currency", label: "Currency" },
-  { id: "fees", label: "Fee Rules" },
-  { id: "txnrules", label: "Txn Rules" },
-  { id: "maintenance", label: "Maint." },
-];
-const DEFAULT_ORDER = DEFAULT_TABS.map(t => t.id);
-
-function SortableTab({ id, label }: { id: string; label: string }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-  const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 10 : undefined, opacity: isDragging ? 0.7 : 1 };
-  return (
-    <div ref={setNodeRef} style={style} className="flex items-center">
-      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing px-0.5 opacity-0 hover:opacity-60 transition-opacity">
-        <GripVertical className="w-3 h-3 text-muted-foreground" />
-      </div>
-      <TabsTrigger value={id} className="text-xs">{label}</TabsTrigger>
-    </div>
-  );
-}
-
-function loadOrder(): string[] {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as string[];
-      if (parsed.length === DEFAULT_ORDER.length && parsed.every(id => DEFAULT_ORDER.includes(id))) return parsed;
-    }
-  } catch {}
-  return DEFAULT_ORDER;
-}
 
 export default function AdminSystemSettings() {
-  const [tabOrder, setTabOrder] = useState<string[]>(loadOrder);
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-  const isCustomOrder = JSON.stringify(tabOrder) !== JSON.stringify(DEFAULT_ORDER);
-  const tabMap = useMemo(() => Object.fromEntries(DEFAULT_TABS.map(t => [t.id, t.label])), []);
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      setTabOrder(prev => {
-        const next = arrayMove(prev, prev.indexOf(active.id as string), prev.indexOf(over.id as string));
-        localStorage.setItem(LS_KEY, JSON.stringify(next));
-        return next;
-      });
-    }
-  };
-
-  const resetOrder = () => {
-    setTabOrder(DEFAULT_ORDER);
-    localStorage.removeItem(LS_KEY);
-  };
-
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-          <Settings className="w-5 h-5 text-primary" /> System Settings
-        </h3>
-        {isCustomOrder && (
-          <Button variant="ghost" size="sm" onClick={resetOrder} className="text-xs gap-1 h-7">
-            <RotateCcw className="w-3 h-3" /> Reset tabs
-          </Button>
-        )}
-      </div>
-      <Tabs defaultValue={tabOrder[0]} className="w-full">
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={tabOrder} strategy={horizontalListSortingStrategy}>
-            <TabsList className="w-full flex h-auto">
-              {tabOrder.map(id => (
-                <SortableTab key={id} id={id} label={tabMap[id]} />
-              ))}
-            </TabsList>
-          </SortableContext>
-        </DndContext>
+      <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+        <Settings className="w-5 h-5 text-primary" /> System Settings
+      </h3>
+      <Tabs defaultValue="app" className="w-full">
+        <TabsList className="w-full grid grid-cols-5 h-auto">
+          <TabsTrigger value="app" className="text-xs">App Config</TabsTrigger>
+          <TabsTrigger value="currency" className="text-xs">Currency</TabsTrigger>
+          <TabsTrigger value="fees" className="text-xs">Fee Rules</TabsTrigger>
+          <TabsTrigger value="txnrules" className="text-xs">Txn Rules</TabsTrigger>
+          <TabsTrigger value="maintenance" className="text-xs">Maint.</TabsTrigger>
+        </TabsList>
         <TabsContent value="app"><AppConfigTab /></TabsContent>
         <TabsContent value="currency"><CurrencyConfigTab /></TabsContent>
         <TabsContent value="fees"><FeeRulesTab /></TabsContent>

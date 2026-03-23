@@ -1,23 +1,34 @@
-## Drag & Drop Reorderable and can be edit/change rules System Settings Tabs
+
+
+## Drag & Drop Panel Reordering for Team Activity and System Health Tabs
 
 ### Summary
+Add drag-and-drop reorderable panels to **TeamActivityDashboard** and **AdminSystemHealth**, matching the existing pattern from `AdminOverviewCharts`. Each component gets sortable sections with grip handles and localStorage persistence.
 
-Make the 5 System Settings tabs (App Config, Currency, Fee Rules, Txn Rules, Maint.) drag-and-drop reorderable with localStorage persistence.
+### Components to Update
 
-### Approach
+**1. TeamActivityDashboard.tsx** — 4 reorderable panels:
+- `summary_cards` — the 4 stat cards (Total Team, Online, Actions Today, Open Tickets)
+- `performance_table` — Team Performance table with department filter
+- `activity_feed` — Recent Activity card
+- `login_history` — Login History card
 
-1. **Define tab order as state** — store an array of tab objects `[{ id: "app", label: "App Config" }, ...]` in state, initialized from `localStorage` key `admin_system_tabs_order`.
-2. **Replace static `TabsList**` — wrap tab triggers in a `DndContext` + `SortableContext` using `horizontalListSortingStrategy`. Each `TabsTrigger` gets wrapped in a sortable container.
-3. **Persist & reset** — save order to localStorage on drag end. Add a small "Reset" button near the header when order differs from default.
-4. **Tab content rendering** — `TabsContent` elements remain static (Radix handles visibility by `value`), only the trigger order changes.
+Wrap in `DndContext` + `SortableContext`. Each panel gets a `SortablePanel` wrapper with `GripVertical` handle. Persist order to `localStorage` key `admin_team_panel_order`. Add "Reset layout" button.
 
-### Technical Details
+**2. AdminSystemHealth.tsx** — 3 reorderable panels:
+- `health_checks` — the status cards grid (System + individual checks)
+- `recent_errors` — Recent Errors card
 
-- Uses `@dnd-kit/core` + `@dnd-kit/sortable` with `horizontalListSortingStrategy`
-- Each sortable trigger wraps a `TabsTrigger` inside a sortable div
-- localStorage key: `admin_system_tabs_order`, stores `string[]` of tab IDs
-- No changes to individual tab content components
+Only 2 distinct sections here, so add a third by splitting or keeping it simple with just the 2 sortable panels. Persist to `localStorage` key `admin_health_panel_order`. Add "Reset layout" button.
 
-### File Modified
+### Technical Approach
+- Extract a shared `SortablePanel` wrapper (same pattern as `SortableChartCard` in AdminOverviewCharts) — or inline it per component to keep changes minimal
+- Use `@dnd-kit/core` + `@dnd-kit/sortable` with `verticalListSortingStrategy` (panels are stacked vertically)
+- Each panel rendered via a `Record<string, ReactNode>` map, iterated in order from state array
+- Grip handle visible on hover in the card/section header
+- "Reset layout" button appears only when order differs from default
 
-1. `src/components/admin/AdminSystemSettings.tsx` — add DnD to tab triggers with persistence
+### Files Modified
+1. `src/components/admin/TeamActivityDashboard.tsx` — wrap 4 panels in DnD context with sortable order + persistence
+2. `src/components/admin/AdminSystemHealth.tsx` — wrap 2 panels in DnD context with sortable order + persistence
+
