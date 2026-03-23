@@ -132,18 +132,27 @@ function CurrencyConfigTab() {
   );
 }
 
+const TXN_TYPES = ["send", "cashout", "cashin", "payment", "recharge", "paybill", "addmoney", "banktransfer"];
+const FEE_TYPES = ["flat", "percentage"];
+
 function FeeRulesTab() {
   const [fees, setFees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<any>(null);
+  const [form, setForm] = useState({
+    txn_type: "send", fee_type: "flat", fee_value: "", min_amount: "", max_amount: "",
+    is_active: true, agent_commission: "", distributor_commission: "", platform_share: "",
+  });
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      const { data } = await supabase.from("fee_config").select("*").order("txn_type");
-      setFees(data ?? []);
-      setLoading(false);
-    })();
-  }, []);
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase.from("fee_config").select("*").order("txn_type").order("min_amount", { ascending: true, nullsFirst: true });
+    setFees(data ?? []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
 
   const toggleFee = async (id: string, active: boolean) => {
     await supabase.from("fee_config").update({ is_active: !active } as any).eq("id", id);
@@ -151,12 +160,110 @@ function FeeRulesTab() {
     toast.success(`Fee rule ${!active ? "activated" : "deactivated"}`);
   };
 
+  const openAdd = () => {
+    setEditing(null);
+    setForm({ txn_type: "send", fee_type: "flat", fee_value: "", min_amount: "", max_amount: "", is_active: true, agent_commission: "", distributor_commission: "", platform_share: "" });
+    setDialogOpen(true);
+  };
+
+  const openEdit = (f: any) => {
+    setEditing(f);
+    setForm({
+      txn_type: f.txn_type, fee_type: f.fee_type, fee_value: String(f.fee_value),
+      min_amount: f.min_amount != null ? String(f.min_amount) : "",
+      max_amount: f.max_amount != null ? String(f.max_amount) : "",
+      is_active: f.is_active,
+      agent_commission: f.agent_commission != null ? String(f.agent_commission) : "",
+      distributor_commission: f.distributor_commission != null ? String(f.distributor_commission) : "",
+      platform_share: f.platform_share != null ? String(f.platform_share) : "",
+    });
+    setDialogOpen(true);
+  };
+
+  const handleSave = async () => {
+    const payload: any = {
+      txn_type: form.txn_type, fee_type: form.fee_type,
+      fee_value: parseFloat(form.fee_value) || 0,
+      min_amount: form.min_amount ? parseFloat(form.min_amount) : null,
+      max_amount: form.max_amount ? parseFloat(form.max_amount) : null,
+      is_active: form.is_active,
+      agent_commission: form.agent_commission ? parseFloat(form.agent_commission) : null,
+      distributor_commission: form.distributor_commission ? parseFloat(form.distributor_commission) : null,
+      platform_share: form.platform_share ? parseFloat(form.platform_share) : null,
+    };
+    if (editing) {
+      const { error } = await supabase.from("fee_config").update(payload).eq("id", editing.id);
+      if (error) { toast.error("Failed to update"); return; }
+      toast.success("Fee rule updated");
+    } else {
+      const { error } = await supabase.from("fee_config").insert(payload);
+      if (error) { toast.error("Failed to create"); return; }
+      toast.success("Fee rule created");
+    }
+    setDialogOpen(false);
+    load();
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this fee rule?")) return;
+    const { error } = await supabase.from("fee_config").delete().eq("id", id);
+    if (error) { toast.error("Failed to delete"); return; }
+    toast.success("Fee rule deleted");
+    load();
+  };
+
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-2">
-        <Card className="border-0 shadow-[var(--shadow-card)]"><CardContent className="p-3 text-center"><p className="text-[10px] text-muted-foreground">Total Rules</p><p className="text-lg font-bold text-foreground">{fees.length}</p></CardContent></Card>
-        <Card className="border-0 shadow-[var(--shadow-card)]"><CardContent className="p-3 text-center"><p className="text-[10px] text-muted-foreground">Active</p><p className="text-lg font-bold text-emerald-600">{fees.filter(f => f.is_active).length}</p></CardContent></Card>
+      <div className="flex items-center justify-between">
+        <div className="grid grid-cols-2 gap-2 flex-1 mr-2">
+          <Card className="border-0 shadow-[var(--shadow-card)]"><CardContent className="p-3 text-center"><p className="text-[10px] text-muted-foreground">Total Rules</p><p className="text-lg font-bold text-foreground">{fees.length}</p></CardContent></Card>
+          <Card className="border-0 shadow-[var(--shadow-card)]"><CardContent className="p-3 text-center"><p className="text-[10px] text-muted-foreground">Active</p><p className="text-lg font-bold text-emerald-600">{fees.filter(f => f.is_active).length}</p></CardContent></Card>
+        </div>
+        <Button size="sm" onClick={openAdd}><Plus className="w-4 h-4 mr-1" /> Add Rule</Button>
       </div>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editing ? "Edit Fee Rule" : "Add Fee Rule"}</DialogTitle></DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Transaction Type</Label>
+                <Select value={form.txn_type} onValueChange={v => setForm(f => ({ ...f, txn_type: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{TXN_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Fee Type</Label>
+                <Select value={form.fee_type} onValueChange={v => setForm(f => ({ ...f, fee_type: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{FEE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Fee Value {form.fee_type === "percentage" ? "(%)" : "(৳)"}</Label>
+              <Input type="number" value={form.fee_value} onChange={e => setForm(f => ({ ...f, fee_value: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label className="text-xs">Min Amount (৳)</Label><Input type="number" placeholder="No min" value={form.min_amount} onChange={e => setForm(f => ({ ...f, min_amount: e.target.value }))} /></div>
+              <div><Label className="text-xs">Max Amount (৳)</Label><Input type="number" placeholder="No max" value={form.max_amount} onChange={e => setForm(f => ({ ...f, max_amount: e.target.value }))} /></div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div><Label className="text-xs">Agent Comm. (%)</Label><Input type="number" placeholder="—" value={form.agent_commission} onChange={e => setForm(f => ({ ...f, agent_commission: e.target.value }))} /></div>
+              <div><Label className="text-xs">Distributor (%)</Label><Input type="number" placeholder="—" value={form.distributor_commission} onChange={e => setForm(f => ({ ...f, distributor_commission: e.target.value }))} /></div>
+              <div><Label className="text-xs">Platform (%)</Label><Input type="number" placeholder="—" value={form.platform_share} onChange={e => setForm(f => ({ ...f, platform_share: e.target.value }))} /></div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={form.is_active} onCheckedChange={v => setForm(f => ({ ...f, is_active: v }))} />
+              <Label className="text-xs">Active</Label>
+            </div>
+            <Button className="w-full" onClick={handleSave}>{editing ? "Update" : "Create"}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Card className="border-0 shadow-[var(--shadow-card)]">
         <CardContent className="p-0">
           <table className="w-full text-sm">
@@ -165,16 +272,23 @@ function FeeRulesTab() {
               <th className="text-left px-3 py-2.5 font-medium text-xs">Fee</th>
               <th className="text-left px-3 py-2.5 font-medium text-xs hidden sm:table-cell">Range</th>
               <th className="text-left px-3 py-2.5 font-medium text-xs">Active</th>
+              <th className="text-left px-3 py-2.5 font-medium text-xs">Actions</th>
             </tr></thead>
             <tbody>
               {fees.map(f => (
                 <tr key={f.id} className="border-b border-border/50 hover:bg-muted/30">
-                  <td className="px-3 py-2.5"><Badge variant="secondary" className="text-[10px]">{f.txn_type}</Badge></td>
-                  <td className="px-3 py-2.5 text-xs font-semibold">{f.fee_type === "percent" ? `${f.fee_value}%` : `৳${f.fee_value}`}</td>
+                  <td className="px-3 py-2.5"><Badge variant="secondary" className="text-[10px] capitalize">{f.txn_type}</Badge></td>
+                  <td className="px-3 py-2.5 text-xs font-semibold">{f.fee_type === "percentage" ? `${f.fee_value}%` : `৳${f.fee_value}`}</td>
                   <td className="px-3 py-2.5 text-xs text-muted-foreground hidden sm:table-cell">
                     ৳{Number(f.min_amount ?? 0).toLocaleString()} — {f.max_amount ? `৳${Number(f.max_amount).toLocaleString()}` : "∞"}
                   </td>
                   <td className="px-3 py-2.5"><Switch checked={f.is_active} onCheckedChange={() => toggleFee(f.id, f.is_active)} /></td>
+                  <td className="px-3 py-2.5">
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(f)}><Pencil className="w-3.5 h-3.5" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(f.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
