@@ -108,6 +108,7 @@ import AdminFraudAutoRules from "@/components/admin/AdminFraudAutoRules";
 import AdminLoanManagement from "@/components/admin/AdminLoanManagement";
 import AdminInsuranceManagement from "@/components/admin/AdminInsuranceManagement";
 import AdminGiftCardManagement from "@/components/admin/AdminGiftCardManagement";
+import AdminProfileEditor from "@/components/admin/AdminProfileEditor";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
