@@ -113,6 +113,8 @@ import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { useIsMobile } from "@/hooks/use-mobile";
+import AdminNavReorder, { type NavGroup } from "@/components/admin/AdminNavReorder";
+import { GripVertical } from "lucide-react";
 
 interface Stats {
   totalUsers: number;
