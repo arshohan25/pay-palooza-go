@@ -418,7 +418,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const onHash = () => {
       const hash = window.location.hash.replace('#', '');
-      if (NAV_ITEMS.some(i => i.id === hash)) setActiveTab(hash);
+      if (ALL_NAV_ITEMS.some(i => i.id === hash)) setActiveTab(hash);
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
