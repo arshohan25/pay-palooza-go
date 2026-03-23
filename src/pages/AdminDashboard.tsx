@@ -2159,6 +2159,9 @@ export default function AdminDashboard() {
                     >
                       {detailData.profile?.status || "active"}
                     </Badge>
+                    <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => { setEditingUserId(detailUser?.user_id); }}>
+                      ✏️ Edit
+                    </Button>
                   </div>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div className="bg-muted/50 rounded-lg p-3">
