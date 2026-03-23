@@ -973,6 +973,9 @@ export default function AdminDashboard() {
             <ShieldAlert className="w-3.5 h-3.5 text-primary-foreground" />
           </div>
           <h1 className="font-bold text-foreground text-sm">Admin</h1>
+          <Button variant="ghost" size="icon" className="ml-auto shrink-0 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setShowReorder(true)} title="Rearrange navigation">
+            <GripVertical className="w-4 h-4" />
+          </Button>
         </div>
         <div className="flex-1 overflow-y-auto pt-2">
           {navContent}
