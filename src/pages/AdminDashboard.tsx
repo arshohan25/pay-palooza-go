@@ -411,6 +411,7 @@ export default function AdminDashboard() {
   const [trashDetailLoading, setTrashDetailLoading] = useState(false);
   const [tempPin, setTempPin] = useState("");
   const [resettingPin, setResettingPin] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
   const generateTempPin = () => {
     const digits = "0123456789";
