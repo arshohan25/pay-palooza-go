@@ -1,51 +1,29 @@
 
 
-## Make Transaction Safety Rules Editable
+## Make Fee Rules Tab Fully Editable with Add/Edit Support
 
-### Problem
-The 5 Transaction Safety Rules in the "Txn Rules" tab are hardcoded with static badges. Admins cannot toggle them on/off or edit their parameters.
+### Summary
+Add full CRUD capabilities to the Fee Rules tab in System Settings, allowing admins to add new fee rules and edit existing ones inline — matching the existing `AdminChargeConfig` component's functionality.
 
-### Solution
-Replace the static array with interactive controls:
+### Changes to `FeeRulesTab` in `src/components/admin/AdminSystemSettings.tsx`
 
-1. **Store rules in state** — initialize from the hardcoded defaults, allowing each rule's `enabled` status to be toggled via a `Switch` component (replacing the static `Badge`).
+1. **Add "Add Rule" button** — next to the summary cards, a `Plus` button opens a Dialog to create a new fee rule with fields: Transaction Type, Fee Type (flat/percentage), Fee Value, Min Amount, Max Amount, Active toggle.
 
-2. **Add inline editing** — clicking a rule row (or an edit icon) expands an inline edit area where the admin can modify the description/parameter (e.g., change "30 seconds" to "60 seconds", or "20 transactions" to "50").
+2. **Add Edit button per row** — a `Pencil` icon button on each row opens the same Dialog pre-filled with that rule's data for editing.
 
-3. **Persist to database** — create a `transaction_safety_rules` table to store these rules so changes survive sessions. On load, fetch from DB; fall back to defaults if empty.
+3. **Add Delete capability** — a `Trash2` icon on each row to remove a rule (with confirmation).
 
-4. **Save with toast feedback** — toggling or editing a rule saves immediately to the database with a success toast.
+4. **Dialog form** — reuses the same pattern from `AdminChargeConfig`: select for txn_type, select for fee_type, number inputs for value/min/max, switch for active. Saves via `supabase.from("fee_config").insert/update`.
 
-### Database Migration
-```sql
-CREATE TABLE public.transaction_safety_rules (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  rule_key text UNIQUE NOT NULL,
-  label text NOT NULL,
-  description text NOT NULL,
-  is_enabled boolean DEFAULT true,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
+5. **Commission fields** — include optional agent_commission, distributor_commission, platform_share fields in the dialog for advanced configuration.
 
-ALTER TABLE public.transaction_safety_rules ENABLE ROW LEVEL SECURITY;
+### Technical Details
+- All DB operations use the existing `fee_config` table (no migrations needed)
+- Dialog state managed with `useState` for `dialogOpen` and `editing` (null = add mode)
+- After save, re-fetch the fee list
+- Transaction types: send, cashout, cashin, payment, recharge, paybill, addmoney, banktransfer
+- Fee types: flat, percentage
 
--- Seed defaults
-INSERT INTO public.transaction_safety_rules (rule_key, label, description, is_enabled) VALUES
-  ('duplicate_guard', 'Duplicate Transaction Guard', 'Block identical txns within 30 seconds', true),
-  ('velocity_control', 'Velocity Control', 'Max 20 transactions per hour per user', true),
-  ('night_restriction', 'Night-time Restriction', 'High-value txns blocked 12AM-6AM', false),
-  ('new_account_limit', 'New Account Limit', 'Reduced limits for accounts < 7 days old', true),
-  ('cross_device_alert', 'Cross-device Alert', 'Alert on txn from new device', true);
-```
-
-### UI Changes in `AdminSystemSettings.tsx` — `TransactionRulesTab`
-- Fetch rules from `transaction_safety_rules` on mount
-- Each rule row: `Switch` to toggle `is_enabled`, pencil icon to enter inline edit mode for description
-- Inline edit shows an `Input` + Save/Cancel buttons
-- Toggle and save both update the DB immediately
-
-### Files Modified
-1. `src/components/admin/AdminSystemSettings.tsx` — refactor `TransactionRulesTab` to use DB-backed editable rules
-2. Database migration — create `transaction_safety_rules` table with seed data and RLS
+### File Modified
+1. `src/components/admin/AdminSystemSettings.tsx` — refactor `FeeRulesTab` with add/edit/delete dialog
 
