@@ -113,6 +113,8 @@ import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { useIsMobile } from "@/hooks/use-mobile";
+import AdminNavReorder, { type NavGroup } from "@/components/admin/AdminNavReorder";
+import { GripVertical } from "lucide-react";
 
 interface Stats {
   totalUsers: number;
@@ -203,7 +205,7 @@ const STATUS_COLORS: Record<string, string> = {
   false_positive: "bg-muted text-muted-foreground",
 };
 
-const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: string; icon: any }[] }[] = [
+const DEFAULT_NAV_GROUPS: NavGroup[] = [
   {
     label: "Overview",
     items: [
@@ -353,16 +355,60 @@ const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: st
   },
 ];
 
-const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items) as { id: string; label: string; icon: any }[];
+const ADMIN_NAV_ORDER_KEY = "admin_nav_order";
+
+function loadNavOrder(): NavGroup[] {
+  try {
+    const saved = localStorage.getItem(ADMIN_NAV_ORDER_KEY);
+    if (!saved) return DEFAULT_NAV_GROUPS;
+    const parsed: { label: string; items: string[] }[] = JSON.parse(saved);
+    // Build an item lookup from defaults
+    const allItems = new Map<string, NavGroup["items"][number]>();
+    const defaultGroupMeta = new Map<string, { pro?: boolean }>();
+    DEFAULT_NAV_GROUPS.forEach(g => {
+      defaultGroupMeta.set(g.label, { pro: g.pro });
+      g.items.forEach(i => allItems.set(i.id, i));
+    });
+    const usedIds = new Set<string>();
+    const result: NavGroup[] = parsed.map(sg => {
+      const meta = defaultGroupMeta.get(sg.label);
+      const items = sg.items
+        .map(id => { usedIds.add(id); return allItems.get(id); })
+        .filter(Boolean) as NavGroup["items"];
+      return { label: sg.label, pro: meta?.pro, items };
+    });
+    // Append any new items from defaults that weren't in saved order
+    DEFAULT_NAV_GROUPS.forEach(dg => {
+      const missing = dg.items.filter(i => !usedIds.has(i.id));
+      if (missing.length > 0) {
+        const existing = result.find(r => r.label === dg.label);
+        if (existing) existing.items.push(...missing);
+        else result.push({ ...dg, items: missing });
+      }
+    });
+    return result.length > 0 ? result : DEFAULT_NAV_GROUPS;
+  } catch {
+    return DEFAULT_NAV_GROUPS;
+  }
+}
+
+function saveNavOrder(groups: NavGroup[]) {
+  const slim = groups.map(g => ({ label: g.label, items: g.items.map(i => i.id) }));
+  localStorage.setItem(ADMIN_NAV_ORDER_KEY, JSON.stringify(slim));
+}
+
+const ALL_NAV_ITEMS = DEFAULT_NAV_GROUPS.flatMap(g => g.items) as { id: string; label: string; icon: any }[];
 
 export default function AdminDashboard() {
   const { isAdmin, loading: authLoading } = useAdmin();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const [navGroups, setNavGroups] = useState<NavGroup[]>(loadNavOrder);
+  const [showReorder, setShowReorder] = useState(false);
   const [showActivityFeed, setShowActivityFeed] = useState(false);
   const [activeTab, setActiveTab] = useState(() => {
     const hash = window.location.hash.replace('#', '');
-    return NAV_ITEMS.some(i => i.id === hash) ? hash : "overview";
+    return ALL_NAV_ITEMS.some(i => i.id === hash) ? hash : "overview";
   });
 
   useEffect(() => {
@@ -372,7 +418,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const onHash = () => {
       const hash = window.location.hash.replace('#', '');
-      if (NAV_ITEMS.some(i => i.id === hash)) setActiveTab(hash);
+      if (ALL_NAV_ITEMS.some(i => i.id === hash)) setActiveTab(hash);
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
@@ -841,7 +887,7 @@ export default function AdminDashboard() {
 
   const navContent = (
     <nav className="flex flex-col gap-1 px-2 pb-4">
-      {NAV_GROUPS.map((group, gi) => (
+      {navGroups.map((group, gi) => (
         <div key={group.label}>
           {gi > 0 && <Separator className="my-2" />}
           <div className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider ${
@@ -927,6 +973,9 @@ export default function AdminDashboard() {
             <ShieldAlert className="w-3.5 h-3.5 text-primary-foreground" />
           </div>
           <h1 className="font-bold text-foreground text-sm">Admin</h1>
+          <Button variant="ghost" size="icon" className="ml-auto shrink-0 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setShowReorder(true)} title="Rearrange navigation">
+            <GripVertical className="w-4 h-4" />
+          </Button>
         </div>
         <div className="flex-1 overflow-y-auto pt-2">
           {navContent}
@@ -956,7 +1005,7 @@ export default function AdminDashboard() {
               </div>
               {/* Desktop: section label */}
               <span className="hidden md:block text-base font-bold text-foreground">
-                {NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview"}
+                {ALL_NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview"}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -1043,7 +1092,7 @@ export default function AdminDashboard() {
               <Menu className="w-4 h-4" />
             </Button>
             <span className="text-sm font-semibold text-foreground">
-              {NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview"}
+              {ALL_NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview"}
             </span>
           </div>
         </header>
@@ -2602,6 +2651,16 @@ export default function AdminDashboard() {
           }}
         />
       )}
+      <AdminNavReorder
+        open={showReorder}
+        onOpenChange={setShowReorder}
+        groups={navGroups}
+        defaultGroups={DEFAULT_NAV_GROUPS}
+        onSave={(updated) => {
+          setNavGroups(updated);
+          saveNavOrder(updated);
+        }}
+      />
     </div>
   );
 }
