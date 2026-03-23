@@ -355,16 +355,60 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items) as { id: string; label: string; icon: any }[];
+const ADMIN_NAV_ORDER_KEY = "admin_nav_order";
+
+function loadNavOrder(): NavGroup[] {
+  try {
+    const saved = localStorage.getItem(ADMIN_NAV_ORDER_KEY);
+    if (!saved) return DEFAULT_NAV_GROUPS;
+    const parsed: { label: string; items: string[] }[] = JSON.parse(saved);
+    // Build an item lookup from defaults
+    const allItems = new Map<string, NavGroup["items"][number]>();
+    const defaultGroupMeta = new Map<string, { pro?: boolean }>();
+    DEFAULT_NAV_GROUPS.forEach(g => {
+      defaultGroupMeta.set(g.label, { pro: g.pro });
+      g.items.forEach(i => allItems.set(i.id, i));
+    });
+    const usedIds = new Set<string>();
+    const result: NavGroup[] = parsed.map(sg => {
+      const meta = defaultGroupMeta.get(sg.label);
+      const items = sg.items
+        .map(id => { usedIds.add(id); return allItems.get(id); })
+        .filter(Boolean) as NavGroup["items"];
+      return { label: sg.label, pro: meta?.pro, items };
+    });
+    // Append any new items from defaults that weren't in saved order
+    DEFAULT_NAV_GROUPS.forEach(dg => {
+      const missing = dg.items.filter(i => !usedIds.has(i.id));
+      if (missing.length > 0) {
+        const existing = result.find(r => r.label === dg.label);
+        if (existing) existing.items.push(...missing);
+        else result.push({ ...dg, items: missing });
+      }
+    });
+    return result.length > 0 ? result : DEFAULT_NAV_GROUPS;
+  } catch {
+    return DEFAULT_NAV_GROUPS;
+  }
+}
+
+function saveNavOrder(groups: NavGroup[]) {
+  const slim = groups.map(g => ({ label: g.label, items: g.items.map(i => i.id) }));
+  localStorage.setItem(ADMIN_NAV_ORDER_KEY, JSON.stringify(slim));
+}
+
+const ALL_NAV_ITEMS = DEFAULT_NAV_GROUPS.flatMap(g => g.items) as { id: string; label: string; icon: any }[];
 
 export default function AdminDashboard() {
   const { isAdmin, loading: authLoading } = useAdmin();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const [navGroups, setNavGroups] = useState<NavGroup[]>(loadNavOrder);
+  const [showReorder, setShowReorder] = useState(false);
   const [showActivityFeed, setShowActivityFeed] = useState(false);
   const [activeTab, setActiveTab] = useState(() => {
     const hash = window.location.hash.replace('#', '');
-    return NAV_ITEMS.some(i => i.id === hash) ? hash : "overview";
+    return ALL_NAV_ITEMS.some(i => i.id === hash) ? hash : "overview";
   });
 
   useEffect(() => {
