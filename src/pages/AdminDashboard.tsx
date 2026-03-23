@@ -2580,6 +2580,18 @@ export default function AdminDashboard() {
           </SheetContent>
         </Sheet>
       )}
+
+      {/* Admin Profile Editor */}
+      {editingUserId && (
+        <AdminProfileEditor
+          userId={editingUserId}
+          onClose={() => setEditingUserId(null)}
+          onSaved={() => {
+            loadData();
+            if (detailUser) openUserDetail(detailUser);
+          }}
+        />
+      )}
     </div>
   );
 }
