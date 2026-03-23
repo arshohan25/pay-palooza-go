@@ -1,50 +1,41 @@
 
 
-## Admin Profile Editor — Full Edit Access for All User Types
+## Rearrange Admin Dashboard Navigation into Logical Sections
 
-### Summary
-Create a new `AdminProfileEditor` component that lets admins edit **any** user's profile fields (name, phone, email, avatar) and role-specific fields (agent business_name, merchant business_name, distributor business_name, etc.). This editor will be accessible from the existing User Detail sheet via a new "Edit Profile" button.
+### Problem
+Several nav items are in unrelated sections (e.g., Orders in Operations instead of E-Commerce, Fund Requests in Operations instead of Financial, Recharge/Billers in System instead of Services, Fraud Alerts split across multiple groups).
 
-### No Database Migration Needed
-All the fields (name, phone, email, avatar_url on `profiles`; business_name, nid_number, territory_code, trade_license on `agents`; business_name, category, bank details on `merchants`; business_name, territory on `distributors`) already exist. RLS policies with admin `has_role()` checks are already in place.
+### Proposed Reorganization
 
-### New Component: `src/components/admin/AdminProfileEditor.tsx`
+```text
+Overview         : Dashboard, Users, Team, Team Activity
+Operations       : Transactions, Chargebacks, MFS Monitor, Disputes, Complaints, KYC, Fund Requests
+Support          : Support, Chat Monitor
+Network          : Agent Hub, Leaderboard, Merchants, Merchant Apps, Distributors, Wallets, Referrals
+Financial        : Commissions, Commission Log, Charges, Limits, Settlements, Bank Recon, Treasury, Float Mgmt, Revenue, Deposit Accts
+Services         : Loans, Insurance, Gift Cards, Savings, Donation Funds, Auto-Save, Recharge, Billers
+E-Commerce       : E-Commerce, Orders
+System           : Gateways, Toggles, Locks, Permissions, Settings, API Hub, API Requests, Webhooks, Devices, OTP Monitor, Sessions, Health
+Security & Risk  : Fraud Alerts, Security, Risk Control, Blacklist
+⭐ Pro Fintech   : AI Fraud, Auto Rules, Geo Track, Routing, Liquidity, Live Monitor
+Marketing        : Marketing, Banners, Loyalty, Notify, Announcements, Feedback, Changelog, Festivals
+Reports          : Reports, Adv. Reports, Audit Log, Export
+HR               : Careers
+Other            : Trash
+```
 
-A dialog/sheet with editable fields organized by section:
+### Key Moves
+- **Orders** → E-Commerce (was Operations)
+- **Fund Requests** → Operations (financial ops, stays)
+- **Merchant Apps** → Network (with Merchants)
+- **API Requests** → System (with API Hub)
+- **Savings, Donation Funds, Auto-Save** → Services (was Financial)
+- **Recharge, Billers** → Services (was System)
+- **Fraud Alerts** → Security & Risk (was Overview)
+- **Risk Control, Blacklist** → Security & Risk (was System)
+- **Team, Team Activity** → Overview (was Other)
+- **Support, Chat Monitor** → new Support group (was Operations)
 
-**Profile Section** (always shown):
-- Name (text input)
-- Phone (text input)
-- Email (text input)
-- Avatar URL (text input)
-
-**Agent Section** (shown if user has agent record):
-- Business Name, NID Number, Territory Code, Trade License, Max Float
-
-**Merchant Section** (shown if user has merchant record):
-- Business Name, Category, MDR Rate, Settlement Frequency
-- Bank Name, Bank Account Holder, Bank Account Number, Bank Branch, Bank Routing, Trade License
-
-**Distributor Section** (shown if user has distributor record):
-- Business Name, Commission Rate, Max Float, Territory
-
-Props: `userId`, `onClose`, `onSaved` callback
-
-**Logic:**
-1. On open: fetch profile + check if user has agent/merchant/distributor records
-2. Display editable form fields for each section that exists
-3. On save: update `profiles` table + relevant entity tables, create audit_log entry, fire toast
-4. All updates audited with before/after values
-
-### Changes to `src/pages/AdminDashboard.tsx`
-
-1. Import `AdminProfileEditor`
-2. Add state: `editingUserId: string | null`
-3. Add an **"Edit"** button next to the existing "View" button in the user detail sheet header
-4. Render `<AdminProfileEditor>` dialog when `editingUserId` is set
-5. On save callback: refresh user list + detail data
-
-### Files Modified
-1. `src/components/admin/AdminProfileEditor.tsx` — new file
-2. `src/pages/AdminDashboard.tsx` — add Edit button + editor state + import
+### File Modified
+1. `src/pages/AdminDashboard.tsx` — rewrite `NAV_GROUPS` array only
 
