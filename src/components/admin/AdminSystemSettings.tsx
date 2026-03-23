@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Settings, Globe, Wrench, AlertTriangle, DollarSign, Shield, Clock, Receipt, Zap } from "lucide-react";
+import { Settings, Globe, Wrench, AlertTriangle, DollarSign, Shield, Clock, Receipt, Zap, Pencil, Check, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -187,6 +187,19 @@ function FeeRulesTab() {
 function TransactionRulesTab() {
   const [limits, setLimits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rules, setRules] = useState<any[]>([]);
+  const [rulesLoading, setRulesLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDesc, setEditDesc] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      setRulesLoading(true);
+      const { data } = await supabase.from("transaction_safety_rules" as any).select("*").order("created_at");
+      setRules(data ?? []);
+      setRulesLoading(false);
+    })();
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -197,27 +210,66 @@ function TransactionRulesTab() {
     })();
   }, []);
 
+  const toggleRule = async (rule: any) => {
+    const newEnabled = !rule.is_enabled;
+    await supabase.from("transaction_safety_rules" as any).update({ is_enabled: newEnabled, updated_at: new Date().toISOString() } as any).eq("id", rule.id);
+    setRules(prev => prev.map(r => r.id === rule.id ? { ...r, is_enabled: newEnabled } : r));
+    toast.success(`${rule.label} ${newEnabled ? "enabled" : "disabled"}`);
+  };
+
+  const saveDescription = async (rule: any) => {
+    if (!editDesc.trim()) return;
+    await supabase.from("transaction_safety_rules" as any).update({ description: editDesc.trim(), updated_at: new Date().toISOString() } as any).eq("id", rule.id);
+    setRules(prev => prev.map(r => r.id === rule.id ? { ...r, description: editDesc.trim() } : r));
+    setEditingId(null);
+    toast.success("Rule description updated");
+  };
+
   return (
     <div className="space-y-3">
       <Card className="border-0 shadow-[var(--shadow-card)]">
         <CardContent className="p-4 space-y-3">
           <p className="text-sm font-medium text-foreground flex items-center gap-2"><Zap className="w-4 h-4 text-primary" /> Transaction Safety Rules</p>
           <div className="space-y-2">
-            {[
-              { rule: "Duplicate Transaction Guard", desc: "Block identical txns within 30 seconds", enabled: true },
-              { rule: "Velocity Control", desc: "Max 20 transactions per hour per user", enabled: true },
-              { rule: "Night-time Restriction", desc: "High-value txns blocked 12AM-6AM", enabled: false },
-              { rule: "New Account Limit", desc: "Reduced limits for accounts < 7 days old", enabled: true },
-              { rule: "Cross-device Alert", desc: "Alert on txn from new device", enabled: true },
-            ].map(r => (
-              <div key={r.rule} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
-                <div>
-                  <p className="text-xs font-medium text-foreground">{r.rule}</p>
-                  <p className="text-[10px] text-muted-foreground">{r.desc}</p>
+            {rules.map(r => (
+              <div key={r.id} className="py-2 border-b border-border/30 last:border-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0 mr-3">
+                    <p className="text-xs font-medium text-foreground">{r.label}</p>
+                    {editingId === r.id ? (
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <Input
+                          value={editDesc}
+                          onChange={e => setEditDesc(e.target.value)}
+                          className="h-7 text-[11px] flex-1"
+                          autoFocus
+                          onKeyDown={e => { if (e.key === "Enter") saveDescription(r); if (e.key === "Escape") setEditingId(null); }}
+                        />
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => saveDescription(r)}>
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingId(null)}>
+                          <X className="w-3.5 h-3.5 text-destructive" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 group">
+                        <p className="text-[10px] text-muted-foreground">{r.description}</p>
+                        <button
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => { setEditingId(r.id); setEditDesc(r.description); }}
+                        >
+                          <Pencil className="w-3 h-3 text-muted-foreground hover:text-foreground" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <Switch checked={r.is_enabled} onCheckedChange={() => toggleRule(r)} />
                 </div>
-                <Badge variant={r.enabled ? "default" : "secondary"} className="text-[10px]">{r.enabled ? "Active" : "Off"}</Badge>
               </div>
             ))}
+            {rulesLoading && <p className="text-xs text-muted-foreground text-center py-4">Loading rules...</p>}
+            {!rulesLoading && rules.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">No safety rules configured</p>}
           </div>
         </CardContent>
       </Card>
