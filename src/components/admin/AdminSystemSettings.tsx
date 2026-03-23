@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Settings, Globe, Wrench, AlertTriangle, DollarSign, Shield, Clock, Receipt, Zap } from "lucide-react";
+import { Settings, Globe, Wrench, AlertTriangle, DollarSign, Shield, Clock, Receipt, Zap, Pencil, Check, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
