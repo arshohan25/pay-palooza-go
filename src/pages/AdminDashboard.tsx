@@ -1089,7 +1089,7 @@ export default function AdminDashboard() {
               <Menu className="w-4 h-4" />
             </Button>
             <span className="text-sm font-semibold text-foreground">
-              {NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview"}
+              {ALL_NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview"}
             </span>
           </div>
         </header>
