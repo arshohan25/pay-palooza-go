@@ -205,7 +205,7 @@ const STATUS_COLORS: Record<string, string> = {
   false_positive: "bg-muted text-muted-foreground",
 };
 
-const NAV_GROUPS: { label: string; pro?: boolean; items: { id: string; label: string; icon: any }[] }[] = [
+const DEFAULT_NAV_GROUPS: NavGroup[] = [
   {
     label: "Overview",
     items: [
