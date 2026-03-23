@@ -1,41 +1,33 @@
 
 
-## Rearrange Admin Dashboard Navigation into Logical Sections
+## Admin Dashboard Drag & Drop Navigation Reordering
 
-### Problem
-Several nav items are in unrelated sections (e.g., Orders in Operations instead of E-Commerce, Fund Requests in Operations instead of Financial, Recharge/Billers in System instead of Services, Fraud Alerts split across multiple groups).
+### Summary
+Enable admins to drag-and-drop reorder both **nav groups** (sections) and **individual items within groups** in the sidebar. The custom order persists in localStorage so it survives reloads.
 
-### Proposed Reorganization
+### Approach
 
-```text
-Overview         : Dashboard, Users, Team, Team Activity
-Operations       : Transactions, Chargebacks, MFS Monitor, Disputes, Complaints, KYC, Fund Requests
-Support          : Support, Chat Monitor
-Network          : Agent Hub, Leaderboard, Merchants, Merchant Apps, Distributors, Wallets, Referrals
-Financial        : Commissions, Commission Log, Charges, Limits, Settlements, Bank Recon, Treasury, Float Mgmt, Revenue, Deposit Accts
-Services         : Loans, Insurance, Gift Cards, Savings, Donation Funds, Auto-Save, Recharge, Billers
-E-Commerce       : E-Commerce, Orders
-System           : Gateways, Toggles, Locks, Permissions, Settings, API Hub, API Requests, Webhooks, Devices, OTP Monitor, Sessions, Health
-Security & Risk  : Fraud Alerts, Security, Risk Control, Blacklist
-⭐ Pro Fintech   : AI Fraud, Auto Rules, Geo Track, Routing, Liquidity, Live Monitor
-Marketing        : Marketing, Banners, Loyalty, Notify, Announcements, Feedback, Changelog, Festivals
-Reports          : Reports, Adv. Reports, Audit Log, Export
-HR               : Careers
-Other            : Trash
-```
+1. **Convert `NAV_GROUPS` from a constant to state** — initialize from localStorage (key: `admin_nav_order`), falling back to the default `NAV_GROUPS` definition.
 
-### Key Moves
-- **Orders** → E-Commerce (was Operations)
-- **Fund Requests** → Operations (financial ops, stays)
-- **Merchant Apps** → Network (with Merchants)
-- **API Requests** → System (with API Hub)
-- **Savings, Donation Funds, Auto-Save** → Services (was Financial)
-- **Recharge, Billers** → Services (was System)
-- **Fraud Alerts** → Security & Risk (was Overview)
-- **Risk Control, Blacklist** → Security & Risk (was System)
-- **Team, Team Activity** → Overview (was Other)
-- **Support, Chat Monitor** → new Support group (was Operations)
+2. **Create `AdminNavReorder` component** — a modal/sheet with two levels of drag-and-drop using `@dnd-kit` (already in the project):
+   - **Outer sortable**: Reorder entire groups (Overview, Operations, etc.)
+   - **Inner sortable**: Reorder items within each group
+   - "Reset to Default" button to restore original order
+   - "Save" button that writes to localStorage and closes
 
-### File Modified
-1. `src/pages/AdminDashboard.tsx` — rewrite `NAV_GROUPS` array only
+3. **Add "Rearrange" toggle button** in sidebar header — pencil/grip icon that opens the reorder modal.
+
+4. **Persist order in localStorage** — store as JSON array of `{ label, items: string[] }`. On load, merge with the master `NAV_GROUPS` to handle any new items added in future updates (new items append to their default group).
+
+### Technical Details
+
+- Uses nested `DndContext` + `SortableContext` from `@dnd-kit` (already a dependency)
+- `DEFAULT_NAV_GROUPS` remains as the immutable reference
+- `navGroups` state in `AdminDashboard` is the live, reorderable copy
+- `NAV_ITEMS` is derived from `navGroups` instead of `NAV_GROUPS`
+- The reorder UI shows group headers as draggable cards, with nested draggable items inside each
+
+### Files Modified
+1. `src/components/admin/AdminNavReorder.tsx` — new component with nested drag-and-drop UI
+2. `src/pages/AdminDashboard.tsx` — convert `NAV_GROUPS` to state, add rearrange button, import reorder component
 
