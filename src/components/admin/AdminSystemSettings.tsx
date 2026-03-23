@@ -187,40 +187,19 @@ function FeeRulesTab() {
 function TransactionRulesTab() {
   const [limits, setLimits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rules, setRules] = useState<any[]>([]);
+  const [rulesLoading, setRulesLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDesc, setEditDesc] = useState("");
 
   useEffect(() => {
     (async () => {
-      setLoading(true);
-      const { data } = await supabase.from("transaction_limits" as any).select("*").order("txn_type");
-      setLimits(data ?? []);
-      setLoading(false);
+      setRulesLoading(true);
+      const { data } = await supabase.from("transaction_safety_rules" as any).select("*").order("created_at");
+      setRules(data ?? []);
+      setRulesLoading(false);
     })();
   }, []);
-
-  return (
-    <div className="space-y-3">
-      <Card className="border-0 shadow-[var(--shadow-card)]">
-        <CardContent className="p-4 space-y-3">
-          <p className="text-sm font-medium text-foreground flex items-center gap-2"><Zap className="w-4 h-4 text-primary" /> Transaction Safety Rules</p>
-          <div className="space-y-2">
-            {[
-              { rule: "Duplicate Transaction Guard", desc: "Block identical txns within 30 seconds", enabled: true },
-              { rule: "Velocity Control", desc: "Max 20 transactions per hour per user", enabled: true },
-              { rule: "Night-time Restriction", desc: "High-value txns blocked 12AM-6AM", enabled: false },
-              { rule: "New Account Limit", desc: "Reduced limits for accounts < 7 days old", enabled: true },
-              { rule: "Cross-device Alert", desc: "Alert on txn from new device", enabled: true },
-            ].map(r => (
-              <div key={r.rule} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
-                <div>
-                  <p className="text-xs font-medium text-foreground">{r.rule}</p>
-                  <p className="text-[10px] text-muted-foreground">{r.desc}</p>
-                </div>
-                <Badge variant={r.enabled ? "default" : "secondary"} className="text-[10px]">{r.enabled ? "Active" : "Off"}</Badge>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       {limits.length > 0 && (
         <Card className="border-0 shadow-[var(--shadow-card)]">
