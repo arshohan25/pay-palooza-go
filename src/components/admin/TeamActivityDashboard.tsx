@@ -1,12 +1,16 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Users, Wifi, Activity, MessageCircle, Clock, TrendingUp } from "lucide-react";
+import { Users, Wifi, Activity, MessageCircle, Clock, TrendingUp, GripVertical, RotateCcw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface TeamMemberMetric {
   user_id: string;
@@ -30,17 +34,69 @@ interface ActivityEntry {
 
 const DEPARTMENTS = ["all", "general", "support", "compliance", "finance", "operations", "engineering"];
 
+const DEFAULT_ORDER = ["summary_cards", "performance_table", "activity_feed", "login_history"];
+const LS_KEY = "admin_team_panel_order";
+
+function loadOrder(): string[] {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length === DEFAULT_ORDER.length && DEFAULT_ORDER.every(id => parsed.includes(id))) return parsed;
+    }
+  } catch {}
+  return DEFAULT_ORDER;
+}
+
+function SortablePanel({ id, children }: { id: string; children: ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 50 : undefined, opacity: isDragging ? 0.7 : 1 }}
+      className="relative group"
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="absolute top-3 right-3 z-10 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing hover:bg-muted"
+        aria-label="Drag to reorder"
+      >
+        <GripVertical className="w-4 h-4 text-muted-foreground" />
+      </button>
+      {children}
+    </div>
+  );
+}
+
 export default function TeamActivityDashboard() {
   const [metrics, setMetrics] = useState<TeamMemberMetric[]>([]);
   const [activityFeed, setActivityFeed] = useState<ActivityEntry[]>([]);
   const [loginHistory, setLoginHistory] = useState<ActivityEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [deptFilter, setDeptFilter] = useState("all");
+  const [panelOrder, setPanelOrder] = useState<string[]>(loadOrder);
+
+  const isCustomOrder = JSON.stringify(panelOrder) !== JSON.stringify(DEFAULT_ORDER);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setPanelOrder(prev => {
+        const next = arrayMove(prev, prev.indexOf(active.id as string), prev.indexOf(over.id as string));
+        localStorage.setItem(LS_KEY, JSON.stringify(next));
+        return next;
+      });
+    }
+  };
+
+  const resetOrder = () => {
+    setPanelOrder(DEFAULT_ORDER);
+    localStorage.removeItem(LS_KEY);
+  };
 
   const loadMetrics = useCallback(async () => {
     setLoading(true);
-
-    // Get all team members
     const { data: members } = await supabase.from("team_members").select("*").order("display_name");
     if (!members || members.length === 0) { setMetrics([]); setLoading(false); return; }
 
@@ -48,7 +104,6 @@ export default function TeamActivityDashboard() {
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
     const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - 7); weekStart.setHours(0, 0, 0, 0);
 
-    // Fetch audit logs for today + week counts
     const [todayRes, weekRes, ticketsRes, feedRes, loginsRes] = await Promise.all([
       supabase.from("audit_logs").select("actor_id").in("actor_id", userIds).gte("created_at", todayStart.toISOString()),
       supabase.from("audit_logs").select("actor_id").in("actor_id", userIds).gte("created_at", weekStart.toISOString()),
@@ -57,7 +112,6 @@ export default function TeamActivityDashboard() {
       supabase.from("audit_logs").select("id, actor_id, action, entity_type, created_at").in("actor_id", userIds).eq("action", "admin_login").order("created_at", { ascending: false }).limit(50),
     ]);
 
-    // Count actions per user
     const todayCounts: Record<string, number> = {};
     const weekCounts: Record<string, number> = {};
     const ticketCounts: Record<string, number> = {};
@@ -89,7 +143,6 @@ export default function TeamActivityDashboard() {
 
   useEffect(() => { loadMetrics(); }, [loadMetrics]);
 
-  // Realtime refresh
   useEffect(() => {
     const ch = supabase.channel("team-dash-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "audit_logs" }, () => loadMetrics())
@@ -108,9 +161,8 @@ export default function TeamActivityDashboard() {
     return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
   }
 
-  return (
-    <div className="space-y-4">
-      {/* Summary Cards */}
+  const panels: Record<string, ReactNode> = {
+    summary_cards: (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card><CardContent className="p-4 flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center"><Users className="w-5 h-5 text-primary" /></div>
@@ -129,108 +181,130 @@ export default function TeamActivityDashboard() {
           <div><p className="text-xs text-muted-foreground">Open Tickets</p><p className="text-xl font-bold text-foreground">{totalOpenTickets}</p></div>
         </CardContent></Card>
       </div>
-
-      {/* Filter */}
-      <div className="flex gap-2 items-center">
-        <Select value={deptFilter} onValueChange={setDeptFilter}>
-          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {DEPARTMENTS.map(d => <SelectItem key={d} value={d}>{d === "all" ? "All Departments" : d.charAt(0).toUpperCase() + d.slice(1)}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Performance Table */}
-      <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm">Team Performance</CardTitle></CardHeader>
-        <CardContent className="p-0">
-          <ScrollArea className="max-h-[350px]">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Member</TableHead>
-                  <TableHead>Dept</TableHead>
-                  <TableHead className="text-center">Status</TableHead>
-                  <TableHead className="text-center">Today</TableHead>
-                  <TableHead className="text-center">Week</TableHead>
-                  <TableHead className="text-center">Tickets</TableHead>
-                  <TableHead>Last Active</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No team members</TableCell></TableRow>
-                ) : filtered.map(m => (
-                  <TableRow key={m.user_id}>
-                    <TableCell className="font-medium text-foreground">{m.display_name}</TableCell>
-                    <TableCell><Badge variant="outline" className="text-xs">{m.department}</Badge></TableCell>
-                    <TableCell className="text-center">
-                      <div className={`w-2.5 h-2.5 rounded-full mx-auto ${m.is_available ? "bg-emerald-500" : "bg-muted-foreground"}`} />
-                    </TableCell>
-                    <TableCell className="text-center font-mono text-sm">{m.actions_today}</TableCell>
-                    <TableCell className="text-center font-mono text-sm">{m.actions_week}</TableCell>
-                    <TableCell className="text-center">
-                      {m.open_tickets > 0 ? <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">{m.open_tickets}</Badge> : <span className="text-muted-foreground">—</span>}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {m.last_active_at ? formatDistanceToNow(new Date(m.last_active_at), { addSuffix: true }) : "Never"}
-                    </TableCell>
+    ),
+    performance_table: (
+      <div className="space-y-3">
+        <div className="flex gap-2 items-center">
+          <Select value={deptFilter} onValueChange={setDeptFilter}>
+            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {DEPARTMENTS.map(d => <SelectItem key={d} value={d}>{d === "all" ? "All Departments" : d.charAt(0).toUpperCase() + d.slice(1)}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Team Performance</CardTitle></CardHeader>
+          <CardContent className="p-0">
+            <ScrollArea className="max-h-[350px]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Member</TableHead>
+                    <TableHead>Dept</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
+                    <TableHead className="text-center">Today</TableHead>
+                    <TableHead className="text-center">Week</TableHead>
+                    <TableHead className="text-center">Tickets</TableHead>
+                    <TableHead>Last Active</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filtered.length === 0 ? (
+                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No team members</TableCell></TableRow>
+                  ) : filtered.map(m => (
+                    <TableRow key={m.user_id}>
+                      <TableCell className="font-medium text-foreground">{m.display_name}</TableCell>
+                      <TableCell><Badge variant="outline" className="text-xs">{m.department}</Badge></TableCell>
+                      <TableCell className="text-center">
+                        <div className={`w-2.5 h-2.5 rounded-full mx-auto ${m.is_available ? "bg-emerald-500" : "bg-muted-foreground"}`} />
+                      </TableCell>
+                      <TableCell className="text-center font-mono text-sm">{m.actions_today}</TableCell>
+                      <TableCell className="text-center font-mono text-sm">{m.actions_week}</TableCell>
+                      <TableCell className="text-center">
+                        {m.open_tickets > 0 ? <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">{m.open_tickets}</Badge> : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {m.last_active_at ? formatDistanceToNow(new Date(m.last_active_at), { addSuffix: true }) : "Never"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
+    ),
+    activity_feed: (
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Activity className="w-4 h-4" />Recent Activity</CardTitle></CardHeader>
+        <CardContent className="p-0">
+          <ScrollArea className="max-h-[300px]">
+            <div className="divide-y divide-border/50">
+              {activityFeed.length === 0 ? (
+                <p className="text-center text-muted-foreground text-xs py-8">No recent activity</p>
+              ) : activityFeed.slice(0, 25).map(e => (
+                <div key={e.id} className="px-4 py-2.5 flex items-start gap-2">
+                  <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <Activity className="w-3 h-3 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-foreground"><span className="font-medium">{e.actor_name}</span>{" "}<span className="text-muted-foreground">{e.action.replace(/_/g, " ")}</span></p>
+                    <p className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(e.created_at), { addSuffix: true })}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </ScrollArea>
         </CardContent>
       </Card>
-
-      {/* Activity Feed + Login History side by side */}
-      <div className="grid md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Activity className="w-4 h-4" />Recent Activity</CardTitle></CardHeader>
-          <CardContent className="p-0">
-            <ScrollArea className="max-h-[300px]">
-              <div className="divide-y divide-border/50">
-                {activityFeed.length === 0 ? (
-                  <p className="text-center text-muted-foreground text-xs py-8">No recent activity</p>
-                ) : activityFeed.slice(0, 25).map(e => (
-                  <div key={e.id} className="px-4 py-2.5 flex items-start gap-2">
-                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                      <Activity className="w-3 h-3 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-foreground"><span className="font-medium">{e.actor_name}</span>{" "}<span className="text-muted-foreground">{e.action.replace(/_/g, " ")}</span></p>
-                      <p className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(e.created_at), { addSuffix: true })}</p>
-                    </div>
+    ),
+    login_history: (
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Clock className="w-4 h-4" />Login History</CardTitle></CardHeader>
+        <CardContent className="p-0">
+          <ScrollArea className="max-h-[300px]">
+            <div className="divide-y divide-border/50">
+              {loginHistory.length === 0 ? (
+                <p className="text-center text-muted-foreground text-xs py-8">No login history recorded</p>
+              ) : loginHistory.slice(0, 25).map(e => (
+                <div key={e.id} className="px-4 py-2.5 flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                    <Clock className="w-3 h-3 text-emerald-500" />
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Clock className="w-4 h-4" />Login History</CardTitle></CardHeader>
-          <CardContent className="p-0">
-            <ScrollArea className="max-h-[300px]">
-              <div className="divide-y divide-border/50">
-                {loginHistory.length === 0 ? (
-                  <p className="text-center text-muted-foreground text-xs py-8">No login history recorded</p>
-                ) : loginHistory.slice(0, 25).map(e => (
-                  <div key={e.id} className="px-4 py-2.5 flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
-                      <Clock className="w-3 h-3 text-emerald-500" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-foreground">{e.actor_name}</p>
-                      <p className="text-[10px] text-muted-foreground">{new Date(e.created_at).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
-                    </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-foreground">{e.actor_name}</p>
+                    <p className="text-[10px] text-muted-foreground">{new Date(e.created_at).toLocaleString("en-BD", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
+    ),
+  };
+
+  return (
+    <div className="space-y-4">
+      {isCustomOrder && (
+        <div className="flex justify-end">
+          <Button variant="ghost" size="sm" onClick={resetOrder} className="text-xs gap-1">
+            <RotateCcw className="w-3 h-3" /> Reset layout
+          </Button>
+        </div>
+      )}
+      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={panelOrder} strategy={verticalListSortingStrategy}>
+          <div className="space-y-4">
+            {panelOrder.map(id => (
+              <SortablePanel key={id} id={id}>
+                {panels[id]}
+              </SortablePanel>
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
     </div>
   );
 }
