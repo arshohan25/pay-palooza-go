@@ -1002,7 +1002,7 @@ export default function AdminDashboard() {
               </div>
               {/* Desktop: section label */}
               <span className="hidden md:block text-base font-bold text-foreground">
-                {NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview"}
+                {ALL_NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview"}
               </span>
             </div>
             <div className="flex items-center gap-2">
