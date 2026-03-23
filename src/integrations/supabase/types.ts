@@ -4163,6 +4163,36 @@ export type Database = {
         }
         Relationships: []
       }
+      transaction_safety_rules: {
+        Row: {
+          created_at: string | null
+          description: string
+          id: string
+          is_enabled: boolean | null
+          label: string
+          rule_key: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          id?: string
+          is_enabled?: boolean | null
+          label: string
+          rule_key: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          id?: string
+          is_enabled?: boolean | null
+          label?: string
+          rule_key?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number
