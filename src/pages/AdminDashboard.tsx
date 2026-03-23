@@ -887,7 +887,7 @@ export default function AdminDashboard() {
 
   const navContent = (
     <nav className="flex flex-col gap-1 px-2 pb-4">
-      {NAV_GROUPS.map((group, gi) => (
+      {navGroups.map((group, gi) => (
         <div key={group.label}>
           {gi > 0 && <Separator className="my-2" />}
           <div className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider ${
