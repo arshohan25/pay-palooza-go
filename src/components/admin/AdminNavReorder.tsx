@@ -39,6 +39,7 @@ export interface NavGroup {
 function SortableItem({ item }: { item: NavItem }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
+  const IconComp = typeof item.icon === 'function' ? item.icon : null;
   return (
     <div
       ref={setNodeRef}
@@ -49,7 +50,7 @@ function SortableItem({ item }: { item: NavItem }) {
       <button type="button" className="cursor-grab active:cursor-grabbing touch-none text-muted-foreground hover:text-foreground" {...listeners}>
         <GripVertical className="w-3.5 h-3.5" />
       </button>
-      <item.icon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+      {IconComp && <IconComp className="w-3.5 h-3.5 text-muted-foreground shrink-0" />}
       <span className="truncate">{item.label}</span>
     </div>
   );
