@@ -136,6 +136,7 @@ export default function AdminApiRequests() {
           });
         }
 
+        auditLog("approve_api_request", requestId, { merchant_id: merchantId, merchant_name: req?.merchant_name });
         toast.success("Request approved & API key generated");
       } else {
         // Notify merchant of rejection
