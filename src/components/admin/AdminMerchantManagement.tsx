@@ -378,6 +378,10 @@ export default function AdminMerchantManagement() {
         category: "merchant",
       });
 
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "merchant_created_direct", entity_type: "merchant", entity_id: profile.user_id, details: { business_name: createForm.business_name, phone: createForm.phone } }).then();
+      }
       toast.success("Merchant created successfully");
       setShowCreateMerchant(false);
       setCreateForm({ phone: "", business_name: "", trade_license: "", category: "retail", bank_name: "", bank_account_number: "", bank_routing: "" });
