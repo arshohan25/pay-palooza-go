@@ -193,6 +193,7 @@ function StoresTab() {
 
   const toggleActive = async (id: string, current: boolean) => {
     await supabase.from("vendor_stores").update({ is_active: !current }).eq("id", id);
+    auditLog("toggle_store", "vendor_store", id, { is_active: !current });
     toast.success(!current ? "Store activated" : "Store suspended");
     load();
   };
