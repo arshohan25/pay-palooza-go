@@ -70,7 +70,7 @@ const stagger = {
 const DistributorDashboard = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  useUserSessionTimeout();
+  useUserSessionTimeout("distributor");
   const { toast } = useToast();
   const { isDisabled } = useGlobalToggles();
 

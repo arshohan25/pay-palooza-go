@@ -49,7 +49,7 @@ import FestivalOverlay from "@/components/FestivalOverlay";
 
 const Index = () => {
   const navigate = useNavigate();
-  useUserSessionTimeout();
+  useUserSessionTimeout("user");
   const [searchParams, setSearchParams] = useSearchParams();
   const { isAuthenticated, loading: authLoading, signOut, user } = useAuth();
   const { status: kycStatus, rejectionReason } = useKycStatus();
