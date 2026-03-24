@@ -13,6 +13,15 @@ import { Plus, Pencil, Trash2, GripVertical, Image, Upload, X, ExternalLink, Lin
 import { toast } from "sonner";
 import { icons } from "lucide-react";
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: "promo_banner", entity_id: entityId, details
+    });
+  }
+}
+
 interface Banner {
   id: string;
   title: string;
