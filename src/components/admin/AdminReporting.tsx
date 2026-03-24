@@ -112,10 +112,10 @@ export default function AdminReporting() {
 
       {/* Daily Volume Chart */}
       <Card className="border-0 shadow-[var(--shadow-card)]">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Daily Transaction Volume</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="p-4">
+          <p className="text-sm font-medium text-foreground flex items-center gap-2 mb-3">
+            <TrendingUp className="w-4 h-4 text-primary" /> Daily Transaction Volume
+          </p>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={dailyData}>
