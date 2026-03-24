@@ -269,7 +269,7 @@ export default function AdminNotificationSender() {
     toast.info("Template loaded into compose form");
   };
 
-
+  const toggleRole = (role: string) => {
     if (role === "all") { setSelectedRoles(["all"]); return; }
     setSelectedRoles((prev) => {
       const without = prev.filter((r) => r !== "all" && r !== role);
