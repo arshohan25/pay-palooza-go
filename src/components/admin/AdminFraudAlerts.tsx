@@ -6,7 +6,7 @@ import {
   AlertTriangle, ShieldAlert, Shield, ShieldCheck, ShieldX, ShieldOff,
   Smartphone, Globe, MapPin, Phone, Hash, Clock, User, ChevronDown, ChevronUp,
   Eye, CheckCircle, XCircle, Lock, RefreshCw, Fingerprint, Wifi, Monitor,
-  ArrowUp, UserCheck,
+  ArrowUp, UserCheck, Trash2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,8 +17,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+async function auditLog(action: string, entityType: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: entityType, entity_id: entityId, details });
+  }
+}
 
 interface FraudAlert {
   id: string;
