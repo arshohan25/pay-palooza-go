@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
         .from("otp_codes")
         .select("*")
         .eq("phone", email)
-        .eq("purpose", "email_verify")
+        .eq("purpose", purpose)
         .eq("code", code)
         .eq("verified", false)
         .gte("expires_at", new Date().toISOString())
