@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { FileText, Plus, Eye, EyeOff, Trash2 } from "lucide-react";
+import { FileText, Plus, Eye, EyeOff, Trash2, Pencil } from "lucide-react";
 
 interface ChangelogEntry {
   id: string;
@@ -18,14 +20,26 @@ interface ChangelogEntry {
   created_at: string;
 }
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: "changelog_entry", entity_id: entityId, details
+    });
+  }
+}
+
 export default function AdminChangelogManager() {
   const [entries, setEntries] = useState<ChangelogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [newEntry, setNewEntry] = useState({ version: "", title: "", body: "" });
   const [adding, setAdding] = useState(false);
+  const [editEntry, setEditEntry] = useState<ChangelogEntry | null>(null);
+  const [editForm, setEditForm] = useState({ version: "", title: "", body: "" });
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const fetch = useCallback(async () => {
+  const fetchEntries = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase
       .from("changelog_entries")
@@ -36,21 +50,45 @@ export default function AdminChangelogManager() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { fetchEntries(); }, [fetchEntries]);
 
   const addEntry = async () => {
     if (!newEntry.version.trim() || !newEntry.title.trim()) return;
     setAdding(true);
     const { data: { session } } = await supabase.auth.getSession();
-    const { error } = await supabase.from("changelog_entries").insert({
+    const { data, error } = await supabase.from("changelog_entries").insert({
       version: newEntry.version.trim(),
       title: newEntry.title.trim(),
       body: newEntry.body,
       created_by: session!.user.id,
-    } as any);
+    } as any).select("id").single();
     if (error) toast.error(error.message);
-    else { toast.success("Changelog entry created"); setNewEntry({ version: "", title: "", body: "" }); setShowAdd(false); fetch(); }
+    else {
+      toast.success("Changelog entry created");
+      await auditLog("changelog_create", data.id, { version: newEntry.version, title: newEntry.title });
+      setNewEntry({ version: "", title: "", body: "" }); setShowAdd(false); fetchEntries();
+    }
     setAdding(false);
+  };
+
+  const openEdit = (e: ChangelogEntry) => {
+    setEditEntry(e);
+    setEditForm({ version: e.version, title: e.title, body: e.body });
+  };
+
+  const saveEdit = async () => {
+    if (!editEntry) return;
+    const { error } = await supabase.from("changelog_entries").update({
+      version: editForm.version.trim(),
+      title: editForm.title.trim(),
+      body: editForm.body,
+      updated_at: new Date().toISOString(),
+    } as any).eq("id", editEntry.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Entry updated");
+    await auditLog("changelog_update", editEntry.id, { previous: { version: editEntry.version, title: editEntry.title }, updated: editForm });
+    setEditEntry(null);
+    fetchEntries();
   };
 
   const togglePublish = async (entry: ChangelogEntry) => {
@@ -58,13 +96,18 @@ export default function AdminChangelogManager() {
     if (!entry.is_published) updates.published_at = new Date().toISOString();
     await supabase.from("changelog_entries").update(updates).eq("id", entry.id);
     toast.success(entry.is_published ? "Unpublished" : "Published");
-    fetch();
+    await auditLog(entry.is_published ? "changelog_unpublish" : "changelog_publish", entry.id, { version: entry.version });
+    fetchEntries();
   };
 
-  const deleteEntry = async (id: string) => {
-    await supabase.from("changelog_entries").delete().eq("id", id);
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    const entry = entries.find(e => e.id === deleteId);
+    await supabase.from("changelog_entries").delete().eq("id", deleteId);
     toast.success("Entry deleted");
-    fetch();
+    await auditLog("changelog_delete", deleteId, { version: entry?.version, title: entry?.title });
+    setDeleteId(null);
+    fetchEntries();
   };
 
   return (
@@ -111,7 +154,10 @@ export default function AdminChangelogManager() {
                       <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => togglePublish(e)}>
                         {e.is_published ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       </Button>
-                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteEntry(e.id)}>
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openEdit(e)}>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => setDeleteId(e.id)}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
@@ -127,6 +173,38 @@ export default function AdminChangelogManager() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editEntry} onOpenChange={(o) => { if (!o) setEditEntry(null); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Changelog Entry</DialogTitle></DialogHeader>
+          <div className="space-y-3 pt-2">
+            <div className="flex gap-2">
+              <Input placeholder="Version" value={editForm.version} onChange={e => setEditForm(f => ({ ...f, version: e.target.value }))} className="w-40" />
+              <Input placeholder="Title" value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} className="flex-1" />
+            </div>
+            <Textarea placeholder="Release notes body" value={editForm.body} onChange={e => setEditForm(f => ({ ...f, body: e.target.value }))} rows={4} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditEntry(null)}>Cancel</Button>
+            <Button onClick={saveEdit} disabled={!editForm.version.trim() || !editForm.title.trim()}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Changelog Entry?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
