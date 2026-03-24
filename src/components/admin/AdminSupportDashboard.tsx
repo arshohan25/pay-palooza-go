@@ -579,9 +579,9 @@ export default function AdminSupportDashboard({ mode = "all" }: AdminSupportDash
                 <button
                   key={conv.id}
                   onClick={() => selectConversation(conv)}
-                  className={`w-full text-left px-4 py-3 hover:bg-muted/30 transition-colors ${
+                  className={`w-full text-left px-4 py-3 hover:bg-muted/30 transition-all ${
                     selectedConv?.id === conv.id ? "bg-primary/5" : ""
-                  }`}
+                  } ${highlightedConvId === conv.id ? "ring-2 ring-primary animate-pulse" : ""}`}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
