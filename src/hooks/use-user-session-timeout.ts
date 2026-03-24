@@ -9,11 +9,19 @@ const WARNING_BEFORE_MS = 2 * 60 * 1000;
 
 const ACTIVITY_EVENTS = ["mousemove", "keydown", "touchstart", "scroll", "click"] as const;
 
+const ROLE_CONFIG_KEYS: Record<string, string> = {
+  user: "user_timeout_minutes",
+  agent: "agent_timeout_minutes",
+  distributor: "distributor_timeout_minutes",
+  super_distributor: "super_distributor_timeout_minutes",
+  merchant: "merchant_timeout_minutes",
+};
+
 /**
  * Auto-logout hook for regular users (non-team-members) after configurable inactivity.
- * Skips activation when user has `is_team_member` in auth metadata (handled by useSessionTimeout).
+ * Accepts an optional role to read role-specific timeout config.
  */
-export function useUserSessionTimeout() {
+export function useUserSessionTimeout(role: string = "user") {
   const navigate = useNavigate();
   const lastActivityRef = useRef(Date.now());
   const warningShownRef = useRef(false);
@@ -25,15 +33,16 @@ export function useUserSessionTimeout() {
 
     const loadConfig = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      // Skip if not authenticated or if team member (team members use useSessionTimeout)
       if (!user || user.user_metadata?.is_team_member) return;
       if (cancelled) return;
       isActiveUserRef.current = true;
 
+      const configKey = ROLE_CONFIG_KEYS[role] || "user_timeout_minutes";
+
       const { data } = await supabase
         .from("global_feature_toggles")
         .select("description")
-        .eq("feature_key", "user_session_timeout_minutes")
+        .eq("feature_key", configKey)
         .maybeSingle();
 
       if (!cancelled && data?.description) {
@@ -44,7 +53,7 @@ export function useUserSessionTimeout() {
 
     loadConfig();
     return () => { cancelled = true; };
-  }, []);
+  }, [role]);
 
   const resetActivity = useCallback(() => {
     lastActivityRef.current = Date.now();

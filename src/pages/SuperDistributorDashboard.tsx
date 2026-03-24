@@ -79,7 +79,7 @@ const stagger = {
 const SuperDistributorDashboard = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  useUserSessionTimeout();
+  useUserSessionTimeout("super_distributor");
   const { toast } = useToast();
 
   const [balance, setBalance] = useState(0);

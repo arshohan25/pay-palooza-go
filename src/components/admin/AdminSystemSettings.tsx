@@ -89,28 +89,31 @@ function AppConfigTab() {
   const enabledCount = toggles.filter(t => t.is_enabled).length;
   const disabledCount = toggles.filter(t => !t.is_enabled).length;
 
-  const [sessionTimeout, setSessionTimeout] = useState("30");
+  const ROLE_TIMEOUT_CONFIG = [
+    { key: "team_session_timeout_minutes", label: "Team Members", icon: "👥" },
+    { key: "user_timeout_minutes", label: "Users", icon: "👤" },
+    { key: "agent_timeout_minutes", label: "Agents", icon: "🏪" },
+    { key: "distributor_timeout_minutes", label: "Distributors", icon: "📦" },
+    { key: "super_distributor_timeout_minutes", label: "Super Distributors", icon: "🏢" },
+    { key: "merchant_timeout_minutes", label: "Merchants", icon: "🛍️" },
+  ];
+
+  const [roleTimeouts, setRoleTimeouts] = useState<Record<string, string>>(
+    Object.fromEntries(ROLE_TIMEOUT_CONFIG.map(r => [r.key, "30"]))
+  );
 
   useEffect(() => {
-    const t = toggles.find((t: any) => t.feature_key === "team_session_timeout_minutes");
-    if (t?.description) setSessionTimeout(t.description);
+    const updated = { ...roleTimeouts };
+    ROLE_TIMEOUT_CONFIG.forEach(r => {
+      const t = toggles.find((t: any) => t.feature_key === r.key);
+      if (t?.description) updated[r.key] = t.description;
+    });
+    setRoleTimeouts(updated);
   }, [toggles]);
 
-  const saveSessionTimeout = async (value: string) => {
-    setSessionTimeout(value);
-    await saveConfigField("team_session_timeout_minutes", value);
-  };
-
-  const [userSessionTimeout, setUserSessionTimeout] = useState("30");
-
-  useEffect(() => {
-    const t = toggles.find((t: any) => t.feature_key === "user_session_timeout_minutes");
-    if (t?.description) setUserSessionTimeout(t.description);
-  }, [toggles]);
-
-  const saveUserSessionTimeout = async (value: string) => {
-    setUserSessionTimeout(value);
-    await saveConfigField("user_session_timeout_minutes", value);
+  const saveRoleTimeout = async (key: string, value: string) => {
+    setRoleTimeouts(prev => ({ ...prev, [key]: value }));
+    await saveConfigField(key, value);
   };
 
   const configFields = [
