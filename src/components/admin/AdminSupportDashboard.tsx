@@ -108,7 +108,9 @@ interface AdminSupportDashboardProps {
 export default function AdminSupportDashboard({ mode = "all" }: AdminSupportDashboardProps) {
   const { user } = useAuth();
   const { visible, flash } = useRealtimeIndicator();
-  const { routing, assignConversation, autoAssignNewConversation } = useAgentRouting();
+  const { routing, assignConversation, autoAssignNewConversation, getAvailableAgents } = useAgentRouting();
+  const [onlineAgents, setOnlineAgents] = useState<{ user_id: string; display_name: string; open_count: number }[]>([]);
+  const [agentsExpanded, setAgentsExpanded] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
