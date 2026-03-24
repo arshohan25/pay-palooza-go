@@ -389,6 +389,17 @@ export default function AdminTeamManagement() {
   const [removeMember, setRemoveMember] = useState<TeamMember | null>(null);
   const [removing, setRemoving] = useState(false);
 
+  // Reset password state
+  const [resetPwMember, setResetPwMember] = useState<TeamMember | null>(null);
+  const [newTempPassword, setNewTempPassword] = useState("");
+  const [resettingPw, setResettingPw] = useState(false);
+  const [pwResetDone, setPwResetDone] = useState(false);
+
+  // Change email state
+  const [editEmailMember, setEditEmailMember] = useState<TeamMember | null>(null);
+  const [newEmail, setNewEmail] = useState("");
+  const [savingEmail, setSavingEmail] = useState(false);
+
   // Permission summary cache for member cards
   const [memberPermSummaries, setMemberPermSummaries] = useState<Record<string, { view: number; add: number; edit: number; del: number }>>({});
 
