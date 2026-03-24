@@ -24,6 +24,7 @@ import { haptics } from "@/lib/haptics";
 import SupportChat from "@/components/SupportChat";
 import ShareReceiptSheet, { ReceiptData } from "@/components/ShareReceiptSheet";
 import TransactionHistory from "./TransactionHistory";
+import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
 
 /* ─── Types ─── */
 interface DistInfo {
@@ -69,6 +70,7 @@ const stagger = {
 const DistributorDashboard = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  useUserSessionTimeout();
   const { toast } = useToast();
   const { isDisabled } = useGlobalToggles();
 

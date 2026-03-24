@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import ShareReceiptSheet, { ReceiptData } from "@/components/ShareReceiptSheet";
 import AgentMenuDrawer from "@/components/AgentMenuDrawer";
 import { useNavigate } from "react-router-dom";
+import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
 import { haptics } from "@/lib/haptics";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -51,6 +52,7 @@ const stagger = {
 const AgentDashboard = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  useUserSessionTimeout();
   const { isDisabled } = useGlobalToggles();
 
   const [agentInfo, setAgentInfo] = useState<AgentInfo | null>(null);

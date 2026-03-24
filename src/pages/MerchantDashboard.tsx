@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useStaffAccess } from "@/hooks/use-staff-access";
 import { supabase } from "@/integrations/supabase/client";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
+import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, RefreshCw, QrCode, BarChart3, Wallet, Clock,
@@ -151,6 +152,7 @@ const MerchantDashboard = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { isStaff, staffRole, merchantId: staffMerchantId, merchantName: staffMerchantName, loading: staffLoading } = useStaffAccess();
   const navigate = useNavigate();
+  useUserSessionTimeout();
   const { toast } = useToast();
   const { isDisabled } = useGlobalToggles();
 

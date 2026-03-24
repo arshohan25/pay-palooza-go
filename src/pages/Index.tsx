@@ -24,6 +24,7 @@ import AddMoneyFlow from "@/components/AddMoneyFlow";
 
 import BankTransferFlow from "@/components/BankTransferFlow";
 import DynamicQrPaySheet from "@/components/DynamicQrPaySheet";
+import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
 
 import SavingsFlow from "@/components/SavingsFlow";
 import MerchantApplicationFlow from "@/components/MerchantApplicationFlow";
@@ -48,6 +49,7 @@ import FestivalOverlay from "@/components/FestivalOverlay";
 
 const Index = () => {
   const navigate = useNavigate();
+  useUserSessionTimeout();
   const [searchParams, setSearchParams] = useSearchParams();
   const { isAuthenticated, loading: authLoading, signOut, user } = useAuth();
   const { status: kycStatus, rejectionReason } = useKycStatus();

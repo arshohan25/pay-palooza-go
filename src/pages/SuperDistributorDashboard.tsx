@@ -23,6 +23,7 @@ import { haptics } from "@/lib/haptics";
 import SupportChat from "@/components/SupportChat";
 import TransactionHistory from "./TransactionHistory";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
+import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
 
 /* ─── Types ─── */
 interface DistRow {
@@ -78,6 +79,7 @@ const stagger = {
 const SuperDistributorDashboard = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  useUserSessionTimeout();
   const { toast } = useToast();
 
   const [balance, setBalance] = useState(0);
