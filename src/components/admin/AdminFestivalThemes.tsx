@@ -451,6 +451,7 @@ export default function AdminFestivalThemes() {
     }
     await supabase.from("festival_themes").update({ is_active: !t.is_active, updated_at: new Date().toISOString() } as any).eq("id", t.id);
     toast.success(t.is_active ? "Theme deactivated" : "Theme activated");
+    await auditLog(t.is_active ? "festival_theme_deactivate" : "festival_theme_activate", t.id, { name: t.name });
     fetchThemes();
   };
 
