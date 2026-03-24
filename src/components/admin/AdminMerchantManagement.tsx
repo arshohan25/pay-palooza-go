@@ -303,6 +303,10 @@ export default function AdminMerchantManagement() {
   const revokeApiKey = async (keyId: string) => {
     const { error } = await supabase.from("merchant_api_keys").update({ is_active: false }).eq("id", keyId);
     if (error) { toast.error("Failed"); return; }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "merchant_api_key_revoked", entity_type: "merchant_api_key", entity_id: keyId, details: {} }).then();
+    }
     toast.success("API key revoked");
     if (detail) {
       setDetail({ ...detail, apiKeys: detail.apiKeys.map(k => k.id === keyId ? { ...k, is_active: false } : k) });
