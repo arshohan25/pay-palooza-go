@@ -152,6 +152,14 @@ export default function AdminNotificationSender() {
   const [smsTodayCount, setSmsTodayCount] = useState(0);
   const [otpTodayCount, setOtpTodayCount] = useState(0);
 
+  // Templates state
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<any>(null);
+  const [templateForm, setTemplateForm] = useState({ name: "", title: "", body: "", category: "promo", image_url: "" });
+  const [deleteTemplateId, setDeleteTemplateId] = useState<string | null>(null);
+
   useEffect(() => { loadHistory(); }, []);
 
   useEffect(() => {
