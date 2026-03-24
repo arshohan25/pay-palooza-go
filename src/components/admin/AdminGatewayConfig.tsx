@@ -162,6 +162,7 @@ export default function AdminGatewayConfig() {
           sort_order: gateways.length + 1,
         });
         toast.success("Gateway added");
+        await auditLog("gateway_created", "new", { provider: editProvider, display_name: editName });
         setAddOpen(false);
       }
     } catch (e: any) {
