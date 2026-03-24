@@ -94,6 +94,7 @@ export default function AdminSmartRouting() {
       await supabase.from("global_feature_toggles").insert({ feature_key: key, label: rule.label, description: rule.description, is_enabled: newVal });
     }
     toast.success(`${rule.label} ${newVal ? "enabled" : "disabled"}`);
+    await auditLog("routing_rule_toggled", "global_feature_toggle", key, { is_enabled: newVal });
   };
 
   const updatePriority = async (id: string, newOrder: number) => {
