@@ -1,6 +1,15 @@
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: "recharge_pack", entity_id: entityId, details
+    }).then();
+  }
+}
 import { Download, Upload, Loader2, FileSpreadsheet, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -140,8 +149,10 @@ export default function AdminRechargeImportExport() {
 
     setImportResult({ added: rows.length - (errors.length > 0 ? 0 : 0), errors });
     if (errors.length === 0 && rows.length > 0) {
+      auditLog("bulk_import_packs", "bulk", { count: rows.length });
       toast.success(`Imported ${rows.length} packs`);
     } else if (rows.length > 0) {
+      auditLog("bulk_import_packs", "bulk", { count: rows.length, errors: errors.length });
       toast.success(`Imported ${rows.length} packs with ${errors.length} warnings`);
     } else {
       toast.error("No valid packs found in CSV");

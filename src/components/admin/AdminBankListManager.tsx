@@ -9,6 +9,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { usePlatformBanks } from "@/hooks/use-platform-banks";
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: "platform_bank", entity_id: entityId, details
+    }).then();
+  }
+}
+
 export default function AdminBankListManager() {
   const { banks, loading, refetch } = usePlatformBanks(true);
   const [search, setSearch] = useState("");
@@ -36,6 +45,7 @@ export default function AdminBankListManager() {
       toast.error(error.message.includes("duplicate") ? "Bank already exists" : error.message);
     } else {
       toast.success("Bank added");
+      auditLog("create_bank", "new", { name: newName.trim(), short_code: newCode.trim().toUpperCase() });
       setNewName("");
       setNewCode("");
       refetch();
@@ -45,6 +55,7 @@ export default function AdminBankListManager() {
 
   const toggleBank = async (id: string, active: boolean) => {
     await supabase.from("platform_banks").update({ is_active: !active } as any).eq("id", id);
+    auditLog("toggle_bank", id, { is_active: !active });
     toast.success(!active ? "Bank activated" : "Bank deactivated");
     refetch();
   };
@@ -52,6 +63,7 @@ export default function AdminBankListManager() {
   const deleteBank = async (id: string, name: string) => {
     if (!confirm(`Delete "${name}"?`)) return;
     await supabase.from("platform_banks").delete().eq("id", id);
+    auditLog("delete_bank", id, { name });
     toast.success("Bank deleted");
     refetch();
   };

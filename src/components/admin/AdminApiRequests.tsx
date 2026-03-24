@@ -10,6 +10,15 @@ import { toast } from "sonner";
 import { Clock, CheckCircle, XCircle, Search, Key, RefreshCw, Copy, Eye, EyeOff } from "lucide-react";
 import { format } from "date-fns";
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: "merchant_api_request", entity_id: entityId, details
+    }).then();
+  }
+}
+
 interface ApiRequest {
   id: string;
   merchant_id: string;
@@ -127,6 +136,7 @@ export default function AdminApiRequests() {
           });
         }
 
+        auditLog("approve_api_request", requestId, { merchant_id: merchantId, merchant_name: req?.merchant_name });
         toast.success("Request approved & API key generated");
       } else {
         // Notify merchant of rejection
@@ -139,6 +149,7 @@ export default function AdminApiRequests() {
             category: "system",
           });
         }
+        auditLog("reject_api_request", requestId, { merchant_id: merchantId, reason: adminNotes[requestId] || null });
         toast.info("Request rejected");
       }
 

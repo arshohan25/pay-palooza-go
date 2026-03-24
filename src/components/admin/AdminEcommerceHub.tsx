@@ -23,6 +23,15 @@ import AdminCourierProviders from "./AdminCourierProviders";
 import AdminDeliveryZones from "./AdminDeliveryZones";
 import AdminReturnRequests from "./AdminReturnRequests";
 
+async function auditLog(action: string, entityType: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: entityType, entity_id: entityId, details
+    }).then();
+  }
+}
+
 type SubTab = "dashboard" | "products" | "stores" | "reviews" | "coupons" | "banners" | "marketing" | "inventory" | "flash_sales" | "couriers" | "zones" | "returns";
 
 const SUB_TABS: { key: SubTab; label: string; icon: any }[] = [
@@ -64,6 +73,7 @@ function ProductsTab() {
 
   const toggleActive = async (id: string, current: boolean) => {
     await supabase.from("merchant_products").update({ is_active: !current }).eq("id", id);
+    auditLog("toggle_product", "merchant_product", id, { is_active: !current });
     toast.success(current ? "Product deactivated" : "Product activated");
     load();
   };
@@ -74,6 +84,7 @@ function ProductsTab() {
     if (editStock) updates.stock = parseInt(editStock);
     if (Object.keys(updates).length === 0) { setEditingId(null); return; }
     await supabase.from("merchant_products").update(updates).eq("id", id);
+    auditLog("edit_product", "merchant_product", id, updates);
     toast.success("Product updated");
     setEditingId(null);
     load();
@@ -81,6 +92,7 @@ function ProductsTab() {
 
   const deleteProduct = async (id: string) => {
     await supabase.from("merchant_products").delete().eq("id", id);
+    auditLog("delete_product", "merchant_product", id, {});
     toast.success("Product deleted");
     load();
   };
@@ -190,6 +202,7 @@ function StoresTab() {
 
   const toggleActive = async (id: string, current: boolean) => {
     await supabase.from("vendor_stores").update({ is_active: !current }).eq("id", id);
+    auditLog("toggle_store", "vendor_store", id, { is_active: !current });
     toast.success(!current ? "Store activated" : "Store suspended");
     load();
   };
@@ -281,6 +294,7 @@ function ReviewsTab() {
 
   const deleteReview = async (id: string) => {
     await supabase.from("product_reviews").delete().eq("id", id);
+    auditLog("delete_review", "product_review", id, {});
     toast.success("Review removed");
     load();
   };
@@ -351,6 +365,7 @@ function CouponsTab() {
 
   const toggleActive = async (id: string, current: boolean) => {
     await supabase.from("coupons").update({ is_active: !current }).eq("id", id);
+    auditLog("toggle_coupon", "coupon", id, { is_active: !current });
     toast.success(current ? "Coupon deactivated" : "Coupon activated");
     load();
   };
@@ -367,8 +382,9 @@ function CouponsTab() {
     if (form.min_order_amount) insert.min_order_amount = parseFloat(form.min_order_amount);
     if (form.max_discount) insert.max_discount = parseFloat(form.max_discount);
 
-    const { error } = await supabase.from("coupons").insert(insert);
+    const { error, data } = await supabase.from("coupons").insert(insert).select("id").single();
     if (error) { toast.error(error.message); return; }
+    auditLog("create_coupon", "coupon", data?.id || "new", { code: insert.code, discount_type: insert.discount_type, discount_value: insert.discount_value });
     toast.success("Coupon created");
     setShowCreate(false);
     setForm({ code: "", discount_type: "percentage", discount_value: "10", usage_limit: "", min_order_amount: "", max_discount: "", description: "" });
@@ -377,6 +393,7 @@ function CouponsTab() {
 
   const deleteCoupon = async (id: string) => {
     await supabase.from("coupons").delete().eq("id", id);
+    auditLog("delete_coupon", "coupon", id, {});
     toast.success("Coupon deleted");
     load();
   };

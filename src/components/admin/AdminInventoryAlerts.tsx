@@ -7,6 +7,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { RefreshCw, AlertTriangle, Package, Edit2 } from "lucide-react";
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: "merchant_product", entity_id: entityId, details
+    }).then();
+  }
+}
+
 export default function AdminInventoryAlerts() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +42,7 @@ export default function AdminInventoryAlerts() {
     const val = parseInt(editStock);
     if (isNaN(val) || val < 0) { toast.error("Invalid stock value"); return; }
     await supabase.from("merchant_products").update({ stock: val }).eq("id", id);
+    auditLog("update_stock", id, { new_stock: val });
     toast.success("Stock updated");
     setEditingId(null);
     load();
