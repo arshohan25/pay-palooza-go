@@ -569,6 +569,42 @@ export default function AdminSupportDashboard({ mode = "all" }: AdminSupportDash
           </Tabs>
           )}
         </div>
+
+        {/* Online Agents Strip */}
+        <div className="px-3 py-2 border-b border-border bg-muted/20">
+          <button
+            onClick={() => setAgentsExpanded(prev => !prev)}
+            className="w-full flex items-center justify-between text-xs"
+          >
+            <span className="flex items-center gap-1.5 font-medium text-foreground">
+              {onlineAgents.length > 0 ? (
+                <Circle size={8} className="fill-green-500 text-green-500" />
+              ) : (
+                <Circle size={8} className="fill-yellow-500 text-yellow-500" />
+              )}
+              {onlineAgents.length > 0
+                ? `${onlineAgents.length} agent${onlineAgents.length > 1 ? "s" : ""} online`
+                : "No agents online"}
+            </span>
+            {agentsExpanded ? <ChevronUp size={14} className="text-muted-foreground" /> : <ChevronDown size={14} className="text-muted-foreground" />}
+          </button>
+          {agentsExpanded && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {onlineAgents.length === 0 ? (
+                <span className="text-[10px] text-muted-foreground">No support agents are currently available.</span>
+              ) : (
+                onlineAgents.map(agent => (
+                  <span key={agent.user_id} className="inline-flex items-center gap-1 rounded-full bg-green-500/10 border border-green-500/20 px-2 py-0.5 text-[10px] font-medium text-foreground">
+                    <Circle size={6} className="fill-green-500 text-green-500 shrink-0" />
+                    {agent.display_name}
+                    <span className="text-muted-foreground">({agent.open_count})</span>
+                  </span>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+
         <ScrollArea className="flex-1">
           {filteredConversations.length === 0 ? (
             <div className="flex flex-col items-center py-16 text-muted-foreground">
