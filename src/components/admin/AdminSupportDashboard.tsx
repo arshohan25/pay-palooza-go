@@ -168,8 +168,11 @@ export default function AdminSupportDashboard({ mode = "all" }: AdminSupportDash
 
   useEffect(() => {
     fetchOnlineAgents();
-    const interval = setInterval(fetchOnlineAgents, 30000);
-    return () => clearInterval(interval);
+    const ch = supabase.channel("online-agents-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "team_members" }, () => fetchOnlineAgents())
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_conversations" }, () => fetchOnlineAgents())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
   }, [fetchOnlineAgents]);
 
   const addCannedReply = async () => {
