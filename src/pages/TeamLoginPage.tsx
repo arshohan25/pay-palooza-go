@@ -100,7 +100,9 @@ export default function TeamLoginPage() {
 
       toast.success("Password changed successfully!");
       setShowPasswordChange(false);
-      navigate("/admin", { replace: true });
+      const { data: { user: u } } = await supabase.auth.getUser();
+      const dest = u ? await getRedirectByRole(u) : "/admin";
+      navigate(dest, { replace: true });
     } catch (err: any) {
       toast.error(err.message || "Failed to change password");
     }
