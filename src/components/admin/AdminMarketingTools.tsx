@@ -137,6 +137,7 @@ export default function AdminMarketingTools() {
         const { error } = await supabase.from("promo_codes").update(payload).eq("id", editingPromo.id);
         if (error) throw error;
         toast.success("Promo code updated");
+        await auditLog("promo_updated", editingPromo.id, { code: promoForm.code });
       } else {
         payload.created_by = session?.user?.id;
         const { error } = await supabase.from("promo_codes").insert(payload);
