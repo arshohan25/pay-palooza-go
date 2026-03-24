@@ -248,6 +248,10 @@ export default function AdminMerchantManagement() {
     if (error) { toast.error("Failed to update"); }
     else {
       toast.success("MDR & settlement updated");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "merchant_mdr_updated", entity_type: "merchant", entity_id: editingMdr.id, details: { mdr_rate: editingMdr.mdr, settlement: editingMdr.settlement } }).then();
+      }
       if (detail?.merchant?.id === editingMdr.id) {
         setDetail(prev => prev ? { ...prev, merchant: { ...prev.merchant, mdr_rate: parseFloat(editingMdr.mdr), settlement_frequency: editingMdr.settlement } } : prev);
       }
@@ -268,6 +272,10 @@ export default function AdminMerchantManagement() {
         body: "Your merchant account has been approved.", category: "merchant",
       });
     }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "merchant_bulk_approve", entity_type: "merchant", entity_id: "bulk", details: { count: pending.length } }).then();
+    }
     toast.success(`Approved ${pending.length} merchants`);
     setSelectedIds(new Set());
     setBulkLoading(false);
@@ -281,6 +289,10 @@ export default function AdminMerchantManagement() {
       const ns = m.status === "suspended" ? "active" : "suspended";
       await supabase.from("merchants").update({ status: ns as any }).eq("id", m.id);
     }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "merchant_bulk_toggle", entity_type: "merchant", entity_id: "bulk", details: { count: targets.length } }).then();
+    }
     toast.success(`Toggled ${targets.length} merchants`);
     setSelectedIds(new Set());
     setBulkLoading(false);
@@ -291,6 +303,10 @@ export default function AdminMerchantManagement() {
   const revokeApiKey = async (keyId: string) => {
     const { error } = await supabase.from("merchant_api_keys").update({ is_active: false }).eq("id", keyId);
     if (error) { toast.error("Failed"); return; }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "merchant_api_key_revoked", entity_type: "merchant_api_key", entity_id: keyId, details: {} }).then();
+    }
     toast.success("API key revoked");
     if (detail) {
       setDetail({ ...detail, apiKeys: detail.apiKeys.map(k => k.id === keyId ? { ...k, is_active: false } : k) });
@@ -304,6 +320,10 @@ export default function AdminMerchantManagement() {
     const appPassword = "epp_" + crypto.randomUUID().replace(/-/g, "").slice(0, 24);
     const { error } = await supabase.from("merchant_api_keys").insert({ merchant_id: merchantId, api_key: apiKey, secret_key: secretKey, app_password: appPassword } as any).select().single();
     if (error) { toast.error("Failed to generate key: " + error.message); return; }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "merchant_api_key_generated", entity_type: "merchant_api_key", entity_id: merchantId, details: { api_key: apiKey } }).then();
+    }
     setShowNewSecret(secretKey);
     toast.success("API key generated");
     if (detailMerchant) {
@@ -358,6 +378,10 @@ export default function AdminMerchantManagement() {
         category: "merchant",
       });
 
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "merchant_created_direct", entity_type: "merchant", entity_id: profile.user_id, details: { business_name: createForm.business_name, phone: createForm.phone } }).then();
+      }
       toast.success("Merchant created successfully");
       setShowCreateMerchant(false);
       setCreateForm({ phone: "", business_name: "", trade_license: "", category: "retail", bank_name: "", bank_account_number: "", bank_routing: "" });
@@ -379,6 +403,7 @@ export default function AdminMerchantManagement() {
       reviewed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }).eq("id", requestId);
+    supabase.from("audit_logs").insert({ actor_id: session.user.id, action: `api_request_${action}`, entity_type: "merchant_api_request", entity_id: requestId, details: { notes } }).then();
     toast.success(`Request ${action}`);
     if (detailMerchant) {
       const d = await fetchMerchantDetail(detailMerchant.id, detailMerchant.user_id);

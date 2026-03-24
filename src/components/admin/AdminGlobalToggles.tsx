@@ -167,6 +167,13 @@ export default function AdminGlobalToggles() {
     return () => { supabase.removeChannel(ch); };
   }, [load]);
 
+  const auditLog = async (action: string, entityId: string, details: any) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: "global_toggle", entity_id: entityId, details }).then();
+    }
+  };
+
   const setVisibility = async (t: FeatureToggle, visibility: string) => {
     const isEnabled = visibility === 'visible';
     const { error } = await supabase
@@ -177,6 +184,7 @@ export default function AdminGlobalToggles() {
     else {
       const labels: Record<string, string> = { visible: "Visible", disabled: "Disabled (greyed out)", hidden: "Hidden" };
       toast.success(`${t.label} → ${labels[visibility] || visibility}`);
+      auditLog("toggle_visibility_changed", t.id, { feature_key: t.feature_key, label: t.label, new_visibility: visibility });
     }
   };
 
@@ -186,7 +194,10 @@ export default function AdminGlobalToggles() {
       .update({ is_enabled: !t.is_enabled } as any)
       .eq("id", t.id);
     if (error) toast.error("Failed to toggle");
-    else toast.success(`${t.label} ${!t.is_enabled ? "enabled" : "disabled"}`);
+    else {
+      toast.success(`${t.label} ${!t.is_enabled ? "enabled" : "disabled"}`);
+      auditLog("toggle_feature", t.id, { feature_key: t.feature_key, label: t.label, new_enabled: !t.is_enabled });
+    }
   };
 
   const openEdit = (t: FeatureToggle) => {
@@ -215,7 +226,7 @@ export default function AdminGlobalToggles() {
         .update({ label: editLabel, description: editDesc || null } as any)
         .eq("id", editToggle.id);
       if (error) toast.error("Failed to save");
-      else { toast.success("Toggle updated"); setEditToggle(null); }
+      else { toast.success("Toggle updated"); auditLog("toggle_edited", editToggle.id, { feature_key: editToggle.feature_key, new_label: editLabel }); setEditToggle(null); }
     } else {
       if (!editKey.trim()) { toast.error("Feature key is required"); setSaving(false); return; }
       const section = allSections.find((s) => s.id === addSection);
@@ -229,7 +240,7 @@ export default function AdminGlobalToggles() {
       if (error) {
         if (error.code === "23505") toast.error("Feature key already exists");
         else toast.error("Failed to create");
-      } else { toast.success("Toggle added"); setAddOpen(false); }
+      } else { toast.success("Toggle added"); auditLog("toggle_created", finalKey, { label: editLabel, feature_key: finalKey }); setAddOpen(false); }
     }
     setSaving(false);
   };
@@ -238,7 +249,7 @@ export default function AdminGlobalToggles() {
     if (!deleteToggle) return;
     const { error } = await supabase.from("global_feature_toggles").delete().eq("id", deleteToggle.id);
     if (error) toast.error("Failed to delete");
-    else toast.success(`${deleteToggle.label} removed`);
+    else { toast.success(`${deleteToggle.label} removed`); auditLog("toggle_deleted", deleteToggle.id, { feature_key: deleteToggle.feature_key, label: deleteToggle.label }); }
     setDeleteToggle(null);
   };
 
@@ -251,7 +262,7 @@ export default function AdminGlobalToggles() {
       .update({ is_enabled: targetValue } as any)
       .neq("is_enabled", targetValue);
     if (error) toast.error(`Failed to ${bulkAction} all`);
-    else toast.success(`All features ${targetValue ? "enabled" : "disabled"}`);
+    else { toast.success(`All features ${targetValue ? "enabled" : "disabled"}`); auditLog("toggle_bulk_action", "all", { action: bulkAction }); }
     setBulkLoading(false);
     setBulkAction(null);
   };

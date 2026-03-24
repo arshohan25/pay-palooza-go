@@ -159,6 +159,11 @@ export default function AdminFeatureLocks() {
     if (error) {
       toast.error("Failed to create lock");
     } else {
+      supabase.from("audit_logs").insert({
+        actor_id: user.id, action: "feature_lock_created", entity_type: "feature_lock",
+        entity_id: selectedUser.user_id,
+        details: { feature: selectedFeature, target_phone: selectedUser.phone, reason: reason || null, duration },
+      }).then();
       toast.success(`${LOCKABLE_FEATURES.find(f => f.value === selectedFeature)?.label} locked for ${selectedUser.name || selectedUser.phone}`);
       resetForm();
       setDialogOpen(false);
@@ -175,6 +180,13 @@ export default function AdminFeatureLocks() {
     if (error) {
       toast.error("Failed to remove lock");
     } else {
+      if (user) {
+        const lock = locks.find(l => l.id === lockId);
+        supabase.from("audit_logs").insert({
+          actor_id: user.id, action: "feature_lock_removed", entity_type: "feature_lock",
+          entity_id: lockId, details: { feature: lock?.feature, target_user_id: lock?.target_user_id },
+        }).then();
+      }
       toast.success("Feature unlocked");
       setLocks(prev => prev.filter(l => l.id !== lockId));
     }

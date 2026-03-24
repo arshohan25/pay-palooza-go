@@ -264,9 +264,17 @@ function FeeRulesTab() {
 
   useEffect(() => { load(); }, []);
 
+  const auditLog = async (action: string, entityId: string, details: any) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: "fee_config", entity_id: entityId, details }).then();
+    }
+  };
+
   const toggleFee = async (id: string, active: boolean) => {
     await supabase.from("fee_config").update({ is_active: !active } as any).eq("id", id);
     setFees(prev => prev.map(f => f.id === id ? { ...f, is_active: !active } : f));
+    auditLog("fee_rule_toggled", id, { new_active: !active });
     toast.success(`Fee rule ${!active ? "activated" : "deactivated"}`);
   };
 
@@ -304,10 +312,12 @@ function FeeRulesTab() {
     if (editing) {
       const { error } = await supabase.from("fee_config").update(payload).eq("id", editing.id);
       if (error) { toast.error("Failed to update"); return; }
+      auditLog("fee_rule_updated", editing.id, { txn_type: payload.txn_type, fee_value: payload.fee_value });
       toast.success("Fee rule updated");
     } else {
       const { error } = await supabase.from("fee_config").insert(payload);
       if (error) { toast.error("Failed to create"); return; }
+      auditLog("fee_rule_created", "new", { txn_type: payload.txn_type, fee_value: payload.fee_value });
       toast.success("Fee rule created");
     }
     setDialogOpen(false);
@@ -318,6 +328,7 @@ function FeeRulesTab() {
     if (!confirm("Delete this fee rule?")) return;
     const { error } = await supabase.from("fee_config").delete().eq("id", id);
     if (error) { toast.error("Failed to delete"); return; }
+    auditLog("fee_rule_deleted", id, {});
     toast.success("Fee rule deleted");
     load();
   };
@@ -440,6 +451,10 @@ function TransactionRulesTab() {
     const newEnabled = !rule.is_enabled;
     await supabase.from("transaction_safety_rules" as any).update({ is_enabled: newEnabled, updated_at: new Date().toISOString() } as any).eq("id", rule.id);
     setRules(prev => prev.map(r => r.id === rule.id ? { ...r, is_enabled: newEnabled } : r));
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "txn_rule_toggled", entity_type: "transaction_safety_rule", entity_id: rule.id, details: { label: rule.label, new_enabled: newEnabled } }).then();
+    }
     toast.success(`${rule.label} ${newEnabled ? "enabled" : "disabled"}`);
   };
 
