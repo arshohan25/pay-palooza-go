@@ -599,7 +599,7 @@ export default function AdminTeamManagement() {
       await supabase.from("team_members").delete().eq("id", removeMember.id);
       await supabase.from("team_access_permissions").delete().eq("user_id", removeMember.user_id);
       for (const role of STAFF_ROLES) {
-        await supabase.from("user_roles").delete().eq("user_id", removeMember.user_id).eq("role", role.value);
+        await supabase.from("user_roles").delete().eq("user_id", removeMember.user_id).eq("role", role.value as any);
       }
 
       await supabase.from("audit_logs").insert({
