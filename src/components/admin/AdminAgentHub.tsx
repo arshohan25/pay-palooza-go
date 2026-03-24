@@ -68,6 +68,9 @@ function AgentListTab() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [detail, setDetail] = useState<Agent | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({ phone: "", name: "", business_name: "", territory_code: "", nid_number: "", trade_license: "", max_float: "500000" });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -97,6 +100,43 @@ function AgentListTab() {
     load();
   };
 
+  const handleCreateAgent = async () => {
+    const phone = form.phone.replace(/\D/g, "").replace(/^88/, "");
+    if (!/^01[3-9]\d{8}$/.test(phone)) { toast.error("Enter a valid 11-digit BD phone number"); return; }
+
+    setCreating(true);
+    try {
+      const pin = String(Math.floor(1000 + Math.random() * 9000));
+      const password = pinToPassword(pin);
+      const { data: authData } = await signUpWithPhonePassword(phone, password, {
+        display_name: form.name || phone,
+      });
+      if (!authData?.user) throw new Error("Account creation failed");
+      const userId = authData.user.id;
+
+      await supabase.from("profiles").update({ name: form.name || null, phone }).eq("user_id", userId);
+      await supabase.from("user_roles").insert({ user_id: userId, role: "agent" } as any);
+      await supabase.from("agents").insert({
+        user_id: userId,
+        business_name: form.business_name || null,
+        territory_code: form.territory_code || null,
+        nid_number: form.nid_number || null,
+        trade_license: form.trade_license || null,
+        max_float: parseInt(form.max_float) || 500000,
+        status: "active",
+      });
+
+      toast.success(`Agent created! Temp PIN: ${pin}`, { duration: 10000 });
+      setCreateOpen(false);
+      setForm({ phone: "", name: "", business_name: "", territory_code: "", nid_number: "", trade_license: "", max_float: "500000" });
+      load();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to create agent");
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-3 gap-2">
@@ -109,7 +149,10 @@ function AgentListTab() {
           </Card>
         ))}
       </div>
-      <div className="relative"><Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" /><Input placeholder="Search agents..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
+      <div className="flex gap-2">
+        <div className="relative flex-1"><Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" /><Input placeholder="Search agents..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
+        <Button size="icon" className="shrink-0" onClick={() => setCreateOpen(true)}><UserPlus className="w-4 h-4" /></Button>
+      </div>
       <Card className="border-0 shadow-[var(--shadow-card)]">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -145,6 +188,7 @@ function AgentListTab() {
         </CardContent>
       </Card>
 
+      {/* Agent Detail Sheet */}
       <Sheet open={!!detail} onOpenChange={o => !o && setDetail(null)}>
         <SheetContent side="right" className="w-full sm:max-w-md">
           <SheetHeader><SheetTitle>Agent Details</SheetTitle></SheetHeader>
@@ -166,6 +210,27 @@ function AgentListTab() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Create Agent Dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Create New Agent</DialogTitle></DialogHeader>
+          <div className="space-y-3 pt-2 max-h-[60vh] overflow-y-auto">
+            <div><Label>Phone Number *</Label><Input placeholder="01XXXXXXXXX" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value.replace(/[^0-9]/g, "").slice(0, 11) }))} /></div>
+            <div><Label>Full Name</Label><Input placeholder="Agent's name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
+            <div><Label>Business Name</Label><Input placeholder="Shop / business name" value={form.business_name} onChange={e => setForm(f => ({ ...f, business_name: e.target.value }))} /></div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>Territory Code</Label><Input placeholder="e.g. DHK-01" value={form.territory_code} onChange={e => setForm(f => ({ ...f, territory_code: e.target.value }))} /></div>
+              <div><Label>Max Float</Label><Input type="number" value={form.max_float} onChange={e => setForm(f => ({ ...f, max_float: e.target.value }))} /></div>
+            </div>
+            <div><Label>NID Number</Label><Input placeholder="National ID" value={form.nid_number} onChange={e => setForm(f => ({ ...f, nid_number: e.target.value }))} /></div>
+            <div><Label>Trade License</Label><Input placeholder="Trade license number" value={form.trade_license} onChange={e => setForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
+            <Button className="w-full" onClick={handleCreateAgent} disabled={creating || !form.phone}>
+              {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : "Create Agent"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
