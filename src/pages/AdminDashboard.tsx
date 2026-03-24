@@ -230,7 +230,8 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
   {
     label: "Support",
     items: [
-      { id: "support", label: "Support", icon: MessageCircle },
+      { id: "live_chat", label: "Live Chat", icon: MessageCircle },
+      { id: "tickets", label: "Tickets", icon: FileText },
       { id: "chat_monitor", label: "Chat Monitor", icon: MessageCircle },
     ],
   },
@@ -913,7 +914,7 @@ export default function AdminDashboard() {
                     {stats.openAlerts}
                   </span>
                 )}
-                {item.id === "support" && supportUnread > 0 && (
+                {item.id === "live_chat" && supportUnread > 0 && (
                   <span className="ml-auto min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
                     {supportUnread}
                   </span>
@@ -1634,8 +1635,11 @@ export default function AdminDashboard() {
         {/* ═══ DISPUTE RESOLUTION ═══ */}
         {activeTab === "disputes" && <AdminDisputeResolution />}
 
-        {/* ═══ SUPPORT DASHBOARD ═══ */}
-        {activeTab === "support" && <AdminSupportDashboard />}
+        {/* ═══ LIVE CHAT ═══ */}
+        {activeTab === "live_chat" && <AdminSupportDashboard mode="live_chat" />}
+
+        {/* ═══ TICKETS ═══ */}
+        {activeTab === "tickets" && <AdminSupportDashboard mode="tickets" />}
 
         {/* ═══ CHAT MONITOR ═══ */}
         {activeTab === "chat_monitor" && <AdminChatMonitor />}

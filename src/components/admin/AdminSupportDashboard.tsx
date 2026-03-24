@@ -5,6 +5,8 @@ import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator"
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Bot, User, Loader2, MessageCircle, ArrowLeft, CheckCheck, Check, Zap, ChevronDown, Plus, Trash2, Edit2, Save, X, UserPlus, Star, RotateCcw, CheckCircle2, Mail, AlertTriangle } from "lucide-react";
 import { useAgentRouting } from "@/components/admin/SupportAgentRouter";
+import { playChatNotification, playChatRequestSound } from "@/lib/sounds";
+import { haptics } from "@/lib/haptics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -99,7 +101,11 @@ const generateComplaintNumber = () => {
   return `CMP-${date}-${suffix}`;
 };
 
-export default function AdminSupportDashboard() {
+interface AdminSupportDashboardProps {
+  mode?: "live_chat" | "tickets" | "all";
+}
+
+export default function AdminSupportDashboard({ mode = "all" }: AdminSupportDashboardProps) {
   const { user } = useAuth();
   const { visible, flash } = useRealtimeIndicator();
   const { routing, assignConversation, autoAssignNewConversation } = useAgentRouting();
@@ -111,7 +117,8 @@ export default function AdminSupportDashboard() {
   const [loading, setLoading] = useState(true);
   const [msgLoading, setMsgLoading] = useState(false);
   const [remoteTyping, setRemoteTyping] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(mode === "live_chat" ? "open" : "all");
+  const [highlightedConvId, setHighlightedConvId] = useState<string | null>(null);
   const [cannedReplies, setCannedReplies] = useState<CannedReply[]>([]);
   const [showAddReply, setShowAddReply] = useState(false);
   const [newReplyLabel, setNewReplyLabel] = useState("");
@@ -264,11 +271,25 @@ export default function AdminSupportDashboard() {
           if (newConv.status === "open" && !newConv.assigned_agent_id) {
             autoAssignNewConversation(newConv.id);
           }
+          // Sound + visual alert for new conversation
+          playChatRequestSound();
+          haptics.notify();
+          toast.info("New support conversation received");
+          setHighlightedConvId(newConv.id);
+          setTimeout(() => setHighlightedConvId(null), 2000);
         }
         loadConversations();
         flash();
       })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "support_messages" }, () => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "support_messages" }, (payload) => {
+        const msg = payload.new as any;
+        // Only alert for user messages (not admin's own)
+        if (msg.sender_role === "user") {
+          playChatNotification();
+          haptics.notify();
+          setHighlightedConvId(msg.conversation_id);
+          setTimeout(() => setHighlightedConvId(null), 2000);
+        }
         loadConversations();
         flash();
       })
@@ -488,8 +509,10 @@ export default function AdminSupportDashboard() {
     }
   };
 
-  // Filter conversations by status
+  // Filter conversations by status and mode
   const filteredConversations = conversations.filter(c => {
+    // In live_chat mode, only show open conversations
+    if (mode === "live_chat") return c.status === "open";
     if (statusFilter === "all") return true;
     return c.status === statusFilter;
   });
@@ -521,10 +544,11 @@ export default function AdminSupportDashboard() {
         <div className="p-4 border-b border-border">
           <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
             <MessageCircle size={16} className="text-primary" />
-            Support Tickets
+            {mode === "live_chat" ? "Live Chat" : mode === "tickets" ? "Tickets" : "Support Tickets"}
           </h3>
           <RealtimeUpdateIndicator visible={visible} />
-          {/* Status filter tabs */}
+          {/* Status filter tabs — hidden in live_chat mode */}
+          {mode !== "live_chat" && (
           <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)} className="mt-2">
             <TabsList className="h-7 w-full grid grid-cols-4 p-0.5">
               <TabsTrigger value="all" className="text-[9px] h-6 px-1 data-[state=active]:text-xs">
@@ -541,6 +565,7 @@ export default function AdminSupportDashboard() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
+          )}
         </div>
         <ScrollArea className="flex-1">
           {filteredConversations.length === 0 ? (
@@ -554,9 +579,9 @@ export default function AdminSupportDashboard() {
                 <button
                   key={conv.id}
                   onClick={() => selectConversation(conv)}
-                  className={`w-full text-left px-4 py-3 hover:bg-muted/30 transition-colors ${
+                  className={`w-full text-left px-4 py-3 hover:bg-muted/30 transition-all ${
                     selectedConv?.id === conv.id ? "bg-primary/5" : ""
-                  }`}
+                  } ${highlightedConvId === conv.id ? "ring-2 ring-primary animate-pulse" : ""}`}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
