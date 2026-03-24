@@ -228,8 +228,8 @@ function AgentListTab() {
         ))}
       </div>
       <div className="flex gap-2">
-        <div className="relative flex-1"><Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" /><Input placeholder="Search agents..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
-        <Button size="icon" className="shrink-0" onClick={() => setCreateOpen(true)}><UserPlus className="w-4 h-4" /></Button>
+        <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" /><Input placeholder="Search agents..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-8 text-xs" /></div>
+        <Button size="icon" className="shrink-0 h-8 w-8" onClick={() => setCreateOpen(true)}><UserPlus className="w-3.5 h-3.5" /></Button>
       </div>
 
       {/* Bulk actions */}
