@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
       .from("otp_codes")
       .select("*", { count: "exact", head: true })
       .eq("phone", email)
-      .eq("purpose", "email_verify")
+      .eq("purpose", purpose)
       .gte("created_at", windowStart);
 
     if ((count ?? 0) >= MAX_OTP_PER_HOUR) {
