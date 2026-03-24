@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
       .from("otp_codes")
       .update({ verified: true })
       .eq("phone", email)
-      .eq("purpose", "email_verify")
+      .eq("purpose", purpose)
       .eq("verified", false);
 
     // Generate 6-digit OTP
@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
     await supabaseAdmin.from("otp_codes").insert({
       phone: email,
       code: otpCode,
-      purpose: "email_verify",
+      purpose: purpose,
       expires_at: expiresAt,
     });
 
