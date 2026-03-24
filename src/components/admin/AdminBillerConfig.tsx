@@ -114,6 +114,7 @@ export default function AdminBillerConfig() {
     try {
       await callBillerApi({ action: "toggle", id: b.id, is_enabled: !b.is_enabled });
       toast.success(`${b.display_name} ${!b.is_enabled ? "enabled" : "disabled"}`);
+      await auditLog("biller_toggled", b.id, { display_name: b.display_name, is_enabled: !b.is_enabled });
     } catch {
       toast.error("Failed to toggle");
     }
