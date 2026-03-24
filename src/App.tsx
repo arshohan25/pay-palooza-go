@@ -57,7 +57,7 @@ const App = () => (
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
-                <Route path="/admin" element={<RoleGuard roles={["admin"]}><AdminDashboard /></RoleGuard>} />
+                <Route path="/admin" element={<RoleGuard roles={["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"]}><AdminDashboard /></RoleGuard>} />
                 <Route path="/agent" element={<RoleGuard roles={["agent", "admin"]}><AgentDashboard /></RoleGuard>} />
                 <Route path="/agent/cashin" element={<RoleGuard roles={["agent", "admin"]}><AgentCashIn /></RoleGuard>} />
                 <Route path="/agent/b2b" element={<RoleGuard roles={["agent", "admin"]}><AgentB2B /></RoleGuard>} />

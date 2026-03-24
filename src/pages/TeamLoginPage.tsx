@@ -9,6 +9,29 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { toast } from "sonner";
 import { Lock, User, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import type { User as AuthUser } from "@supabase/supabase-js";
+
+const TEAM_ROLES = ["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"];
+
+const ROLE_ROUTES: Record<string, string> = {
+  agent: "/agent",
+  merchant: "/merchant",
+  distributor: "/distributor",
+  super_distributor: "/super-distributor",
+};
+
+async function getRedirectByRole(user: AuthUser): Promise<string> {
+  const { data } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id);
+  const roles = data?.map((r) => r.role) ?? [];
+  if (roles.some((r) => TEAM_ROLES.includes(r))) return "/admin";
+  for (const [role, path] of Object.entries(ROLE_ROUTES)) {
+    if (roles.includes(role as any)) return path;
+  }
+  return "/admin";
+}
 
 export default function TeamLoginPage() {
   const navigate = useNavigate();
