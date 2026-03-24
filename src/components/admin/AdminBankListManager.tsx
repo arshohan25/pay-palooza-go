@@ -9,6 +9,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { usePlatformBanks } from "@/hooks/use-platform-banks";
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: "platform_bank", entity_id: entityId, details
+    }).then();
+  }
+}
+
 export default function AdminBankListManager() {
   const { banks, loading, refetch } = usePlatformBanks(true);
   const [search, setSearch] = useState("");
