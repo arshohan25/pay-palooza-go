@@ -328,6 +328,7 @@ function FeeRulesTab() {
     if (!confirm("Delete this fee rule?")) return;
     const { error } = await supabase.from("fee_config").delete().eq("id", id);
     if (error) { toast.error("Failed to delete"); return; }
+    auditLog("fee_rule_deleted", id, {});
     toast.success("Fee rule deleted");
     load();
   };
