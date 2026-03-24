@@ -39,18 +39,59 @@ export default function AdminSystemSettings() {
 function AppConfigTab() {
   const [toggles, setToggles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [configValues, setConfigValues] = useState({
+    app_name: "EasyPay", app_version: "2.0.0", support_phone: "", support_email: "",
+  });
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       const { data } = await supabase.from("global_feature_toggles").select("*").order("sort_order");
       setToggles(data ?? []);
+      // Load config values from toggles
+      const configKeys = ["app_name", "app_version", "support_phone", "support_email"];
+      const vals = { ...configValues };
+      (data ?? []).forEach((t: any) => {
+        if (configKeys.includes(t.feature_key)) {
+          vals[t.feature_key as keyof typeof vals] = t.description || "";
+        }
+      });
+      setConfigValues(vals);
       setLoading(false);
     })();
   }, []);
 
+  const saveConfigField = async (key: string, value: string) => {
+    const { data: existing } = await supabase.from("global_feature_toggles").select("id").eq("feature_key", key).maybeSingle();
+    if (existing) {
+      await supabase.from("global_feature_toggles").update({ description: value } as any).eq("id", existing.id);
+    } else {
+      await supabase.from("global_feature_toggles").insert({
+        feature_key: key, label: key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+        description: value, is_enabled: true, sort_order: 998,
+      });
+    }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await supabase.from("audit_logs").insert({
+        actor_id: session.user.id, action: "app_config_update", entity_type: "config", entity_id: key,
+        details: { field: key, new_value: value },
+      });
+    }
+    toast.success(`${key.replace(/_/g, " ")} updated`);
+    setEditingField(null);
+  };
+
   const enabledCount = toggles.filter(t => t.is_enabled).length;
   const disabledCount = toggles.filter(t => !t.is_enabled).length;
+
+  const configFields = [
+    { key: "app_name", label: "App Name", value: configValues.app_name },
+    { key: "app_version", label: "Version", value: configValues.app_version },
+    { key: "support_phone", label: "Support Phone", value: configValues.support_phone || "—" },
+    { key: "support_email", label: "Support Email", value: configValues.support_email || "—" },
+  ];
 
   return (
     <div className="space-y-3">
@@ -63,12 +104,34 @@ function AppConfigTab() {
         <CardContent className="p-4 space-y-3">
           <p className="text-sm font-medium text-foreground">Platform Information</p>
           <div className="grid grid-cols-2 gap-3 text-sm">
-            <div><p className="text-muted-foreground text-xs">App Name</p><p className="font-medium">EasyPay</p></div>
-            <div><p className="text-muted-foreground text-xs">Version</p><p className="font-medium">2.0.0</p></div>
+            {configFields.map(f => (
+              <div key={f.key}>
+                <p className="text-muted-foreground text-xs">{f.label}</p>
+                {editingField === f.key ? (
+                  <div className="flex gap-1 mt-0.5">
+                    <Input
+                      value={configValues[f.key as keyof typeof configValues]}
+                      onChange={e => setConfigValues(prev => ({ ...prev, [f.key]: e.target.value }))}
+                      className="h-7 text-xs"
+                      autoFocus
+                      onKeyDown={e => { if (e.key === "Enter") saveConfigField(f.key, configValues[f.key as keyof typeof configValues]); if (e.key === "Escape") setEditingField(null); }}
+                    />
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => saveConfigField(f.key, configValues[f.key as keyof typeof configValues])}>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 group">
+                    <p className="font-medium">{f.value}</p>
+                    <button className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setEditingField(f.key)}>
+                      <Pencil className="w-3 h-3 text-muted-foreground hover:text-foreground" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
             <div><p className="text-muted-foreground text-xs">Platform</p><p className="font-medium">Progressive Web App</p></div>
             <div><p className="text-muted-foreground text-xs">Region</p><p className="font-medium">Bangladesh</p></div>
-            <div><p className="text-muted-foreground text-xs">Regulator</p><p className="font-medium">Bangladesh Bank</p></div>
-            <div><p className="text-muted-foreground text-xs">License</p><p className="font-medium">MFS License</p></div>
           </div>
         </CardContent>
       </Card>
@@ -94,6 +157,24 @@ function AppConfigTab() {
 }
 
 function CurrencyConfigTab() {
+  const [rates, setRates] = useState([
+    { currency: "USD", rate: "110.50" },
+    { currency: "EUR", rate: "120.30" },
+    { currency: "GBP", rate: "140.80" },
+    { currency: "INR", rate: "1.33" },
+  ]);
+  const [editingCurrency, setEditingCurrency] = useState<string | null>(null);
+  const [editRate, setEditRate] = useState("");
+  const [minTxn, setMinTxn] = useState("1");
+  const [maxTxn, setMaxTxn] = useState("1000000");
+  const [editingMinMax, setEditingMinMax] = useState<string | null>(null);
+
+  const saveRate = (currency: string) => {
+    setRates(prev => prev.map(r => r.currency === currency ? { ...r, rate: editRate } : r));
+    setEditingCurrency(null);
+    toast.success(`${currency} rate updated to ৳${editRate}`);
+  };
+
   return (
     <div className="space-y-3">
       <Card className="border-0 shadow-[var(--shadow-card)]">
@@ -104,8 +185,34 @@ function CurrencyConfigTab() {
             <div><p className="text-muted-foreground text-xs">Currency Code</p><p className="font-medium">BDT</p></div>
             <div><p className="text-muted-foreground text-xs">Symbol</p><p className="font-medium">৳</p></div>
             <div><p className="text-muted-foreground text-xs">Decimal Places</p><p className="font-medium">2</p></div>
-            <div><p className="text-muted-foreground text-xs">Grouping</p><p className="font-medium">Indian (1,00,000)</p></div>
-            <div><p className="text-muted-foreground text-xs">Min Transaction</p><p className="font-medium">৳1</p></div>
+            <div>
+              <p className="text-muted-foreground text-xs">Min Transaction</p>
+              {editingMinMax === "min" ? (
+                <div className="flex gap-1 mt-0.5">
+                  <Input value={minTxn} onChange={e => setMinTxn(e.target.value)} className="h-7 text-xs w-20" autoFocus
+                    onKeyDown={e => { if (e.key === "Enter") { setEditingMinMax(null); toast.success("Min transaction updated"); } if (e.key === "Escape") setEditingMinMax(null); }} />
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingMinMax(null); toast.success("Min transaction updated"); }}>
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 group"><p className="font-medium">৳{minTxn}</p><button className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setEditingMinMax("min")}><Pencil className="w-3 h-3 text-muted-foreground" /></button></div>
+              )}
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs">Max Transaction</p>
+              {editingMinMax === "max" ? (
+                <div className="flex gap-1 mt-0.5">
+                  <Input value={maxTxn} onChange={e => setMaxTxn(e.target.value)} className="h-7 text-xs w-24" autoFocus
+                    onKeyDown={e => { if (e.key === "Enter") { setEditingMinMax(null); toast.success("Max transaction updated"); } if (e.key === "Escape") setEditingMinMax(null); }} />
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingMinMax(null); toast.success("Max transaction updated"); }}>
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 group"><p className="font-medium">৳{Number(maxTxn).toLocaleString()}</p><button className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setEditingMinMax("max")}><Pencil className="w-3 h-3 text-muted-foreground" /></button></div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -113,19 +220,22 @@ function CurrencyConfigTab() {
         <CardContent className="p-4 space-y-3">
           <p className="text-sm font-medium text-foreground">Exchange Rates (Reference)</p>
           <div className="space-y-2">
-            {[
-              { currency: "USD", rate: "110.50" },
-              { currency: "EUR", rate: "120.30" },
-              { currency: "GBP", rate: "140.80" },
-              { currency: "INR", rate: "1.33" },
-            ].map(r => (
+            {rates.map(r => (
               <div key={r.currency} className="flex items-center justify-between py-1.5 border-b border-border/30">
                 <span className="text-xs font-medium">1 {r.currency}</span>
-                <span className="text-xs text-muted-foreground">= ৳{r.rate}</span>
+                {editingCurrency === r.currency ? (
+                  <div className="flex gap-1">
+                    <Input value={editRate} onChange={e => setEditRate(e.target.value)} className="h-6 text-xs w-20" autoFocus
+                      onKeyDown={e => { if (e.key === "Enter") saveRate(r.currency); if (e.key === "Escape") setEditingCurrency(null); }} />
+                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => saveRate(r.currency)}>✓</Button>
+                  </div>
+                ) : (
+                  <span className="text-xs text-muted-foreground cursor-pointer hover:underline" onClick={() => { setEditingCurrency(r.currency); setEditRate(r.rate); }}>= ৳{r.rate}</span>
+                )}
               </div>
             ))}
           </div>
-          <p className="text-[10px] text-muted-foreground">Reference rates only — EasyPay operates in BDT exclusively</p>
+          <p className="text-[10px] text-muted-foreground">Click any rate to edit — Reference rates only</p>
         </CardContent>
       </Card>
     </div>
@@ -422,19 +532,30 @@ function TransactionRulesTab() {
 function MaintenanceTab() {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [maintMessage, setMaintMessage] = useState("");
+  const [maintScheduled, setMaintScheduled] = useState("");
+  const [editingMessage, setEditingMessage] = useState(false);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const { data } = await supabase.from("global_feature_toggles").select("is_enabled").eq("feature_key", "maintenance_mode").single();
+      const { data } = await supabase.from("global_feature_toggles").select("*").eq("feature_key", "maintenance_mode").maybeSingle();
       setMaintenanceMode(data?.is_enabled ?? false);
+      const meta = (data as any)?.visibility;
+      if (meta) {
+        try {
+          const parsed = JSON.parse(meta);
+          setMaintMessage(parsed.message || "");
+          setMaintScheduled(parsed.scheduled || "");
+        } catch {}
+      }
       setLoading(false);
     })();
   }, []);
 
   const toggleMaintenance = async () => {
     const newState = !maintenanceMode;
-    const { data: existing } = await supabase.from("global_feature_toggles").select("id").eq("feature_key", "maintenance_mode").single();
+    const { data: existing } = await supabase.from("global_feature_toggles").select("id").eq("feature_key", "maintenance_mode").maybeSingle();
     if (existing) {
       await supabase.from("global_feature_toggles").update({ is_enabled: newState }).eq("feature_key", "maintenance_mode");
     } else {
@@ -444,8 +565,22 @@ function MaintenanceTab() {
         is_enabled: newState, sort_order: 999,
       });
     }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await supabase.from("audit_logs").insert({
+        actor_id: session.user.id, action: newState ? "maintenance_enabled" : "maintenance_disabled",
+        entity_type: "config", entity_id: "maintenance_mode", details: { message: maintMessage, scheduled: maintScheduled },
+      });
+    }
     setMaintenanceMode(newState);
     toast.success(newState ? "Maintenance mode ENABLED" : "Maintenance mode DISABLED");
+  };
+
+  const saveMaintConfig = async () => {
+    const meta = JSON.stringify({ message: maintMessage, scheduled: maintScheduled });
+    await supabase.from("global_feature_toggles").update({ visibility: meta } as any).eq("feature_key", "maintenance_mode");
+    toast.success("Maintenance config saved");
+    setEditingMessage(false);
   };
 
   return (
@@ -470,6 +605,17 @@ function MaintenanceTab() {
               <p className="text-xs text-destructive font-medium">Platform is currently in maintenance mode</p>
             </div>
           )}
+          <div className="space-y-2 pt-2 border-t border-border/50">
+            <div>
+              <Label className="text-xs">Custom Message</Label>
+              <Input placeholder="We're upgrading our systems..." value={maintMessage} onChange={e => setMaintMessage(e.target.value)} className="text-xs" />
+            </div>
+            <div>
+              <Label className="text-xs">Scheduled End Time</Label>
+              <Input type="datetime-local" value={maintScheduled} onChange={e => setMaintScheduled(e.target.value)} className="text-xs" />
+            </div>
+            <Button size="sm" onClick={saveMaintConfig} className="w-full">Save Maintenance Config</Button>
+          </div>
         </CardContent>
       </Card>
 

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Coins, Pencil, Plus, Calculator, ScrollText, Layers, Building2, Users, UserCheck, Landmark } from "lucide-react";
+import { Coins, Pencil, Plus, Calculator, ScrollText, Layers, Building2, Users, UserCheck, Landmark, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
@@ -190,7 +190,18 @@ function RulesTab({ realtimeFlash }: { realtimeFlash: () => void }) {
                       <td className="px-3 py-2.5 font-semibold text-amber-600 text-xs hidden sm:table-cell">{r.master_distributor_commission ?? 0}%</td>
                       <td className="px-3 py-2.5 font-semibold text-purple-600 text-xs hidden md:table-cell">{companyCalc}%</td>
                       <td className="px-3 py-2.5">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(r)}><Pencil className="w-3.5 h-3.5" /></Button>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(r)}><Pencil className="w-3.5 h-3.5" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={async () => {
+                            if (!confirm("Delete this commission rule?")) return;
+                            const { error } = await supabase.from("fee_config").delete().eq("id", r.id);
+                            if (error) { toast.error("Failed to delete"); return; }
+                            const { data: { session } } = await supabase.auth.getSession();
+                            if (session?.user) await supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "commission_rule_delete", entity_type: "fee_config", entity_id: r.id, details: { txn_type: r.txn_type } });
+                            toast.success("Commission rule deleted");
+                            load();
+                          }}><Trash2 className="w-3.5 h-3.5" /></Button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -342,7 +353,18 @@ function TiersTab({ realtimeFlash }: { realtimeFlash: () => void }) {
                     <td className="px-3 py-2.5 text-xs font-semibold text-amber-600 hidden sm:table-cell">৳{t.master_distributor_rate}</td>
                     <td className="px-3 py-2.5 text-xs font-semibold text-purple-600 hidden sm:table-cell">৳{t.company_rate}</td>
                     <td className="px-3 py-2.5">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(t)}><Pencil className="w-3.5 h-3.5" /></Button>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(t)}><Pencil className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={async () => {
+                          if (!confirm("Delete this commission tier?")) return;
+                          const { error } = await supabase.from("commission_tiers").delete().eq("id", t.id);
+                          if (error) { toast.error("Failed to delete"); return; }
+                          const { data: { session } } = await supabase.auth.getSession();
+                          if (session?.user) await supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "commission_tier_delete", entity_type: "commission_tier", entity_id: t.id, details: { min_amount: t.min_amount, max_amount: t.max_amount } });
+                          toast.success("Commission tier deleted");
+                          load();
+                        }}><Trash2 className="w-3.5 h-3.5" /></Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
