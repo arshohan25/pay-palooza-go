@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { signOut } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/use-profile";
+import { useSessionTimeout } from "@/hooks/use-session-timeout";
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -413,6 +414,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { displayName } = useProfile();
+  useSessionTimeout();
   const [navGroups, setNavGroups] = useState<NavGroup[]>(loadNavOrder);
   const [showReorder, setShowReorder] = useState(false);
   const [showActivityFeed, setShowActivityFeed] = useState(false);

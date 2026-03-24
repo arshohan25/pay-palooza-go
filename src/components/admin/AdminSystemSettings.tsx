@@ -86,6 +86,18 @@ function AppConfigTab() {
   const enabledCount = toggles.filter(t => t.is_enabled).length;
   const disabledCount = toggles.filter(t => !t.is_enabled).length;
 
+  const [sessionTimeout, setSessionTimeout] = useState("30");
+
+  useEffect(() => {
+    const t = toggles.find((t: any) => t.feature_key === "team_session_timeout_minutes");
+    if (t?.description) setSessionTimeout(t.description);
+  }, [toggles]);
+
+  const saveSessionTimeout = async (value: string) => {
+    setSessionTimeout(value);
+    await saveConfigField("team_session_timeout_minutes", value);
+  };
+
   const configFields = [
     { key: "app_name", label: "App Name", value: configValues.app_name },
     { key: "app_version", label: "Version", value: configValues.app_version },
@@ -133,6 +145,28 @@ function AppConfigTab() {
             <div><p className="text-muted-foreground text-xs">Platform</p><p className="font-medium">Progressive Web App</p></div>
             <div><p className="text-muted-foreground text-xs">Region</p><p className="font-medium">Bangladesh</p></div>
           </div>
+        </CardContent>
+      </Card>
+      <Card className="border-0 shadow-[var(--shadow-card)]">
+        <CardContent className="p-4 space-y-3">
+          <p className="text-sm font-medium text-foreground flex items-center gap-2">
+            <Clock className="w-4 h-4 text-primary" /> Team Session Timeout
+          </p>
+          <p className="text-[10px] text-muted-foreground">
+            Auto-logout team members after this period of inactivity.
+          </p>
+          <Select value={sessionTimeout} onValueChange={saveSessionTimeout}>
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="15">15 minutes</SelectItem>
+              <SelectItem value="30">30 minutes</SelectItem>
+              <SelectItem value="60">1 hour</SelectItem>
+              <SelectItem value="120">2 hours</SelectItem>
+              <SelectItem value="240">4 hours</SelectItem>
+            </SelectContent>
+          </Select>
         </CardContent>
       </Card>
       <Card className="border-0 shadow-[var(--shadow-card)]">
