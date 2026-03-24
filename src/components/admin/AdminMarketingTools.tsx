@@ -158,6 +158,7 @@ export default function AdminMarketingTools() {
 
   const togglePromo = async (id: string, active: boolean) => {
     await supabase.from("promo_codes").update({ is_active: !active } as any).eq("id", id);
+    await auditLog("promo_toggled", id, { is_active: !active });
     loadPromos();
   };
 
