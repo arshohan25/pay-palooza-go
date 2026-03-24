@@ -285,6 +285,7 @@ function ReviewsTab() {
 
   const deleteReview = async (id: string) => {
     await supabase.from("product_reviews").delete().eq("id", id);
+    auditLog("delete_review", "product_review", id, {});
     toast.success("Review removed");
     load();
   };
