@@ -32,6 +32,13 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: "recharge_pack", entity_id: entityId, details });
+  }
+}
+
 const OPERATORS = ["Grameenphone", "Robi", "Banglalink", "Teletalk", "Airtel"];
 const TYPES = ["drive", "regular"];
 const SUB_CATEGORIES = ["internet", "minutes", "bundles", "callrates"];
