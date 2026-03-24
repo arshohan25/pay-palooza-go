@@ -497,60 +497,21 @@ export default function AdminTeamManagement() {
     }
     setAdding(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const adminSession = session;
-
-      const signUpData = await teamSignUp(addUsername.trim(), addPassword, addName.trim());
-      if (!signUpData.user) throw new Error("Failed to create account");
-      const newUserId = signUpData.user.id;
-
-      if (adminSession) {
-        await supabase.auth.setSession({
-          access_token: adminSession.access_token,
-          refresh_token: adminSession.refresh_token,
-        });
-      }
-
-      const syntheticPhone = `TEAM-${addUsername.trim()}`;
-      await supabase.from("profiles").insert({
-        user_id: newUserId,
-        phone: syntheticPhone,
-        name: addName.trim(),
-        status: "active",
+      const { data, error } = await supabase.functions.invoke("create-team-member", {
+        body: {
+          username: addUsername.trim(),
+          password: addPassword,
+          displayName: addName.trim(),
+          email: addEmail.trim() || null,
+          role: addRole,
+          department: addDept,
+          notes: addNotes || null,
+          permissions: addPerms,
+        },
       });
 
-      await supabase.from("team_members").insert({
-        user_id: newUserId,
-        display_name: addName.trim(),
-        department: addDept,
-        notes: addNotes || null,
-        created_by: adminSession?.user?.id,
-        username: addUsername.trim(),
-        temp_password: addPassword,
-        email: addEmail.trim() || null,
-      } as any);
-
-      await supabase.from("user_roles").insert({ user_id: newUserId, role: addRole } as any);
-
-      // Insert permissions from the addPerms state (configured in step 2)
-      const perms = addPerms.map(p => ({
-        user_id: newUserId,
-        section: p.section,
-        can_view: p.can_view,
-        can_add: p.can_add,
-        can_edit: p.can_edit,
-        can_delete: p.can_delete,
-        granted_by: adminSession?.user?.id,
-      }));
-      await supabase.from("team_access_permissions").upsert(perms, { onConflict: "user_id,section" });
-
-      await supabase.from("audit_logs").insert({
-        actor_id: adminSession?.user?.id!,
-        action: "team_member_created",
-        entity_type: "team",
-        entity_id: newUserId,
-        details: { display_name: addName.trim(), username: addUsername.trim(), role: addRole, department: addDept },
-      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast.success("Team member created successfully");
       setCreatedCreds({ username: addUsername.trim(), password: addPassword });
