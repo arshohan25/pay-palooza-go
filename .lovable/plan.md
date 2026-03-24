@@ -1,49 +1,61 @@
 
 
-## Phase 6: Support, Compliance & Monitoring — Full CRUD
+## Phase 7: Configuration, Infrastructure & Remaining Modules — Full CRUD + Audit Logging
 
 ### Current State & Gaps
 
 | Section | Lines | Has | Missing |
 |---------|-------|-----|---------|
-| **Dispute Resolution** | 213 | View + status update | Create dispute (admin-initiated), delete resolved disputes, audit logging |
-| **Complaint Manager** | 153 | View + status update + notes | Delete resolved complaints, priority change, audit logging |
-| **Blacklist Manager** | 173 | Add + toggle + delete | Edit entry (reason/type), AlertDialog on delete, audit logging |
-| **User Feedback** | 107 | Read-only list | Delete feedback, flag/archive feedback, reply to feedback, audit logging |
-| **Chat Monitor** | 246 | Read-only viewer | Delete/archive conversations, flag conversations, audit logging |
-| **Careers Manager** | 171 | Create + toggle + delete jobs, shortlist/reject apps | Edit job details, AlertDialog on delete, audit logging |
+| **Charge Config** | 237 | Create + Edit + Toggle | Delete rule, AlertDialog confirmations, audit logging |
+| **Courier Providers** | 111 | Create + Toggle + Delete | Edit provider, AlertDialog on delete, audit logging |
+| **Delivery Zones** | 129 | Create + Toggle + Delete | Edit zone, AlertDialog on delete, audit logging |
+| **Deposit Accounts** | 149 | Full CRUD (create/edit/delete/toggle) | AlertDialog on delete, audit logging |
+| **Device Manager** | 134 | View + Revoke with AlertDialog | Audit logging on revoke |
+| **Smart Routing** | 309 | Routing toggles + Payment links CRUD | Edit payment link, AlertDialog on link delete, audit logging |
+| **Marketing Tools** | 671 | Full CRUD for promos/cashback/campaigns | Audit logging on all mutations |
+| **Gateway Config** | 347 | Full CRUD with AlertDialog | Audit logging |
+| **Biller Config** | 413 | Full CRUD with AlertDialog | Audit logging |
+| **Recharge Packs** | 527 | Full CRUD with AlertDialog + drag reorder | Audit logging |
 
 ### Implementation
 
-**File 1: `AdminDisputeResolution.tsx`** (~213 → ~320 lines)
-- Add "Create Dispute" dialog (admin-initiated: select user by phone, subject, description, link transaction)
-- Add "Delete" button for resolved/rejected disputes with AlertDialog
-- Add audit logging to create/update/delete actions
+**File 1: `AdminChargeConfig.tsx`** (~237 → ~290 lines)
+- Add Delete button (Trash2) per row with AlertDialog confirmation
+- Add audit logging to create/edit/delete/toggle actions
 
-**File 2: `AdminComplaintManager.tsx`** (~153 → ~220 lines)
-- Add "Delete" button per resolved complaint with AlertDialog confirmation
-- Add priority change capability in the update dialog
-- Add audit logging to status update and delete actions
-
-**File 3: `AdminBlacklistManager.tsx`** (~173 → ~240 lines)
-- Add "Edit" button per entry (edit reason, update type) via inline or dialog
+**File 2: `AdminCourierProviders.tsx`** (~111 → ~180 lines)
+- Add "Edit" dialog (pre-filled name, logo_url, tracking_url_template)
 - Wrap delete in AlertDialog confirmation
-- Add audit logging to add/edit/delete/toggle actions
+- Add audit logging to create/edit/delete/toggle actions
 
-**File 4: `AdminUserFeedback.tsx`** (~107 → ~200 lines)
-- Add "Delete" button per feedback with AlertDialog
-- Add "Flag" toggle to mark feedback as important/reviewed
-- Add audit logging to delete/flag actions
+**File 3: `AdminDeliveryZones.tsx`** (~129 → ~200 lines)
+- Add "Edit" dialog (zone_name, cities, delivery_fee, estimated_days, courier)
+- Wrap delete in AlertDialog confirmation
+- Add audit logging to create/edit/delete/toggle actions
 
-**File 5: `AdminChatMonitor.tsx`** (~246 → ~310 lines)
-- Add "Delete Conversation" button with AlertDialog (deletes messages + conversation)
-- Add "Flag" button to mark conversations for review
-- Add audit logging to delete/flag actions
+**File 4: `AdminDepositAccounts.tsx`** (~149 → ~180 lines)
+- Wrap delete in AlertDialog confirmation
+- Add audit logging to create/edit/delete/toggle actions
 
-**File 6: `AdminCareersManager.tsx`** (~171 → ~260 lines)
-- Add "Edit Job" dialog (pre-filled with title, department, location, type, description, requirements)
-- Wrap job delete in AlertDialog confirmation
-- Add audit logging to create/edit/delete/toggle/shortlist/reject actions
+**File 5: `AdminDeviceManager.tsx`** (~134 → ~150 lines)
+- Add audit logging on device revoke
+
+**File 6: `AdminSmartRouting.tsx`** (~309 → ~360 lines)
+- Add "Edit" for payment links (title, amount, description)
+- Wrap link delete in AlertDialog confirmation
+- Add audit logging to routing toggle changes and payment link CRUD
+
+**File 7: `AdminMarketingTools.tsx`** (~671 → ~710 lines)
+- Add audit logging to all promo/cashback/campaign create/edit/delete/toggle actions
+
+**File 8: `AdminGatewayConfig.tsx`** (~347 → ~370 lines)
+- Add audit logging to create/edit/delete/toggle actions
+
+**File 9: `AdminBillerConfig.tsx`** (~413 → ~435 lines)
+- Add audit logging to create/edit/delete/toggle actions
+
+**File 10: `AdminRechargePackManager.tsx`** (~527 → ~550 lines)
+- Add audit logging to create/edit/delete/toggle/reorder actions
 
 ### Technical Pattern (consistent across all files)
 ```typescript
@@ -64,10 +76,14 @@ async function auditLog(action: string, entityType: string, entityId: string, de
 None — all tables exist with required columns.
 
 ### Files Modified
-1. `src/components/admin/AdminDisputeResolution.tsx`
-2. `src/components/admin/AdminComplaintManager.tsx`
-3. `src/components/admin/AdminBlacklistManager.tsx`
-4. `src/components/admin/AdminUserFeedback.tsx`
-5. `src/components/admin/AdminChatMonitor.tsx`
-6. `src/components/admin/AdminCareersManager.tsx`
+1. `src/components/admin/AdminChargeConfig.tsx`
+2. `src/components/admin/AdminCourierProviders.tsx`
+3. `src/components/admin/AdminDeliveryZones.tsx`
+4. `src/components/admin/AdminDepositAccounts.tsx`
+5. `src/components/admin/AdminDeviceManager.tsx`
+6. `src/components/admin/AdminSmartRouting.tsx`
+7. `src/components/admin/AdminMarketingTools.tsx`
+8. `src/components/admin/AdminGatewayConfig.tsx`
+9. `src/components/admin/AdminBillerConfig.tsx`
+10. `src/components/admin/AdminRechargePackManager.tsx`
 
