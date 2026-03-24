@@ -1,25 +1,55 @@
 
 
-## Plan: Redesign Activity Monitor to Match Reference
+## Plan: Unify Admin Dashboard Menu/Card Styles
 
-### Reference Analysis
-The screenshot shows a clean, minimal design with:
-- Section header: search icon + "Activity Monitor" title + subtitle below
-- Full-width search input with search icon, download and refresh buttons aligned right
-- Type filters as plain text labels in a row, with "All" shown as a small green filled circle/dot badge, others as plain text with no background
-- Status filters same pattern — green dot for active "All", plain text for others
+### Context
+The admin dashboard has inconsistent styling across components. The Session Timeout Management card (App Config tab) uses the cleanest pattern: a Card with header icon + title + subtitle, followed by structured rows with icon + label + control. This style needs to be applied consistently to the Activity Monitor and other admin sections.
 
-### Current vs Target
-The current implementation uses `rounded-full` pill buttons with `bg-primary` or `bg-muted/50` backgrounds. The reference uses a much more minimal approach: just text labels, with the active "All" indicated by a small green dot/circle to its left rather than a filled background pill.
+### Style Pattern to Standardize
 
-### Changes — `AdminActivityMonitor.tsx`
+```text
+┌─ Card (border-0 shadow-card) ──────────────────────┐
+│  [Icon] Section Title                               │
+│  Subtitle description text                          │
+│                                                     │
+│  ┌─ Row ──────────────────────────────────────────┐ │
+│  │ [Icon] Label               [Control/Badge]     │ │
+│  └────────────────────────────────────────────────┘ │
+│  ┌─ Row ──────────────────────────────────────────┐ │
+│  │ [Icon] Label               [Control/Badge]     │ │
+│  └────────────────────────────────────────────────┘ │
+│                                                     │
+│  Filter bar: pill-style buttons, not outline        │
+└─────────────────────────────────────────────────────┘
+```
 
-1. **Filter pills redesign**: Replace rounded-full background pills with plain text buttons. Active filter gets a small green dot indicator (like a bullet) to the left instead of a filled background. Non-active items are plain `text-muted-foreground` text.
+### Changes
 
-2. **Search row**: Keep the current layout (search input + download + refresh icons) — it already matches the reference closely.
+**1. AdminActivityMonitor.tsx** - Major redesign
+- Replace `CardHeader`/`CardTitle` with the standard card header pattern (icon + title + subtitle in `CardContent`)
+- Redesign filter bar: type and status filters as compact pill-style badges in a `flex-wrap` layout (matching Global Toggles segmented control style) instead of outline `Button` rows
+- Unify the search bar + actions row with the same spacing/sizing used in other admin cards
+- Keep the table/mobile card layout but update header row to use consistent `text-xs font-medium text-muted-foreground` styling
 
-3. **Header**: Already matches. Keep as-is.
+**2. AdminSystemSettings.tsx** - Minor tweaks
+- Ensure all tab content cards use the same header pattern: `[Icon] Title` as `text-sm font-medium` with optional subtitle
+- Standardize "Platform Information", "Quick Feature Toggle Summary", "Currency Configuration", "Transaction Safety Rules", "System Health", "Scheduled Jobs" cards to all use the same card header format
+- Make the editable config rows consistent with the Session Timeout rows (icon + label + control alignment)
 
-### File Modified
-- `src/components/admin/AdminActivityMonitor.tsx` — lines ~186-217, redesign type and status filter rows
+**3. AdminReporting.tsx** - Header consistency
+- Wrap stat cards in a consistent grid pattern matching the `grid-cols-3 gap-2` pattern from AppConfigTab
+- Standardize chart card headers to match `[Icon] Title` format
+
+**4. AdminAgentHub.tsx** - Filter/stat consistency  
+- Stat cards at the top should use the same `border-0 shadow-card` Card pattern with `text-[10px]` labels
+- Search/filter bar should match the Activity Monitor redesign
+
+### Files Modified
+- `src/components/admin/AdminActivityMonitor.tsx` — redesign header, filter bars, and table styling
+- `src/components/admin/AdminSystemSettings.tsx` — standardize card headers across all tabs
+- `src/components/admin/AdminReporting.tsx` — unify stat card and chart headers
+- `src/components/admin/AdminAgentHub.tsx` — match filter/stat card styles
+
+### Scope Note
+This focuses on the 4 most visible admin sections. The same patterns will naturally cascade to other admin components through consistency.
 

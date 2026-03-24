@@ -182,37 +182,35 @@ export default function AdminActivityMonitor() {
           </Button>
         </div>
 
-        {/* Type filter */}
-        <div className="flex flex-wrap items-center gap-3">
+        {/* Type filter - pill style */}
+        <div className="flex flex-wrap gap-1">
           {TXN_TYPES.map(t => (
             <button
               key={t}
-              className={`flex items-center gap-1.5 text-[11px] font-medium capitalize transition-colors ${
+              className={`px-2.5 py-1 rounded-full text-[10px] font-medium capitalize transition-colors ${
                 typeFilter === t
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
               }`}
               onClick={() => setTypeFilter(t)}
             >
-              {typeFilter === t && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />}
               {t}
             </button>
           ))}
         </div>
 
-        {/* Status filter */}
-        <div className="flex flex-wrap items-center gap-3">
+        {/* Status filter - pill style */}
+        <div className="flex flex-wrap gap-1">
           {TXN_STATUSES.map(s => (
             <button
               key={s}
-              className={`flex items-center gap-1.5 text-[11px] font-medium capitalize transition-colors ${
+              className={`px-2.5 py-1 rounded-full text-[10px] font-medium capitalize transition-colors ${
                 statusFilter === s
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
               }`}
               onClick={() => setStatusFilter(s)}
             >
-              {statusFilter === s && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />}
               {s}
             </button>
           ))}
