@@ -256,6 +256,7 @@ export default function AdminFraudAlerts() {
       sla_deadline: newSla,
     } as any).eq("id", alert.id);
     if (error) { toast.error("Failed to escalate"); return; }
+    await auditLog("fraud_alert_escalate", "fraud_alert", alert.id, { new_level: newLevel, rule: alert.rule_triggered });
     toast.success(`Escalated to L${newLevel}`);
     loadAlerts();
   };
@@ -265,7 +266,16 @@ export default function AdminFraudAlerts() {
       assigned_to_team_member: memberId || null,
     } as any).eq("id", alertId);
     if (error) { toast.error("Failed to assign"); return; }
+    await auditLog("fraud_alert_assign", "fraud_alert", alertId, { assigned_to_team_member: memberId || null });
     toast.success("Assigned");
+    loadAlerts();
+  };
+
+  const handleDeleteAlert = async (alertId: string) => {
+    const { error } = await supabase.from("fraud_alerts").delete().eq("id", alertId);
+    if (error) { toast.error("Failed to delete"); return; }
+    await auditLog("fraud_alert_delete", "fraud_alert", alertId, {});
+    toast.success("Alert deleted");
     loadAlerts();
   };
 
