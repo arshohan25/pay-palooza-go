@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import TeamActivityDashboard from "@/components/admin/TeamActivityDashboard";
 import TeamActivityLog from "@/components/admin/TeamActivityLog";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,8 +16,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { UserPlus, Shield, Trash2, Search, Clock, CheckCircle, XCircle, Eye, Pencil, Activity, RefreshCw, UsersRound, Copy, KeyRound, Mail, Send } from "lucide-react";
+import { UserPlus, Shield, Trash2, Search, Clock, CheckCircle, XCircle, Eye, Pencil, Activity, RefreshCw, UsersRound, Copy, KeyRound, Mail, Send, Plus, ChevronDown, ChevronRight, Zap, ShieldCheck, EyeOff } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 type AppRole = "customer" | "agent" | "merchant" | "distributor" | "super_distributor" | "admin" | "compliance" | "finance";
@@ -28,12 +29,66 @@ const STAFF_ROLES: { value: AppRole; label: string }[] = [
   { value: "finance", label: "Finance" },
 ];
 
-const SECTIONS = [
-  "overview", "users", "transactions", "chargebacks", "alerts", "charges",
-  "commissions", "disputes", "support", "locks", "orders", "gateways",
-  "toggles", "recharge", "kyc", "referrals", "treasury", "webhooks",
-  "permissions", "reporting", "billers", "auditlog", "apihub", "banners", "limits", "team",
+// ═══ EXPANDED SECTIONS WITH CATEGORIES ═══
+const SECTION_CATEGORIES: { label: string; sections: string[] }[] = [
+  { label: "Operations", sections: ["overview", "users", "transactions", "orders", "ecommerce", "inventory"] },
+  { label: "Financial", sections: ["treasury", "settlements", "commissions", "charges", "float", "savings", "loans", "donations"] },
+  { label: "Network", sections: ["merchants", "agents", "distributors", "referrals"] },
+  { label: "Services", sections: ["recharge", "billers", "insurance", "gift_cards"] },
+  { label: "Support", sections: ["support", "live_chat", "tickets", "disputes"] },
+  { label: "Security", sections: ["security", "kyc", "locks", "blacklist", "sessions", "devices", "fraud"] },
+  { label: "System", sections: ["toggles", "gateways", "webhooks", "apihub", "system_health", "data_export"] },
+  { label: "Admin", sections: ["team", "permissions", "auditlog", "banners", "limits", "reporting", "marketing", "careers"] },
 ];
+
+const ALL_SECTIONS = SECTION_CATEGORIES.flatMap(c => c.sections);
+
+// ═══ PERMISSION PRESETS ═══
+interface PermPreset {
+  label: string;
+  description: string;
+  fullAccess: string[];
+  viewOnly: string[];
+}
+
+const PERMISSION_PRESETS: Record<string, PermPreset> = {
+  support_agent: {
+    label: "Support Agent",
+    description: "Support, live chat, tickets + view users/transactions/orders",
+    fullAccess: ["support", "live_chat", "tickets"],
+    viewOnly: ["users", "transactions", "orders", "overview"],
+  },
+  compliance_officer: {
+    label: "Compliance Officer",
+    description: "KYC, audit, security, blacklist, fraud + view users/transactions",
+    fullAccess: ["kyc", "auditlog", "security", "blacklist", "fraud"],
+    viewOnly: ["users", "transactions", "overview"],
+  },
+  finance_manager: {
+    label: "Finance Manager",
+    description: "Treasury, settlements, commissions, charges, float + view transactions/reporting",
+    fullAccess: ["treasury", "settlements", "commissions", "charges", "float"],
+    viewOnly: ["transactions", "reporting", "overview"],
+  },
+  operations: {
+    label: "Operations",
+    description: "Orders, ecommerce, inventory, merchants, agents + view overview/reporting",
+    fullAccess: ["orders", "ecommerce", "inventory", "merchants", "agents"],
+    viewOnly: ["overview", "reporting"],
+  },
+  full_access: {
+    label: "Full Access",
+    description: "All sections with full permissions",
+    fullAccess: ALL_SECTIONS,
+    viewOnly: [],
+  },
+  view_only: {
+    label: "View Only",
+    description: "Read-only access to all sections",
+    fullAccess: [],
+    viewOnly: ALL_SECTIONS,
+  },
+};
 
 const DEPARTMENTS = ["general", "support", "compliance", "finance", "operations", "engineering"];
 
@@ -56,8 +111,163 @@ interface TeamMember {
 interface AccessPerm {
   section: string;
   can_view: boolean;
+  can_add: boolean;
   can_edit: boolean;
   can_delete: boolean;
+}
+
+function applyPreset(presetKey: string): AccessPerm[] {
+  const preset = PERMISSION_PRESETS[presetKey];
+  if (!preset) return ALL_SECTIONS.map(s => ({ section: s, can_view: false, can_add: false, can_edit: false, can_delete: false }));
+  return ALL_SECTIONS.map(s => {
+    if (preset.fullAccess.includes(s)) return { section: s, can_view: true, can_add: true, can_edit: true, can_delete: true };
+    if (preset.viewOnly.includes(s)) return { section: s, can_view: true, can_add: false, can_edit: false, can_delete: false };
+    return { section: s, can_view: false, can_add: false, can_edit: false, can_delete: false };
+  });
+}
+
+function getPermSummary(perms: AccessPerm[]) {
+  return {
+    view: perms.filter(p => p.can_view).length,
+    add: perms.filter(p => p.can_add).length,
+    edit: perms.filter(p => p.can_edit).length,
+    del: perms.filter(p => p.can_delete).length,
+  };
+}
+
+// ═══ Permission Editor Component (reused in Add + Edit dialogs) ═══
+function PermissionEditor({ perms, onChange }: { perms: AccessPerm[]; onChange: (p: AccessPerm[]) => void }) {
+  const [openCats, setOpenCats] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(SECTION_CATEGORIES.map(c => [c.label, true]))
+  );
+  const [selectedPreset, setSelectedPreset] = useState<string>("");
+
+  const toggleCat = (label: string) => setOpenCats(prev => ({ ...prev, [label]: !prev[label] }));
+
+  const handlePreset = (key: string) => {
+    setSelectedPreset(key);
+    onChange(applyPreset(key));
+  };
+
+  const togglePerm = (section: string, field: "can_view" | "can_add" | "can_edit" | "can_delete") => {
+    setSelectedPreset("");
+    onChange(perms.map(p => {
+      if (p.section !== section) return p;
+      const updated = { ...p, [field]: !p[field] };
+      if (field === "can_view" && !updated.can_view) { updated.can_add = false; updated.can_edit = false; updated.can_delete = false; }
+      if (field !== "can_view" && updated[field]) { updated.can_view = true; }
+      return updated;
+    }));
+  };
+
+  const bulkAction = (action: "grant_view" | "revoke_all" | "full_access") => {
+    setSelectedPreset("");
+    onChange(perms.map(p => {
+      if (action === "grant_view") return { ...p, can_view: true };
+      if (action === "revoke_all") return { ...p, can_view: false, can_add: false, can_edit: false, can_delete: false };
+      return { ...p, can_view: true, can_add: true, can_edit: true, can_delete: true };
+    }));
+  };
+
+  const summary = getPermSummary(perms);
+
+  return (
+    <div className="space-y-3">
+      {/* Preset selector */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Label className="text-xs text-muted-foreground shrink-0">Preset:</Label>
+        <Select value={selectedPreset} onValueChange={handlePreset}>
+          <SelectTrigger className="h-8 text-xs w-48"><SelectValue placeholder="Choose a preset..." /></SelectTrigger>
+          <SelectContent>
+            {Object.entries(PERMISSION_PRESETS).map(([k, v]) => (
+              <SelectItem key={k} value={k}>
+                <div>
+                  <span className="font-medium">{v.label}</span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Bulk actions */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => bulkAction("grant_view")}>
+          <Eye className="w-3 h-3 mr-1" />Grant All View
+        </Button>
+        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => bulkAction("full_access")}>
+          <Zap className="w-3 h-3 mr-1" />Full Access
+        </Button>
+        <Button size="sm" variant="outline" className="h-7 text-xs text-destructive hover:text-destructive" onClick={() => bulkAction("revoke_all")}>
+          <EyeOff className="w-3 h-3 mr-1" />Revoke All
+        </Button>
+        <div className="ml-auto text-xs text-muted-foreground">
+          {summary.view}/{ALL_SECTIONS.length} accessible
+        </div>
+      </div>
+
+      {/* Summary badges */}
+      <div className="flex gap-2 flex-wrap">
+        <Badge variant="outline" className="text-xs"><Eye className="w-3 h-3 mr-1" />View: {summary.view}</Badge>
+        <Badge variant="outline" className="text-xs"><Plus className="w-3 h-3 mr-1" />Add: {summary.add}</Badge>
+        <Badge variant="outline" className="text-xs"><Pencil className="w-3 h-3 mr-1" />Edit: {summary.edit}</Badge>
+        <Badge variant="outline" className="text-xs"><Trash2 className="w-3 h-3 mr-1" />Delete: {summary.del}</Badge>
+      </div>
+
+      {/* Grouped sections */}
+      <ScrollArea className="max-h-[40vh]">
+        <div className="space-y-1">
+          {SECTION_CATEGORIES.map(cat => {
+            const isOpen = openCats[cat.label] !== false;
+            const catPerms = perms.filter(p => cat.sections.includes(p.section));
+            return (
+              <Collapsible key={cat.label} open={isOpen} onOpenChange={() => toggleCat(cat.label)}>
+                <CollapsibleTrigger className="flex items-center gap-2 w-full py-1.5 px-2 rounded-md hover:bg-muted/50 text-sm font-semibold text-foreground">
+                  {isOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                  {cat.label}
+                  <span className="text-xs font-normal text-muted-foreground ml-auto">
+                    {catPerms.filter(p => p.can_view).length}/{cat.sections.length}
+                  </span>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs py-1">Section</TableHead>
+                        <TableHead className="text-center w-14 py-1"><Eye className="w-3 h-3 mx-auto" /></TableHead>
+                        <TableHead className="text-center w-14 py-1"><Plus className="w-3 h-3 mx-auto" /></TableHead>
+                        <TableHead className="text-center w-14 py-1"><Pencil className="w-3 h-3 mx-auto" /></TableHead>
+                        <TableHead className="text-center w-14 py-1"><Trash2 className="w-3 h-3 mx-auto" /></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {catPerms.map(p => (
+                        <TableRow key={p.section}>
+                          <TableCell className="capitalize text-xs py-1.5">{p.section.replace(/_/g, " ")}</TableCell>
+                          <TableCell className="text-center py-1.5">
+                            <Checkbox checked={p.can_view} onCheckedChange={() => togglePerm(p.section, "can_view")} />
+                          </TableCell>
+                          <TableCell className="text-center py-1.5">
+                            <Checkbox checked={p.can_add} onCheckedChange={() => togglePerm(p.section, "can_add")} />
+                          </TableCell>
+                          <TableCell className="text-center py-1.5">
+                            <Checkbox checked={p.can_edit} onCheckedChange={() => togglePerm(p.section, "can_edit")} />
+                          </TableCell>
+                          <TableCell className="text-center py-1.5">
+                            <Checkbox checked={p.can_delete} onCheckedChange={() => togglePerm(p.section, "can_delete")} />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CollapsibleContent>
+              </Collapsible>
+            );
+          })}
+        </div>
+      </ScrollArea>
+    </div>
+  );
 }
 
 export default function AdminTeamManagement() {
@@ -68,6 +278,7 @@ export default function AdminTeamManagement() {
 
   // Add member state
   const [showAdd, setShowAdd] = useState(false);
+  const [addStep, setAddStep] = useState<1 | 2>(1);
   const [addUsername, setAddUsername] = useState("");
   const [addPassword, setAddPassword] = useState("");
   const [addRole, setAddRole] = useState<AppRole>("compliance");
@@ -79,6 +290,7 @@ export default function AdminTeamManagement() {
   const [createdCreds, setCreatedCreds] = useState<{ username: string; password: string } | null>(null);
   const [emailSent, setEmailSent] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [addPerms, setAddPerms] = useState<AccessPerm[]>(() => applyPreset("view_only"));
 
   // Edit / permissions state
   const [editMember, setEditMember] = useState<TeamMember | null>(null);
@@ -95,15 +307,19 @@ export default function AdminTeamManagement() {
   const [removeMember, setRemoveMember] = useState<TeamMember | null>(null);
   const [removing, setRemoving] = useState(false);
 
+  // Permission summary cache for member cards
+  const [memberPermSummaries, setMemberPermSummaries] = useState<Record<string, { view: number; add: number; edit: number; del: number }>>({});
+
   const loadMembers = useCallback(async () => {
     setLoading(true);
     const { data: tmData } = await supabase.from("team_members").select("*").order("created_at", { ascending: false });
     if (!tmData || tmData.length === 0) { setMembers([]); setLoading(false); return; }
 
     const userIds = tmData.map(m => m.user_id);
-    const [rolesRes, profilesRes] = await Promise.all([
+    const [rolesRes, profilesRes, permsRes] = await Promise.all([
       supabase.from("user_roles").select("user_id, role").in("user_id", userIds),
       supabase.from("profiles").select("user_id, phone, name, avatar_url").in("user_id", userIds),
+      supabase.from("team_access_permissions").select("user_id, can_view, can_add, can_edit, can_delete").in("user_id", userIds),
     ]);
 
     const rolesMap: Record<string, AppRole[]> = {};
@@ -114,6 +330,17 @@ export default function AdminTeamManagement() {
 
     const profileMap: Record<string, any> = {};
     (profilesRes.data ?? []).forEach(p => { profileMap[p.user_id] = p; });
+
+    // Build perm summaries
+    const summaries: Record<string, { view: number; add: number; edit: number; del: number }> = {};
+    (permsRes.data ?? []).forEach((p: any) => {
+      if (!summaries[p.user_id]) summaries[p.user_id] = { view: 0, add: 0, edit: 0, del: 0 };
+      if (p.can_view) summaries[p.user_id].view++;
+      if (p.can_add) summaries[p.user_id].add++;
+      if (p.can_edit) summaries[p.user_id].edit++;
+      if (p.can_delete) summaries[p.user_id].del++;
+    });
+    setMemberPermSummaries(summaries);
 
     setMembers(tmData.map(m => ({
       ...m,
@@ -143,6 +370,8 @@ export default function AdminTeamManagement() {
     setAddDept("general");
     setCreatedCreds(null);
     setEmailSent(false);
+    setAddStep(1);
+    setAddPerms(applyPreset("view_only"));
   };
 
   const sendCredentialsEmail = async (email: string, username: string, password: string) => {
@@ -176,15 +405,12 @@ export default function AdminTeamManagement() {
     setAdding(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const adminSession = session; // save admin session
+      const adminSession = session;
 
-      // Create auth account for team member
       const signUpData = await teamSignUp(addUsername.trim(), addPassword, addName.trim());
       if (!signUpData.user) throw new Error("Failed to create account");
       const newUserId = signUpData.user.id;
 
-      // Re-authenticate as admin (teamSignUp changes the session)
-      // We need to restore admin session
       if (adminSession) {
         await supabase.auth.setSession({
           access_token: adminSession.access_token,
@@ -192,7 +418,6 @@ export default function AdminTeamManagement() {
         });
       }
 
-      // Create profile with synthetic phone
       const syntheticPhone = `TEAM-${addUsername.trim()}`;
       await supabase.from("profiles").insert({
         user_id: newUserId,
@@ -201,7 +426,6 @@ export default function AdminTeamManagement() {
         status: "active",
       });
 
-      // Insert team member row
       await supabase.from("team_members").insert({
         user_id: newUserId,
         display_name: addName.trim(),
@@ -212,21 +436,20 @@ export default function AdminTeamManagement() {
         temp_password: addPassword,
       } as any);
 
-      // Assign role
       await supabase.from("user_roles").insert({ user_id: newUserId, role: addRole });
 
-      // Insert default permissions
-      const perms = SECTIONS.map(s => ({
+      // Insert permissions from the addPerms state (configured in step 2)
+      const perms = addPerms.map(p => ({
         user_id: newUserId,
-        section: s,
-        can_view: true,
-        can_edit: false,
-        can_delete: false,
+        section: p.section,
+        can_view: p.can_view,
+        can_add: p.can_add,
+        can_edit: p.can_edit,
+        can_delete: p.can_delete,
         granted_by: adminSession?.user?.id,
       }));
       await supabase.from("team_access_permissions").upsert(perms, { onConflict: "user_id,section" });
 
-      // Audit log
       await supabase.from("audit_logs").insert({
         actor_id: adminSession?.user?.id!,
         action: "team_member_created",
@@ -238,7 +461,6 @@ export default function AdminTeamManagement() {
       toast.success("Team member created successfully");
       setCreatedCreds({ username: addUsername.trim(), password: addPassword });
 
-      // Auto-send credentials email if email was provided
       if (addEmail.trim()) {
         await sendCredentialsEmail(addEmail.trim(), addUsername.trim(), addPassword);
       }
@@ -255,25 +477,13 @@ export default function AdminTeamManagement() {
     setEditMember(member);
     setEditLoading(true);
     const { data } = await supabase.from("team_access_permissions")
-      .select("section, can_view, can_edit, can_delete")
+      .select("section, can_view, can_add, can_edit, can_delete")
       .eq("user_id", member.user_id);
     
     const permMap: Record<string, AccessPerm> = {};
-    (data ?? []).forEach(p => { permMap[p.section] = p; });
-    setEditPerms(SECTIONS.map(s => permMap[s] || { section: s, can_view: true, can_edit: false, can_delete: false }));
+    (data ?? []).forEach((p: any) => { permMap[p.section] = { ...p, can_add: p.can_add ?? false }; });
+    setEditPerms(ALL_SECTIONS.map(s => permMap[s] || { section: s, can_view: true, can_add: false, can_edit: false, can_delete: false }));
     setEditLoading(false);
-  };
-
-  const togglePerm = (section: string, field: "can_view" | "can_edit" | "can_delete") => {
-    setEditPerms(prev => prev.map(p => {
-      if (p.section !== section) return p;
-      const updated = { ...p, [field]: !p[field] };
-      // If removing view, also remove edit/delete
-      if (field === "can_view" && !updated.can_view) { updated.can_edit = false; updated.can_delete = false; }
-      // If granting edit/delete, also grant view
-      if ((field === "can_edit" || field === "can_delete") && updated[field]) { updated.can_view = true; }
-      return updated;
-    }));
   };
 
   const savePermissions = async () => {
@@ -285,6 +495,7 @@ export default function AdminTeamManagement() {
         user_id: editMember.user_id,
         section: p.section,
         can_view: p.can_view,
+        can_add: p.can_add,
         can_edit: p.can_edit,
         can_delete: p.can_delete,
         granted_by: session?.user?.id,
@@ -298,11 +509,12 @@ export default function AdminTeamManagement() {
         action: "team_permissions_updated",
         entity_type: "team",
         entity_id: editMember.user_id,
-        details: { display_name: editMember.display_name, sections_edited: editPerms.filter(p => p.can_edit).map(p => p.section).length },
+        details: { display_name: editMember.display_name, sections_edited: editPerms.filter(p => p.can_edit).length },
       });
 
       toast.success("Permissions saved");
       setEditMember(null);
+      loadMembers();
     } catch (e: any) {
       toast.error(e.message || "Failed to save permissions");
     }
@@ -346,11 +558,8 @@ export default function AdminTeamManagement() {
     setRemoving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      // Remove from team_members
       await supabase.from("team_members").delete().eq("id", removeMember.id);
-      // Remove team permissions
       await supabase.from("team_access_permissions").delete().eq("user_id", removeMember.user_id);
-      // Remove staff roles (keep customer)
       for (const role of STAFF_ROLES) {
         await supabase.from("user_roles").delete().eq("user_id", removeMember.user_id).eq("role", role.value);
       }
@@ -433,59 +642,71 @@ export default function AdminTeamManagement() {
             </CardContent></Card>
           ) : (
             <div className="grid gap-3">
-              {filtered.map(member => (
-                <Card key={member.id} className="border shadow-sm">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-semibold text-foreground truncate">{member.display_name}</h3>
-                          <div className={`w-2 h-2 rounded-full ${member.is_available ? "bg-emerald-500" : "bg-muted-foreground"}`} />
-                          <span className="text-xs text-muted-foreground">{member.is_available ? "Online" : "Offline"}</span>
+              {filtered.map(member => {
+                const ps = memberPermSummaries[member.user_id];
+                return (
+                  <Card key={member.id} className="border shadow-sm">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-semibold text-foreground truncate">{member.display_name}</h3>
+                            <div className={`w-2 h-2 rounded-full ${member.is_available ? "bg-emerald-500" : "bg-muted-foreground"}`} />
+                            <span className="text-xs text-muted-foreground">{member.is_available ? "Online" : "Offline"}</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground font-mono">{member.username || member.profile?.phone || "—"}</p>
+                          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                            <Badge variant="outline" className="text-xs">{member.department}</Badge>
+                            {(member.roles || []).map(r => (
+                              <Badge key={r} className={`text-xs ${ROLE_COLORS[r] || "bg-muted text-muted-foreground"}`}>{r}</Badge>
+                            ))}
+                            {(() => {
+                              const done = [
+                                (member as any).has_logged_in,
+                                (member as any).has_changed_password,
+                                (member as any).has_completed_profile,
+                              ].filter(Boolean).length;
+                              if (done >= 3) return null;
+                              return (
+                                <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-700">
+                                  Onboarding: {done}/3
+                                </Badge>
+                              );
+                            })()}
+                          </div>
+                          {/* Permission summary badges */}
+                          {ps && (
+                            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0"><Eye className="w-2.5 h-2.5 mr-0.5" />{ps.view}</Badge>
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0"><Plus className="w-2.5 h-2.5 mr-0.5" />{ps.add}</Badge>
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0"><Pencil className="w-2.5 h-2.5 mr-0.5" />{ps.edit}</Badge>
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0"><Trash2 className="w-2.5 h-2.5 mr-0.5" />{ps.del}</Badge>
+                            </div>
+                          )}
+                          {member.last_active_at && (
+                            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              Last active {formatDistanceToNow(new Date(member.last_active_at), { addSuffix: true })}
+                            </p>
+                          )}
                         </div>
-                        <p className="text-sm text-muted-foreground font-mono">{member.username || member.profile?.phone || "—"}</p>
-                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                          <Badge variant="outline" className="text-xs">{member.department}</Badge>
-                          {(member.roles || []).map(r => (
-                            <Badge key={r} className={`text-xs ${ROLE_COLORS[r] || "bg-muted text-muted-foreground"}`}>{r}</Badge>
-                          ))}
-                          {(() => {
-                            const done = [
-                              (member as any).has_logged_in,
-                              (member as any).has_changed_password,
-                              (member as any).has_completed_profile,
-                            ].filter(Boolean).length;
-                            if (done >= 3) return null;
-                            return (
-                              <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-700">
-                                Onboarding: {done}/3
-                              </Badge>
-                            );
-                          })()}
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Switch checked={member.is_available} onCheckedChange={() => toggleAvailability(member)} />
+                          <Button size="icon" variant="ghost" onClick={() => openEdit(member)} title="Permissions">
+                            <Shield className="w-4 h-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" onClick={() => openActivity(member)} title="Activity">
+                            <Activity className="w-4 h-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" onClick={() => setRemoveMember(member)} title="Remove" className="text-destructive hover:text-destructive">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
-                        {member.last_active_at && (
-                          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            Last active {formatDistanceToNow(new Date(member.last_active_at), { addSuffix: true })}
-                          </p>
-                        )}
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <Switch checked={member.is_available} onCheckedChange={() => toggleAvailability(member)} />
-                        <Button size="icon" variant="ghost" onClick={() => openEdit(member)} title="Permissions">
-                          <Shield className="w-4 h-4" />
-                        </Button>
-                        <Button size="icon" variant="ghost" onClick={() => openActivity(member)} title="Activity">
-                          <Activity className="w-4 h-4" />
-                        </Button>
-                        <Button size="icon" variant="ghost" onClick={() => setRemoveMember(member)} title="Remove" className="text-destructive hover:text-destructive">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </TabsContent>
@@ -506,15 +727,19 @@ export default function AdminTeamManagement() {
         </TabsContent>
       </Tabs>
 
-      {/* ═══ ADD MEMBER DIALOG ═══ */}
+      {/* ═══ ADD MEMBER DIALOG (2-STEP) ═══ */}
       <Dialog open={showAdd} onOpenChange={o => { if (!o) { setShowAdd(false); setCreatedCreds(null); } }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl max-h-[90vh]">
           <DialogHeader>
-            <DialogTitle>{createdCreds ? "Credentials Created" : "Add Team Member"}</DialogTitle>
+            <DialogTitle>
+              {createdCreds ? "Credentials Created" : addStep === 1 ? "Add Team Member — Step 1: Info" : "Add Team Member — Step 2: Permissions"}
+            </DialogTitle>
             <DialogDescription>
               {createdCreds
                 ? "Share these credentials securely with the team member."
-                : "Create a new team member account with auto-generated credentials."}
+                : addStep === 1
+                ? "Create a new team member account with auto-generated credentials."
+                : "Configure what this team member can access. You can also change this later."}
             </DialogDescription>
           </DialogHeader>
 
@@ -574,7 +799,7 @@ export default function AdminTeamManagement() {
               )}
               <p className="text-xs text-muted-foreground text-center">⚠️ Save these credentials now. The password won't be shown again.</p>
             </div>
-          ) : (
+          ) : addStep === 1 ? (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -632,15 +857,36 @@ export default function AdminTeamManagement() {
                 <Textarea value={addNotes} onChange={e => setAddNotes(e.target.value)} className="mt-1" rows={2} />
               </div>
             </div>
+          ) : (
+            /* Step 2: Permissions */
+            <PermissionEditor perms={addPerms} onChange={setAddPerms} />
           )}
 
           <DialogFooter>
             {createdCreds ? (
               <Button onClick={() => { setShowAdd(false); setCreatedCreds(null); }}>Done</Button>
-            ) : (
+            ) : addStep === 1 ? (
               <>
                 <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
-                <Button onClick={addMember} disabled={adding || !addUsername.trim() || !addPassword.trim() || !addName.trim()}>
+                <Button
+                  onClick={() => {
+                    if (!addUsername.trim() || !addPassword.trim() || !addName.trim()) {
+                      toast.error("Username, password and display name are required");
+                      return;
+                    }
+                    setAddStep(2);
+                  }}
+                >
+                  Next: Permissions →
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => setAddStep(1)}>← Back</Button>
+                <Button variant="secondary" onClick={() => { setAddPerms(applyPreset("view_only")); addMember(); }}>
+                  Skip (View-Only Default)
+                </Button>
+                <Button onClick={addMember} disabled={adding}>
                   <KeyRound className="w-4 h-4 mr-1" />
                   {adding ? "Creating..." : "Create Account"}
                 </Button>
@@ -652,7 +898,7 @@ export default function AdminTeamManagement() {
 
       {/* ═══ EDIT PERMISSIONS DIALOG ═══ */}
       <Dialog open={!!editMember} onOpenChange={o => { if (!o) setEditMember(null); }}>
-        <DialogContent className="max-w-2xl max-h-[80vh]">
+        <DialogContent className="max-w-2xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Permissions — {editMember?.display_name}</DialogTitle>
             <DialogDescription>Configure which admin sections this team member can access.</DialogDescription>
@@ -660,34 +906,7 @@ export default function AdminTeamManagement() {
           {editLoading ? (
             <div className="flex justify-center py-8"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
           ) : (
-            <ScrollArea className="max-h-[50vh]">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Section</TableHead>
-                    <TableHead className="text-center w-20"><Eye className="w-4 h-4 mx-auto" /></TableHead>
-                    <TableHead className="text-center w-20"><Pencil className="w-4 h-4 mx-auto" /></TableHead>
-                    <TableHead className="text-center w-20"><Trash2 className="w-4 h-4 mx-auto" /></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {editPerms.map(p => (
-                    <TableRow key={p.section}>
-                      <TableCell className="font-medium capitalize">{p.section}</TableCell>
-                      <TableCell className="text-center">
-                        <Checkbox checked={p.can_view} onCheckedChange={() => togglePerm(p.section, "can_view")} />
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Checkbox checked={p.can_edit} onCheckedChange={() => togglePerm(p.section, "can_edit")} />
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Checkbox checked={p.can_delete} onCheckedChange={() => togglePerm(p.section, "can_delete")} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </ScrollArea>
+            <PermissionEditor perms={editPerms} onChange={setEditPerms} />
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditMember(null)}>Cancel</Button>
@@ -767,13 +986,13 @@ function AccessMatrixView({ members }: { members: TeamMember[] }) {
       if (members.length === 0) { setLoading(false); return; }
       const userIds = members.map(m => m.user_id);
       const { data } = await supabase.from("team_access_permissions")
-        .select("user_id, section, can_view, can_edit, can_delete")
+        .select("user_id, section, can_view, can_add, can_edit, can_delete")
         .in("user_id", userIds);
 
       const map: Record<string, AccessPerm[]> = {};
-      (data ?? []).forEach(p => {
+      (data ?? []).forEach((p: any) => {
         if (!map[p.user_id]) map[p.user_id] = [];
-        map[p.user_id].push(p);
+        map[p.user_id].push({ ...p, can_add: p.can_add ?? false });
       });
       setPerms(map);
       setLoading(false);
@@ -799,23 +1018,33 @@ function AccessMatrixView({ members }: { members: TeamMember[] }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {SECTIONS.map(section => (
-              <TableRow key={section}>
-                <TableCell className="sticky left-0 bg-background font-medium capitalize text-sm">{section}</TableCell>
-                {members.map(m => {
-                  const p = (perms[m.user_id] || []).find(pp => pp.section === section);
-                  return (
-                    <TableCell key={m.id} className="text-center">
-                      <div className="flex justify-center gap-0.5">
-                        {p?.can_view && <Eye className="w-3 h-3 text-emerald-500" />}
-                        {p?.can_edit && <Pencil className="w-3 h-3 text-blue-500" />}
-                        {p?.can_delete && <Trash2 className="w-3 h-3 text-destructive" />}
-                        {!p?.can_view && !p?.can_edit && !p?.can_delete && <XCircle className="w-3 h-3 text-muted-foreground/30" />}
-                      </div>
-                    </TableCell>
-                  );
-                })}
-              </TableRow>
+            {SECTION_CATEGORIES.map(cat => (
+              <>
+                <TableRow key={`cat-${cat.label}`}>
+                  <TableCell colSpan={members.length + 1} className="sticky left-0 bg-muted/50 font-semibold text-xs text-muted-foreground uppercase tracking-wider py-1.5">
+                    {cat.label}
+                  </TableCell>
+                </TableRow>
+                {cat.sections.map(section => (
+                  <TableRow key={section}>
+                    <TableCell className="sticky left-0 bg-background font-medium capitalize text-sm">{section.replace(/_/g, " ")}</TableCell>
+                    {members.map(m => {
+                      const p = (perms[m.user_id] || []).find(pp => pp.section === section);
+                      return (
+                        <TableCell key={m.id} className="text-center">
+                          <div className="flex justify-center gap-0.5">
+                            {p?.can_view && <Eye className="w-3 h-3 text-emerald-500" />}
+                            {p?.can_add && <Plus className="w-3 h-3 text-cyan-500" />}
+                            {p?.can_edit && <Pencil className="w-3 h-3 text-blue-500" />}
+                            {p?.can_delete && <Trash2 className="w-3 h-3 text-destructive" />}
+                            {!p?.can_view && !p?.can_add && !p?.can_edit && !p?.can_delete && <XCircle className="w-3 h-3 text-muted-foreground/30" />}
+                          </div>
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </>
             ))}
           </TableBody>
         </Table>
@@ -823,4 +1052,3 @@ function AccessMatrixView({ members }: { members: TeamMember[] }) {
     </ScrollArea>
   );
 }
-
