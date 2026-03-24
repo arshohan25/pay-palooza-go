@@ -272,7 +272,7 @@ export default function AdminRechargePackManager() {
     } else {
       const { error } = await supabase.from("recharge_packs").update(payload as any).eq("id", editPack.id!);
       if (error) toast.error("Failed to update pack");
-      else { toast.success("Pack updated"); setEditPack(null); }
+      else { toast.success("Pack updated"); await auditLog("pack_updated", editPack.id!, { name: editPack.name }); setEditPack(null); }
     }
     setSaving(false);
   };
