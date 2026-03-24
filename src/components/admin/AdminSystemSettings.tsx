@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings, Globe, Wrench, AlertTriangle, DollarSign, Shield, Clock, Receipt, Zap, Pencil, Check, X, Plus, Trash2 } from "lucide-react";
+import { Settings, Globe, Wrench, AlertTriangle, DollarSign, Shield, Clock, Receipt, Zap, Pencil, Check, X, Plus, Trash2, Landmark } from "lucide-react";
+import AdminBankListManager from "@/components/admin/AdminBankListManager";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
