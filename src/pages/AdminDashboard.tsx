@@ -80,7 +80,7 @@ import AdminAgentHub from "@/components/admin/AdminAgentHub";
 import AdminWalletSystem from "@/components/admin/AdminWalletSystem";
 import AdminSecurityCenter from "@/components/admin/AdminSecurityCenter";
 import AdminSystemSettings from "@/components/admin/AdminSystemSettings";
-import AdminBankListManager from "@/components/admin/AdminBankListManager";
+
 import AdminLoyaltyPoints from "@/components/admin/AdminLoyaltyPoints";
 import AdminAiFraudDetection from "@/components/admin/AdminAiFraudDetection";
 import AdminGeoTracking from "@/components/admin/AdminGeoTracking";
@@ -1752,12 +1752,7 @@ export default function AdminDashboard() {
         {activeTab === "security" && <AdminSecurityCenter />}
 
         {/* ═══ SYSTEM SETTINGS ═══ */}
-        {activeTab === "sys_settings" && (
-          <div className="space-y-8">
-            <AdminSystemSettings />
-            <AdminBankListManager />
-          </div>
-        )}
+        {activeTab === "sys_settings" && <AdminSystemSettings />}
 
         {/* ═══ LOYALTY POINTS ═══ */}
         {activeTab === "loyalty" && <AdminLoyaltyPoints />}
