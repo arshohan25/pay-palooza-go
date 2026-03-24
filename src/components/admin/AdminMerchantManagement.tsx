@@ -403,6 +403,7 @@ export default function AdminMerchantManagement() {
       reviewed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }).eq("id", requestId);
+    supabase.from("audit_logs").insert({ actor_id: session.user.id, action: `api_request_${action}`, entity_type: "merchant_api_request", entity_id: requestId, details: { notes } }).then();
     toast.success(`Request ${action}`);
     if (detailMerchant) {
       const d = await fetchMerchantDetail(detailMerchant.id, detailMerchant.user_id);

@@ -262,7 +262,7 @@ export default function AdminGlobalToggles() {
       .update({ is_enabled: targetValue } as any)
       .neq("is_enabled", targetValue);
     if (error) toast.error(`Failed to ${bulkAction} all`);
-    else toast.success(`All features ${targetValue ? "enabled" : "disabled"}`);
+    else { toast.success(`All features ${targetValue ? "enabled" : "disabled"}`); auditLog("toggle_bulk_action", "all", { action: bulkAction }); }
     setBulkLoading(false);
     setBulkAction(null);
   };

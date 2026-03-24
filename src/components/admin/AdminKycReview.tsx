@@ -239,6 +239,14 @@ export default function AdminKycReview() {
       toast.error("Failed to re-open KYC record");
     } else {
       toast.success("KYC record re-opened for review");
+      const { data: { session: auditSession } } = await supabase.auth.getSession();
+      if (auditSession?.user) {
+        supabase.from("audit_logs").insert({
+          actor_id: auditSession.user.id, action: "kyc_reopened",
+          entity_type: "kyc_verification", entity_id: selected.id,
+          details: { user_id: selected.user_id, full_name: selected.full_name, notes: reviewNotes },
+        }).then();
+      }
       setSelected(null);
       loadRecords();
     }

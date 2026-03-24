@@ -185,6 +185,10 @@ export default function AdminDistributorManagement() {
     setBulkLoading(true);
     const targets = distributors.filter(d => selectedIds.has(d.id));
     await Promise.allSettled(targets.map(d => supabase.from("distributors").update({ status: status as any }).eq("id", d.id)));
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "distributor_bulk_status", entity_type: "distributor", entity_id: "bulk", details: { count: targets.length, new_status: status } }).then();
+    }
     toast.success(`${targets.length} distributors set to ${status}`);
     setSelectedIds(new Set());
     setBulkLoading(false);

@@ -311,11 +311,20 @@ export default function AdminTeamManagement() {
 
   // Toggle availability
   const toggleAvailability = async (member: TeamMember) => {
+    const newAvail = !member.is_available;
     const { error } = await supabase.from("team_members")
-      .update({ is_available: !member.is_available, updated_at: new Date().toISOString() })
+      .update({ is_available: newAvail, updated_at: new Date().toISOString() })
       .eq("id", member.id);
     if (error) { toast.error("Failed to update status"); return; }
-    setMembers(prev => prev.map(m => m.id === member.id ? { ...m, is_available: !m.is_available } : m));
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      supabase.from("audit_logs").insert({
+        actor_id: session.user.id, action: newAvail ? "team_member_available" : "team_member_unavailable",
+        entity_type: "team", entity_id: member.user_id,
+        details: { display_name: member.display_name },
+      }).then();
+    }
+    setMembers(prev => prev.map(m => m.id === member.id ? { ...m, is_available: newAvail } : m));
   };
 
   // Load activity

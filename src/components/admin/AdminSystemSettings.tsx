@@ -451,6 +451,10 @@ function TransactionRulesTab() {
     const newEnabled = !rule.is_enabled;
     await supabase.from("transaction_safety_rules" as any).update({ is_enabled: newEnabled, updated_at: new Date().toISOString() } as any).eq("id", rule.id);
     setRules(prev => prev.map(r => r.id === rule.id ? { ...r, is_enabled: newEnabled } : r));
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "txn_rule_toggled", entity_type: "transaction_safety_rule", entity_id: rule.id, details: { label: rule.label, new_enabled: newEnabled } }).then();
+    }
     toast.success(`${rule.label} ${newEnabled ? "enabled" : "disabled"}`);
   };
 
