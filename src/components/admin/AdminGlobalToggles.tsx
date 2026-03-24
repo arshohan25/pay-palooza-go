@@ -226,7 +226,7 @@ export default function AdminGlobalToggles() {
         .update({ label: editLabel, description: editDesc || null } as any)
         .eq("id", editToggle.id);
       if (error) toast.error("Failed to save");
-      else { toast.success("Toggle updated"); setEditToggle(null); }
+      else { toast.success("Toggle updated"); auditLog("toggle_edited", editToggle.id, { feature_key: editToggle.feature_key, new_label: editLabel }); setEditToggle(null); }
     } else {
       if (!editKey.trim()) { toast.error("Feature key is required"); setSaving(false); return; }
       const section = allSections.find((s) => s.id === addSection);
