@@ -20,6 +20,9 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Parse body once
+    const { targetUserId, newPassword } = await req.json();
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -28,16 +31,14 @@ Deno.serve(async (req) => {
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(
-      authHeader.replace("Bearer ", "")
-    );
-    if (claimsErr || !claimsData?.claims?.sub) {
+    const { data: { user: caller }, error: authError } = await userClient.auth.getUser();
+    if (authError || !caller) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const adminId = claimsData.claims.sub as string;
+    const adminId = caller.id;
 
     // Verify admin role
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
@@ -54,8 +55,6 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const { targetUserId, newPassword } = await req.json();
 
     if (!targetUserId || typeof targetUserId !== "string") {
       return new Response(JSON.stringify({ error: "Missing targetUserId" }), {
