@@ -221,18 +221,18 @@ export default function AdminActivityMonitor() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-muted-foreground">
-                    <th className="text-left px-4 py-3 font-medium">Short ID</th>
-                    <th className="text-left px-4 py-3 font-medium">Type</th>
-                    <th className="text-left px-4 py-3 font-medium">Sender</th>
-                    <th className="text-left px-4 py-3 font-medium">Receiver</th>
-                    <th className="text-left px-4 py-3 font-medium">Amount</th>
-                    <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">Fee</th>
-                    <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">Commission</th>
-                    <th className="text-left px-4 py-3 font-medium hidden xl:table-cell">Balance After</th>
-                    <th className="text-left px-4 py-3 font-medium">Status</th>
-                    <th className="text-left px-4 py-3 font-medium">Date-Time</th>
-                    <th className="text-left px-4 py-3 font-medium w-10"></th>
-                  </tr>
+                     <th className="text-left px-3 py-3 font-medium">Short ID</th>
+                     <th className="text-left px-3 py-3 font-medium">Type</th>
+                     <th className="text-left px-3 py-3 font-medium">Sender</th>
+                     <th className="text-left px-3 py-3 font-medium">Receiver</th>
+                     <th className="text-left px-3 py-3 font-medium">Amount</th>
+                     <th className="text-left px-3 py-3 font-medium hidden lg:table-cell">Fee</th>
+                     <th className="text-left px-3 py-3 font-medium hidden lg:table-cell">Commission</th>
+                     <th className="text-left px-3 py-3 font-medium hidden 2xl:table-cell">Balance After</th>
+                     <th className="text-left px-3 py-3 font-medium whitespace-nowrap">Status</th>
+                     <th className="text-left px-3 py-3 font-medium hidden xl:table-cell">Date-Time</th>
+                     <th className="text-left px-3 py-3 font-medium w-10"></th>
+                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map(txn => {
