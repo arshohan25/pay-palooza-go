@@ -23,6 +23,15 @@ import AdminCourierProviders from "./AdminCourierProviders";
 import AdminDeliveryZones from "./AdminDeliveryZones";
 import AdminReturnRequests from "./AdminReturnRequests";
 
+async function auditLog(action: string, entityType: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: entityType, entity_id: entityId, details
+    }).then();
+  }
+}
+
 type SubTab = "dashboard" | "products" | "stores" | "reviews" | "coupons" | "banners" | "marketing" | "inventory" | "flash_sales" | "couriers" | "zones" | "returns";
 
 const SUB_TABS: { key: SubTab; label: string; icon: any }[] = [
