@@ -101,6 +101,18 @@ function AppConfigTab() {
     await saveConfigField("team_session_timeout_minutes", value);
   };
 
+  const [userSessionTimeout, setUserSessionTimeout] = useState("30");
+
+  useEffect(() => {
+    const t = toggles.find((t: any) => t.feature_key === "user_session_timeout_minutes");
+    if (t?.description) setUserSessionTimeout(t.description);
+  }, [toggles]);
+
+  const saveUserSessionTimeout = async (value: string) => {
+    setUserSessionTimeout(value);
+    await saveConfigField("user_session_timeout_minutes", value);
+  };
+
   const configFields = [
     { key: "app_name", label: "App Name", value: configValues.app_name },
     { key: "app_version", label: "Version", value: configValues.app_version },
