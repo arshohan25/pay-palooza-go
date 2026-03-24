@@ -45,6 +45,7 @@ export default function AdminBankListManager() {
       toast.error(error.message.includes("duplicate") ? "Bank already exists" : error.message);
     } else {
       toast.success("Bank added");
+      auditLog("create_bank", "new", { name: newName.trim(), short_code: newCode.trim().toUpperCase() });
       setNewName("");
       setNewCode("");
       refetch();
