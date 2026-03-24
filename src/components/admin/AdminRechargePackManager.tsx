@@ -268,7 +268,7 @@ export default function AdminRechargePackManager() {
     if (isNew) {
       const { error } = await supabase.from("recharge_packs").insert(payload as any);
       if (error) toast.error("Failed to create pack");
-      else { toast.success("Pack created"); setEditPack(null); }
+      else { toast.success("Pack created"); await auditLog("pack_created", "new", { name: editPack.name }); setEditPack(null); }
     } else {
       const { error } = await supabase.from("recharge_packs").update(payload as any).eq("id", editPack.id!);
       if (error) toast.error("Failed to update pack");
