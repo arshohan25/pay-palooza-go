@@ -65,6 +65,13 @@ async function callBillerApi(body: Record<string, unknown>) {
   return data;
 }
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: "biller_config", entity_id: entityId, details });
+  }
+}
+
 export default function AdminBillerConfig() {
   const [billers, setBillers] = useState<Biller[]>([]);
   const { visible, flash } = useRealtimeIndicator();
