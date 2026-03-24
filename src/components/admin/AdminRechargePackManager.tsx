@@ -281,7 +281,7 @@ export default function AdminRechargePackManager() {
     if (!deletePack) return;
     const { error } = await supabase.from("recharge_packs").delete().eq("id", deletePack.id);
     if (error) toast.error("Failed to delete");
-    else toast.success(`"${deletePack.name}" deleted`);
+    else { toast.success(`"${deletePack.name}" deleted`); await auditLog("pack_deleted", deletePack.id, { name: deletePack.name }); }
     setDeletePack(null);
   };
 
