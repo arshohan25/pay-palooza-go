@@ -56,6 +56,13 @@ async function callGatewayApi(body: Record<string, unknown>) {
   return data;
 }
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: "payment_gateway", entity_id: entityId, details });
+  }
+}
+
 export default function AdminGatewayConfig() {
   const [gateways, setGateways] = useState<Gateway[]>([]);
   const { visible, flash } = useRealtimeIndicator();
