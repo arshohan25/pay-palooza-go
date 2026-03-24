@@ -167,6 +167,13 @@ export default function AdminGlobalToggles() {
     return () => { supabase.removeChannel(ch); };
   }, [load]);
 
+  const auditLog = async (action: string, entityId: string, details: any) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: "global_toggle", entity_id: entityId, details }).then();
+    }
+  };
+
   const setVisibility = async (t: FeatureToggle, visibility: string) => {
     const isEnabled = visibility === 'visible';
     const { error } = await supabase
@@ -177,6 +184,7 @@ export default function AdminGlobalToggles() {
     else {
       const labels: Record<string, string> = { visible: "Visible", disabled: "Disabled (greyed out)", hidden: "Hidden" };
       toast.success(`${t.label} → ${labels[visibility] || visibility}`);
+      auditLog("toggle_visibility_changed", t.id, { feature_key: t.feature_key, label: t.label, new_visibility: visibility });
     }
   };
 
