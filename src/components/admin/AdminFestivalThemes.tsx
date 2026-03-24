@@ -13,6 +13,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Plus, Edit2, Trash2, Eye, Calendar, Palette } from "lucide-react";
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: "festival_theme", entity_id: entityId, details
+    });
+  }
+}
+
 interface FestivalTheme {
   id: string;
   name: string;
@@ -424,11 +433,13 @@ export default function AdminFestivalThemes() {
       const { error } = await supabase.from("festival_themes").update(payload as any).eq("id", editing.id);
       if (error) { toast.error(error.message); return; }
       toast.success("Theme updated");
+      await auditLog("festival_theme_update", editing.id, { name: payload.name });
     } else {
       const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase.from("festival_themes").insert({ ...payload, created_by: user?.id } as any);
+      const { data, error } = await supabase.from("festival_themes").insert({ ...payload, created_by: user?.id } as any).select("id").single();
       if (error) { toast.error(error.message); return; }
       toast.success("Theme created");
+      await auditLog("festival_theme_create", data.id, { name: payload.name });
     }
     setDialogOpen(false);
     fetchThemes();
@@ -440,12 +451,15 @@ export default function AdminFestivalThemes() {
     }
     await supabase.from("festival_themes").update({ is_active: !t.is_active, updated_at: new Date().toISOString() } as any).eq("id", t.id);
     toast.success(t.is_active ? "Theme deactivated" : "Theme activated");
+    await auditLog(t.is_active ? "festival_theme_deactivate" : "festival_theme_activate", t.id, { name: t.name });
     fetchThemes();
   };
 
   const deleteTheme = async (id: string) => {
+    const theme = themes.find(t => t.id === id);
     await supabase.from("festival_themes").delete().eq("id", id);
     toast.success("Theme deleted");
+    await auditLog("festival_theme_delete", id, { name: theme?.name });
     fetchThemes();
   };
 

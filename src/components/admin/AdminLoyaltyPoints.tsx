@@ -6,28 +6,31 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Star, Plus, Pencil, Gift, TrendingUp } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Star, Plus, Pencil, Trash2, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-interface LoyaltyRule {
-  id: string;
-  name: string;
-  txn_type: string;
-  points_per_100: number;
-  min_amount: number;
-  is_active: boolean;
-  created_at: string;
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: "cashback_rule", entity_id: entityId, details
+    });
+  }
 }
 
-// Loyalty points uses cashback_rules table with a "loyalty" cashback_type
 export default function AdminLoyaltyPoints() {
   const [rules, setRules] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState({ name: "", txn_type: "send", points: "1", min_amount: "0", is_active: true });
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  const [adjustForm, setAdjustForm] = useState({ phone: "", points: "0", reason: "", action: "add" as "add" | "deduct" });
 
   const load = async () => {
     setLoading(true);
@@ -63,13 +66,47 @@ export default function AdminLoyaltyPoints() {
       const { error } = await supabase.from("cashback_rules").update(payload).eq("id", editing.id);
       if (error) { toast.error("Failed to update"); return; }
       toast.success("Loyalty rule updated");
+      await auditLog("loyalty_rule_update", editing.id, { previous: { name: editing.name, cashback_value: editing.cashback_value }, updated: payload });
     } else {
-      const { error } = await supabase.from("cashback_rules").insert(payload);
+      const { data, error } = await supabase.from("cashback_rules").insert(payload).select("id").single();
       if (error) { toast.error("Failed to create"); return; }
       toast.success("Loyalty rule created");
+      await auditLog("loyalty_rule_create", data.id, payload);
     }
     setDialogOpen(false);
     load();
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    const rule = rules.find(r => r.id === deleteId);
+    const { error } = await supabase.from("cashback_rules").delete().eq("id", deleteId);
+    if (error) { toast.error("Failed to delete"); return; }
+    toast.success("Loyalty rule deleted");
+    await auditLog("loyalty_rule_delete", deleteId, { deleted_rule: rule?.name });
+    setDeleteId(null);
+    load();
+  };
+
+  const handleAdjust = async () => {
+    const pts = parseInt(adjustForm.points);
+    if (!adjustForm.phone.trim() || !pts || pts <= 0 || !adjustForm.reason.trim()) {
+      toast.error("Phone, points, and reason are required");
+      return;
+    }
+    // This is a manual adjustment - log it as audit
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    await supabase.from("audit_logs").insert({
+      actor_id: session.user.id,
+      action: `loyalty_points_${adjustForm.action}`,
+      entity_type: "loyalty_adjustment",
+      entity_id: adjustForm.phone,
+      details: { phone: adjustForm.phone, points: pts, action: adjustForm.action, reason: adjustForm.reason }
+    });
+    toast.success(`${adjustForm.action === "add" ? "Added" : "Deducted"} ${pts} points for ${adjustForm.phone} (logged)`);
+    setAdjustOpen(false);
+    setAdjustForm({ phone: "", points: "0", reason: "", action: "add" });
   };
 
   const totalActive = rules.filter(r => r.is_active).length;
@@ -82,7 +119,10 @@ export default function AdminLoyaltyPoints() {
           <p className="text-sm font-semibold text-foreground flex items-center gap-2"><Star className="w-4 h-4 text-amber-500" /> Loyalty Points</p>
           <p className="text-xs text-muted-foreground">Reward users with points for transactions</p>
         </div>
-        <Button size="sm" onClick={openAdd}><Plus className="w-4 h-4 mr-1" /> Add Rule</Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => setAdjustOpen(true)}><UserPlus className="w-4 h-4 mr-1" /> Adjust</Button>
+          <Button size="sm" onClick={openAdd}><Plus className="w-4 h-4 mr-1" /> Add Rule</Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
@@ -99,7 +139,7 @@ export default function AdminLoyaltyPoints() {
                 <th className="text-left px-3 py-2.5 font-medium text-xs">Type</th>
                 <th className="text-left px-3 py-2.5 font-medium text-xs">Points</th>
                 <th className="text-left px-3 py-2.5 font-medium text-xs">Status</th>
-                <th className="text-left px-3 py-2.5 font-medium text-xs">Edit</th>
+                <th className="text-left px-3 py-2.5 font-medium text-xs">Actions</th>
               </tr></thead>
               <tbody>
                 {rules.map(r => (
@@ -108,7 +148,12 @@ export default function AdminLoyaltyPoints() {
                     <td className="px-3 py-2.5"><Badge variant="secondary" className="text-[10px] capitalize">{r.txn_type}</Badge></td>
                     <td className="px-3 py-2.5 text-xs font-semibold text-amber-600">{r.cashback_value} pts</td>
                     <td className="px-3 py-2.5"><Badge variant={r.is_active ? "default" : "secondary"} className="text-[10px]">{r.is_active ? "Active" : "Off"}</Badge></td>
-                    <td className="px-3 py-2.5"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(r)}><Pencil className="w-3.5 h-3.5" /></Button></td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(r)}><Pencil className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(r.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -118,6 +163,7 @@ export default function AdminLoyaltyPoints() {
         </CardContent>
       </Card>
 
+      {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>{editing ? "Edit Loyalty Rule" : "Add Loyalty Rule"}</DialogTitle></DialogHeader>
@@ -134,6 +180,43 @@ export default function AdminLoyaltyPoints() {
             <div><Label>Min Amount (৳)</Label><Input type="number" value={form.min_amount} onChange={e => setForm(f => ({ ...f, min_amount: e.target.value }))} /></div>
             <div className="flex items-center gap-2"><Switch checked={form.is_active} onCheckedChange={v => setForm(f => ({ ...f, is_active: v }))} /><Label>Active</Label></div>
             <Button className="w-full" onClick={handleSave}>{editing ? "Update" : "Create"} Rule</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Loyalty Rule?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone. The rule will be permanently removed.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Manual Adjust Dialog */}
+      <Dialog open={adjustOpen} onOpenChange={setAdjustOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Manual Point Adjustment</DialogTitle></DialogHeader>
+          <div className="space-y-3 pt-2">
+            <div><Label>User Phone</Label><Input value={adjustForm.phone} onChange={e => setAdjustForm(f => ({ ...f, phone: e.target.value }))} placeholder="01XXXXXXXXX" /></div>
+            <div>
+              <Label>Action</Label>
+              <Select value={adjustForm.action} onValueChange={(v: "add" | "deduct") => setAdjustForm(f => ({ ...f, action: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="add">Add Points</SelectItem>
+                  <SelectItem value="deduct">Deduct Points</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>Points</Label><Input type="number" value={adjustForm.points} onChange={e => setAdjustForm(f => ({ ...f, points: e.target.value }))} /></div>
+            <div><Label>Reason</Label><Textarea value={adjustForm.reason} onChange={e => setAdjustForm(f => ({ ...f, reason: e.target.value }))} placeholder="Reason for adjustment..." rows={2} /></div>
+            <Button className="w-full" onClick={handleAdjust}>Submit Adjustment</Button>
           </div>
         </DialogContent>
       </Dialog>

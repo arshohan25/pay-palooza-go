@@ -13,6 +13,15 @@ import { Plus, Pencil, Trash2, GripVertical, Image, Upload, X, ExternalLink, Lin
 import { toast } from "sonner";
 import { icons } from "lucide-react";
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: "promo_banner", entity_id: entityId, details
+    });
+  }
+}
+
 interface Banner {
   id: string;
   title: string;
@@ -200,10 +209,12 @@ export default function AdminBannerManager() {
 
     if (editId) {
       const { error } = await supabase.from("promo_banners").update(payload).eq("id", editId);
-      if (error) toast.error(error.message); else toast.success("Banner updated");
+      if (error) toast.error(error.message);
+      else { toast.success("Banner updated"); await auditLog("banner_update", editId, { title: payload.title }); }
     } else {
-      const { error } = await supabase.from("promo_banners").insert(payload);
-      if (error) toast.error(error.message); else toast.success("Banner created");
+      const { data, error } = await supabase.from("promo_banners").insert(payload).select("id").single();
+      if (error) toast.error(error.message);
+      else { toast.success("Banner created"); await auditLog("banner_create", data.id, { title: payload.title }); }
     }
     setSaving(false);
     setDialogOpen(false);
@@ -212,8 +223,10 @@ export default function AdminBannerManager() {
 
   const deleteBanner = async () => {
     if (!deleteId) return;
+    const banner = banners.find(b => b.id === deleteId);
     const { error } = await supabase.from("promo_banners").delete().eq("id", deleteId);
-    if (error) toast.error(error.message); else toast.success("Banner deleted");
+    if (error) toast.error(error.message);
+    else { toast.success("Banner deleted"); await auditLog("banner_delete", deleteId, { title: banner?.title }); }
     setDeleteId(null);
     load();
   };

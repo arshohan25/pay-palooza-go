@@ -5,7 +5,7 @@ import {
   Store, UserCheck, Crown, Truck, Image as ImageIcon, Link2, Copy, CheckCheck,
   RotateCcw, Pencil, Trash2, RefreshCw, Clock, Eye, ChevronDown, ChevronUp,
   Activity, UserX, TrendingUp, TrendingDown, Target, Search, MessageSquare,
-  Mail, Filter, MailCheck, MailX,
+  Mail, Filter, MailCheck, MailX, Plus,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,10 +18,20 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: "notification", entity_id: entityId, details
+    });
+  }
+}
 import { formatDistanceToNow, format, startOfDay, endOfDay, subDays } from "date-fns";
 
 const CATEGORIES = [
@@ -100,7 +110,7 @@ interface AdminNotif {
   metadata: any;
 }
 
-type MainTab = "compose" | "notif_logs" | "sms_logs";
+type MainTab = "compose" | "notif_logs" | "sms_logs" | "templates";
 
 export default function AdminNotificationSender() {
   const [mainTab, setMainTab] = useState<MainTab>("compose");
@@ -142,11 +152,20 @@ export default function AdminNotificationSender() {
   const [smsTodayCount, setSmsTodayCount] = useState(0);
   const [otpTodayCount, setOtpTodayCount] = useState(0);
 
+  // Templates state
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<any>(null);
+  const [templateForm, setTemplateForm] = useState({ name: "", title: "", body: "", category: "promo", image_url: "" });
+  const [deleteTemplateId, setDeleteTemplateId] = useState<string | null>(null);
+
   useEffect(() => { loadHistory(); }, []);
 
   useEffect(() => {
     if (mainTab === "notif_logs") loadNotifLogs();
     if (mainTab === "sms_logs") loadSmsLogs();
+    if (mainTab === "templates") loadTemplates();
   }, [mainTab]);
 
   const loadHistory = async () => {
@@ -186,6 +205,69 @@ export default function AdminNotificationSender() {
     setSmsTodayCount(todayLogs.filter(l => l.action?.toLowerCase().includes("sms") || l.action?.toLowerCase().includes("notify")).length);
     setOtpTodayCount(todayLogs.filter(l => l.action?.toLowerCase().includes("otp")).length);
     setSmsLogsLoading(false);
+  };
+
+  const loadTemplates = async () => {
+    setTemplatesLoading(true);
+    const { data } = await (supabase as any).from("notification_templates").select("*").order("created_at", { ascending: false });
+    setTemplates(data || []);
+    setTemplatesLoading(false);
+  };
+
+  const openTemplateAdd = () => {
+    setEditingTemplate(null);
+    setTemplateForm({ name: "", title: "", body: "", category: "promo", image_url: "" });
+    setTemplateDialogOpen(true);
+  };
+
+  const openTemplateEdit = (t: any) => {
+    setEditingTemplate(t);
+    setTemplateForm({ name: t.name, title: t.title, body: t.body, category: t.category, image_url: t.image_url || "" });
+    setTemplateDialogOpen(true);
+  };
+
+  const saveTemplate = async () => {
+    if (!templateForm.name.trim() || !templateForm.title.trim()) { toast.error("Name and title required"); return; }
+    const payload: any = {
+      name: templateForm.name, title: templateForm.title, body: templateForm.body,
+      category: templateForm.category, image_url: templateForm.image_url || null,
+      updated_at: new Date().toISOString(),
+    };
+    if (editingTemplate) {
+      const { error } = await (supabase as any).from("notification_templates").update(payload).eq("id", editingTemplate.id);
+      if (error) { toast.error(error.message); return; }
+      toast.success("Template updated");
+      await auditLog("template_update", editingTemplate.id, { name: payload.name });
+    } else {
+      const { data: { user } } = await supabase.auth.getUser();
+      payload.created_by = user?.id;
+      const { data, error } = await (supabase as any).from("notification_templates").insert(payload).select("id").single();
+      if (error) { toast.error(error.message); return; }
+      toast.success("Template created");
+      await auditLog("template_create", data.id, { name: payload.name });
+    }
+    setTemplateDialogOpen(false);
+    loadTemplates();
+  };
+
+  const deleteTemplate = async () => {
+    if (!deleteTemplateId) return;
+    const tpl = templates.find(t => t.id === deleteTemplateId);
+    const { error } = await (supabase as any).from("notification_templates").delete().eq("id", deleteTemplateId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Template deleted");
+    await auditLog("template_delete", deleteTemplateId, { name: tpl?.name });
+    setDeleteTemplateId(null);
+    loadTemplates();
+  };
+
+  const useTemplate = (t: any) => {
+    setTitle(t.title);
+    setBody(t.body);
+    setCategory(t.category);
+    if (t.image_url) setImageUrl(t.image_url);
+    setMainTab("compose");
+    toast.info("Template loaded into compose form");
   };
 
   const toggleRole = (role: string) => {
@@ -248,6 +330,7 @@ export default function AdminNotificationSender() {
     try {
       const result = await sendNotification();
       toast.success(`Notification sent to ${result.sent_count} users`);
+      await auditLog("notification_send", "bulk", { title: title.trim(), sent_count: result.sent_count, roles: selectedRoles });
       resetForm();
       loadHistory();
     } catch (err: any) {
@@ -284,6 +367,7 @@ export default function AdminNotificationSender() {
     const { error } = await supabase.from("admin_notifications" as any).delete().eq("id", id);
     if (error) { toast.error("Delete failed"); return; }
     toast.success("Notification deleted");
+    await auditLog("notification_delete", id, {});
     setHistory(prev => prev.filter(n => n.id !== id));
     setDeleteConfirm(null);
   };
@@ -345,6 +429,9 @@ export default function AdminNotificationSender() {
         </Button>
         <Button variant={mainTab === "sms_logs" ? "default" : "outline"} size="sm" onClick={() => setMainTab("sms_logs")}>
           <MessageSquare className="w-4 h-4 mr-1" /> SMS Logs
+        </Button>
+        <Button variant={mainTab === "templates" ? "default" : "outline"} size="sm" onClick={() => setMainTab("templates")}>
+          <Tag className="w-4 h-4 mr-1" /> Templates
         </Button>
       </div>
 
@@ -769,6 +856,78 @@ export default function AdminNotificationSender() {
               )}
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* ═══ TEMPLATES TAB ═══ */}
+      {mainTab === "templates" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold">Notification Templates</h3>
+            <Button size="sm" onClick={openTemplateAdd}><Plus className="w-4 h-4 mr-1" /> New Template</Button>
+          </div>
+          {templatesLoading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading…</div>
+          ) : templates.length === 0 ? (
+            <Card><CardContent className="py-8 text-center text-muted-foreground">No templates yet. Create one to speed up sending.</CardContent></Card>
+          ) : (
+            <div className="space-y-2">
+              {templates.map(t => (
+                <Card key={t.id}>
+                  <CardContent className="p-4 flex items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm">{t.name}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{t.title}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{t.body}</p>
+                      <Badge variant="secondary" className="text-[10px] mt-1 capitalize">{t.category}</Badge>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => useTemplate(t)}>Use</Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openTemplateEdit(t)}><Pencil className="w-3.5 h-3.5" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteTemplateId(t.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Template Add/Edit Dialog */}
+          <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader><DialogTitle>{editingTemplate ? "Edit Template" : "New Template"}</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div><Label>Template Name</Label><Input value={templateForm.name} onChange={e => setTemplateForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Eid Promo" /></div>
+                <div><Label>Title</Label><Input value={templateForm.title} onChange={e => setTemplateForm(f => ({ ...f, title: e.target.value }))} placeholder="Notification title" /></div>
+                <div><Label>Body</Label><Textarea value={templateForm.body} onChange={e => setTemplateForm(f => ({ ...f, body: e.target.value }))} rows={3} placeholder="Notification body" /></div>
+                <div>
+                  <Label>Category</Label>
+                  <Select value={templateForm.category} onValueChange={v => setTemplateForm(f => ({ ...f, category: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Image URL (optional)</Label><Input value={templateForm.image_url} onChange={e => setTemplateForm(f => ({ ...f, image_url: e.target.value }))} placeholder="https://..." /></div>
+              </div>
+              <DialogFooter><Button onClick={saveTemplate} disabled={!templateForm.name.trim() || !templateForm.title.trim()}>{editingTemplate ? "Update" : "Create"}</Button></DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Template Delete Confirmation */}
+          <AlertDialog open={!!deleteTemplateId} onOpenChange={() => setDeleteTemplateId(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Template?</AlertDialogTitle>
+                <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={deleteTemplate}>Delete</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )}
 

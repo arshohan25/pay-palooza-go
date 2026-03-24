@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Megaphone, Info, AlertTriangle, Wrench, CheckCircle } from "lucide-react";
 
@@ -35,12 +36,22 @@ const emptyForm = { title: "", message: "", type: "info", priority: 0, starts_at
 
 const db = supabase as any;
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: "platform_announcement", entity_id: entityId, details
+    });
+  }
+}
+
 export default function AdminAnnouncementManager() {
   const [items, setItems] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -85,26 +96,33 @@ export default function AdminAnnouncementManager() {
       const { error } = await db.from("platform_announcements").update(payload).eq("id", editId);
       if (error) { toast.error(error.message); return; }
       toast.success("Announcement updated");
+      await auditLog("announcement_update", editId, { title: form.title });
     } else {
       const { data: { user } } = await supabase.auth.getUser();
       payload.created_by = user?.id;
-      const { error } = await db.from("platform_announcements").insert(payload);
+      const { data, error } = await db.from("platform_announcements").insert(payload).select("id").single();
       if (error) { toast.error(error.message); return; }
       toast.success("Announcement created");
+      await auditLog("announcement_create", data.id, { title: form.title });
     }
     setDialogOpen(false);
     load();
   };
 
-  const remove = async (id: string) => {
-    const { error } = await db.from("platform_announcements").delete().eq("id", id);
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    const item = items.find(i => i.id === deleteId);
+    const { error } = await db.from("platform_announcements").delete().eq("id", deleteId);
     if (error) { toast.error(error.message); return; }
     toast.success("Deleted");
+    await auditLog("announcement_delete", deleteId, { title: item?.title });
+    setDeleteId(null);
     load();
   };
 
   const toggleActive = async (id: string, val: boolean) => {
     await db.from("platform_announcements").update({ is_active: val, updated_at: new Date().toISOString() }).eq("id", id);
+    await auditLog("announcement_toggle", id, { is_active: val });
     load();
   };
 
@@ -151,7 +169,7 @@ export default function AdminAnnouncementManager() {
                   <div className="flex items-center gap-2 shrink-0">
                     <Switch checked={a.is_active} onCheckedChange={(v) => toggleActive(a.id, v)} />
                     <Button variant="ghost" size="icon" onClick={() => openEdit(a)}><Pencil className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => remove(a.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => setDeleteId(a.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </div>
                 </CardContent>
               </Card>
@@ -186,6 +204,20 @@ export default function AdminAnnouncementManager() {
           <DialogFooter><Button onClick={save}>{editId ? "Update" : "Create"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Announcement?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
