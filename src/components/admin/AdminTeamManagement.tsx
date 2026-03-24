@@ -217,6 +217,7 @@ function PermissionEditor({ perms, onChange, members }: { perms: AccessPerm[]; o
 
   const togglePerm = (section: string, field: "can_view" | "can_add" | "can_edit" | "can_delete") => {
     setSelectedPreset("");
+    setCloneFrom("");
     onChange(perms.map(p => {
       if (p.section !== section) return p;
       const updated = { ...p, [field]: !p[field] };
