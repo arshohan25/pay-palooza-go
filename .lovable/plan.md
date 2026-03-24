@@ -1,29 +1,40 @@
 
 
-## Plan: Make Activity Monitor Responsive
+## Plan: Make Admin Dashboard Sidebar & Header Responsive for Tablet Viewports
 
 ### Problem
-At medium desktop widths (~1128px), the table columns overflow and text gets clipped (Status shows "Comp...", Chargeback button is cut off). The table tries to show too many columns for the available width.
+At tablet widths (768px–1024px), the fixed 224px sidebar is always visible, leaving only ~540-800px for content. The header search bar and controls also compete for space.
 
-### Changes — Single File: `src/components/admin/AdminActivityMonitor.tsx`
+### Solution
+Shift the sidebar breakpoint from `md` (768px) to `lg` (1024px). This means tablets (768–1023px) get the mobile hamburger drawer instead of the fixed sidebar, freeing up the full viewport width for content.
 
-**1. Improve column visibility at breakpoints:**
-- Hide "Date-Time" column below `xl` (already showing in expanded details)
-- Hide "Balance After" below `2xl` instead of `xl`
-- Make Short ID column narrower with truncation
+### Changes — Single File: `src/pages/AdminDashboard.tsx`
 
-**2. Reduce horizontal padding in table cells:**
-- Change `px-4` to `px-3` on all `<td>` and `<th>` elements to reclaim space
+**1. Sidebar visibility: `md:flex` → `lg:flex`**
+- Line 967: `aside className="hidden md:flex …"` → `"hidden lg:flex …"`
 
-**3. Make the expanded detail row more responsive:**
-- Use `grid-cols-2 md:grid-cols-3` for the detail grid so it adapts at medium widths
+**2. Main column left margin: `md:ml-56` → `lg:ml-56`**
+- Line 991: Update margin class
 
-**4. Improve filter row wrapping:**
-- Add `overflow-x-auto` with horizontal scroll on the type filter row so 11 filter buttons don't force wrapping at tight widths
+**3. Header elements: update `md:` → `lg:` breakpoints**
+- Back button and mobile branding: `md:hidden` → `lg:hidden`
+- Desktop section label: `hidden md:block` → `hidden lg:block`
+- Desktop search: `hidden md:block` → `hidden lg:block`
+- Mobile search: `md:hidden` → `lg:hidden`
+- Header icon sizes: keep as-is (already responsive)
 
-**5. Ensure Status badge doesn't truncate:**
-- Add `whitespace-nowrap` to the Status badge cell
+**4. Mobile nav section label + hamburger: `md:hidden` → `lg:hidden`**
+- Line 1085: Show hamburger menu for both mobile and tablet
+
+**5. Activity Feed sidebar: `md:mr-72` → `lg:mr-72`** and the feed aside `md:flex` → `lg:flex`
 
 ### Result
-The table will gracefully hide less-critical columns (Date, Balance After) at narrower desktop widths while keeping essential data (ID, Type, Sender, Receiver, Amount, Status) always visible. The expanded row still shows all details.
+- **Desktop (≥1024px)**: Fixed sidebar + full layout (unchanged)
+- **Tablet (768–1023px)**: No fixed sidebar; uses hamburger drawer like mobile; full-width content
+- **Mobile (<768px)**: Unchanged
+
+### Technical Details
+- ~10 class name changes, all in the same file
+- No structural or logic changes
+- The Sheet-based mobile drawer already exists and handles navigation perfectly
 
