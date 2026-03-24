@@ -547,7 +547,8 @@ export default function AdminSupportDashboard({ mode = "all" }: AdminSupportDash
             {mode === "live_chat" ? "Live Chat" : mode === "tickets" ? "Tickets" : "Support Tickets"}
           </h3>
           <RealtimeUpdateIndicator visible={visible} />
-          {/* Status filter tabs */}
+          {/* Status filter tabs — hidden in live_chat mode */}
+          {mode !== "live_chat" && (
           <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)} className="mt-2">
             <TabsList className="h-7 w-full grid grid-cols-4 p-0.5">
               <TabsTrigger value="all" className="text-[9px] h-6 px-1 data-[state=active]:text-xs">
@@ -564,6 +565,7 @@ export default function AdminSupportDashboard({ mode = "all" }: AdminSupportDash
               </TabsTrigger>
             </TabsList>
           </Tabs>
+          )}
         </div>
         <ScrollArea className="flex-1">
           {filteredConversations.length === 0 ? (
