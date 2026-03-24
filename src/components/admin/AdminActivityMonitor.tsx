@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, Fragment } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, ChevronDown, ChevronUp, Loader2, RefreshCw, RotateCcw, Download } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -156,58 +156,66 @@ export default function AdminActivityMonitor() {
 
   return (
     <Card className="border-0 shadow-[var(--shadow-card)]">
-      <CardHeader className="pb-3">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <CardTitle className="text-base">Activity Monitor</CardTitle>
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1 md:flex-none">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search name, phone, ID…"
-                className="pl-10 w-full md:w-64"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-            </div>
-            <Button variant="outline" size="icon" onClick={exportCsv} disabled={filtered.length === 0} title="Export CSV">
-              <Download className="w-4 h-4" />
-            </Button>
-            <Button variant="outline" size="icon" onClick={() => loadTransactions(0)} disabled={loading}>
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            </Button>
-          </div>
+      <CardContent className="p-4 space-y-3">
+        <div>
+          <p className="text-sm font-medium text-foreground flex items-center gap-2">
+            <Search className="w-4 h-4 text-primary" /> Activity Monitor
+          </p>
+          <p className="text-[10px] text-muted-foreground mt-1">Real-time transaction feed with filters and export</p>
         </div>
 
-        {/* Type filter */}
-        <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1 scrollbar-hide">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Search name, phone, ID…"
+              className="pl-9 h-8 text-xs"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={exportCsv} disabled={filtered.length === 0} title="Export CSV">
+            <Download className="w-3.5 h-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => loadTransactions(0)} disabled={loading}>
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+        </div>
+
+        {/* Type filter - pill style */}
+        <div className="flex flex-wrap gap-1">
           {TXN_TYPES.map(t => (
-            <Button
+            <button
               key={t}
-              size="sm"
-              variant={typeFilter === t ? "default" : "outline"}
-              className="text-xs h-7 capitalize shrink-0"
+              className={`px-2.5 py-1 rounded-full text-[10px] font-medium capitalize transition-colors ${
+                typeFilter === t
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+              }`}
               onClick={() => setTypeFilter(t)}
             >
               {t}
-            </Button>
+            </button>
           ))}
         </div>
 
-        {/* Status filter */}
-        <div className="flex flex-wrap gap-1.5 mt-2">
+        {/* Status filter - pill style */}
+        <div className="flex flex-wrap gap-1">
           {TXN_STATUSES.map(s => (
-            <Button
+            <button
               key={s}
-              size="sm"
-              variant={statusFilter === s ? "default" : "outline"}
-              className="text-xs h-7 capitalize"
+              className={`px-2.5 py-1 rounded-full text-[10px] font-medium capitalize transition-colors ${
+                statusFilter === s
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+              }`}
               onClick={() => setStatusFilter(s)}
             >
               {s}
-            </Button>
+            </button>
           ))}
         </div>
-      </CardHeader>
+      </CardContent>
 
       <CardContent className="p-0">
         {loading ? (
@@ -219,19 +227,19 @@ export default function AdminActivityMonitor() {
             {/* Desktop table */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm">
-                <thead>
+                 <thead>
                   <tr className="border-b border-border text-muted-foreground">
-                     <th className="text-left px-3 py-3 font-medium">Short ID</th>
-                     <th className="text-left px-3 py-3 font-medium">Type</th>
-                     <th className="text-left px-3 py-3 font-medium">Sender</th>
-                     <th className="text-left px-3 py-3 font-medium">Receiver</th>
-                     <th className="text-left px-3 py-3 font-medium">Amount</th>
-                     <th className="text-left px-3 py-3 font-medium hidden lg:table-cell">Fee</th>
-                     <th className="text-left px-3 py-3 font-medium hidden lg:table-cell">Commission</th>
-                     <th className="text-left px-3 py-3 font-medium hidden 2xl:table-cell">Balance After</th>
-                     <th className="text-left px-3 py-3 font-medium whitespace-nowrap">Status</th>
-                     <th className="text-left px-3 py-3 font-medium hidden xl:table-cell">Date-Time</th>
-                     <th className="text-left px-3 py-3 font-medium w-10"></th>
+                     <th className="text-left px-3 py-2.5 font-medium text-xs">Short ID</th>
+                     <th className="text-left px-3 py-2.5 font-medium text-xs">Type</th>
+                     <th className="text-left px-3 py-2.5 font-medium text-xs">Sender</th>
+                     <th className="text-left px-3 py-2.5 font-medium text-xs">Receiver</th>
+                     <th className="text-left px-3 py-2.5 font-medium text-xs">Amount</th>
+                     <th className="text-left px-3 py-2.5 font-medium text-xs hidden lg:table-cell">Fee</th>
+                     <th className="text-left px-3 py-2.5 font-medium text-xs hidden lg:table-cell">Commission</th>
+                     <th className="text-left px-3 py-2.5 font-medium text-xs hidden 2xl:table-cell">Balance After</th>
+                     <th className="text-left px-3 py-2.5 font-medium text-xs whitespace-nowrap">Status</th>
+                     <th className="text-left px-3 py-2.5 font-medium text-xs hidden xl:table-cell">Date-Time</th>
+                     <th className="text-left px-3 py-2.5 font-medium text-xs w-10"></th>
                    </tr>
                 </thead>
                 <tbody>
