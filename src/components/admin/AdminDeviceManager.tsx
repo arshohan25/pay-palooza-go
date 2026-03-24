@@ -9,6 +9,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Smartphone, Trash2, AlertTriangle, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: "device_registration", entity_id: entityId, details });
+  }
+}
+
 export default function AdminDeviceManager() {
   const [devices, setDevices] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<Record<string, any>>({});
@@ -21,7 +28,6 @@ export default function AdminDeviceManager() {
     const { data } = await supabase.from("device_registrations").select("*").order("created_at", { ascending: false }).limit(500);
     setDevices(data ?? []);
 
-    // Resolve user info
     const uids = [...new Set((data ?? []).map(d => d.user_id))];
     if (uids.length > 0) {
       const { data: profs } = await supabase.from("profiles").select("user_id, name, phone").in("user_id", uids);
@@ -35,13 +41,17 @@ export default function AdminDeviceManager() {
   useEffect(() => { fetch(); }, [fetch]);
 
   const revoke = async (id: string) => {
+    const device = devices.find(d => d.id === id);
     const { error } = await supabase.from("device_registrations").delete().eq("id", id);
     if (error) toast.error(error.message);
-    else { toast.success("Device revoked"); await fetch(); }
+    else {
+      toast.success("Device revoked");
+      await auditLog("device_revoked", id, { user_id: device?.user_id, fingerprint: device?.device_fingerprint });
+      await fetch();
+    }
     setRevokeTarget(null);
   };
 
-  // Flag users with 3+ devices
   const deviceCountByUser: Record<string, number> = {};
   devices.forEach(d => { deviceCountByUser[d.user_id] = (deviceCountByUser[d.user_id] || 0) + 1; });
   const suspiciousUsers = Object.entries(deviceCountByUser).filter(([, c]) => c >= 3).map(([uid]) => uid);

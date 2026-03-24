@@ -16,6 +16,12 @@ import { Megaphone, Plus, Tag, Percent, Gift, Pencil, Trash2, Copy, Calendar, Ro
 import { toast } from "sonner";
 import { format } from "date-fns";
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: "marketing", entity_id: entityId, details });
+  }
+}
 type SubTab = "promo" | "cashback" | "campaigns";
 
 interface PromoCode {
@@ -131,11 +137,13 @@ export default function AdminMarketingTools() {
         const { error } = await supabase.from("promo_codes").update(payload).eq("id", editingPromo.id);
         if (error) throw error;
         toast.success("Promo code updated");
+        await auditLog("promo_updated", editingPromo.id, { code: promoForm.code });
       } else {
         payload.created_by = session?.user?.id;
         const { error } = await supabase.from("promo_codes").insert(payload);
         if (error) throw error;
         toast.success("Promo code created");
+        await auditLog("promo_created", "new", { code: promoForm.code });
       }
       setShowPromoForm(false); setEditingPromo(null); loadPromos();
     } catch (err: any) { toast.error(err.message || "Failed to save"); }
@@ -145,11 +153,12 @@ export default function AdminMarketingTools() {
   const deletePromo = async (id: string) => {
     const { error } = await supabase.from("promo_codes").delete().eq("id", id);
     if (error) toast.error("Failed to delete");
-    else { toast.success("Promo code deleted"); loadPromos(); }
+    else { toast.success("Promo code deleted"); await auditLog("promo_deleted", id, {}); loadPromos(); }
   };
 
   const togglePromo = async (id: string, active: boolean) => {
     await supabase.from("promo_codes").update({ is_active: !active } as any).eq("id", id);
+    await auditLog("promo_toggled", id, { is_active: !active });
     loadPromos();
   };
 
@@ -184,11 +193,13 @@ export default function AdminMarketingTools() {
         const { error } = await supabase.from("cashback_rules").update(payload).eq("id", editingCashback.id);
         if (error) throw error;
         toast.success("Cashback rule updated");
+        await auditLog("cashback_updated", editingCashback.id, { name: cashbackForm.name });
       } else {
         payload.created_by = session?.user?.id;
         const { error } = await supabase.from("cashback_rules").insert(payload);
         if (error) throw error;
         toast.success("Cashback rule created");
+        await auditLog("cashback_created", "new", { name: cashbackForm.name });
       }
       setShowCashbackForm(false); setEditingCashback(null); loadCashbacks();
     } catch (err: any) { toast.error(err.message || "Failed to save"); }
@@ -198,11 +209,12 @@ export default function AdminMarketingTools() {
   const deleteCashback = async (id: string) => {
     const { error } = await supabase.from("cashback_rules").delete().eq("id", id);
     if (error) toast.error("Failed to delete");
-    else { toast.success("Cashback rule deleted"); loadCashbacks(); }
+    else { toast.success("Cashback rule deleted"); await auditLog("cashback_deleted", id, {}); loadCashbacks(); }
   };
 
   const toggleCashback = async (id: string, active: boolean) => {
     await supabase.from("cashback_rules").update({ is_active: !active } as any).eq("id", id);
+    await auditLog("cashback_toggled", id, { is_active: !active });
     loadCashbacks();
   };
 
@@ -235,11 +247,13 @@ export default function AdminMarketingTools() {
         const { error } = await supabase.from("campaigns").update(payload).eq("id", editingCampaign.id);
         if (error) throw error;
         toast.success("Campaign updated");
+        await auditLog("campaign_updated", editingCampaign.id, { name: campaignForm.name });
       } else {
         payload.created_by = session?.user?.id;
         const { error } = await supabase.from("campaigns").insert(payload);
         if (error) throw error;
         toast.success("Campaign created");
+        await auditLog("campaign_created", "new", { name: campaignForm.name });
       }
       setShowCampaignForm(false); setEditingCampaign(null); loadCampaigns();
     } catch (err: any) { toast.error(err.message || "Failed to save"); }
@@ -249,12 +263,13 @@ export default function AdminMarketingTools() {
   const deleteCampaign = async (id: string) => {
     const { error } = await supabase.from("campaigns").delete().eq("id", id);
     if (error) toast.error("Failed to delete");
-    else { toast.success("Campaign deleted"); loadCampaigns(); }
+    else { toast.success("Campaign deleted"); await auditLog("campaign_deleted", id, {}); loadCampaigns(); }
   };
 
   const toggleCampaignStatus = async (c: Campaign) => {
     const newStatus = c.status === "active" ? "draft" : "active";
     await supabase.from("campaigns").update({ status: newStatus, updated_at: new Date().toISOString() } as any).eq("id", c.id);
+    await auditLog("campaign_status_toggled", c.id, { status: newStatus });
     loadCampaigns();
   };
 

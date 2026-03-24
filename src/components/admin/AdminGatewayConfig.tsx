@@ -56,6 +56,13 @@ async function callGatewayApi(body: Record<string, unknown>) {
   return data;
 }
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: "payment_gateway", entity_id: entityId, details });
+  }
+}
+
 export default function AdminGatewayConfig() {
   const [gateways, setGateways] = useState<Gateway[]>([]);
   const { visible, flash } = useRealtimeIndicator();
@@ -95,6 +102,7 @@ export default function AdminGatewayConfig() {
     try {
       await callGatewayApi({ action: "toggle", id: gw.id, is_enabled: !gw.is_enabled });
       toast.success(`${gw.display_name} ${!gw.is_enabled ? "enabled" : "disabled"}`);
+      await auditLog("gateway_toggled", gw.id, { display_name: gw.display_name, is_enabled: !gw.is_enabled });
     } catch {
       toast.error("Failed to toggle");
     }
@@ -142,6 +150,7 @@ export default function AdminGatewayConfig() {
           config: editConfig,
         });
         toast.success("Gateway updated");
+        await auditLog("gateway_updated", editGw.id, { display_name: editName });
         setEditGw(null);
       } else {
         if (!editProvider.trim()) { toast.error("Provider key is required"); setSaving(false); return; }
@@ -153,6 +162,7 @@ export default function AdminGatewayConfig() {
           sort_order: gateways.length + 1,
         });
         toast.success("Gateway added");
+        await auditLog("gateway_created", "new", { provider: editProvider, display_name: editName });
         setAddOpen(false);
       }
     } catch (e: any) {
@@ -166,6 +176,7 @@ export default function AdminGatewayConfig() {
     try {
       await callGatewayApi({ action: "delete", id: deleteGw.id });
       toast.success(`${deleteGw.display_name} removed`);
+      await auditLog("gateway_deleted", deleteGw.id, { display_name: deleteGw.display_name });
     } catch {
       toast.error("Failed to delete");
     }

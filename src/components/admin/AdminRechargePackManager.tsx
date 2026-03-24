@@ -32,6 +32,13 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: "recharge_pack", entity_id: entityId, details });
+  }
+}
+
 const OPERATORS = ["Grameenphone", "Robi", "Banglalink", "Teletalk", "Airtel"];
 const TYPES = ["drive", "regular"];
 const SUB_CATEGORIES = ["internet", "minutes", "bundles", "callrates"];
@@ -233,7 +240,7 @@ export default function AdminRechargePackManager() {
     };
     const { error } = await supabase.from("recharge_packs").insert(payload as any);
     if (error) toast.error("Failed to duplicate");
-    else toast.success(`Duplicated "${p.name}"`);
+    else { toast.success(`Duplicated "${p.name}"`); await auditLog("pack_duplicated", p.id, { name: p.name }); }
   };
 
   const savePack = async () => {
@@ -261,11 +268,11 @@ export default function AdminRechargePackManager() {
     if (isNew) {
       const { error } = await supabase.from("recharge_packs").insert(payload as any);
       if (error) toast.error("Failed to create pack");
-      else { toast.success("Pack created"); setEditPack(null); }
+      else { toast.success("Pack created"); await auditLog("pack_created", "new", { name: editPack.name }); setEditPack(null); }
     } else {
       const { error } = await supabase.from("recharge_packs").update(payload as any).eq("id", editPack.id!);
       if (error) toast.error("Failed to update pack");
-      else { toast.success("Pack updated"); setEditPack(null); }
+      else { toast.success("Pack updated"); await auditLog("pack_updated", editPack.id!, { name: editPack.name }); setEditPack(null); }
     }
     setSaving(false);
   };
@@ -274,12 +281,13 @@ export default function AdminRechargePackManager() {
     if (!deletePack) return;
     const { error } = await supabase.from("recharge_packs").delete().eq("id", deletePack.id);
     if (error) toast.error("Failed to delete");
-    else toast.success(`"${deletePack.name}" deleted`);
+    else { toast.success(`"${deletePack.name}" deleted`); await auditLog("pack_deleted", deletePack.id, { name: deletePack.name }); }
     setDeletePack(null);
   };
 
   const toggleActive = async (p: Pack) => {
     await supabase.from("recharge_packs").update({ is_active: !p.is_active } as any).eq("id", p.id);
+    await auditLog("pack_toggled", p.id, { name: p.name, is_active: !p.is_active });
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -306,6 +314,7 @@ export default function AdminRechargePackManager() {
     );
     await Promise.all(updates);
     toast.success("Order updated");
+    await auditLog("pack_reordered", "batch", { count: reordered.length });
   };
 
   const filtered = packs.filter(p => {

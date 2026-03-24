@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { Settings, Plus, Pencil } from "lucide-react";
+import { Settings, Plus, Pencil, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
@@ -32,11 +33,21 @@ interface FeeConfig {
 const TXN_TYPES = ["send", "cashout", "cashin", "payment", "recharge", "paybill", "addmoney", "banktransfer"];
 const FEE_TYPES = ["flat", "percentage"];
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: "fee_config", entity_id: entityId, details
+    });
+  }
+}
+
 export default function AdminChargeConfig() {
   const [configs, setConfigs] = useState<FeeConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<FeeConfig | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<FeeConfig | null>(null);
   const [form, setForm] = useState({
     txn_type: "send",
     fee_type: "flat",
@@ -104,10 +115,12 @@ export default function AdminChargeConfig() {
       const { error } = await supabase.from("fee_config").update(payload).eq("id", editing.id);
       if (error) { toast.error("Failed to update"); return; }
       toast.success("Charge updated");
+      await auditLog("charge_config_updated", editing.id, payload);
     } else {
-      const { error } = await supabase.from("fee_config").insert(payload);
+      const { data, error } = await supabase.from("fee_config").insert(payload).select("id").single();
       if (error) { toast.error("Failed to create"); return; }
       toast.success("Charge created");
+      if (data) await auditLog("charge_config_created", data.id, payload);
     }
     setDialogOpen(false);
     load();
@@ -115,6 +128,17 @@ export default function AdminChargeConfig() {
 
   const toggleActive = async (id: string, active: boolean) => {
     await supabase.from("fee_config").update({ is_active: active }).eq("id", id);
+    await auditLog("charge_config_toggled", id, { is_active: active });
+    load();
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const { error } = await supabase.from("fee_config").delete().eq("id", deleteTarget.id);
+    if (error) { toast.error("Failed to delete"); setDeleteTarget(null); return; }
+    toast.success("Charge rule deleted");
+    await auditLog("charge_config_deleted", deleteTarget.id, { txn_type: deleteTarget.txn_type, fee_value: deleteTarget.fee_value });
+    setDeleteTarget(null);
     load();
   };
 
@@ -191,7 +215,7 @@ export default function AdminChargeConfig() {
                   <th className="text-left px-4 py-3 font-medium">Fee</th>
                   <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Range</th>
                   <th className="text-left px-4 py-3 font-medium">Active</th>
-                  <th className="text-left px-4 py-3 font-medium">Action</th>
+                  <th className="text-left px-4 py-3 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -212,9 +236,14 @@ export default function AdminChargeConfig() {
                       <Switch checked={c.is_active} onCheckedChange={v => toggleActive(c.id, v)} />
                     </td>
                     <td className="px-4 py-3">
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(c)}>
-                        <Pencil className="w-4 h-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(c)}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteTarget(c)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -232,6 +261,21 @@ export default function AdminChargeConfig() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={o => { if (!o) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Charge Rule?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove the {deleteTarget?.txn_type} charge rule ({deleteTarget?.fee_type === "percentage" ? `${deleteTarget?.fee_value}%` : `৳${deleteTarget?.fee_value}`}).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -10,8 +10,16 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Route, Plus, Copy, Trash2 } from "lucide-react";
+import { Route, Plus, Copy, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+
+async function auditLog(action: string, entityType: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: entityType, entity_id: entityId, details });
+  }
+}
 
 type SubTab = "routing" | "payment_links";
 
@@ -41,6 +49,9 @@ export default function AdminSmartRouting() {
   const [showLinkForm, setShowLinkForm] = useState(false);
   const [linkForm, setLinkForm] = useState({ title: "", amount: "", description: "", maxUses: "", expiresAt: "" });
   const [creating, setCreating] = useState(false);
+  const [deleteLinkTarget, setDeleteLinkTarget] = useState<any>(null);
+  const [editLinkTarget, setEditLinkTarget] = useState<any>(null);
+  const [editLinkForm, setEditLinkForm] = useState({ title: "", amount: "", description: "" });
 
   const loadGateways = useCallback(async () => {
     setLoading(true);
@@ -83,6 +94,7 @@ export default function AdminSmartRouting() {
       await supabase.from("global_feature_toggles").insert({ feature_key: key, label: rule.label, description: rule.description, is_enabled: newVal });
     }
     toast.success(`${rule.label} ${newVal ? "enabled" : "disabled"}`);
+    await auditLog("routing_rule_toggled", "global_feature_toggle", key, { is_enabled: newVal });
   };
 
   const updatePriority = async (id: string, newOrder: number) => {
@@ -124,6 +136,7 @@ export default function AdminSmartRouting() {
       setShowLinkForm(false);
       setLinkForm({ title: "", amount: "", description: "", maxUses: "", expiresAt: "" });
       toast.success("Payment link created");
+      await auditLog("payment_link_created", "payment_link", "new", { title: linkForm.title });
       loadPaymentLinks();
     } catch {
       toast.error("Failed to create link");
@@ -132,16 +145,39 @@ export default function AdminSmartRouting() {
     }
   };
 
-  const deleteLink = async (id: string) => {
-    const { error } = await supabase.from("payment_links").delete().eq("id", id);
-    if (error) { toast.error("Failed to delete"); return; }
+  const confirmDeleteLink = async () => {
+    if (!deleteLinkTarget) return;
+    const { error } = await supabase.from("payment_links").delete().eq("id", deleteLinkTarget.id);
+    if (error) { toast.error("Failed to delete"); setDeleteLinkTarget(null); return; }
     toast.success("Link deleted");
+    await auditLog("payment_link_deleted", "payment_link", deleteLinkTarget.id, { title: deleteLinkTarget.title });
+    setDeleteLinkTarget(null);
     loadPaymentLinks();
   };
 
   const toggleLink = async (id: string, current: boolean) => {
     await supabase.from("payment_links").update({ is_active: !current }).eq("id", id);
     toast.success(`Link ${!current ? "activated" : "deactivated"}`);
+    await auditLog("payment_link_toggled", "payment_link", id, { is_active: !current });
+    loadPaymentLinks();
+  };
+
+  const openEditLink = (link: any) => {
+    setEditLinkTarget(link);
+    setEditLinkForm({ title: link.title, amount: link.amount ? String(link.amount) : "", description: link.description || "" });
+  };
+
+  const saveEditLink = async () => {
+    if (!editLinkTarget || !editLinkForm.title) { toast.error("Title required"); return; }
+    const { error } = await supabase.from("payment_links").update({
+      title: editLinkForm.title,
+      amount: editLinkForm.amount ? Number(editLinkForm.amount) : null,
+      description: editLinkForm.description || null,
+    }).eq("id", editLinkTarget.id);
+    if (error) { toast.error("Failed to update"); return; }
+    toast.success("Link updated");
+    await auditLog("payment_link_updated", "payment_link", editLinkTarget.id, { title: editLinkForm.title });
+    setEditLinkTarget(null);
     loadPaymentLinks();
   };
 
@@ -272,7 +308,8 @@ export default function AdminSmartRouting() {
                           <TableCell>
                             <div className="flex gap-1">
                               <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => copyLink(link.short_code)}><Copy className="w-3 h-3" /></Button>
-                              <Button variant="ghost" size="sm" className="h-7 px-2 text-destructive" onClick={() => deleteLink(link.id)}><Trash2 className="w-3 h-3" /></Button>
+                              <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => openEditLink(link)}><Pencil className="w-3 h-3" /></Button>
+                              <Button variant="ghost" size="sm" className="h-7 px-2 text-destructive" onClick={() => setDeleteLinkTarget(link)}><Trash2 className="w-3 h-3" /></Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -301,6 +338,34 @@ export default function AdminSmartRouting() {
               <div><Label className="text-xs">Expires At</Label><Input type="date" value={linkForm.expiresAt} onChange={e => setLinkForm(p => ({ ...p, expiresAt: e.target.value }))} /></div>
             </div>
             <Button className="w-full" onClick={createPaymentLink} disabled={creating}>{creating ? "Creating…" : "Create Link"}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!deleteLinkTarget} onOpenChange={o => { if (!o) setDeleteLinkTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{deleteLinkTarget?.title}"?</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently remove this payment link.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteLink} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={!!editLinkTarget} onOpenChange={o => { if (!o) setEditLinkTarget(null); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Payment Link</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label className="text-xs">Title</Label><Input value={editLinkForm.title} onChange={e => setEditLinkForm(p => ({ ...p, title: e.target.value }))} /></div>
+            <div><Label className="text-xs">Amount</Label><Input type="number" value={editLinkForm.amount} onChange={e => setEditLinkForm(p => ({ ...p, amount: e.target.value }))} placeholder="Custom" /></div>
+            <div><Label className="text-xs">Description</Label><Textarea value={editLinkForm.description} onChange={e => setEditLinkForm(p => ({ ...p, description: e.target.value }))} rows={2} /></div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setEditLinkTarget(null)}>Cancel</Button>
+            <Button onClick={saveEditLink}>Save</Button>
           </div>
         </DialogContent>
       </Dialog>

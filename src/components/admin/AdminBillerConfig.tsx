@@ -65,6 +65,13 @@ async function callBillerApi(body: Record<string, unknown>) {
   return data;
 }
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: "biller_config", entity_id: entityId, details });
+  }
+}
+
 export default function AdminBillerConfig() {
   const [billers, setBillers] = useState<Biller[]>([]);
   const { visible, flash } = useRealtimeIndicator();
@@ -107,6 +114,7 @@ export default function AdminBillerConfig() {
     try {
       await callBillerApi({ action: "toggle", id: b.id, is_enabled: !b.is_enabled });
       toast.success(`${b.display_name} ${!b.is_enabled ? "enabled" : "disabled"}`);
+      await auditLog("biller_toggled", b.id, { display_name: b.display_name, is_enabled: !b.is_enabled });
     } catch {
       toast.error("Failed to toggle");
     }
@@ -147,6 +155,7 @@ export default function AdminBillerConfig() {
           config: editConfig,
         });
         toast.success("Biller updated");
+        await auditLog("biller_updated", editBiller.id, { display_name: editName });
         setEditBiller(null);
       } else {
         if (!editCode.trim()) { toast.error("Biller code is required"); setSaving(false); return; }
@@ -160,6 +169,7 @@ export default function AdminBillerConfig() {
           sort_order: billers.length + 1,
         });
         toast.success("Biller added");
+        await auditLog("biller_created", "new", { biller_code: editCode, display_name: editName });
         setAddOpen(false);
       }
     } catch (e: any) {
@@ -173,6 +183,7 @@ export default function AdminBillerConfig() {
     try {
       await callBillerApi({ action: "delete", id: deleteBiller.id });
       toast.success(`${deleteBiller.display_name} removed`);
+      await auditLog("biller_deleted", deleteBiller.id, { display_name: deleteBiller.display_name });
     } catch {
       toast.error("Failed to delete");
     }

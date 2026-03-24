@@ -5,10 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, Landmark, Wallet } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
 
 const METHODS = [
   { id: "bkash", label: "bKash" },
@@ -21,12 +23,20 @@ const METHODS = [
 
 const emptyForm = { method: "bkash", label: "", account_number: "", account_name: "", bank_name: "", instructions: "", sort_order: 0 };
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: "deposit_account", entity_id: entityId, details });
+  }
+}
+
 export default function AdminDepositAccounts() {
   const { accounts, loading, upsert, remove, toggleActive } = useDepositAccounts();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<DepositAccount | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<DepositAccount | null>(null);
 
   const openAdd = () => { setEditing(null); setForm(emptyForm); setOpen(true); };
   const openEdit = (a: DepositAccount) => {
@@ -40,8 +50,21 @@ export default function AdminDepositAccounts() {
     setSaving(true);
     try {
       await upsert({ ...(editing ? { id: editing.id } : {}), ...form });
+      await auditLog(editing ? "deposit_account_updated" : "deposit_account_created", editing?.id || "new", { label: form.label, method: form.method });
       setOpen(false);
     } finally { setSaving(false); }
+  };
+
+  const handleToggle = async (id: string, v: boolean) => {
+    await toggleActive(id, v);
+    await auditLog("deposit_account_toggled", id, { is_active: v });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    await remove(deleteTarget.id);
+    await auditLog("deposit_account_deleted", deleteTarget.id, { label: deleteTarget.label });
+    setDeleteTarget(null);
   };
 
   return (
@@ -81,12 +104,12 @@ export default function AdminDepositAccounts() {
                   <TableCell className="font-mono text-sm text-foreground">{a.account_number}</TableCell>
                   <TableCell className="text-muted-foreground text-xs">{a.account_name ?? "—"}</TableCell>
                   <TableCell>
-                    <Switch checked={a.is_active} onCheckedChange={(v) => toggleActive(a.id, v)} />
+                    <Switch checked={a.is_active} onCheckedChange={(v) => handleToggle(a.id, v)} />
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
                       <Button size="icon" variant="ghost" onClick={() => openEdit(a)}><Pencil size={14} /></Button>
-                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(a.id)}><Trash2 size={14} /></Button>
+                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => setDeleteTarget(a)}><Trash2 size={14} /></Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -144,6 +167,19 @@ export default function AdminDepositAccounts() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={o => { if (!o) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{deleteTarget?.label}"?</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently remove this deposit account.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
