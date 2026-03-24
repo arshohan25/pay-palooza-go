@@ -1,0 +1,1 @@
+ALTER TABLE public.team_access_permissions ADD COLUMN IF NOT EXISTS can_add boolean DEFAULT false;

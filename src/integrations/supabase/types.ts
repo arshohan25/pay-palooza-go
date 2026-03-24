@@ -4072,6 +4072,7 @@ export type Database = {
       }
       team_access_permissions: {
         Row: {
+          can_add: boolean | null
           can_delete: boolean | null
           can_edit: boolean | null
           can_view: boolean | null
@@ -4083,6 +4084,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          can_add?: boolean | null
           can_delete?: boolean | null
           can_edit?: boolean | null
           can_view?: boolean | null
@@ -4094,6 +4096,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          can_add?: boolean | null
           can_delete?: boolean | null
           can_edit?: boolean | null
           can_view?: boolean | null
