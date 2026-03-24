@@ -18,10 +18,9 @@ export function useAdmin() {
         .from("user_roles")
         .select("role")
         .eq("user_id", session.user.id)
-        .eq("role", "admin")
-        .maybeSingle();
+        .in("role", ["admin","compliance","finance","support","operations","marketing","hr","audit","risk","developer","manager"]);
 
-      setIsAdmin(!!data);
+      setIsAdmin((data?.length ?? 0) > 0);
       setLoading(false);
     };
 
