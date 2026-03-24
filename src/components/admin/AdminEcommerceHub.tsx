@@ -83,6 +83,7 @@ function ProductsTab() {
 
   const deleteProduct = async (id: string) => {
     await supabase.from("merchant_products").delete().eq("id", id);
+    auditLog("delete_product", "merchant_product", id, {});
     toast.success("Product deleted");
     load();
   };
