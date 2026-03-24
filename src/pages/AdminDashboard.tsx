@@ -25,6 +25,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { signOut } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
+import { useProfile } from "@/hooks/use-profile";
+
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good Morning";
+  if (hour < 17) return "Good Afternoon";
+  return "Good Evening";
+};
 import AdminChargeConfig from "@/components/admin/AdminChargeConfig";
 import AdminCommissionSetup from "@/components/admin/AdminCommissionSetup";
 import AdminDisputeResolution from "@/components/admin/AdminDisputeResolution";
@@ -404,6 +412,7 @@ export default function AdminDashboard() {
   const { isAdmin, loading: authLoading } = useAdmin();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { displayName } = useProfile();
   const [navGroups, setNavGroups] = useState<NavGroup[]>(loadNavOrder);
   const [showReorder, setShowReorder] = useState(false);
   const [showActivityFeed, setShowActivityFeed] = useState(false);
@@ -1006,7 +1015,7 @@ export default function AdminDashboard() {
               </div>
               {/* Desktop: section label */}
               <span className="hidden lg:block text-base font-bold text-foreground">
-                {ALL_NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview"}
+                {activeTab === "overview" ? `${getGreeting()}, ${displayName || "Admin"}` : (ALL_NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview")}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -1093,7 +1102,7 @@ export default function AdminDashboard() {
               <Menu className="w-4 h-4" />
             </Button>
             <span className="text-sm font-semibold text-foreground">
-              {ALL_NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview"}
+              {activeTab === "overview" ? `${getGreeting()}, ${displayName || "Admin"}` : (ALL_NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview")}
             </span>
           </div>
         </header>
