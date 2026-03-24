@@ -174,17 +174,45 @@ function getPermSummary(perms: AccessPerm[]) {
 }
 
 // ═══ Permission Editor Component (reused in Add + Edit dialogs) ═══
-function PermissionEditor({ perms, onChange }: { perms: AccessPerm[]; onChange: (p: AccessPerm[]) => void }) {
+function PermissionEditor({ perms, onChange, members }: { perms: AccessPerm[]; onChange: (p: AccessPerm[]) => void; members?: TeamMember[] }) {
   const [openCats, setOpenCats] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(SECTION_CATEGORIES.map(c => [c.label, true]))
   );
   const [selectedPreset, setSelectedPreset] = useState<string>("");
+  const [cloneFrom, setCloneFrom] = useState<string>("");
+  const [cloning, setCloning] = useState(false);
 
   const toggleCat = (label: string) => setOpenCats(prev => ({ ...prev, [label]: !prev[label] }));
 
   const handlePreset = (key: string) => {
     setSelectedPreset(key);
+    setCloneFrom("");
     onChange(applyPreset(key));
+  };
+
+  const handleClone = async (memberId: string) => {
+    const member = members?.find(m => m.id === memberId);
+    if (!member) return;
+    setCloneFrom(memberId);
+    setSelectedPreset("");
+    setCloning(true);
+    try {
+      const { data } = await supabase.from("team_access_permissions")
+        .select("section, can_view, can_add, can_edit, can_delete")
+        .eq("user_id", member.user_id);
+      const fetched = data ?? [];
+      const clonedPerms = ALL_SECTIONS.map(s => {
+        const found = fetched.find((f: any) => f.section === s);
+        return found
+          ? { section: s, can_view: !!found.can_view, can_add: !!found.can_add, can_edit: !!found.can_edit, can_delete: !!found.can_delete }
+          : { section: s, can_view: false, can_add: false, can_edit: false, can_delete: false };
+      });
+      onChange(clonedPerms);
+      toast.success(`Cloned permissions from ${member.display_name}`);
+    } catch {
+      toast.error("Failed to clone permissions");
+    }
+    setCloning(false);
   };
 
   const togglePerm = (section: string, field: "can_view" | "can_add" | "can_edit" | "can_delete") => {
