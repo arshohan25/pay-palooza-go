@@ -1,61 +1,57 @@
 
 
-## Phase 7: Configuration, Infrastructure & Remaining Modules — Full CRUD + Audit Logging
+## Phase 8: Financial, Risk & E-Commerce Operations — Full CRUD + Audit Logging
 
 ### Current State & Gaps
 
 | Section | Lines | Has | Missing |
 |---------|-------|-----|---------|
-| **Charge Config** | 237 | Create + Edit + Toggle | Delete rule, AlertDialog confirmations, audit logging |
-| **Courier Providers** | 111 | Create + Toggle + Delete | Edit provider, AlertDialog on delete, audit logging |
-| **Delivery Zones** | 129 | Create + Toggle + Delete | Edit zone, AlertDialog on delete, audit logging |
-| **Deposit Accounts** | 149 | Full CRUD (create/edit/delete/toggle) | AlertDialog on delete, audit logging |
-| **Device Manager** | 134 | View + Revoke with AlertDialog | Audit logging on revoke |
-| **Smart Routing** | 309 | Routing toggles + Payment links CRUD | Edit payment link, AlertDialog on link delete, audit logging |
-| **Marketing Tools** | 671 | Full CRUD for promos/cashback/campaigns | Audit logging on all mutations |
-| **Gateway Config** | 347 | Full CRUD with AlertDialog | Audit logging |
-| **Biller Config** | 413 | Full CRUD with AlertDialog | Audit logging |
-| **Recharge Packs** | 527 | Full CRUD with AlertDialog + drag reorder | Audit logging |
+| **Fraud Auto Rules** | 256 | Create + Toggle + Delete | Edit rule, AlertDialog on delete, audit logging |
+| **Fraud Alerts** | 625 | View + Status update + Assign + Escalate | Delete resolved alerts, audit logging on status/assign/escalate |
+| **Flash Sales** | 160 | Create + Toggle + Delete | Edit sale (price/dates), AlertDialog on delete, audit logging |
+| **Settlements** | 321 | Create + Status update + Export | Delete failed settlements, audit logging on create/status |
+| **Commission Setup** | 602 | Full CRUD rules/tiers (partial audit) | Audit logging on create/edit/toggle (only delete has it) |
+| **Risk Control** | 529 | View + Freeze agent (has audit) | Missing audit on other actions (unfreeze, velocity locks) |
+| **AI Fraud Detection** | 378 | View + Lock wallet (has audit) | Missing audit on investigate action |
+| **Return Requests** | 179 | View + Status update | Delete completed returns, audit logging on status changes |
+| **Order Management** | 765 | Full CRUD + status updates + escrow | Audit logging on status changes, cancellations, bulk actions |
+| **Bank Reconciliation** | 229 | Read-only analytics | No mutations needed — skip |
 
 ### Implementation
 
-**File 1: `AdminChargeConfig.tsx`** (~237 → ~290 lines)
-- Add Delete button (Trash2) per row with AlertDialog confirmation
-- Add audit logging to create/edit/delete/toggle actions
-
-**File 2: `AdminCourierProviders.tsx`** (~111 → ~180 lines)
-- Add "Edit" dialog (pre-filled name, logo_url, tracking_url_template)
+**File 1: `AdminFraudAutoRules.tsx`** (~256 → ~320 lines)
+- Add "Edit" dialog (pre-filled name, metric, threshold, action, lock_duration)
 - Wrap delete in AlertDialog confirmation
 - Add audit logging to create/edit/delete/toggle actions
 
-**File 3: `AdminDeliveryZones.tsx`** (~129 → ~200 lines)
-- Add "Edit" dialog (zone_name, cities, delivery_fee, estimated_days, courier)
+**File 2: `AdminFraudAlerts.tsx`** (~625 → ~660 lines)
+- Add "Delete" for resolved/false_positive alerts with AlertDialog
+- Add audit logging to status update, assign, escalate, delete actions
+
+**File 3: `AdminFlashSales.tsx`** (~160 → ~230 lines)
+- Add "Edit" dialog (sale_price, starts_at, ends_at)
 - Wrap delete in AlertDialog confirmation
 - Add audit logging to create/edit/delete/toggle actions
 
-**File 4: `AdminDepositAccounts.tsx`** (~149 → ~180 lines)
-- Wrap delete in AlertDialog confirmation
-- Add audit logging to create/edit/delete/toggle actions
+**File 4: `AdminSettlements.tsx`** (~321 → ~370 lines)
+- Add "Delete" for failed settlements with AlertDialog
+- Add audit logging to create/status update/delete actions
 
-**File 5: `AdminDeviceManager.tsx`** (~134 → ~150 lines)
-- Add audit logging on device revoke
+**File 5: `AdminCommissionSetup.tsx`** (~602 → ~630 lines)
+- Add audit logging to rule create/edit/toggle and tier create/edit actions (delete already has it)
 
-**File 6: `AdminSmartRouting.tsx`** (~309 → ~360 lines)
-- Add "Edit" for payment links (title, amount, description)
-- Wrap link delete in AlertDialog confirmation
-- Add audit logging to routing toggle changes and payment link CRUD
+**File 6: `AdminReturnRequests.tsx`** (~179 → ~220 lines)
+- Add "Delete" for completed returns with AlertDialog
+- Add audit logging to status update/delete actions
 
-**File 7: `AdminMarketingTools.tsx`** (~671 → ~710 lines)
-- Add audit logging to all promo/cashback/campaign create/edit/delete/toggle actions
+**File 7: `AdminOrderManagement.tsx`** (~765 → ~800 lines)
+- Add audit logging to order status changes, cancellations, and bulk actions
 
-**File 8: `AdminGatewayConfig.tsx`** (~347 → ~370 lines)
-- Add audit logging to create/edit/delete/toggle actions
+**File 8: `AdminAiFraudDetection.tsx`** (~378 → ~395 lines)
+- Add audit logging to the investigate action
 
-**File 9: `AdminBillerConfig.tsx`** (~413 → ~435 lines)
-- Add audit logging to create/edit/delete/toggle actions
-
-**File 10: `AdminRechargePackManager.tsx`** (~527 → ~550 lines)
-- Add audit logging to create/edit/delete/toggle/reorder actions
+**File 9: `AdminRiskControl.tsx`** (~529 → ~550 lines)
+- Standardize existing inline audit calls into shared `auditLog` helper pattern
 
 ### Technical Pattern (consistent across all files)
 ```typescript
@@ -76,14 +72,13 @@ async function auditLog(action: string, entityType: string, entityId: string, de
 None — all tables exist with required columns.
 
 ### Files Modified
-1. `src/components/admin/AdminChargeConfig.tsx`
-2. `src/components/admin/AdminCourierProviders.tsx`
-3. `src/components/admin/AdminDeliveryZones.tsx`
-4. `src/components/admin/AdminDepositAccounts.tsx`
-5. `src/components/admin/AdminDeviceManager.tsx`
-6. `src/components/admin/AdminSmartRouting.tsx`
-7. `src/components/admin/AdminMarketingTools.tsx`
-8. `src/components/admin/AdminGatewayConfig.tsx`
-9. `src/components/admin/AdminBillerConfig.tsx`
-10. `src/components/admin/AdminRechargePackManager.tsx`
+1. `src/components/admin/AdminFraudAutoRules.tsx`
+2. `src/components/admin/AdminFraudAlerts.tsx`
+3. `src/components/admin/AdminFlashSales.tsx`
+4. `src/components/admin/AdminSettlements.tsx`
+5. `src/components/admin/AdminCommissionSetup.tsx`
+6. `src/components/admin/AdminReturnRequests.tsx`
+7. `src/components/admin/AdminOrderManagement.tsx`
+8. `src/components/admin/AdminAiFraudDetection.tsx`
+9. `src/components/admin/AdminRiskControl.tsx`
 
