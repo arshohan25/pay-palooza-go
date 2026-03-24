@@ -1004,7 +1004,7 @@ export default function AdminDashboard() {
                 <h1 className="font-bold text-foreground text-base">Admin</h1>
               </div>
               {/* Desktop: section label */}
-              <span className="hidden md:block text-base font-bold text-foreground">
+              <span className="hidden lg:block text-base font-bold text-foreground">
                 {ALL_NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview"}
               </span>
             </div>
