@@ -155,6 +155,7 @@ export default function AdminBillerConfig() {
           config: editConfig,
         });
         toast.success("Biller updated");
+        await auditLog("biller_updated", editBiller.id, { display_name: editName });
         setEditBiller(null);
       } else {
         if (!editCode.trim()) { toast.error("Biller code is required"); setSaving(false); return; }
