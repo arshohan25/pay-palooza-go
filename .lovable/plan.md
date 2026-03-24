@@ -1,70 +1,51 @@
 
 
-## Plan: Add 2FA for Team Login
+## Plan: Admin Reset Team Password & Change Email
 
-### Overview
-After a team member enters correct username + password, they must verify a 6-digit OTP sent to their email before being granted access. This reuses the existing `send-email-otp` edge function and `otp_codes` table.
+### What It Does
+Adds two management actions to each team member card: **Reset Password** and **Change Email**. The admin can generate a new temporary password or update the 2FA email directly from the team management UI.
 
-### Database Changes
+### Changes
 
-**Add `email` column to `team_members` table** — required so we know where to send the 2FA code. Admins will set this when creating team members.
+**File: `src/components/admin/AdminTeamManagement.tsx`**
 
-```sql
-ALTER TABLE public.team_members ADD COLUMN email text;
-```
+1. **Add state variables** for the reset password and change email dialogs:
+   - `resetPwMember`, `newTempPassword`, `resettingPw` — for password reset dialog
+   - `editEmailMember`, `newEmail`, `savingEmail` — for email change dialog
 
-### Edge Function Changes
+2. **Add two action buttons** to each member card (alongside the existing Shield, Activity, Trash buttons):
+   - `KeyRound` icon button — opens Reset Password dialog
+   - `Mail` icon button — opens Change Email dialog
 
-**`send-email-otp`** — Add a new purpose `team_2fa` alongside the existing `email_verify`. No other changes needed since the function already handles send + verify flows generically via the `purpose` field. We'll pass `purpose: "team_2fa"` from the client.
+3. **Reset Password dialog**:
+   - Shows member name and a pre-generated random password (using existing `generatePassword()`)
+   - Regenerate button to get a new random password
+   - Confirm button calls the existing `admin-reset-pin` edge function pattern but adapted: since team members use username+password (not PIN), we need a new approach
+   - Actually, team auth uses `supabase.auth.signInWithPassword` with real passwords, so resetting requires the admin API. We'll create a lightweight edge function `admin-reset-team-password` that uses `adminClient.auth.admin.updateUserById()` to set the new password
+   - On success, shows the new password with copy button and option to email it via `send-team-credentials`
+   - Records action in `audit_logs`
 
-### Frontend Changes
+4. **Change Email dialog**:
+   - Shows current email (from `team_members.email`) and an input for the new email
+   - Save button updates `team_members.email` via direct Supabase update
+   - Records action in `audit_logs`
 
-**`src/pages/TeamLoginPage.tsx`** — Add a 2FA step between password validation and redirect:
+**New file: `supabase/functions/admin-reset-team-password/index.ts`**
 
-1. New state: `show2fa`, `otpCode`, `verifying2fa`, `teamEmail`
-2. After successful `teamSignIn` and password-change check, fetch `team_members.email` for the logged-in user
-3. If email exists, call `send-email-otp` with `{ email, purpose: "team_2fa" }` and show OTP dialog
-4. OTP dialog: 6-digit input using existing `InputOTP` component, verify button, resend link
-5. On successful verification, proceed to role-based redirect
-6. If no email is set on the team member, skip 2FA (graceful fallback)
+- Verifies caller has admin role (same pattern as `admin-reset-pin`)
+- Accepts `{ targetUserId, newPassword }`
+- Calls `adminClient.auth.admin.updateUserById(targetUserId, { password: newPassword })`
+- Resets the `has_changed_password` flag on `team_members` so member is forced to change password on next login
+- Records in `audit_logs`
 
-**`src/components/admin/AdminTeamManagement.tsx`** — Add an email field to the "Add Member" form (Step 1) so admins can set the 2FA email when creating members. Also allow editing it on existing members.
+### Technical Details
 
-### Flow Diagram
-```text
-Username + Password
-        │
-        ▼
-  Password OK? ──No──▶ Error
-        │
-       Yes
-        │
-        ▼
-  Need password change? ──Yes──▶ Change dialog
-        │                              │
-       No                          Done
-        │◄─────────────────────────────┘
-        ▼
-  Has email? ──No──▶ Skip 2FA → Redirect
-        │
-       Yes
-        │
-        ▼
-  Send OTP to email
-        │
-        ▼
-  Enter 6-digit code
-        │
-        ▼
-  Verify via edge fn
-        │
-        ▼
-  Redirect to dashboard
-```
+- The edge function reuses the exact auth verification pattern from `admin-reset-pin` (JWT validation, admin role check via service role client)
+- Password reset also sets `team_members.has_changed_password = false` so the member must change it on next login
+- Email change is a simple client-side update to `team_members.email` — no edge function needed
+- Both actions are audit-logged with before/after details
 
 ### Files Modified
-- **Migration** — Add `email` column to `team_members`
-- **`supabase/functions/send-email-otp/index.ts`** — Support `team_2fa` purpose
-- **`src/pages/TeamLoginPage.tsx`** — Add 2FA OTP dialog step
-- **`src/components/admin/AdminTeamManagement.tsx`** — Add email field to member creation/edit
+- `src/components/admin/AdminTeamManagement.tsx` — Add dialogs, buttons, handlers
+- `supabase/functions/admin-reset-team-password/index.ts` — New edge function
 
