@@ -84,6 +84,36 @@ const PERMISSION_PRESETS: Record<string, PermPreset> = {
     fullAccess: ["orders", "ecommerce", "inventory", "merchants", "agents"],
     viewOnly: ["overview", "reporting"],
   },
+  marketing_team: {
+    label: "Marketing",
+    description: "Marketing, banners + view reporting/ecommerce",
+    fullAccess: ["marketing", "banners"],
+    viewOnly: ["reporting", "ecommerce", "overview"],
+  },
+  hr_manager: {
+    label: "HR / Manager",
+    description: "Team, users full access + view audit/sessions",
+    fullAccess: ["team", "users"],
+    viewOnly: ["auditlog", "sessions", "overview"],
+  },
+  risk_officer: {
+    label: "Risk Officer",
+    description: "Fraud, blacklist, security + view transactions/KYC",
+    fullAccess: ["fraud", "blacklist", "security"],
+    viewOnly: ["transactions", "kyc", "overview"],
+  },
+  auditor: {
+    label: "Auditor",
+    description: "View-only across audit, transactions, reporting",
+    fullAccess: [],
+    viewOnly: ["auditlog", "transactions", "reporting", "overview", "treasury", "settlements", "commissions"],
+  },
+  developer: {
+    label: "Developer",
+    description: "API hub, gateways, webhooks, system health",
+    fullAccess: ["apihub", "gateways", "webhooks", "system_health"],
+    viewOnly: ["overview", "toggles"],
+  },
   full_access: {
     label: "Full Access",
     description: "All sections with full permissions",
