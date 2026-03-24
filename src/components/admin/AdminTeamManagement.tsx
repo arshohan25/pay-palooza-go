@@ -98,7 +98,7 @@ const PERMISSION_PRESETS: Record<string, PermPreset> = {
   },
 };
 
-const DEPARTMENTS = ["general", "support", "compliance", "finance", "operations", "engineering"];
+const DEPARTMENTS = ["general", "support", "compliance", "finance", "operations", "engineering", "marketing", "hr", "risk", "audit", "management", "product", "logistics", "legal"];
 
 interface TeamMember {
   id: string;
