@@ -544,7 +544,7 @@ export default function AdminSupportDashboard({ mode = "all" }: AdminSupportDash
         <div className="p-4 border-b border-border">
           <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
             <MessageCircle size={16} className="text-primary" />
-            Support Tickets
+            {mode === "live_chat" ? "Live Chat" : mode === "tickets" ? "Tickets" : "Support Tickets"}
           </h3>
           <RealtimeUpdateIndicator visible={visible} />
           {/* Status filter tabs */}
