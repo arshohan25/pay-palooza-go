@@ -287,6 +287,7 @@ export default function AdminRechargePackManager() {
 
   const toggleActive = async (p: Pack) => {
     await supabase.from("recharge_packs").update({ is_active: !p.is_active } as any).eq("id", p.id);
+    await auditLog("pack_toggled", p.id, { name: p.name, is_active: !p.is_active });
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
