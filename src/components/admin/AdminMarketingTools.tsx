@@ -253,6 +253,7 @@ export default function AdminMarketingTools() {
         const { error } = await supabase.from("campaigns").insert(payload);
         if (error) throw error;
         toast.success("Campaign created");
+        await auditLog("campaign_created", "new", { name: campaignForm.name });
       }
       setShowCampaignForm(false); setEditingCampaign(null); loadCampaigns();
     } catch (err: any) { toast.error(err.message || "Failed to save"); }
