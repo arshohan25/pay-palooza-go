@@ -179,13 +179,13 @@ export default function AdminActivityMonitor() {
         </div>
 
         {/* Type filter */}
-        <div className="flex flex-wrap gap-1.5 mt-3">
+        <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1 scrollbar-hide">
           {TXN_TYPES.map(t => (
             <Button
               key={t}
               size="sm"
               variant={typeFilter === t ? "default" : "outline"}
-              className="text-xs h-7 capitalize"
+              className="text-xs h-7 capitalize shrink-0"
               onClick={() => setTypeFilter(t)}
             >
               {t}
