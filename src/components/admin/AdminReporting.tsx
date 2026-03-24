@@ -159,10 +159,8 @@ export default function AdminReporting() {
 
         {/* Type Breakdown Pie */}
         <Card className="border-0 shadow-[var(--shadow-card)]">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Volume by Type</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-4">
+            <p className="text-sm font-medium text-foreground mb-3">Volume by Type</p>
             <div className="h-52 flex items-center">
               <ResponsiveContainer width="60%" height="100%">
                 <PieChart>
