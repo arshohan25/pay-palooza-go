@@ -248,6 +248,10 @@ export default function AdminMerchantManagement() {
     if (error) { toast.error("Failed to update"); }
     else {
       toast.success("MDR & settlement updated");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "merchant_mdr_updated", entity_type: "merchant", entity_id: editingMdr.id, details: { mdr_rate: editingMdr.mdr, settlement: editingMdr.settlement } }).then();
+      }
       if (detail?.merchant?.id === editingMdr.id) {
         setDetail(prev => prev ? { ...prev, merchant: { ...prev.merchant, mdr_rate: parseFloat(editingMdr.mdr), settlement_frequency: editingMdr.settlement } } : prev);
       }
