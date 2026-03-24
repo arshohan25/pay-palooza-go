@@ -567,6 +567,26 @@ export default function AdminFraudAlerts() {
                               </Button>
                             </div>
                           )}
+                          {/* Delete for resolved/dismissed */}
+                          {(alert.status === "resolved" || alert.status === "false_positive") && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="ghost" className="text-xs h-8 gap-1.5 text-destructive">
+                                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Alert</AlertDialogTitle>
+                                  <AlertDialogDescription>Permanently delete this resolved alert? This cannot be undone.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteAlert(alert.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
                         </div>
                       </motion.div>
                     )}
