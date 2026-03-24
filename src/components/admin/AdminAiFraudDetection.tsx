@@ -55,6 +55,11 @@ export default function AdminAiFraudDetection() {
         status: "investigating" as any,
         details: { initiated_by: session.user.id, user_name: name },
       });
+      await supabase.from("audit_logs").insert({
+        actor_id: session.user.id, action: "ai_fraud_investigate",
+        entity_type: "user", entity_id: userId,
+        details: { user_name: name, reason },
+      });
       toast.success(`Investigation opened for ${name}`);
     } catch { toast.error("Failed to create alert"); }
     finally { setActionLoading(null); }

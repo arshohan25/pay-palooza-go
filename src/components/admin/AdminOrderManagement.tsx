@@ -147,8 +147,16 @@ export default function AdminOrderManagement() {
     return () => { supabase.removeChannel(channel); };
   }, [fetchOrders]);
 
+  const auditLog = async (action: string, entityId: string, details: any) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: "order", entity_id: entityId, details });
+    }
+  };
+
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     setUpdatingId(orderId);
+    const order = orders.find(o => o.id === orderId);
     const { error } = await supabase
       .from("orders")
       .update({ status: newStatus })
@@ -156,6 +164,7 @@ export default function AdminOrderManagement() {
     if (error) {
       toast.error("Failed to update order status");
     } else {
+      await auditLog("order_status_update", orderId, { order_num: order?.order_num, old_status: order?.status, new_status: newStatus });
       toast.success(`Order updated to ${STATUS_CONFIG[newStatus]?.label ?? newStatus}`);
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
       if (selectedOrder?.id === orderId) {
@@ -184,8 +193,10 @@ export default function AdminOrderManagement() {
       }
 
       if (result.refunded) {
+        await auditLog("order_cancel_refund", cancelTarget.id, { order_num: cancelTarget.order_num, total: cancelTarget.total, reason: cancelReason });
         toast.success(`Order ${cancelTarget.order_num} cancelled · ৳${cancelTarget.total.toLocaleString()} refunded to wallet`);
       } else {
+        await auditLog("order_cancel", cancelTarget.id, { order_num: cancelTarget.order_num, reason: cancelReason });
         toast.success(`Order ${cancelTarget.order_num} cancelled`);
       }
     } catch (e: any) {
@@ -260,6 +271,7 @@ export default function AdminOrderManagement() {
     if (error) {
       toast.error("Failed to update orders");
     } else {
+      await auditLog("order_bulk_status_update", ids.join(","), { count: ids.length, new_status: bulkStatus });
       toast.success(`${ids.length} order(s) updated to ${STATUS_CONFIG[bulkStatus]?.label ?? bulkStatus}`);
       setOrders(prev => prev.map(o => ids.includes(o.id) ? { ...o, status: bulkStatus } : o));
       setSelectedIds(new Set());

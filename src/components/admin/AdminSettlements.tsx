@@ -10,9 +10,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Landmark, Plus, CheckCircle, Clock, XCircle, Download, Search } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Landmark, Plus, CheckCircle, Clock, XCircle, Download, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+
+async function auditLog(action: string, entityType: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: entityType, entity_id: entityId, details });
+  }
+}
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
@@ -142,6 +150,7 @@ export default function AdminSettlements() {
       } as any);
 
       if (error) throw error;
+      await auditLog("settlement_create", "settlement", ref, { entity_type: form.entityType, entity_name: entityName, net_amount: net });
       toast.success(`Settlement ${ref} created — ৳${net.toLocaleString()} net`);
       setShowCreate(false);
       setForm({ entityType: "merchant", entityPhone: "", periodStart: "", periodEnd: "", bankName: "", bankAccount: "", notes: "" });
@@ -157,8 +166,18 @@ export default function AdminSettlements() {
     const update: any = { status: newStatus, updated_at: new Date().toISOString() };
     if (newStatus === "completed") update.settled_at = new Date().toISOString();
     const { error } = await supabase.from("settlements").update(update).eq("id", id);
-    if (error) toast.error("Failed to update");
-    else { toast.success(`Settlement marked ${newStatus}`); load(); }
+    if (error) { toast.error("Failed to update"); return; }
+    await auditLog("settlement_status_update", "settlement", id, { new_status: newStatus });
+    toast.success(`Settlement marked ${newStatus}`);
+    load();
+  };
+
+  const deleteSettlement = async (id: string) => {
+    const { error } = await supabase.from("settlements").delete().eq("id", id);
+    if (error) { toast.error("Failed to delete"); return; }
+    await auditLog("settlement_delete", "settlement", id, {});
+    toast.success("Settlement deleted");
+    load();
   };
 
   const exportCSV = () => {
@@ -276,6 +295,23 @@ export default function AdminSettlements() {
                           <Button size="sm" className="h-7 text-xs" onClick={() => updateStatus(s.id, "completed")}><CheckCircle className="w-3 h-3 mr-1" /> Complete</Button>
                         )}
                         {s.status === "completed" && <span className="text-xs text-muted-foreground">{s.settled_at ? formatDistanceToNow(new Date(s.settled_at), { addSuffix: true }) : "—"}</span>}
+                        {s.status === "failed" && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive"><Trash2 className="w-3 h-3 mr-1" />Delete</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Settlement</AlertDialogTitle>
+                                <AlertDialogDescription>Delete this failed settlement? This cannot be undone.</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => deleteSettlement(s.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

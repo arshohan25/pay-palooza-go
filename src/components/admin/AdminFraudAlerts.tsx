@@ -6,7 +6,7 @@ import {
   AlertTriangle, ShieldAlert, Shield, ShieldCheck, ShieldX, ShieldOff,
   Smartphone, Globe, MapPin, Phone, Hash, Clock, User, ChevronDown, ChevronUp,
   Eye, CheckCircle, XCircle, Lock, RefreshCw, Fingerprint, Wifi, Monitor,
-  ArrowUp, UserCheck,
+  ArrowUp, UserCheck, Trash2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,8 +17,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+async function auditLog(action: string, entityType: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: entityType, entity_id: entityId, details });
+  }
+}
 
 interface FraudAlert {
   id: string;
@@ -171,16 +181,17 @@ export default function AdminFraudAlerts() {
   const handleAction = async () => {
     if (!actionDialog) return;
     setActionLoading(true);
-    const { alert, action } = actionDialog;
+    const { alert, action: actionType } = actionDialog;
 
     try {
-      if (action === "investigate") {
+      if (actionType === "investigate") {
         await supabase
           .from("fraud_alerts")
           .update({ status: "investigating" as any })
           .eq("id", alert.id);
+        await auditLog("fraud_alert_investigate", "fraud_alert", alert.id, { rule: alert.rule_triggered, user_id: alert.user_id });
         toast.success("Alert marked as investigating");
-      } else if (action === "resolve") {
+      } else if (actionType === "resolve") {
         await supabase
           .from("fraud_alerts")
           .update({
@@ -189,8 +200,9 @@ export default function AdminFraudAlerts() {
             resolution_notes: resolutionNotes || null,
           })
           .eq("id", alert.id);
+        await auditLog("fraud_alert_resolve", "fraud_alert", alert.id, { rule: alert.rule_triggered, notes: resolutionNotes });
         toast.success("Alert resolved");
-      } else if (action === "dismiss") {
+      } else if (actionType === "dismiss") {
         await supabase
           .from("fraud_alerts")
           .update({
@@ -199,8 +211,9 @@ export default function AdminFraudAlerts() {
             resolution_notes: resolutionNotes || "Dismissed as false positive",
           })
           .eq("id", alert.id);
+        await auditLog("fraud_alert_dismiss", "fraud_alert", alert.id, { rule: alert.rule_triggered });
         toast.success("Alert dismissed as false positive");
-      } else if (action === "lock") {
+      } else if (actionType === "lock") {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
         await supabase
@@ -215,6 +228,7 @@ export default function AdminFraudAlerts() {
           .from("fraud_alerts")
           .update({ status: "resolved" as any, resolved_at: new Date().toISOString(), resolution_notes: "Account locked" })
           .eq("id", alert.id);
+        await auditLog("fraud_alert_lock_account", "fraud_alert", alert.id, { user_id: alert.user_id, rule: alert.rule_triggered });
         toast.success("Account locked & alert resolved");
       }
       setActionDialog(null);
@@ -242,6 +256,7 @@ export default function AdminFraudAlerts() {
       sla_deadline: newSla,
     } as any).eq("id", alert.id);
     if (error) { toast.error("Failed to escalate"); return; }
+    await auditLog("fraud_alert_escalate", "fraud_alert", alert.id, { new_level: newLevel, rule: alert.rule_triggered });
     toast.success(`Escalated to L${newLevel}`);
     loadAlerts();
   };
@@ -251,7 +266,16 @@ export default function AdminFraudAlerts() {
       assigned_to_team_member: memberId || null,
     } as any).eq("id", alertId);
     if (error) { toast.error("Failed to assign"); return; }
+    await auditLog("fraud_alert_assign", "fraud_alert", alertId, { assigned_to_team_member: memberId || null });
     toast.success("Assigned");
+    loadAlerts();
+  };
+
+  const handleDeleteAlert = async (alertId: string) => {
+    const { error } = await supabase.from("fraud_alerts").delete().eq("id", alertId);
+    if (error) { toast.error("Failed to delete"); return; }
+    await auditLog("fraud_alert_delete", "fraud_alert", alertId, {});
+    toast.success("Alert deleted");
     loadAlerts();
   };
 
@@ -542,6 +566,26 @@ export default function AdminFraudAlerts() {
                                 <Lock className="w-3.5 h-3.5" /> Lock Account
                               </Button>
                             </div>
+                          )}
+                          {/* Delete for resolved/dismissed */}
+                          {(alert.status === "resolved" || alert.status === "false_positive") && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="ghost" className="text-xs h-8 gap-1.5 text-destructive">
+                                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Alert</AlertDialogTitle>
+                                  <AlertDialogDescription>Permanently delete this resolved alert? This cannot be undone.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteAlert(alert.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           )}
                         </div>
                       </motion.div>

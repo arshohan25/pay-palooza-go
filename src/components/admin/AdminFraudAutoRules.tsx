@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, RefreshCw, Zap, ShieldAlert, Clock, Bot } from "lucide-react";
+import { Plus, Trash2, RefreshCw, Zap, ShieldAlert, Clock, Bot, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
 const METRICS = [
@@ -55,11 +56,21 @@ interface RuleLog {
   created_at: string;
 }
 
+async function auditLog(action: string, entityType: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: entityType, entity_id: entityId, details
+    });
+  }
+}
+
 export default function AdminFraudAutoRules() {
   const [rules, setRules] = useState<AutoRule[]>([]);
   const [logs, setLogs] = useState<RuleLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [editing, setEditing] = useState<AutoRule | null>(null);
   const [form, setForm] = useState({ name: "", metric: "daily_txn_count", threshold: "", action: "lock_account", lock_duration: "permanent" });
   const [saving, setSaving] = useState(false);
 
@@ -76,23 +87,45 @@ export default function AdminFraudAutoRules() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  const resetForm = () => setForm({ name: "", metric: "daily_txn_count", threshold: "", action: "lock_account", lock_duration: "permanent" });
+
   const createRule = async () => {
     if (!form.name || !form.threshold) { toast.error("Name and threshold required"); return; }
     setSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const { error } = await supabase.from("fraud_auto_rules").insert({
-        name: form.name,
-        metric: form.metric,
-        threshold: Number(form.threshold),
-        action: form.action,
-        lock_duration: form.lock_duration,
-        created_by: session?.user?.id,
-      } as any);
+      const { data, error } = await supabase.from("fraud_auto_rules").insert({
+        name: form.name, metric: form.metric, threshold: Number(form.threshold),
+        action: form.action, lock_duration: form.lock_duration, created_by: session?.user?.id,
+      } as any).select().single();
       if (error) throw error;
+      await auditLog("fraud_rule_create", "fraud_auto_rule", data.id, { name: form.name, metric: form.metric, threshold: Number(form.threshold) });
       toast.success("Rule created");
       setShowCreate(false);
-      setForm({ name: "", metric: "daily_txn_count", threshold: "", action: "lock_account", lock_duration: "permanent" });
+      resetForm();
+      loadData();
+    } catch (err: any) { toast.error(err.message); }
+    finally { setSaving(false); }
+  };
+
+  const openEdit = (rule: AutoRule) => {
+    setEditing(rule);
+    setForm({ name: rule.name, metric: rule.metric, threshold: String(rule.threshold), action: rule.action, lock_duration: rule.lock_duration });
+  };
+
+  const saveEdit = async () => {
+    if (!editing || !form.name || !form.threshold) { toast.error("Name and threshold required"); return; }
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("fraud_auto_rules").update({
+        name: form.name, metric: form.metric, threshold: Number(form.threshold),
+        action: form.action, lock_duration: form.lock_duration, updated_at: new Date().toISOString(),
+      } as any).eq("id", editing.id);
+      if (error) throw error;
+      await auditLog("fraud_rule_edit", "fraud_auto_rule", editing.id, { name: form.name, metric: form.metric, threshold: Number(form.threshold) });
+      toast.success("Rule updated");
+      setEditing(null);
+      resetForm();
       loadData();
     } catch (err: any) { toast.error(err.message); }
     finally { setSaving(false); }
@@ -101,13 +134,16 @@ export default function AdminFraudAutoRules() {
   const toggleRule = async (rule: AutoRule) => {
     const { error } = await supabase.from("fraud_auto_rules").update({ is_active: !rule.is_active } as any).eq("id", rule.id);
     if (error) { toast.error("Failed to toggle"); return; }
+    await auditLog("fraud_rule_toggle", "fraud_auto_rule", rule.id, { name: rule.name, is_active: !rule.is_active });
     setRules(prev => prev.map(r => r.id === rule.id ? { ...r, is_active: !r.is_active } : r));
     toast.success(rule.is_active ? "Rule disabled" : "Rule enabled");
   };
 
   const deleteRule = async (id: string) => {
+    const rule = rules.find(r => r.id === id);
     const { error } = await supabase.from("fraud_auto_rules").delete().eq("id", id);
     if (error) { toast.error("Failed to delete"); return; }
+    await auditLog("fraud_rule_delete", "fraud_auto_rule", id, { name: rule?.name });
     setRules(prev => prev.filter(r => r.id !== id));
     toast.success("Rule deleted");
   };
@@ -115,6 +151,9 @@ export default function AdminFraudAutoRules() {
   if (loading) {
     return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
   }
+
+  const dialogOpen = showCreate || !!editing;
+  const dialogTitle = editing ? "Edit Auto-Rule" : "Create Auto-Rule";
 
   return (
     <div className="space-y-4">
@@ -126,7 +165,7 @@ export default function AdminFraudAutoRules() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={loadData}><RefreshCw className="w-3.5 h-3.5" /></Button>
-          <Button size="sm" onClick={() => setShowCreate(true)}><Plus className="w-3.5 h-3.5 mr-1" /> New Rule</Button>
+          <Button size="sm" onClick={() => { resetForm(); setShowCreate(true); }}><Plus className="w-3.5 h-3.5 mr-1" /> New Rule</Button>
         </div>
       </div>
 
@@ -156,9 +195,26 @@ export default function AdminFraudAutoRules() {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Switch checked={rule.is_active} onCheckedChange={() => toggleRule(rule)} />
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteRule(rule.id)}>
-                        <Trash2 className="w-3.5 h-3.5" />
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(rule)}>
+                        <Pencil className="w-3.5 h-3.5" />
                       </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Rule</AlertDialogTitle>
+                            <AlertDialogDescription>Delete "{rule.name}"? This cannot be undone.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteRule(rule.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                 </CardContent>
@@ -207,12 +263,12 @@ export default function AdminFraudAutoRules() {
         </TabsContent>
       </Tabs>
 
-      {/* Create Rule Dialog */}
-      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+      {/* Create/Edit Rule Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={o => { if (!o) { setShowCreate(false); setEditing(null); resetForm(); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Zap className="w-4 h-4 text-primary" /> Create Auto-Rule</DialogTitle>
-            <DialogDescription>Define a trigger that automatically takes action when thresholds are breached.</DialogDescription>
+            <DialogTitle className="flex items-center gap-2"><Zap className="w-4 h-4 text-primary" /> {dialogTitle}</DialogTitle>
+            <DialogDescription>{editing ? "Update the rule configuration." : "Define a trigger that automatically takes action when thresholds are breached."}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -246,8 +302,8 @@ export default function AdminFraudAutoRules() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowCreate(false)}>Cancel</Button>
-            <Button onClick={createRule} disabled={saving}>{saving ? "Creating…" : "Create Rule"}</Button>
+            <Button variant="ghost" onClick={() => { setShowCreate(false); setEditing(null); resetForm(); }}>Cancel</Button>
+            <Button onClick={editing ? saveEdit : createRule} disabled={saving}>{saving ? "Saving…" : editing ? "Update Rule" : "Create Rule"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

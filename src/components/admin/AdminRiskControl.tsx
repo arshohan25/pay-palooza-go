@@ -269,6 +269,10 @@ const AmlRulesTab = () => {
 
   const toggleRule = async (id: string, current: boolean) => {
     await supabase.from("aml_rules").update({ is_active: !current, updated_at: new Date().toISOString() }).eq("id", id);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "aml_rule_toggle", entity_type: "aml_rule", entity_id: id, details: { is_active: !current } });
+    }
     toast.success(`Rule ${!current ? "enabled" : "disabled"}`);
     fetchRules();
   };

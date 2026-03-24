@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { RotateCcw, Search, CheckCircle2, XCircle, Clock, Eye } from "lucide-react";
+import { RotateCcw, Search, CheckCircle2, XCircle, Clock, Eye, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,11 +9,21 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+
+async function auditLog(action: string, entityType: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: entityType, entity_id: entityId, details });
+  }
+}
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   pending: { label: "Pending", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300", icon: Clock },
@@ -59,12 +69,21 @@ export default function AdminReturnRequests() {
     if (error) {
       toast.error(error.message);
     } else {
+      await auditLog(`return_request_${status}`, "return_request", id, { status, admin_notes: adminNotes || null });
       toast.success(`Return request ${status}`);
       setSelectedRequest(null);
       setAdminNotes("");
       load();
     }
     setUpdating(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    const { error } = await (supabase as any).from("return_requests").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    await auditLog("return_request_delete", "return_request", id, {});
+    toast.success("Return request deleted");
+    load();
   };
 
   const filtered = requests.filter((r) => {
@@ -126,6 +145,25 @@ export default function AdminReturnRequests() {
                   <Button variant="ghost" size="icon" onClick={() => { setSelectedRequest(req); setAdminNotes(req.admin_notes || ""); }}>
                     <Eye className="w-4 h-4" />
                   </Button>
+                  {(req.status === "completed" || req.status === "rejected") && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-destructive h-8 w-8">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Return Request</AlertDialogTitle>
+                          <AlertDialogDescription>Delete this return request? This cannot be undone.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(req.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
                 </div>
               );
             })}
