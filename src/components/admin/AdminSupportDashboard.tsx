@@ -509,8 +509,10 @@ export default function AdminSupportDashboard({ mode = "all" }: AdminSupportDash
     }
   };
 
-  // Filter conversations by status
+  // Filter conversations by status and mode
   const filteredConversations = conversations.filter(c => {
+    // In live_chat mode, only show open conversations
+    if (mode === "live_chat") return c.status === "open";
     if (statusFilter === "all") return true;
     return c.status === statusFilter;
   });
