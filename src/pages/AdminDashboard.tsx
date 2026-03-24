@@ -914,7 +914,7 @@ export default function AdminDashboard() {
                     {stats.openAlerts}
                   </span>
                 )}
-                {item.id === "support" && supportUnread > 0 && (
+                {item.id === "live_chat" && supportUnread > 0 && (
                   <span className="ml-auto min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[9px] font-bold rounded-full inline-flex items-center justify-center">
                     {supportUnread}
                   </span>
