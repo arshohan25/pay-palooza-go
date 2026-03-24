@@ -49,6 +49,9 @@ export default function AdminSmartRouting() {
   const [showLinkForm, setShowLinkForm] = useState(false);
   const [linkForm, setLinkForm] = useState({ title: "", amount: "", description: "", maxUses: "", expiresAt: "" });
   const [creating, setCreating] = useState(false);
+  const [deleteLinkTarget, setDeleteLinkTarget] = useState<any>(null);
+  const [editLinkTarget, setEditLinkTarget] = useState<any>(null);
+  const [editLinkForm, setEditLinkForm] = useState({ title: "", amount: "", description: "" });
 
   const loadGateways = useCallback(async () => {
     setLoading(true);
