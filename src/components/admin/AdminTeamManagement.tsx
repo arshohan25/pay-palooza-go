@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import TeamActivityDashboard from "@/components/admin/TeamActivityDashboard";
 import TeamActivityLog from "@/components/admin/TeamActivityLog";
 import { supabase } from "@/integrations/supabase/client";
-import { teamSignUp, generateUsername, generatePassword } from "@/lib/auth";
+import { generateUsername, generatePassword } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
