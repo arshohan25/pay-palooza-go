@@ -157,6 +157,24 @@ function AppConfigTab() {
 }
 
 function CurrencyConfigTab() {
+  const [rates, setRates] = useState([
+    { currency: "USD", rate: "110.50" },
+    { currency: "EUR", rate: "120.30" },
+    { currency: "GBP", rate: "140.80" },
+    { currency: "INR", rate: "1.33" },
+  ]);
+  const [editingCurrency, setEditingCurrency] = useState<string | null>(null);
+  const [editRate, setEditRate] = useState("");
+  const [minTxn, setMinTxn] = useState("1");
+  const [maxTxn, setMaxTxn] = useState("1000000");
+  const [editingMinMax, setEditingMinMax] = useState<string | null>(null);
+
+  const saveRate = (currency: string) => {
+    setRates(prev => prev.map(r => r.currency === currency ? { ...r, rate: editRate } : r));
+    setEditingCurrency(null);
+    toast.success(`${currency} rate updated to ৳${editRate}`);
+  };
+
   return (
     <div className="space-y-3">
       <Card className="border-0 shadow-[var(--shadow-card)]">
@@ -167,8 +185,34 @@ function CurrencyConfigTab() {
             <div><p className="text-muted-foreground text-xs">Currency Code</p><p className="font-medium">BDT</p></div>
             <div><p className="text-muted-foreground text-xs">Symbol</p><p className="font-medium">৳</p></div>
             <div><p className="text-muted-foreground text-xs">Decimal Places</p><p className="font-medium">2</p></div>
-            <div><p className="text-muted-foreground text-xs">Grouping</p><p className="font-medium">Indian (1,00,000)</p></div>
-            <div><p className="text-muted-foreground text-xs">Min Transaction</p><p className="font-medium">৳1</p></div>
+            <div>
+              <p className="text-muted-foreground text-xs">Min Transaction</p>
+              {editingMinMax === "min" ? (
+                <div className="flex gap-1 mt-0.5">
+                  <Input value={minTxn} onChange={e => setMinTxn(e.target.value)} className="h-7 text-xs w-20" autoFocus
+                    onKeyDown={e => { if (e.key === "Enter") { setEditingMinMax(null); toast.success("Min transaction updated"); } if (e.key === "Escape") setEditingMinMax(null); }} />
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingMinMax(null); toast.success("Min transaction updated"); }}>
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 group"><p className="font-medium">৳{minTxn}</p><button className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setEditingMinMax("min")}><Pencil className="w-3 h-3 text-muted-foreground" /></button></div>
+              )}
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs">Max Transaction</p>
+              {editingMinMax === "max" ? (
+                <div className="flex gap-1 mt-0.5">
+                  <Input value={maxTxn} onChange={e => setMaxTxn(e.target.value)} className="h-7 text-xs w-24" autoFocus
+                    onKeyDown={e => { if (e.key === "Enter") { setEditingMinMax(null); toast.success("Max transaction updated"); } if (e.key === "Escape") setEditingMinMax(null); }} />
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingMinMax(null); toast.success("Max transaction updated"); }}>
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 group"><p className="font-medium">৳{Number(maxTxn).toLocaleString()}</p><button className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setEditingMinMax("max")}><Pencil className="w-3 h-3 text-muted-foreground" /></button></div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -176,19 +220,22 @@ function CurrencyConfigTab() {
         <CardContent className="p-4 space-y-3">
           <p className="text-sm font-medium text-foreground">Exchange Rates (Reference)</p>
           <div className="space-y-2">
-            {[
-              { currency: "USD", rate: "110.50" },
-              { currency: "EUR", rate: "120.30" },
-              { currency: "GBP", rate: "140.80" },
-              { currency: "INR", rate: "1.33" },
-            ].map(r => (
+            {rates.map(r => (
               <div key={r.currency} className="flex items-center justify-between py-1.5 border-b border-border/30">
                 <span className="text-xs font-medium">1 {r.currency}</span>
-                <span className="text-xs text-muted-foreground">= ৳{r.rate}</span>
+                {editingCurrency === r.currency ? (
+                  <div className="flex gap-1">
+                    <Input value={editRate} onChange={e => setEditRate(e.target.value)} className="h-6 text-xs w-20" autoFocus
+                      onKeyDown={e => { if (e.key === "Enter") saveRate(r.currency); if (e.key === "Escape") setEditingCurrency(null); }} />
+                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => saveRate(r.currency)}>✓</Button>
+                  </div>
+                ) : (
+                  <span className="text-xs text-muted-foreground cursor-pointer hover:underline" onClick={() => { setEditingCurrency(r.currency); setEditRate(r.rate); }}>= ৳{r.rate}</span>
+                )}
               </div>
             ))}
           </div>
-          <p className="text-[10px] text-muted-foreground">Reference rates only — EasyPay operates in BDT exclusively</p>
+          <p className="text-[10px] text-muted-foreground">Click any rate to edit — Reference rates only</p>
         </CardContent>
       </Card>
     </div>
