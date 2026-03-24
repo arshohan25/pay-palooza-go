@@ -997,7 +997,7 @@ export default function AdminDashboard() {
               <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="shrink-0 lg:hidden">
                 <ChevronLeft className="w-5 h-5" />
               </Button>
-              <div className="flex items-center gap-2.5 md:hidden">
+              <div className="flex items-center gap-2.5 lg:hidden">
                 <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                   <ShieldAlert className="w-4 h-4 text-primary-foreground" />
                 </div>
