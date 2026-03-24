@@ -373,8 +373,9 @@ function CouponsTab() {
     if (form.min_order_amount) insert.min_order_amount = parseFloat(form.min_order_amount);
     if (form.max_discount) insert.max_discount = parseFloat(form.max_discount);
 
-    const { error } = await supabase.from("coupons").insert(insert);
+    const { error, data } = await supabase.from("coupons").insert(insert).select("id").single();
     if (error) { toast.error(error.message); return; }
+    auditLog("create_coupon", "coupon", data?.id || "new", { code: insert.code, discount_type: insert.discount_type, discount_value: insert.discount_value });
     toast.success("Coupon created");
     setShowCreate(false);
     setForm({ code: "", discount_type: "percentage", discount_value: "10", usage_limit: "", min_order_amount: "", max_discount: "", description: "" });
