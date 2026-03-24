@@ -1,45 +1,31 @@
 
 
-## Plan: Split Support into Live Chat & Tickets + Add Notification Sound/Visual Alert
+## Plan: Add "Currently Online" Support Agents Indicator
 
 ### What Changes
 
-**1. Split the Admin "Support" nav into two tabs: "Live Chat" and "Tickets"**
+**Single file: `src/components/admin/AdminSupportDashboard.tsx`**
 
-In `src/pages/AdminDashboard.tsx`:
-- Replace the single `{ id: "support", label: "Support", icon: MessageCircle }` nav item with two items:
-  - `{ id: "live_chat", label: "Live Chat", icon: MessageCircle }` — real-time conversations (status: "open")
-  - `{ id: "tickets", label: "Tickets", icon: Ticket }` — all tickets with full status filtering (open/resolved/closed)
-- Add rendering for both tabs, each using a new wrapper that passes a `mode` prop to `AdminSupportDashboard`
-- Move the `supportUnread` badge to the "Live Chat" nav item
+**1. Add state and periodic fetch for online agents**
+- Add `onlineAgents` state (array of `{ user_id, display_name, open_count }`)
+- Use the existing `getAvailableAgents()` from `useAgentRouting` (already destructured but not used directly — will add it to the destructured return)
+- Fetch on mount and refresh every 30 seconds via `setInterval`
+- Also re-fetch when conversations change (to update open_count)
 
-**2. Add mode prop to `AdminSupportDashboard`**
+**2. Render an "Online Agents" collapsible strip**
+- Place it between the header title/tabs and the conversation list (after line ~568, before `<ScrollArea>`)
+- Show a compact horizontal strip with:
+  - Green dot + "X agents online" summary
+  - Each agent as a small pill: `[green dot] Name (3 chats)` showing their `display_name` and `open_count`
+- If no agents online: show a yellow warning pill "No agents online"
+- Collapsed by default, expandable with a chevron toggle to save space
 
-In `src/components/admin/AdminSupportDashboard.tsx`:
-- Accept an optional `mode` prop: `"live_chat" | "tickets" | "all"` (default `"all"`)
-- In **Live Chat** mode: only show `open` conversations, hide the status filter tabs, focus on real-time messaging
-- In **Tickets** mode: show all conversations with full status filter tabs (All, Open, Resolved, Closed), focused on ticket management/triage
-
-**3. Add notification sound + visual pulse alert on new messages**
-
-In `src/components/admin/AdminSupportDashboard.tsx`:
-- Import `playChatNotification` from `@/lib/sounds` and `haptics` from `@/lib/haptics`
-- In the existing realtime listener for `support_messages` INSERT events:
-  - Play notification sound via `playChatNotification()`
-  - Fire haptic feedback via `haptics.notify()`
-  - Add a visual pulse animation on the conversation list item that received the new message (brief green border flash using a `newMsgConvId` state that clears after 2 seconds)
-- In the realtime listener for `support_conversations` INSERT events (new conversation created):
-  - Play `playChatRequestSound()` from `@/lib/sounds` (3-note ascending chime)
-  - Show a toast with "New support conversation from {user}" 
-  - Add the same visual pulse on the new conversation entry
-
-### Files Modified
-- `src/pages/AdminDashboard.tsx` — split nav item, add two tab renderings
-- `src/components/admin/AdminSupportDashboard.tsx` — add `mode` prop filtering, notification sound + visual pulse on new messages/conversations
+**3. Wire `getAvailableAgents` from existing hook**
+- Already available via `useAgentRouting()` — just add it to the destructured return on line 111
 
 ### Technical Details
-- Uses existing `playChatNotification()` and `playChatRequestSound()` from `src/lib/sounds.ts` — no new audio infrastructure needed
-- Uses existing `haptics.notify()` from `src/lib/haptics.ts`
-- Visual pulse: a `ring-2 ring-primary animate-pulse` class applied briefly (2s) to the conversation row that received a new message, tracked via `highlightedConvId` state
-- The `mode` prop simply filters `filteredConversations` and conditionally hides the status tabs — no duplication of the component
+- No new dependencies, hooks, or database changes needed
+- `getAvailableAgents()` already queries `team_members` (department=support, is_available=true) and counts open conversations per agent — exactly what's needed
+- Polling interval of 30s keeps data fresh without overloading
+- The strip is ~40px tall collapsed, expands to show individual agent pills
 
