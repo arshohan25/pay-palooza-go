@@ -13,6 +13,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Plus, Edit2, Trash2, Eye, Calendar, Palette } from "lucide-react";
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: "festival_theme", entity_id: entityId, details
+    });
+  }
+}
+
 interface FestivalTheme {
   id: string;
   name: string;
