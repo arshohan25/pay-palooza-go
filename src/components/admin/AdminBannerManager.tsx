@@ -209,10 +209,12 @@ export default function AdminBannerManager() {
 
     if (editId) {
       const { error } = await supabase.from("promo_banners").update(payload).eq("id", editId);
-      if (error) toast.error(error.message); else toast.success("Banner updated");
+      if (error) toast.error(error.message);
+      else { toast.success("Banner updated"); await auditLog("banner_update", editId, { title: payload.title }); }
     } else {
-      const { error } = await supabase.from("promo_banners").insert(payload);
-      if (error) toast.error(error.message); else toast.success("Banner created");
+      const { data, error } = await supabase.from("promo_banners").insert(payload).select("id").single();
+      if (error) toast.error(error.message);
+      else { toast.success("Banner created"); await auditLog("banner_create", data.id, { title: payload.title }); }
     }
     setSaving(false);
     setDialogOpen(false);
