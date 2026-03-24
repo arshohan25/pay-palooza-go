@@ -384,6 +384,7 @@ function CouponsTab() {
 
   const deleteCoupon = async (id: string) => {
     await supabase.from("coupons").delete().eq("id", id);
+    auditLog("delete_coupon", "coupon", id, {});
     toast.success("Coupon deleted");
     load();
   };

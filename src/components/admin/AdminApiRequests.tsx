@@ -149,6 +149,7 @@ export default function AdminApiRequests() {
             category: "system",
           });
         }
+        auditLog("reject_api_request", requestId, { merchant_id: merchantId, reason: adminNotes[requestId] || null });
         toast.info("Request rejected");
       }
 

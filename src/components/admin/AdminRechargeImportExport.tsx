@@ -149,8 +149,10 @@ export default function AdminRechargeImportExport() {
 
     setImportResult({ added: rows.length - (errors.length > 0 ? 0 : 0), errors });
     if (errors.length === 0 && rows.length > 0) {
+      auditLog("bulk_import_packs", "bulk", { count: rows.length });
       toast.success(`Imported ${rows.length} packs`);
     } else if (rows.length > 0) {
+      auditLog("bulk_import_packs", "bulk", { count: rows.length, errors: errors.length });
       toast.success(`Imported ${rows.length} packs with ${errors.length} warnings`);
     } else {
       toast.error("No valid packs found in CSV");

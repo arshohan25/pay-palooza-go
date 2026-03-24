@@ -63,6 +63,7 @@ export default function AdminBankListManager() {
   const deleteBank = async (id: string, name: string) => {
     if (!confirm(`Delete "${name}"?`)) return;
     await supabase.from("platform_banks").delete().eq("id", id);
+    auditLog("delete_bank", id, { name });
     toast.success("Bank deleted");
     refetch();
   };

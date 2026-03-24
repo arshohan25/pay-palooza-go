@@ -42,6 +42,7 @@ export default function AdminInventoryAlerts() {
     const val = parseInt(editStock);
     if (isNaN(val) || val < 0) { toast.error("Invalid stock value"); return; }
     await supabase.from("merchant_products").update({ stock: val }).eq("id", id);
+    auditLog("update_stock", id, { new_stock: val });
     toast.success("Stock updated");
     setEditingId(null);
     load();
