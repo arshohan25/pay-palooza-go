@@ -516,6 +516,7 @@ export default function AdminTeamManagement() {
         created_by: adminSession?.user?.id,
         username: addUsername.trim(),
         temp_password: addPassword,
+        email: addEmail.trim() || null,
       } as any);
 
       await supabase.from("user_roles").insert({ user_id: newUserId, role: addRole } as any);
