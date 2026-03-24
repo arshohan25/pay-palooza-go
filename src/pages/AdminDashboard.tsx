@@ -994,7 +994,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between px-4 lg:px-6 py-3">
             <div className="flex items-center gap-2">
               {/* Mobile only: back + hamburger */}
-              <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="shrink-0 md:hidden">
+              <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="shrink-0 lg:hidden">
                 <ChevronLeft className="w-5 h-5" />
               </Button>
               <div className="flex items-center gap-2.5 md:hidden">
