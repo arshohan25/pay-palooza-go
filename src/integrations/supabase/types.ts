@@ -4115,6 +4115,7 @@ export type Database = {
           created_by: string | null
           department: string | null
           display_name: string
+          email: string | null
           first_login_at: string | null
           has_changed_password: boolean
           has_completed_profile: boolean
@@ -4134,6 +4135,7 @@ export type Database = {
           created_by?: string | null
           department?: string | null
           display_name: string
+          email?: string | null
           first_login_at?: string | null
           has_changed_password?: boolean
           has_completed_profile?: boolean
@@ -4153,6 +4155,7 @@ export type Database = {
           created_by?: string | null
           department?: string | null
           display_name?: string
+          email?: string | null
           first_login_at?: string | null
           has_changed_password?: boolean
           has_completed_profile?: boolean
