@@ -289,7 +289,7 @@ export default function AdminActivityMonitor() {
                                   transition={{ duration: 0.2 }}
                                   className="overflow-hidden"
                                 >
-                                  <div className="bg-muted/30 px-6 py-4 grid grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                                  <div className="bg-muted/30 px-4 py-4 grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                                     <div>
                                       <p className="text-muted-foreground text-xs mb-1">Transaction ID</p>
                                       <p className="font-mono text-xs text-foreground break-all">{txn.id}</p>
