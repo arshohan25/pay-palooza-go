@@ -244,37 +244,37 @@ export default function AdminActivityMonitor() {
                           className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer"
                           onClick={() => setExpandedId(isExpanded ? null : txn.id)}
                         >
-                          <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{txn.short_id}</td>
-                          <td className="px-4 py-3">
-                            <Badge variant="secondary" className={`text-xs ${TXN_TYPE_COLORS[txn.type] ?? ""}`}>
+                          <td className="px-3 py-3 font-mono text-xs text-muted-foreground max-w-[80px] truncate">{txn.short_id}</td>
+                          <td className="px-3 py-3">
+                            <Badge variant="secondary" className={`text-xs whitespace-nowrap ${TXN_TYPE_COLORS[txn.type] ?? ""}`}>
                               {txn.type}
                             </Badge>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 py-3">
                             <div className="leading-tight">
-                              <p className="font-medium text-foreground text-xs">{sender?.name || "—"}</p>
+                              <p className="font-medium text-foreground text-xs truncate max-w-[120px]">{sender?.name || "—"}</p>
                               <p className="text-[11px] text-muted-foreground">{sender?.phone || "—"}</p>
                             </div>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 py-3">
                             <div className="leading-tight">
-                              <p className="font-medium text-foreground text-xs">{txn.recipient_name || "—"}</p>
+                              <p className="font-medium text-foreground text-xs truncate max-w-[120px]">{txn.recipient_name || "—"}</p>
                               <p className="text-[11px] text-muted-foreground">{txn.recipient_phone || "—"}</p>
                             </div>
                           </td>
-                          <td className="px-4 py-3 font-semibold text-foreground">৳{txn.amount?.toLocaleString()}</td>
-                          <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">৳{txn.fee?.toLocaleString()}</td>
-                          <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">৳{txn.commission?.toLocaleString()}</td>
-                          <td className="px-4 py-3 text-muted-foreground hidden xl:table-cell">
+                          <td className="px-3 py-3 font-semibold text-foreground whitespace-nowrap">৳{txn.amount?.toLocaleString()}</td>
+                          <td className="px-3 py-3 text-muted-foreground hidden lg:table-cell">৳{txn.fee?.toLocaleString()}</td>
+                          <td className="px-3 py-3 text-muted-foreground hidden lg:table-cell">৳{txn.commission?.toLocaleString()}</td>
+                          <td className="px-3 py-3 text-muted-foreground hidden 2xl:table-cell whitespace-nowrap">
                             {txn.balance_after != null ? `৳${Number(txn.balance_after).toLocaleString()}` : "—"}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 py-3 whitespace-nowrap">
                             <Badge variant={STATUS_BADGE[txn.status] ?? "outline"} className="text-xs capitalize">{txn.status}</Badge>
                           </td>
-                          <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">
+                          <td className="px-3 py-3 text-muted-foreground text-xs whitespace-nowrap hidden xl:table-cell">
                             {format(new Date(txn.created_at), "MMM dd, yyyy, hh:mm a")}
                           </td>
-                          <td className="px-4 py-3 text-muted-foreground">
+                          <td className="px-3 py-3 text-muted-foreground">
                             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                           </td>
                         </tr>
