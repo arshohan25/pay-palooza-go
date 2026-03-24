@@ -174,21 +174,50 @@ function getPermSummary(perms: AccessPerm[]) {
 }
 
 // ═══ Permission Editor Component (reused in Add + Edit dialogs) ═══
-function PermissionEditor({ perms, onChange }: { perms: AccessPerm[]; onChange: (p: AccessPerm[]) => void }) {
+function PermissionEditor({ perms, onChange, members }: { perms: AccessPerm[]; onChange: (p: AccessPerm[]) => void; members?: TeamMember[] }) {
   const [openCats, setOpenCats] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(SECTION_CATEGORIES.map(c => [c.label, true]))
   );
   const [selectedPreset, setSelectedPreset] = useState<string>("");
+  const [cloneFrom, setCloneFrom] = useState<string>("");
+  const [cloning, setCloning] = useState(false);
 
   const toggleCat = (label: string) => setOpenCats(prev => ({ ...prev, [label]: !prev[label] }));
 
   const handlePreset = (key: string) => {
     setSelectedPreset(key);
+    setCloneFrom("");
     onChange(applyPreset(key));
+  };
+
+  const handleClone = async (memberId: string) => {
+    const member = members?.find(m => m.id === memberId);
+    if (!member) return;
+    setCloneFrom(memberId);
+    setSelectedPreset("");
+    setCloning(true);
+    try {
+      const { data } = await supabase.from("team_access_permissions")
+        .select("section, can_view, can_add, can_edit, can_delete")
+        .eq("user_id", member.user_id);
+      const fetched = data ?? [];
+      const clonedPerms = ALL_SECTIONS.map(s => {
+        const found = fetched.find((f: any) => f.section === s);
+        return found
+          ? { section: s, can_view: !!found.can_view, can_add: !!found.can_add, can_edit: !!found.can_edit, can_delete: !!found.can_delete }
+          : { section: s, can_view: false, can_add: false, can_edit: false, can_delete: false };
+      });
+      onChange(clonedPerms);
+      toast.success(`Cloned permissions from ${member.display_name}`);
+    } catch {
+      toast.error("Failed to clone permissions");
+    }
+    setCloning(false);
   };
 
   const togglePerm = (section: string, field: "can_view" | "can_add" | "can_edit" | "can_delete") => {
     setSelectedPreset("");
+    setCloneFrom("");
     onChange(perms.map(p => {
       if (p.section !== section) return p;
       const updated = { ...p, [field]: !p[field] };
@@ -199,6 +228,7 @@ function PermissionEditor({ perms, onChange }: { perms: AccessPerm[]; onChange: 
   };
 
   const bulkAction = (action: "grant_view" | "revoke_all" | "full_access") => {
+    setCloneFrom("");
     setSelectedPreset("");
     onChange(perms.map(p => {
       if (action === "grant_view") return { ...p, can_view: true };
@@ -226,6 +256,20 @@ function PermissionEditor({ perms, onChange }: { perms: AccessPerm[]; onChange: 
             ))}
           </SelectContent>
         </Select>
+        {members && members.length > 0 && (
+          <>
+            <span className="text-xs text-muted-foreground">or</span>
+            <Label className="text-xs text-muted-foreground shrink-0 flex items-center gap-1"><Copy className="w-3 h-3" />Clone from:</Label>
+            <Select value={cloneFrom} onValueChange={handleClone} disabled={cloning}>
+              <SelectTrigger className="h-8 text-xs w-48"><SelectValue placeholder={cloning ? "Cloning..." : "Select member..."} /></SelectTrigger>
+              <SelectContent>
+                {members.map(m => (
+                  <SelectItem key={m.id} value={m.id}>{m.display_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </>
+        )}
       </div>
 
       {/* Bulk actions */}
@@ -905,7 +949,7 @@ export default function AdminTeamManagement() {
             </div>
           ) : (
             /* Step 2: Permissions */
-            <PermissionEditor perms={addPerms} onChange={setAddPerms} />
+            <PermissionEditor perms={addPerms} onChange={setAddPerms} members={members} />
           )}
 
           <DialogFooter>
@@ -952,7 +996,7 @@ export default function AdminTeamManagement() {
           {editLoading ? (
             <div className="flex justify-center py-8"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
           ) : (
-            <PermissionEditor perms={editPerms} onChange={setEditPerms} />
+            <PermissionEditor perms={editPerms} onChange={setEditPerms} members={members} />
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditMember(null)}>Cancel</Button>
