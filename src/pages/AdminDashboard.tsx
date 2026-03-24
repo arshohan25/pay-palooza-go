@@ -964,7 +964,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-background flex">
       {/* ═══ Persistent sidebar – desktop only ═══ */}
-      <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-56 bg-card border-r border-border z-40">
+      <aside className="hidden lg:flex flex-col fixed left-0 top-0 bottom-0 w-56 bg-card border-r border-border z-40">
         <div className="px-4 py-4 flex items-center gap-2.5 border-b border-border">
           <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="shrink-0 h-8 w-8">
             <ChevronLeft className="w-4 h-4" />
@@ -988,28 +988,28 @@ export default function AdminDashboard() {
       </aside>
 
       {/* ═══ Main column ═══ */}
-      <div className={`flex-1 flex flex-col md:ml-56 overflow-x-hidden transition-[margin] duration-300 ${showActivityFeed && !isMobile ? "md:mr-72" : ""}`}>
+      <div className={`flex-1 flex flex-col lg:ml-56 overflow-x-hidden transition-[margin] duration-300 ${showActivityFeed && !isMobile ? "lg:mr-72" : ""}`}>
         {/* Top header */}
         <header className="sticky top-0 z-30 bg-card border-b border-border">
-          <div className="flex items-center justify-between px-4 md:px-6 py-3">
+          <div className="flex items-center justify-between px-4 lg:px-6 py-3">
             <div className="flex items-center gap-2">
               {/* Mobile only: back + hamburger */}
-              <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="shrink-0 md:hidden">
+              <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="shrink-0 lg:hidden">
                 <ChevronLeft className="w-5 h-5" />
               </Button>
-              <div className="flex items-center gap-2.5 md:hidden">
+              <div className="flex items-center gap-2.5 lg:hidden">
                 <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                   <ShieldAlert className="w-4 h-4 text-primary-foreground" />
                 </div>
                 <h1 className="font-bold text-foreground text-base">Admin</h1>
               </div>
               {/* Desktop: section label */}
-              <span className="hidden md:block text-base font-bold text-foreground">
+              <span className="hidden lg:block text-base font-bold text-foreground">
                 {ALL_NAV_ITEMS.find(i => i.id === activeTab)?.label ?? "Overview"}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="relative hidden md:block">
+              <div className="relative hidden lg:block">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Search users, transactions…"
@@ -1018,7 +1018,7 @@ export default function AdminDashboard() {
                   onChange={e => setSearchQuery(e.target.value)}
                 />
               </div>
-              <div className="relative md:hidden flex-1 max-w-[160px]">
+              <div className="relative lg:hidden flex-1 max-w-[160px]">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                 <Input
                   placeholder="Search…"
@@ -1082,7 +1082,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Mobile: Active section label + hamburger */}
-          <div className="flex md:hidden items-center gap-2 px-4 pb-2">
+          <div className="flex lg:hidden items-center gap-2 px-4 pb-2">
             <Button
               variant="outline"
               size="icon"
@@ -2622,7 +2622,7 @@ export default function AdminDashboard() {
 
       {/* ═══ Activity Feed – Desktop sidebar ═══ */}
       {!isMobile && showActivityFeed && (
-        <aside className="hidden md:flex flex-col fixed right-0 top-0 bottom-0 w-72 bg-card border-l border-border z-40 animate-slide-in-right">
+        <aside className="hidden lg:flex flex-col fixed right-0 top-0 bottom-0 w-72 bg-card border-l border-border z-40 animate-slide-in-right">
           <AdminActivityFeed />
         </aside>
       )}
