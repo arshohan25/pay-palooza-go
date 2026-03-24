@@ -143,6 +143,7 @@ export default function AdminMarketingTools() {
         const { error } = await supabase.from("promo_codes").insert(payload);
         if (error) throw error;
         toast.success("Promo code created");
+        await auditLog("promo_created", "new", { code: promoForm.code });
       }
       setShowPromoForm(false); setEditingPromo(null); loadPromos();
     } catch (err: any) { toast.error(err.message || "Failed to save"); }
