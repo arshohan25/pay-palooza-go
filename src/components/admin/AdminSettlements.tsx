@@ -150,6 +150,7 @@ export default function AdminSettlements() {
       } as any);
 
       if (error) throw error;
+      await auditLog("settlement_create", "settlement", ref, { entity_type: form.entityType, entity_name: entityName, net_amount: net });
       toast.success(`Settlement ${ref} created — ৳${net.toLocaleString()} net`);
       setShowCreate(false);
       setForm({ entityType: "merchant", entityPhone: "", periodStart: "", periodEnd: "", bankName: "", bankAccount: "", notes: "" });
