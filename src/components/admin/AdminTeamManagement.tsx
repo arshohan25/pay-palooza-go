@@ -256,6 +256,20 @@ function PermissionEditor({ perms, onChange, members }: { perms: AccessPerm[]; o
             ))}
           </SelectContent>
         </Select>
+        {members && members.length > 0 && (
+          <>
+            <span className="text-xs text-muted-foreground">or</span>
+            <Label className="text-xs text-muted-foreground shrink-0 flex items-center gap-1"><Copy className="w-3 h-3" />Clone from:</Label>
+            <Select value={cloneFrom} onValueChange={handleClone} disabled={cloning}>
+              <SelectTrigger className="h-8 text-xs w-48"><SelectValue placeholder={cloning ? "Cloning..." : "Select member..."} /></SelectTrigger>
+              <SelectContent>
+                {members.map(m => (
+                  <SelectItem key={m.id} value={m.id}>{m.display_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </>
+        )}
       </div>
 
       {/* Bulk actions */}
