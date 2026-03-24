@@ -1,7 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
-import { CalendarIcon, RefreshCw, Eye, Users, ArrowLeftRight, Landmark, Gift, HelpCircle, Shield, FileText } from "lucide-react";
+import {
+  CalendarIcon, RefreshCw, Eye, Users, ArrowLeftRight, Landmark, Gift, Shield, FileText,
+  UserCog, UserPlus, UserMinus, ToggleLeft, Store, ShoppingCart, CreditCard, Bell,
+  Lock, Unlock, Ban, Pencil, Package, Settings, Truck, AlertTriangle, CheckCircle,
+  XCircle, Send, Zap, Database, Key, Layers, Tag, RotateCcw, Search, Trash2, Plus
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,19 +40,144 @@ const CATEGORY_MAP: Record<string, { label: string; actions: string[] }> = {
   chargebacks: { label: "Chargebacks", actions: ["chargeback", "chargeback_reversal"] },
   treasury: { label: "Treasury", actions: ["treasury_disburse"] },
   referrals: { label: "Referrals", actions: ["referral_milestone_pay", "referral_milestone_reset", "referral_reset_all"] },
+  user_management: { label: "User Management", actions: ["toggle_user_status", "soft_delete_user", "reactivate_user", "device_revoked"] },
+  agents: { label: "Agents", actions: ["create_agent", "edit_agent", "delete_agent", "toggle_agent_status"] },
+  distributors: { label: "Distributors", actions: ["create_distributor", "edit_distributor", "delete_distributor", "toggle_distributor_status"] },
+  merchants: { label: "Merchants", actions: ["edit_merchant", "delete_merchant", "toggle_merchant_status", "regenerate_api_key", "approve_application", "reject_application"] },
+  kyc: { label: "KYC", actions: ["approve_kyc", "reject_kyc", "request_resubmit"] },
+  team: { label: "Team", actions: ["create_team_member", "edit_team_member", "delete_team_member", "toggle_team_status"] },
+  security_risk: { label: "Security & Risk", actions: ["blacklist_added", "blacklist_toggled", "blacklist_deleted", "blacklist_edited", "gateway_toggled", "gateway_created", "gateway_updated", "gateway_deleted", "fraud_rule_create", "fraud_rule_edit", "fraud_rule_delete", "fraud_rule_toggle", "freeze_wallet", "unfreeze_wallet", "aml_toggle"] },
+  financial: { label: "Financial", actions: ["commission_rule_edit", "commission_rule_delete", "commission_tier_create", "commission_tier_edit", "commission_tier_delete", "settlement_create", "settlement_status", "settlement_delete", "adjust_balance"] },
+  system_config: { label: "System Config", actions: ["create_feature_lock", "delete_feature_lock", "create_toggle", "edit_toggle", "delete_toggle", "toggle_feature", "update_app_config", "update_fee_rule", "update_txn_rule", "toggle_maintenance", "banner_create", "banner_update", "banner_delete", "create_bank", "toggle_bank", "delete_bank"] },
+  ecommerce: { label: "E-Commerce", actions: ["flash_sale_create", "flash_sale_edit", "flash_sale_delete", "flash_sale_toggle", "order_status", "order_cancel", "order_bulk_status", "return_status", "return_delete", "product_toggle", "product_edit", "product_delete", "store_toggle", "coupon_create", "coupon_edit", "coupon_delete", "bulk_import_packs", "update_stock"] },
+  fraud: { label: "Fraud Alerts", actions: ["fraud_alert_status", "fraud_alert_assign", "fraud_alert_escalate", "fraud_alert_delete", "fraud_investigate"] },
+  notifications: { label: "Notifications & Charges", actions: ["notification_send", "charge_config_create", "charge_config_edit", "charge_config_delete", "charge_config_toggle", "approve_api_request", "reject_api_request"] },
 };
 
 const ALL_KNOWN_ACTIONS = Object.values(CATEGORY_MAP).flatMap(c => c.actions);
 
+const I = { s: 3, c: "w-3 h-3" }; // icon size shorthand
+
 const ACTION_META: Record<string, { label: string; icon: React.ReactNode }> = {
-  view_user_profile: { label: "View Profile", icon: <Eye className="w-3 h-3" /> },
-  view_all_profiles: { label: "View User List", icon: <Users className="w-3 h-3" /> },
-  chargeback: { label: "Chargeback", icon: <ArrowLeftRight className="w-3 h-3" /> },
-  chargeback_reversal: { label: "Chargeback Reversal", icon: <ArrowLeftRight className="w-3 h-3" /> },
-  treasury_disburse: { label: "Treasury Disburse", icon: <Landmark className="w-3 h-3" /> },
-  referral_milestone_pay: { label: "Referral Pay", icon: <Gift className="w-3 h-3" /> },
-  referral_milestone_reset: { label: "Referral Reset", icon: <Gift className="w-3 h-3" /> },
-  referral_reset_all: { label: "Referral Reset All", icon: <Gift className="w-3 h-3" /> },
+  // Profile Views
+  view_user_profile: { label: "View Profile", icon: <Eye className={I.c} /> },
+  view_all_profiles: { label: "View User List", icon: <Users className={I.c} /> },
+  // Chargebacks
+  chargeback: { label: "Chargeback", icon: <ArrowLeftRight className={I.c} /> },
+  chargeback_reversal: { label: "Chargeback Reversal", icon: <ArrowLeftRight className={I.c} /> },
+  // Treasury
+  treasury_disburse: { label: "Treasury Disburse", icon: <Landmark className={I.c} /> },
+  // Referrals
+  referral_milestone_pay: { label: "Referral Pay", icon: <Gift className={I.c} /> },
+  referral_milestone_reset: { label: "Referral Reset", icon: <Gift className={I.c} /> },
+  referral_reset_all: { label: "Referral Reset All", icon: <Gift className={I.c} /> },
+  // User Management
+  toggle_user_status: { label: "Toggle User Status", icon: <ToggleLeft className={I.c} /> },
+  soft_delete_user: { label: "Soft Delete User", icon: <UserMinus className={I.c} /> },
+  reactivate_user: { label: "Reactivate User", icon: <UserPlus className={I.c} /> },
+  device_revoked: { label: "Device Revoked", icon: <Lock className={I.c} /> },
+  // Agents
+  create_agent: { label: "Create Agent", icon: <UserPlus className={I.c} /> },
+  edit_agent: { label: "Edit Agent", icon: <Pencil className={I.c} /> },
+  delete_agent: { label: "Delete Agent", icon: <Trash2 className={I.c} /> },
+  toggle_agent_status: { label: "Toggle Agent Status", icon: <ToggleLeft className={I.c} /> },
+  // Distributors
+  create_distributor: { label: "Create Distributor", icon: <UserPlus className={I.c} /> },
+  edit_distributor: { label: "Edit Distributor", icon: <Pencil className={I.c} /> },
+  delete_distributor: { label: "Delete Distributor", icon: <Trash2 className={I.c} /> },
+  toggle_distributor_status: { label: "Toggle Distributor", icon: <ToggleLeft className={I.c} /> },
+  // Merchants
+  edit_merchant: { label: "Edit Merchant", icon: <Pencil className={I.c} /> },
+  delete_merchant: { label: "Delete Merchant", icon: <Trash2 className={I.c} /> },
+  toggle_merchant_status: { label: "Toggle Merchant", icon: <ToggleLeft className={I.c} /> },
+  regenerate_api_key: { label: "Regenerate API Key", icon: <Key className={I.c} /> },
+  approve_application: { label: "Approve Application", icon: <CheckCircle className={I.c} /> },
+  reject_application: { label: "Reject Application", icon: <XCircle className={I.c} /> },
+  // KYC
+  approve_kyc: { label: "Approve KYC", icon: <CheckCircle className={I.c} /> },
+  reject_kyc: { label: "Reject KYC", icon: <XCircle className={I.c} /> },
+  request_resubmit: { label: "Request Resubmit", icon: <RotateCcw className={I.c} /> },
+  // Team
+  create_team_member: { label: "Create Team Member", icon: <UserPlus className={I.c} /> },
+  edit_team_member: { label: "Edit Team Member", icon: <Pencil className={I.c} /> },
+  delete_team_member: { label: "Delete Team Member", icon: <Trash2 className={I.c} /> },
+  toggle_team_status: { label: "Toggle Team Status", icon: <ToggleLeft className={I.c} /> },
+  // Security & Risk
+  blacklist_added: { label: "Blacklist Added", icon: <Ban className={I.c} /> },
+  blacklist_toggled: { label: "Blacklist Toggled", icon: <ToggleLeft className={I.c} /> },
+  blacklist_deleted: { label: "Blacklist Deleted", icon: <Trash2 className={I.c} /> },
+  blacklist_edited: { label: "Blacklist Edited", icon: <Pencil className={I.c} /> },
+  gateway_toggled: { label: "Gateway Toggled", icon: <ToggleLeft className={I.c} /> },
+  gateway_created: { label: "Gateway Created", icon: <Plus className={I.c} /> },
+  gateway_updated: { label: "Gateway Updated", icon: <Pencil className={I.c} /> },
+  gateway_deleted: { label: "Gateway Deleted", icon: <Trash2 className={I.c} /> },
+  fraud_rule_create: { label: "Fraud Rule Created", icon: <AlertTriangle className={I.c} /> },
+  fraud_rule_edit: { label: "Fraud Rule Edited", icon: <AlertTriangle className={I.c} /> },
+  fraud_rule_delete: { label: "Fraud Rule Deleted", icon: <AlertTriangle className={I.c} /> },
+  fraud_rule_toggle: { label: "Fraud Rule Toggled", icon: <ToggleLeft className={I.c} /> },
+  freeze_wallet: { label: "Freeze Wallet", icon: <Lock className={I.c} /> },
+  unfreeze_wallet: { label: "Unfreeze Wallet", icon: <Unlock className={I.c} /> },
+  aml_toggle: { label: "AML Rule Toggled", icon: <Shield className={I.c} /> },
+  // Financial
+  commission_rule_edit: { label: "Commission Rule Edit", icon: <CreditCard className={I.c} /> },
+  commission_rule_delete: { label: "Commission Rule Delete", icon: <CreditCard className={I.c} /> },
+  commission_tier_create: { label: "Commission Tier Create", icon: <Layers className={I.c} /> },
+  commission_tier_edit: { label: "Commission Tier Edit", icon: <Layers className={I.c} /> },
+  commission_tier_delete: { label: "Commission Tier Delete", icon: <Layers className={I.c} /> },
+  settlement_create: { label: "Settlement Created", icon: <CreditCard className={I.c} /> },
+  settlement_status: { label: "Settlement Status", icon: <CreditCard className={I.c} /> },
+  settlement_delete: { label: "Settlement Deleted", icon: <Trash2 className={I.c} /> },
+  adjust_balance: { label: "Balance Adjusted", icon: <Database className={I.c} /> },
+  // System Config
+  create_feature_lock: { label: "Feature Locked", icon: <Lock className={I.c} /> },
+  delete_feature_lock: { label: "Feature Unlocked", icon: <Unlock className={I.c} /> },
+  create_toggle: { label: "Toggle Created", icon: <Plus className={I.c} /> },
+  edit_toggle: { label: "Toggle Edited", icon: <Pencil className={I.c} /> },
+  delete_toggle: { label: "Toggle Deleted", icon: <Trash2 className={I.c} /> },
+  toggle_feature: { label: "Feature Toggled", icon: <ToggleLeft className={I.c} /> },
+  update_app_config: { label: "App Config Updated", icon: <Settings className={I.c} /> },
+  update_fee_rule: { label: "Fee Rule Updated", icon: <Settings className={I.c} /> },
+  update_txn_rule: { label: "Txn Rule Updated", icon: <Settings className={I.c} /> },
+  toggle_maintenance: { label: "Maintenance Toggled", icon: <Settings className={I.c} /> },
+  banner_create: { label: "Banner Created", icon: <Plus className={I.c} /> },
+  banner_update: { label: "Banner Updated", icon: <Pencil className={I.c} /> },
+  banner_delete: { label: "Banner Deleted", icon: <Trash2 className={I.c} /> },
+  create_bank: { label: "Bank Created", icon: <Landmark className={I.c} /> },
+  toggle_bank: { label: "Bank Toggled", icon: <ToggleLeft className={I.c} /> },
+  delete_bank: { label: "Bank Deleted", icon: <Trash2 className={I.c} /> },
+  // E-Commerce
+  flash_sale_create: { label: "Flash Sale Created", icon: <Zap className={I.c} /> },
+  flash_sale_edit: { label: "Flash Sale Edited", icon: <Zap className={I.c} /> },
+  flash_sale_delete: { label: "Flash Sale Deleted", icon: <Zap className={I.c} /> },
+  flash_sale_toggle: { label: "Flash Sale Toggled", icon: <Zap className={I.c} /> },
+  order_status: { label: "Order Status Changed", icon: <Package className={I.c} /> },
+  order_cancel: { label: "Order Cancelled", icon: <XCircle className={I.c} /> },
+  order_bulk_status: { label: "Bulk Order Update", icon: <Package className={I.c} /> },
+  return_status: { label: "Return Status Changed", icon: <RotateCcw className={I.c} /> },
+  return_delete: { label: "Return Deleted", icon: <Trash2 className={I.c} /> },
+  product_toggle: { label: "Product Toggled", icon: <ShoppingCart className={I.c} /> },
+  product_edit: { label: "Product Edited", icon: <Pencil className={I.c} /> },
+  product_delete: { label: "Product Deleted", icon: <Trash2 className={I.c} /> },
+  store_toggle: { label: "Store Toggled", icon: <Store className={I.c} /> },
+  coupon_create: { label: "Coupon Created", icon: <Tag className={I.c} /> },
+  coupon_edit: { label: "Coupon Edited", icon: <Tag className={I.c} /> },
+  coupon_delete: { label: "Coupon Deleted", icon: <Tag className={I.c} /> },
+  bulk_import_packs: { label: "Bulk Import Packs", icon: <Package className={I.c} /> },
+  update_stock: { label: "Stock Updated", icon: <Package className={I.c} /> },
+  // Fraud Alerts
+  fraud_alert_status: { label: "Fraud Alert Status", icon: <AlertTriangle className={I.c} /> },
+  fraud_alert_assign: { label: "Fraud Alert Assigned", icon: <UserCog className={I.c} /> },
+  fraud_alert_escalate: { label: "Fraud Alert Escalated", icon: <AlertTriangle className={I.c} /> },
+  fraud_alert_delete: { label: "Fraud Alert Deleted", icon: <Trash2 className={I.c} /> },
+  fraud_investigate: { label: "Fraud Investigated", icon: <Search className={I.c} /> },
+  // Notifications & Charges
+  notification_send: { label: "Notification Sent", icon: <Send className={I.c} /> },
+  charge_config_create: { label: "Charge Config Created", icon: <Plus className={I.c} /> },
+  charge_config_edit: { label: "Charge Config Edited", icon: <Pencil className={I.c} /> },
+  charge_config_delete: { label: "Charge Config Deleted", icon: <Trash2 className={I.c} /> },
+  charge_config_toggle: { label: "Charge Config Toggled", icon: <ToggleLeft className={I.c} /> },
+  approve_api_request: { label: "API Request Approved", icon: <CheckCircle className={I.c} /> },
+  reject_api_request: { label: "API Request Rejected", icon: <XCircle className={I.c} /> },
 };
 
 function formatAction(action: string) {
