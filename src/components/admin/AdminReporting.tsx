@@ -141,10 +141,8 @@ export default function AdminReporting() {
       <div className="grid md:grid-cols-2 gap-4">
         {/* Transaction Count Trend */}
         <Card className="border-0 shadow-[var(--shadow-card)]">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Daily Txn Count</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-4">
+            <p className="text-sm font-medium text-foreground mb-3">Daily Txn Count</p>
             <div className="h-52">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={dailyData}>
