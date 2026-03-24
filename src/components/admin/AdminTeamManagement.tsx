@@ -794,6 +794,12 @@ export default function AdminTeamManagement() {
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           <Switch checked={member.is_available} onCheckedChange={() => toggleAvailability(member)} />
+                          <Button size="icon" variant="ghost" onClick={() => { setResetPwMember(member); setNewTempPassword(generatePassword()); setPwResetDone(false); }} title="Reset Password">
+                            <KeyRound className="w-4 h-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" onClick={() => { setEditEmailMember(member); setNewEmail((member as any).email || ""); }} title="Change Email">
+                            <Mail className="w-4 h-4" />
+                          </Button>
                           <Button size="icon" variant="ghost" onClick={() => openEdit(member)} title="Permissions">
                             <Shield className="w-4 h-4" />
                           </Button>
