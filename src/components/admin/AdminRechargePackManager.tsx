@@ -240,7 +240,7 @@ export default function AdminRechargePackManager() {
     };
     const { error } = await supabase.from("recharge_packs").insert(payload as any);
     if (error) toast.error("Failed to duplicate");
-    else toast.success(`Duplicated "${p.name}"`);
+    else { toast.success(`Duplicated "${p.name}"`); await auditLog("pack_duplicated", p.id, { name: p.name }); }
   };
 
   const savePack = async () => {
