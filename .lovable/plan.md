@@ -1,24 +1,22 @@
 
 
-## Plan: Add More Session Timeout Options
+## Fix: Platform Bank List showing under all inner tabs
 
-### What Changes
-Expand the session timeout dropdown in **Admin Dashboard → System Settings → App Config** from 5 options to 10 options.
+### Problem
+`AdminBankListManager` is rendered as a sibling **after** the `AdminSystemSettings` component in `AdminDashboard.tsx` (line 1758). This means it always appears below the System Settings tabs regardless of which inner tab (App Config, Currency, Fee Rules, etc.) is selected.
 
-### Current Options
-15 min, 30 min, 1 hour, 2 hours, 4 hours
+### Solution
+Move `AdminBankListManager` inside the `AdminSystemSettings` component as a **6th tab** called "Banks". This keeps it scoped to its own tab instead of always visible.
 
-### New Options (added)
-- **5 minutes** — for testing
-- **10 minutes**
-- **45 minutes**
-- **3 hours**
-- **6 hours**
-- **8 hours** (full workday)
+### Changes
 
-### Full List After Change
-5 min → 10 min → 15 min → 30 min → 45 min → 1 hour → 2 hours → 3 hours → 4 hours → 6 hours → 8 hours
+**File: `src/components/admin/AdminSystemSettings.tsx`**
+- Add import for `AdminBankListManager`
+- Add a 6th tab trigger: "Banks"
+- Add corresponding `TabsContent` rendering `AdminBankListManager`
+- Update grid from `grid-cols-5` to `grid-cols-6`
 
-### File Modified
-- `src/components/admin/AdminSystemSettings.tsx` — update SelectItem list (lines 163-167)
+**File: `src/pages/AdminDashboard.tsx`**
+- Remove `AdminBankListManager` from the `sys_settings` block (line 1758)
+- Remove its import if no longer used elsewhere
 
