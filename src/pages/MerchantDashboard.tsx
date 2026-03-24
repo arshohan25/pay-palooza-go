@@ -152,6 +152,7 @@ const MerchantDashboard = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { isStaff, staffRole, merchantId: staffMerchantId, merchantName: staffMerchantName, loading: staffLoading } = useStaffAccess();
   const navigate = useNavigate();
+  useUserSessionTimeout();
   const { toast } = useToast();
   const { isDisabled } = useGlobalToggles();
 
