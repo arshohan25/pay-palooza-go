@@ -271,11 +271,25 @@ export default function AdminSupportDashboard({ mode = "all" }: AdminSupportDash
           if (newConv.status === "open" && !newConv.assigned_agent_id) {
             autoAssignNewConversation(newConv.id);
           }
+          // Sound + visual alert for new conversation
+          playChatRequestSound();
+          haptics.notify();
+          toast.info("New support conversation received");
+          setHighlightedConvId(newConv.id);
+          setTimeout(() => setHighlightedConvId(null), 2000);
         }
         loadConversations();
         flash();
       })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "support_messages" }, () => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "support_messages" }, (payload) => {
+        const msg = payload.new as any;
+        // Only alert for user messages (not admin's own)
+        if (msg.sender_role === "user") {
+          playChatNotification();
+          haptics.notify();
+          setHighlightedConvId(msg.conversation_id);
+          setTimeout(() => setHighlightedConvId(null), 2000);
+        }
         loadConversations();
         flash();
       })
