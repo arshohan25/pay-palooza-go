@@ -433,11 +433,13 @@ export default function AdminFestivalThemes() {
       const { error } = await supabase.from("festival_themes").update(payload as any).eq("id", editing.id);
       if (error) { toast.error(error.message); return; }
       toast.success("Theme updated");
+      await auditLog("festival_theme_update", editing.id, { name: payload.name });
     } else {
       const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase.from("festival_themes").insert({ ...payload, created_by: user?.id } as any);
+      const { data, error } = await supabase.from("festival_themes").insert({ ...payload, created_by: user?.id } as any).select("id").single();
       if (error) { toast.error(error.message); return; }
       toast.success("Theme created");
+      await auditLog("festival_theme_create", data.id, { name: payload.name });
     }
     setDialogOpen(false);
     fetchThemes();
