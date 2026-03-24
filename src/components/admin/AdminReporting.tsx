@@ -93,28 +93,18 @@ export default function AdminReporting() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-          <BarChart3 className="w-5 h-5 text-primary" /> Reporting Dashboard
-        </h3>
-        <p className="text-sm text-muted-foreground">System-wide analytics and insights</p>
-      </div>
-
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         {[
-          { icon: ArrowLeftRight, label: "Total Transactions", value: totals.txnCount.toLocaleString(), color: "text-primary" },
-          { icon: DollarSign, label: "Total Volume", value: `৳${(totals.totalVolume / 1000).toFixed(1)}K`, color: "text-emerald-600" },
-          { icon: TrendingUp, label: "Total Fees", value: `৳${totals.totalFees.toLocaleString()}`, color: "text-amber-600" },
-          { icon: Users, label: "Commissions Paid", value: `৳${totals.totalCommissions.toLocaleString()}`, color: "text-blue-600" },
+          { label: "Total Transactions", value: totals.txnCount.toLocaleString() },
+          { label: "Total Volume", value: `৳${(totals.totalVolume / 1000).toFixed(1)}K` },
+          { label: "Total Fees", value: `৳${totals.totalFees.toLocaleString()}` },
+          { label: "Commissions Paid", value: `৳${totals.totalCommissions.toLocaleString()}` },
         ].map(kpi => (
           <Card key={kpi.label} className="border-0 shadow-[var(--shadow-card)]">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <kpi.icon className={`w-4 h-4 ${kpi.color}`} />
-                <span className="text-xs text-muted-foreground">{kpi.label}</span>
-              </div>
-              <p className={`text-xl font-bold ${kpi.color}`}>{kpi.value}</p>
+            <CardContent className="p-3 text-center">
+              <p className="text-[10px] text-muted-foreground">{kpi.label}</p>
+              <p className="text-lg font-bold text-foreground">{kpi.value}</p>
             </CardContent>
           </Card>
         ))}
