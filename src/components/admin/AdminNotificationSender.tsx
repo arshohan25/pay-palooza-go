@@ -110,7 +110,7 @@ interface AdminNotif {
   metadata: any;
 }
 
-type MainTab = "compose" | "notif_logs" | "sms_logs";
+type MainTab = "compose" | "notif_logs" | "sms_logs" | "templates";
 
 export default function AdminNotificationSender() {
   const [mainTab, setMainTab] = useState<MainTab>("compose");
