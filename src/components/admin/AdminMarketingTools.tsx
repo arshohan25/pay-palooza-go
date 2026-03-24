@@ -209,7 +209,7 @@ export default function AdminMarketingTools() {
   const deleteCashback = async (id: string) => {
     const { error } = await supabase.from("cashback_rules").delete().eq("id", id);
     if (error) toast.error("Failed to delete");
-    else { toast.success("Cashback rule deleted"); loadCashbacks(); }
+    else { toast.success("Cashback rule deleted"); await auditLog("cashback_deleted", id, {}); loadCashbacks(); }
   };
 
   const toggleCashback = async (id: string, active: boolean) => {
