@@ -24,6 +24,16 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow, format, startOfDay, endOfDay, subDays } from "date-fns";
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: "notification", entity_id: entityId, details
+    });
+  }
+}
+import { formatDistanceToNow, format, startOfDay, endOfDay, subDays } from "date-fns";
+
 const CATEGORIES = [
   { value: "promo", label: "Promotion", icon: Megaphone, color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" },
   { value: "update", label: "Update", icon: ShieldCheck, color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
