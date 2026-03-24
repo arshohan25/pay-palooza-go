@@ -55,6 +55,7 @@ export default function AdminBankListManager() {
 
   const toggleBank = async (id: string, active: boolean) => {
     await supabase.from("platform_banks").update({ is_active: !active } as any).eq("id", id);
+    auditLog("toggle_bank", id, { is_active: !active });
     toast.success(!active ? "Bank activated" : "Bank deactivated");
     refetch();
   };
