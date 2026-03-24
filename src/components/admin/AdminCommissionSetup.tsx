@@ -135,6 +135,8 @@ function RulesTab({ realtimeFlash }: { realtimeFlash: () => void }) {
       platform_share: form.platform ? parseFloat(form.platform) : 0,
     }).eq("id", editing.id);
     if (error) { toast.error("Failed to update"); return; }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) await supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "commission_rule_edit", entity_type: "fee_config", entity_id: editing.id, details: { txn_type: editing.txn_type, agent: form.agent, distributor: form.distributor } });
     toast.success("Commission updated");
     setEditing(null);
     load();
