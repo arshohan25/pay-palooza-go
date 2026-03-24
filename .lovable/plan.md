@@ -1,59 +1,30 @@
 
 
-## Phase 8: Financial, Risk & E-Commerce Operations — Full CRUD + Audit Logging
+## Phase 9: Network, System & Remaining Modules — Audit Logging + CRUD Gaps
 
-### Current State & Gaps
+### Scope
+The remaining 12 admin modules with mutations that lack standardized audit logging. Most already have full CRUD; the primary gap is audit trail coverage.
 
-| Section | Lines | Has | Missing |
-|---------|-------|-----|---------|
-| **Fraud Auto Rules** | 256 | Create + Toggle + Delete | Edit rule, AlertDialog on delete, audit logging |
-| **Fraud Alerts** | 625 | View + Status update + Assign + Escalate | Delete resolved alerts, audit logging on status/assign/escalate |
-| **Flash Sales** | 160 | Create + Toggle + Delete | Edit sale (price/dates), AlertDialog on delete, audit logging |
-| **Settlements** | 321 | Create + Status update + Export | Delete failed settlements, audit logging on create/status |
-| **Commission Setup** | 602 | Full CRUD rules/tiers (partial audit) | Audit logging on create/edit/toggle (only delete has it) |
-| **Risk Control** | 529 | View + Freeze agent (has audit) | Missing audit on other actions (unfreeze, velocity locks) |
-| **AI Fraud Detection** | 378 | View + Lock wallet (has audit) | Missing audit on investigate action |
-| **Return Requests** | 179 | View + Status update | Delete completed returns, audit logging on status changes |
-| **Order Management** | 765 | Full CRUD + status updates + escrow | Audit logging on status changes, cancellations, bulk actions |
-| **Bank Reconciliation** | 229 | Read-only analytics | No mutations needed — skip |
+### Files & Changes
 
-### Implementation
+| # | File | Lines | Has | Adding |
+|---|------|-------|-----|--------|
+| 1 | `AdminAgentHub.tsx` | 686 | Full CRUD (create/edit/delete/status) | Audit logging on all mutations |
+| 2 | `AdminDistributorManagement.tsx` | 387 | Full CRUD (create/edit/delete/status) | Audit logging on all mutations |
+| 3 | `AdminMerchantManagement.tsx` | 1103 | Full CRUD + API keys + status | Audit logging on all mutations |
+| 4 | `AdminMerchantApplications.tsx` | 301 | Approve/reject applications | Audit logging on status changes |
+| 5 | `AdminKycReview.tsx` | 596 | Approve/reject/request-resubmit | Audit logging on all KYC decisions |
+| 6 | `AdminTeamManagement.tsx` | 817 | Full CRUD (create/edit/delete staff) | Audit logging on all mutations |
+| 7 | `AdminFeatureLocks.tsx` | 430 | Create/delete locks | Audit logging on lock/unlock actions |
+| 8 | `AdminGlobalToggles.tsx` | 495 | Full CRUD (create/edit/delete/toggle) | Audit logging on all mutations |
+| 9 | `AdminWalletSystem.tsx` | 444 | Freeze/unfreeze + balance adjustments | Audit logging on freeze/adjust actions |
+| 10 | `AdminSystemSettings.tsx` | 669 | Config updates across 5 tabs | Audit logging on all setting changes |
+| 11 | `AdminReferralManagement.tsx` | 521 | Milestone payments + status changes | Audit logging on pay/reset actions |
+| 12 | `AdminLimitManager.tsx` | 719 | Full CRUD limits + overrides | Audit logging on all mutations |
 
-**File 1: `AdminFraudAutoRules.tsx`** (~256 → ~320 lines)
-- Add "Edit" dialog (pre-filled name, metric, threshold, action, lock_duration)
-- Wrap delete in AlertDialog confirmation
-- Add audit logging to create/edit/delete/toggle actions
+### Implementation Pattern
+Each file gets the standard `auditLog` helper and calls it on every mutation:
 
-**File 2: `AdminFraudAlerts.tsx`** (~625 → ~660 lines)
-- Add "Delete" for resolved/false_positive alerts with AlertDialog
-- Add audit logging to status update, assign, escalate, delete actions
-
-**File 3: `AdminFlashSales.tsx`** (~160 → ~230 lines)
-- Add "Edit" dialog (sale_price, starts_at, ends_at)
-- Wrap delete in AlertDialog confirmation
-- Add audit logging to create/edit/delete/toggle actions
-
-**File 4: `AdminSettlements.tsx`** (~321 → ~370 lines)
-- Add "Delete" for failed settlements with AlertDialog
-- Add audit logging to create/status update/delete actions
-
-**File 5: `AdminCommissionSetup.tsx`** (~602 → ~630 lines)
-- Add audit logging to rule create/edit/toggle and tier create/edit actions (delete already has it)
-
-**File 6: `AdminReturnRequests.tsx`** (~179 → ~220 lines)
-- Add "Delete" for completed returns with AlertDialog
-- Add audit logging to status update/delete actions
-
-**File 7: `AdminOrderManagement.tsx`** (~765 → ~800 lines)
-- Add audit logging to order status changes, cancellations, and bulk actions
-
-**File 8: `AdminAiFraudDetection.tsx`** (~378 → ~395 lines)
-- Add audit logging to the investigate action
-
-**File 9: `AdminRiskControl.tsx`** (~529 → ~550 lines)
-- Standardize existing inline audit calls into shared `auditLog` helper pattern
-
-### Technical Pattern (consistent across all files)
 ```typescript
 async function auditLog(action: string, entityType: string, entityId: string, details: any) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -64,21 +35,27 @@ async function auditLog(action: string, entityType: string, entityId: string, de
   }
 }
 ```
-- Every destructive action: AlertDialog confirmation
-- Toast feedback on success/error
-- List auto-refresh after mutation
+
+Specific actions logged per file:
+- **AgentHub**: create_agent, edit_agent, delete_agent, toggle_agent_status
+- **DistributorManagement**: create_distributor, edit_distributor, delete_distributor, toggle_distributor_status
+- **MerchantManagement**: edit_merchant, delete_merchant, toggle_merchant_status, regenerate_api_key
+- **MerchantApplications**: approve_application, reject_application
+- **KycReview**: approve_kyc, reject_kyc, request_resubmit
+- **TeamManagement**: create_team_member, edit_team_member, delete_team_member, toggle_team_status
+- **FeatureLocks**: create_feature_lock, delete_feature_lock
+- **GlobalToggles**: create_toggle, edit_toggle, delete_toggle, toggle_feature
+- **WalletSystem**: freeze_wallet, unfreeze_wallet, adjust_balance
+- **SystemSettings**: update_app_config, update_currency, update_fee_rule, update_txn_rule, toggle_maintenance
+- **ReferralManagement**: pay_milestone, reset_referral
+- **LimitManager**: create_limit, edit_limit, delete_limit, create_override
 
 ### Database Changes
-None — all tables exist with required columns.
+None — all tables exist.
 
-### Files Modified
-1. `src/components/admin/AdminFraudAutoRules.tsx`
-2. `src/components/admin/AdminFraudAlerts.tsx`
-3. `src/components/admin/AdminFlashSales.tsx`
-4. `src/components/admin/AdminSettlements.tsx`
-5. `src/components/admin/AdminCommissionSetup.tsx`
-6. `src/components/admin/AdminReturnRequests.tsx`
-7. `src/components/admin/AdminOrderManagement.tsx`
-8. `src/components/admin/AdminAiFraudDetection.tsx`
-9. `src/components/admin/AdminRiskControl.tsx`
+### Technical Details
+- Add `auditLog` helper at top of each file
+- Insert audit calls after each successful Supabase mutation (`.update()`, `.insert()`, `.delete()`)
+- Fire-and-forget pattern (no `await` blocking the UI flow for audit)
+- Existing CRUD and AlertDialog patterns are preserved; only audit instrumentation is added
 
