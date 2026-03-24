@@ -5,7 +5,7 @@ import {
   Store, UserCheck, Crown, Truck, Image as ImageIcon, Link2, Copy, CheckCheck,
   RotateCcw, Pencil, Trash2, RefreshCw, Clock, Eye, ChevronDown, ChevronUp,
   Activity, UserX, TrendingUp, TrendingDown, Target, Search, MessageSquare,
-  Mail, Filter, MailCheck, MailX,
+  Mail, Filter, MailCheck, MailX, Plus,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
