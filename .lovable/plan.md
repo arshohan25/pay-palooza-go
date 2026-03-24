@@ -1,29 +1,33 @@
 
 
-## Make Fee Rules Tab Fully Editable with Add/Edit Support
+## Add "Create Agent" to Admin Agent Management Hub
 
 ### Summary
-Add full CRUD capabilities to the Fee Rules tab in System Settings, allowing admins to add new fee rules and edit existing ones inline — matching the existing `AdminChargeConfig` component's functionality.
+Add a "Create Agent" button + dialog to the `AgentListTab` in the Admin Agent Hub, allowing admins to onboard new agents directly — similar to the existing Distributor→Agent creation flow.
 
-### Changes to `FeeRulesTab` in `src/components/admin/AdminSystemSettings.tsx`
+### Changes to `src/components/admin/AdminAgentHub.tsx`
 
-1. **Add "Add Rule" button** — next to the summary cards, a `Plus` button opens a Dialog to create a new fee rule with fields: Transaction Type, Fee Type (flat/percentage), Fee Value, Min Amount, Max Amount, Active toggle.
+1. **Add "+" button** next to the search bar or status cards — opens a Dialog for creating a new agent.
 
-2. **Add Edit button per row** — a `Pencil` icon button on each row opens the same Dialog pre-filled with that rule's data for editing.
+2. **Create Agent Dialog** with fields:
+   - Phone Number (required, with validation)
+   - Full Name
+   - Business Name
+   - Territory Code
+   - NID Number
+   - Trade License
+   - Max Float (default 500,000)
 
-3. **Add Delete capability** — a `Trash2` icon on each row to remove a rule (with confirmation).
+3. **Creation logic** (mirrors `DistributorCreateAgent`):
+   - Clean phone, generate random 4-digit PIN
+   - Create auth account via `signUpWithPhonePassword`
+   - Create profile record
+   - Assign `agent` role in `user_roles`
+   - Create `agents` row with business details
+   - Toast success + reload list
 
-4. **Dialog form** — reuses the same pattern from `AdminChargeConfig`: select for txn_type, select for fee_type, number inputs for value/min/max, switch for active. Saves via `supabase.from("fee_config").insert/update`.
-
-5. **Commission fields** — include optional agent_commission, distributor_commission, platform_share fields in the dialog for advanced configuration.
-
-### Technical Details
-- All DB operations use the existing `fee_config` table (no migrations needed)
-- Dialog state managed with `useState` for `dialogOpen` and `editing` (null = add mode)
-- After save, re-fetch the fee list
-- Transaction types: send, cashout, cashin, payment, recharge, paybill, addmoney, banktransfer
-- Fee types: flat, percentage
+4. **UI placement**: A `UserPlus` icon button beside the search input, or a full "Add Agent" button above the table.
 
 ### File Modified
-1. `src/components/admin/AdminSystemSettings.tsx` — refactor `FeeRulesTab` with add/edit/delete dialog
+1. `src/components/admin/AdminAgentHub.tsx` — add create agent dialog and handler to `AgentListTab`
 
