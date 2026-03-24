@@ -1081,6 +1081,139 @@ export default function AdminTeamManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ═══ RESET PASSWORD DIALOG ═══ */}
+      <Dialog open={!!resetPwMember} onOpenChange={o => { if (!o) setResetPwMember(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Generate a new temporary password for <strong>{resetPwMember?.display_name}</strong>. They will be required to change it on next login.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs text-muted-foreground">New Password</Label>
+              <div className="flex gap-1 mt-1">
+                <Input value={newTempPassword} readOnly className="font-mono" />
+                <Button size="icon" variant="outline" onClick={() => setNewTempPassword(generatePassword())} title="Regenerate">
+                  <RefreshCw className="w-3 h-3" />
+                </Button>
+                <Button size="icon" variant="outline" onClick={() => { navigator.clipboard.writeText(newTempPassword); toast.success("Password copied"); }}>
+                  <Copy className="w-3 h-3" />
+                </Button>
+              </div>
+            </div>
+            {pwResetDone && (
+              <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg px-3 py-2">
+                <CheckCircle className="w-4 h-4 shrink-0" />
+                <span>Password reset successfully. Share the new password securely.</span>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetPwMember(null)}>{pwResetDone ? "Close" : "Cancel"}</Button>
+            {!pwResetDone && (
+              <Button
+                onClick={async () => {
+                  if (!resetPwMember) return;
+                  setResettingPw(true);
+                  try {
+                    const { error } = await supabase.functions.invoke("admin-reset-team-password", {
+                      body: { targetUserId: resetPwMember.user_id, newPassword: newTempPassword },
+                    });
+                    if (error) throw error;
+                    setPwResetDone(true);
+                    toast.success("Password reset successfully");
+
+                    // Optionally email the new password if member has email
+                    const memberEmail = (resetPwMember as any).email;
+                    if (memberEmail) {
+                      await supabase.functions.invoke("send-team-credentials", {
+                        body: {
+                          email: memberEmail,
+                          displayName: resetPwMember.display_name,
+                          username: resetPwMember.username || "—",
+                          password: newTempPassword,
+                          loginUrl: `${window.location.origin}/team-login`,
+                          role: resetPwMember.roles?.[0] || "—",
+                          department: resetPwMember.department,
+                        },
+                      });
+                      toast.success(`New credentials emailed to ${memberEmail}`);
+                    }
+                  } catch (e: any) {
+                    toast.error(e.message || "Failed to reset password");
+                  }
+                  setResettingPw(false);
+                }}
+                disabled={resettingPw}
+              >
+                <KeyRound className="w-4 h-4 mr-1" />
+                {resettingPw ? "Resetting..." : "Reset Password"}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══ CHANGE EMAIL DIALOG ═══ */}
+      <Dialog open={!!editEmailMember} onOpenChange={o => { if (!o) setEditEmailMember(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Change Email</DialogTitle>
+            <DialogDescription>
+              Update the email address for <strong>{editEmailMember?.display_name}</strong>. Used for 2FA and credential delivery.
+            </DialogDescription>
+          </DialogHeader>
+          <div>
+            <Label>Email</Label>
+            <Input value={newEmail} onChange={e => setNewEmail(e.target.value)} type="email" placeholder="member@company.com" className="mt-1" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditEmailMember(null)}>Cancel</Button>
+            <Button
+              onClick={async () => {
+                if (!editEmailMember) return;
+                setSavingEmail(true);
+                try {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  const oldEmail = (editEmailMember as any).email || null;
+                  const trimmed = newEmail.trim() || null;
+
+                  const { error } = await supabase.from("team_members")
+                    .update({ email: trimmed, updated_at: new Date().toISOString() } as any)
+                    .eq("user_id", editEmailMember.user_id);
+                  if (error) throw error;
+
+                  await supabase.from("audit_logs").insert({
+                    actor_id: session?.user?.id!,
+                    action: "team_email_changed",
+                    entity_type: "team",
+                    entity_id: editEmailMember.user_id,
+                    details: {
+                      display_name: editEmailMember.display_name,
+                      old_email: oldEmail,
+                      new_email: trimmed,
+                    },
+                  });
+
+                  toast.success("Email updated");
+                  setEditEmailMember(null);
+                  loadMembers();
+                } catch (e: any) {
+                  toast.error(e.message || "Failed to update email");
+                }
+                setSavingEmail(false);
+              }}
+              disabled={savingEmail}
+            >
+              <Mail className="w-4 h-4 mr-1" />
+              {savingEmail ? "Saving..." : "Save Email"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
