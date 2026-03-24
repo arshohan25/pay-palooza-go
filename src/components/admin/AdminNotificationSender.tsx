@@ -858,6 +858,78 @@ export default function AdminNotificationSender() {
         </div>
       )}
 
+      {/* ═══ TEMPLATES TAB ═══ */}
+      {mainTab === "templates" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold">Notification Templates</h3>
+            <Button size="sm" onClick={openTemplateAdd}><Plus className="w-4 h-4 mr-1" /> New Template</Button>
+          </div>
+          {templatesLoading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading…</div>
+          ) : templates.length === 0 ? (
+            <Card><CardContent className="py-8 text-center text-muted-foreground">No templates yet. Create one to speed up sending.</CardContent></Card>
+          ) : (
+            <div className="space-y-2">
+              {templates.map(t => (
+                <Card key={t.id}>
+                  <CardContent className="p-4 flex items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm">{t.name}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{t.title}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{t.body}</p>
+                      <Badge variant="secondary" className="text-[10px] mt-1 capitalize">{t.category}</Badge>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => useTemplate(t)}>Use</Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openTemplateEdit(t)}><Pencil className="w-3.5 h-3.5" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteTemplateId(t.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Template Add/Edit Dialog */}
+          <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader><DialogTitle>{editingTemplate ? "Edit Template" : "New Template"}</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div><Label>Template Name</Label><Input value={templateForm.name} onChange={e => setTemplateForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Eid Promo" /></div>
+                <div><Label>Title</Label><Input value={templateForm.title} onChange={e => setTemplateForm(f => ({ ...f, title: e.target.value }))} placeholder="Notification title" /></div>
+                <div><Label>Body</Label><Textarea value={templateForm.body} onChange={e => setTemplateForm(f => ({ ...f, body: e.target.value }))} rows={3} placeholder="Notification body" /></div>
+                <div>
+                  <Label>Category</Label>
+                  <Select value={templateForm.category} onValueChange={v => setTemplateForm(f => ({ ...f, category: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Image URL (optional)</Label><Input value={templateForm.image_url} onChange={e => setTemplateForm(f => ({ ...f, image_url: e.target.value }))} placeholder="https://..." /></div>
+              </div>
+              <DialogFooter><Button onClick={saveTemplate} disabled={!templateForm.name.trim() || !templateForm.title.trim()}>{editingTemplate ? "Update" : "Create"}</Button></DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Template Delete Confirmation */}
+          <AlertDialog open={!!deleteTemplateId} onOpenChange={() => setDeleteTemplateId(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Template?</AlertDialogTitle>
+                <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={deleteTemplate}>Delete</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      )}
+
       {/* Edit Dialog */}
       <Dialog open={!!editNotif} onOpenChange={(o) => { if (!o) setEditNotif(null); }}>
         <DialogContent className="max-w-sm">
