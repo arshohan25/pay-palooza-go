@@ -201,12 +201,40 @@ export default function AdminMerchantManagement() {
     loadMerchants();
   };
 
+  // Delete merchant
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [deletingMerchant, setDeletingMerchant] = useState(false);
+
   // ─── Status toggle ───
-  const toggleStatus = async (m: any) => {
-    const newStatus = m.status === "suspended" ? "active" : "suspended";
+  const setMerchantStatus = async (m: any, newStatus: string) => {
     const { error } = await supabase.from("merchants").update({ status: newStatus as any }).eq("id", m.id);
     if (error) { toast.error("Failed"); return; }
+    // Audit
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      supabase.from("audit_logs").insert({ actor_id: session.user.id, action: `merchant_${newStatus}`, entity_type: "merchant", entity_id: m.id, details: { business_name: m.business_name, previous_status: m.status } }).then();
+    }
     toast.success(`Merchant ${newStatus}`);
+    loadMerchants();
+  };
+
+  const toggleStatus = async (m: any) => {
+    const newStatus = m.status === "suspended" ? "active" : "suspended";
+    await setMerchantStatus(m, newStatus);
+  };
+
+  const handleDeleteMerchant = async () => {
+    if (!deleteTarget) return;
+    setDeletingMerchant(true);
+    await supabase.from("merchants").delete().eq("id", deleteTarget.id);
+    await supabase.from("user_roles").delete().eq("user_id", deleteTarget.user_id).eq("role", "merchant" as any);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "merchant_deleted", entity_type: "merchant", entity_id: deleteTarget.id, details: { business_name: deleteTarget.business_name } }).then();
+    }
+    toast.success("Merchant deleted");
+    setDeleteTarget(null);
+    setDeletingMerchant(false);
     loadMerchants();
   };
 
@@ -559,6 +587,16 @@ export default function AdminMerchantManagement() {
                             <CheckCircle className="w-3 h-3" /> Review
                           </Button>
                         )}
+                        {m.status === "active" && (
+                          <Button size="sm" variant="outline" className="text-xs h-7 text-amber-600" onClick={() => setMerchantStatus(m, "hold")}>
+                            Hold
+                          </Button>
+                        )}
+                        {m.status === "hold" && (
+                          <Button size="sm" variant="default" className="text-xs h-7" onClick={() => setMerchantStatus(m, "active")}>
+                            Activate
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant={m.status === "suspended" ? "default" : "destructive"}
@@ -566,6 +604,9 @@ export default function AdminMerchantManagement() {
                           onClick={() => toggleStatus(m)}
                         >
                           {m.status === "suspended" ? "Activate" : "Suspend"}
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-xs h-7 text-destructive" onClick={() => setDeleteTarget(m)}>
+                          <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
                     </td>
@@ -1029,6 +1070,25 @@ export default function AdminMerchantManagement() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Delete Merchant Confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={v => { if (!v) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Merchant</AlertDialogTitle>
+            <AlertDialogDescription>
+              Permanently delete <strong>{deleteTarget?.business_name}</strong>? This removes their merchant record, role, and all associated API keys. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteMerchant} disabled={deletingMerchant} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deletingMerchant ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
