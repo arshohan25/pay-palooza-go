@@ -474,7 +474,7 @@ export default function AdminTeamManagement() {
         temp_password: addPassword,
       } as any);
 
-      await supabase.from("user_roles").insert({ user_id: newUserId, role: addRole });
+      await supabase.from("user_roles").insert({ user_id: newUserId, role: addRole } as any);
 
       // Insert permissions from the addPerms state (configured in step 2)
       const perms = addPerms.map(p => ({
