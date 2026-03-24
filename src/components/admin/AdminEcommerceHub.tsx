@@ -75,6 +75,7 @@ function ProductsTab() {
     if (editStock) updates.stock = parseInt(editStock);
     if (Object.keys(updates).length === 0) { setEditingId(null); return; }
     await supabase.from("merchant_products").update(updates).eq("id", id);
+    auditLog("edit_product", "merchant_product", id, updates);
     toast.success("Product updated");
     setEditingId(null);
     load();
