@@ -194,7 +194,10 @@ export default function AdminGlobalToggles() {
       .update({ is_enabled: !t.is_enabled } as any)
       .eq("id", t.id);
     if (error) toast.error("Failed to toggle");
-    else toast.success(`${t.label} ${!t.is_enabled ? "enabled" : "disabled"}`);
+    else {
+      toast.success(`${t.label} ${!t.is_enabled ? "enabled" : "disabled"}`);
+      auditLog("toggle_feature", t.id, { feature_key: t.feature_key, label: t.label, new_enabled: !t.is_enabled });
+    }
   };
 
   const openEdit = (t: FeatureToggle) => {
