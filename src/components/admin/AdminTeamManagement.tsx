@@ -21,12 +21,20 @@ import { toast } from "sonner";
 import { UserPlus, Shield, Trash2, Search, Clock, CheckCircle, XCircle, Eye, Pencil, Activity, RefreshCw, UsersRound, Copy, KeyRound, Mail, Send, Plus, ChevronDown, ChevronRight, Zap, ShieldCheck, EyeOff } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
-type AppRole = "customer" | "agent" | "merchant" | "distributor" | "super_distributor" | "admin" | "compliance" | "finance";
+type AppRole = "customer" | "agent" | "merchant" | "distributor" | "super_distributor" | "admin" | "compliance" | "finance" | "support" | "operations" | "marketing" | "hr" | "audit" | "risk" | "developer" | "manager";
 
 const STAFF_ROLES: { value: AppRole; label: string }[] = [
   { value: "admin", label: "Admin" },
+  { value: "manager", label: "Manager" },
   { value: "compliance", label: "Compliance" },
   { value: "finance", label: "Finance" },
+  { value: "support", label: "Support" },
+  { value: "operations", label: "Operations" },
+  { value: "marketing", label: "Marketing" },
+  { value: "hr", label: "HR" },
+  { value: "audit", label: "Auditor" },
+  { value: "risk", label: "Risk Officer" },
+  { value: "developer", label: "Developer" },
 ];
 
 // ═══ EXPANDED SECTIONS WITH CATEGORIES ═══
@@ -76,6 +84,36 @@ const PERMISSION_PRESETS: Record<string, PermPreset> = {
     fullAccess: ["orders", "ecommerce", "inventory", "merchants", "agents"],
     viewOnly: ["overview", "reporting"],
   },
+  marketing_team: {
+    label: "Marketing",
+    description: "Marketing, banners + view reporting/ecommerce",
+    fullAccess: ["marketing", "banners"],
+    viewOnly: ["reporting", "ecommerce", "overview"],
+  },
+  hr_manager: {
+    label: "HR / Manager",
+    description: "Team, users full access + view audit/sessions",
+    fullAccess: ["team", "users"],
+    viewOnly: ["auditlog", "sessions", "overview"],
+  },
+  risk_officer: {
+    label: "Risk Officer",
+    description: "Fraud, blacklist, security + view transactions/KYC",
+    fullAccess: ["fraud", "blacklist", "security"],
+    viewOnly: ["transactions", "kyc", "overview"],
+  },
+  auditor: {
+    label: "Auditor",
+    description: "View-only across audit, transactions, reporting",
+    fullAccess: [],
+    viewOnly: ["auditlog", "transactions", "reporting", "overview", "treasury", "settlements", "commissions"],
+  },
+  developer: {
+    label: "Developer",
+    description: "API hub, gateways, webhooks, system health",
+    fullAccess: ["apihub", "gateways", "webhooks", "system_health"],
+    viewOnly: ["overview", "toggles"],
+  },
   full_access: {
     label: "Full Access",
     description: "All sections with full permissions",
@@ -90,7 +128,7 @@ const PERMISSION_PRESETS: Record<string, PermPreset> = {
   },
 };
 
-const DEPARTMENTS = ["general", "support", "compliance", "finance", "operations", "engineering"];
+const DEPARTMENTS = ["general", "support", "compliance", "finance", "operations", "engineering", "marketing", "hr", "risk", "audit", "management", "product", "logistics", "legal"];
 
 interface TeamMember {
   id: string;
@@ -436,7 +474,7 @@ export default function AdminTeamManagement() {
         temp_password: addPassword,
       } as any);
 
-      await supabase.from("user_roles").insert({ user_id: newUserId, role: addRole });
+      await supabase.from("user_roles").insert({ user_id: newUserId, role: addRole } as any);
 
       // Insert permissions from the addPerms state (configured in step 2)
       const perms = addPerms.map(p => ({
@@ -561,7 +599,7 @@ export default function AdminTeamManagement() {
       await supabase.from("team_members").delete().eq("id", removeMember.id);
       await supabase.from("team_access_permissions").delete().eq("user_id", removeMember.user_id);
       for (const role of STAFF_ROLES) {
-        await supabase.from("user_roles").delete().eq("user_id", removeMember.user_id).eq("role", role.value);
+        await supabase.from("user_roles").delete().eq("user_id", removeMember.user_id).eq("role", role.value as any);
       }
 
       await supabase.from("audit_logs").insert({
@@ -589,8 +627,16 @@ export default function AdminTeamManagement() {
 
   const ROLE_COLORS: Record<string, string> = {
     admin: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+    manager: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300",
     compliance: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
     finance: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+    support: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300",
+    operations: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
+    marketing: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300",
+    hr: "bg-lime-100 text-lime-700 dark:bg-lime-900/30 dark:text-lime-300",
+    audit: "bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-300",
+    risk: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
+    developer: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300",
     customer: "bg-muted text-muted-foreground",
     agent: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
     merchant: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",

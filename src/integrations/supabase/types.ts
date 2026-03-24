@@ -4855,6 +4855,14 @@ export type Database = {
         | "admin"
         | "compliance"
         | "finance"
+        | "support"
+        | "operations"
+        | "marketing"
+        | "hr"
+        | "audit"
+        | "risk"
+        | "developer"
+        | "manager"
       chat_message_type: "text" | "money" | "voice" | "image" | "order"
       chat_type: "direct" | "group"
       dispute_status: "open" | "under_review" | "resolved" | "rejected"
@@ -5024,6 +5032,14 @@ export const Constants = {
         "admin",
         "compliance",
         "finance",
+        "support",
+        "operations",
+        "marketing",
+        "hr",
+        "audit",
+        "risk",
+        "developer",
+        "manager",
       ],
       chat_message_type: ["text", "money", "voice", "image", "order"],
       chat_type: ["direct", "group"],
