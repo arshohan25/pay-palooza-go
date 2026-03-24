@@ -341,6 +341,34 @@ export default function AdminSmartRouting() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteLinkTarget} onOpenChange={o => { if (!o) setDeleteLinkTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{deleteLinkTarget?.title}"?</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently remove this payment link.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteLink} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={!!editLinkTarget} onOpenChange={o => { if (!o) setEditLinkTarget(null); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Payment Link</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label className="text-xs">Title</Label><Input value={editLinkForm.title} onChange={e => setEditLinkForm(p => ({ ...p, title: e.target.value }))} /></div>
+            <div><Label className="text-xs">Amount</Label><Input type="number" value={editLinkForm.amount} onChange={e => setEditLinkForm(p => ({ ...p, amount: e.target.value }))} placeholder="Custom" /></div>
+            <div><Label className="text-xs">Description</Label><Textarea value={editLinkForm.description} onChange={e => setEditLinkForm(p => ({ ...p, description: e.target.value }))} rows={2} /></div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setEditLinkTarget(null)}>Cancel</Button>
+            <Button onClick={saveEditLink}>Save</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
