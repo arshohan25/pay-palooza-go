@@ -199,6 +199,7 @@ export default function AdminMarketingTools() {
         const { error } = await supabase.from("cashback_rules").insert(payload);
         if (error) throw error;
         toast.success("Cashback rule created");
+        await auditLog("cashback_created", "new", { name: cashbackForm.name });
       }
       setShowCashbackForm(false); setEditingCashback(null); loadCashbacks();
     } catch (err: any) { toast.error(err.message || "Failed to save"); }
