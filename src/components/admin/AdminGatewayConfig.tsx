@@ -102,6 +102,7 @@ export default function AdminGatewayConfig() {
     try {
       await callGatewayApi({ action: "toggle", id: gw.id, is_enabled: !gw.is_enabled });
       toast.success(`${gw.display_name} ${!gw.is_enabled ? "enabled" : "disabled"}`);
+      await auditLog("gateway_toggled", gw.id, { display_name: gw.display_name, is_enabled: !gw.is_enabled });
     } catch {
       toast.error("Failed to toggle");
     }
