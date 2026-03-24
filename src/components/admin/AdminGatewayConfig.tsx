@@ -150,6 +150,7 @@ export default function AdminGatewayConfig() {
           config: editConfig,
         });
         toast.success("Gateway updated");
+        await auditLog("gateway_updated", editGw.id, { display_name: editName });
         setEditGw(null);
       } else {
         if (!editProvider.trim()) { toast.error("Provider key is required"); setSaving(false); return; }
