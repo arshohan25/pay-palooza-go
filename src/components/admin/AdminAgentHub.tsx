@@ -138,6 +138,10 @@ function AgentListTab() {
         nid_number: form.nid_number || null, trade_license: form.trade_license || null,
         max_float: parseInt(form.max_float) || 500000, status: "active",
       });
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "agent_created", entity_type: "agent", entity_id: userId, details: { phone, business_name: form.business_name } }).then();
+      }
       toast.success(`Agent created! Temp PIN: ${pin}`, { duration: 10000 });
       setCreateOpen(false);
       setForm({ phone: "", name: "", business_name: "", territory_code: "", nid_number: "", trade_license: "", max_float: "500000" });
