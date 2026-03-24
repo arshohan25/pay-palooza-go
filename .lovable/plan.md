@@ -1,50 +1,74 @@
 
 
-## Plan: Add Role-Based Session Timeout (Separate from Team Members)
+## Plan: Per-Role Session Timeouts with Redesigned UI
 
-### Problem
-Currently, session timeout only applies to **team members** (admin staff). Regular users, agents, distributors, and merchants have no inactivity timeout.
+### What Changes
 
-### Solution
-Create a new **user session timeout** system with its own configurable duration, separate from the team member timeout.
+**1. Replace single "User Session Timeout" with per-role timeouts**
 
-### Changes
+Currently there's one shared timeout for all non-team users. This will be split into 5 separate configurable timeouts:
+- **User** (regular users)
+- **Agent**
+- **Distributor**
+- **Super Distributor**
+- **Merchant**
 
-**1. Admin UI — Add "User Session Timeout" dropdown** (`src/components/admin/AdminSystemSettings.tsx`)
-- Add a second timeout card below the existing "Team Session Timeout" card
-- Label: "User Session Timeout" with description "Auto-logout users, agents, distributors, and merchants after inactivity."
-- Same time options (5m–8h), stored as `user_session_timeout_minutes` in `global_feature_toggles`
-- Add state + save logic mirroring the team timeout pattern
+Each stored as a separate key in `global_feature_toggles`:
+- `user_timeout_minutes`
+- `agent_timeout_minutes`
+- `distributor_timeout_minutes`
+- `super_distributor_timeout_minutes`
+- `merchant_timeout_minutes`
 
-**2. Create new hook** (`src/hooks/use-user-session-timeout.ts`)
-- Similar structure to `use-session-timeout.ts` but for non-team-member authenticated users
-- Reads `user_session_timeout_minutes` from `global_feature_toggles`
-- Activates for any authenticated user who is **not** a team member (to avoid double-timeout)
-- On expiry: signs out and redirects to `/` (home/auth page) instead of `/team-login`
-- Same activity tracking (mousemove, keydown, etc.) and warning toast pattern
-- Default: 30 minutes (if no config set)
+**2. Redesigned Admin UI** (`src/components/admin/AdminSystemSettings.tsx`)
 
-**3. Wire hook into dashboards**
-- `src/pages/Index.tsx` — add `useUserSessionTimeout()` (covers regular users)
-- `src/pages/AgentDashboard.tsx` — add `useUserSessionTimeout()`
-- `src/pages/DistributorDashboard.tsx` — add `useUserSessionTimeout()`
-- `src/pages/MerchantDashboard.tsx` — add `useUserSessionTimeout()`
-- `src/pages/SuperDistributorDashboard.tsx` — add `useUserSessionTimeout()`
+Replace the two separate timeout cards with a single unified "Session Timeout Management" card featuring:
+- A clean header with icon and description
+- A table/grid layout showing each role with its own timeout dropdown in a row
+- Roles listed: Team Members, Users, Agents, Distributors, Super Distributors, Merchants
+- Each row has: role icon + name, current timeout dropdown
+- Compact, scannable design — all timeouts visible at a glance
 
-### Key Difference from Team Timeout
-| Aspect | Team Timeout | User Timeout |
-|--------|-------------|-------------|
-| Config key | `team_session_timeout_minutes` | `user_session_timeout_minutes` |
-| Applies to | `is_team_member` metadata users | All authenticated non-team users |
-| Redirect | `/team-login` | `/` |
-| DB update | `team_members.last_active_at` | `profiles.updated_at` (skip) |
+**3. Update hook** (`src/hooks/use-user-session-timeout.ts`)
+
+- Accept an optional `role` parameter: `useUserSessionTimeout(role?: string)`
+- Based on the role, read the matching config key (e.g., `agent_timeout_minutes`)
+- Fall back to `user_timeout_minutes` if no role-specific key exists
+- Default remains 30 minutes
+
+**4. Wire role-specific timeouts into dashboards**
+
+Each dashboard passes its role to the hook:
+- `src/pages/Index.tsx` → `useUserSessionTimeout("user")`
+- `src/pages/AgentDashboard.tsx` → `useUserSessionTimeout("agent")`
+- `src/pages/DistributorDashboard.tsx` → `useUserSessionTimeout("distributor")`
+- `src/pages/SuperDistributorDashboard.tsx` → `useUserSessionTimeout("super_distributor")`
+- `src/pages/MerchantDashboard.tsx` → `useUserSessionTimeout("merchant")`
+
+### UI Design (Redesigned Card)
+
+```text
+┌──────────────────────────────────────────────────┐
+│ 🕐 Session Timeout Management                    │
+│ Configure auto-logout duration per role           │
+│                                                   │
+│  Role                    Timeout                  │
+│  ─────────────────────── ──────────────────────── │
+│  👥 Team Members         [  30 minutes      ▾ ]  │
+│  👤 Users                [  30 minutes      ▾ ]  │
+│  🏪 Agents               [  1 hour          ▾ ]  │
+│  📦 Distributors         [  2 hours         ▾ ]  │
+│  🏢 Super Distributors   [  2 hours         ▾ ]  │
+│  🛍️ Merchants            [  1 hour          ▾ ]  │
+└──────────────────────────────────────────────────┘
+```
 
 ### Files Modified
-- `src/components/admin/AdminSystemSettings.tsx` — add User Session Timeout config card
-- `src/hooks/use-user-session-timeout.ts` — **new file**, inactivity hook for regular users
-- `src/pages/Index.tsx` — wire hook
-- `src/pages/AgentDashboard.tsx` — wire hook
-- `src/pages/DistributorDashboard.tsx` — wire hook
-- `src/pages/MerchantDashboard.tsx` — wire hook
-- `src/pages/SuperDistributorDashboard.tsx` — wire hook
+- `src/components/admin/AdminSystemSettings.tsx` — redesign timeout UI into single unified card with per-role dropdowns
+- `src/hooks/use-user-session-timeout.ts` — accept `role` param, read role-specific config key
+- `src/pages/Index.tsx` — pass `"user"` to hook
+- `src/pages/AgentDashboard.tsx` — pass `"agent"`
+- `src/pages/DistributorDashboard.tsx` — pass `"distributor"`
+- `src/pages/SuperDistributorDashboard.tsx` — pass `"super_distributor"`
+- `src/pages/MerchantDashboard.tsx` — pass `"merchant"`
 
