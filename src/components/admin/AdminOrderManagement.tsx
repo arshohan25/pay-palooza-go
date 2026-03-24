@@ -147,8 +147,16 @@ export default function AdminOrderManagement() {
     return () => { supabase.removeChannel(channel); };
   }, [fetchOrders]);
 
+  const auditLog = async (action: string, entityId: string, details: any) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: "order", entity_id: entityId, details });
+    }
+  };
+
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     setUpdatingId(orderId);
+    const order = orders.find(o => o.id === orderId);
     const { error } = await supabase
       .from("orders")
       .update({ status: newStatus })
@@ -156,6 +164,7 @@ export default function AdminOrderManagement() {
     if (error) {
       toast.error("Failed to update order status");
     } else {
+      await auditLog("order_status_update", orderId, { order_num: order?.order_num, old_status: order?.status, new_status: newStatus });
       toast.success(`Order updated to ${STATUS_CONFIG[newStatus]?.label ?? newStatus}`);
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
       if (selectedOrder?.id === orderId) {
