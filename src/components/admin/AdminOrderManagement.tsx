@@ -271,6 +271,7 @@ export default function AdminOrderManagement() {
     if (error) {
       toast.error("Failed to update orders");
     } else {
+      await auditLog("order_bulk_status_update", ids.join(","), { count: ids.length, new_status: bulkStatus });
       toast.success(`${ids.length} order(s) updated to ${STATUS_CONFIG[bulkStatus]?.label ?? bulkStatus}`);
       setOrders(prev => prev.map(o => ids.includes(o.id) ? { ...o, status: bulkStatus } : o));
       setSelectedIds(new Set());
