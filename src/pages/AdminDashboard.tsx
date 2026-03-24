@@ -1635,8 +1635,11 @@ export default function AdminDashboard() {
         {/* ═══ DISPUTE RESOLUTION ═══ */}
         {activeTab === "disputes" && <AdminDisputeResolution />}
 
-        {/* ═══ SUPPORT DASHBOARD ═══ */}
-        {activeTab === "support" && <AdminSupportDashboard />}
+        {/* ═══ LIVE CHAT ═══ */}
+        {activeTab === "live_chat" && <AdminSupportDashboard mode="live_chat" />}
+
+        {/* ═══ TICKETS ═══ */}
+        {activeTab === "tickets" && <AdminSupportDashboard mode="tickets" />}
 
         {/* ═══ CHAT MONITOR ═══ */}
         {activeTab === "chat_monitor" && <AdminChatMonitor />}
