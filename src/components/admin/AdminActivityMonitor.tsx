@@ -179,13 +179,13 @@ export default function AdminActivityMonitor() {
         </div>
 
         {/* Type filter */}
-        <div className="flex flex-wrap gap-1.5 mt-3">
+        <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1 scrollbar-hide">
           {TXN_TYPES.map(t => (
             <Button
               key={t}
               size="sm"
               variant={typeFilter === t ? "default" : "outline"}
-              className="text-xs h-7 capitalize"
+              className="text-xs h-7 capitalize shrink-0"
               onClick={() => setTypeFilter(t)}
             >
               {t}
@@ -221,18 +221,18 @@ export default function AdminActivityMonitor() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-muted-foreground">
-                    <th className="text-left px-4 py-3 font-medium">Short ID</th>
-                    <th className="text-left px-4 py-3 font-medium">Type</th>
-                    <th className="text-left px-4 py-3 font-medium">Sender</th>
-                    <th className="text-left px-4 py-3 font-medium">Receiver</th>
-                    <th className="text-left px-4 py-3 font-medium">Amount</th>
-                    <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">Fee</th>
-                    <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">Commission</th>
-                    <th className="text-left px-4 py-3 font-medium hidden xl:table-cell">Balance After</th>
-                    <th className="text-left px-4 py-3 font-medium">Status</th>
-                    <th className="text-left px-4 py-3 font-medium">Date-Time</th>
-                    <th className="text-left px-4 py-3 font-medium w-10"></th>
-                  </tr>
+                     <th className="text-left px-3 py-3 font-medium">Short ID</th>
+                     <th className="text-left px-3 py-3 font-medium">Type</th>
+                     <th className="text-left px-3 py-3 font-medium">Sender</th>
+                     <th className="text-left px-3 py-3 font-medium">Receiver</th>
+                     <th className="text-left px-3 py-3 font-medium">Amount</th>
+                     <th className="text-left px-3 py-3 font-medium hidden lg:table-cell">Fee</th>
+                     <th className="text-left px-3 py-3 font-medium hidden lg:table-cell">Commission</th>
+                     <th className="text-left px-3 py-3 font-medium hidden 2xl:table-cell">Balance After</th>
+                     <th className="text-left px-3 py-3 font-medium whitespace-nowrap">Status</th>
+                     <th className="text-left px-3 py-3 font-medium hidden xl:table-cell">Date-Time</th>
+                     <th className="text-left px-3 py-3 font-medium w-10"></th>
+                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map(txn => {
@@ -244,37 +244,37 @@ export default function AdminActivityMonitor() {
                           className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer"
                           onClick={() => setExpandedId(isExpanded ? null : txn.id)}
                         >
-                          <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{txn.short_id}</td>
-                          <td className="px-4 py-3">
-                            <Badge variant="secondary" className={`text-xs ${TXN_TYPE_COLORS[txn.type] ?? ""}`}>
+                          <td className="px-3 py-3 font-mono text-xs text-muted-foreground max-w-[80px] truncate">{txn.short_id}</td>
+                          <td className="px-3 py-3">
+                            <Badge variant="secondary" className={`text-xs whitespace-nowrap ${TXN_TYPE_COLORS[txn.type] ?? ""}`}>
                               {txn.type}
                             </Badge>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 py-3">
                             <div className="leading-tight">
-                              <p className="font-medium text-foreground text-xs">{sender?.name || "—"}</p>
+                              <p className="font-medium text-foreground text-xs truncate max-w-[120px]">{sender?.name || "—"}</p>
                               <p className="text-[11px] text-muted-foreground">{sender?.phone || "—"}</p>
                             </div>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 py-3">
                             <div className="leading-tight">
-                              <p className="font-medium text-foreground text-xs">{txn.recipient_name || "—"}</p>
+                              <p className="font-medium text-foreground text-xs truncate max-w-[120px]">{txn.recipient_name || "—"}</p>
                               <p className="text-[11px] text-muted-foreground">{txn.recipient_phone || "—"}</p>
                             </div>
                           </td>
-                          <td className="px-4 py-3 font-semibold text-foreground">৳{txn.amount?.toLocaleString()}</td>
-                          <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">৳{txn.fee?.toLocaleString()}</td>
-                          <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">৳{txn.commission?.toLocaleString()}</td>
-                          <td className="px-4 py-3 text-muted-foreground hidden xl:table-cell">
+                          <td className="px-3 py-3 font-semibold text-foreground whitespace-nowrap">৳{txn.amount?.toLocaleString()}</td>
+                          <td className="px-3 py-3 text-muted-foreground hidden lg:table-cell">৳{txn.fee?.toLocaleString()}</td>
+                          <td className="px-3 py-3 text-muted-foreground hidden lg:table-cell">৳{txn.commission?.toLocaleString()}</td>
+                          <td className="px-3 py-3 text-muted-foreground hidden 2xl:table-cell whitespace-nowrap">
                             {txn.balance_after != null ? `৳${Number(txn.balance_after).toLocaleString()}` : "—"}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 py-3 whitespace-nowrap">
                             <Badge variant={STATUS_BADGE[txn.status] ?? "outline"} className="text-xs capitalize">{txn.status}</Badge>
                           </td>
-                          <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">
+                          <td className="px-3 py-3 text-muted-foreground text-xs whitespace-nowrap hidden xl:table-cell">
                             {format(new Date(txn.created_at), "MMM dd, yyyy, hh:mm a")}
                           </td>
-                          <td className="px-4 py-3 text-muted-foreground">
+                          <td className="px-3 py-3 text-muted-foreground">
                             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                           </td>
                         </tr>
@@ -289,7 +289,7 @@ export default function AdminActivityMonitor() {
                                   transition={{ duration: 0.2 }}
                                   className="overflow-hidden"
                                 >
-                                  <div className="bg-muted/30 px-6 py-4 grid grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                                  <div className="bg-muted/30 px-4 py-4 grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                                     <div>
                                       <p className="text-muted-foreground text-xs mb-1">Transaction ID</p>
                                       <p className="font-mono text-xs text-foreground break-all">{txn.id}</p>
