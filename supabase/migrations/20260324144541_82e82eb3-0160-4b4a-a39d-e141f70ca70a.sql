@@ -1,0 +1,1 @@
+UPDATE public.team_members SET email = 'test@example.com', has_changed_password = true WHERE username = 'staff-T00J';
