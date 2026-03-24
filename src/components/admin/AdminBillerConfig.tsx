@@ -169,6 +169,7 @@ export default function AdminBillerConfig() {
           sort_order: billers.length + 1,
         });
         toast.success("Biller added");
+        await auditLog("biller_created", "new", { biller_code: editCode, display_name: editName });
         setAddOpen(false);
       }
     } catch (e: any) {
