@@ -1,60 +1,27 @@
 
 
-## Plan: Add Essential Roles and Departments
+## Plan: Clone Permissions from Existing Member
 
-### Current State
-- **Roles** (8): admin, compliance, finance, customer, agent, merchant, distributor, super_distributor
-- **Departments** (6): general, support, compliance, finance, operations, engineering
+### What It Does
+Adds a "Clone from member" option in the permission configuration step (Step 2) of the Add Member dialog. When creating a new team member, the admin can select an existing member from a dropdown, and that member's exact permission grid is copied into the new member's permission editor.
 
 ### Changes
 
 **File: `src/components/admin/AdminTeamManagement.tsx`**
 
-#### 1. Expand STAFF_ROLES
-Add these essential roles:
+1. **Add "Clone from member" dropdown** in the `PermissionEditor` component, next to the existing Preset selector. It will:
+   - Show a `Select` dropdown listing all current team members by display name
+   - Accept a `members` prop (the loaded `TeamMember[]` list)
+   - On selection, fetch that member's `team_access_permissions` from the database and populate the permission grid
 
-| Role Value | Label |
-|---|---|
-| support | Support |
-| operations | Operations |
-| marketing | Marketing |
-| hr | HR |
-| audit | Auditor |
-| risk | Risk Officer |
-| developer | Developer |
-| manager | Manager |
+2. **Pass `members` prop** to `PermissionEditor` from both the Add dialog (Step 2) and the Edit dialog.
 
-Total: 16 roles (8 existing + 8 new). The `AppRole` type union will be extended accordingly.
+3. **Fetch and apply cloned permissions**: When a member is selected from the clone dropdown:
+   - Query `team_access_permissions` for that member's `user_id`
+   - Map results into the `AccessPerm[]` format (filling missing sections with no access)
+   - Call `onChange(clonedPerms)` to update the grid
 
-#### 2. Expand DEPARTMENTS
-Add these departments:
+4. **UI placement**: The clone dropdown sits on the same row as the preset selector, with a `Copy` icon and "Clone from:" label. Selecting a clone clears the preset selection and vice versa.
 
-| Department |
-|---|
-| marketing |
-| hr |
-| risk |
-| audit |
-| management |
-| product |
-| logistics |
-| legal |
-
-Total: 14 departments (6 existing + 8 new).
-
-#### 3. Update ROLE_COLORS
-Add color mappings for all new roles so badges display distinctly.
-
-#### 4. Update Permission Presets
-Add new presets matching the new roles:
-- **Marketing**: marketing, banners sections with full access; reporting, ecommerce view-only
-- **HR / Manager**: team, users full access; auditlog, sessions view-only
-- **Risk Officer**: fraud, blacklist, security full access; transactions, kyc view-only
-- **Auditor**: auditlog, transactions, reporting view-only across the board (no edit/delete)
-- **Developer**: apihub, gateways, webhooks, system_health full access
-
-### Technical Details
-- Single file modified: `src/components/admin/AdminTeamManagement.tsx`
-- No database changes needed — roles/departments are stored as plain strings in `team_members` and `user_roles` tables
-- The local `AppRole` type union is extended (this is a UI-level type, not the DB enum)
+### No database changes needed.
 
