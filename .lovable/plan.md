@@ -1,51 +1,39 @@
 
 
-## Plan: Admin Reset Team Password & Change Email
+## Plan: Fix AdminDashboard Rejecting Non-Admin Team Roles
 
-### What It Does
-Adds two management actions to each team member card: **Reset Password** and **Change Email**. The admin can generate a new temporary password or update the 2FA email directly from the team management UI.
+### Problem
+The `AdminDashboard` component (line 626) has its own authorization check using `useAdmin()`, which only looks for the `admin` role. This creates a double-gate:
+1. **RoleGuard** (in App.tsx) -- correctly allows all 11 team roles including `compliance`
+2. **AdminDashboard** (internal) -- uses `useAdmin()` which only checks `role = 'admin'`, bouncing all other team roles to `/`
 
-### Changes
+The RoleGuard was fixed earlier, but the dashboard's internal check was missed.
 
-**File: `src/components/admin/AdminTeamManagement.tsx`**
+### Solution
+Update `useAdmin()` hook to check for any team role, not just `admin`. Rename the concept slightly to `isTeamAdmin` or keep `isAdmin` but broaden it to match the same set of roles the RoleGuard allows.
 
-1. **Add state variables** for the reset password and change email dialogs:
-   - `resetPwMember`, `newTempPassword`, `resettingPw` — for password reset dialog
-   - `editEmailMember`, `newEmail`, `savingEmail` — for email change dialog
+**File: `src/hooks/use-admin.ts`**
 
-2. **Add two action buttons** to each member card (alongside the existing Shield, Activity, Trash buttons):
-   - `KeyRound` icon button — opens Reset Password dialog
-   - `Mail` icon button — opens Change Email dialog
+Change the `useAdmin` hook to query for any of the 11 team roles instead of only `admin`:
 
-3. **Reset Password dialog**:
-   - Shows member name and a pre-generated random password (using existing `generatePassword()`)
-   - Regenerate button to get a new random password
-   - Confirm button calls the existing `admin-reset-pin` edge function pattern but adapted: since team members use username+password (not PIN), we need a new approach
-   - Actually, team auth uses `supabase.auth.signInWithPassword` with real passwords, so resetting requires the admin API. We'll create a lightweight edge function `admin-reset-team-password` that uses `adminClient.auth.admin.updateUserById()` to set the new password
-   - On success, shows the new password with copy button and option to email it via `send-team-credentials`
-   - Records action in `audit_logs`
+```typescript
+// Before:
+.eq("role", "admin")
+.maybeSingle();
+setIsAdmin(!!data);
 
-4. **Change Email dialog**:
-   - Shows current email (from `team_members.email`) and an input for the new email
-   - Save button updates `team_members.email` via direct Supabase update
-   - Records action in `audit_logs`
+// After:
+.in("role", ["admin","compliance","finance","support","operations","marketing","hr","audit","risk","developer","manager"]);
+setIsAdmin((data?.length ?? 0) > 0);
+```
 
-**New file: `supabase/functions/admin-reset-team-password/index.ts`**
+This single change fixes:
+- Dashboard redirect at line 626
+- All `if (!isAdmin) return;` guards on data fetching (lines 522, 536, etc.)
+- The `if (!isAdmin) return null;` at line 769
 
-- Verifies caller has admin role (same pattern as `admin-reset-pin`)
-- Accepts `{ targetUserId, newPassword }`
-- Calls `adminClient.auth.admin.updateUserById(targetUserId, { password: newPassword })`
-- Resets the `has_changed_password` flag on `team_members` so member is forced to change password on next login
-- Records in `audit_logs`
-
-### Technical Details
-
-- The edge function reuses the exact auth verification pattern from `admin-reset-pin` (JWT validation, admin role check via service role client)
-- Password reset also sets `team_members.has_changed_password = false` so the member must change it on next login
-- Email change is a simple client-side update to `team_members.email` — no edge function needed
-- Both actions are audit-logged with before/after details
+No other files need changes. The section-level `team_access_permissions` system already handles granular access within the dashboard.
 
 ### Files Modified
-- `src/components/admin/AdminTeamManagement.tsx` — Add dialogs, buttons, handlers
-- `supabase/functions/admin-reset-team-password/index.ts` — New edge function
+- `src/hooks/use-admin.ts` -- Broaden role check from `admin` only to all team roles
 
