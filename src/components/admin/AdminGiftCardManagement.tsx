@@ -6,8 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Gift, Search, RefreshCw, Eye } from "lucide-react";
+import { Gift, Search, RefreshCw, Eye, Plus, Pencil, Trash2, Copy } from "lucide-react";
 
 const STATUS_BADGE: Record<string, string> = {
   active: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
@@ -17,25 +19,42 @@ const STATUS_BADGE: Record<string, string> = {
 
 const STATUSES = ["all", "active", "redeemed", "expired"] as const;
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: "gift_card", entity_id: entityId, details });
+  }
+}
+
+function generateCode() {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code = "";
+  for (let i = 0; i < 16; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
 export default function AdminGiftCardManagement() {
   const [cards, setCards] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [detail, setDetail] = useState<any | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState({ brand: "", denomination: "", recipient_phone: "" });
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkForm, setBulkForm] = useState({ brand: "", denomination: "", count: "5" });
+  const [editDialog, setEditDialog] = useState<{ card: any; brand: string; denomination: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
 
-  const fetch = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("gift_cards")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(300);
+    const { data } = await supabase.from("gift_cards").select("*").order("created_at", { ascending: false }).limit(300);
     setCards(data ?? []);
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const filtered = cards.filter(c => {
     if (statusFilter !== "all" && c.status !== statusFilter) return false;
@@ -51,11 +70,74 @@ export default function AdminGiftCardManagement() {
   };
 
   const revokeCard = async (id: string) => {
+    const card = cards.find(c => c.id === id);
     const { error } = await supabase.from("gift_cards").update({ status: "expired" as any }).eq("id", id);
+    if (!error) await auditLog("gift_card_revoke", id, { brand: card?.brand, denomination: card?.denomination });
     if (error) { toast.error(error.message); return; }
     toast.success("Gift card revoked");
     setDetail(null);
-    fetch();
+    fetchData();
+  };
+
+  const handleCreate = async () => {
+    const { brand, denomination, recipient_phone } = createForm;
+    if (!brand || !denomination) { toast.error("Brand and denomination required"); return; }
+    setSaving(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    const { data: created, error } = await supabase.from("gift_cards").insert({
+      brand, denomination: Number(denomination), recipient_phone: recipient_phone || null, code: generateCode(), purchaser_id: session?.user?.id ?? "",
+    }).select().single();
+    if (!error && created) await auditLog("gift_card_issue", created.id, { brand, denomination, recipient_phone });
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Gift card issued");
+    setCreateOpen(false);
+    setCreateForm({ brand: "", denomination: "", recipient_phone: "" });
+    fetchData();
+  };
+
+  const handleBulkGenerate = async () => {
+    const { brand, denomination, count } = bulkForm;
+    if (!brand || !denomination) { toast.error("Brand and denomination required"); return; }
+    const n = Math.min(Number(count) || 1, 50);
+    setSaving(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    const rows = Array.from({ length: n }, () => ({
+      brand, denomination: Number(denomination), code: generateCode(), purchaser_id: session?.user?.id ?? "",
+    }));
+    const { error } = await supabase.from("gift_cards").insert(rows);
+    if (!error) await auditLog("gift_card_bulk_generate", "bulk", { brand, denomination, count: n });
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${n} gift cards generated`);
+    setBulkOpen(false);
+    setBulkForm({ brand: "", denomination: "", count: "5" });
+    fetchData();
+  };
+
+  const handleEdit = async () => {
+    if (!editDialog) return;
+    const { card, brand, denomination } = editDialog;
+    setSaving(true);
+    const { error } = await supabase.from("gift_cards").update({ brand, denomination: Number(denomination) }).eq("id", card.id);
+    if (!error) await auditLog("gift_card_edit", card.id, { previous: { brand: card.brand, denomination: card.denomination }, new: { brand, denomination } });
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Card updated");
+    setEditDialog(null);
+    fetchData();
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setSaving(true);
+    const { error } = await supabase.from("gift_cards").delete().eq("id", deleteTarget.id);
+    if (!error) await auditLog("gift_card_delete", deleteTarget.id, { brand: deleteTarget.brand, denomination: deleteTarget.denomination, status: deleteTarget.status });
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Gift card deleted");
+    setDeleteTarget(null);
+    fetchData();
   };
 
   const maskCode = (code: string) => code ? code.slice(0, 4) + "****" + code.slice(-4) : "—";
@@ -84,11 +166,11 @@ export default function AdminGiftCardManagement() {
           <Input placeholder="Search by code or brand..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
         </div>
         {STATUSES.map(s => (
-          <Button key={s} size="sm" variant={statusFilter === s ? "default" : "outline"} onClick={() => setStatusFilter(s)} className="capitalize h-8 text-xs">
-            {s}
-          </Button>
+          <Button key={s} size="sm" variant={statusFilter === s ? "default" : "outline"} onClick={() => setStatusFilter(s)} className="capitalize h-8 text-xs">{s}</Button>
         ))}
-        <Button size="sm" variant="ghost" onClick={fetch}><RefreshCw className="w-4 h-4" /></Button>
+        <Button size="sm" variant="ghost" onClick={fetchData}><RefreshCw className="w-4 h-4" /></Button>
+        <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4 mr-1" /> Issue Card</Button>
+        <Button size="sm" variant="outline" onClick={() => setBulkOpen(true)}><Copy className="w-4 h-4 mr-1" /> Bulk Generate</Button>
       </div>
 
       <Card className="border-0 shadow-[var(--shadow-card)]">
@@ -124,13 +206,15 @@ export default function AdminGiftCardManagement() {
                     <TableCell className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => setDetail(c)}>
-                          <Eye className="w-3 h-3" />
-                        </Button>
+                        <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => setDetail(c)}><Eye className="w-3 h-3" /></Button>
                         {c.status === "active" && (
-                          <Button size="sm" variant="destructive" className="h-6 text-[10px] px-2" onClick={() => revokeCard(c.id)}>
-                            Revoke
-                          </Button>
+                          <>
+                            <Button size="sm" variant="ghost" className="h-6 px-1" onClick={() => setEditDialog({ card: c, brand: c.brand, denomination: String(c.denomination) })}><Pencil className="w-3 h-3" /></Button>
+                            <Button size="sm" variant="destructive" className="h-6 text-[10px] px-2" onClick={() => revokeCard(c.id)}>Revoke</Button>
+                          </>
+                        )}
+                        {["expired", "redeemed"].includes(c.status) && (
+                          <Button size="sm" variant="ghost" className="h-6 px-1 text-destructive" onClick={() => setDeleteTarget(c)}><Trash2 className="w-3 h-3" /></Button>
                         )}
                       </div>
                     </TableCell>
@@ -142,6 +226,7 @@ export default function AdminGiftCardManagement() {
         </CardContent>
       </Card>
 
+      {/* Detail sheet */}
       <Sheet open={!!detail} onOpenChange={v => !v && setDetail(null)}>
         <SheetContent>
           <SheetHeader>
@@ -166,6 +251,78 @@ export default function AdminGiftCardManagement() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Issue card dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Issue Gift Card</DialogTitle>
+            <DialogDescription>Create a new gift card</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="Brand name" value={createForm.brand} onChange={e => setCreateForm(f => ({ ...f, brand: e.target.value }))} />
+            <Input placeholder="Denomination (৳)" type="number" value={createForm.denomination} onChange={e => setCreateForm(f => ({ ...f, denomination: e.target.value }))} />
+            <Input placeholder="Recipient phone (optional)" value={createForm.recipient_phone} onChange={e => setCreateForm(f => ({ ...f, recipient_phone: e.target.value }))} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreate} disabled={saving}>{saving ? "Issuing…" : "Issue Card"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk generate dialog */}
+      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bulk Generate Gift Cards</DialogTitle>
+            <DialogDescription>Generate multiple cards at once (max 50)</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="Brand name" value={bulkForm.brand} onChange={e => setBulkForm(f => ({ ...f, brand: e.target.value }))} />
+            <div className="grid grid-cols-2 gap-2">
+              <Input placeholder="Denomination (৳)" type="number" value={bulkForm.denomination} onChange={e => setBulkForm(f => ({ ...f, denomination: e.target.value }))} />
+              <Input placeholder="Count" type="number" value={bulkForm.count} onChange={e => setBulkForm(f => ({ ...f, count: e.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkOpen(false)}>Cancel</Button>
+            <Button onClick={handleBulkGenerate} disabled={saving}>{saving ? "Generating…" : "Generate"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit dialog */}
+      <Dialog open={!!editDialog} onOpenChange={v => !v && setEditDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Gift Card</DialogTitle>
+            <DialogDescription>Update brand and denomination</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="Brand" value={editDialog?.brand ?? ""} onChange={e => editDialog && setEditDialog({ ...editDialog, brand: e.target.value })} />
+            <Input placeholder="Denomination (৳)" type="number" value={editDialog?.denomination ?? ""} onChange={e => editDialog && setEditDialog({ ...editDialog, denomination: e.target.value })} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialog(null)}>Cancel</Button>
+            <Button onClick={handleEdit} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={v => !v && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Gift Card</AlertDialogTitle>
+            <AlertDialogDescription>Permanently delete this {deleteTarget?.brand} gift card (৳{Number(deleteTarget?.denomination).toLocaleString()})? This cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={saving} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{saving ? "Deleting…" : "Delete"}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
