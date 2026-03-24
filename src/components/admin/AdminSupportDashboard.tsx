@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, User, Loader2, MessageCircle, ArrowLeft, CheckCheck, Check, Zap, ChevronDown, Plus, Trash2, Edit2, Save, X, UserPlus, Star, RotateCcw, CheckCircle2, Mail, AlertTriangle } from "lucide-react";
+import { Send, Bot, User, Loader2, MessageCircle, ArrowLeft, CheckCheck, Check, Zap, ChevronDown, ChevronUp, Plus, Trash2, Edit2, Save, X, UserPlus, Star, RotateCcw, CheckCircle2, Mail, AlertTriangle, Circle } from "lucide-react";
 import { useAgentRouting } from "@/components/admin/SupportAgentRouter";
 import { playChatNotification, playChatRequestSound } from "@/lib/sounds";
 import { haptics } from "@/lib/haptics";
