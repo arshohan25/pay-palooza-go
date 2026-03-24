@@ -22,7 +22,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { formatDistanceToNow, format, startOfDay, endOfDay, subDays } from "date-fns";
 
 async function auditLog(action: string, entityId: string, details: any) {
   const { data: { session } } = await supabase.auth.getSession();
