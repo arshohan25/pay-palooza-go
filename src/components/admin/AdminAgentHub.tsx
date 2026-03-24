@@ -9,8 +9,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Search, MapPin, Wallet, Receipt, Eye, CheckCircle, Clock, XCircle, Building2, Pencil } from "lucide-react";
+import { Users, Search, MapPin, Wallet, Receipt, Eye, CheckCircle, Clock, XCircle, Building2, Pencil, UserPlus, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { signUpWithPhonePassword, pinToPassword } from "@/lib/auth";
 import { toast } from "sonner";
 
 interface Agent {
