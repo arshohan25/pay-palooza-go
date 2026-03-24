@@ -996,7 +996,7 @@ export default function AdminTeamManagement() {
           {editLoading ? (
             <div className="flex justify-center py-8"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
           ) : (
-            <PermissionEditor perms={editPerms} onChange={setEditPerms} />
+            <PermissionEditor perms={editPerms} onChange={setEditPerms} members={members} />
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditMember(null)}>Cancel</Button>
