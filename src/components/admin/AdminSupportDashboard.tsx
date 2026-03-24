@@ -101,7 +101,11 @@ const generateComplaintNumber = () => {
   return `CMP-${date}-${suffix}`;
 };
 
-export default function AdminSupportDashboard() {
+interface AdminSupportDashboardProps {
+  mode?: "live_chat" | "tickets" | "all";
+}
+
+export default function AdminSupportDashboard({ mode = "all" }: AdminSupportDashboardProps) {
   const { user } = useAuth();
   const { visible, flash } = useRealtimeIndicator();
   const { routing, assignConversation, autoAssignNewConversation } = useAgentRouting();
@@ -113,7 +117,8 @@ export default function AdminSupportDashboard() {
   const [loading, setLoading] = useState(true);
   const [msgLoading, setMsgLoading] = useState(false);
   const [remoteTyping, setRemoteTyping] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(mode === "live_chat" ? "open" : "all");
+  const [highlightedConvId, setHighlightedConvId] = useState<string | null>(null);
   const [cannedReplies, setCannedReplies] = useState<CannedReply[]>([]);
   const [showAddReply, setShowAddReply] = useState(false);
   const [newReplyLabel, setNewReplyLabel] = useState("");
