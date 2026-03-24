@@ -5,6 +5,8 @@ import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator"
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Bot, User, Loader2, MessageCircle, ArrowLeft, CheckCheck, Check, Zap, ChevronDown, Plus, Trash2, Edit2, Save, X, UserPlus, Star, RotateCcw, CheckCircle2, Mail, AlertTriangle } from "lucide-react";
 import { useAgentRouting } from "@/components/admin/SupportAgentRouter";
+import { playChatNotification, playChatRequestSound } from "@/lib/sounds";
+import { haptics } from "@/lib/haptics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
