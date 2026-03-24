@@ -157,40 +157,37 @@ export default function AdminActivityMonitor() {
   return (
     <Card className="border-0 shadow-[var(--shadow-card)]">
       <CardContent className="p-4 space-y-3">
-        <div>
-          <p className="text-sm font-medium text-foreground flex items-center gap-2">
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium text-foreground flex items-center gap-2 shrink-0">
             <Search className="w-4 h-4 text-primary" /> Activity Monitor
           </p>
-          <p className="text-[10px] text-muted-foreground mt-1">Real-time transaction feed with filters and export</p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <div className="flex-1" />
+          <div className="relative w-48">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
             <Input
-              placeholder="Search name, phone, ID…"
-              className="pl-9 h-8 text-xs"
+              placeholder="Search…"
+              className="pl-7 h-7 text-[11px]"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={exportCsv} disabled={filtered.length === 0} title="Export CSV">
+          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={exportCsv} disabled={filtered.length === 0} title="Export CSV">
             <Download className="w-3.5 h-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => loadTransactions(0)} disabled={loading}>
+          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => loadTransactions(0)} disabled={loading}>
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
           </Button>
         </div>
 
-        {/* Type filter - pill style */}
-        <div className="flex flex-wrap gap-1">
+        {/* Type filter - segmented control */}
+        <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5">
           {TXN_TYPES.map(t => (
             <button
               key={t}
-              className={`px-2.5 py-1 rounded-full text-[10px] font-medium capitalize transition-colors ${
+              className={`px-2.5 py-1 rounded-md text-[10px] font-medium capitalize transition-all ${
                 typeFilter === t
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
               onClick={() => setTypeFilter(t)}
             >
@@ -199,15 +196,15 @@ export default function AdminActivityMonitor() {
           ))}
         </div>
 
-        {/* Status filter - pill style */}
-        <div className="flex flex-wrap gap-1">
+        {/* Status filter - segmented control */}
+        <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5">
           {TXN_STATUSES.map(s => (
             <button
               key={s}
-              className={`px-2.5 py-1 rounded-full text-[10px] font-medium capitalize transition-colors ${
+              className={`px-2.5 py-1 rounded-md text-[10px] font-medium capitalize transition-all ${
                 statusFilter === s
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
               onClick={() => setStatusFilter(s)}
             >
