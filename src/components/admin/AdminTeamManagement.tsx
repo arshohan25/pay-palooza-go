@@ -949,7 +949,7 @@ export default function AdminTeamManagement() {
             </div>
           ) : (
             /* Step 2: Permissions */
-            <PermissionEditor perms={addPerms} onChange={setAddPerms} />
+            <PermissionEditor perms={addPerms} onChange={setAddPerms} members={members} />
           )}
 
           <DialogFooter>
