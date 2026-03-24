@@ -166,8 +166,18 @@ export default function AdminSettlements() {
     const update: any = { status: newStatus, updated_at: new Date().toISOString() };
     if (newStatus === "completed") update.settled_at = new Date().toISOString();
     const { error } = await supabase.from("settlements").update(update).eq("id", id);
-    if (error) toast.error("Failed to update");
-    else { toast.success(`Settlement marked ${newStatus}`); load(); }
+    if (error) { toast.error("Failed to update"); return; }
+    await auditLog("settlement_status_update", "settlement", id, { new_status: newStatus });
+    toast.success(`Settlement marked ${newStatus}`);
+    load();
+  };
+
+  const deleteSettlement = async (id: string) => {
+    const { error } = await supabase.from("settlements").delete().eq("id", id);
+    if (error) { toast.error("Failed to delete"); return; }
+    await auditLog("settlement_delete", "settlement", id, {});
+    toast.success("Settlement deleted");
+    load();
   };
 
   const exportCSV = () => {
