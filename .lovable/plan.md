@@ -1,54 +1,51 @@
 
 
-## Phase 5: Marketing & Communications — CRUD Gaps
+## Phase 6: Support, Compliance & Monitoring — Full CRUD
 
-### Current State
+### Current State & Gaps
 
 | Section | Lines | Has | Missing |
 |---------|-------|-----|---------|
-| **Banners** | 523 | Full CRUD (create/edit/delete/drag-reorder) | Audit logging |
-| **Announcements** | 191 | Full CRUD (create/edit/delete/toggle) | Audit logging |
-| **Loyalty Points** | 142 | Create + Edit rules | Delete rule, manual point adjustment, audit logging |
-| **Festival Themes** | 794 | Full CRUD (create/edit/delete/preview) | Audit logging |
-| **Changelog** | 132 | Create + Delete + Publish toggle | Edit entry body/title, audit logging |
-| **Notification Sender** | 814 | Send + Edit + Delete + SMS logs | Notification templates CRUD, audit logging on send |
-
----
+| **Dispute Resolution** | 213 | View + status update | Create dispute (admin-initiated), delete resolved disputes, audit logging |
+| **Complaint Manager** | 153 | View + status update + notes | Delete resolved complaints, priority change, audit logging |
+| **Blacklist Manager** | 173 | Add + toggle + delete | Edit entry (reason/type), AlertDialog on delete, audit logging |
+| **User Feedback** | 107 | Read-only list | Delete feedback, flag/archive feedback, reply to feedback, audit logging |
+| **Chat Monitor** | 246 | Read-only viewer | Delete/archive conversations, flag conversations, audit logging |
+| **Careers Manager** | 171 | Create + toggle + delete jobs, shortlist/reject apps | Edit job details, AlertDialog on delete, audit logging |
 
 ### Implementation
 
-**File 1: `AdminLoyaltyPoints.tsx`**
-- Add Delete button (Trash2) per rule row with confirmation
-- Add "Manual Adjust" dialog: select user by phone, add/deduct points, reason
-- Add audit logging to create/edit/delete/adjust actions
+**File 1: `AdminDisputeResolution.tsx`** (~213 → ~320 lines)
+- Add "Create Dispute" dialog (admin-initiated: select user by phone, subject, description, link transaction)
+- Add "Delete" button for resolved/rejected disputes with AlertDialog
+- Add audit logging to create/update/delete actions
 
-**File 2: `AdminChangelogManager.tsx`**
-- Add Edit button per entry (pencil icon → dialog with version/title/body pre-filled)
-- Add AlertDialog confirmation on delete
-- Add audit logging to create/edit/delete/publish actions
+**File 2: `AdminComplaintManager.tsx`** (~153 → ~220 lines)
+- Add "Delete" button per resolved complaint with AlertDialog confirmation
+- Add priority change capability in the update dialog
+- Add audit logging to status update and delete actions
 
-**File 3: `AdminAnnouncementManager.tsx`**
-- Add audit logging to create/edit/delete/toggle actions
-- Add AlertDialog confirmation on delete (currently immediate)
+**File 3: `AdminBlacklistManager.tsx`** (~173 → ~240 lines)
+- Add "Edit" button per entry (edit reason, update type) via inline or dialog
+- Wrap delete in AlertDialog confirmation
+- Add audit logging to add/edit/delete/toggle actions
 
-**File 4: `AdminBannerManager.tsx`**
-- Add audit logging to create/edit/delete/reorder actions
+**File 4: `AdminUserFeedback.tsx`** (~107 → ~200 lines)
+- Add "Delete" button per feedback with AlertDialog
+- Add "Flag" toggle to mark feedback as important/reviewed
+- Add audit logging to delete/flag actions
 
-**File 5: `AdminFestivalThemes.tsx`**
-- Add audit logging to create/edit/delete/activate actions
+**File 5: `AdminChatMonitor.tsx`** (~246 → ~310 lines)
+- Add "Delete Conversation" button with AlertDialog (deletes messages + conversation)
+- Add "Flag" button to mark conversations for review
+- Add audit logging to delete/flag actions
 
-**File 6: `AdminNotificationSender.tsx`**
-- Add "Templates" tab with CRUD: create/edit/delete reusable notification templates (title, body, category, image_url)
-- Templates stored in `notification_templates` table (needs migration)
-- "Use Template" button in send tab to pre-fill from a template
-- Add audit logging on send/delete actions
+**File 6: `AdminCareersManager.tsx`** (~171 → ~260 lines)
+- Add "Edit Job" dialog (pre-filled with title, department, location, type, description, requirements)
+- Wrap job delete in AlertDialog confirmation
+- Add audit logging to create/edit/delete/toggle/shortlist/reject actions
 
-### Database Changes
-- Create `notification_templates` table (id, name, title, body, category, image_url, is_active, created_by, created_at, updated_at)
-- Enable RLS with admin-only access via `has_role()`
-
-### Technical Pattern
-All files get a shared `auditLog()` helper:
+### Technical Pattern (consistent across all files)
 ```typescript
 async function auditLog(action: string, entityType: string, entityId: string, details: any) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -59,12 +56,18 @@ async function auditLog(action: string, entityType: string, entityId: string, de
   }
 }
 ```
+- Every destructive action: AlertDialog confirmation
+- Toast feedback on success/error
+- List auto-refresh after mutation
+
+### Database Changes
+None — all tables exist with required columns.
 
 ### Files Modified
-1. `src/components/admin/AdminLoyaltyPoints.tsx`
-2. `src/components/admin/AdminChangelogManager.tsx`
-3. `src/components/admin/AdminAnnouncementManager.tsx`
-4. `src/components/admin/AdminBannerManager.tsx`
-5. `src/components/admin/AdminFestivalThemes.tsx`
-6. `src/components/admin/AdminNotificationSender.tsx`
+1. `src/components/admin/AdminDisputeResolution.tsx`
+2. `src/components/admin/AdminComplaintManager.tsx`
+3. `src/components/admin/AdminBlacklistManager.tsx`
+4. `src/components/admin/AdminUserFeedback.tsx`
+5. `src/components/admin/AdminChatMonitor.tsx`
+6. `src/components/admin/AdminCareersManager.tsx`
 
