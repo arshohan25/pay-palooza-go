@@ -240,7 +240,7 @@ export default function AdminGlobalToggles() {
       if (error) {
         if (error.code === "23505") toast.error("Feature key already exists");
         else toast.error("Failed to create");
-      } else { toast.success("Toggle added"); setAddOpen(false); }
+      } else { toast.success("Toggle added"); auditLog("toggle_created", finalKey, { label: editLabel, feature_key: finalKey }); setAddOpen(false); }
     }
     setSaving(false);
   };
