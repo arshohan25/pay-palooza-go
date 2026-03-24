@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
-import { Lock, User, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { Lock, User, Eye, EyeOff, ShieldCheck, MailCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User as AuthUser } from "@supabase/supabase-js";
 
@@ -47,6 +48,91 @@ export default function TeamLoginPage() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
+  // 2FA state
+  const [show2fa, setShow2fa] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [verifying2fa, setVerifying2fa] = useState(false);
+  const [teamEmail, setTeamEmail] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  const proceedToRedirect = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const dest = user ? await getRedirectByRole(user) : "/admin";
+    navigate(dest, { replace: true });
+  };
+
+  const start2faOrRedirect = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { await proceedToRedirect(); return; }
+
+    // Fetch team member email for 2FA
+    const { data: tm } = await supabase
+      .from("team_members")
+      .select("email")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const email = (tm as any)?.email;
+    if (!email) {
+      // No email configured — skip 2FA
+      toast.success("Welcome back!");
+      await proceedToRedirect();
+      return;
+    }
+
+    // Send OTP
+    setTeamEmail(email);
+    try {
+      await supabase.functions.invoke("send-email-otp", {
+        body: { email, purpose: "team_2fa" },
+      });
+      setShow2fa(true);
+      toast.info(`Verification code sent to ${maskEmail(email)}`);
+    } catch {
+      toast.error("Failed to send verification code");
+    }
+  };
+
+  const verify2fa = async () => {
+    if (otpCode.length !== 6) return;
+    setVerifying2fa(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-email-otp", {
+        body: { email: teamEmail, action: "verify", code: otpCode, purpose: "team_2fa" },
+      });
+      if (error) throw error;
+      const result = typeof data === "string" ? JSON.parse(data) : data;
+      if (result?.error) throw new Error(result.error);
+
+      toast.success("Welcome back!");
+      setShow2fa(false);
+      await proceedToRedirect();
+    } catch (err: any) {
+      toast.error(err.message || "Invalid or expired code");
+      setOtpCode("");
+    }
+    setVerifying2fa(false);
+  };
+
+  const resendOtp = async () => {
+    if (resendCooldown > 0) return;
+    try {
+      await supabase.functions.invoke("send-email-otp", {
+        body: { email: teamEmail, purpose: "team_2fa" },
+      });
+      toast.info("New code sent");
+      setResendCooldown(30);
+      const interval = setInterval(() => {
+        setResendCooldown(prev => {
+          if (prev <= 1) { clearInterval(interval); return 0; }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch {
+      toast.error("Failed to resend code");
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password.trim()) {
@@ -57,7 +143,6 @@ export default function TeamLoginPage() {
     try {
       await teamSignIn(username.trim(), password);
 
-      // Check team_members for onboarding status
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: tm } = await supabase
@@ -67,7 +152,6 @@ export default function TeamLoginPage() {
           .maybeSingle();
 
         if (tm) {
-          // Mark first login
           if (!tm.has_logged_in) {
             await supabase.from("team_members")
               .update({
@@ -77,7 +161,6 @@ export default function TeamLoginPage() {
               .eq("user_id", user.id);
           }
 
-          // Force password change if temp_password exists and password hasn't been changed
           if (!tm.has_changed_password && tm.temp_password) {
             setShowPasswordChange(true);
             setLoading(false);
@@ -86,9 +169,7 @@ export default function TeamLoginPage() {
         }
       }
 
-      toast.success("Welcome back!");
-      const dest = await getRedirectByRole(user!);
-      navigate(dest, { replace: true });
+      await start2faOrRedirect();
     } catch (err: any) {
       toast.error(err.message || "Invalid credentials");
     }
@@ -109,7 +190,6 @@ export default function TeamLoginPage() {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
 
-      // Update team_members
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         await supabase.from("team_members")
@@ -123,9 +203,7 @@ export default function TeamLoginPage() {
 
       toast.success("Password changed successfully!");
       setShowPasswordChange(false);
-      const { data: { user: u } } = await supabase.auth.getUser();
-      const dest = u ? await getRedirectByRole(u) : "/admin";
-      navigate(dest, { replace: true });
+      await start2faOrRedirect();
     } catch (err: any) {
       toast.error(err.message || "Failed to change password");
     }
@@ -263,6 +341,65 @@ export default function TeamLoginPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 2FA OTP Dialog */}
+      <Dialog open={show2fa} onOpenChange={() => {}}>
+        <DialogContent className="max-w-sm" onPointerDownOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MailCheck className="w-5 h-5 text-primary" />
+              Two-Factor Authentication
+            </DialogTitle>
+            <DialogDescription>
+              Enter the 6-digit code sent to <strong>{maskEmail(teamEmail)}</strong>
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col items-center gap-4 py-2">
+            <InputOTP
+              maxLength={6}
+              value={otpCode}
+              onChange={setOtpCode}
+              disabled={verifying2fa}
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+                <InputOTPSlot index={2} />
+                <InputOTPSlot index={3} />
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
+              </InputOTPGroup>
+            </InputOTP>
+
+            <button
+              type="button"
+              className="text-xs text-primary hover:underline disabled:text-muted-foreground disabled:no-underline"
+              disabled={resendCooldown > 0}
+              onClick={resendOtp}
+            >
+              {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
+            </button>
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={verify2fa}
+              disabled={verifying2fa || otpCode.length !== 6}
+              className="w-full"
+            >
+              {verifying2fa ? "Verifying..." : "Verify & Continue"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+}
+
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!domain) return email;
+  const visible = local.slice(0, 2);
+  return `${visible}***@${domain}`;
 }

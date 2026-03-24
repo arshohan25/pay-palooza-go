@@ -917,11 +917,12 @@ export default function AdminTeamManagement() {
                 <Input value={addName} onChange={e => setAddName(e.target.value)} className="mt-1" placeholder="John Doe" />
               </div>
               <div>
-                <Label>Email <span className="text-muted-foreground font-normal">(optional — to send credentials)</span></Label>
+                <Label>Email <span className="text-muted-foreground font-normal">(for credentials &amp; 2FA)</span></Label>
                 <div className="flex gap-1 mt-1">
                   <Mail className="w-4 h-4 mt-2.5 text-muted-foreground shrink-0" />
                   <Input value={addEmail} onChange={e => setAddEmail(e.target.value)} type="email" placeholder="member@company.com" />
                 </div>
+                <p className="text-xs text-muted-foreground mt-1">Used for sending credentials and two-factor authentication at login.</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
