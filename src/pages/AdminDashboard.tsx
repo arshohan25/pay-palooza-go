@@ -414,6 +414,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { displayName } = useProfile();
+  useSessionTimeout();
   const [navGroups, setNavGroups] = useState<NavGroup[]>(loadNavOrder);
   const [showReorder, setShowReorder] = useState(false);
   const [showActivityFeed, setShowActivityFeed] = useState(false);

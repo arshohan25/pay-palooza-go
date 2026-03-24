@@ -86,6 +86,18 @@ function AppConfigTab() {
   const enabledCount = toggles.filter(t => t.is_enabled).length;
   const disabledCount = toggles.filter(t => !t.is_enabled).length;
 
+  const [sessionTimeout, setSessionTimeout] = useState("30");
+
+  useEffect(() => {
+    const t = toggles.find((t: any) => t.feature_key === "team_session_timeout_minutes");
+    if (t?.description) setSessionTimeout(t.description);
+  }, [toggles]);
+
+  const saveSessionTimeout = async (value: string) => {
+    setSessionTimeout(value);
+    await saveConfigField("team_session_timeout_minutes", value);
+  };
+
   const configFields = [
     { key: "app_name", label: "App Name", value: configValues.app_name },
     { key: "app_version", label: "Version", value: configValues.app_version },
