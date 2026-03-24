@@ -16,6 +16,12 @@ import { Megaphone, Plus, Tag, Percent, Gift, Pencil, Trash2, Copy, Calendar, Ro
 import { toast } from "sonner";
 import { format } from "date-fns";
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: "marketing", entity_id: entityId, details });
+  }
+}
 type SubTab = "promo" | "cashback" | "campaigns";
 
 interface PromoCode {
