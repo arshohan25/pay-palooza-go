@@ -1,8 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star, MessageSquare } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Star, MessageSquare, Trash2, Flag } from "lucide-react";
+import { toast } from "sonner";
 
 interface Feedback {
   id: string;
@@ -11,25 +14,51 @@ interface Feedback {
   comment: string | null;
   screen: string | null;
   created_at: string;
+  is_flagged?: boolean;
+}
+
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: "user_feedback", entity_id: entityId, details
+    });
+  }
 }
 
 export default function AdminUserFeedback() {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const { data } = await supabase
-        .from("user_feedback")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(100);
-      setFeedback((data as any[]) ?? []);
-      setLoading(false);
-    };
-    load();
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("user_feedback")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    setFeedback((data as any[]) ?? []);
+    setLoading(false);
   }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const deleteFeedback = async (id: string) => {
+    const { error } = await supabase.from("user_feedback").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    await auditLog("feedback_deleted", id, {});
+    toast.success("Feedback deleted");
+    load();
+  };
+
+  const toggleFlag = async (f: Feedback) => {
+    const newVal = !f.is_flagged;
+    const { error } = await supabase.from("user_feedback").update({ is_flagged: newVal } as any).eq("id", f.id);
+    if (error) { toast.error(error.message); return; }
+    await auditLog(newVal ? "feedback_flagged" : "feedback_unflagged", f.id, {});
+    toast.success(newVal ? "Flagged" : "Unflagged");
+    load();
+  };
 
   const avgRating = feedback.length > 0 ? (feedback.reduce((s, f) => s + f.rating, 0) / feedback.length).toFixed(1) : "—";
   const distribution = [5, 4, 3, 2, 1].map(r => ({ rating: r, count: feedback.filter(f => f.rating === r).length }));
@@ -37,7 +66,6 @@ export default function AdminUserFeedback() {
 
   return (
     <div className="space-y-4">
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="border-0 shadow-[var(--shadow-card)]">
           <CardContent className="p-4 text-center">
@@ -71,7 +99,6 @@ export default function AdminUserFeedback() {
         </Card>
       </div>
 
-      {/* Feedback List */}
       <Card className="border-0 shadow-[var(--shadow-card)]">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg"><MessageSquare className="w-5 h-5" /> Recent Feedback</CardTitle>
@@ -84,14 +111,32 @@ export default function AdminUserFeedback() {
           ) : (
             <div className="space-y-3">
               {feedback.map(f => (
-                <div key={f.id} className="p-3 rounded-lg border border-border/50 bg-muted/20">
+                <div key={f.id} className={`p-3 rounded-lg border ${f.is_flagged ? "border-amber-400 bg-amber-50/30 dark:bg-amber-900/10" : "border-border/50 bg-muted/20"}`}>
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-1">
                       {[1, 2, 3, 4, 5].map(s => <Star key={s} className={`w-3.5 h-3.5 ${s <= f.rating ? "text-yellow-500 fill-yellow-500" : "text-muted-foreground"}`} />)}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       {f.screen && <Badge variant="outline" className="text-[10px]">{f.screen}</Badge>}
                       <span className="text-[10px] text-muted-foreground">{new Date(f.created_at).toLocaleDateString()}</span>
+                      <Button variant="ghost" size="icon" className={`h-6 w-6 ${f.is_flagged ? "text-amber-500" : "text-muted-foreground"}`} onClick={() => toggleFlag(f)}>
+                        <Flag className="w-3.5 h-3.5" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive"><Trash2 className="w-3.5 h-3.5" /></Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Feedback?</AlertDialogTitle>
+                            <AlertDialogDescription>This feedback entry will be permanently removed.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteFeedback(f.id)}>Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                   {f.comment && <p className="text-sm text-foreground mt-1">{f.comment}</p>}
