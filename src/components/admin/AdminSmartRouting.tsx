@@ -145,10 +145,13 @@ export default function AdminSmartRouting() {
     }
   };
 
-  const deleteLink = async (id: string) => {
-    const { error } = await supabase.from("payment_links").delete().eq("id", id);
-    if (error) { toast.error("Failed to delete"); return; }
+  const confirmDeleteLink = async () => {
+    if (!deleteLinkTarget) return;
+    const { error } = await supabase.from("payment_links").delete().eq("id", deleteLinkTarget.id);
+    if (error) { toast.error("Failed to delete"); setDeleteLinkTarget(null); return; }
     toast.success("Link deleted");
+    await auditLog("payment_link_deleted", "payment_link", deleteLinkTarget.id, { title: deleteLinkTarget.title });
+    setDeleteLinkTarget(null);
     loadPaymentLinks();
   };
 
