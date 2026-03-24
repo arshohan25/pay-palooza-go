@@ -304,6 +304,7 @@ export default function AdminNotificationSender() {
     const { error } = await supabase.from("admin_notifications" as any).delete().eq("id", id);
     if (error) { toast.error("Delete failed"); return; }
     toast.success("Notification deleted");
+    await auditLog("notification_delete", id, {});
     setHistory(prev => prev.filter(n => n.id !== id));
     setDeleteConfirm(null);
   };
