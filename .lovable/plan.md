@@ -1,38 +1,39 @@
 
 
-## Plan: Test 2FA OTP Flow for staff-SA88
+## Plan: Session Timeout & Auto-Logout for Team Members
 
-### Current State
-- `staff-SA88` has `email: null` and `has_changed_password: false`
-- Because there's no email, the 2FA step is skipped entirely after login
-- The password hasn't been changed yet, so login will trigger the forced password change dialog first
+### What It Does
+- Team members are automatically logged out after a configurable period of inactivity (default: 30 minutes)
+- Admin can set the timeout duration from System Settings (e.g., 15 min, 30 min, 1 hour, 2 hours)
+- A warning toast appears 2 minutes before logout
+- Any user interaction (mouse, keyboard, touch, scroll) resets the timer
 
-### Steps to Test
+### Implementation
 
-**1. Update staff-SA88's record**
-- Set `email = 'test@example.com'` on the `team_members` row
-- Set `has_changed_password = true` to skip the forced password change dialog and isolate the 2FA flow
+**1. Store timeout setting in `global_feature_toggles`**
+- Use feature key `team_session_timeout_minutes` with the `description` field storing the numeric value (e.g., "30")
+- No database migration needed — reuses existing config pattern from `AppConfigTab`
 
-**2. Log in at `/team-login`**
-- Username: `staff-SA88`
-- Password: `DAw35zTa` (the original temp password, since has_changed_password will be set to true)
-- After successful auth, the code checks `tm.email` → finds `test@example.com` → triggers OTP send
+**2. Create `useSessionTimeout` hook** (`src/hooks/use-session-timeout.ts`)
+- Reads `team_session_timeout_minutes` from `global_feature_toggles` on mount
+- Checks if the current user is a team member (has `is_team_member` in auth metadata)
+- Sets up activity listeners (`mousemove`, `keydown`, `touchstart`, `scroll`, `click`)
+- Tracks last activity timestamp; on each tick (every 30s), checks if elapsed time exceeds threshold
+- Shows a warning toast at 2 minutes remaining
+- Calls `supabase.auth.signOut()` and redirects to `/team-login` when timeout is reached
+- Updates `team_members.last_active_at` periodically (every 5 minutes) as a side effect
 
-**3. Verify the OTP dialog appears**
-- The `send-email-otp` edge function is called with `{ email: "test@example.com", purpose: "team_2fa" }`
-- A toast shows "Verification code sent to te***@example.com"
-- The 2FA dialog renders with 6-digit OTP input, verify button, and resend option
+**3. Mount the hook in `AdminDashboard.tsx`**
+- Call `useSessionTimeout()` inside the component so it runs for all team-authenticated admin sessions
+- Also mount in agent/distributor/merchant dashboards if team members access those routes (via the existing `RoleGuard`)
 
-**4. Verify OTP**
-- Query `otp_codes` table for the generated code
-- Enter the code in the OTP dialog
-- Confirm successful verification redirects to `/admin`
-
-**5. Test edge cases**
-- Wrong code → "Invalid or expired OTP" error
-- Resend button with 30s cooldown
-- Already-verified code rejected on replay
+**4. Add admin UI in `AdminSystemSettings.tsx` → App Config tab**
+- Add a "Session Timeout" field with a dropdown: 15 min, 30 min, 1 hour, 2 hours, 4 hours
+- Saves to `global_feature_toggles` with key `team_session_timeout_minutes`
+- Audit-logged like other config changes
 
 ### Files Modified
-- No code changes needed — only database updates and manual testing
+- `src/hooks/use-session-timeout.ts` (new)
+- `src/pages/AdminDashboard.tsx` — mount hook
+- `src/components/admin/AdminSystemSettings.tsx` — add timeout config UI
 
