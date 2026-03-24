@@ -158,6 +158,26 @@ export default function AdminSmartRouting() {
   const toggleLink = async (id: string, current: boolean) => {
     await supabase.from("payment_links").update({ is_active: !current }).eq("id", id);
     toast.success(`Link ${!current ? "activated" : "deactivated"}`);
+    await auditLog("payment_link_toggled", "payment_link", id, { is_active: !current });
+    loadPaymentLinks();
+  };
+
+  const openEditLink = (link: any) => {
+    setEditLinkTarget(link);
+    setEditLinkForm({ title: link.title, amount: link.amount ? String(link.amount) : "", description: link.description || "" });
+  };
+
+  const saveEditLink = async () => {
+    if (!editLinkTarget || !editLinkForm.title) { toast.error("Title required"); return; }
+    const { error } = await supabase.from("payment_links").update({
+      title: editLinkForm.title,
+      amount: editLinkForm.amount ? Number(editLinkForm.amount) : null,
+      description: editLinkForm.description || null,
+    }).eq("id", editLinkTarget.id);
+    if (error) { toast.error("Failed to update"); return; }
+    toast.success("Link updated");
+    await auditLog("payment_link_updated", "payment_link", editLinkTarget.id, { title: editLinkForm.title });
+    setEditLinkTarget(null);
     loadPaymentLinks();
   };
 
