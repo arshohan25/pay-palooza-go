@@ -353,7 +353,18 @@ function TiersTab({ realtimeFlash }: { realtimeFlash: () => void }) {
                     <td className="px-3 py-2.5 text-xs font-semibold text-amber-600 hidden sm:table-cell">৳{t.master_distributor_rate}</td>
                     <td className="px-3 py-2.5 text-xs font-semibold text-purple-600 hidden sm:table-cell">৳{t.company_rate}</td>
                     <td className="px-3 py-2.5">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(t)}><Pencil className="w-3.5 h-3.5" /></Button>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(t)}><Pencil className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={async () => {
+                          if (!confirm("Delete this commission tier?")) return;
+                          const { error } = await supabase.from("commission_tiers").delete().eq("id", t.id);
+                          if (error) { toast.error("Failed to delete"); return; }
+                          const { data: { session } } = await supabase.auth.getSession();
+                          if (session?.user) await supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "commission_tier_delete", entity_type: "commission_tier", entity_id: t.id, details: { min_amount: t.min_amount, max_amount: t.max_amount } });
+                          toast.success("Commission tier deleted");
+                          load();
+                        }}><Trash2 className="w-3.5 h-3.5" /></Button>
+                      </div>
                     </td>
                   </tr>
                 ))}

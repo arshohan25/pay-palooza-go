@@ -532,19 +532,30 @@ function TransactionRulesTab() {
 function MaintenanceTab() {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [maintMessage, setMaintMessage] = useState("");
+  const [maintScheduled, setMaintScheduled] = useState("");
+  const [editingMessage, setEditingMessage] = useState(false);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const { data } = await supabase.from("global_feature_toggles").select("is_enabled").eq("feature_key", "maintenance_mode").single();
+      const { data } = await supabase.from("global_feature_toggles").select("*").eq("feature_key", "maintenance_mode").maybeSingle();
       setMaintenanceMode(data?.is_enabled ?? false);
+      const meta = (data as any)?.visibility;
+      if (meta) {
+        try {
+          const parsed = JSON.parse(meta);
+          setMaintMessage(parsed.message || "");
+          setMaintScheduled(parsed.scheduled || "");
+        } catch {}
+      }
       setLoading(false);
     })();
   }, []);
 
   const toggleMaintenance = async () => {
     const newState = !maintenanceMode;
-    const { data: existing } = await supabase.from("global_feature_toggles").select("id").eq("feature_key", "maintenance_mode").single();
+    const { data: existing } = await supabase.from("global_feature_toggles").select("id").eq("feature_key", "maintenance_mode").maybeSingle();
     if (existing) {
       await supabase.from("global_feature_toggles").update({ is_enabled: newState }).eq("feature_key", "maintenance_mode");
     } else {
@@ -554,8 +565,22 @@ function MaintenanceTab() {
         is_enabled: newState, sort_order: 999,
       });
     }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await supabase.from("audit_logs").insert({
+        actor_id: session.user.id, action: newState ? "maintenance_enabled" : "maintenance_disabled",
+        entity_type: "config", entity_id: "maintenance_mode", details: { message: maintMessage, scheduled: maintScheduled },
+      });
+    }
     setMaintenanceMode(newState);
     toast.success(newState ? "Maintenance mode ENABLED" : "Maintenance mode DISABLED");
+  };
+
+  const saveMaintConfig = async () => {
+    const meta = JSON.stringify({ message: maintMessage, scheduled: maintScheduled });
+    await supabase.from("global_feature_toggles").update({ visibility: meta } as any).eq("feature_key", "maintenance_mode");
+    toast.success("Maintenance config saved");
+    setEditingMessage(false);
   };
 
   return (
@@ -580,6 +605,17 @@ function MaintenanceTab() {
               <p className="text-xs text-destructive font-medium">Platform is currently in maintenance mode</p>
             </div>
           )}
+          <div className="space-y-2 pt-2 border-t border-border/50">
+            <div>
+              <Label className="text-xs">Custom Message</Label>
+              <Input placeholder="We're upgrading our systems..." value={maintMessage} onChange={e => setMaintMessage(e.target.value)} className="text-xs" />
+            </div>
+            <div>
+              <Label className="text-xs">Scheduled End Time</Label>
+              <Input type="datetime-local" value={maintScheduled} onChange={e => setMaintScheduled(e.target.value)} className="text-xs" />
+            </div>
+            <Button size="sm" onClick={saveMaintConfig} className="w-full">Save Maintenance Config</Button>
+          </div>
         </CardContent>
       </Card>
 
