@@ -160,6 +160,18 @@ export default function AdminSupportDashboard({ mode = "all" }: AdminSupportDash
 
   useEffect(() => { loadCannedReplies(); }, [loadCannedReplies]);
 
+  // Poll online agents every 30s
+  const fetchOnlineAgents = useCallback(async () => {
+    const agents = await getAvailableAgents();
+    setOnlineAgents(agents);
+  }, [getAvailableAgents]);
+
+  useEffect(() => {
+    fetchOnlineAgents();
+    const interval = setInterval(fetchOnlineAgents, 30000);
+    return () => clearInterval(interval);
+  }, [fetchOnlineAgents]);
+
   const addCannedReply = async () => {
     if (!newReplyLabel.trim() || !newReplyText.trim() || !user) return;
     const { error } = await supabase.from("admin_canned_replies").insert({
