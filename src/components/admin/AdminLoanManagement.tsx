@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { CreditCard, Search, RefreshCw, CheckCircle, XCircle, Banknote, Clock } from "lucide-react";
+import { CreditCard, Search, RefreshCw, CheckCircle, XCircle, Banknote, Clock, Plus, Pencil, Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const STATUS_BADGE: Record<string, string> = {
@@ -19,6 +20,13 @@ const STATUS_BADGE: Record<string, string> = {
 
 const STATUSES = ["all", "pending", "approved", "rejected", "disbursed", "repaid"] as const;
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: "loan_application", entity_id: entityId, details });
+  }
+}
+
 export default function AdminLoanManagement() {
   const [loans, setLoans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,14 +34,14 @@ export default function AdminLoanManagement() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [actionDialog, setActionDialog] = useState<{ loan: any; action: string; note: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState({ phone: "", amount: "", tenure_days: "30", interest_rate: "10" });
+  const [editDialog, setEditDialog] = useState<{ loan: any; amount: string; tenure_days: string; interest_rate: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("loan_applications")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(300);
+    const { data } = await supabase.from("loan_applications").select("*").order("created_at", { ascending: false }).limit(300);
     setLoans(data ?? []);
     setLoading(false);
   }, []);
@@ -57,10 +65,7 @@ export default function AdminLoanManagement() {
   const handleAction = async () => {
     if (!actionDialog) return;
     const { loan, action, note } = actionDialog;
-    if (action === "reject" && !note.trim()) {
-      toast.error("Rejection reason is required");
-      return;
-    }
+    if (action === "reject" && !note.trim()) { toast.error("Rejection reason is required"); return; }
     setSaving(true);
     const { data: { session } } = await supabase.auth.getSession();
     const updates: Record<string, any> = {
@@ -72,10 +77,76 @@ export default function AdminLoanManagement() {
       updates.reviewed_at = new Date().toISOString();
     }
     const { error } = await supabase.from("loan_applications").update(updates).eq("id", loan.id);
+    if (!error) {
+      await auditLog(`loan_${action}`, loan.id, { amount: loan.amount, previous_status: loan.status, new_status: updates.status, note: note.trim() || null });
+    }
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     toast.success(`Loan ${updates.status}`);
     setActionDialog(null);
+    fetch();
+  };
+
+  const handleCreate = async () => {
+    const { phone, amount, tenure_days, interest_rate } = createForm;
+    if (!phone || !amount) { toast.error("Phone and amount are required"); return; }
+    setSaving(true);
+    // Resolve user by phone
+    const { data: profile } = await supabase.from("profiles").select("user_id").eq("phone", phone.replace(/\D/g, "")).maybeSingle();
+    if (!profile) { toast.error("User not found with this phone"); setSaving(false); return; }
+    const amt = Number(amount);
+    const tenure = Number(tenure_days);
+    const rate = Number(interest_rate);
+    const interest = amt * rate * (tenure / 365) / 100;
+    const emi = amt + interest;
+    const { data: created, error } = await supabase.from("loan_applications").insert({
+      user_id: profile.user_id, amount: amt, tenure_days: tenure, interest_rate: rate, emi_amount: Math.round(emi), status: "pending" as any,
+    }).select().single();
+    if (!error && created) {
+      await auditLog("loan_create", created.id, { amount: amt, tenure_days: tenure, interest_rate: rate, user_id: profile.user_id });
+    }
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Loan offer created");
+    setCreateOpen(false);
+    setCreateForm({ phone: "", amount: "", tenure_days: "30", interest_rate: "10" });
+    fetch();
+  };
+
+  const handleEdit = async () => {
+    if (!editDialog) return;
+    const { loan, amount, tenure_days, interest_rate } = editDialog;
+    const amt = Number(amount);
+    const tenure = Number(tenure_days);
+    const rate = Number(interest_rate);
+    if (!amt || !tenure || !rate) { toast.error("All fields required"); return; }
+    const interest = amt * rate * (tenure / 365) / 100;
+    const emi = amt + interest;
+    setSaving(true);
+    const { error } = await supabase.from("loan_applications").update({
+      amount: amt, tenure_days: tenure, interest_rate: rate, emi_amount: Math.round(emi),
+    }).eq("id", loan.id);
+    if (!error) {
+      await auditLog("loan_edit", loan.id, { previous: { amount: loan.amount, tenure_days: loan.tenure_days, interest_rate: loan.interest_rate }, new: { amount: amt, tenure_days: tenure, interest_rate: rate } });
+    }
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Loan terms updated");
+    setEditDialog(null);
+    fetch();
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setSaving(true);
+    const { error } = await supabase.from("loan_applications").delete().eq("id", deleteTarget.id);
+    if (!error) {
+      await auditLog("loan_delete", deleteTarget.id, { amount: deleteTarget.amount, status: deleteTarget.status, user_id: deleteTarget.user_id });
+    }
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Loan application deleted");
+    setDeleteTarget(null);
     fetch();
   };
 
@@ -107,11 +178,10 @@ export default function AdminLoanManagement() {
           <Input placeholder="Search by user ID..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
         </div>
         {STATUSES.map(s => (
-          <Button key={s} size="sm" variant={statusFilter === s ? "default" : "outline"} onClick={() => setStatusFilter(s)} className="capitalize h-8 text-xs">
-            {s}
-          </Button>
+          <Button key={s} size="sm" variant={statusFilter === s ? "default" : "outline"} onClick={() => setStatusFilter(s)} className="capitalize h-8 text-xs">{s}</Button>
         ))}
         <Button size="sm" variant="ghost" onClick={fetch}><RefreshCw className="w-4 h-4" /></Button>
+        <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4 mr-1" /> Create Loan</Button>
       </div>
 
       <Card className="border-0 shadow-[var(--shadow-card)]">
@@ -159,6 +229,14 @@ export default function AdminLoanManagement() {
                         {loan.status === "disbursed" && (
                           <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => setActionDialog({ loan, action: "repaid", note: "" })}>Repaid</Button>
                         )}
+                        {["pending", "approved"].includes(loan.status) && (
+                          <Button size="sm" variant="ghost" className="h-6 px-1" onClick={() => setEditDialog({ loan, amount: String(loan.amount), tenure_days: String(loan.tenure_days), interest_rate: String(loan.interest_rate) })}>
+                            <Pencil className="w-3 h-3" />
+                          </Button>
+                        )}
+                        <Button size="sm" variant="ghost" className="h-6 px-1 text-destructive" onClick={() => setDeleteTarget(loan)}>
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -169,24 +247,74 @@ export default function AdminLoanManagement() {
         </CardContent>
       </Card>
 
+      {/* Action dialog (approve/reject/disburse/repaid) */}
       <AlertDialog open={!!actionDialog} onOpenChange={v => !v && setActionDialog(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="capitalize">{actionDialog?.action} Loan</AlertDialogTitle>
-            <AlertDialogDescription>
-              ৳{Number(actionDialog?.loan?.amount).toLocaleString()} for user {actionDialog?.loan?.user_id?.slice(0, 8)}…
-            </AlertDialogDescription>
+            <AlertDialogDescription>৳{Number(actionDialog?.loan?.amount).toLocaleString()} for user {actionDialog?.loan?.user_id?.slice(0, 8)}…</AlertDialogDescription>
           </AlertDialogHeader>
-          <Input
-            placeholder={actionDialog?.action === "reject" ? "Rejection reason (required)" : "Admin note (optional)"}
-            value={actionDialog?.note ?? ""}
-            onChange={e => actionDialog && setActionDialog({ ...actionDialog, note: e.target.value })}
-          />
+          <Input placeholder={actionDialog?.action === "reject" ? "Rejection reason (required)" : "Admin note (optional)"} value={actionDialog?.note ?? ""} onChange={e => actionDialog && setActionDialog({ ...actionDialog, note: e.target.value })} />
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleAction} disabled={saving}>
-              {saving ? "Saving…" : "Confirm"}
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleAction} disabled={saving}>{saving ? "Saving…" : "Confirm"}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Create dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Loan Offer</DialogTitle>
+            <DialogDescription>Create a new loan application for a user</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="User phone (e.g. 01712345678)" value={createForm.phone} onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value }))} />
+            <Input placeholder="Amount (৳)" type="number" value={createForm.amount} onChange={e => setCreateForm(f => ({ ...f, amount: e.target.value }))} />
+            <div className="grid grid-cols-2 gap-2">
+              <Input placeholder="Tenure (days)" type="number" value={createForm.tenure_days} onChange={e => setCreateForm(f => ({ ...f, tenure_days: e.target.value }))} />
+              <Input placeholder="Interest rate (%)" type="number" value={createForm.interest_rate} onChange={e => setCreateForm(f => ({ ...f, interest_rate: e.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreate} disabled={saving}>{saving ? "Creating…" : "Create"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit dialog */}
+      <Dialog open={!!editDialog} onOpenChange={v => !v && setEditDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Loan Terms</DialogTitle>
+            <DialogDescription>Update amount, tenure, and interest rate</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="Amount (৳)" type="number" value={editDialog?.amount ?? ""} onChange={e => editDialog && setEditDialog({ ...editDialog, amount: e.target.value })} />
+            <div className="grid grid-cols-2 gap-2">
+              <Input placeholder="Tenure (days)" type="number" value={editDialog?.tenure_days ?? ""} onChange={e => editDialog && setEditDialog({ ...editDialog, tenure_days: e.target.value })} />
+              <Input placeholder="Interest rate (%)" type="number" value={editDialog?.interest_rate ?? ""} onChange={e => editDialog && setEditDialog({ ...editDialog, interest_rate: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialog(null)}>Cancel</Button>
+            <Button onClick={handleEdit} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={v => !v && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Loan Application</AlertDialogTitle>
+            <AlertDialogDescription>Permanently delete this ৳{Number(deleteTarget?.amount).toLocaleString()} loan application? This cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={saving} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{saving ? "Deleting…" : "Delete"}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

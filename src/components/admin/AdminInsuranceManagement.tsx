@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Shield, Search, RefreshCw, AlertTriangle } from "lucide-react";
+import { Shield, Search, RefreshCw, AlertTriangle, Plus, Pencil, Trash2 } from "lucide-react";
 
 const STATUS_BADGE: Record<string, string> = {
   active: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
@@ -17,24 +19,32 @@ const STATUS_BADGE: Record<string, string> = {
 
 const STATUSES = ["all", "active", "expired", "cancelled", "claimed"] as const;
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: "insurance_policy", entity_id: entityId, details });
+  }
+}
+
 export default function AdminInsuranceManagement() {
   const [policies, setPolicies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [saving, setSaving] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState({ phone: "", plan_name: "", plan_type: "life", premium: "", coverage_amount: "", duration_months: "12" });
+  const [editDialog, setEditDialog] = useState<{ policy: any; premium: string; coverage_amount: string; duration_months: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
 
-  const fetch = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("insurance_policies")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(300);
+    const { data } = await supabase.from("insurance_policies").select("*").order("created_at", { ascending: false }).limit(300);
     setPolicies(data ?? []);
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const filtered = policies.filter(p => {
     if (statusFilter !== "all" && p.status !== statusFilter) return false;
@@ -56,10 +66,63 @@ export default function AdminInsuranceManagement() {
   };
 
   const cancelPolicy = async (id: string) => {
+    const policy = policies.find(p => p.id === id);
     const { error } = await supabase.from("insurance_policies").update({ status: "cancelled" as any }).eq("id", id);
+    if (!error) await auditLog("insurance_cancel", id, { plan_name: policy?.plan_name, previous_status: policy?.status });
     if (error) { toast.error(error.message); return; }
     toast.success("Policy cancelled");
-    fetch();
+    fetchData();
+  };
+
+  const handleCreate = async () => {
+    const { phone, plan_name, plan_type, premium, coverage_amount, duration_months } = createForm;
+    if (!phone || !plan_name || !premium || !coverage_amount) { toast.error("All fields required"); return; }
+    setSaving(true);
+    const { data: profile } = await supabase.from("profiles").select("user_id").eq("phone", phone.replace(/\D/g, "")).maybeSingle();
+    if (!profile) { toast.error("User not found"); setSaving(false); return; }
+    const dur = Number(duration_months);
+    const expiresAt = new Date();
+    expiresAt.setMonth(expiresAt.getMonth() + dur);
+    const { data: created, error } = await supabase.from("insurance_policies").insert({
+      user_id: profile.user_id, plan_name, plan_type, premium: Number(premium), coverage_amount: Number(coverage_amount), duration_months: dur, expires_at: expiresAt.toISOString(), status: "active" as any,
+    }).select().single();
+    if (!error && created) await auditLog("insurance_create", created.id, { plan_name, plan_type, premium, coverage_amount, user_id: profile.user_id });
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Policy created");
+    setCreateOpen(false);
+    setCreateForm({ phone: "", plan_name: "", plan_type: "life", premium: "", coverage_amount: "", duration_months: "12" });
+    fetchData();
+  };
+
+  const handleEdit = async () => {
+    if (!editDialog) return;
+    const { policy, premium, coverage_amount, duration_months } = editDialog;
+    setSaving(true);
+    const dur = Number(duration_months);
+    const expiresAt = new Date(policy.purchased_at || policy.created_at);
+    expiresAt.setMonth(expiresAt.getMonth() + dur);
+    const { error } = await supabase.from("insurance_policies").update({
+      premium: Number(premium), coverage_amount: Number(coverage_amount), duration_months: dur, expires_at: expiresAt.toISOString(),
+    }).eq("id", policy.id);
+    if (!error) await auditLog("insurance_edit", policy.id, { previous: { premium: policy.premium, coverage_amount: policy.coverage_amount, duration_months: policy.duration_months }, new: { premium, coverage_amount, duration_months: dur } });
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Policy updated");
+    setEditDialog(null);
+    fetchData();
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setSaving(true);
+    const { error } = await supabase.from("insurance_policies").delete().eq("id", deleteTarget.id);
+    if (!error) await auditLog("insurance_delete", deleteTarget.id, { plan_name: deleteTarget.plan_name, status: deleteTarget.status, user_id: deleteTarget.user_id });
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Policy deleted");
+    setDeleteTarget(null);
+    fetchData();
   };
 
   return (
@@ -86,11 +149,10 @@ export default function AdminInsuranceManagement() {
           <Input placeholder="Search by plan name or user ID..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
         </div>
         {STATUSES.map(s => (
-          <Button key={s} size="sm" variant={statusFilter === s ? "default" : "outline"} onClick={() => setStatusFilter(s)} className="capitalize h-8 text-xs">
-            {s}
-          </Button>
+          <Button key={s} size="sm" variant={statusFilter === s ? "default" : "outline"} onClick={() => setStatusFilter(s)} className="capitalize h-8 text-xs">{s}</Button>
         ))}
-        <Button size="sm" variant="ghost" onClick={fetch}><RefreshCw className="w-4 h-4" /></Button>
+        <Button size="sm" variant="ghost" onClick={fetchData}><RefreshCw className="w-4 h-4" /></Button>
+        <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4 mr-1" /> Create Policy</Button>
       </div>
 
       <Card className="border-0 shadow-[var(--shadow-card)]">
@@ -130,15 +192,21 @@ export default function AdminInsuranceManagement() {
                         {isExpiringSoon(p.expires_at) && <AlertTriangle className="w-3 h-3 text-yellow-600" />}
                       </div>
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {p.expires_at ? new Date(p.expires_at).toLocaleDateString() : "—"}
-                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{p.expires_at ? new Date(p.expires_at).toLocaleDateString() : "—"}</TableCell>
                     <TableCell>
-                      {p.status === "active" && (
-                        <Button size="sm" variant="destructive" className="h-6 text-[10px] px-2" onClick={() => cancelPolicy(p.id)}>
-                          Cancel
+                      <div className="flex gap-1">
+                        {p.status === "active" && (
+                          <Button size="sm" variant="destructive" className="h-6 text-[10px] px-2" onClick={() => cancelPolicy(p.id)}>Cancel</Button>
+                        )}
+                        <Button size="sm" variant="ghost" className="h-6 px-1" onClick={() => setEditDialog({ policy: p, premium: String(p.premium), coverage_amount: String(p.coverage_amount), duration_months: String(p.duration_months) })}>
+                          <Pencil className="w-3 h-3" />
                         </Button>
-                      )}
+                        {["cancelled", "expired"].includes(p.status) && (
+                          <Button size="sm" variant="ghost" className="h-6 px-1 text-destructive" onClick={() => setDeleteTarget(p)}>
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -147,6 +215,70 @@ export default function AdminInsuranceManagement() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Create dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Insurance Policy</DialogTitle>
+            <DialogDescription>Issue a new policy for a user</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="User phone" value={createForm.phone} onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value }))} />
+            <Input placeholder="Plan name" value={createForm.plan_name} onChange={e => setCreateForm(f => ({ ...f, plan_name: e.target.value }))} />
+            <div className="grid grid-cols-2 gap-2">
+              <select className="h-10 rounded-md border border-input bg-background px-3 text-sm" value={createForm.plan_type} onChange={e => setCreateForm(f => ({ ...f, plan_type: e.target.value }))}>
+                <option value="life">Life</option>
+                <option value="health">Health</option>
+                <option value="accident">Accident</option>
+                <option value="device">Device</option>
+              </select>
+              <Input placeholder="Duration (months)" type="number" value={createForm.duration_months} onChange={e => setCreateForm(f => ({ ...f, duration_months: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Input placeholder="Premium (৳)" type="number" value={createForm.premium} onChange={e => setCreateForm(f => ({ ...f, premium: e.target.value }))} />
+              <Input placeholder="Coverage (৳)" type="number" value={createForm.coverage_amount} onChange={e => setCreateForm(f => ({ ...f, coverage_amount: e.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreate} disabled={saving}>{saving ? "Creating…" : "Create"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit dialog */}
+      <Dialog open={!!editDialog} onOpenChange={v => !v && setEditDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Policy</DialogTitle>
+            <DialogDescription>Update premium, coverage, and duration</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="Premium (৳)" type="number" value={editDialog?.premium ?? ""} onChange={e => editDialog && setEditDialog({ ...editDialog, premium: e.target.value })} />
+            <Input placeholder="Coverage (৳)" type="number" value={editDialog?.coverage_amount ?? ""} onChange={e => editDialog && setEditDialog({ ...editDialog, coverage_amount: e.target.value })} />
+            <Input placeholder="Duration (months)" type="number" value={editDialog?.duration_months ?? ""} onChange={e => editDialog && setEditDialog({ ...editDialog, duration_months: e.target.value })} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialog(null)}>Cancel</Button>
+            <Button onClick={handleEdit} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={v => !v && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Policy</AlertDialogTitle>
+            <AlertDialogDescription>Permanently delete the "{deleteTarget?.plan_name}" policy? This cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={saving} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{saving ? "Deleting…" : "Delete"}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
