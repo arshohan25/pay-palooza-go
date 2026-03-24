@@ -587,6 +587,16 @@ export default function AdminMerchantManagement() {
                             <CheckCircle className="w-3 h-3" /> Review
                           </Button>
                         )}
+                        {m.status === "active" && (
+                          <Button size="sm" variant="outline" className="text-xs h-7 text-amber-600" onClick={() => setMerchantStatus(m, "hold")}>
+                            Hold
+                          </Button>
+                        )}
+                        {m.status === "hold" && (
+                          <Button size="sm" variant="default" className="text-xs h-7" onClick={() => setMerchantStatus(m, "active")}>
+                            Activate
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant={m.status === "suspended" ? "default" : "destructive"}
@@ -594,6 +604,9 @@ export default function AdminMerchantManagement() {
                           onClick={() => toggleStatus(m)}
                         >
                           {m.status === "suspended" ? "Activate" : "Suspend"}
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-xs h-7 text-destructive" onClick={() => setDeleteTarget(m)}>
+                          <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
                     </td>
