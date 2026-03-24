@@ -295,6 +295,23 @@ export default function AdminSettlements() {
                           <Button size="sm" className="h-7 text-xs" onClick={() => updateStatus(s.id, "completed")}><CheckCircle className="w-3 h-3 mr-1" /> Complete</Button>
                         )}
                         {s.status === "completed" && <span className="text-xs text-muted-foreground">{s.settled_at ? formatDistanceToNow(new Date(s.settled_at), { addSuffix: true }) : "—"}</span>}
+                        {s.status === "failed" && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive"><Trash2 className="w-3 h-3 mr-1" />Delete</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Settlement</AlertDialogTitle>
+                                <AlertDialogDescription>Delete this failed settlement? This cannot be undone.</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => deleteSettlement(s.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

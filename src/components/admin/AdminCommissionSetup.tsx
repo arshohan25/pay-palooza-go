@@ -297,10 +297,14 @@ function TiersTab({ realtimeFlash }: { realtimeFlash: () => void }) {
     if (editing) {
       const { error } = await supabase.from("commission_tiers").update(payload).eq("id", editing.id);
       if (error) { toast.error("Failed to update tier"); return; }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) await supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "commission_tier_edit", entity_type: "commission_tier", entity_id: editing.id, details: payload });
       toast.success("Tier updated");
     } else {
-      const { error } = await supabase.from("commission_tiers").insert(payload);
+      const { data, error } = await supabase.from("commission_tiers").insert(payload).select().single();
       if (error) { toast.error("Failed to create tier"); return; }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) await supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "commission_tier_create", entity_type: "commission_tier", entity_id: data.id, details: payload });
       toast.success("Tier created");
     }
     setDialogOpen(false);
