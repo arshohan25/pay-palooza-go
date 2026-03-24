@@ -24,6 +24,7 @@ import AddMoneyFlow from "@/components/AddMoneyFlow";
 
 import BankTransferFlow from "@/components/BankTransferFlow";
 import DynamicQrPaySheet from "@/components/DynamicQrPaySheet";
+import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
 
 import SavingsFlow from "@/components/SavingsFlow";
 import MerchantApplicationFlow from "@/components/MerchantApplicationFlow";

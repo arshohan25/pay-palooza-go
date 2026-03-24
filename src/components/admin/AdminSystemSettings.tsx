@@ -192,6 +192,34 @@ function AppConfigTab() {
       </Card>
       <Card className="border-0 shadow-[var(--shadow-card)]">
         <CardContent className="p-4 space-y-3">
+          <p className="text-sm font-medium text-foreground flex items-center gap-2">
+            <Clock className="w-4 h-4 text-primary" /> User Session Timeout
+          </p>
+          <p className="text-[10px] text-muted-foreground">
+            Auto-logout users, agents, distributors, and merchants after inactivity.
+          </p>
+          <Select value={userSessionTimeout} onValueChange={saveUserSessionTimeout}>
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="5">5 minutes</SelectItem>
+              <SelectItem value="10">10 minutes</SelectItem>
+              <SelectItem value="15">15 minutes</SelectItem>
+              <SelectItem value="30">30 minutes</SelectItem>
+              <SelectItem value="45">45 minutes</SelectItem>
+              <SelectItem value="60">1 hour</SelectItem>
+              <SelectItem value="120">2 hours</SelectItem>
+              <SelectItem value="180">3 hours</SelectItem>
+              <SelectItem value="240">4 hours</SelectItem>
+              <SelectItem value="360">6 hours</SelectItem>
+              <SelectItem value="480">8 hours</SelectItem>
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
+      <Card className="border-0 shadow-[var(--shadow-card)]">
+        <CardContent className="p-4 space-y-3">
           <p className="text-sm font-medium text-foreground">Quick Feature Toggle Summary</p>
           <div className="divide-y divide-border/50">
             {toggles.slice(0, 10).map(t => (

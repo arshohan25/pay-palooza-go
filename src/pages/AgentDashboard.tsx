@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import ShareReceiptSheet, { ReceiptData } from "@/components/ShareReceiptSheet";
 import AgentMenuDrawer from "@/components/AgentMenuDrawer";
 import { useNavigate } from "react-router-dom";
+import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
 import { haptics } from "@/lib/haptics";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
