@@ -2622,7 +2622,7 @@ export default function AdminDashboard() {
 
       {/* ═══ Activity Feed – Desktop sidebar ═══ */}
       {!isMobile && showActivityFeed && (
-        <aside className="hidden md:flex flex-col fixed right-0 top-0 bottom-0 w-72 bg-card border-l border-border z-40 animate-slide-in-right">
+        <aside className="hidden lg:flex flex-col fixed right-0 top-0 bottom-0 w-72 bg-card border-l border-border z-40 animate-slide-in-right">
           <AdminActivityFeed />
         </aside>
       )}
