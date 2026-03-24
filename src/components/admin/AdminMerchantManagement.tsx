@@ -201,12 +201,40 @@ export default function AdminMerchantManagement() {
     loadMerchants();
   };
 
+  // Delete merchant
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [deletingMerchant, setDeletingMerchant] = useState(false);
+
   // ─── Status toggle ───
-  const toggleStatus = async (m: any) => {
-    const newStatus = m.status === "suspended" ? "active" : "suspended";
+  const setMerchantStatus = async (m: any, newStatus: string) => {
     const { error } = await supabase.from("merchants").update({ status: newStatus as any }).eq("id", m.id);
     if (error) { toast.error("Failed"); return; }
+    // Audit
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      supabase.from("audit_logs").insert({ actor_id: session.user.id, action: `merchant_${newStatus}`, entity_type: "merchant", entity_id: m.id, details: { business_name: m.business_name, previous_status: m.status } }).then();
+    }
     toast.success(`Merchant ${newStatus}`);
+    loadMerchants();
+  };
+
+  const toggleStatus = async (m: any) => {
+    const newStatus = m.status === "suspended" ? "active" : "suspended";
+    await setMerchantStatus(m, newStatus);
+  };
+
+  const handleDeleteMerchant = async () => {
+    if (!deleteTarget) return;
+    setDeletingMerchant(true);
+    await supabase.from("merchants").delete().eq("id", deleteTarget.id);
+    await supabase.from("user_roles").delete().eq("user_id", deleteTarget.user_id).eq("role", "merchant" as any);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "merchant_deleted", entity_type: "merchant", entity_id: deleteTarget.id, details: { business_name: deleteTarget.business_name } }).then();
+    }
+    toast.success("Merchant deleted");
+    setDeleteTarget(null);
+    setDeletingMerchant(false);
     loadMerchants();
   };
 
