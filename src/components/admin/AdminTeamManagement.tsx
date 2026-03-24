@@ -21,12 +21,20 @@ import { toast } from "sonner";
 import { UserPlus, Shield, Trash2, Search, Clock, CheckCircle, XCircle, Eye, Pencil, Activity, RefreshCw, UsersRound, Copy, KeyRound, Mail, Send, Plus, ChevronDown, ChevronRight, Zap, ShieldCheck, EyeOff } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
-type AppRole = "customer" | "agent" | "merchant" | "distributor" | "super_distributor" | "admin" | "compliance" | "finance";
+type AppRole = "customer" | "agent" | "merchant" | "distributor" | "super_distributor" | "admin" | "compliance" | "finance" | "support" | "operations" | "marketing" | "hr" | "audit" | "risk" | "developer" | "manager";
 
 const STAFF_ROLES: { value: AppRole; label: string }[] = [
   { value: "admin", label: "Admin" },
+  { value: "manager", label: "Manager" },
   { value: "compliance", label: "Compliance" },
   { value: "finance", label: "Finance" },
+  { value: "support", label: "Support" },
+  { value: "operations", label: "Operations" },
+  { value: "marketing", label: "Marketing" },
+  { value: "hr", label: "HR" },
+  { value: "audit", label: "Auditor" },
+  { value: "risk", label: "Risk Officer" },
+  { value: "developer", label: "Developer" },
 ];
 
 // ═══ EXPANDED SECTIONS WITH CATEGORIES ═══
