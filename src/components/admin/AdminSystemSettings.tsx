@@ -264,9 +264,17 @@ function FeeRulesTab() {
 
   useEffect(() => { load(); }, []);
 
+  const auditLog = async (action: string, entityId: string, details: any) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      supabase.from("audit_logs").insert({ actor_id: session.user.id, action, entity_type: "fee_config", entity_id: entityId, details }).then();
+    }
+  };
+
   const toggleFee = async (id: string, active: boolean) => {
     await supabase.from("fee_config").update({ is_active: !active } as any).eq("id", id);
     setFees(prev => prev.map(f => f.id === id ? { ...f, is_active: !active } : f));
+    auditLog("fee_rule_toggled", id, { new_active: !active });
     toast.success(`Fee rule ${!active ? "activated" : "deactivated"}`);
   };
 
