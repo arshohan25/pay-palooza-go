@@ -20,6 +20,8 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { email, action, code } = body;
 
+    const purpose = body.purpose || "email_verify";
+
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return new Response(
         JSON.stringify({ error: "Invalid email address" }),
