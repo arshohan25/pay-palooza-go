@@ -456,8 +456,10 @@ export default function AdminFestivalThemes() {
   };
 
   const deleteTheme = async (id: string) => {
+    const theme = themes.find(t => t.id === id);
     await supabase.from("festival_themes").delete().eq("id", id);
     toast.success("Theme deleted");
+    await auditLog("festival_theme_delete", id, { name: theme?.name });
     fetchThemes();
   };
 

@@ -223,8 +223,10 @@ export default function AdminBannerManager() {
 
   const deleteBanner = async () => {
     if (!deleteId) return;
+    const banner = banners.find(b => b.id === deleteId);
     const { error } = await supabase.from("promo_banners").delete().eq("id", deleteId);
-    if (error) toast.error(error.message); else toast.success("Banner deleted");
+    if (error) toast.error(error.message);
+    else { toast.success("Banner deleted"); await auditLog("banner_delete", deleteId, { title: banner?.title }); }
     setDeleteId(null);
     load();
   };
