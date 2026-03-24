@@ -308,7 +308,8 @@ export default function AdminSmartRouting() {
                           <TableCell>
                             <div className="flex gap-1">
                               <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => copyLink(link.short_code)}><Copy className="w-3 h-3" /></Button>
-                              <Button variant="ghost" size="sm" className="h-7 px-2 text-destructive" onClick={() => deleteLink(link.id)}><Trash2 className="w-3 h-3" /></Button>
+                              <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => openEditLink(link)}><Pencil className="w-3 h-3" /></Button>
+                              <Button variant="ghost" size="sm" className="h-7 px-2 text-destructive" onClick={() => setDeleteLinkTarget(link)}><Trash2 className="w-3 h-3" /></Button>
                             </div>
                           </TableCell>
                         </TableRow>
