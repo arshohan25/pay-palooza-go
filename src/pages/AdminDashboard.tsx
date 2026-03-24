@@ -230,7 +230,8 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
   {
     label: "Support",
     items: [
-      { id: "support", label: "Support", icon: MessageCircle },
+      { id: "live_chat", label: "Live Chat", icon: MessageCircle },
+      { id: "tickets", label: "Tickets", icon: FileText },
       { id: "chat_monitor", label: "Chat Monitor", icon: MessageCircle },
     ],
   },
