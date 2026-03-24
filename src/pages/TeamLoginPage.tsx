@@ -64,7 +64,8 @@ export default function TeamLoginPage() {
       }
 
       toast.success("Welcome back!");
-      navigate("/admin", { replace: true });
+      const dest = await getRedirectByRole(user!);
+      navigate(dest, { replace: true });
     } catch (err: any) {
       toast.error(err.message || "Invalid credentials");
     }
