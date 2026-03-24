@@ -165,6 +165,7 @@ export default function AdminNotificationSender() {
   useEffect(() => {
     if (mainTab === "notif_logs") loadNotifLogs();
     if (mainTab === "sms_logs") loadSmsLogs();
+    if (mainTab === "templates") loadTemplates();
   }, [mainTab]);
 
   const loadHistory = async () => {
