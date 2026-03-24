@@ -247,6 +247,7 @@ export default function AdminMarketingTools() {
         const { error } = await supabase.from("campaigns").update(payload).eq("id", editingCampaign.id);
         if (error) throw error;
         toast.success("Campaign updated");
+        await auditLog("campaign_updated", editingCampaign.id, { name: campaignForm.name });
       } else {
         payload.created_by = session?.user?.id;
         const { error } = await supabase.from("campaigns").insert(payload);
