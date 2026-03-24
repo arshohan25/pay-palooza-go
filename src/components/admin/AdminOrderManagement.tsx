@@ -193,8 +193,10 @@ export default function AdminOrderManagement() {
       }
 
       if (result.refunded) {
+        await auditLog("order_cancel_refund", cancelTarget.id, { order_num: cancelTarget.order_num, total: cancelTarget.total, reason: cancelReason });
         toast.success(`Order ${cancelTarget.order_num} cancelled · ৳${cancelTarget.total.toLocaleString()} refunded to wallet`);
       } else {
+        await auditLog("order_cancel", cancelTarget.id, { order_num: cancelTarget.order_num, reason: cancelReason });
         toast.success(`Order ${cancelTarget.order_num} cancelled`);
       }
     } catch (e: any) {
