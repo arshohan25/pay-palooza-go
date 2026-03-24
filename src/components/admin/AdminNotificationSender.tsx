@@ -429,6 +429,9 @@ export default function AdminNotificationSender() {
         <Button variant={mainTab === "sms_logs" ? "default" : "outline"} size="sm" onClick={() => setMainTab("sms_logs")}>
           <MessageSquare className="w-4 h-4 mr-1" /> SMS Logs
         </Button>
+        <Button variant={mainTab === "templates" ? "default" : "outline"} size="sm" onClick={() => setMainTab("templates")}>
+          <Tag className="w-4 h-4 mr-1" /> Templates
+        </Button>
       </div>
 
       {/* ═══ COMPOSE TAB ═══ */}
