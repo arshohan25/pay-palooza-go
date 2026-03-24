@@ -153,7 +153,7 @@ export default function AdminMarketingTools() {
   const deletePromo = async (id: string) => {
     const { error } = await supabase.from("promo_codes").delete().eq("id", id);
     if (error) toast.error("Failed to delete");
-    else { toast.success("Promo code deleted"); loadPromos(); }
+    else { toast.success("Promo code deleted"); await auditLog("promo_deleted", id, {}); loadPromos(); }
   };
 
   const togglePromo = async (id: string, active: boolean) => {
