@@ -312,10 +312,12 @@ function FeeRulesTab() {
     if (editing) {
       const { error } = await supabase.from("fee_config").update(payload).eq("id", editing.id);
       if (error) { toast.error("Failed to update"); return; }
+      auditLog("fee_rule_updated", editing.id, { txn_type: payload.txn_type, fee_value: payload.fee_value });
       toast.success("Fee rule updated");
     } else {
       const { error } = await supabase.from("fee_config").insert(payload);
       if (error) { toast.error("Failed to create"); return; }
+      auditLog("fee_rule_created", "new", { txn_type: payload.txn_type, fee_value: payload.fee_value });
       toast.success("Fee rule created");
     }
     setDialogOpen(false);
