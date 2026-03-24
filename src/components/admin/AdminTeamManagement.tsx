@@ -228,6 +228,7 @@ function PermissionEditor({ perms, onChange, members }: { perms: AccessPerm[]; o
   };
 
   const bulkAction = (action: "grant_view" | "revoke_all" | "full_access") => {
+    setCloneFrom("");
     setSelectedPreset("");
     onChange(perms.map(p => {
       if (action === "grant_view") return { ...p, can_view: true };
