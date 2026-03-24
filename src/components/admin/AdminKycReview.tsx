@@ -192,6 +192,16 @@ export default function AdminKycReview() {
     } else {
       toast.success(`KYC ${decision === "verified" ? "approved" : "rejected"} successfully`);
 
+      // Audit log
+      const { data: { session: auditSession } } = await supabase.auth.getSession();
+      if (auditSession?.user) {
+        supabase.from("audit_logs").insert({
+          actor_id: auditSession.user.id, action: decision === "verified" ? "kyc_approved" : "kyc_rejected",
+          entity_type: "kyc_verification", entity_id: selected.id,
+          details: { user_id: selected.user_id, full_name: selected.full_name, nid_number: selected.nid_number, notes: finalNotes },
+        }).then();
+      }
+
       // Send notifications (in-app + email + SMS)
       try {
         await supabase.functions.invoke("kyc-notify", {
