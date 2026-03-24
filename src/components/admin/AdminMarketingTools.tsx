@@ -263,7 +263,7 @@ export default function AdminMarketingTools() {
   const deleteCampaign = async (id: string) => {
     const { error } = await supabase.from("campaigns").delete().eq("id", id);
     if (error) toast.error("Failed to delete");
-    else { toast.success("Campaign deleted"); loadCampaigns(); }
+    else { toast.success("Campaign deleted"); await auditLog("campaign_deleted", id, {}); loadCampaigns(); }
   };
 
   const toggleCampaignStatus = async (c: Campaign) => {
