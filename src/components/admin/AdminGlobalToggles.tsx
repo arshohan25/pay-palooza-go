@@ -249,7 +249,7 @@ export default function AdminGlobalToggles() {
     if (!deleteToggle) return;
     const { error } = await supabase.from("global_feature_toggles").delete().eq("id", deleteToggle.id);
     if (error) toast.error("Failed to delete");
-    else toast.success(`${deleteToggle.label} removed`);
+    else { toast.success(`${deleteToggle.label} removed`); auditLog("toggle_deleted", deleteToggle.id, { feature_key: deleteToggle.feature_key, label: deleteToggle.label }); }
     setDeleteToggle(null);
   };
 
