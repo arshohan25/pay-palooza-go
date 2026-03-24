@@ -206,7 +206,70 @@ export default function AdminNotificationSender() {
     setSmsLogsLoading(false);
   };
 
-  const toggleRole = (role: string) => {
+  const loadTemplates = async () => {
+    setTemplatesLoading(true);
+    const { data } = await (supabase as any).from("notification_templates").select("*").order("created_at", { ascending: false });
+    setTemplates(data || []);
+    setTemplatesLoading(false);
+  };
+
+  const openTemplateAdd = () => {
+    setEditingTemplate(null);
+    setTemplateForm({ name: "", title: "", body: "", category: "promo", image_url: "" });
+    setTemplateDialogOpen(true);
+  };
+
+  const openTemplateEdit = (t: any) => {
+    setEditingTemplate(t);
+    setTemplateForm({ name: t.name, title: t.title, body: t.body, category: t.category, image_url: t.image_url || "" });
+    setTemplateDialogOpen(true);
+  };
+
+  const saveTemplate = async () => {
+    if (!templateForm.name.trim() || !templateForm.title.trim()) { toast.error("Name and title required"); return; }
+    const payload: any = {
+      name: templateForm.name, title: templateForm.title, body: templateForm.body,
+      category: templateForm.category, image_url: templateForm.image_url || null,
+      updated_at: new Date().toISOString(),
+    };
+    if (editingTemplate) {
+      const { error } = await (supabase as any).from("notification_templates").update(payload).eq("id", editingTemplate.id);
+      if (error) { toast.error(error.message); return; }
+      toast.success("Template updated");
+      await auditLog("template_update", editingTemplate.id, { name: payload.name });
+    } else {
+      const { data: { user } } = await supabase.auth.getUser();
+      payload.created_by = user?.id;
+      const { data, error } = await (supabase as any).from("notification_templates").insert(payload).select("id").single();
+      if (error) { toast.error(error.message); return; }
+      toast.success("Template created");
+      await auditLog("template_create", data.id, { name: payload.name });
+    }
+    setTemplateDialogOpen(false);
+    loadTemplates();
+  };
+
+  const deleteTemplate = async () => {
+    if (!deleteTemplateId) return;
+    const tpl = templates.find(t => t.id === deleteTemplateId);
+    const { error } = await (supabase as any).from("notification_templates").delete().eq("id", deleteTemplateId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Template deleted");
+    await auditLog("template_delete", deleteTemplateId, { name: tpl?.name });
+    setDeleteTemplateId(null);
+    loadTemplates();
+  };
+
+  const useTemplate = (t: any) => {
+    setTitle(t.title);
+    setBody(t.body);
+    setCategory(t.category);
+    if (t.image_url) setImageUrl(t.image_url);
+    setMainTab("compose");
+    toast.info("Template loaded into compose form");
+  };
+
+
     if (role === "all") { setSelectedRoles(["all"]); return; }
     setSelectedRoles((prev) => {
       const without = prev.filter((r) => r !== "all" && r !== role);
