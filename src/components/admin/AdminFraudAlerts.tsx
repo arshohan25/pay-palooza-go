@@ -181,16 +181,17 @@ export default function AdminFraudAlerts() {
   const handleAction = async () => {
     if (!actionDialog) return;
     setActionLoading(true);
-    const { alert, action } = actionDialog;
+    const { alert, action: actionType } = actionDialog;
 
     try {
-      if (action === "investigate") {
+      if (actionType === "investigate") {
         await supabase
           .from("fraud_alerts")
           .update({ status: "investigating" as any })
           .eq("id", alert.id);
+        await auditLog("fraud_alert_investigate", "fraud_alert", alert.id, { rule: alert.rule_triggered, user_id: alert.user_id });
         toast.success("Alert marked as investigating");
-      } else if (action === "resolve") {
+      } else if (actionType === "resolve") {
         await supabase
           .from("fraud_alerts")
           .update({
@@ -199,8 +200,9 @@ export default function AdminFraudAlerts() {
             resolution_notes: resolutionNotes || null,
           })
           .eq("id", alert.id);
+        await auditLog("fraud_alert_resolve", "fraud_alert", alert.id, { rule: alert.rule_triggered, notes: resolutionNotes });
         toast.success("Alert resolved");
-      } else if (action === "dismiss") {
+      } else if (actionType === "dismiss") {
         await supabase
           .from("fraud_alerts")
           .update({
@@ -209,8 +211,9 @@ export default function AdminFraudAlerts() {
             resolution_notes: resolutionNotes || "Dismissed as false positive",
           })
           .eq("id", alert.id);
+        await auditLog("fraud_alert_dismiss", "fraud_alert", alert.id, { rule: alert.rule_triggered });
         toast.success("Alert dismissed as false positive");
-      } else if (action === "lock") {
+      } else if (actionType === "lock") {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
         await supabase
@@ -225,6 +228,7 @@ export default function AdminFraudAlerts() {
           .from("fraud_alerts")
           .update({ status: "resolved" as any, resolved_at: new Date().toISOString(), resolution_notes: "Account locked" })
           .eq("id", alert.id);
+        await auditLog("fraud_alert_lock_account", "fraud_alert", alert.id, { user_id: alert.user_id, rule: alert.rule_triggered });
         toast.success("Account locked & alert resolved");
       }
       setActionDialog(null);
