@@ -267,6 +267,7 @@ export default function AdminNotificationSender() {
     try {
       const result = await sendNotification();
       toast.success(`Notification sent to ${result.sent_count} users`);
+      await auditLog("notification_send", "bulk", { title: title.trim(), sent_count: result.sent_count, roles: selectedRoles });
       resetForm();
       loadHistory();
     } catch (err: any) {
