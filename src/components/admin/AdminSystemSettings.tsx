@@ -20,18 +20,20 @@ export default function AdminSystemSettings() {
         <Settings className="w-5 h-5 text-primary" /> System Settings
       </h3>
       <Tabs defaultValue="app" className="w-full">
-        <TabsList className="w-full grid grid-cols-5 h-auto">
+        <TabsList className="w-full grid grid-cols-6 h-auto">
           <TabsTrigger value="app" className="text-xs">App Config</TabsTrigger>
           <TabsTrigger value="currency" className="text-xs">Currency</TabsTrigger>
           <TabsTrigger value="fees" className="text-xs">Fee Rules</TabsTrigger>
           <TabsTrigger value="txnrules" className="text-xs">Txn Rules</TabsTrigger>
           <TabsTrigger value="maintenance" className="text-xs">Maint.</TabsTrigger>
+          <TabsTrigger value="banks" className="text-xs">Banks</TabsTrigger>
         </TabsList>
         <TabsContent value="app"><AppConfigTab /></TabsContent>
         <TabsContent value="currency"><CurrencyConfigTab /></TabsContent>
         <TabsContent value="fees"><FeeRulesTab /></TabsContent>
         <TabsContent value="txnrules"><TransactionRulesTab /></TabsContent>
         <TabsContent value="maintenance"><MaintenanceTab /></TabsContent>
+        <TabsContent value="banks"><AdminBankListManager /></TabsContent>
       </Tabs>
     </div>
   );
