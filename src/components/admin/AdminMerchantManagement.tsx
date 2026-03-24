@@ -320,6 +320,10 @@ export default function AdminMerchantManagement() {
     const appPassword = "epp_" + crypto.randomUUID().replace(/-/g, "").slice(0, 24);
     const { error } = await supabase.from("merchant_api_keys").insert({ merchant_id: merchantId, api_key: apiKey, secret_key: secretKey, app_password: appPassword } as any).select().single();
     if (error) { toast.error("Failed to generate key: " + error.message); return; }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "merchant_api_key_generated", entity_type: "merchant_api_key", entity_id: merchantId, details: { api_key: apiKey } }).then();
+    }
     setShowNewSecret(secretKey);
     toast.success("API key generated");
     if (detailMerchant) {
