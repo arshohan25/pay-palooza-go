@@ -1,31 +1,44 @@
 
 
-## Plan: Add "Currently Online" Support Agents Indicator
+## Plan: Real-time Updates for Currently Online Indicator
 
-### What Changes
+### Current State
+The `AdminSupportDashboard` polls `getAvailableAgents()` every 30 seconds via `setInterval`. This queries `team_members` (filtered by `department=support`, `is_available=true`) and counts open `support_conversations`.
 
-**Single file: `src/components/admin/AdminSupportDashboard.tsx`**
+### Change
+Replace the 30-second polling with a Supabase Realtime subscription on the `team_members` table. When any team member's `is_available` status changes, the indicator updates instantly.
 
-**1. Add state and periodic fetch for online agents**
-- Add `onlineAgents` state (array of `{ user_id, display_name, open_count }`)
-- Use the existing `getAvailableAgents()` from `useAgentRouting` (already destructured but not used directly — will add it to the destructured return)
-- Fetch on mount and refresh every 30 seconds via `setInterval`
-- Also re-fetch when conversations change (to update open_count)
+### Implementation
 
-**2. Render an "Online Agents" collapsible strip**
-- Place it between the header title/tabs and the conversation list (after line ~568, before `<ScrollArea>`)
-- Show a compact horizontal strip with:
-  - Green dot + "X agents online" summary
-  - Each agent as a small pill: `[green dot] Name (3 chats)` showing their `display_name` and `open_count`
-- If no agents online: show a yellow warning pill "No agents online"
-- Collapsed by default, expandable with a chevron toggle to save space
+**File: `src/components/admin/AdminSupportDashboard.tsx`**
 
-**3. Wire `getAvailableAgents` from existing hook**
-- Already available via `useAgentRouting()` — just add it to the destructured return on line 111
+Replace the polling `useEffect` (lines 169-173):
+
+```typescript
+// Before:
+useEffect(() => {
+  fetchOnlineAgents();
+  const interval = setInterval(fetchOnlineAgents, 30000);
+  return () => clearInterval(interval);
+}, [fetchOnlineAgents]);
+
+// After:
+useEffect(() => {
+  fetchOnlineAgents();
+  const ch = supabase.channel("online-agents-rt")
+    .on("postgres_changes", { event: "*", schema: "public", table: "team_members" }, () => fetchOnlineAgents())
+    .on("postgres_changes", { event: "*", schema: "public", table: "support_conversations" }, () => fetchOnlineAgents())
+    .subscribe();
+  return () => { supabase.removeChannel(ch); };
+}, [fetchOnlineAgents]);
+```
+
+This listens for any change to `team_members` (availability toggle, new member added) and `support_conversations` (conversation assigned/resolved, affecting open_count) and re-fetches instantly. No database changes needed since `team_members` changes are already propagated via Supabase Realtime.
 
 ### Technical Details
-- No new dependencies, hooks, or database changes needed
-- `getAvailableAgents()` already queries `team_members` (department=support, is_available=true) and counts open conversations per agent — exactly what's needed
-- Polling interval of 30s keeps data fresh without overloading
-- The strip is ~40px tall collapsed, expands to show individual agent pills
+- Subscribes to `postgres_changes` on `team_members` and `support_conversations` tables
+- Removes the 30-second `setInterval` entirely
+- Initial fetch still runs on mount
+- Channel is cleaned up on unmount via `removeChannel`
+- Single file change, ~5 lines modified
 
