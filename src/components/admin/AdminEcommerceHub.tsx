@@ -64,6 +64,7 @@ function ProductsTab() {
 
   const toggleActive = async (id: string, current: boolean) => {
     await supabase.from("merchant_products").update({ is_active: !current }).eq("id", id);
+    auditLog("toggle_product", "merchant_product", id, { is_active: !current });
     toast.success(current ? "Product deactivated" : "Product activated");
     load();
   };
