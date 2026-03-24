@@ -314,6 +314,7 @@ export default function AdminRechargePackManager() {
     );
     await Promise.all(updates);
     toast.success("Order updated");
+    await auditLog("pack_reordered", "batch", { count: reordered.length });
   };
 
   const filtered = packs.filter(p => {

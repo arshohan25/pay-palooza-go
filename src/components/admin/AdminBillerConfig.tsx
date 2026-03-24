@@ -183,6 +183,7 @@ export default function AdminBillerConfig() {
     try {
       await callBillerApi({ action: "delete", id: deleteBiller.id });
       toast.success(`${deleteBiller.display_name} removed`);
+      await auditLog("biller_deleted", deleteBiller.id, { display_name: deleteBiller.display_name });
     } catch {
       toast.error("Failed to delete");
     }

@@ -176,6 +176,7 @@ export default function AdminGatewayConfig() {
     try {
       await callGatewayApi({ action: "delete", id: deleteGw.id });
       toast.success(`${deleteGw.display_name} removed`);
+      await auditLog("gateway_deleted", deleteGw.id, { display_name: deleteGw.display_name });
     } catch {
       toast.error("Failed to delete");
     }

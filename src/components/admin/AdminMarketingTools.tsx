@@ -269,6 +269,7 @@ export default function AdminMarketingTools() {
   const toggleCampaignStatus = async (c: Campaign) => {
     const newStatus = c.status === "active" ? "draft" : "active";
     await supabase.from("campaigns").update({ status: newStatus, updated_at: new Date().toISOString() } as any).eq("id", c.id);
+    await auditLog("campaign_status_toggled", c.id, { status: newStatus });
     loadCampaigns();
   };
 
