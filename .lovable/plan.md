@@ -1,22 +1,50 @@
 
 
-## Fix: Platform Bank List showing under all inner tabs
+## Plan: Add Role-Based Session Timeout (Separate from Team Members)
 
 ### Problem
-`AdminBankListManager` is rendered as a sibling **after** the `AdminSystemSettings` component in `AdminDashboard.tsx` (line 1758). This means it always appears below the System Settings tabs regardless of which inner tab (App Config, Currency, Fee Rules, etc.) is selected.
+Currently, session timeout only applies to **team members** (admin staff). Regular users, agents, distributors, and merchants have no inactivity timeout.
 
 ### Solution
-Move `AdminBankListManager` inside the `AdminSystemSettings` component as a **6th tab** called "Banks". This keeps it scoped to its own tab instead of always visible.
+Create a new **user session timeout** system with its own configurable duration, separate from the team member timeout.
 
 ### Changes
 
-**File: `src/components/admin/AdminSystemSettings.tsx`**
-- Add import for `AdminBankListManager`
-- Add a 6th tab trigger: "Banks"
-- Add corresponding `TabsContent` rendering `AdminBankListManager`
-- Update grid from `grid-cols-5` to `grid-cols-6`
+**1. Admin UI — Add "User Session Timeout" dropdown** (`src/components/admin/AdminSystemSettings.tsx`)
+- Add a second timeout card below the existing "Team Session Timeout" card
+- Label: "User Session Timeout" with description "Auto-logout users, agents, distributors, and merchants after inactivity."
+- Same time options (5m–8h), stored as `user_session_timeout_minutes` in `global_feature_toggles`
+- Add state + save logic mirroring the team timeout pattern
 
-**File: `src/pages/AdminDashboard.tsx`**
-- Remove `AdminBankListManager` from the `sys_settings` block (line 1758)
-- Remove its import if no longer used elsewhere
+**2. Create new hook** (`src/hooks/use-user-session-timeout.ts`)
+- Similar structure to `use-session-timeout.ts` but for non-team-member authenticated users
+- Reads `user_session_timeout_minutes` from `global_feature_toggles`
+- Activates for any authenticated user who is **not** a team member (to avoid double-timeout)
+- On expiry: signs out and redirects to `/` (home/auth page) instead of `/team-login`
+- Same activity tracking (mousemove, keydown, etc.) and warning toast pattern
+- Default: 30 minutes (if no config set)
+
+**3. Wire hook into dashboards**
+- `src/pages/Index.tsx` — add `useUserSessionTimeout()` (covers regular users)
+- `src/pages/AgentDashboard.tsx` — add `useUserSessionTimeout()`
+- `src/pages/DistributorDashboard.tsx` — add `useUserSessionTimeout()`
+- `src/pages/MerchantDashboard.tsx` — add `useUserSessionTimeout()`
+- `src/pages/SuperDistributorDashboard.tsx` — add `useUserSessionTimeout()`
+
+### Key Difference from Team Timeout
+| Aspect | Team Timeout | User Timeout |
+|--------|-------------|-------------|
+| Config key | `team_session_timeout_minutes` | `user_session_timeout_minutes` |
+| Applies to | `is_team_member` metadata users | All authenticated non-team users |
+| Redirect | `/team-login` | `/` |
+| DB update | `team_members.last_active_at` | `profiles.updated_at` (skip) |
+
+### Files Modified
+- `src/components/admin/AdminSystemSettings.tsx` — add User Session Timeout config card
+- `src/hooks/use-user-session-timeout.ts` — **new file**, inactivity hook for regular users
+- `src/pages/Index.tsx` — wire hook
+- `src/pages/AgentDashboard.tsx` — wire hook
+- `src/pages/DistributorDashboard.tsx` — wire hook
+- `src/pages/MerchantDashboard.tsx` — wire hook
+- `src/pages/SuperDistributorDashboard.tsx` — wire hook
 
