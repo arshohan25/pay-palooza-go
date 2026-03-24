@@ -356,6 +356,7 @@ function CouponsTab() {
 
   const toggleActive = async (id: string, current: boolean) => {
     await supabase.from("coupons").update({ is_active: !current }).eq("id", id);
+    auditLog("toggle_coupon", "coupon", id, { is_active: !current });
     toast.success(current ? "Coupon deactivated" : "Coupon activated");
     load();
   };
