@@ -1082,7 +1082,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Mobile: Active section label + hamburger */}
-          <div className="flex md:hidden items-center gap-2 px-4 pb-2">
+          <div className="flex lg:hidden items-center gap-2 px-4 pb-2">
             <Button
               variant="outline"
               size="icon"
