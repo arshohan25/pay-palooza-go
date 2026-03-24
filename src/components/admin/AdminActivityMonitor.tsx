@@ -227,19 +227,19 @@ export default function AdminActivityMonitor() {
             {/* Desktop table */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm">
-                <thead>
+                 <thead>
                   <tr className="border-b border-border text-muted-foreground">
-                     <th className="text-left px-3 py-3 font-medium">Short ID</th>
-                     <th className="text-left px-3 py-3 font-medium">Type</th>
-                     <th className="text-left px-3 py-3 font-medium">Sender</th>
-                     <th className="text-left px-3 py-3 font-medium">Receiver</th>
-                     <th className="text-left px-3 py-3 font-medium">Amount</th>
-                     <th className="text-left px-3 py-3 font-medium hidden lg:table-cell">Fee</th>
-                     <th className="text-left px-3 py-3 font-medium hidden lg:table-cell">Commission</th>
-                     <th className="text-left px-3 py-3 font-medium hidden 2xl:table-cell">Balance After</th>
-                     <th className="text-left px-3 py-3 font-medium whitespace-nowrap">Status</th>
-                     <th className="text-left px-3 py-3 font-medium hidden xl:table-cell">Date-Time</th>
-                     <th className="text-left px-3 py-3 font-medium w-10"></th>
+                     <th className="text-left px-3 py-2.5 font-medium text-xs">Short ID</th>
+                     <th className="text-left px-3 py-2.5 font-medium text-xs">Type</th>
+                     <th className="text-left px-3 py-2.5 font-medium text-xs">Sender</th>
+                     <th className="text-left px-3 py-2.5 font-medium text-xs">Receiver</th>
+                     <th className="text-left px-3 py-2.5 font-medium text-xs">Amount</th>
+                     <th className="text-left px-3 py-2.5 font-medium text-xs hidden lg:table-cell">Fee</th>
+                     <th className="text-left px-3 py-2.5 font-medium text-xs hidden lg:table-cell">Commission</th>
+                     <th className="text-left px-3 py-2.5 font-medium text-xs hidden 2xl:table-cell">Balance After</th>
+                     <th className="text-left px-3 py-2.5 font-medium text-xs whitespace-nowrap">Status</th>
+                     <th className="text-left px-3 py-2.5 font-medium text-xs hidden xl:table-cell">Date-Time</th>
+                     <th className="text-left px-3 py-2.5 font-medium text-xs w-10"></th>
                    </tr>
                 </thead>
                 <tbody>
