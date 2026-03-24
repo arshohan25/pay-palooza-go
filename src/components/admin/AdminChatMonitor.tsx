@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageCircle, Users, AlertTriangle, Search, RefreshCw, Eye } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { MessageCircle, Users, AlertTriangle, Search, RefreshCw, Eye, Trash2, Flag } from "lucide-react";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -15,7 +16,7 @@ interface ConvRow {
   type: string;
   status: string;
   created_at: string;
-  participants?: { user_id: string; profile?: { name: string; phone: string } }[];
+  participants?: { user_id: string }[];
   lastMessage?: string;
 }
 
@@ -27,6 +28,15 @@ interface MessageRow {
   created_at: string;
   is_deleted: boolean;
   senderName?: string;
+}
+
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: "chat_conversation", entity_id: entityId, details
+    });
+  }
 }
 
 export default function AdminChatMonitor() {
@@ -47,22 +57,18 @@ export default function AdminChatMonitor() {
       .limit(200);
 
     if (convs) {
-      // Load participants for each conversation
       const enriched: ConvRow[] = [];
       for (const c of convs) {
         const { data: parts } = await supabase
           .from("chat_participants")
           .select("user_id")
           .eq("conversation_id", c.id);
-
-        // Get last message
         const { data: lastMsg } = await supabase
           .from("chat_messages")
           .select("content")
           .eq("conversation_id", c.id)
           .order("created_at", { ascending: false })
           .limit(1);
-
         enriched.push({
           ...c,
           participants: parts?.map(p => ({ user_id: p.user_id })) ?? [],
@@ -92,20 +98,34 @@ export default function AdminChatMonitor() {
       .limit(100);
 
     if (data) {
-      // Get sender profiles
       const senderIds = [...new Set(data.map(m => m.sender_id))];
       const { data: profiles } = await supabase
         .from("profiles")
         .select("user_id, name")
         .in("user_id", senderIds);
-
       const profileMap = new Map(profiles?.map(p => [p.user_id, p.name]) ?? []);
-      setMessages(data.map(m => ({
-        ...m,
-        senderName: profileMap.get(m.sender_id) ?? "Unknown",
-      })));
+      setMessages(data.map(m => ({ ...m, senderName: profileMap.get(m.sender_id) ?? "Unknown" })));
     }
     setLoadingMsgs(false);
+  };
+
+  const deleteConversation = async (convId: string) => {
+    await supabase.from("chat_messages").delete().eq("conversation_id", convId);
+    await supabase.from("chat_participants").delete().eq("conversation_id", convId);
+    const { error } = await supabase.from("chat_conversations").delete().eq("id", convId);
+    if (error) { toast.error(error.message); return; }
+    await auditLog("conversation_deleted", convId, {});
+    toast.success("Conversation deleted");
+    loadConversations();
+  };
+
+  const flagConversation = async (convId: string, currentStatus: string) => {
+    const newStatus = currentStatus === "flagged" ? "active" : "flagged";
+    const { error } = await supabase.from("chat_conversations").update({ status: newStatus }).eq("id", convId);
+    if (error) { toast.error(error.message); return; }
+    await auditLog(newStatus === "flagged" ? "conversation_flagged" : "conversation_unflagged", convId, {});
+    toast.success(newStatus === "flagged" ? "Flagged for review" : "Unflagged");
+    loadConversations();
   };
 
   const filtered = conversations.filter(c =>
@@ -115,7 +135,6 @@ export default function AdminChatMonitor() {
 
   return (
     <div className="space-y-4">
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         <Card className="border-0 shadow-sm">
           <CardContent className="p-3 flex items-center gap-3">
@@ -152,19 +171,16 @@ export default function AdminChatMonitor() {
         </Card>
       </div>
 
-      {/* Search & Refresh */}
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Search conversations..." value={search} onChange={e => setSearch(e.target.value)}
-            className="pl-9 h-9 text-sm" />
+          <Input placeholder="Search conversations..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
         </div>
         <Button variant="outline" size="sm" onClick={loadConversations} disabled={loading}>
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
         </Button>
       </div>
 
-      {/* Conversation List */}
       <Card>
         <CardHeader className="py-3 px-4">
           <CardTitle className="text-sm">All Conversations</CardTitle>
@@ -180,7 +196,7 @@ export default function AdminChatMonitor() {
                         {conv.name || `Chat ${conv.id.slice(0, 8)}`}
                       </p>
                       <Badge variant="outline" className="text-[9px]">{conv.type}</Badge>
-                      <Badge variant={conv.status === "active" ? "secondary" : "outline"} className="text-[9px]">
+                      <Badge variant={conv.status === "active" ? "secondary" : conv.status === "flagged" ? "destructive" : "outline"} className="text-[9px]">
                         {conv.status}
                       </Badge>
                     </div>
@@ -189,10 +205,30 @@ export default function AdminChatMonitor() {
                       {conv.participants?.length ?? 0} participants · {new Date(conv.created_at).toLocaleDateString()}
                     </p>
                   </div>
-                  <Button variant="ghost" size="sm" className="shrink-0 h-8 text-xs gap-1"
-                    onClick={() => viewMessages(conv.id)}>
-                    <Eye className="w-3.5 h-3.5" /> View
-                  </Button>
+                  <div className="flex gap-1 shrink-0">
+                    <Button variant="ghost" size="sm" className="h-8 text-xs gap-1" onClick={() => viewMessages(conv.id)}>
+                      <Eye className="w-3.5 h-3.5" /> View
+                    </Button>
+                    <Button variant="ghost" size="icon" className={`h-8 w-8 ${conv.status === "flagged" ? "text-amber-500" : "text-muted-foreground"}`}
+                      onClick={() => flagConversation(conv.id, conv.status)}>
+                      <Flag className="w-3.5 h-3.5" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="w-3.5 h-3.5" /></Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Conversation?</AlertDialogTitle>
+                          <AlertDialogDescription>All messages and participant data will be permanently removed.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteConversation(conv.id)}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
               ))}
               {filtered.length === 0 && (
@@ -205,7 +241,6 @@ export default function AdminChatMonitor() {
         </CardContent>
       </Card>
 
-      {/* Message Viewer Sheet */}
       <Sheet open={!!selectedConv} onOpenChange={() => setSelectedConv(null)}>
         <SheetContent side="right" className="w-[90vw] max-w-lg p-0 flex flex-col">
           <SheetHeader className="px-4 py-3 border-b border-border">

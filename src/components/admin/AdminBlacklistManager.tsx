@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Shield, Plus, Trash2, Search } from "lucide-react";
+import { Shield, Plus, Trash2, Search, Pencil } from "lucide-react";
 
 interface BlacklistEntry {
   id: string;
@@ -20,6 +22,15 @@ interface BlacklistEntry {
   created_at: string;
 }
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: "blacklist_entry", entity_id: entityId, details
+    });
+  }
+}
+
 export default function AdminBlacklistManager() {
   const [entries, setEntries] = useState<BlacklistEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,6 +39,8 @@ export default function AdminBlacklistManager() {
   const [showAdd, setShowAdd] = useState(false);
   const [newEntry, setNewEntry] = useState({ type: "phone", value: "", reason: "" });
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<BlacklistEntry | null>(null);
+  const [editForm, setEditForm] = useState({ type: "", reason: "" });
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -46,25 +59,51 @@ export default function AdminBlacklistManager() {
     if (!newEntry.value.trim()) return;
     setAdding(true);
     const { data: { session } } = await supabase.auth.getSession();
-    const { error } = await supabase.from("blacklist_entries").insert({
+    const { data, error } = await supabase.from("blacklist_entries").insert({
       type: newEntry.type,
       value: newEntry.value.trim(),
       reason: newEntry.reason || null,
       blocked_by: session!.user.id,
-    } as any);
+    } as any).select("id").single();
     if (error) toast.error(error.message);
-    else { toast.success("Entry added to blacklist"); setNewEntry({ type: "phone", value: "", reason: "" }); setShowAdd(false); fetch(); }
+    else {
+      await auditLog("blacklist_added", data.id, { type: newEntry.type, value: newEntry.value });
+      toast.success("Entry added to blacklist");
+      setNewEntry({ type: "phone", value: "", reason: "" });
+      setShowAdd(false);
+      fetch();
+    }
     setAdding(false);
   };
 
-  const toggleActive = async (id: string, current: boolean) => {
-    await supabase.from("blacklist_entries").update({ is_active: !current } as any).eq("id", id);
+  const toggleActive = async (entry: BlacklistEntry) => {
+    await supabase.from("blacklist_entries").update({ is_active: !entry.is_active } as any).eq("id", entry.id);
+    await auditLog("blacklist_toggled", entry.id, { is_active: !entry.is_active });
     fetch();
   };
 
   const deleteEntry = async (id: string) => {
     await supabase.from("blacklist_entries").delete().eq("id", id);
+    await auditLog("blacklist_deleted", id, {});
     toast.success("Entry removed");
+    fetch();
+  };
+
+  const openEdit = (e: BlacklistEntry) => {
+    setEditing(e);
+    setEditForm({ type: e.type, reason: e.reason ?? "" });
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    const { error } = await supabase.from("blacklist_entries").update({
+      type: editForm.type,
+      reason: editForm.reason || null,
+    } as any).eq("id", editing.id);
+    if (error) { toast.error(error.message); return; }
+    await auditLog("blacklist_edited", editing.id, { old_type: editing.type, new_type: editForm.type });
+    toast.success("Entry updated");
+    setEditing(null);
     fetch();
   };
 
@@ -150,15 +189,34 @@ export default function AdminBlacklistManager() {
                       <TableCell className="font-mono text-xs">{e.value}</TableCell>
                       <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{e.reason || "—"}</TableCell>
                       <TableCell>
-                        <Badge variant={e.is_active ? "destructive" : "secondary"} className="text-[10px] cursor-pointer" onClick={() => toggleActive(e.id, e.is_active)}>
+                        <Badge variant={e.is_active ? "destructive" : "secondary"} className="text-[10px] cursor-pointer" onClick={() => toggleActive(e)}>
                           {e.is_active ? "Blocked" : "Inactive"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">{new Date(e.created_at).toLocaleDateString()}</TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteEntry(e.id)}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openEdit(e)}>
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Remove Entry?</AlertDialogTitle>
+                                <AlertDialogDescription>This will permanently remove "{e.value}" from the blacklist.</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => deleteEntry(e.id)}>Delete</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -168,6 +226,34 @@ export default function AdminBlacklistManager() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editing} onOpenChange={o => !o && setEditing(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Edit Blacklist Entry</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Type</label>
+              <Select value={editForm.type} onValueChange={v => setEditForm({ ...editForm, type: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="phone">Phone</SelectItem>
+                  <SelectItem value="ip">IP Address</SelectItem>
+                  <SelectItem value="device">Device</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Reason</label>
+              <Input value={editForm.reason} onChange={e => setEditForm({ ...editForm, reason: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button onClick={saveEdit}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

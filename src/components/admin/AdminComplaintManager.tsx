@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { AlertTriangle, CheckCircle, Clock, MessageCircle, RefreshCw } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertTriangle, CheckCircle, Clock, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -21,6 +22,15 @@ const STATUS_COLORS: Record<string, string> = {
   in_progress: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
   resolved: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
 };
+
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: "support_complaint", entity_id: entityId, details
+    });
+  }
+}
 
 export default function AdminComplaintManager() {
   const [complaints, setComplaints] = useState<any[]>([]);
@@ -43,10 +53,25 @@ export default function AdminComplaintManager() {
 
   const updateComplaint = async (id: string, updates: Record<string, any>) => {
     setSaving(true);
+    const old = selected;
     const { error } = await supabase.from("support_complaints").update({ ...updates, updated_at: new Date().toISOString() }).eq("id", id);
     if (error) toast.error(error.message);
-    else { toast.success("Complaint updated"); await fetch(); setSelected(null); }
+    else {
+      await auditLog("complaint_updated", id, { old_status: old?.status, new_status: updates.status, priority: updates.priority });
+      toast.success("Complaint updated");
+      await fetch();
+      setSelected(null);
+    }
     setSaving(false);
+  };
+
+  const deleteComplaint = async (id: string) => {
+    const { error } = await supabase.from("support_complaints").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    await auditLog("complaint_deleted", id, {});
+    toast.success("Complaint deleted");
+    setSelected(null);
+    fetch();
   };
 
   const counts = {
@@ -99,9 +124,28 @@ export default function AdminComplaintManager() {
               <CardContent className="p-3">
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-mono text-xs text-muted-foreground">{c.complaint_number}</span>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 items-center">
                     <Badge className={`text-[10px] ${PRIORITY_COLORS[c.priority] ?? ""}`}>{c.priority}</Badge>
                     <Badge className={`text-[10px] ${STATUS_COLORS[c.status] ?? ""}`}>{c.status}</Badge>
+                    {c.status === "resolved" && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={e => e.stopPropagation()}>
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Complaint?</AlertDialogTitle>
+                            <AlertDialogDescription>This will permanently remove complaint {c.complaint_number}.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteComplaint(c.id)}>Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                 </div>
                 <p className="text-sm font-medium text-foreground">{c.subject}</p>
@@ -135,6 +179,18 @@ export default function AdminComplaintManager() {
                 </Select>
               </div>
               <div>
+                <label className="text-xs font-medium text-muted-foreground">Update Priority</label>
+                <Select value={selected.priority} onValueChange={(v) => setSelected({ ...selected, priority: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
                 <label className="text-xs font-medium text-muted-foreground">Resolution Notes</label>
                 <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
               </div>
@@ -142,7 +198,7 @@ export default function AdminComplaintManager() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setSelected(null)}>Cancel</Button>
-            <Button disabled={saving} onClick={() => updateComplaint(selected.id, { status: selected.status, resolution_notes: notes })}>
+            <Button disabled={saving} onClick={() => updateComplaint(selected.id, { status: selected.status, priority: selected.priority, resolution_notes: notes })}>
               {saving ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>

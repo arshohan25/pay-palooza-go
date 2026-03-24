@@ -5,9 +5,20 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, RefreshCw, Trash2, Briefcase, Users, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, RefreshCw, Trash2, Briefcase, Users, ChevronDown, ChevronUp, Pencil } from "lucide-react";
+
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: "job_listing", entity_id: entityId, details
+    });
+  }
+}
 
 export default function AdminCareersManager() {
   const [jobs, setJobs] = useState<any[]>([]);
@@ -16,6 +27,8 @@ export default function AdminCareersManager() {
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
   const [applications, setApplications] = useState<Record<string, any[]>>({});
   const [form, setForm] = useState({ title: "", department: "", location: "Bangladesh", type: "full-time", description: "", requirements: "" });
+  const [editingJob, setEditingJob] = useState<any>(null);
+  const [editForm, setEditForm] = useState({ title: "", department: "", location: "", type: "", description: "", requirements: "" });
 
   const load = async () => {
     setLoading(true);
@@ -28,15 +41,16 @@ export default function AdminCareersManager() {
 
   const create = async () => {
     if (!form.title.trim()) { toast.error("Title is required"); return; }
-    const { error } = await supabase.from("job_listings").insert({
+    const { data, error } = await supabase.from("job_listings").insert({
       title: form.title.trim(),
       department: form.department.trim() || null,
       location: form.location.trim(),
       type: form.type,
       description: form.description.trim() || null,
       requirements: form.requirements.trim() || null,
-    });
+    }).select("id").single();
     if (error) { toast.error(error.message); return; }
+    await auditLog("job_created", data.id, { title: form.title });
     toast.success("Job posted");
     setForm({ title: "", department: "", location: "Bangladesh", type: "full-time", description: "", requirements: "" });
     setShowCreate(false);
@@ -45,13 +59,44 @@ export default function AdminCareersManager() {
 
   const toggle = async (id: string, current: boolean) => {
     await supabase.from("job_listings").update({ is_active: !current }).eq("id", id);
+    await auditLog("job_toggled", id, { is_active: !current });
     toast.success(current ? "Job hidden" : "Job published");
     load();
   };
 
   const remove = async (id: string) => {
     await supabase.from("job_listings").delete().eq("id", id);
+    await auditLog("job_deleted", id, {});
     toast.success("Job deleted");
+    load();
+  };
+
+  const openEdit = (j: any) => {
+    setEditingJob(j);
+    setEditForm({
+      title: j.title ?? "",
+      department: j.department ?? "",
+      location: j.location ?? "",
+      type: j.type ?? "full-time",
+      description: j.description ?? "",
+      requirements: j.requirements ?? "",
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editingJob) return;
+    const { error } = await supabase.from("job_listings").update({
+      title: editForm.title.trim(),
+      department: editForm.department.trim() || null,
+      location: editForm.location.trim(),
+      type: editForm.type,
+      description: editForm.description.trim() || null,
+      requirements: editForm.requirements.trim() || null,
+    }).eq("id", editingJob.id);
+    if (error) { toast.error(error.message); return; }
+    await auditLog("job_edited", editingJob.id, { title: editForm.title });
+    toast.success("Job updated");
+    setEditingJob(null);
     load();
   };
 
@@ -64,6 +109,7 @@ export default function AdminCareersManager() {
 
   const updateAppStatus = async (appId: string, jobId: string, status: string) => {
     await supabase.from("job_applications").update({ status }).eq("id", appId);
+    await auditLog("application_" + status, appId, { job_id: jobId });
     toast.success(`Marked as ${status}`);
     loadApps(jobId);
   };
@@ -92,11 +138,7 @@ export default function AdminCareersManager() {
               <Input placeholder="Department" value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} />
               <Input placeholder="Location" value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} />
             </div>
-            <select
-              value={form.type}
-              onChange={e => setForm({ ...form, type: e.target.value })}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            >
+            <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
               <option value="full-time">Full-time</option>
               <option value="part-time">Part-time</option>
               <option value="contract">Contract</option>
@@ -127,12 +169,27 @@ export default function AdminCareersManager() {
                     <p className="text-xs text-muted-foreground">{j.department || "—"} · {j.location} · {j.type}</p>
                   </div>
                   <Switch checked={j.is_active} onCheckedChange={() => toggle(j.id, j.is_active)} />
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(j)}>
+                    <Pencil className="w-3.5 h-3.5" />
+                  </Button>
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => loadApps(j.id)}>
                     {expandedJob === j.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   </Button>
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => remove(j.id)}>
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive"><Trash2 className="w-3.5 h-3.5" /></Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Job Listing?</AlertDialogTitle>
+                        <AlertDialogDescription>"{j.title}" and all associated applications will be affected.</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => remove(j.id)}>Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
 
                 {expandedJob === j.id && (
@@ -166,6 +223,31 @@ export default function AdminCareersManager() {
           ))}
         </div>
       )}
+
+      {/* Edit Job Dialog */}
+      <Dialog open={!!editingJob} onOpenChange={o => !o && setEditingJob(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Job</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="Job title" value={editForm.title} onChange={e => setEditForm({ ...editForm, title: e.target.value })} />
+            <div className="grid grid-cols-2 gap-2">
+              <Input placeholder="Department" value={editForm.department} onChange={e => setEditForm({ ...editForm, department: e.target.value })} />
+              <Input placeholder="Location" value={editForm.location} onChange={e => setEditForm({ ...editForm, location: e.target.value })} />
+            </div>
+            <select value={editForm.type} onChange={e => setEditForm({ ...editForm, type: e.target.value })} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+              <option value="full-time">Full-time</option>
+              <option value="part-time">Part-time</option>
+              <option value="contract">Contract</option>
+            </select>
+            <Textarea placeholder="Job description" value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} rows={3} />
+            <Textarea placeholder="Requirements" value={editForm.requirements} onChange={e => setEditForm({ ...editForm, requirements: e.target.value })} rows={3} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingJob(null)}>Cancel</Button>
+            <Button onClick={saveEdit}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

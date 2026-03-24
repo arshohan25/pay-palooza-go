@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { Scale, Eye } from "lucide-react";
+import { Scale, Eye, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
@@ -32,6 +34,15 @@ const STATUS_COLORS: Record<string, string> = {
   rejected: "bg-muted text-muted-foreground",
 };
 
+async function auditLog(action: string, entityId: string, details: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await supabase.from("audit_logs").insert({
+      actor_id: session.user.id, action, entity_type: "dispute", entity_id: entityId, details
+    });
+  }
+}
+
 export default function AdminDisputeResolution() {
   const [disputes, setDisputes] = useState<Dispute[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +50,9 @@ export default function AdminDisputeResolution() {
   const [newStatus, setNewStatus] = useState("");
   const [notes, setNotes] = useState("");
   const [filter, setFilter] = useState("all");
+  const [showCreate, setShowCreate] = useState(false);
+  const [createForm, setCreateForm] = useState({ phone: "", subject: "", description: "", transaction_id: "" });
+  const [creating, setCreating] = useState(false);
   const { visible: realtimeVisible, flash: realtimeFlash } = useRealtimeIndicator();
 
   const load = async () => {
@@ -54,7 +68,6 @@ export default function AdminDisputeResolution() {
 
   useEffect(() => { load(); }, []);
 
-  // Realtime: auto-refresh disputes on any change
   useEffect(() => {
     const channel = supabase
       .channel("admin-disputes-realtime")
@@ -80,7 +93,38 @@ export default function AdminDisputeResolution() {
     }
     const { error } = await supabase.from("disputes").update(update).eq("id", viewing.id);
     if (error) { toast.error("Update failed"); return; }
+    await auditLog("dispute_status_update", viewing.id, { old_status: viewing.status, new_status: newStatus });
     toast.success("Dispute updated");
+    setViewing(null);
+    load();
+  };
+
+  const handleCreate = async () => {
+    if (!createForm.subject.trim() || !createForm.phone.trim()) { toast.error("Phone and subject required"); return; }
+    setCreating(true);
+    // Find user by phone
+    const { data: profile } = await supabase.from("profiles").select("user_id").eq("phone", createForm.phone.trim()).maybeSingle();
+    if (!profile) { toast.error("User not found with that phone"); setCreating(false); return; }
+    const { data, error } = await supabase.from("disputes").insert({
+      complainant_id: profile.user_id,
+      subject: createForm.subject.trim(),
+      description: createForm.description.trim() || null,
+      transaction_id: createForm.transaction_id.trim() || null,
+    }).select("id").single();
+    if (error) { toast.error(error.message); setCreating(false); return; }
+    await auditLog("dispute_created", data.id, { complainant_phone: createForm.phone, subject: createForm.subject });
+    toast.success("Dispute created");
+    setCreateForm({ phone: "", subject: "", description: "", transaction_id: "" });
+    setShowCreate(false);
+    setCreating(false);
+    load();
+  };
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("disputes").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    await auditLog("dispute_deleted", id, {});
+    toast.success("Dispute deleted");
     setViewing(null);
     load();
   };
@@ -101,16 +145,19 @@ export default function AdminDisputeResolution() {
             {openCount} open · {reviewCount} under review
           </p>
         </div>
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Disputes</SelectItem>
-            <SelectItem value="open">Open</SelectItem>
-            <SelectItem value="under_review">Under Review</SelectItem>
-            <SelectItem value="resolved">Resolved</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2">
+          <Button size="sm" onClick={() => setShowCreate(true)}><Plus className="w-4 h-4 mr-1" /> Create Dispute</Button>
+          <Select value={filter} onValueChange={setFilter}>
+            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Disputes</SelectItem>
+              <SelectItem value="open">Open</SelectItem>
+              <SelectItem value="under_review">Under Review</SelectItem>
+              <SelectItem value="resolved">Resolved</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <Card className="border-0 shadow-[var(--shadow-card)]">
@@ -141,10 +188,27 @@ export default function AdminDisputeResolution() {
                     <td className="px-4 py-3 text-muted-foreground text-xs">
                       {new Date(d.created_at).toLocaleDateString()}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 flex gap-1">
                       <Button variant="ghost" size="icon" onClick={() => openView(d)}>
                         <Eye className="w-4 h-4" />
                       </Button>
+                      {(d.status === "resolved" || d.status === "rejected") && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="w-4 h-4" /></Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Dispute?</AlertDialogTitle>
+                              <AlertDialogDescription>This will permanently remove this dispute record.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(d.id)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -160,6 +224,7 @@ export default function AdminDisputeResolution() {
         </CardContent>
       </Card>
 
+      {/* View/Update Dialog */}
       <Dialog open={!!viewing} onOpenChange={open => !open && setViewing(null)}>
         <DialogContent>
           <DialogHeader>
@@ -206,6 +271,35 @@ export default function AdminDisputeResolution() {
               <Button className="w-full" onClick={handleUpdate}>Update Dispute</Button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Dispute Dialog */}
+      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Create Dispute</DialogTitle></DialogHeader>
+          <div className="space-y-3 pt-2">
+            <div>
+              <Label>User Phone</Label>
+              <Input placeholder="01XXXXXXXXX" value={createForm.phone} onChange={e => setCreateForm({ ...createForm, phone: e.target.value })} />
+            </div>
+            <div>
+              <Label>Subject</Label>
+              <Input placeholder="Dispute subject" value={createForm.subject} onChange={e => setCreateForm({ ...createForm, subject: e.target.value })} />
+            </div>
+            <div>
+              <Label>Description</Label>
+              <Textarea placeholder="Details…" value={createForm.description} onChange={e => setCreateForm({ ...createForm, description: e.target.value })} rows={3} />
+            </div>
+            <div>
+              <Label>Transaction ID (optional)</Label>
+              <Input placeholder="Transaction UUID" value={createForm.transaction_id} onChange={e => setCreateForm({ ...createForm, transaction_id: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+            <Button disabled={creating} onClick={handleCreate}>{creating ? "Creating…" : "Create"}</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
