@@ -20,6 +20,8 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { email, action, code } = body;
 
+    const purpose = body.purpose || "email_verify";
+
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return new Response(
         JSON.stringify({ error: "Invalid email address" }),
@@ -45,7 +47,7 @@ Deno.serve(async (req) => {
         .from("otp_codes")
         .select("*")
         .eq("phone", email)
-        .eq("purpose", "email_verify")
+        .eq("purpose", purpose)
         .eq("code", code)
         .eq("verified", false)
         .gte("expires_at", new Date().toISOString())
@@ -79,7 +81,7 @@ Deno.serve(async (req) => {
       .from("otp_codes")
       .select("*", { count: "exact", head: true })
       .eq("phone", email)
-      .eq("purpose", "email_verify")
+      .eq("purpose", purpose)
       .gte("created_at", windowStart);
 
     if ((count ?? 0) >= MAX_OTP_PER_HOUR) {
@@ -94,7 +96,7 @@ Deno.serve(async (req) => {
       .from("otp_codes")
       .update({ verified: true })
       .eq("phone", email)
-      .eq("purpose", "email_verify")
+      .eq("purpose", purpose)
       .eq("verified", false);
 
     // Generate 6-digit OTP
@@ -104,7 +106,7 @@ Deno.serve(async (req) => {
     await supabaseAdmin.from("otp_codes").insert({
       phone: email,
       code: otpCode,
-      purpose: "email_verify",
+      purpose: purpose,
       expires_at: expiresAt,
     });
 
