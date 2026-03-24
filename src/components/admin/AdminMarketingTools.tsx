@@ -214,6 +214,7 @@ export default function AdminMarketingTools() {
 
   const toggleCashback = async (id: string, active: boolean) => {
     await supabase.from("cashback_rules").update({ is_active: !active } as any).eq("id", id);
+    await auditLog("cashback_toggled", id, { is_active: !active });
     loadCashbacks();
   };
 
