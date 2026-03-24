@@ -136,6 +136,7 @@ export default function AdminSmartRouting() {
       setShowLinkForm(false);
       setLinkForm({ title: "", amount: "", description: "", maxUses: "", expiresAt: "" });
       toast.success("Payment link created");
+      await auditLog("payment_link_created", "payment_link", "new", { title: linkForm.title });
       loadPaymentLinks();
     } catch {
       toast.error("Failed to create link");
