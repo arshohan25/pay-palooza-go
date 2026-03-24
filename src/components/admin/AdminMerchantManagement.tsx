@@ -272,6 +272,10 @@ export default function AdminMerchantManagement() {
         body: "Your merchant account has been approved.", category: "merchant",
       });
     }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "merchant_bulk_approve", entity_type: "merchant", entity_id: "bulk", details: { count: pending.length } }).then();
+    }
     toast.success(`Approved ${pending.length} merchants`);
     setSelectedIds(new Set());
     setBulkLoading(false);
@@ -284,6 +288,10 @@ export default function AdminMerchantManagement() {
     for (const m of targets) {
       const ns = m.status === "suspended" ? "active" : "suspended";
       await supabase.from("merchants").update({ status: ns as any }).eq("id", m.id);
+    }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "merchant_bulk_toggle", entity_type: "merchant", entity_id: "bulk", details: { count: targets.length } }).then();
     }
     toast.success(`Toggled ${targets.length} merchants`);
     setSelectedIds(new Set());
