@@ -166,59 +166,48 @@ function AppConfigTab() {
         </CardContent>
       </Card>
       <Card className="border-0 shadow-[var(--shadow-card)]">
-        <CardContent className="p-4 space-y-3">
-          <p className="text-sm font-medium text-foreground flex items-center gap-2">
-            <Clock className="w-4 h-4 text-primary" /> Team Session Timeout
-          </p>
-          <p className="text-[10px] text-muted-foreground">
-            Auto-logout team members after this period of inactivity.
-          </p>
-          <Select value={sessionTimeout} onValueChange={saveSessionTimeout}>
-            <SelectTrigger className="h-9 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="5">5 minutes</SelectItem>
-              <SelectItem value="10">10 minutes</SelectItem>
-              <SelectItem value="15">15 minutes</SelectItem>
-              <SelectItem value="30">30 minutes</SelectItem>
-              <SelectItem value="45">45 minutes</SelectItem>
-              <SelectItem value="60">1 hour</SelectItem>
-              <SelectItem value="120">2 hours</SelectItem>
-              <SelectItem value="180">3 hours</SelectItem>
-              <SelectItem value="240">4 hours</SelectItem>
-              <SelectItem value="360">6 hours</SelectItem>
-              <SelectItem value="480">8 hours</SelectItem>
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
-      <Card className="border-0 shadow-[var(--shadow-card)]">
-        <CardContent className="p-4 space-y-3">
-          <p className="text-sm font-medium text-foreground flex items-center gap-2">
-            <Clock className="w-4 h-4 text-primary" /> User Session Timeout
-          </p>
-          <p className="text-[10px] text-muted-foreground">
-            Auto-logout users, agents, distributors, and merchants after inactivity.
-          </p>
-          <Select value={userSessionTimeout} onValueChange={saveUserSessionTimeout}>
-            <SelectTrigger className="h-9 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="5">5 minutes</SelectItem>
-              <SelectItem value="10">10 minutes</SelectItem>
-              <SelectItem value="15">15 minutes</SelectItem>
-              <SelectItem value="30">30 minutes</SelectItem>
-              <SelectItem value="45">45 minutes</SelectItem>
-              <SelectItem value="60">1 hour</SelectItem>
-              <SelectItem value="120">2 hours</SelectItem>
-              <SelectItem value="180">3 hours</SelectItem>
-              <SelectItem value="240">4 hours</SelectItem>
-              <SelectItem value="360">6 hours</SelectItem>
-              <SelectItem value="480">8 hours</SelectItem>
-            </SelectContent>
-          </Select>
+        <CardContent className="p-4 space-y-4">
+          <div>
+            <p className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Clock className="w-4 h-4 text-primary" /> Session Timeout Management
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Configure auto-logout duration per role after inactivity.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2 text-[10px] text-muted-foreground font-medium px-1">
+              <span>Role</span>
+              <span>Timeout</span>
+            </div>
+            <div className="divide-y divide-border/40">
+              {ROLE_TIMEOUT_CONFIG.map(r => (
+                <div key={r.key} className="grid grid-cols-2 gap-2 items-center py-2">
+                  <span className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                    <span>{r.icon}</span> {r.label}
+                  </span>
+                  <Select value={roleTimeouts[r.key]} onValueChange={v => saveRoleTimeout(r.key, v)}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5 minutes</SelectItem>
+                      <SelectItem value="10">10 minutes</SelectItem>
+                      <SelectItem value="15">15 minutes</SelectItem>
+                      <SelectItem value="30">30 minutes</SelectItem>
+                      <SelectItem value="45">45 minutes</SelectItem>
+                      <SelectItem value="60">1 hour</SelectItem>
+                      <SelectItem value="120">2 hours</SelectItem>
+                      <SelectItem value="180">3 hours</SelectItem>
+                      <SelectItem value="240">4 hours</SelectItem>
+                      <SelectItem value="360">6 hours</SelectItem>
+                      <SelectItem value="480">8 hours</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </div>
+          </div>
         </CardContent>
       </Card>
       <Card className="border-0 shadow-[var(--shadow-card)]">
