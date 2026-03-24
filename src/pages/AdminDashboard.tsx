@@ -964,7 +964,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-background flex">
       {/* ═══ Persistent sidebar – desktop only ═══ */}
-      <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-56 bg-card border-r border-border z-40">
+      <aside className="hidden lg:flex flex-col fixed left-0 top-0 bottom-0 w-56 bg-card border-r border-border z-40">
         <div className="px-4 py-4 flex items-center gap-2.5 border-b border-border">
           <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="shrink-0 h-8 w-8">
             <ChevronLeft className="w-4 h-4" />
