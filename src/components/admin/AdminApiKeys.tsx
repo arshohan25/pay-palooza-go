@@ -233,7 +233,7 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
       </div>
 
       {/* Desktop Table */}
-      <Card className="hidden md:block">
+      <Card className="hidden md:block overflow-hidden">
         <div className="overflow-x-auto">
         <Table className="min-w-[800px]">
           <TableHeader>
