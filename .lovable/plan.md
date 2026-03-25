@@ -1,22 +1,30 @@
 
 
-## Plan: Duplicate TxnID Detection
+## Plan: Make Live Chat Responsive
 
-### What
-Add a real-time check when users type a Transaction ID in the Add Money proof step. Query `fund_requests` to see if the same `transaction_id_proof` was already submitted. Show a warning if a duplicate is found.
+### Problem
+The Live Chat admin panel has layout issues at various breakpoints: long messages overflow, chat header action buttons crowd on tablets, and the two-panel layout feels cramped on medium screens. The screenshot shows encrypted text overflowing the message bubble.
 
 ### Changes
 
-**`src/components/AddMoneyFlow.tsx`**
-1. Add state: `duplicateTxnWarning` (string)
-2. Add a debounced check function that queries `fund_requests` table for existing rows matching the entered `transaction_id_proof` (case-insensitive trim)
-3. On the proof step, show a destructive-colored warning below the TxnID input if duplicate found (e.g., "This Transaction ID was already submitted on [date]. Submitting duplicate IDs may delay processing.")
-4. Also check `mfs_incoming_payments` table for the same `txn_id` to cover webhook-received payments
-5. Block submission (disable Continue) if a confirmed duplicate is detected, or at minimum show a strong warning
+**`src/components/admin/AdminSupportDashboard.tsx`**
+
+1. **Fix message overflow** - Add `overflow-hidden word-break: break-all` to message bubbles so long strings (like encrypted text or base64) wrap properly instead of overflowing horizontally.
+
+2. **Responsive chat header actions** - Stack action buttons vertically or use icon-only buttons on smaller screens (below `lg`). Hide button text on tablets, show only icons with tooltips.
+
+3. **Responsive conversation list width** - Change sidebar from `md:w-80 lg:w-96` to `md:w-72 lg:w-80 xl:w-96` for better fit on medium screens.
+
+4. **Responsive user info in chat header** - Truncate long email/phone on smaller screens, hide email below `lg`.
+
+5. **Message bubble max-width** - Increase from `max-w-[70%]` to `max-w-[85%]` on mobile, keep `70%` on larger screens using responsive classes.
+
+6. **Quick Replies popover** - Make popover width responsive: `w-64 md:w-80`.
+
+7. **Conversation list items** - Ensure email and assigned agent badges wrap properly on narrow sidebars. Hide email in sidebar below `lg`.
 
 ### Technical Detail
-- Query: `supabase.from('fund_requests').select('id,created_at,status').eq('transaction_id_proof', txnId.trim()).neq('status','rejected').limit(1)`
-- Debounce 500ms after user stops typing to avoid excessive queries
-- Also query `mfs_incoming_payments` by `txn_id` for cross-check
-- Display warning with the date and status of the existing request
+- All changes are CSS/Tailwind only within `AdminSupportDashboard.tsx`
+- Key fix: `break-all` or `overflow-wrap: anywhere` on message content `<p>` to handle base64/encrypted strings
+- Use responsive utility classes (`md:`, `lg:`, `xl:`) for progressive layout enhancement
 
