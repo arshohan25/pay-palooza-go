@@ -234,7 +234,8 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
 
       {/* Table */}
       <Card>
-        <Table>
+        <div className="overflow-x-auto">
+        <Table className="min-w-[800px]">
           <TableHeader>
             <TableRow>
               <TableHead>Merchant</TableHead>
@@ -295,7 +296,7 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
                   </Button>
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">{format(new Date(k.created_at), "dd MMM yyyy")}</TableCell>
-                <TableCell>
+                <TableCell className="whitespace-nowrap">
                   <div className="flex gap-1">
                     <Button
                       size="sm"
@@ -320,6 +321,7 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
             ))}
           </TableBody>
         </Table>
+        </div>
       </Card>
 
       {/* Permissions Editor Dialog */}
