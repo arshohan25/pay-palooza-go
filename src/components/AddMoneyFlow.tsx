@@ -72,6 +72,9 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   const pinRef = useRef<HTMLInputElement>(null);
   const [submittedRequestId, setSubmittedRequestId] = useState<string | null>(null);
   const [trackingStatus, setTrackingStatus] = useState<string>("pending");
+  const [duplicateTxnWarning, setDuplicateTxnWarning] = useState("");
+  const [checkingDuplicate, setCheckingDuplicate] = useState(false);
+  const duplicateCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const { accounts: depositAccounts, loading: depositLoading } = useDepositAccounts(source ?? undefined);
@@ -135,8 +138,37 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
     }
   };
 
+  // Debounced duplicate TxnID check
+  const checkDuplicateTxnId = (value: string) => {
+    if (duplicateCheckTimer.current) clearTimeout(duplicateCheckTimer.current);
+    if (!value.trim()) { setDuplicateTxnWarning(""); setCheckingDuplicate(false); return; }
+    setCheckingDuplicate(true);
+    duplicateCheckTimer.current = setTimeout(async () => {
+      try {
+        const trimmed = value.trim();
+        const { data } = await supabase
+          .from("fund_requests")
+          .select("id,created_at,status")
+          .eq("transaction_id_proof", trimmed)
+          .neq("status", "rejected")
+          .limit(1);
+        if (data && data.length > 0) {
+          const date = new Date(data[0].created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+          setDuplicateTxnWarning(`This Transaction ID was already submitted on ${date} (${data[0].status}). Duplicate IDs may delay processing.`);
+        } else {
+          setDuplicateTxnWarning("");
+        }
+      } catch {
+        setDuplicateTxnWarning("");
+      } finally {
+        setCheckingDuplicate(false);
+      }
+    }, 500);
+  };
+
   const handleProofContinue = () => {
     if (!txnId.trim() && !proofFile) { setError("Provide a Transaction ID or upload proof."); return; }
+    if (duplicateTxnWarning) { setError("Please use a different Transaction ID — this one was already submitted."); return; }
     setPin("");
     setPinError("");
     goTo("pin");
@@ -359,14 +391,25 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-foreground">Transaction ID / Reference</label>
                       <Input type="text" placeholder="e.g. TXN123456789" value={txnId}
-                        onChange={(e) => { setTxnId(e.target.value); setError(""); validateTxnId(e.target.value); }}
+                        onChange={(e) => { setTxnId(e.target.value); setError(""); validateTxnId(e.target.value); checkDuplicateTxnId(e.target.value); }}
                         className="h-12 bg-card border-border" />
+                      {checkingDuplicate && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Loader2 size={12} className="animate-spin" />Checking for duplicates…
+                        </p>
+                      )}
+                      {duplicateTxnWarning && (
+                        <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 flex gap-2">
+                          <XCircle size={16} className="text-destructive shrink-0 mt-0.5" />
+                          <p className="text-xs text-destructive leading-relaxed">{duplicateTxnWarning}</p>
+                        </div>
+                      )}
                       {txnIdWarning && (
                         <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
                           <AlertCircle size={12} />{txnIdWarning}
                         </p>
                       )}
-                      {source && TXNID_PATTERNS[source] && !txnIdWarning && txnId.trim() && (
+                      {source && TXNID_PATTERNS[source] && !txnIdWarning && txnId.trim() && !duplicateTxnWarning && (
                         <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                           <CheckCircle2 size={12} />Format looks correct
                         </p>
