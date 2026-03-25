@@ -18,6 +18,7 @@ import OnboardingSlides, { hasSeenOnboarding, markOnboardingDone } from "@/compo
 import TxnToast from "@/components/TxnToast";
 import { useKycStatus } from "@/hooks/use-kyc-status";
 import { parseQrData } from "@/lib/qrParser";
+import { BalanceCardSkeleton, QuickActionsSkeleton, TransactionListSkeleton } from "@/components/HomeSkeletons";
 
 // Lazy load below-fold / non-critical home components
 const AppHeader = lazy(() => import("@/components/AppHeader"));
