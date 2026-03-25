@@ -317,5 +317,11 @@ export default function AdminFundRequests() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </TabsContent>
+
+    <TabsContent value="incoming">
+      <AdminIncomingMfs />
+    </TabsContent>
+    </Tabs>
   );
 }
