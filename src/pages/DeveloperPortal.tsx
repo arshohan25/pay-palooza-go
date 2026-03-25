@@ -164,10 +164,11 @@ export default function DeveloperPortal() {
             Build with <span className="text-primary">EasyPay</span>
           </h1>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
-            Accept payments, generate dynamic QR codes, and manage transactions with our simple REST API and drop-in SDK.
+            Accept payments, connect banking rails, integrate MFS providers, and manage transactions with our simple REST API and drop-in SDK. Open to merchants, banks, card networks, MFS providers, and billers.
           </p>
-          <div className="flex items-center justify-center gap-3 pt-4">
+          <div className="flex items-center justify-center gap-3 pt-4 flex-wrap">
             <a href="#quick-start"><Button className="gap-2"><Zap className="w-4 h-4" /> Quick Start</Button></a>
+            <a href="#partners"><Button variant="outline" className="gap-2"><Handshake className="w-4 h-4" /> Partner Programs</Button></a>
             <a href="#api-reference"><Button variant="outline" className="gap-2"><Code2 className="w-4 h-4" /> API Reference</Button></a>
           </div>
         </section>
