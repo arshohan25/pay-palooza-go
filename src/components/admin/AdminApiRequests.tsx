@@ -13,6 +13,9 @@ import AdminApiKeys from "./AdminApiKeys";
 import AdminApiLogs from "./AdminApiLogs";
 import AdminApiRateLimits from "./AdminApiRateLimits";
 import AdminApiIpWhitelist from "./AdminApiIpWhitelist";
+import AdminApiWebhooks from "./AdminApiWebhooks";
+import AdminApiSandbox from "./AdminApiSandbox";
+import AdminApiUsageAnalytics from "./AdminApiUsageAnalytics";
 
 async function auditLog(action: string, entityId: string, details: any) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -44,7 +47,7 @@ const STATUS_BADGE: Record<string, { variant: "default" | "secondary" | "destruc
 };
 
 export default function AdminApiRequests() {
-  const [activeTab, setActiveTab] = useState<"requests" | "keys" | "logs" | "rate-limits" | "ip-whitelist">("requests");
+  const [activeTab, setActiveTab] = useState<"requests" | "keys" | "logs" | "rate-limits" | "ip-whitelist" | "webhooks" | "sandbox" | "usage">("requests");
   const [requests, setRequests] = useState<ApiRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
@@ -197,6 +200,9 @@ export default function AdminApiRequests() {
           { key: "logs" as const, label: "Logs" },
           { key: "rate-limits" as const, label: "Rate Limits" },
           { key: "ip-whitelist" as const, label: "IP Whitelist" },
+          { key: "webhooks" as const, label: "Webhooks" },
+          { key: "sandbox" as const, label: "Sandbox" },
+          { key: "usage" as const, label: "Usage" },
         ]).map(t => (
           <button
             key={t.key}
@@ -216,6 +222,12 @@ export default function AdminApiRequests() {
         <AdminApiRateLimits search={search} />
       ) : activeTab === "ip-whitelist" ? (
         <AdminApiIpWhitelist search={search} />
+      ) : activeTab === "webhooks" ? (
+        <AdminApiWebhooks search={search} />
+      ) : activeTab === "sandbox" ? (
+        <AdminApiSandbox />
+      ) : activeTab === "usage" ? (
+        <AdminApiUsageAnalytics search={search} />
       ) : (
         <>
           {/* Summary cards */}
