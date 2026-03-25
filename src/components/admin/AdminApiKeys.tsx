@@ -262,16 +262,16 @@ export default function AdminApiKeys({ search, onGenerateRef }: AdminApiKeysProp
       {/* Desktop Table */}
       <Card className="hidden md:block">
         <div className="overflow-x-auto">
-        <Table className="min-w-[1050px]">
+        <Table className="w-full">
           <TableHeader>
             <TableRow>
-              <TableHead className="min-w-[120px]">Merchant</TableHead>
-              <TableHead className="min-w-[180px]">API Key</TableHead>
-              <TableHead className="min-w-[60px]">Env</TableHead>
-              <TableHead className="min-w-[90px]">Status</TableHead>
-              <TableHead className="min-w-[80px]">Permissions</TableHead>
-              <TableHead className="whitespace-nowrap min-w-[100px]">Created</TableHead>
-              <TableHead className="whitespace-nowrap min-w-[180px]">Actions</TableHead>
+              <TableHead>Merchant</TableHead>
+              <TableHead>API Key</TableHead>
+              <TableHead className="w-auto">Env</TableHead>
+              <TableHead className="w-auto">Status</TableHead>
+              <TableHead className="w-auto">Permissions</TableHead>
+              <TableHead className="w-auto whitespace-nowrap">Created</TableHead>
+              <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
