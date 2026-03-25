@@ -1,40 +1,73 @@
 
 
-## Redesign: Premium API Keys UI
+## Complete Referral Flow End-to-End
 
-### Design Direction
-Replace the plain table and basic stat cards with a polished, modern aesthetic featuring glass-morphism stat cards, refined typography, subtle gradients, dot-pattern status indicators, and a cleaner table with better visual hierarchy.
+### Current State
+- **Database**: `referrals`, `referral_rewards` tables exist with RLS policies
+- **Triggers**: `check_referral_milestones` fires automatically on transaction insert and KYC verification
+- **UI**: ReferPage shows referral dashboard; AuthPage has `referralCodeInput` state but **no input field** to enter it
+- **Auth**: `signUp()` in `lib/auth.ts` accepts referral code and creates the referral row
 
-### Changes in `src/components/admin/AdminApiKeys.tsx`
+### What's Missing
 
-**1. Summary Cards -- Glass-morphism style**
-- Replace plain `Card` with gradient backgrounds + backdrop-blur
-- Total Keys: subtle primary gradient bg, Live icon with glow
-- Active: emerald gradient tint
-- Revoked: rose/red gradient tint
-- Add ring/border highlights, larger icon with rounded bg container
-- Use `tracking-tight` on numbers, `uppercase tracking-wider text-[10px]` on labels
+1. **No referral code input field** during registration — the state exists but no UI renders it
+2. **No referral code validation** — user can enter any text; should validate format and existence
+3. **No notifications to referrer** when milestones are hit
+4. **No deep-link / URL-based referral** — sharing a link should pre-fill the code on signup
 
-**2. Desktop Table -- Premium refinement**
-- Card wrapper: `border-0 shadow-lg rounded-2xl overflow-hidden`
-- Table header: `bg-muted/30` with `uppercase text-[11px] tracking-wider font-semibold text-muted-foreground/70` styling
-- Rows: remove default borders, use `hover:bg-primary/[0.03]` subtle hover, add `border-b border-border/50` thin separator
-- API Key code block: refined with `bg-gradient-to-r from-muted/80 to-muted/40 border border-border/50 rounded-md` 
-- Env badge: pill style with dot indicator (`w-1.5 h-1.5 rounded-full bg-emerald-500` for Live, `bg-amber-500` for Test) instead of solid badge
-- Status badge: softer colors -- Active gets `bg-emerald-500/10 text-emerald-600 border-emerald-500/20`, Revoked gets `bg-red-500/10 text-red-600 border-red-500/20`
-- Permissions: show as subtle `bg-primary/5 text-primary rounded-full px-2.5 py-0.5` chip
-- Action buttons: icon-only with tooltips for Rotate/Delete, text for Revoke/Reactivate with refined sizing
+### Plan
 
-**3. Mobile Cards -- Elevated design**
-- `rounded-2xl border-0 shadow-md` wrapper
-- Top section: merchant name with env/status pills aligned right
-- API key section: full-width code block with gradient bg
-- Action row: refined button styling with `rounded-xl` corners
+**1. Add Referral Code Input to Registration (AuthPage.tsx)**
+- On the `register_phone` screen, add a collapsible "Have a referral code?" section below the phone input
+- Tapping it reveals a text input bound to `referralCodeInput`
+- Validate format (`EZP-XXXX-XXXX`) on blur; show error if invalid
+- Also read `?ref=CODE` from URL params and pre-fill the input automatically
 
-**4. Dialogs -- Polish**
-- Add subtle gradient header bg to Generate Key and Permissions dialogs
-- Credential reveal section: use card-in-card pattern with amber/warning tint background
-- Better spacing and label hierarchy
+**2. Validate Referral Code Before Signup (lib/auth.ts)**
+- In `signUp()`, before inserting the referral row, verify the code exists and belongs to a different user
+- Already partially done — just need to surface errors to the UI if the code is invalid
 
-All logic (fetching, mutations, realtime) remains unchanged. Only the JSX class names and minor structural nesting for visual purposes.
+**3. Add Referrer Notifications on Milestone Payouts (DB Migration)**
+- Update `check_referral_milestones` function to insert a notification row for the referrer when each milestone is paid:
+  - Milestone 1: "Your referral earned ৳10! [referee] completed KYC"
+  - Milestone 2: "Your referral earned ৳20! [referee] made their first transaction"  
+  - Milestone 3: "Your referral earned ৳20! [referee] completed 5 transactions"
+
+**4. Support Deep-Link Referrals (AuthPage.tsx + ReferPage.tsx)**
+- Read `?ref=` query param from URL in AuthPage and auto-fill `referralCodeInput`
+- In ReferPage share actions, include the deep link: `https://pay-palooza-go.lovable.app/?ref=CODE`
+
+### Files to Change
+
+| File | Change |
+|------|--------|
+| `src/pages/AuthPage.tsx` | Add referral code input field on register_phone screen; read `?ref=` URL param |
+| `src/pages/ReferPage.tsx` | Update share text to include deep link URL |
+| `src/lib/auth.ts` | Add referral code format validation before lookup |
+| DB Migration | Update `check_referral_milestones` to insert notification rows for referrer on each milestone payout |
+
+### Technical Details
+
+**Referral Input UI** (register_phone screen):
+```text
+┌─────────────────────────┐
+│ 📱 Enter mobile number  │
+│ [01XXXXXXXXX          ] │
+│                         │
+│ 🎁 Have a referral code?│  ← collapsible
+│ [EZP-XXXX-XXXX       ] │  ← shown when expanded
+│                         │
+│ [  Send OTP  →        ] │
+└─────────────────────────┘
+```
+
+**Deep link format**: `https://pay-palooza-go.lovable.app/?ref=EZP-XXXX-XXXX`
+
+**Notification insert** (inside `check_referral_milestones`):
+```sql
+INSERT INTO notifications (user_id, title, body, category, metadata)
+VALUES (v_referral.referrer_id, '🎉 Referral Reward: ৳10', 
+  'Your referred friend completed KYC verification!', 'referral',
+  jsonb_build_object('referral_id', v_referral.id, 'milestone', 'kyc_verified', 'amount', 10));
+```
 
