@@ -1,73 +1,26 @@
 
 
-## Complete Referral Flow End-to-End
+## Auto-Track Referrals via Link Only (Remove Manual Code Input)
 
-### Current State
-- **Database**: `referrals`, `referral_rewards` tables exist with RLS policies
-- **Triggers**: `check_referral_milestones` fires automatically on transaction insert and KYC verification
-- **UI**: ReferPage shows referral dashboard; AuthPage has `referralCodeInput` state but **no input field** to enter it
-- **Auth**: `signUp()` in `lib/auth.ts` accepts referral code and creates the referral row
+### What Changes
 
-### What's Missing
+The referral code input field on registration will be removed. Referrals will only be tracked automatically when someone registers via a referral link (e.g., `https://pay-palooza-go.lovable.app/?ref=EZP-XXXX-XXXX`). The `?ref=` param is silently captured and used during signup — no user interaction needed.
 
-1. **No referral code input field** during registration — the state exists but no UI renders it
-2. **No referral code validation** — user can enter any text; should validate format and existence
-3. **No notifications to referrer** when milestones are hit
-4. **No deep-link / URL-based referral** — sharing a link should pre-fill the code on signup
+### Changes
 
-### Plan
+**1. AuthPage.tsx — Remove manual referral UI, keep silent URL capture**
+- Remove the collapsible "Have a referral code?" section (lines ~914-963) entirely
+- Remove `referralExpanded` and `referralError` state variables
+- Keep `referralCodeInput` state but populate it silently from `?ref=` URL param only (existing `useEffect` already does this)
+- Remove the `Gift` and `ChevronDown` imports if unused elsewhere
 
-**1. Add Referral Code Input to Registration (AuthPage.tsx)**
-- On the `register_phone` screen, add a collapsible "Have a referral code?" section below the phone input
-- Tapping it reveals a text input bound to `referralCodeInput`
-- Validate format (`EZP-XXXX-XXXX`) on blur; show error if invalid
-- Also read `?ref=CODE` from URL params and pre-fill the input automatically
+**2. ReferPage.tsx — Ensure share links use the deep link URL**
+- Already done from prior work; verify share text includes `?ref=CODE` URL
 
-**2. Validate Referral Code Before Signup (lib/auth.ts)**
-- In `signUp()`, before inserting the referral row, verify the code exists and belongs to a different user
-- Already partially done — just need to surface errors to the UI if the code is invalid
+**3. lib/auth.ts — No changes needed**
+- The `signUp()` function already accepts and processes the referral code; it just won't receive one unless `?ref=` was in the URL
 
-**3. Add Referrer Notifications on Milestone Payouts (DB Migration)**
-- Update `check_referral_milestones` function to insert a notification row for the referrer when each milestone is paid:
-  - Milestone 1: "Your referral earned ৳10! [referee] completed KYC"
-  - Milestone 2: "Your referral earned ৳20! [referee] made their first transaction"  
-  - Milestone 3: "Your referral earned ৳20! [referee] completed 5 transactions"
-
-**4. Support Deep-Link Referrals (AuthPage.tsx + ReferPage.tsx)**
-- Read `?ref=` query param from URL in AuthPage and auto-fill `referralCodeInput`
-- In ReferPage share actions, include the deep link: `https://pay-palooza-go.lovable.app/?ref=CODE`
-
-### Files to Change
-
-| File | Change |
-|------|--------|
-| `src/pages/AuthPage.tsx` | Add referral code input field on register_phone screen; read `?ref=` URL param |
-| `src/pages/ReferPage.tsx` | Update share text to include deep link URL |
-| `src/lib/auth.ts` | Add referral code format validation before lookup |
-| DB Migration | Update `check_referral_milestones` to insert notification rows for referrer on each milestone payout |
-
-### Technical Details
-
-**Referral Input UI** (register_phone screen):
-```text
-┌─────────────────────────┐
-│ 📱 Enter mobile number  │
-│ [01XXXXXXXXX          ] │
-│                         │
-│ 🎁 Have a referral code?│  ← collapsible
-│ [EZP-XXXX-XXXX       ] │  ← shown when expanded
-│                         │
-│ [  Send OTP  →        ] │
-└─────────────────────────┘
-```
-
-**Deep link format**: `https://pay-palooza-go.lovable.app/?ref=EZP-XXXX-XXXX`
-
-**Notification insert** (inside `check_referral_milestones`):
-```sql
-INSERT INTO notifications (user_id, title, body, category, metadata)
-VALUES (v_referral.referrer_id, '🎉 Referral Reward: ৳10', 
-  'Your referred friend completed KYC verification!', 'referral',
-  jsonb_build_object('referral_id', v_referral.id, 'milestone', 'kyc_verified', 'amount', 10));
-```
+### Result
+- Users sharing their referral link → recipient clicks → opens registration page → `?ref=CODE` is silently captured → on signup the referral row is created automatically
+- No manual code entry available — cleaner UX, prevents typos, and enforces link-based tracking
 
