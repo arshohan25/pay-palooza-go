@@ -388,11 +388,13 @@ const Index = () => {
     <>
       <AnimatePresence>
         {!isAuthenticated && (
-          <AuthPage onAuthenticated={() => {
-            // Auth state is now managed by useAuth hook via Supabase session
-            // onAuthenticated is called after successful sign-up/sign-in
-            // The useAuth hook will automatically pick up the session change
-          }} />
+          <Suspense fallback={null}>
+            <AuthPage onAuthenticated={() => {
+              // Auth state is now managed by useAuth hook via Supabase session
+              // onAuthenticated is called after successful sign-up/sign-in
+              // The useAuth hook will automatically pick up the session change
+            }} />
+          </Suspense>
         )}
       </AnimatePresence>
 
@@ -406,7 +408,9 @@ const Index = () => {
           ref={mainRef}
           className="flex-1 w-full max-w-xl mx-auto px-4 py-4 pb-32 md:pb-12 md:px-8 md:py-8 md:max-w-2xl overflow-x-hidden"
         >
-          {mainContent()}
+          <Suspense fallback={<div className="flex items-center justify-center min-h-[40vh]"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+            {mainContent()}
+          </Suspense>
         </main>
       </div>
 
@@ -414,86 +418,87 @@ const Index = () => {
       <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
 
       {/* ── Flow overlays ── */}
-      <AnimatePresence mode="wait" initial={false}>
-        {showSendMoney && <SendMoneyFlow key="send-money-flow" prefilledPhone={sendMoneyPrefilledPhone} onSuccess={(amt) => { sendMoneyOnComplete?.(amt); setSendMoneyOnComplete(undefined); }} onClose={() => { setShowSendMoney(false); setSendMoneyPrefilledPhone(undefined); setSendMoneyOnComplete(undefined); }} />}
-        {showCashOut   && <CashOutFlow key="cash-out-flow" onClose={() => setShowCashOut(false)} />}
-        {showPayment   && <PaymentFlow key="payment-flow" prefilledMerchantId={paymentPrefilledMerchant} onClose={() => { setShowPayment(false); setPaymentPrefilledMerchant(undefined); }} onDynamicQr={(session) => { setShowPayment(false); setPaymentPrefilledMerchant(undefined); setDynamicQrSession(session); }} />}
-        {showRecharge  && <MobileRechargeFlow key="recharge-flow" onClose={() => setShowRecharge(false)} />}
-        {showPayBill   && <PayBillFlow key="paybill-flow" onClose={() => setShowPayBill(false)} />}
-        {showAddMoney  && <AddMoneyFlow key="addmoney-flow" onClose={() => setShowAddMoney(false)} />}
-        
-        {showBankTransfer && <BankTransferFlow key="bank-transfer-flow" onClose={() => setShowBankTransfer(false)} />}
-        {showSavings   && <SavingsFlow key="savings-flow" onClose={() => setShowSavings(false)} />}
-        {showKycFlow   && <KycFlow key="kyc-flow" onClose={() => setShowKycFlow(false)} />}
-      </AnimatePresence>
-      <MerchantApplicationFlow open={showMerchantApply} onOpenChange={setShowMerchantApply} />
+      <Suspense fallback={null}>
+        <AnimatePresence mode="wait" initial={false}>
+          {showSendMoney && <SendMoneyFlow key="send-money-flow" prefilledPhone={sendMoneyPrefilledPhone} onSuccess={(amt) => { sendMoneyOnComplete?.(amt); setSendMoneyOnComplete(undefined); }} onClose={() => { setShowSendMoney(false); setSendMoneyPrefilledPhone(undefined); setSendMoneyOnComplete(undefined); }} />}
+          {showCashOut   && <CashOutFlow key="cash-out-flow" onClose={() => setShowCashOut(false)} />}
+          {showPayment   && <PaymentFlow key="payment-flow" prefilledMerchantId={paymentPrefilledMerchant} onClose={() => { setShowPayment(false); setPaymentPrefilledMerchant(undefined); }} onDynamicQr={(session) => { setShowPayment(false); setPaymentPrefilledMerchant(undefined); setDynamicQrSession(session); }} />}
+          {showRecharge  && <MobileRechargeFlow key="recharge-flow" onClose={() => setShowRecharge(false)} />}
+          {showPayBill   && <PayBillFlow key="paybill-flow" onClose={() => setShowPayBill(false)} />}
+          {showAddMoney  && <AddMoneyFlow key="addmoney-flow" onClose={() => setShowAddMoney(false)} />}
+          
+          {showBankTransfer && <BankTransferFlow key="bank-transfer-flow" onClose={() => setShowBankTransfer(false)} />}
+          {showSavings   && <SavingsFlow key="savings-flow" onClose={() => setShowSavings(false)} />}
+          {showKycFlow   && <KycFlow key="kyc-flow" onClose={() => setShowKycFlow(false)} />}
+        </AnimatePresence>
+        <MerchantApplicationFlow open={showMerchantApply} onOpenChange={setShowMerchantApply} />
 
+        {/* Scan & Pay QR flow */}
+        <QrScannerModal
+          open={showScanPay}
+          onClose={() => setShowScanPay(false)}
+          title="Scan & Pay"
+          onScan={async (result) => {
+            setShowScanPay(false);
+            const parsed = parseQrData(result);
 
-      {/* Scan & Pay QR flow */}
-      <QrScannerModal
-        open={showScanPay}
-        onClose={() => setShowScanPay(false)}
-        title="Scan & Pay"
-        onScan={async (result) => {
-          setShowScanPay(false);
-          const parsed = parseQrData(result);
-
-          if (parsed.flow === "dynamic_payment" && parsed.sessionId) {
-            setDynamicQrSession({
-              sessionId: parsed.sessionId,
-              merchantId: parsed.identifier,
-              amount: parsed.amount,
-              ref: parsed.ref,
-            });
-          } else if (parsed.flow === "payment") {
-            setPaymentPrefilledMerchant(parsed.identifier);
-            setShowPayment(true);
-          } else if (parsed.flow === "send") {
-            setSendMoneyPrefilledPhone(parsed.identifier);
-            setShowSendMoney(true);
-          } else {
-            // Unknown — try RPC fallback
-            try {
-              const { data } = await supabase.rpc("resolve_transfer_recipient", {
-                p_identifier: parsed.identifier,
-                p_flow: "send",
+            if (parsed.flow === "dynamic_payment" && parsed.sessionId) {
+              setDynamicQrSession({
+                sessionId: parsed.sessionId,
+                merchantId: parsed.identifier,
+                amount: parsed.amount,
+                ref: parsed.ref,
               });
-              const res = data as any;
-              if (res?.found) {
-                setSendMoneyPrefilledPhone(res.canonical_phone || parsed.identifier);
-                setShowSendMoney(true);
-              } else {
-                // Try payment flow
-                const { data: payData } = await supabase.rpc("resolve_transfer_recipient", {
+            } else if (parsed.flow === "payment") {
+              setPaymentPrefilledMerchant(parsed.identifier);
+              setShowPayment(true);
+            } else if (parsed.flow === "send") {
+              setSendMoneyPrefilledPhone(parsed.identifier);
+              setShowSendMoney(true);
+            } else {
+              // Unknown — try RPC fallback
+              try {
+                const { data } = await supabase.rpc("resolve_transfer_recipient", {
                   p_identifier: parsed.identifier,
-                  p_flow: "payment",
+                  p_flow: "send",
                 });
-                const payRes = payData as any;
-                if (payRes?.found) {
-                  setPaymentPrefilledMerchant(parsed.identifier);
-                  setShowPayment(true);
+                const res = data as any;
+                if (res?.found) {
+                  setSendMoneyPrefilledPhone(res.canonical_phone || parsed.identifier);
+                  setShowSendMoney(true);
                 } else {
-                  toast.error("Unrecognized QR code. Please try a valid EasyPay QR.");
+                  // Try payment flow
+                  const { data: payData } = await supabase.rpc("resolve_transfer_recipient", {
+                    p_identifier: parsed.identifier,
+                    p_flow: "payment",
+                  });
+                  const payRes = payData as any;
+                  if (payRes?.found) {
+                    setPaymentPrefilledMerchant(parsed.identifier);
+                    setShowPayment(true);
+                  } else {
+                    toast.error("Unrecognized QR code. Please try a valid EasyPay QR.");
+                  }
                 }
+              } catch {
+                toast.error("Could not process QR code. Please try again.");
               }
-            } catch {
-              toast.error("Could not process QR code. Please try again.");
             }
-          }
-        }}
-      />
-
-      {/* Dynamic QR Payment Sheet */}
-      {dynamicQrSession && (
-        <DynamicQrPaySheet
-          open={!!dynamicQrSession}
-          onClose={() => setDynamicQrSession(null)}
-          sessionId={dynamicQrSession.sessionId}
-          merchantId={dynamicQrSession.merchantId}
-          amount={dynamicQrSession.amount}
-          ref_={dynamicQrSession.ref}
+          }}
         />
-      )}
+
+        {/* Dynamic QR Payment Sheet */}
+        {dynamicQrSession && (
+          <DynamicQrPaySheet
+            open={!!dynamicQrSession}
+            onClose={() => setDynamicQrSession(null)}
+            sessionId={dynamicQrSession.sessionId}
+            merchantId={dynamicQrSession.merchantId}
+            amount={dynamicQrSession.amount}
+            ref_={dynamicQrSession.ref}
+          />
+        )}
+      </Suspense>
 
       {/* PWA install prompt */}
       <InstallPrompt isAuthenticated={isAuthenticated} />
