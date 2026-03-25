@@ -1,55 +1,22 @@
 
-Problem identified: I was fixing only the inner component, but the screenshot shows this is a layout-chain issue, not just a table issue.
 
-What’s actually causing the cut-off:
-1. `src/components/admin/AdminApiKeys.tsx`
-- The desktop table still uses `min-w-[800px]`, which is too small for 7 columns plus two action buttons.
-- The Actions column has no enforced width, so “Reactivate” gets squeezed and clipped.
+## Fix: API Keys Table Cut-off
 
-2. `src/pages/AdminDashboard.tsx`
-- The main admin content wrapper still has `overflow-x-hidden` on the main column.
-- That parent container can clip child content before the table’s own horizontal scroll can help.
+The problem is clear from the screenshot — the "Revoke"/"Reactivate" buttons are clipped on the right edge.
 
-3. `src/components/admin/AdminApiRequests.tsx`
-- The sub-tabs and request table were improved, but the API Keys tab is a separate child component, so those fixes do not solve the API Keys clipping.
+**Root cause**: At your viewport (1146px), after the sidebar (224px) and padding (~48px), the content area is roughly 874px wide. The table's `min-w-[950px]` forces it wider than the container, but the wrapping `Card` has `overflow-hidden` which clips instead of scrolling. The `overflow-x-auto` div inside should handle this, but the combination causes the clip.
 
-Implementation plan:
-1. Fix the parent dashboard container
-- Update the main admin column in `AdminDashboard.tsx` to stop horizontally clipping child panels.
-- Keep vertical scrolling behavior, but allow child sections like API Keys to manage their own horizontal overflow.
+### Changes
 
-2. Fix the API Keys desktop table sizing
-- Increase the table minimum width substantially so scrolling activates before buttons are compressed.
-- Add explicit width / no-wrap rules to:
-  - `Created`
-  - `Actions`
-  - action button group
-- Keep the action buttons on one line at all times.
+**1. `src/components/admin/AdminApiKeys.tsx`**
+- Remove `overflow-hidden` from the Card wrapper — this is what's clipping the scroll container
+- Keep `overflow-x-auto` on the inner div (this is correct)
+- Increase table `min-w` from `950px` to `1050px` so horizontal scroll activates properly instead of trying to squeeze content
+- Add `whitespace-nowrap` to the Created cell (not just the header)
 
-3. Rebalance the API Keys columns
-- Constrain earlier columns so they don’t steal space from Actions:
-  - mask/API key column
-  - permissions column
-  - created date column
-- Use nowrap where appropriate and allow truncation only on non-critical content.
+**2. `src/pages/AdminDashboard.tsx`**  
+- On the `<main>` element (line 1125), change `overflow-auto` to `overflow-y-auto overflow-x-hidden` — vertical scroll stays, but horizontal overflow is delegated to child scroll containers (the table's own `overflow-x-auto` div)
+- This prevents double scrollbars while letting inner components handle their own horizontal scroll
 
-4. Improve API Keys header responsiveness
-- If needed, make the top controls row wrap more gracefully so it doesn’t reduce available content width on medium desktop sizes.
+This approach ensures the table scrolls horizontally within its own container without being clipped by parent elements.
 
-5. Verify the full API Access Management section
-- Recheck:
-  - sub-tab overflow
-  - summary cards wrapping
-  - requests table scroll
-  - API Keys table actions visibility
-- Specifically confirm the revoked row shows the full “Reactivate” button at the current desktop viewport.
-
-Files to update:
-- `src/pages/AdminDashboard.tsx`
-- `src/components/admin/AdminApiKeys.tsx`
-- possibly minor polish in `src/components/admin/AdminApiRequests.tsx`
-
-Why previous attempts didn’t fully work:
-- They addressed scroll wrappers, but not the two real blockers together:
-  - the parent `overflow-x-hidden`
-  - the API Keys table being undersized for its actual column content
