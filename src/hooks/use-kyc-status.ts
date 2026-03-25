@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { fireSuccessConfetti } from "@/lib/confetti";
-import { haptics } from "@/lib/haptics";
 import { toast } from "sonner";
 
 export type KycStatus = "none" | "pending" | "verified" | "rejected";
