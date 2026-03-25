@@ -42,6 +42,7 @@ import DonationsPage from "./pages/DonationsPage";
 import LoanPage from "./pages/LoanPage";
 import InsurancePage from "./pages/InsurancePage";
 import GiftCardsPage from "./pages/GiftCardsPage";
+import DeveloperPortal from "./pages/DeveloperPortal";
 
 const queryClient = new QueryClient();
 
