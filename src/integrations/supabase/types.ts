@@ -4217,7 +4217,6 @@ export type Database = {
           last_active_at: string | null
           notes: string | null
           password_changed_at: string | null
-          temp_password: string | null
           updated_at: string | null
           user_id: string
           username: string | null
@@ -4237,7 +4236,6 @@ export type Database = {
           last_active_at?: string | null
           notes?: string | null
           password_changed_at?: string | null
-          temp_password?: string | null
           updated_at?: string | null
           user_id: string
           username?: string | null
@@ -4257,7 +4255,6 @@ export type Database = {
           last_active_at?: string | null
           notes?: string | null
           password_changed_at?: string | null
-          temp_password?: string | null
           updated_at?: string | null
           user_id?: string
           username?: string | null

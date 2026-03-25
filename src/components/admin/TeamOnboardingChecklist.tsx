@@ -81,7 +81,6 @@ export default function TeamOnboardingChecklist() {
         await supabase.from("team_members").update({
           has_changed_password: true,
           password_changed_at: new Date().toISOString(),
-          temp_password: null,
         } as any).eq("user_id", user.id);
       }
       setData(prev => prev ? { ...prev, has_changed_password: true } : prev);
