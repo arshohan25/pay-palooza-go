@@ -1,11 +1,13 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFundRequests } from "@/hooks/use-fund-requests";
 import { useDepositAccounts } from "@/hooks/use-deposit-accounts";
+import { supabase } from "@/integrations/supabase/client";
 import {
   ChevronLeft, CheckCircle2, AlertCircle, Upload, Clock,
   Landmark, CreditCard, Wallet, Copy, Check, ShieldAlert, ShieldCheck,
+  XCircle, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +29,22 @@ const SOURCE_OPTIONS = [
   { id: "card", label: "Card / Other", icon: CreditCard, color: "bg-slate-600" },
 ];
 
+// TxnID validation patterns per provider
+const TXNID_PATTERNS: Record<string, { regex: RegExp; hint: string }> = {
+  bkash: {
+    regex: /^[A-Za-z0-9]{10}$/,
+    hint: "bKash TxnID is 10 alphanumeric characters (e.g., ABC1234XYZ)",
+  },
+  nagad: {
+    regex: /^\d{8,15}$/,
+    hint: "Nagad TxnID is 8-15 digits (e.g., 12345678901)",
+  },
+  rocket: {
+    regex: /^R?\d{8,15}$/i,
+    hint: "Rocket TxnID starts with 'R' followed by digits (e.g., R12345678)",
+  },
+};
+
 const slideVariants = {
   enter: (dir: number) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0 }),
   center: { x: 0, opacity: 1 },
@@ -44,6 +62,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   const [amount, setAmount] = useState("");
   const [source, setSource] = useState<string | null>(null);
   const [txnId, setTxnId] = useState("");
+  const [txnIdWarning, setTxnIdWarning] = useState("");
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -51,6 +70,8 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
   const pinRef = useRef<HTMLInputElement>(null);
+  const [submittedRequestId, setSubmittedRequestId] = useState<string | null>(null);
+  const [trackingStatus, setTrackingStatus] = useState<string>("pending");
   
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const { accounts: depositAccounts, loading: depositLoading } = useDepositAccounts(source ?? undefined);
@@ -102,6 +123,18 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
     setError("");
   };
 
+  // Validate TxnID format based on source
+  const validateTxnId = (value: string) => {
+    if (!value.trim()) { setTxnIdWarning(""); return; }
+    if (!source || !TXNID_PATTERNS[source]) { setTxnIdWarning(""); return; }
+    const pattern = TXNID_PATTERNS[source];
+    if (!pattern.regex.test(value.trim())) {
+      setTxnIdWarning(pattern.hint);
+    } else {
+      setTxnIdWarning("");
+    }
+  };
+
   const handleProofContinue = () => {
     if (!txnId.trim() && !proofFile) { setError("Provide a Transaction ID or upload proof."); return; }
     setPin("");
@@ -120,12 +153,15 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
       if (proofFile) {
         proofUrl = await uploadProof(proofFile);
       }
-      await submitAddMoney({
+      const result = await submitAddMoney({
         amount: parseFloat(amount),
         source_method: source ?? undefined,
         proof_url: proofUrl,
         transaction_id_proof: txnId.trim() || undefined,
       });
+      if (result?.request_id) {
+        setSubmittedRequestId(result.request_id);
+      }
       haptics.success();
       setDir(1);
       setStep("success");
@@ -134,6 +170,51 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Real-time status tracking on success screen
+  useEffect(() => {
+    if (step !== "success" || !submittedRequestId) return;
+    
+    const channel = supabase
+      .channel(`fund-request-${submittedRequestId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "fund_requests",
+          filter: `id=eq.${submittedRequestId}`,
+        },
+        (payload) => {
+          const newStatus = (payload.new as any)?.status;
+          if (newStatus) {
+            setTrackingStatus(newStatus);
+            if (newStatus === "approved") {
+              haptics.success();
+              toast.success("Your add money request has been approved! ✅");
+            } else if (newStatus === "rejected") {
+              haptics.error();
+              toast.error("Your add money request was rejected.");
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [step, submittedRequestId]);
+
+  const trackingSteps = [
+    { key: "pending", label: "Submitted", icon: Clock },
+    { key: "review", label: "Under Review", icon: Loader2 },
+    { key: "approved", label: "Approved", icon: CheckCircle2 },
+  ];
+
+  const getTrackingIndex = () => {
+    if (trackingStatus === "approved") return 2;
+    if (trackingStatus === "rejected") return -1;
+    return 0; // pending
   };
 
   return (
@@ -278,8 +359,18 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-foreground">Transaction ID / Reference</label>
                       <Input type="text" placeholder="e.g. TXN123456789" value={txnId}
-                        onChange={(e) => { setTxnId(e.target.value); setError(""); }}
+                        onChange={(e) => { setTxnId(e.target.value); setError(""); validateTxnId(e.target.value); }}
                         className="h-12 bg-card border-border" />
+                      {txnIdWarning && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                          <AlertCircle size={12} />{txnIdWarning}
+                        </p>
+                      )}
+                      {source && TXNID_PATTERNS[source] && !txnIdWarning && txnId.trim() && (
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                          <CheckCircle2 size={12} />Format looks correct
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -348,13 +439,66 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                   <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4 px-4">
                     <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
                       <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto">
-                        <Clock size={36} className="text-emerald-600" />
+                        {trackingStatus === "approved" ? (
+                          <CheckCircle2 size={36} className="text-emerald-600" />
+                        ) : trackingStatus === "rejected" ? (
+                          <XCircle size={36} className="text-destructive" />
+                        ) : (
+                          <Clock size={36} className="text-emerald-600" />
+                        )}
                       </div>
                     </motion.div>
-                    <h2 className="text-xl font-bold text-foreground">Request Submitted</h2>
+                    <h2 className="text-xl font-bold text-foreground">
+                      {trackingStatus === "approved" ? "Request Approved! ✅" :
+                       trackingStatus === "rejected" ? "Request Rejected" :
+                       "Request Submitted"}
+                    </h2>
                     <p className="text-sm text-muted-foreground max-w-xs">
-                      Your add money request of <span className="font-bold text-foreground">৳{parseFloat(amount).toLocaleString()}</span> is pending admin approval. You'll be notified once processed.
+                      {trackingStatus === "approved" ? (
+                        <>৳{parseFloat(amount).toLocaleString()} has been added to your wallet.</>
+                      ) : trackingStatus === "rejected" ? (
+                        <>Your add money request of ৳{parseFloat(amount).toLocaleString()} was rejected. Check notifications for details.</>
+                      ) : (
+                        <>Your add money request of <span className="font-bold text-foreground">৳{parseFloat(amount).toLocaleString()}</span> is pending approval.</>
+                      )}
                     </p>
+
+                    {/* Status Tracker */}
+                    {trackingStatus !== "rejected" && (
+                      <div className="w-full max-w-xs mt-2">
+                        <div className="flex items-center justify-between relative">
+                          <div className="absolute top-4 left-8 right-8 h-0.5 bg-border" />
+                          <div
+                            className="absolute top-4 left-8 h-0.5 bg-emerald-500 transition-all duration-500"
+                            style={{ width: `${getTrackingIndex() * 50}%` }}
+                          />
+                          {trackingSteps.map((ts, i) => {
+                            const Icon = ts.icon;
+                            const isActive = i <= getTrackingIndex();
+                            const isCurrent = i === getTrackingIndex();
+                            return (
+                              <div key={ts.key} className="flex flex-col items-center gap-1 relative z-10">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                                  isActive ? "bg-emerald-500 text-white" : "bg-muted border border-border text-muted-foreground"
+                                } ${isCurrent ? "ring-2 ring-emerald-500/30 ring-offset-2 ring-offset-background" : ""}`}>
+                                  <Icon size={14} className={isCurrent && trackingStatus === "pending" ? "animate-pulse" : ""} />
+                                </div>
+                                <span className={`text-[10px] font-medium ${isActive ? "text-foreground" : "text-muted-foreground"}`}>
+                                  {ts.label}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {trackingStatus === "pending" && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        ⏱ Usually processed within 15 minutes. You'll be notified when done.
+                      </p>
+                    )}
+
                     <Button className="mt-4 w-full max-w-xs" onClick={onClose}>Done</Button>
                   </div>
                 )}

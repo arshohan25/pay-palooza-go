@@ -3,8 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle2, XCircle, Clock, Search, Filter, Image as ImageIcon,
-  ChevronDown, AlertCircle, Wallet, Landmark, ExternalLink,
+  ChevronDown, AlertCircle, Wallet, Landmark, ExternalLink, Radio,
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AdminIncomingMfs from "./AdminIncomingMfs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -151,7 +153,19 @@ export default function AdminFundRequests() {
   if (loading) return <div className="flex items-center justify-center py-12 text-muted-foreground">Loading fund requests…</div>;
 
   return (
-    <div className="space-y-4">
+    <Tabs defaultValue="requests" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="requests" className="gap-1.5">
+          Fund Requests
+          {pendingCount > 0 && <Badge variant="destructive" className="text-[10px] px-1">{pendingCount}</Badge>}
+        </TabsTrigger>
+        <TabsTrigger value="incoming" className="gap-1.5">
+          <Radio size={12} /> Incoming MFS
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="requests">
+      <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
           Fund Requests
@@ -304,5 +318,11 @@ export default function AdminFundRequests() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </TabsContent>
+
+    <TabsContent value="incoming">
+      <AdminIncomingMfs />
+    </TabsContent>
+    </Tabs>
   );
 }

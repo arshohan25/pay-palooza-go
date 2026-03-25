@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.product-recommendations]
 verify_jwt = false
+
+[functions.mfs-incoming-webhook]
+verify_jwt = false
