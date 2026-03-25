@@ -364,18 +364,20 @@ const Index = () => {
 
   // Show splash first, then onboarding (once), then auth/home
   if (!splashDone) {
-    return <SplashScreen onDone={() => { sessionStorage.setItem("splashDone", "1"); setSplashDone(true); }} />;
+    return <Suspense fallback={null}><SplashScreen onDone={() => { sessionStorage.setItem("splashDone", "1"); setSplashDone(true); }} /></Suspense>;
   }
 
   if (!onboardingDone || replayOnboarding) {
     return (
-      <AnimatePresence>
-        <OnboardingSlides onDone={() => {
-          setOnboardingDone(true);
-          setReplayOnboarding(false);
-          markOnboardingDone();
-        }} />
-      </AnimatePresence>
+      <Suspense fallback={null}>
+        <AnimatePresence>
+          <OnboardingSlides onDone={() => {
+            setOnboardingDone(true);
+            setReplayOnboarding(false);
+            markOnboardingDone();
+          }} />
+        </AnimatePresence>
+      </Suspense>
     );
   }
 
