@@ -148,6 +148,7 @@ export default function DeveloperPortal() {
           <Link to="/" className="font-bold text-lg text-primary">EasyPay</Link>
           <nav className="flex items-center gap-4 text-sm">
             <a href="#quick-start" className="text-muted-foreground hover:text-foreground transition-colors hidden sm:block">Quick Start</a>
+            <a href="#partners" className="text-muted-foreground hover:text-foreground transition-colors hidden sm:block">Partners</a>
             <a href="#api-reference" className="text-muted-foreground hover:text-foreground transition-colors hidden sm:block">API Reference</a>
             <a href="#sdk" className="text-muted-foreground hover:text-foreground transition-colors hidden sm:block">SDK</a>
             <Link to="/"><Button size="sm" variant="outline" className="h-8 text-xs">Back to App</Button></Link>
