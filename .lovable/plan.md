@@ -1,45 +1,43 @@
 
 
-## Plan: Add Essential API Management Sub-tabs
+## Plan: Add API Security Enhancements
 
-### What's There Now
-The API Access Management section (`AdminApiRequests.tsx`) has 5 sub-tabs: Requests, API Keys, Logs, Rate Limits, IP Whitelist. These are solid but missing some critical operational tools.
+### What
+Add the 5 identified security gaps to EasyPay's API integration: **Environment Separation** (test/live keys), **Key Rotation**, **Scoped Permissions**, **Idempotency**, and **Replay Protection**.
 
-### New Sub-tabs to Add
+### Database Migration
 
-#### 1. **Webhooks** — `AdminApiWebhooks.tsx`
-- List all `merchant_api_keys` with their `webhook_url` configured
-- Test webhook button: sends a test POST payload to the merchant's URL and shows response status/time
-- Edit webhook URL inline per key
-- Show recent delivery attempts from `merchant_api_logs` filtered to webhook actions
-- Summary cards: Total Configured, Active Webhooks, Failed Deliveries
+Add columns to `merchant_api_keys`:
+- `environment` (text, default `'live'`, check `test` or `live`)
+- `permissions` (text[], default `'{create_session,check_status,list_sessions}'`)
+- `rotation_expires_at` (timestamptz, nullable) — old key stays valid until this time during rotation
 
-#### 2. **Sandbox** — `AdminApiSandbox.tsx`
-- Interactive API testing console for admins to simulate merchant API calls
-- Select a merchant API key, choose an endpoint/action (create-payment, check-status, refund)
-- Auto-fill sample request body, editable JSON textarea
-- Execute button that calls the `merchant-payment-api` edge function
-- Display response: status code, body (formatted JSON), response time
-- Useful for debugging merchant integration issues
+Add new table `merchant_idempotency_keys`:
+- `id` uuid PK
+- `merchant_id` uuid FK
+- `idempotency_key` text NOT NULL
+- `session_id` uuid FK to merchant_payment_sessions
+- `created_at` timestamptz
+- UNIQUE constraint on `(merchant_id, idempotency_key)`
 
-#### 3. **Usage Analytics** — `AdminApiUsageAnalytics.tsx`
-- Aggregate stats from `merchant_api_logs`: requests per day chart, top merchants by volume, error rate trends
-- Time range selector (24h, 7d, 30d)
-- Bar/line chart using existing chart components for daily request counts
-- Top 5 merchants by API call volume
-- Breakdown by status code (2xx vs 4xx vs 5xx pie/donut)
-- Average response time trend
+### Edge Function: `merchant-payment-api/index.ts`
 
-### Changes to Existing Files
+1. **Environment check** — test keys can only create sessions with `test_mode: true` metadata; test sessions don't process real payments
+2. **Permissions check** — validate `action` against `keyRow.permissions` array; reject unauthorized actions with 403
+3. **Idempotency** — accept `X-Idempotency-Key` header; on `create_session`, check `merchant_idempotency_keys` first; if exists, return cached session; otherwise insert new record
+4. **Replay protection** — require `X-EasyPay-Timestamp` header; reject requests older than 5 minutes
+5. **Key rotation** — if key is inactive but `rotation_expires_at > now()`, still allow requests (grace period)
 
-#### `AdminApiRequests.tsx`
-- Add 3 new tabs: "Webhooks", "Sandbox", "Usage" to the segmented control
-- Import and render the 3 new components
-- Pass `search` prop to Webhooks and Usage
+### Admin UI: `AdminApiKeys.tsx`
 
-### Technical Detail
-- All data sourced from existing tables: `merchant_api_keys`, `merchant_api_logs`, `merchants`
-- Sandbox calls existing `merchant-payment-api` edge function
-- Charts use the existing `@/components/ui/chart` (Recharts-based)
-- No database migrations needed
+1. **Environment badge** — show "Test" or "Live" badge per key
+2. **Environment toggle** when generating new keys — radio for Test/Live
+3. **Permissions editor** — multi-select checkboxes for `create_session`, `check_status`, `list_sessions`, `refund`
+4. **Rotate key button** — generates new key pair, sets `rotation_expires_at` on old key (24h grace), marks old key inactive after expiry
+5. **Rotation indicator** — show "Rotating (expires in Xh)" badge on keys in grace period
+
+### Files Changed
+- **Migration SQL** — new columns + new table
+- `supabase/functions/merchant-payment-api/index.ts` — add 5 security checks
+- `src/components/admin/AdminApiKeys.tsx` — environment, permissions, rotation UI
 
