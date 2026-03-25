@@ -45,7 +45,7 @@ interface AdminApiKeysProps {
   search: string;
 }
 
-export default function AdminApiKeys({ search }: AdminApiKeysProps) {
+export default function AdminApiKeys({ search, onGenerateRef }: AdminApiKeysProps & { onGenerateRef?: (fn: () => void) => void }) {
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [merchants, setMerchants] = useState<Merchant[]>([]);
@@ -151,9 +151,16 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
 
   const toggleKey = async (id: string, active: boolean) => {
     setRevoking(id);
-    await supabase.from("merchant_api_keys").update({ is_active: !active, updated_at: new Date().toISOString() }).eq("id", id);
-    toast.success(active ? "Key revoked" : "Key reactivated");
-    setRevoking(null);
+    try {
+      const { error } = await supabase.from("merchant_api_keys").update({ is_active: !active, updated_at: new Date().toISOString() }).eq("id", id);
+      if (error) throw error;
+      toast.success(active ? "Key revoked" : "Key reactivated");
+      await fetchKeys();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update key");
+    } finally {
+      setRevoking(null);
+    }
   };
 
   const handleRotate = async (key: ApiKey) => {
@@ -195,13 +202,18 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
 
   const savePermissions = async () => {
     if (!permEditKey) return;
-    await supabase.from("merchant_api_keys").update({
-      permissions: permEditPerms,
-      updated_at: new Date().toISOString(),
-    }).eq("id", permEditKey.id);
-    toast.success("Permissions updated");
-    setPermEditOpen(false);
-    fetchKeys();
+    try {
+      const { error } = await supabase.from("merchant_api_keys").update({
+        permissions: permEditPerms,
+        updated_at: new Date().toISOString(),
+      }).eq("id", permEditKey.id);
+      if (error) throw error;
+      toast.success("Permissions updated");
+      setPermEditOpen(false);
+      await fetchKeys();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update permissions");
+    }
   };
 
   const copyText = (text: string, label: string) => {
@@ -526,16 +538,18 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Expose openGenerate to parent */}
-      <GenerateKeyTrigger onOpen={openGenerate} />
+      {/* Expose openGenerate to parent via ref callback */}
+      <GenerateKeyTrigger onOpen={openGenerate} onGenerateRef={onGenerateRef} />
     </div>
   );
 }
 
-function GenerateKeyTrigger({ onOpen }: { onOpen: () => void }) {
+function GenerateKeyTrigger({ onOpen, onGenerateRef }: { onOpen: () => void; onGenerateRef?: (fn: () => void) => void }) {
   React.useEffect(() => {
+    onGenerateRef?.(onOpen);
+    // Keep window fallback for backwards compat
     (window as any).__openGenerateApiKey = onOpen;
     return () => { delete (window as any).__openGenerateApiKey; };
-  }, [onOpen]);
+  }, [onOpen, onGenerateRef]);
   return null;
 }

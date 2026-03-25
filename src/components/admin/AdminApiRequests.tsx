@@ -48,6 +48,7 @@ const STATUS_BADGE: Record<string, { variant: "default" | "secondary" | "destruc
 
 export default function AdminApiRequests() {
   const [activeTab, setActiveTab] = useState<"requests" | "keys" | "logs" | "rate-limits" | "ip-whitelist" | "webhooks" | "sandbox" | "usage">("requests");
+  const [openGenerateKey, setOpenGenerateKey] = useState<(() => void) | null>(null);
   const [requests, setRequests] = useState<ApiRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
@@ -182,7 +183,7 @@ export default function AdminApiRequests() {
             />
           </div>
           {activeTab === "keys" && (
-            <Button size="sm" className="h-7 text-xs" onClick={() => (window as any).__openGenerateApiKey?.()}>
+            <Button size="sm" className="h-7 text-xs" onClick={() => openGenerateKey?.()}>
               <Plus className="w-3.5 h-3.5 mr-1" /> Generate Key
             </Button>
           )}
@@ -215,7 +216,7 @@ export default function AdminApiRequests() {
       </div>
 
       {activeTab === "keys" ? (
-        <AdminApiKeys search={search} />
+        <AdminApiKeys search={search} onGenerateRef={(fn) => setOpenGenerateKey(() => fn)} />
       ) : activeTab === "logs" ? (
         <AdminApiLogs search={search} />
       ) : activeTab === "rate-limits" ? (
