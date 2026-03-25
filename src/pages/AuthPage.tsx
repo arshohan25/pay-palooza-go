@@ -3,8 +3,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, AlertCircle, Eye, EyeOff, ArrowRight, RefreshCw,
   Shield, CheckCircle2, UserRound, Smartphone,
-  Lock, Star, Zap, Globe, Fingerprint,
+  Lock, Star, Zap, Globe, Fingerprint, Gift, ChevronDown,
 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { haptics } from "@/lib/haptics";
 import { signUp, signIn, phoneToEmail, isPhoneRegistered } from "@/lib/auth";
 import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
@@ -373,7 +374,19 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const [error, setError]           = useState("");
   const [userName, setUserName]     = useState("");
   const [referralCodeInput, setReferralCodeInput] = useState("");
+  const [referralExpanded, setReferralExpanded] = useState(false);
+  const [referralError, setReferralError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Read ?ref= from URL and auto-fill referral code
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const refCode = searchParams.get("ref");
+    if (refCode) {
+      setReferralCodeInput(refCode.toUpperCase());
+      setReferralExpanded(true);
+    }
+  }, [searchParams]);
   const [showKycAfterRegister, setShowKycAfterRegister] = useState(false);
   const [forgotOtpCode, setForgotOtpCode] = useState("");
   const [forgotOtpSending, setForgotOtpSending] = useState(false);
@@ -897,6 +910,58 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                           </p>
                         </div>
                         <PhoneInput value={phone} onChange={(v) => { setPhone(v); setError(""); }} error={error} autoFocus />
+
+                        {/* Referral Code (register only) */}
+                        {mode === "register_phone" && (
+                          <div className="space-y-2">
+                            <button
+                              type="button"
+                              onClick={() => setReferralExpanded(!referralExpanded)}
+                              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              <Gift size={14} className="text-primary" />
+                              <span className="font-medium">Have a referral code?</span>
+                              <motion.div animate={{ rotate: referralExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                                <ChevronDown size={14} />
+                              </motion.div>
+                            </button>
+                            <AnimatePresence>
+                              {referralExpanded && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: "auto", opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="overflow-hidden"
+                                >
+                                  <input
+                                    type="text"
+                                    placeholder="EZP-XXXX-XXXX"
+                                    value={referralCodeInput}
+                                    onChange={(e) => {
+                                      const v = e.target.value.toUpperCase().slice(0, 14);
+                                      setReferralCodeInput(v);
+                                      setReferralError("");
+                                    }}
+                                    onBlur={() => {
+                                      const code = referralCodeInput.trim();
+                                      if (code && !/^EZP-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code)) {
+                                        setReferralError("Invalid format. Use EZP-XXXX-XXXX");
+                                      }
+                                    }}
+                                    className="w-full h-12 px-4 text-sm font-mono font-bold bg-card border-2 border-border rounded-xl focus:outline-none focus:border-primary transition-all placeholder:text-muted-foreground/30 placeholder:font-normal"
+                                  />
+                                  {referralError && (
+                                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-destructive flex items-center gap-1.5 px-1 mt-1">
+                                      <AlertCircle size={12} /> {referralError}
+                                    </motion.p>
+                                  )}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        )}
+
                         <motion.button whileTap={{ scale: 0.97 }}
                           className="w-full h-14 gradient-hero text-white font-bold text-[15px] rounded-2xl shadow-glow flex items-center justify-center gap-2 disabled:opacity-40"
                           onClick={mode === "register_phone" ? handleRegisterPhone : handleLoginPhone}
