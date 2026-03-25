@@ -10,8 +10,8 @@ import { FestivalThemeProvider } from "@/contexts/FestivalThemeContext";
 import FestivalBodyEffect from "@/components/FestivalBodyEffect";
 import RoleGuard from "@/components/RoleGuard";
 
-// Eagerly load the home page (critical path)
-import Index from "./pages/Index";
+// Lazy load the home page (was eager — now split for smaller initial bundle)
+const Index = lazy(() => import("./pages/Index"));
 
 // Lazy load all other routes
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
