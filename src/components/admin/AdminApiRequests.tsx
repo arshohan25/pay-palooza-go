@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Clock, CheckCircle, XCircle, Search, Key, RefreshCw, Copy, Eye, EyeOff } from "lucide-react";
+import { Clock, CheckCircle, XCircle, Search, Key, RefreshCw, Copy, Eye, EyeOff, Plus } from "lucide-react";
 import { format } from "date-fns";
+import AdminApiKeys from "./AdminApiKeys";
 
 async function auditLog(action: string, entityId: string, details: any) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -40,6 +41,7 @@ const STATUS_BADGE: Record<string, { variant: "default" | "secondary" | "destruc
 };
 
 export default function AdminApiRequests() {
+  const [activeTab, setActiveTab] = useState<"requests" | "keys">("requests");
   const [requests, setRequests] = useState<ApiRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
@@ -58,7 +60,6 @@ export default function AdminApiRequests() {
 
     if (!reqData) { setRequests([]); setLoading(false); return; }
 
-    // Fetch merchant names
     const merchantIds = [...new Set((reqData as any[]).map((r: any) => r.merchant_id))];
     const { data: merchants } = await supabase
       .from("merchants")
@@ -73,7 +74,6 @@ export default function AdminApiRequests() {
 
   useEffect(() => { fetchRequests(); }, [fetchRequests]);
 
-  // Realtime
   useEffect(() => {
     const ch = supabase.channel("admin-api-requests-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "merchant_api_requests" }, () => fetchRequests())
@@ -108,7 +108,6 @@ export default function AdminApiRequests() {
       }).eq("id", requestId);
 
       if (action === "approved") {
-        // Generate API key + app password
         const apiKey = "epk_" + crypto.randomUUID().replace(/-/g, "");
         const secretKey = "eps_" + crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
         const appPassword = "epp_" + crypto.randomUUID().replace(/-/g, "").slice(0, 24);
@@ -125,7 +124,6 @@ export default function AdminApiRequests() {
 
         setGeneratedSecret({ requestId, secret: secretKey });
 
-        // Notify merchant
         const { data: merchant } = await supabase.from("merchants").select("user_id").eq("id", merchantId).maybeSingle();
         if (merchant?.user_id) {
           await supabase.from("notifications").insert({
@@ -139,7 +137,6 @@ export default function AdminApiRequests() {
         auditLog("approve_api_request", requestId, { merchant_id: merchantId, merchant_name: req?.merchant_name });
         toast.success("Request approved & API key generated");
       } else {
-        // Notify merchant of rejection
         const { data: merchant } = await supabase.from("merchants").select("user_id").eq("id", merchantId).maybeSingle();
         if (merchant?.user_id) {
           await supabase.from("notifications").insert({
@@ -162,137 +159,172 @@ export default function AdminApiRequests() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-foreground">API Access Requests</h2>
-        <Button variant="outline" size="sm" onClick={fetchRequests} disabled={loading}>
-          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} /> Refresh
-        </Button>
-      </div>
-
-      {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="cursor-pointer hover:bg-muted/40 transition-colors" onClick={() => setFilter("pending")}>
-          <CardContent className="p-4 flex items-center gap-3">
-            <Clock className="w-8 h-8 text-amber-500" />
-            <div>
-              <p className="text-2xl font-bold text-foreground">{counts.pending}</p>
-              <p className="text-xs text-muted-foreground">Pending</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:bg-muted/40 transition-colors" onClick={() => setFilter("approved")}>
-          <CardContent className="p-4 flex items-center gap-3">
-            <CheckCircle className="w-8 h-8 text-emerald-500" />
-            <div>
-              <p className="text-2xl font-bold text-foreground">{counts.approved}</p>
-              <p className="text-xs text-muted-foreground">Approved</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:bg-muted/40 transition-colors" onClick={() => setFilter("rejected")}>
-          <CardContent className="p-4 flex items-center gap-3">
-            <XCircle className="w-8 h-8 text-destructive" />
-            <div>
-              <p className="text-2xl font-bold text-foreground">{counts.rejected}</p>
-              <p className="text-xs text-muted-foreground">Rejected</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Generated secret display */}
-      {generatedSecret && (
-        <Card className="border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20">
-          <CardContent className="p-4 space-y-2">
-            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">⚠️ Secret key generated — copy it now (shown once):</p>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 text-xs bg-background rounded px-2 py-1.5 font-mono break-all border">
-                {showSecret ? generatedSecret.secret : "•".repeat(40)}
-              </code>
-              <Button size="icon" variant="ghost" onClick={() => setShowSecret(!showSecret)}>
-                {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </Button>
-              <Button size="icon" variant="ghost" onClick={() => { navigator.clipboard.writeText(generatedSecret.secret); toast.success("Copied"); }}>
-                <Copy className="w-4 h-4" />
-              </Button>
-            </div>
-            <Button size="sm" variant="outline" onClick={() => { setGeneratedSecret(null); setShowSecret(false); }}>Dismiss</Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Filter + Search */}
-      <div className="flex gap-2 flex-wrap items-center">
-        <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5">
-          {(["all", "pending", "approved", "rejected"] as const).map(f => (
-            <button key={f} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${filter === f ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setFilter(f)}>
-              {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
-              {f !== "all" && <Badge variant="secondary" className="text-xs">{counts[f]}</Badge>}
-            </button>
-          ))}
-        </div>
-        <div className="relative flex-1 min-w-[180px]">
-          <Search className="absolute left-2 top-2.5 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Search merchant or reason..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8 h-9" />
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+          <Key className="w-5 h-5 text-primary" /> API Access Management
+        </h2>
+        <div className="flex items-center gap-1.5">
+          <div className="relative">
+            <Search className="absolute left-2 top-2 w-3.5 h-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Search..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-7 h-7 w-44 text-xs"
+            />
+          </div>
+          {activeTab === "keys" && (
+            <Button size="sm" className="h-7 text-xs" onClick={() => (window as any).__openGenerateApiKey?.()}>
+              <Plus className="w-3.5 h-3.5 mr-1" /> Generate Key
+            </Button>
+          )}
+          <Button variant="outline" size="icon" className="h-7 w-7" onClick={fetchRequests} disabled={loading}>
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+          </Button>
         </div>
       </div>
 
-      {/* Table */}
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Merchant</TableHead>
-              <TableHead>Reason</TableHead>
-              <TableHead>Webhook</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
-            ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No requests found</TableCell></TableRow>
-            ) : filtered.map(req => {
-              const badge = STATUS_BADGE[req.status] || STATUS_BADGE.pending;
-              return (
-                <TableRow key={req.id}>
-                  <TableCell className="font-medium">{req.merchant_name}</TableCell>
-                  <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">{req.reason || "—"}</TableCell>
-                  <TableCell className="max-w-[150px] truncate text-xs font-mono">{req.webhook_url || "—"}</TableCell>
-                  <TableCell><Badge variant={badge.variant}>{badge.label}</Badge></TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{format(new Date(req.created_at), "dd MMM yyyy")}</TableCell>
-                  <TableCell>
-                    {req.status === "pending" ? (
-                      <div className="space-y-2">
-                        <Textarea
-                          placeholder="Admin notes (optional)..."
-                          value={adminNotes[req.id] || ""}
-                          onChange={e => setAdminNotes(prev => ({ ...prev, [req.id]: e.target.value }))}
-                          className="text-xs h-16 min-h-0"
-                        />
-                        <div className="flex gap-1">
-                          <Button size="sm" disabled={processing === req.id} onClick={() => handleAction(req.id, "approved", req.merchant_id)}>
-                            <Key className="w-3 h-3 mr-1" /> Approve
-                          </Button>
-                          <Button size="sm" variant="destructive" disabled={processing === req.id} onClick={() => handleAction(req.id, "rejected", req.merchant_id)}>
-                            Reject
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">{req.admin_notes || "—"}</span>
-                    )}
-                  </TableCell>
+      {/* Sub-tabs */}
+      <div className="bg-muted/50 rounded-lg p-1 flex gap-0.5 w-fit">
+        {([
+          { key: "requests" as const, label: "Requests" },
+          { key: "keys" as const, label: "API Keys" },
+        ]).map(t => (
+          <button
+            key={t.key}
+            className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === t.key ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            onClick={() => setActiveTab(t.key)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "keys" ? (
+        <AdminApiKeys search={search} />
+      ) : (
+        <>
+          {/* Summary cards */}
+          <div className="grid grid-cols-3 gap-4">
+            <Card className="cursor-pointer hover:bg-muted/40 transition-colors" onClick={() => setFilter("pending")}>
+              <CardContent className="p-4 flex items-center gap-3">
+                <Clock className="w-8 h-8 text-amber-500" />
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{counts.pending}</p>
+                  <p className="text-xs text-muted-foreground">Pending</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="cursor-pointer hover:bg-muted/40 transition-colors" onClick={() => setFilter("approved")}>
+              <CardContent className="p-4 flex items-center gap-3">
+                <CheckCircle className="w-8 h-8 text-emerald-500" />
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{counts.approved}</p>
+                  <p className="text-xs text-muted-foreground">Approved</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="cursor-pointer hover:bg-muted/40 transition-colors" onClick={() => setFilter("rejected")}>
+              <CardContent className="p-4 flex items-center gap-3">
+                <XCircle className="w-8 h-8 text-destructive" />
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{counts.rejected}</p>
+                  <p className="text-xs text-muted-foreground">Rejected</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Generated secret display */}
+          {generatedSecret && (
+            <Card className="border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20">
+              <CardContent className="p-4 space-y-2">
+                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">⚠️ Secret key generated — copy it now (shown once):</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs bg-background rounded px-2 py-1.5 font-mono break-all border">
+                    {showSecret ? generatedSecret.secret : "•".repeat(40)}
+                  </code>
+                  <Button size="icon" variant="ghost" onClick={() => setShowSecret(!showSecret)}>
+                    {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                  <Button size="icon" variant="ghost" onClick={() => { navigator.clipboard.writeText(generatedSecret.secret); toast.success("Copied"); }}>
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => { setGeneratedSecret(null); setShowSecret(false); }}>Dismiss</Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Filter */}
+          <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5 w-fit">
+            {(["all", "pending", "approved", "rejected"] as const).map(f => (
+              <button key={f} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${filter === f ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setFilter(f)}>
+                {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
+                {f !== "all" && <Badge variant="secondary" className="text-xs">{counts[f]}</Badge>}
+              </button>
+            ))}
+          </div>
+
+          {/* Table */}
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Merchant</TableHead>
+                  <TableHead>Reason</TableHead>
+                  <TableHead>Webhook</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
+                ) : filtered.length === 0 ? (
+                  <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No requests found</TableCell></TableRow>
+                ) : filtered.map(req => {
+                  const badge = STATUS_BADGE[req.status] || STATUS_BADGE.pending;
+                  return (
+                    <TableRow key={req.id}>
+                      <TableCell className="font-medium">{req.merchant_name}</TableCell>
+                      <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">{req.reason || "—"}</TableCell>
+                      <TableCell className="max-w-[150px] truncate text-xs font-mono">{req.webhook_url || "—"}</TableCell>
+                      <TableCell><Badge variant={badge.variant}>{badge.label}</Badge></TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{format(new Date(req.created_at), "dd MMM yyyy")}</TableCell>
+                      <TableCell>
+                        {req.status === "pending" ? (
+                          <div className="space-y-2">
+                            <Textarea
+                              placeholder="Admin notes (optional)..."
+                              value={adminNotes[req.id] || ""}
+                              onChange={e => setAdminNotes(prev => ({ ...prev, [req.id]: e.target.value }))}
+                              className="text-xs h-16 min-h-0"
+                            />
+                            <div className="flex gap-1">
+                              <Button size="sm" disabled={processing === req.id} onClick={() => handleAction(req.id, "approved", req.merchant_id)}>
+                                <Key className="w-3 h-3 mr-1" /> Approve
+                              </Button>
+                              <Button size="sm" variant="destructive" disabled={processing === req.id} onClick={() => handleAction(req.id, "rejected", req.merchant_id)}>
+                                Reject
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">{req.admin_notes || "—"}</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </Card>
+        </>
+      )}
     </div>
   );
 }
