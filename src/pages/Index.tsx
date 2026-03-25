@@ -12,7 +12,7 @@ import BottomNav from "@/components/BottomNav";
 import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import InstallPrompt from "@/components/InstallPrompt";
-import { hasSeenOnboarding, markOnboardingDone } from "@/components/OnboardingSlides";
+import { hasSeenOnboarding, markOnboardingDone } from "@/lib/onboardingUtils";
 import TxnToast from "@/components/TxnToast";
 import { useKycStatus } from "@/hooks/use-kyc-status";
 import { parseQrData } from "@/lib/qrParser";

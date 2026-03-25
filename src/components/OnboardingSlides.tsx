@@ -3,13 +3,8 @@ import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from
 import { ArrowRight, ChevronRight } from "lucide-react";
 import { haptics } from "@/lib/haptics";
 
-const ONBOARDING_KEY = "mfs_onboarding_done";
-
-export const hasSeenOnboarding = () =>
-  localStorage.getItem(ONBOARDING_KEY) === "1";
-
-export const markOnboardingDone = () =>
-  localStorage.setItem(ONBOARDING_KEY, "1");
+import { hasSeenOnboarding, markOnboardingDone } from "@/lib/onboardingUtils";
+export { hasSeenOnboarding, markOnboardingDone };
 
 // ── Slide definitions ──────────────────────────────────────────────────────────
 const SLIDES = [
