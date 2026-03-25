@@ -557,7 +557,7 @@ export default function AdminSupportDashboard({ mode = "all" }: AdminSupportDash
   return (
     <div className="flex h-[calc(100dvh-12rem)] min-h-[400px] rounded-2xl border border-border overflow-hidden bg-card" style={{ height: "calc(100dvh - 12rem)" }}>
       {/* Conversation List */}
-      <div className={`w-full md:w-80 lg:w-96 border-r border-border flex flex-col ${showChat ? "hidden md:flex" : "flex"}`}>
+      <div className={`w-full md:w-72 lg:w-80 xl:w-96 border-r border-border flex flex-col ${showChat ? "hidden md:flex" : "flex"}`}>
         <div className="p-4 border-b border-border">
           <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
             <MessageCircle size={16} className="text-primary" />
@@ -677,8 +677,8 @@ export default function AdminSupportDashboard({ mode = "all" }: AdminSupportDash
                       <div className="flex items-center gap-1 mt-0.5">
                         <p className="text-[9px] text-muted-foreground/60">{conv.user_phone}</p>
                         {conv.user_email && (
-                          <span className="text-[8px] text-muted-foreground/50 flex items-center gap-0.5">
-                            <Mail size={8} /> {conv.user_email}
+                          <span className="text-[8px] text-muted-foreground/50 items-center gap-0.5 hidden lg:flex">
+                            <Mail size={8} /> <span className="truncate max-w-[100px]">{conv.user_email}</span>
                           </span>
                         )}
                         {/* Rating stars for resolved/closed with rating */}
@@ -731,14 +731,14 @@ export default function AdminSupportDashboard({ mode = "all" }: AdminSupportDash
                     <StarRating rating={selectedConv.rating} />
                   )}
                 </div>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[10px] text-muted-foreground truncate">
                   {remoteTyping ? (
                     <span className="text-primary font-semibold animate-pulse">typing...</span>
                   ) : (
                     <>
                       {selectedConv.user_phone}
                       {selectedConv.user_email && (
-                        <span className="ml-2 text-muted-foreground/60">
+                        <span className="ml-2 text-muted-foreground/60 hidden lg:inline">
                           <Mail size={8} className="inline mr-0.5" />{selectedConv.user_email}
                         </span>
                       )}
@@ -753,16 +753,17 @@ export default function AdminSupportDashboard({ mode = "all" }: AdminSupportDash
                 )}
               </div>
               {/* Action buttons based on status */}
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex items-center gap-1 lg:gap-1.5 shrink-0">
                 {/* Escalate button — available for open/resolved tickets without a complaint */}
                 {(selectedConv.status === "open" || selectedConv.status === "resolved") && !selectedConv.complaint_number && (
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-[10px] h-7 rounded-lg gap-1 border-amber-500/30 text-amber-600 hover:bg-amber-50"
+                    className="text-[10px] h-7 rounded-lg gap-1 border-amber-500/30 text-amber-600 hover:bg-amber-50 px-1.5 lg:px-2"
                     onClick={openEscalateDialog}
+                    title="Escalate"
                   >
-                    <AlertTriangle size={12} /> Escalate
+                    <AlertTriangle size={12} /> <span className="hidden lg:inline">Escalate</span>
                   </Button>
                 )}
                 {selectedConv.status === "open" && (
@@ -770,18 +771,21 @@ export default function AdminSupportDashboard({ mode = "all" }: AdminSupportDash
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-[10px] h-7 rounded-lg gap-1 border-blue-500/30 text-blue-600 hover:bg-blue-50"
+                      className="text-[10px] h-7 rounded-lg gap-1 border-blue-500/30 text-blue-600 hover:bg-blue-50 px-1.5 lg:px-2"
                       onClick={() => updateConversationStatus(selectedConv.id, "resolved")}
+                      title="Resolve"
                     >
-                      <CheckCircle2 size={12} /> Resolve
+                      <CheckCircle2 size={12} /> <span className="hidden lg:inline">Resolve</span>
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-[10px] h-7 rounded-lg"
+                      className="text-[10px] h-7 rounded-lg px-1.5 lg:px-2"
                       onClick={() => updateConversationStatus(selectedConv.id, "closed")}
+                      title="Close"
                     >
-                      Close
+                      <span className="hidden lg:inline">Close</span>
+                      <X size={12} className="lg:hidden" />
                     </Button>
                   </>
                 )}
@@ -790,18 +794,21 @@ export default function AdminSupportDashboard({ mode = "all" }: AdminSupportDash
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-[10px] h-7 rounded-lg gap-1 text-emerald-600 border-emerald-500/30 hover:bg-emerald-50"
+                      className="text-[10px] h-7 rounded-lg gap-1 text-emerald-600 border-emerald-500/30 hover:bg-emerald-50 px-1.5 lg:px-2"
                       onClick={() => updateConversationStatus(selectedConv.id, "open")}
+                      title="Reopen"
                     >
-                      <RotateCcw size={12} /> Reopen
+                      <RotateCcw size={12} /> <span className="hidden lg:inline">Reopen</span>
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-[10px] h-7 rounded-lg"
+                      className="text-[10px] h-7 rounded-lg px-1.5 lg:px-2"
                       onClick={() => updateConversationStatus(selectedConv.id, "closed")}
+                      title="Close"
                     >
-                      Close
+                      <span className="hidden lg:inline">Close</span>
+                      <X size={12} className="lg:hidden" />
                     </Button>
                   </>
                 )}
@@ -809,10 +816,11 @@ export default function AdminSupportDashboard({ mode = "all" }: AdminSupportDash
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-[10px] h-7 rounded-lg gap-1 text-emerald-600 border-emerald-500/30 hover:bg-emerald-50"
+                    className="text-[10px] h-7 rounded-lg gap-1 text-emerald-600 border-emerald-500/30 hover:bg-emerald-50 px-1.5 lg:px-2"
                     onClick={() => updateConversationStatus(selectedConv.id, "open")}
+                    title="Reopen"
                   >
-                    <RotateCcw size={12} /> Reopen
+                    <RotateCcw size={12} /> <span className="hidden lg:inline">Reopen</span>
                   </Button>
                 )}
               </div>
@@ -839,8 +847,8 @@ export default function AdminSupportDashboard({ mode = "all" }: AdminSupportDash
                         <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${isAdmin ? "bg-primary/15" : "bg-muted"}`}>
                           {isAdmin ? <Bot size={12} className="text-primary" /> : <User size={12} className="text-muted-foreground" />}
                         </div>
-                        <div className={`rounded-2xl px-3 py-2 max-w-[70%] ${isAdmin ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted/60 text-foreground rounded-bl-md"}`}>
-                          <p className="text-xs leading-relaxed break-words whitespace-pre-line">{msg.content}</p>
+                        <div className={`rounded-2xl px-3 py-2 max-w-[85%] lg:max-w-[70%] overflow-hidden ${isAdmin ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted/60 text-foreground rounded-bl-md"}`}>
+                          <p className="text-xs leading-relaxed whitespace-pre-line" style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}>{msg.content}</p>
                           <div className={`flex items-center gap-1 mt-0.5 ${isAdmin ? "justify-end" : ""}`}>
                             <p className={`text-[9px] ${isAdmin ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
                               {new Date(msg.created_at).toLocaleTimeString("en-BD", { hour: "2-digit", minute: "2-digit" })}
@@ -899,7 +907,7 @@ export default function AdminSupportDashboard({ mode = "all" }: AdminSupportDash
                         <ChevronDown size={10} />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-80 p-2" align="start" side="top">
+                    <PopoverContent className="w-64 md:w-80 p-2" align="start" side="top">
                       <div className="flex items-center justify-between mb-1.5">
                         <p className="text-[10px] font-bold text-foreground">Quick Reply Templates</p>
                         <Button
