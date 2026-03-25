@@ -1,44 +1,36 @@
 
 
-## Plan: Create a Public Developer Portal for EasyPay Integration
+## Plan: Expand Developer Portal for All Partner Types
 
 ### Problem
-Currently, integration docs are buried inside the Merchant Dashboard's API tab. External gateways, businesses, or developers who want to connect with EasyPay have no public-facing entry point to learn how to integrate, get credentials, or understand the API.
+The Developer Portal only covers merchant integration (payment sessions, SDK). It doesn't address how **banks**, **card networks**, **other MFS providers**, or **utility billers** can connect with EasyPay as partners.
 
 ### Solution
-Create a public `/developers` page — a Developer Portal that explains how to integrate with EasyPay, with SDK docs, API reference, and a "Get Started" flow.
+Add a **"Partnership Programs"** section above Quick Start with cards for each partner type, and a dedicated **"Partner Integration Guides"** section with collapsible details for each category.
 
-### New Page: `src/pages/DeveloperPortal.tsx`
+### Changes to `src/pages/DeveloperPortal.tsx`
 
-**Sections:**
-1. **Hero** — "Build with EasyPay" headline, sub-text explaining payment collection, QR payments, webhooks
-2. **Integration Methods** — 3 cards:
-   - **SDK (Drop-in Button)** — embed `easypay-sdk.js`, code snippet with `EasyPay.init()` + `renderButton()`
-   - **REST API** — direct API calls to create sessions, check status, list sessions
-   - **QR Payments** — dynamic QR generation via API with polling
-3. **Quick Start** — step-by-step: Register as Merchant → Get API Keys → Install SDK → Accept Payments
-4. **API Reference** — collapsible sections for each endpoint:
-   - `create_session` — params, response, example
-   - `check_status` — params, response
-   - `list_sessions` — pagination params
-   - Authentication headers (`X-API-Key`, `X-App-Password`)
-   - Webhook verification (HMAC-SHA256)
-5. **Code Examples** — tabbed snippets (JavaScript, Python, cURL)
-6. **SDK Reference** — `EasyPay.init()`, `renderButton()`, `displayQR()`, `createPayment()`, `checkStatus()`
-7. **CTA Footer** — "Become a Merchant" button → links to `/merchant` or merchant application flow
+**1. Update Hero subtitle** to mention all partner types, not just payments.
 
-### Route
-- Add `/developers` route in `App.tsx` (public, no auth required)
+**2. Add nav links** — "Partners" anchor in header nav.
 
-### Files
-| File | Action |
-|------|--------|
-| `src/pages/DeveloperPortal.tsx` | Create — full developer docs page |
-| `src/App.tsx` | Add route `/developers` |
+**3. New "Partnership Programs" section** (after Integration Methods) — 4 cards:
 
-### Design
-- Clean, documentation-style layout with the existing brand colors
-- Code blocks with copy buttons using `bg-muted/50 rounded-lg` pattern
-- Responsive — works on mobile and desktop
-- No authentication required — fully public
+| Partner Type | Description |
+|---|---|
+| **Banks & Financial Institutions** | Link bank accounts for fund transfers, settlements, and wallet top-ups via our Banking API |
+| **Card Networks** | Connect Visa, Mastercard, or local card rails for card-linked wallet funding and payments |
+| **MFS Providers** | Interoperability with bKash, Nagad, Rocket, etc. for cross-platform transfers |
+| **Utility Billers** | Register as a biller to receive payments through EasyPay's bill pay network |
+
+**4. New "Partner Integration Guides" section** — collapsible blocks for each type with:
+- **Banking API**: endpoints for bank verification, fund transfer initiation, settlement webhooks, required credentials
+- **Card Integration**: card tokenization flow, 3DS callbacks, settlement cycle docs
+- **MFS Interoperability**: cross-wallet transfer API, reconciliation endpoints, sandbox testing
+- **Biller Onboarding**: biller registration, payment notification webhooks, config params
+
+**5. Update CTA** — change from "Become a Merchant" only to include "Partner with Us" option.
+
+### File
+- `src/pages/DeveloperPortal.tsx` — sole file modified
 
