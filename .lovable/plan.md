@@ -1,43 +1,45 @@
 
 
-## Plan: Add Essential API Management Components
+## Plan: Add Essential API Management Sub-tabs
 
-### What
-Add three new sub-tabs to the API Access Management section: **API Logs**, **Rate Limits**, and **IP Whitelist**. All backing tables already exist in the database (`merchant_api_logs`, `merchant_api_keys.rate_limit_per_minute`, `merchant_ip_whitelist`).
+### What's There Now
+The API Access Management section (`AdminApiRequests.tsx`) has 5 sub-tabs: Requests, API Keys, Logs, Rate Limits, IP Whitelist. These are solid but missing some critical operational tools.
 
-### Changes
+### New Sub-tabs to Add
 
-#### 1. New Component: `src/components/admin/AdminApiLogs.tsx`
-- Query `merchant_api_logs` table with filters for merchant, status code (2xx/4xx/5xx), and date range
-- Summary cards: Total Requests, Success Rate, Avg Response Time, Error Count
-- Table columns: Time, Merchant, Action, Status Code, Response Time, IP, Error
-- Expandable rows showing user_agent and full error message
-- Real-time subscription for live updates
+#### 1. **Webhooks** — `AdminApiWebhooks.tsx`
+- List all `merchant_api_keys` with their `webhook_url` configured
+- Test webhook button: sends a test POST payload to the merchant's URL and shows response status/time
+- Edit webhook URL inline per key
+- Show recent delivery attempts from `merchant_api_logs` filtered to webhook actions
+- Summary cards: Total Configured, Active Webhooks, Failed Deliveries
 
-#### 2. New Component: `src/components/admin/AdminApiRateLimits.tsx`
-- List all `merchant_api_keys` showing merchant name, current `rate_limit_per_minute`, and active status
-- Inline edit: click on rate limit value to change it (select dropdown: 10, 30, 60, 120, 300, 600, unlimited)
-- Updates `merchant_api_keys.rate_limit_per_minute` directly
-- Summary: total keys, keys with custom limits, keys at default
+#### 2. **Sandbox** — `AdminApiSandbox.tsx`
+- Interactive API testing console for admins to simulate merchant API calls
+- Select a merchant API key, choose an endpoint/action (create-payment, check-status, refund)
+- Auto-fill sample request body, editable JSON textarea
+- Execute button that calls the `merchant-payment-api` edge function
+- Display response: status code, body (formatted JSON), response time
+- Useful for debugging merchant integration issues
 
-#### 3. New Component: `src/components/admin/AdminApiIpWhitelist.tsx`
-- Query `merchant_ip_whitelist` joined with merchant names
-- Table: Merchant, IP Address, Label, Added Date, Actions (delete)
-- Add IP dialog: select merchant, enter IP address, optional label
-- Toggle `ip_whitelist_enabled` on `merchant_api_keys` per key
-- Summary cards: Total IPs, Merchants with whitelist enabled
+#### 3. **Usage Analytics** — `AdminApiUsageAnalytics.tsx`
+- Aggregate stats from `merchant_api_logs`: requests per day chart, top merchants by volume, error rate trends
+- Time range selector (24h, 7d, 30d)
+- Bar/line chart using existing chart components for daily request counts
+- Top 5 merchants by API call volume
+- Breakdown by status code (2xx vs 4xx vs 5xx pie/donut)
+- Average response time trend
 
-#### 4. Update `src/components/admin/AdminApiRequests.tsx`
-- Add sub-tabs: Requests | API Keys | **Logs** | **Rate Limits** | **IP Whitelist**
-- Render the new components based on active tab
-- Pass `search` prop to new components for consistent filtering
+### Changes to Existing Files
 
-#### 5. Update `src/pages/AdminDashboard.tsx`
-- No new sidebar items needed -- everything nests under existing "API Requests" tab
+#### `AdminApiRequests.tsx`
+- Add 3 new tabs: "Webhooks", "Sandbox", "Usage" to the segmented control
+- Import and render the 3 new components
+- Pass `search` prop to Webhooks and Usage
 
 ### Technical Detail
-- All three tables (`merchant_api_logs`, `merchant_ip_whitelist`, `merchant_api_keys`) already exist with proper schemas
-- `merchant_api_keys` already has `rate_limit_per_minute` (number) and `ip_whitelist_enabled` (boolean) columns
-- Follow existing admin UI patterns: summary cards at top, segmented control tabs, table with search filtering
-- Real-time channel subscriptions for `merchant_api_logs` table
+- All data sourced from existing tables: `merchant_api_keys`, `merchant_api_logs`, `merchants`
+- Sandbox calls existing `merchant-payment-api` edge function
+- Charts use the existing `@/components/ui/chart` (Recharts-based)
+- No database migrations needed
 
