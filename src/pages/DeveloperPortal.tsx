@@ -501,9 +501,10 @@ export default function DeveloperPortal() {
         {/* CTA */}
         <section className="text-center border border-border rounded-2xl p-10 bg-card space-y-4">
           <h2 className="text-2xl font-bold text-foreground">Ready to get started?</h2>
-          <p className="text-muted-foreground">Register as a merchant to get your API credentials and start accepting payments.</p>
-          <div className="flex items-center justify-center gap-3">
+          <p className="text-muted-foreground">Whether you're a merchant, bank, MFS provider, or biller — we have an integration path for you.</p>
+          <div className="flex items-center justify-center gap-3 flex-wrap">
             <Link to="/"><Button className="gap-2">Become a Merchant <ArrowRight className="w-4 h-4" /></Button></Link>
+            <a href="mailto:partners@easypay.com"><Button variant="outline" className="gap-2"><Handshake className="w-4 h-4" /> Partner with Us</Button></a>
             <a href="mailto:support@easypay.com"><Button variant="outline">Contact Sales</Button></a>
           </div>
         </section>
