@@ -186,7 +186,7 @@ export default function AdminActivityMonitor() {
               key={t}
               className={`px-2.5 py-1 rounded-md text-[10px] font-medium capitalize transition-all ${
                 typeFilter === t
-                  ? "bg-background text-foreground shadow-sm"
+                  ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
               onClick={() => setTypeFilter(t)}
@@ -203,7 +203,7 @@ export default function AdminActivityMonitor() {
               key={s}
               className={`px-2.5 py-1 rounded-md text-[10px] font-medium capitalize transition-all ${
                 statusFilter === s
-                  ? "bg-background text-foreground shadow-sm"
+                  ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
               onClick={() => setStatusFilter(s)}

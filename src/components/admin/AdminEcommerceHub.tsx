@@ -489,18 +489,20 @@ export default function AdminEcommerceHub() {
         <h2 className="text-lg font-bold text-foreground">E-Commerce Management</h2>
       </div>
 
-      <div className="flex gap-2 flex-wrap">
+      <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5">
         {SUB_TABS.map(t => (
-          <Button
+          <button
             key={t.key}
-            variant={subTab === t.key ? "default" : "outline"}
-            size="sm"
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+              subTab === t.key
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
             onClick={() => setSubTab(t.key)}
-            className="gap-1.5"
           >
-            <t.icon className="w-4 h-4" />
+            <t.icon className="w-3.5 h-3.5" />
             {t.label}
-          </Button>
+          </button>
         ))}
       </div>
 

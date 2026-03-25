@@ -103,9 +103,11 @@ export default function AdminGeoTracking() {
         </Select>
       </div>
 
-      <div className="flex gap-2 flex-wrap">
+      <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5">
         {(["overview", "agents", "hotspots", "coverage"] as const).map(t => (
-          <Button key={t} variant={subTab === t ? "default" : "outline"} size="sm" onClick={() => setSubTab(t)} className="capitalize">{t}</Button>
+          <button key={t} className={`px-3 py-1.5 rounded-md text-xs font-medium capitalize transition-all ${
+            subTab === t ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`} onClick={() => setSubTab(t)}>{t}</button>
         ))}
       </div>
 

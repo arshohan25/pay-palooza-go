@@ -141,16 +141,17 @@ export default function AdminRechargeLog() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Select value={modeFilter} onValueChange={(v) => setModeFilter(v as ModeFilter)}>
-          <SelectTrigger className="w-32 h-9">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Modes</SelectItem>
-            <SelectItem value="api">Live API</SelectItem>
-            <SelectItem value="local">Local</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="bg-muted/50 rounded-lg p-1 flex gap-0.5">
+          {([
+            { key: "all", label: "All Modes" },
+            { key: "api", label: "Live API" },
+            { key: "local", label: "Local" },
+          ] as const).map(t => (
+            <button key={t.key} className={`px-2.5 py-1 rounded-md text-[10px] font-medium transition-all ${
+              modeFilter === t.key ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            }`} onClick={() => setModeFilter(t.key as ModeFilter)}>{t.label}</button>
+          ))}
+        </div>
         <Select value={operatorFilter} onValueChange={setOperatorFilter}>
           <SelectTrigger className="w-36 h-9">
             <SelectValue />
