@@ -233,9 +233,9 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
       </div>
 
       {/* Desktop Table */}
-      <Card className="hidden md:block overflow-hidden">
+      <Card className="hidden md:block">
         <div className="overflow-x-auto">
-        <Table className="min-w-[950px]">
+        <Table className="min-w-[1050px]">
           <TableHeader>
             <TableRow>
               <TableHead className="min-w-[120px]">Merchant</TableHead>
@@ -295,7 +295,7 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
                     {(k.permissions || []).length} perms
                   </Button>
                 </TableCell>
-                <TableCell className="text-xs text-muted-foreground">{format(new Date(k.created_at), "dd MMM yyyy")}</TableCell>
+                <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{format(new Date(k.created_at), "dd MMM yyyy")}</TableCell>
                 <TableCell className="whitespace-nowrap">
                   <div className="flex gap-1 whitespace-nowrap">
                     <Button
