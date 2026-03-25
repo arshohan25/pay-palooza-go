@@ -193,6 +193,118 @@ export default function DeveloperPortal() {
           </div>
         </section>
 
+        {/* Partnership Programs */}
+        <section id="partners" className="space-y-6 scroll-mt-20">
+          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2"><Handshake className="w-5 h-5" /> Partnership Programs</h2>
+          <p className="text-muted-foreground">EasyPay is open to all financial ecosystem partners. Choose your integration path below.</p>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {[
+              { icon: Building2, title: "Banks & Financial Institutions", desc: "Link bank accounts for fund transfers, settlements, and wallet top-ups via our Banking API. Support for BEFTN, NPSB, and RTGS rails." },
+              { icon: CreditCard, title: "Card Networks", desc: "Connect Visa, Mastercard, or local card rails for card-linked wallet funding and payments. Tokenization and 3DS supported." },
+              { icon: Smartphone, title: "MFS Providers", desc: "Interoperability with bKash, Nagad, Rocket, and other MFS platforms for seamless cross-platform transfers." },
+              { icon: FileText, title: "Utility Billers", desc: "Register as a biller to receive payments through EasyPay's bill pay network. Real-time payment notifications via webhook." },
+            ].map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="border border-border rounded-xl p-6 space-y-3 hover:border-primary/40 transition-colors bg-card">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Icon className="w-5 h-5 text-primary" />
+                </div>
+                <h3 className="font-semibold text-foreground">{title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Partner Integration Guides */}
+        <section className="space-y-6 scroll-mt-20">
+          <h2 className="text-2xl font-bold text-foreground">Partner Integration Guides</h2>
+          <div className="space-y-3">
+            <CollapsibleSection title="Banking API" method="POST" path="Banking Integration">
+              <p className="text-sm text-muted-foreground">Connect your bank's core banking system with EasyPay for real-time fund transfers and settlements.</p>
+              <h4 className="text-sm font-semibold text-foreground mt-3">Available Endpoints</h4>
+              <div className="text-xs space-y-1 mt-2">
+                {[
+                  ["verify_account", "POST", "Verify a bank account holder name and status before initiating transfers"],
+                  ["initiate_transfer", "POST", "Push funds from EasyPay wallet to a linked bank account (BEFTN/NPSB/RTGS)"],
+                  ["settlement_webhook", "WEBHOOK", "Receive real-time settlement confirmations and reconciliation data"],
+                  ["balance_inquiry", "POST", "Query available settlement balance for your institution"],
+                ].map(([endpoint, method, desc]) => (
+                  <div key={endpoint} className="flex gap-2 items-baseline">
+                    <code className="font-mono text-primary">{endpoint}</code>
+                    <Badge variant="outline" className="text-[9px] px-1 py-0">{method}</Badge>
+                    <span className="text-muted-foreground">— {desc}</span>
+                  </div>
+                ))}
+              </div>
+              <h4 className="text-sm font-semibold text-foreground mt-4">Required Credentials</h4>
+              <p className="text-xs text-muted-foreground mt-1">Bank Partner API Key (<code className="bg-muted px-1 rounded">epb_</code>), Settlement Secret (<code className="bg-muted px-1 rounded">ebs_</code>), and a signed partnership agreement.</p>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Card Network Integration" method="POST" path="Card Rails">
+              <p className="text-sm text-muted-foreground">Enable card-linked wallet funding and merchant payments through Visa, Mastercard, or local card schemes.</p>
+              <h4 className="text-sm font-semibold text-foreground mt-3">Integration Flow</h4>
+              <div className="text-xs space-y-1 mt-2">
+                {[
+                  ["tokenize_card", "POST", "Securely tokenize a cardholder's card for recurring or on-demand funding"],
+                  ["charge_token", "POST", "Initiate a charge against a stored card token"],
+                  ["3ds_callback", "WEBHOOK", "Receive 3D Secure authentication results for card transactions"],
+                  ["settlement_cycle", "GET", "Query daily card settlement cycle status and amounts"],
+                ].map(([endpoint, method, desc]) => (
+                  <div key={endpoint} className="flex gap-2 items-baseline">
+                    <code className="font-mono text-primary">{endpoint}</code>
+                    <Badge variant="outline" className="text-[9px] px-1 py-0">{method}</Badge>
+                    <span className="text-muted-foreground">— {desc}</span>
+                  </div>
+                ))}
+              </div>
+              <h4 className="text-sm font-semibold text-foreground mt-4">Required Credentials</h4>
+              <p className="text-xs text-muted-foreground mt-1">Card Partner Key (<code className="bg-muted px-1 rounded">epc_</code>), Acquirer ID, and PCI-DSS compliance certification.</p>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="MFS Interoperability" method="POST" path="MFS Cross-Platform">
+              <p className="text-sm text-muted-foreground">Enable cross-wallet transfers between EasyPay and other MFS providers (bKash, Nagad, Rocket, etc.).</p>
+              <h4 className="text-sm font-semibold text-foreground mt-3">Endpoints</h4>
+              <div className="text-xs space-y-1 mt-2">
+                {[
+                  ["cross_transfer", "POST", "Initiate a transfer from an MFS wallet to EasyPay or vice versa"],
+                  ["reconcile", "POST", "Batch reconciliation of cross-platform transactions"],
+                  ["status_check", "GET", "Check real-time transfer status by reference ID"],
+                  ["sandbox_simulate", "POST", "Simulate transfers in sandbox mode for testing"],
+                ].map(([endpoint, method, desc]) => (
+                  <div key={endpoint} className="flex gap-2 items-baseline">
+                    <code className="font-mono text-primary">{endpoint}</code>
+                    <Badge variant="outline" className="text-[9px] px-1 py-0">{method}</Badge>
+                    <span className="text-muted-foreground">— {desc}</span>
+                  </div>
+                ))}
+              </div>
+              <h4 className="text-sm font-semibold text-foreground mt-4">Required Credentials</h4>
+              <p className="text-xs text-muted-foreground mt-1">MFS Partner Key (<code className="bg-muted px-1 rounded">epm_</code>), Interop Secret, and Bangladesh Bank interoperability license reference.</p>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Biller Onboarding" method="POST" path="Utility Billers">
+              <p className="text-sm text-muted-foreground">Register your organization as a biller on EasyPay's bill pay network to receive customer payments.</p>
+              <h4 className="text-sm font-semibold text-foreground mt-3">Onboarding Steps</h4>
+              <div className="text-xs space-y-1 mt-2">
+                {[
+                  ["register_biller", "POST", "Submit biller details (name, category, account info) for approval"],
+                  ["configure_plans", "POST", "Define billing plans, amounts, due dates, and customer ID formats"],
+                  ["payment_notification", "WEBHOOK", "Receive real-time notification when a customer pays a bill"],
+                  ["bulk_reconciliation", "GET", "Download daily/monthly payment reconciliation reports"],
+                ].map(([endpoint, method, desc]) => (
+                  <div key={endpoint} className="flex gap-2 items-baseline">
+                    <code className="font-mono text-primary">{endpoint}</code>
+                    <Badge variant="outline" className="text-[9px] px-1 py-0">{method}</Badge>
+                    <span className="text-muted-foreground">— {desc}</span>
+                  </div>
+                ))}
+              </div>
+              <h4 className="text-sm font-semibold text-foreground mt-4">Required Credentials</h4>
+              <p className="text-xs text-muted-foreground mt-1">Biller API Key (<code className="bg-muted px-1 rounded">epbl_</code>), Webhook Secret, and a signed biller agreement.</p>
+            </CollapsibleSection>
+          </div>
+        </section>
+
         {/* Quick Start */}
         <section id="quick-start" className="space-y-6 scroll-mt-20">
           <h2 className="text-2xl font-bold text-foreground">Quick Start</h2>
