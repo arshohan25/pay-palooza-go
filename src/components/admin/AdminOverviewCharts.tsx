@@ -301,11 +301,13 @@ export default function AdminOverviewCharts() {
               <RotateCcw className="w-3 h-3" /> Reset layout
             </Button>
           )}
-          {(["daily", "weekly", "monthly"] as Period[]).map(p => (
-            <Button key={p} size="sm" variant={period === p ? "default" : "outline"} className="text-xs h-7 px-3 capitalize" onClick={() => setPeriod(p)}>
-              {p}
-            </Button>
-          ))}
+          <div className="bg-muted/50 rounded-lg p-1 flex gap-0.5">
+            {(["daily", "weekly", "monthly"] as Period[]).map(p => (
+              <button key={p} className={`px-3 py-1 rounded-md text-xs font-medium transition-all capitalize ${period === p ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setPeriod(p)}>
+                {p}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

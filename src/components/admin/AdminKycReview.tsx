@@ -283,16 +283,13 @@ export default function AdminKycReview() {
       </div>
       {/* Filter bar */}
       <div className="flex items-center gap-2 flex-wrap">
-        {(["pending", "all", "verified", "rejected"] as const).map(f => (
-          <Button
-            key={f}
-            variant={filter === f ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilter(f)}
-          >
-            {f === "pending" ? `Pending (${stats.pending})` : f.charAt(0).toUpperCase() + f.slice(1)}
-          </Button>
-        ))}
+        <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5">
+          {(["pending", "all", "verified", "rejected"] as const).map(f => (
+            <button key={f} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${filter === f ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setFilter(f)}>
+              {f === "pending" ? `Pending (${stats.pending})` : f.charAt(0).toUpperCase() + f.slice(1)}
+            </button>
+          ))}
+        </div>
         <Button variant="outline" size="icon" onClick={loadRecords} disabled={loading} className="ml-auto">
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
         </Button>

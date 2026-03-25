@@ -372,9 +372,9 @@ function AdjustmentsTab() {
                   </div>
                   <p className="text-sm font-bold text-foreground">৳{Number(found.balance).toLocaleString()}</p>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button variant={adjustType === "credit" ? "default" : "outline"} size="sm" onClick={() => setAdjustType("credit")} className="gap-1"><Plus className="w-3 h-3" />Credit</Button>
-                  <Button variant={adjustType === "debit" ? "destructive" : "outline"} size="sm" onClick={() => setAdjustType("debit")} className="gap-1"><Minus className="w-3 h-3" />Debit</Button>
+                <div className="bg-muted/50 rounded-lg p-1 flex gap-0.5">
+                  <button className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${adjustType === "credit" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setAdjustType("credit")}><Plus className="w-3 h-3" />Credit</button>
+                  <button className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${adjustType === "debit" ? "bg-destructive text-destructive-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setAdjustType("debit")}><Minus className="w-3 h-3" />Debit</button>
                 </div>
                 <Input type="number" placeholder="Amount" value={amount} onChange={e => setAmount(e.target.value)} />
                 <Input placeholder="Reason (required)" value={reason} onChange={e => setReason(e.target.value)} />

@@ -448,19 +448,17 @@ export default function AdminMerchantManagement() {
   return (
     <div className="space-y-4">
       {/* Top-level sub-tabs */}
-      <div className="flex gap-2 flex-wrap">
-        <Button variant={mainTab === "merchants" ? "default" : "outline"} size="sm" onClick={() => setMainTab("merchants")}>
-          <Store className="w-4 h-4 mr-1" /> Merchants
-        </Button>
-        <Button variant={mainTab === "api-requests" ? "default" : "outline"} size="sm" onClick={() => setMainTab("api-requests")}>
-          <Key className="w-4 h-4 mr-1" /> API Requests
-        </Button>
-        <Button variant={mainTab === "applications" ? "default" : "outline"} size="sm" onClick={() => setMainTab("applications")}>
-          <FileText className="w-4 h-4 mr-1" /> Applications
-        </Button>
-        <Button variant={mainTab === "targeting" ? "default" : "outline"} size="sm" onClick={() => setMainTab("targeting")}>
-          <Filter className="w-4 h-4 mr-1" /> Targeting
-        </Button>
+      <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5">
+        {([
+          { key: "merchants", icon: Store, label: "Merchants" },
+          { key: "api-requests", icon: Key, label: "API Requests" },
+          { key: "applications", icon: FileText, label: "Applications" },
+          { key: "targeting", icon: Filter, label: "Targeting" },
+        ] as const).map(t => (
+          <button key={t.key} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${mainTab === t.key ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setMainTab(t.key as any)}>
+            <t.icon className="w-3.5 h-3.5" /> {t.label}
+          </button>
+        ))}
       </div>
 
       {mainTab === "api-requests" && <AdminApiRequests />}

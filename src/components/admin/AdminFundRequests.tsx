@@ -160,19 +160,22 @@ export default function AdminFundRequests() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-2">
-        {(["all", "pending", "approved", "rejected"] as const).map(f => (
-          <Button key={f} variant={filter === f ? "default" : "outline"} size="sm" onClick={() => setFilter(f)} className="capitalize text-xs">
-            {f === "all" ? "All" : f}
-            {f === "pending" && pendingCount > 0 && <Badge variant="secondary" className="ml-1 text-[10px] px-1">{pendingCount}</Badge>}
-          </Button>
-        ))}
-        <div className="h-6 w-px bg-border mx-1" />
-        {(["all", "add_money", "withdraw"] as const).map(f => (
-          <Button key={f} variant={typeFilter === f ? "default" : "outline"} size="sm" onClick={() => setTypeFilter(f)} className="capitalize text-xs">
-            {f === "all" ? "All Types" : f === "add_money" ? "Add Money" : "Withdraw"}
-          </Button>
-        ))}
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5">
+          {(["all", "pending", "approved", "rejected"] as const).map(f => (
+            <button key={f} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${filter === f ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setFilter(f)}>
+              {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
+              {f === "pending" && pendingCount > 0 && <Badge variant="secondary" className="text-[10px] px-1">{pendingCount}</Badge>}
+            </button>
+          ))}
+        </div>
+        <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5">
+          {(["all", "add_money", "withdraw"] as const).map(f => (
+            <button key={f} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${typeFilter === f ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setTypeFilter(f)}>
+              {f === "all" ? "All Types" : f === "add_money" ? "Add Money" : "Withdraw"}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="relative">

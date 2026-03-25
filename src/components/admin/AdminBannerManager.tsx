@@ -411,25 +411,13 @@ export default function AdminBannerManager() {
             {/* Link Target */}
             <div>
               <Label>Link Target</Label>
-              <div className="flex gap-2 mt-1 mb-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={form.link_mode === "feature" ? "default" : "outline"}
-                  onClick={() => setForm({ ...form, link_mode: "feature", link_url: "" })}
-                  className="text-xs"
-                >
-                  <Link2 className="w-3 h-3 mr-1" /> App Feature
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={form.link_mode === "external" ? "default" : "outline"}
-                  onClick={() => setForm({ ...form, link_mode: "external", link_url: "" })}
-                  className="text-xs"
-                >
-                  <ExternalLink className="w-3 h-3 mr-1" /> External URL
-                </Button>
+              <div className="bg-muted/50 rounded-lg p-1 flex gap-0.5 mt-1 mb-2">
+                <button type="button" className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${form.link_mode === "feature" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setForm({ ...form, link_mode: "feature", link_url: "" })}>
+                  <Link2 className="w-3 h-3" /> App Feature
+                </button>
+                <button type="button" className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${form.link_mode === "external" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setForm({ ...form, link_mode: "external", link_url: "" })}>
+                  <ExternalLink className="w-3 h-3" /> External URL
+                </button>
               </div>
               {form.link_mode === "feature" ? (
                 <Select

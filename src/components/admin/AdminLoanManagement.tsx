@@ -177,9 +177,11 @@ export default function AdminLoanManagement() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input placeholder="Search by user ID..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
         </div>
-        {STATUSES.map(s => (
-          <Button key={s} size="sm" variant={statusFilter === s ? "default" : "outline"} onClick={() => setStatusFilter(s)} className="capitalize h-8 text-xs">{s}</Button>
-        ))}
+        <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5">
+          {STATUSES.map(s => (
+            <button key={s} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all capitalize ${statusFilter === s ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setStatusFilter(s)}>{s}</button>
+          ))}
+        </div>
         <Button size="sm" variant="ghost" onClick={fetch}><RefreshCw className="w-4 h-4" /></Button>
         <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4 mr-1" /> Create Loan</Button>
       </div>

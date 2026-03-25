@@ -550,17 +550,15 @@ export default function AdminTreasury() {
                 Clear dates
               </Button>
             )}
-            <div className="flex gap-1 flex-wrap ml-auto">
+            <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5 ml-auto">
               {["all", "earning", "disburse", "user_addmoney", "commission_paid", "initial_deposit"].map(f => (
-                <Button
+                <button
                   key={f}
-                  variant={filterType === f ? "default" : "outline"}
-                  size="sm"
-                  className="text-xs h-7"
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${filterType === f ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                   onClick={() => setFilterType(f)}
                 >
                   {f === "all" ? "All" : LEDGER_TYPE_CONFIG[f]?.label || f}
-                </Button>
+                </button>
               ))}
             </div>
           </div>
