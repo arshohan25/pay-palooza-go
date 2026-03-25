@@ -44,7 +44,7 @@ const STATUS_BADGE: Record<string, { variant: "default" | "secondary" | "destruc
 };
 
 export default function AdminApiRequests() {
-  const [activeTab, setActiveTab] = useState<"requests" | "keys">("requests");
+  const [activeTab, setActiveTab] = useState<"requests" | "keys" | "logs" | "rate-limits" | "ip-whitelist">("requests");
   const [requests, setRequests] = useState<ApiRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
