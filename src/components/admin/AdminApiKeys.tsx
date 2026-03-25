@@ -235,16 +235,16 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
       {/* Desktop Table */}
       <Card className="hidden md:block overflow-hidden">
         <div className="overflow-x-auto">
-        <Table className="min-w-[800px]">
+        <Table className="min-w-[950px]">
           <TableHeader>
             <TableRow>
-              <TableHead>Merchant</TableHead>
-              <TableHead>API Key</TableHead>
-              <TableHead>Env</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Permissions</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead className="min-w-[120px]">Merchant</TableHead>
+              <TableHead className="min-w-[180px]">API Key</TableHead>
+              <TableHead className="min-w-[60px]">Env</TableHead>
+              <TableHead className="min-w-[90px]">Status</TableHead>
+              <TableHead className="min-w-[80px]">Permissions</TableHead>
+              <TableHead className="whitespace-nowrap min-w-[100px]">Created</TableHead>
+              <TableHead className="whitespace-nowrap min-w-[180px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -297,7 +297,7 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">{format(new Date(k.created_at), "dd MMM yyyy")}</TableCell>
                 <TableCell className="whitespace-nowrap">
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 whitespace-nowrap">
                     <Button
                       size="sm"
                       variant="outline"
