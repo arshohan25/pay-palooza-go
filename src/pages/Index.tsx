@@ -377,11 +377,15 @@ const Index = () => {
     );
   }
 
-  // Show loading while checking auth state
+  // Show skeleton while checking auth state (meaningful content for Speed Index)
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-background">
+        <div className="w-full max-w-xl mx-auto px-4 py-4 space-y-5">
+          <BalanceCardSkeleton />
+          <QuickActionsSkeleton />
+          <TransactionListSkeleton />
+        </div>
       </div>
     );
   }
@@ -410,7 +414,7 @@ const Index = () => {
           ref={mainRef}
           className="flex-1 w-full max-w-xl mx-auto px-4 py-4 pb-32 md:pb-12 md:px-8 md:py-8 md:max-w-2xl overflow-x-hidden"
         >
-          <Suspense fallback={<div className="flex items-center justify-center min-h-[40vh]"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+          <Suspense fallback={<div className="space-y-5"><BalanceCardSkeleton /><QuickActionsSkeleton /><TransactionListSkeleton /></div>}>
             {mainContent()}
           </Suspense>
         </main>
