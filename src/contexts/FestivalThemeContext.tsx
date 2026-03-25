@@ -87,7 +87,10 @@ export function FestivalThemeProvider({ children }: { children: ReactNode }) {
         }
 
         if (t.body_pattern && t.body_pattern !== "none") {
-          document.body.classList.add(`festival-body-${t.body_pattern}`);
+          // Lazy-load festival pattern CSS only when needed
+          import("@/styles/festival-patterns.css").then(() => {
+            document.body.classList.add(`festival-body-${t.body_pattern}`);
+          });
         }
       }
     };
