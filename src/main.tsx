@@ -19,3 +19,10 @@ document.addEventListener("keydown", (e) => {
 });
 
 createRoot(document.getElementById("root")!).render(<App />);
+
+// Register service worker after page becomes interactive (non-blocking)
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js", { scope: "/" });
+  });
+}
