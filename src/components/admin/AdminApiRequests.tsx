@@ -194,6 +194,9 @@ export default function AdminApiRequests() {
         {([
           { key: "requests" as const, label: "Requests" },
           { key: "keys" as const, label: "API Keys" },
+          { key: "logs" as const, label: "Logs" },
+          { key: "rate-limits" as const, label: "Rate Limits" },
+          { key: "ip-whitelist" as const, label: "IP Whitelist" },
         ]).map(t => (
           <button
             key={t.key}
@@ -207,6 +210,12 @@ export default function AdminApiRequests() {
 
       {activeTab === "keys" ? (
         <AdminApiKeys search={search} />
+      ) : activeTab === "logs" ? (
+        <AdminApiLogs search={search} />
+      ) : activeTab === "rate-limits" ? (
+        <AdminApiRateLimits search={search} />
+      ) : activeTab === "ip-whitelist" ? (
+        <AdminApiIpWhitelist search={search} />
       ) : (
         <>
           {/* Summary cards */}
