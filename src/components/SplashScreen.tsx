@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import logo from "@/assets/easypay-logo.png";
+import logo from "@/assets/easypay-logo.webp";
 
 interface SplashScreenProps {
   onDone: () => void;

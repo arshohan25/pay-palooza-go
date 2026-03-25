@@ -29,7 +29,7 @@ function fmt(n: number) {
 
 async function loadLogoBase64(): Promise<string | null> {
   try {
-    const res = await fetch("/icons/easypay-logo.png");
+    const res = await fetch("/icons/easypay-logo.webp");
     const blob = await res.blob();
     return await new Promise((resolve) => {
       const reader = new FileReader();

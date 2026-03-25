@@ -1,5 +1,5 @@
 import { LayoutDashboard, ArrowLeftRight, ScanLine, MessageCircle, CircleUserRound } from "lucide-react";
-import logo from "@/assets/easypay-logo.png";
+import logo from "@/assets/easypay-logo.webp";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { getTxnNotifCount, onTxnNotifChange } from "@/lib/txnNotifStore";
