@@ -193,7 +193,7 @@ export default function AdminApiRequests() {
       </div>
 
       {/* Sub-tabs */}
-      <div className="bg-muted/50 rounded-lg p-1 flex gap-0.5 w-fit">
+      <div className="bg-muted/50 rounded-lg p-1 flex gap-0.5 overflow-x-auto max-w-full">
         {([
           { key: "requests" as const, label: "Requests" },
           { key: "keys" as const, label: "API Keys" },
@@ -231,7 +231,7 @@ export default function AdminApiRequests() {
       ) : (
         <>
           {/* Summary cards */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card className="cursor-pointer hover:bg-muted/40 transition-colors" onClick={() => setFilter("pending")}>
               <CardContent className="p-4 flex items-center gap-3">
                 <Clock className="w-8 h-8 text-amber-500" />
@@ -283,7 +283,7 @@ export default function AdminApiRequests() {
           )}
 
           {/* Filter */}
-          <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5 w-fit">
+          <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5 overflow-x-auto max-w-full">
             {(["all", "pending", "approved", "rejected"] as const).map(f => (
               <button key={f} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${filter === f ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setFilter(f)}>
                 {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
@@ -293,8 +293,9 @@ export default function AdminApiRequests() {
           </div>
 
           {/* Table */}
-          <Card>
-            <Table>
+          <Card className="overflow-hidden">
+            <div className="overflow-x-auto">
+            <Table className="min-w-[700px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Merchant</TableHead>
@@ -328,7 +329,7 @@ export default function AdminApiRequests() {
                               onChange={e => setAdminNotes(prev => ({ ...prev, [req.id]: e.target.value }))}
                               className="text-xs h-16 min-h-0"
                             />
-                            <div className="flex gap-1">
+                            <div className="flex gap-1 whitespace-nowrap">
                               <Button size="sm" disabled={processing === req.id} onClick={() => handleAction(req.id, "approved", req.merchant_id)}>
                                 <Key className="w-3 h-3 mr-1" /> Approve
                               </Button>
@@ -346,6 +347,7 @@ export default function AdminApiRequests() {
                 })}
               </TableBody>
             </Table>
+            </div>
           </Card>
         </>
       )}
