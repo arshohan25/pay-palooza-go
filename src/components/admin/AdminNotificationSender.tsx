@@ -420,19 +420,26 @@ export default function AdminNotificationSender() {
   return (
     <div className="space-y-6">
       {/* Tab Switcher */}
-      <div className="flex gap-2 flex-wrap">
-        <Button variant={mainTab === "compose" ? "default" : "outline"} size="sm" onClick={() => setMainTab("compose")}>
-          <Send className="w-4 h-4 mr-1" /> Compose
-        </Button>
-        <Button variant={mainTab === "notif_logs" ? "default" : "outline"} size="sm" onClick={() => setMainTab("notif_logs")}>
-          <Mail className="w-4 h-4 mr-1" /> Notification Logs
-        </Button>
-        <Button variant={mainTab === "sms_logs" ? "default" : "outline"} size="sm" onClick={() => setMainTab("sms_logs")}>
-          <MessageSquare className="w-4 h-4 mr-1" /> SMS Logs
-        </Button>
-        <Button variant={mainTab === "templates" ? "default" : "outline"} size="sm" onClick={() => setMainTab("templates")}>
-          <Tag className="w-4 h-4 mr-1" /> Templates
-        </Button>
+      <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5">
+        {([
+          { key: "compose", label: "Compose", icon: Send },
+          { key: "notif_logs", label: "Notification Logs", icon: Mail },
+          { key: "sms_logs", label: "SMS Logs", icon: MessageSquare },
+          { key: "templates", label: "Templates", icon: Tag },
+        ] as const).map(t => (
+          <button
+            key={t.key}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+              mainTab === t.key
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setMainTab(t.key as any)}
+          >
+            <t.icon className="w-3.5 h-3.5" />
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {/* ═══ COMPOSE TAB ═══ */}

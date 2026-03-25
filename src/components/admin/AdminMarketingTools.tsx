@@ -292,10 +292,25 @@ export default function AdminMarketingTools() {
         <p className="text-sm text-muted-foreground">Manage promo codes, cashback rules, and campaigns</p>
       </div>
 
-      <div className="flex gap-2 flex-wrap">
-        <Button variant={subTab === "promo" ? "default" : "outline"} size="sm" onClick={() => setSubTab("promo")}><Tag className="w-4 h-4 mr-1" /> Promo Codes</Button>
-        <Button variant={subTab === "cashback" ? "default" : "outline"} size="sm" onClick={() => setSubTab("cashback")}><Gift className="w-4 h-4 mr-1" /> Cashback Rules</Button>
-        <Button variant={subTab === "campaigns" ? "default" : "outline"} size="sm" onClick={() => setSubTab("campaigns")}><Rocket className="w-4 h-4 mr-1" /> Campaigns</Button>
+      <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5">
+        {([
+          { key: "promo", label: "Promo Codes", icon: Tag },
+          { key: "cashback", label: "Cashback Rules", icon: Gift },
+          { key: "campaigns", label: "Campaigns", icon: Rocket },
+        ] as const).map(t => (
+          <button
+            key={t.key}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+              subTab === t.key
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setSubTab(t.key as any)}
+          >
+            <t.icon className="w-3.5 h-3.5" />
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {/* Summary */}

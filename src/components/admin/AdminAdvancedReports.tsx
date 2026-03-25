@@ -90,16 +90,18 @@ export default function AdminAdvancedReports() {
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5">
         {([
           { key: "transactions" as const, label: "Transactions", icon: ArrowLeftRight },
           { key: "revenue" as const, label: "Revenue", icon: DollarSign },
           { key: "commissions" as const, label: "Commissions", icon: Coins },
           { key: "settlements" as const, label: "Settlements", icon: TrendingUp },
         ] as const).map(t => (
-          <Button key={t.key} variant={tab === t.key ? "default" : "outline"} size="sm" onClick={() => setTab(t.key)}>
-            <t.icon className="w-4 h-4 mr-1" /> {t.label}
-          </Button>
+          <button key={t.key} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+            tab === t.key ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`} onClick={() => setTab(t.key)}>
+            <t.icon className="w-3.5 h-3.5" /> {t.label}
+          </button>
         ))}
       </div>
 

@@ -90,13 +90,15 @@ export default function AdminBankReconciliation() {
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex gap-2">
+      <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5">
         {[
           { key: "overview" as const, label: "Overview" },
           { key: "transfers" as const, label: "Bank Transfers" },
           { key: "reconcile" as const, label: "Reconciliation" },
         ].map(t => (
-          <Button key={t.key} variant={subTab === t.key ? "default" : "outline"} size="sm" onClick={() => setSubTab(t.key)}>{t.label}</Button>
+          <button key={t.key} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+            subTab === t.key ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`} onClick={() => setSubTab(t.key)}>{t.label}</button>
         ))}
       </div>
 

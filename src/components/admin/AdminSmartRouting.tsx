@@ -193,9 +193,23 @@ export default function AdminSmartRouting() {
         <h2 className="text-lg font-bold text-foreground">Smart Routing & Payment Links</h2>
       </div>
 
-      <div className="flex gap-2">
-        <Button variant={subTab === "routing" ? "default" : "outline"} size="sm" onClick={() => setSubTab("routing")}>Gateway Routing</Button>
-        <Button variant={subTab === "payment_links" ? "default" : "outline"} size="sm" onClick={() => setSubTab("payment_links")}>Payment Links</Button>
+      <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5">
+        {([
+          { key: "routing", label: "Gateway Routing" },
+          { key: "payment_links", label: "Payment Links" },
+        ] as const).map(t => (
+          <button
+            key={t.key}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+              subTab === t.key
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setSubTab(t.key as any)}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {subTab === "routing" && (

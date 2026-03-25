@@ -154,15 +154,18 @@ export default function AdminBlacklistManager() {
               <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-muted-foreground" />
               <Input placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)} className="pl-8" />
             </div>
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="phone">Phone</SelectItem>
-                <SelectItem value="ip">IP</SelectItem>
-                <SelectItem value="device">Device</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="bg-muted/50 rounded-lg p-1 flex gap-0.5">
+              {([
+                { key: "all", label: "All Types" },
+                { key: "phone", label: "Phone" },
+                { key: "ip", label: "IP" },
+                { key: "device", label: "Device" },
+              ] as const).map(t => (
+                <button key={t.key} className={`px-2.5 py-1 rounded-md text-[10px] font-medium transition-all ${
+                  filterType === t.key ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                }`} onClick={() => setFilterType(t.key)}>{t.label}</button>
+              ))}
+            </div>
           </div>
 
           {loading ? (
