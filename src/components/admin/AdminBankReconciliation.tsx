@@ -79,14 +79,16 @@ export default function AdminBankReconciliation() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-primary" /> Bank Reconciliation
-          </h3>
-          <p className="text-sm text-muted-foreground">Track bank transfers, deposits, and reconcile accounts</p>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+          <Building2 className="w-5 h-5 text-primary" /> Bank Reconciliation
+        </h3>
+        <div className="flex items-center gap-1.5">
+          <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-7 w-32 text-xs" />
+          <span className="text-muted-foreground text-xs">to</span>
+          <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-7 w-32 text-xs" />
+          <Button variant="outline" size="icon" className="h-7 w-7" onClick={exportCSV}><Download className="w-3.5 h-3.5" /></Button>
         </div>
-        <Button variant="outline" size="sm" onClick={exportCSV}><Download className="w-4 h-4 mr-1" /> Export</Button>
       </div>
 
       {/* Sub-tabs */}
@@ -100,13 +102,6 @@ export default function AdminBankReconciliation() {
             subTab === t.key ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
           }`} onClick={() => setSubTab(t.key)}>{t.label}</button>
         ))}
-      </div>
-
-      {/* Date filters */}
-      <div className="flex gap-2 items-center">
-        <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-40" />
-        <span className="text-muted-foreground">to</span>
-        <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-40" />
       </div>
 
       {loading ? (

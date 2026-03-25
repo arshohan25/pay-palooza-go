@@ -80,12 +80,18 @@ export default function AdminAdvancedReports() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-primary" /> Advanced Reports
-          </h3>
-          <p className="text-sm text-muted-foreground">Comprehensive analytics with date filtering and export</p>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+          <BarChart3 className="w-5 h-5 text-primary" /> Advanced Reports
+        </h3>
+        <div className="flex items-center gap-1.5">
+          <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-7 w-32 text-xs" />
+          <span className="text-muted-foreground text-xs">to</span>
+          <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-7 w-32 text-xs" />
+          <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => {
+            const data = tab === "settlements" ? settlements : typeData.map(d => ({ ...d, fees: d.fees.toFixed(2), commissions: d.commissions.toFixed(2) }));
+            exportCSV(data, `${tab}-report-${dateFrom}-to-${dateTo}.csv`);
+          }}><Download className="w-3.5 h-3.5" /></Button>
         </div>
       </div>
 
@@ -103,17 +109,6 @@ export default function AdminAdvancedReports() {
             <t.icon className="w-3.5 h-3.5" /> {t.label}
           </button>
         ))}
-      </div>
-
-      {/* Date filters */}
-      <div className="flex gap-2 items-center flex-wrap">
-        <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-40" />
-        <span className="text-muted-foreground">to</span>
-        <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-40" />
-        <Button variant="outline" size="sm" onClick={() => {
-          const data = tab === "settlements" ? settlements : typeData.map(d => ({ ...d, fees: d.fees.toFixed(2), commissions: d.commissions.toFixed(2) }));
-          exportCSV(data, `${tab}-report-${dateFrom}-to-${dateTo}.csv`);
-        }}><Download className="w-4 h-4 mr-1" /> Export CSV</Button>
       </div>
 
       {loading ? (

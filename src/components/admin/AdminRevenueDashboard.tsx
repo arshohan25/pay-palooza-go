@@ -29,6 +29,8 @@ export default function AdminRevenueDashboard() {
   );
 }
 
+// ProfitReportTab date filters moved to header row below
+
 function TotalRevenueTab() {
   const [treasury, setTreasury] = useState<any>(null);
   const [txnStats, setTxnStats] = useState({ totalFees: 0, totalCommissions: 0, txnCount: 0 });
@@ -236,11 +238,15 @@ function ProfitReportTab() {
 
   return (
     <div className="space-y-3">
-      <div className="flex gap-2 items-end flex-wrap">
-        <div><p className="text-xs text-muted-foreground mb-1">From</p><Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-36" /></div>
-        <div><p className="text-xs text-muted-foreground mb-1">To</p><Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-36" /></div>
-        <Button size="sm" onClick={load}>Apply</Button>
-        <Button variant="outline" size="sm" onClick={exportCSV}><Download className="w-4 h-4 mr-1" />CSV</Button>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <p className="text-sm font-medium text-foreground">Profit Report</p>
+        <div className="flex items-center gap-1.5">
+          <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-7 w-32 text-xs" />
+          <span className="text-muted-foreground text-xs">to</span>
+          <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-7 w-32 text-xs" />
+          <Button size="sm" className="h-7 text-xs px-2" onClick={load}>Apply</Button>
+          <Button variant="outline" size="icon" className="h-7 w-7" onClick={exportCSV}><Download className="w-3.5 h-3.5" /></Button>
+        </div>
       </div>
       {loading ? <Loader /> : (
         <div className="grid grid-cols-2 gap-2">
