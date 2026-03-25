@@ -95,7 +95,12 @@ export function FestivalThemeProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    fetchTheme();
+    // Defer festival theme fetch to not block TTI
+    if ("requestIdleCallback" in window) {
+      (window as any).requestIdleCallback(fetchTheme);
+    } else {
+      setTimeout(fetchTheme, 200);
+    }
 
     return () => {
       clearPalette();
