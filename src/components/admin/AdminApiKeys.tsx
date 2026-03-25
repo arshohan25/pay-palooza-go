@@ -217,7 +217,7 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
   return (
     <div className="space-y-4">
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card><CardContent className="p-4 flex items-center gap-3">
           <Key className="w-8 h-8 text-primary" />
           <div><p className="text-2xl font-bold text-foreground">{counts.total}</p><p className="text-xs text-muted-foreground">Total Keys</p></div>
@@ -232,8 +232,8 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
         </CardContent></Card>
       </div>
 
-      {/* Table */}
-      <Card>
+      {/* Desktop Table */}
+      <Card className="hidden md:block">
         <div className="overflow-x-auto">
         <Table className="min-w-[800px]">
           <TableHeader>
@@ -323,6 +323,82 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
         </Table>
         </div>
       </Card>
+
+      {/* Mobile Card Layout */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          <Card><CardContent className="p-4 text-center text-muted-foreground">Loading...</CardContent></Card>
+        ) : filtered.length === 0 ? (
+          <Card><CardContent className="p-4 text-center text-muted-foreground">No API keys found</CardContent></Card>
+        ) : filtered.map(k => (
+          <Card key={k.id}>
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="font-medium text-sm text-foreground">{k.merchant_name}</p>
+                <div className="flex items-center gap-1.5">
+                  <Badge variant={k.environment === "test" ? "secondary" : "default"} className="text-xs">
+                    {k.environment === "test" ? "Test" : "Live"}
+                  </Badge>
+                  <Badge variant={k.is_active ? "default" : "destructive"} className="text-xs">
+                    {k.is_active ? "Active" : "Revoked"}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded flex-1 truncate">{maskKey(k.api_key)}</code>
+                <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => copyText(k.api_key, "API Key")}>
+                  <Copy className="w-3 h-3" />
+                </Button>
+              </div>
+
+              {isInGracePeriod(k) && (
+                <Badge variant="outline" className="text-xs text-amber-600 border-amber-400 gap-1">
+                  <Clock className="w-3 h-3" />
+                  Grace {formatDistanceToNow(new Date(k.rotation_expires_at!), { addSuffix: false })}
+                </Badge>
+              )}
+
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{format(new Date(k.created_at), "dd MMM yyyy")}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs h-auto py-1"
+                  onClick={() => {
+                    setPermEditKey(k);
+                    setPermEditPerms(k.permissions || ["create_session", "check_status", "list_sessions"]);
+                    setPermEditOpen(true);
+                  }}
+                >
+                  {(k.permissions || []).length} perms
+                </Button>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1"
+                  disabled={rotating === k.id || !k.is_active}
+                  onClick={() => handleRotate(k)}
+                >
+                  <RefreshCw className="w-3.5 h-3.5 mr-1" /> Rotate
+                </Button>
+                <Button
+                  size="sm"
+                  variant={k.is_active ? "destructive" : "outline"}
+                  className="flex-1"
+                  disabled={revoking === k.id}
+                  onClick={() => toggleKey(k.id, k.is_active)}
+                >
+                  {k.is_active ? "Revoke" : "Reactivate"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       {/* Permissions Editor Dialog */}
       <Dialog open={permEditOpen} onOpenChange={setPermEditOpen}>
