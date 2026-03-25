@@ -69,11 +69,11 @@ export default function AdminAgentLeaderboard() {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="flex items-center gap-2 text-lg"><Trophy className="w-5 h-5 text-yellow-500" /> Agent Leaderboard</CardTitle>
-          <div className="flex gap-1">
+          <div className="bg-muted/50 rounded-lg p-1 flex gap-0.5">
             {(["volume", "count", "commission"] as const).map(s => (
-              <Button key={s} size="sm" variant={sortBy === s ? "default" : "outline"} onClick={() => setSortBy(s)} className="text-xs capitalize">
+              <button key={s} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${sortBy === s ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setSortBy(s)}>
                 {s === "volume" ? "Volume" : s === "count" ? "Txn Count" : "Commission"}
-              </Button>
+              </button>
             ))}
           </div>
         </div>

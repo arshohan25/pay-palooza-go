@@ -328,17 +328,13 @@ export default function AdminFraudAlerts() {
           </p>
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
-          {["all", "open", "investigating", "resolved", "false_positive"].map(s => (
-            <Button
-              key={s}
-              size="sm"
-              variant={filterStatus === s ? "default" : "outline"}
-              className="text-xs h-7 capitalize"
-              onClick={() => setFilterStatus(s)}
-            >
-              {s === "false_positive" ? "Dismissed" : s}
-            </Button>
-          ))}
+          <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5">
+            {["all", "open", "investigating", "resolved", "false_positive"].map(s => (
+              <button key={s} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all capitalize ${filterStatus === s ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setFilterStatus(s)}>
+                {s === "false_positive" ? "Dismissed" : s}
+              </button>
+            ))}
+          </div>
           <Button size="sm" variant="ghost" className="h-7" onClick={loadAlerts}>
             <RefreshCw className="w-3.5 h-3.5" />
           </Button>

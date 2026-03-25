@@ -224,12 +224,14 @@ export default function AdminApiRequests() {
 
       {/* Filter + Search */}
       <div className="flex gap-2 flex-wrap items-center">
-        {(["all", "pending", "approved", "rejected"] as const).map(f => (
-          <Button key={f} variant={filter === f ? "default" : "outline"} size="sm" onClick={() => setFilter(f)}>
-            {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
-            {f !== "all" && <Badge variant="secondary" className="ml-1 text-xs">{counts[f]}</Badge>}
-          </Button>
-        ))}
+        <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5">
+          {(["all", "pending", "approved", "rejected"] as const).map(f => (
+            <button key={f} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${filter === f ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setFilter(f)}>
+              {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
+              {f !== "all" && <Badge variant="secondary" className="text-xs">{counts[f]}</Badge>}
+            </button>
+          ))}
+        </div>
         <div className="relative flex-1 min-w-[180px]">
           <Search className="absolute left-2 top-2.5 w-4 h-4 text-muted-foreground" />
           <Input placeholder="Search merchant or reason..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8 h-9" />

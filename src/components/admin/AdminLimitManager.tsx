@@ -571,22 +571,22 @@ function BulkActionsTab() {
         <CardHeader><CardTitle className="text-base">Bulk Apply Limit Override</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           {/* Role filter */}
-          <div className="flex gap-2 flex-wrap">
+          <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5">
             {(["user", "merchant", "agent"] as const).map(role => (
-              <Button key={role} variant={targetRole === role ? "default" : "outline"} size="sm" onClick={() => { setTargetRole(role); setSelectedUsers([]); setUserSearchResults([]); }}>
+              <button key={role} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${targetRole === role ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => { setTargetRole(role); setSelectedUsers([]); setUserSearchResults([]); }}>
                 {ROLE_LABELS[role]}s
-              </Button>
+              </button>
             ))}
           </div>
 
           {/* Apply mode toggle */}
-          <div className="flex gap-2">
-            <Button variant={applyMode === "all" ? "default" : "outline"} size="sm" onClick={() => setApplyMode("all")}>
-              <Users className="w-3.5 h-3.5 mr-1" /> Apply to All
-            </Button>
-            <Button variant={applyMode === "selected" ? "default" : "outline"} size="sm" onClick={() => setApplyMode("selected")}>
-              <UserCheck className="w-3.5 h-3.5 mr-1" /> Select Users
-            </Button>
+          <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5">
+            <button className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${applyMode === "all" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setApplyMode("all")}>
+              <Users className="w-3.5 h-3.5" /> Apply to All
+            </button>
+            <button className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${applyMode === "selected" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setApplyMode("selected")}>
+              <UserCheck className="w-3.5 h-3.5" /> Select Users
+            </button>
           </div>
 
           {/* User search + selection */}

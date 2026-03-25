@@ -161,15 +161,14 @@ export default function AdminWebhookLog() {
                 <SelectItem value="failed">Failed</SelectItem>
               </SelectContent>
             </Select>
-            <Button
-              variant={isLive ? "default" : "outline"}
-              size="sm"
-              onClick={() => setIsLive(!isLive)}
-              className="h-8 gap-1.5 text-xs"
-            >
-              <Radio className="w-3.5 h-3.5" />
-              {isLive ? "Live" : "Paused"}
-            </Button>
+            <div className="bg-muted/50 rounded-lg p-1 flex gap-0.5">
+              <button className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${isLive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setIsLive(true)}>
+                <Radio className={`w-3.5 h-3.5 ${isLive ? "animate-pulse" : ""}`} /> Live
+              </button>
+              <button className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${!isLive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setIsLive(false)}>
+                Paused
+              </button>
+            </div>
             <Button variant="outline" size="sm" onClick={load} disabled={loading} className="h-8 gap-1.5">
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
               Refresh

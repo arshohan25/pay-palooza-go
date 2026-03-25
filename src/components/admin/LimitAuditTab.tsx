@@ -188,10 +188,14 @@ export default function LimitAuditTab() {
         <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-40" />
         <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-40" />
         <div className="ml-auto flex gap-2 items-center">
-          <Button variant={isLive ? "default" : "outline"} size="sm" onClick={() => setIsLive(l => !l)}>
-            <Radio className={`w-3.5 h-3.5 mr-1 ${isLive ? "text-red-400 animate-pulse" : ""}`} />
-            {isLive ? "Live" : "Paused"}
-          </Button>
+          <div className="bg-muted/50 rounded-lg p-1 flex gap-0.5">
+            <button className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${isLive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setIsLive(true)}>
+              <Radio className={`w-3.5 h-3.5 ${isLive ? "animate-pulse" : ""}`} /> Live
+            </button>
+            <button className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${!isLive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setIsLive(false)}>
+              Paused
+            </button>
+          </div>
           <Button variant="outline" size="sm" onClick={exportCsv}>
             <Download className="w-3.5 h-3.5 mr-1" />CSV
           </Button>

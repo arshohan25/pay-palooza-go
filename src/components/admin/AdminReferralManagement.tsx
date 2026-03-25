@@ -246,9 +246,9 @@ export default function AdminReferralManagement() {
 
         {/* ═══ REFERRALS TAB ═══ */}
         <TabsContent value="referrals">
-          <div className="flex gap-2 mb-4 flex-wrap">
+          <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5 mb-4">
             {["all", "pending", "active", "completed"].map(s => (
-              <Button key={s} variant={statusFilter === s ? "default" : "outline"} size="sm" onClick={() => setStatusFilter(s)} className="capitalize">{s}</Button>
+              <button key={s} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all capitalize ${statusFilter === s ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setStatusFilter(s)}>{s}</button>
             ))}
           </div>
 

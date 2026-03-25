@@ -181,40 +181,28 @@ export default function AdminActivityFeed() {
         <CollapsibleContent>
           <div className="px-3 py-2 border-b border-border space-y-2">
             {/* Event type chips */}
-            <div className="flex flex-wrap gap-1">
+            <div className="bg-muted/50 rounded-lg p-0.5 flex flex-wrap gap-0.5">
               {(Object.entries(EVENT_TYPE_META) as [string, typeof EVENT_TYPE_META["INSERT"]][]).map(([et, meta]) => {
                 const active = activeEventTypes.has(et);
                 const Icon = meta.icon;
                 return (
-                  <Button
-                    key={et}
-                    variant={active ? "default" : "outline"}
-                    size="sm"
-                    className="h-5 px-1.5 text-[10px] gap-1"
-                    onClick={() => toggleEventType(et)}
-                  >
+                  <button key={et} className={`px-1.5 py-1 rounded-md text-[10px] font-medium transition-all flex items-center gap-1 ${active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => toggleEventType(et)}>
                     <Icon className="w-2.5 h-2.5" /> {meta.label}
-                  </Button>
+                  </button>
                 );
               })}
             </div>
             {/* Table chips */}
-            <div className="flex flex-wrap gap-1">
+            <div className="bg-muted/50 rounded-lg p-0.5 flex flex-wrap gap-0.5">
               {LISTENED_TABLES.map(table => {
                 const meta = TABLE_META[table];
                 if (!meta) return null;
                 const active = activeTables.has(table);
                 const Icon = meta.icon;
                 return (
-                  <Button
-                    key={table}
-                    variant={active ? "default" : "outline"}
-                    size="sm"
-                    className="h-5 px-1.5 text-[10px] gap-1"
-                    onClick={() => toggleTable(table)}
-                  >
+                  <button key={table} className={`px-1.5 py-1 rounded-md text-[10px] font-medium transition-all flex items-center gap-1 ${active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => toggleTable(table)}>
                     <Icon className="w-2.5 h-2.5" /> {meta.label}
-                  </Button>
+                  </button>
                 );
               })}
             </div>
