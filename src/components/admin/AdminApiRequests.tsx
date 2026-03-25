@@ -10,6 +10,9 @@ import { toast } from "sonner";
 import { Clock, CheckCircle, XCircle, Search, Key, RefreshCw, Copy, Eye, EyeOff, Plus } from "lucide-react";
 import { format } from "date-fns";
 import AdminApiKeys from "./AdminApiKeys";
+import AdminApiLogs from "./AdminApiLogs";
+import AdminApiRateLimits from "./AdminApiRateLimits";
+import AdminApiIpWhitelist from "./AdminApiIpWhitelist";
 
 async function auditLog(action: string, entityId: string, details: any) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -41,7 +44,7 @@ const STATUS_BADGE: Record<string, { variant: "default" | "secondary" | "destruc
 };
 
 export default function AdminApiRequests() {
-  const [activeTab, setActiveTab] = useState<"requests" | "keys">("requests");
+  const [activeTab, setActiveTab] = useState<"requests" | "keys" | "logs" | "rate-limits" | "ip-whitelist">("requests");
   const [requests, setRequests] = useState<ApiRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
@@ -191,6 +194,9 @@ export default function AdminApiRequests() {
         {([
           { key: "requests" as const, label: "Requests" },
           { key: "keys" as const, label: "API Keys" },
+          { key: "logs" as const, label: "Logs" },
+          { key: "rate-limits" as const, label: "Rate Limits" },
+          { key: "ip-whitelist" as const, label: "IP Whitelist" },
         ]).map(t => (
           <button
             key={t.key}
@@ -204,6 +210,12 @@ export default function AdminApiRequests() {
 
       {activeTab === "keys" ? (
         <AdminApiKeys search={search} />
+      ) : activeTab === "logs" ? (
+        <AdminApiLogs search={search} />
+      ) : activeTab === "rate-limits" ? (
+        <AdminApiRateLimits search={search} />
+      ) : activeTab === "ip-whitelist" ? (
+        <AdminApiIpWhitelist search={search} />
       ) : (
         <>
           {/* Summary cards */}
