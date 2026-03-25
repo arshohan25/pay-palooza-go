@@ -235,16 +235,16 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
       {/* Desktop Table */}
       <Card className="hidden md:block overflow-hidden">
         <div className="overflow-x-auto">
-        <Table className="min-w-[800px]">
+        <Table className="min-w-[950px]">
           <TableHeader>
             <TableRow>
-              <TableHead>Merchant</TableHead>
-              <TableHead>API Key</TableHead>
-              <TableHead>Env</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Permissions</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead className="whitespace-nowrap">Merchant</TableHead>
+              <TableHead className="whitespace-nowrap">API Key</TableHead>
+              <TableHead className="whitespace-nowrap">Env</TableHead>
+              <TableHead className="whitespace-nowrap">Status</TableHead>
+              <TableHead className="whitespace-nowrap">Permissions</TableHead>
+              <TableHead className="whitespace-nowrap">Created</TableHead>
+              <TableHead className="whitespace-nowrap min-w-[180px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
