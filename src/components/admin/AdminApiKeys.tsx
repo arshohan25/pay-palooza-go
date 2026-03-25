@@ -64,7 +64,6 @@ export default function AdminApiKeys({ search, onGenerateRef }: AdminApiKeysProp
   const [permEditPerms, setPermEditPerms] = useState<string[]>([]);
   const [rotating, setRotating] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
-  const openGenerateRef = useRef(openGenerate);
   const fetchKeys = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase
@@ -218,6 +217,20 @@ export default function AdminApiKeys({ search, onGenerateRef }: AdminApiKeysProp
     }
   };
 
+  const handleDelete = async (id: string) => {
+    setDeleting(id);
+    try {
+      const { error } = await supabase.from("merchant_api_keys").delete().eq("id", id);
+      if (error) throw error;
+      toast.success("API key deleted");
+      await fetchKeys();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to delete key");
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   const copyText = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copied`);
@@ -311,7 +324,7 @@ export default function AdminApiKeys({ search, onGenerateRef }: AdminApiKeysProp
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{format(new Date(k.created_at), "dd MMM yyyy")}</TableCell>
                 <TableCell className="whitespace-nowrap">
-                  <div className="flex gap-1 whitespace-nowrap">
+                  <div className="flex gap-1 shrink-0">
                     <Button
                       size="sm"
                       variant="outline"
@@ -329,6 +342,27 @@ export default function AdminApiKeys({ search, onGenerateRef }: AdminApiKeysProp
                     >
                       {k.is_active ? "Revoke" : "Reactivate"}
                     </Button>
+                    {!k.is_active && !isInGracePeriod(k) && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="sm" variant="outline" disabled={deleting === k.id} title="Delete key">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete API Key?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently remove this revoked API key for {k.merchant_name}. This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(k.id)}>Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
@@ -408,6 +442,27 @@ export default function AdminApiKeys({ search, onGenerateRef }: AdminApiKeysProp
                 >
                   {k.is_active ? "Revoke" : "Reactivate"}
                 </Button>
+                {!k.is_active && !isInGracePeriod(k) && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" variant="outline" disabled={deleting === k.id} title="Delete key">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete API Key?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently remove this revoked API key for {k.merchant_name}. This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(k.id)}>Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -540,18 +595,17 @@ export default function AdminApiKeys({ search, onGenerateRef }: AdminApiKeysProp
         </DialogContent>
       </Dialog>
 
-      {/* Expose openGenerate to parent via ref callback */}
-      <GenerateKeyTrigger onOpen={openGenerate} onGenerateRef={onGenerateRef} />
+      {/* Register openGenerate with parent */}
+      <RegisterOpenGenerate onGenerateRef={onGenerateRef} openGenerate={openGenerate} />
     </div>
   );
 }
 
-function GenerateKeyTrigger({ onOpen, onGenerateRef }: { onOpen: () => void; onGenerateRef?: (fn: () => void) => void }) {
-  React.useEffect(() => {
-    onGenerateRef?.(onOpen);
-    // Keep window fallback for backwards compat
-    (window as any).__openGenerateApiKey = onOpen;
-    return () => { delete (window as any).__openGenerateApiKey; };
-  }, [onOpen, onGenerateRef]);
+function RegisterOpenGenerate({ onGenerateRef, openGenerate }: { onGenerateRef?: (fn: () => void) => void; openGenerate: () => void }) {
+  const ref = useRef(openGenerate);
+  ref.current = openGenerate;
+  useEffect(() => {
+    onGenerateRef?.(() => ref.current());
+  }, [onGenerateRef]);
   return null;
 }
