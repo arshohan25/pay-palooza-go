@@ -1,30 +1,43 @@
 
 
-## Plan: Make Live Chat Responsive
+## Plan: Add Essential API Management Components
 
-### Problem
-The Live Chat admin panel has layout issues at various breakpoints: long messages overflow, chat header action buttons crowd on tablets, and the two-panel layout feels cramped on medium screens. The screenshot shows encrypted text overflowing the message bubble.
+### What
+Add three new sub-tabs to the API Access Management section: **API Logs**, **Rate Limits**, and **IP Whitelist**. All backing tables already exist in the database (`merchant_api_logs`, `merchant_api_keys.rate_limit_per_minute`, `merchant_ip_whitelist`).
 
 ### Changes
 
-**`src/components/admin/AdminSupportDashboard.tsx`**
+#### 1. New Component: `src/components/admin/AdminApiLogs.tsx`
+- Query `merchant_api_logs` table with filters for merchant, status code (2xx/4xx/5xx), and date range
+- Summary cards: Total Requests, Success Rate, Avg Response Time, Error Count
+- Table columns: Time, Merchant, Action, Status Code, Response Time, IP, Error
+- Expandable rows showing user_agent and full error message
+- Real-time subscription for live updates
 
-1. **Fix message overflow** - Add `overflow-hidden word-break: break-all` to message bubbles so long strings (like encrypted text or base64) wrap properly instead of overflowing horizontally.
+#### 2. New Component: `src/components/admin/AdminApiRateLimits.tsx`
+- List all `merchant_api_keys` showing merchant name, current `rate_limit_per_minute`, and active status
+- Inline edit: click on rate limit value to change it (select dropdown: 10, 30, 60, 120, 300, 600, unlimited)
+- Updates `merchant_api_keys.rate_limit_per_minute` directly
+- Summary: total keys, keys with custom limits, keys at default
 
-2. **Responsive chat header actions** - Stack action buttons vertically or use icon-only buttons on smaller screens (below `lg`). Hide button text on tablets, show only icons with tooltips.
+#### 3. New Component: `src/components/admin/AdminApiIpWhitelist.tsx`
+- Query `merchant_ip_whitelist` joined with merchant names
+- Table: Merchant, IP Address, Label, Added Date, Actions (delete)
+- Add IP dialog: select merchant, enter IP address, optional label
+- Toggle `ip_whitelist_enabled` on `merchant_api_keys` per key
+- Summary cards: Total IPs, Merchants with whitelist enabled
 
-3. **Responsive conversation list width** - Change sidebar from `md:w-80 lg:w-96` to `md:w-72 lg:w-80 xl:w-96` for better fit on medium screens.
+#### 4. Update `src/components/admin/AdminApiRequests.tsx`
+- Add sub-tabs: Requests | API Keys | **Logs** | **Rate Limits** | **IP Whitelist**
+- Render the new components based on active tab
+- Pass `search` prop to new components for consistent filtering
 
-4. **Responsive user info in chat header** - Truncate long email/phone on smaller screens, hide email below `lg`.
-
-5. **Message bubble max-width** - Increase from `max-w-[70%]` to `max-w-[85%]` on mobile, keep `70%` on larger screens using responsive classes.
-
-6. **Quick Replies popover** - Make popover width responsive: `w-64 md:w-80`.
-
-7. **Conversation list items** - Ensure email and assigned agent badges wrap properly on narrow sidebars. Hide email in sidebar below `lg`.
+#### 5. Update `src/pages/AdminDashboard.tsx`
+- No new sidebar items needed -- everything nests under existing "API Requests" tab
 
 ### Technical Detail
-- All changes are CSS/Tailwind only within `AdminSupportDashboard.tsx`
-- Key fix: `break-all` or `overflow-wrap: anywhere` on message content `<p>` to handle base64/encrypted strings
-- Use responsive utility classes (`md:`, `lg:`, `xl:`) for progressive layout enhancement
+- All three tables (`merchant_api_logs`, `merchant_ip_whitelist`, `merchant_api_keys`) already exist with proper schemas
+- `merchant_api_keys` already has `rate_limit_per_minute` (number) and `ip_whitelist_enabled` (boolean) columns
+- Follow existing admin UI patterns: summary cards at top, segmented control tabs, table with search filtering
+- Real-time channel subscriptions for `merchant_api_logs` table
 
