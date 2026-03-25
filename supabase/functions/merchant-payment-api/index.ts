@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-api-key, x-app-password, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-api-key, x-app-password, x-idempotency-key, x-easypay-timestamp, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 function json(data: unknown, status = 200) {
@@ -51,6 +51,15 @@ Deno.serve(async (req) => {
   };
 
   try {
+    // ═══ REPLAY PROTECTION ═══
+    const timestampHeader = req.headers.get("x-easypay-timestamp") || req.headers.get("X-EasyPay-Timestamp");
+    if (timestampHeader) {
+      const ts = parseInt(timestampHeader, 10);
+      if (isNaN(ts) || Math.abs(Date.now() - ts) > 300000) {
+        return json({ error: "Request expired or invalid timestamp. Must be within 5 minutes." }, 401);
+      }
+    }
+
     const apiKey = req.headers.get("x-api-key") || req.headers.get("X-API-Key");
     if (!apiKey) return json({ error: "Missing X-API-Key header" }, 401);
 
@@ -60,15 +69,27 @@ Deno.serve(async (req) => {
     // Validate API key + app password
     const { data: keyData, error: keyErr } = await supabase
       .from("merchant_api_keys")
-      .select("id, merchant_id, webhook_url, is_active, secret_key, app_password, rate_limit_per_minute, ip_whitelist_enabled")
+      .select("id, merchant_id, webhook_url, is_active, secret_key, app_password, rate_limit_per_minute, ip_whitelist_enabled, environment, permissions, rotation_expires_at")
       .eq("api_key", apiKey)
       .single();
 
     if (keyErr || !keyData) return json({ error: "Invalid API key" }, 401);
     keyRow = keyData;
 
-    if (!keyRow.is_active) { statusCode = 403; errorMessage = "API key deactivated"; await logRequest(); return json({ error: "API key is deactivated" }, 403); }
-    if (keyRow.app_password && keyRow.app_password !== appPassword) { statusCode = 401; errorMessage = "Invalid app password"; await logRequest(); return json({ error: "Invalid App Password" }, 401); }
+    // ═══ KEY ROTATION GRACE PERIOD ═══
+    if (!keyRow.is_active) {
+      if (keyRow.rotation_expires_at && new Date(keyRow.rotation_expires_at) > new Date()) {
+        // Grace period — allow request with inactive key
+      } else {
+        statusCode = 403; errorMessage = "API key deactivated"; await logRequest();
+        return json({ error: "API key is deactivated" }, 403);
+      }
+    }
+
+    if (keyRow.app_password && keyRow.app_password !== appPassword) {
+      statusCode = 401; errorMessage = "Invalid app password"; await logRequest();
+      return json({ error: "Invalid App Password" }, 401);
+    }
 
     // ═══ IP WHITELIST CHECK ═══
     if (keyRow.ip_whitelist_enabled) {
@@ -124,6 +145,17 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     action = body.action || "create_session";
 
+    // ═══ PERMISSIONS CHECK ═══
+    const permissions: string[] = keyRow.permissions || ["create_session", "check_status", "list_sessions"];
+    if (!permissions.includes(action)) {
+      statusCode = 403; errorMessage = `Action '${action}' not permitted for this key`;
+      await logRequest();
+      return json({ error: `This API key does not have permission for action: ${action}` }, 403);
+    }
+
+    // ═══ ENVIRONMENT CHECK ═══
+    const isTestKey = keyRow.environment === "test";
+
     // ═══════════════════════════════════════════
     // CREATE SESSION
     // ═══════════════════════════════════════════
@@ -133,6 +165,40 @@ Deno.serve(async (req) => {
       if (!amount || typeof amount !== "number" || amount < 1 || amount > 1000000) {
         statusCode = 400; errorMessage = "Invalid amount"; await logRequest();
         return json({ error: "Amount must be between 1 and 1,000,000" }, 400);
+      }
+
+      // ═══ IDEMPOTENCY CHECK ═══
+      const idempotencyKey = req.headers.get("x-idempotency-key") || req.headers.get("X-Idempotency-Key");
+      if (idempotencyKey) {
+        const { data: existing } = await supabase
+          .from("merchant_idempotency_keys")
+          .select("session_id")
+          .eq("merchant_id", keyRow.merchant_id)
+          .eq("idempotency_key", idempotencyKey)
+          .maybeSingle();
+
+        if (existing?.session_id) {
+          // Return cached session
+          const { data: cachedSession } = await supabase
+            .from("merchant_payment_sessions")
+            .select("id, amount, currency, reference, status, expires_at, created_at")
+            .eq("id", existing.session_id)
+            .single();
+
+          if (cachedSession) {
+            await logRequest();
+            return json({
+              success: true,
+              session_id: cachedSession.id,
+              amount: cachedSession.amount,
+              currency: cachedSession.currency,
+              reference: cachedSession.reference,
+              status: cachedSession.status,
+              expires_at: cachedSession.expires_at,
+              idempotent: true,
+            });
+          }
+        }
       }
 
       // Rate limit: max 100 sessions per hour per merchant
@@ -148,6 +214,12 @@ Deno.serve(async (req) => {
         return json({ error: "Rate limit exceeded. Max 100 sessions per hour." }, 429);
       }
 
+      // Merge test_mode into metadata for test keys
+      const sessionMetadata = {
+        ...(metadata || {}),
+        ...(isTestKey ? { test_mode: true } : {}),
+      };
+
       const { data: session, error: sessErr } = await supabase
         .from("merchant_payment_sessions")
         .insert({
@@ -160,14 +232,23 @@ Deno.serve(async (req) => {
           cancel_url: cancel_url || null,
           callback_url: callback_url || keyRow.webhook_url || null,
           customer_phone: customer_phone || null,
-          metadata: metadata || {},
+          metadata: sessionMetadata,
         })
         .select("id, amount, currency, reference, status, expires_at, created_at")
         .single();
 
       if (sessErr) { statusCode = 500; errorMessage = sessErr.message; await logRequest(); return json({ error: sessErr.message }, 500); }
 
-      // Derive app URL: avoid iframe/editor hosts that produce unusable public links
+      // Store idempotency key if provided
+      if (idempotencyKey && session) {
+        await supabase.from("merchant_idempotency_keys").insert({
+          merchant_id: keyRow.merchant_id,
+          idempotency_key: idempotencyKey,
+          session_id: session.id,
+        }).then(() => {}, () => {});
+      }
+
+      // Derive app URL
       const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/+$/, "") || "";
       const normalizedOrigin = origin.replace(/\/+$/, "");
       const isEditorHost = normalizedOrigin.includes("lovableproject.com");
@@ -179,7 +260,6 @@ Deno.serve(async (req) => {
       const checkoutUrl = `${baseUrl}/checkout/${session.id}`;
       const qrPageUrl = `${baseUrl}/pay/qr/${session.id}`;
 
-      // Dynamic QR payload — scannable by EasyPay app
       const qrData = JSON.stringify({
         type: "easypay",
         sessionId: session.id,
@@ -200,6 +280,8 @@ Deno.serve(async (req) => {
         reference: session.reference,
         status: session.status,
         expires_at: session.expires_at,
+        environment: keyRow.environment,
+        ...(isTestKey ? { test_mode: true } : {}),
       });
     }
 
@@ -212,7 +294,7 @@ Deno.serve(async (req) => {
 
       const { data: session, error } = await supabase
         .from("merchant_payment_sessions")
-        .select("id, amount, currency, reference, status, customer_phone, payer_user_id, completed_at, expires_at, webhook_delivered, created_at")
+        .select("id, amount, currency, reference, status, customer_phone, payer_user_id, completed_at, expires_at, webhook_delivered, created_at, metadata")
         .eq("id", session_id)
         .eq("merchant_id", keyRow.merchant_id)
         .single();

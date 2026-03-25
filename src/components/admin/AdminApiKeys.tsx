@@ -6,10 +6,20 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Key, Copy, Eye, EyeOff, ShieldCheck, ShieldOff, Search, Plus } from "lucide-react";
-import { format } from "date-fns";
+import { Key, Copy, Eye, EyeOff, ShieldCheck, ShieldOff, RefreshCw, Clock } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
+
+const ALL_PERMISSIONS = [
+  { value: "create_session", label: "Create Session" },
+  { value: "check_status", label: "Check Status" },
+  { value: "list_sessions", label: "List Sessions" },
+  { value: "refund", label: "Refund" },
+];
 
 interface ApiKey {
   id: string;
@@ -21,6 +31,9 @@ interface ApiKey {
   is_active: boolean;
   created_at: string;
   merchant_name?: string;
+  environment?: string;
+  permissions?: string[];
+  rotation_expires_at?: string | null;
 }
 
 interface Merchant {
@@ -43,6 +56,12 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
   const [newSecret, setNewSecret] = useState<{ secret: string; apiKey: string; appPassword: string } | null>(null);
   const [showSecret, setShowSecret] = useState(false);
   const [revoking, setRevoking] = useState<string | null>(null);
+  const [newEnv, setNewEnv] = useState<"live" | "test">("live");
+  const [newPermissions, setNewPermissions] = useState<string[]>(["create_session", "check_status", "list_sessions"]);
+  const [permEditOpen, setPermEditOpen] = useState(false);
+  const [permEditKey, setPermEditKey] = useState<ApiKey | null>(null);
+  const [permEditPerms, setPermEditPerms] = useState<string[]>([]);
+  const [rotating, setRotating] = useState<string | null>(null);
 
   const fetchKeys = useCallback(async () => {
     setLoading(true);
@@ -96,6 +115,8 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
     setWebhookUrl("");
     setNewSecret(null);
     setShowSecret(false);
+    setNewEnv("live");
+    setNewPermissions(["create_session", "check_status", "list_sessions"]);
     setGenerateOpen(true);
   };
 
@@ -114,6 +135,8 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
         app_password: appPassword,
         webhook_url: webhookUrl || null,
         is_active: true,
+        environment: newEnv,
+        permissions: newPermissions,
       });
       if (error) throw error;
 
@@ -133,12 +156,63 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
     setRevoking(null);
   };
 
+  const handleRotate = async (key: ApiKey) => {
+    setRotating(key.id);
+    try {
+      const newApiKey = "epk_" + crypto.randomUUID().replace(/-/g, "");
+      const newSecretKey = "eps_" + crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
+      const newAppPassword = "epp_" + crypto.randomUUID().replace(/-/g, "").slice(0, 24);
+
+      // Set 24h grace period on old key and deactivate
+      const graceExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      await supabase.from("merchant_api_keys").update({
+        is_active: false,
+        rotation_expires_at: graceExpiry,
+        updated_at: new Date().toISOString(),
+      }).eq("id", key.id);
+
+      // Create new key with same settings
+      const { error } = await supabase.from("merchant_api_keys").insert({
+        merchant_id: key.merchant_id,
+        api_key: newApiKey,
+        secret_key: newSecretKey,
+        app_password: newAppPassword,
+        webhook_url: key.webhook_url,
+        is_active: true,
+        environment: key.environment || "live",
+        permissions: key.permissions || ["create_session", "check_status", "list_sessions"],
+      });
+      if (error) throw error;
+
+      toast.success("Key rotated. Old key valid for 24h grace period.");
+      fetchKeys();
+    } catch (e: any) {
+      toast.error(e.message || "Rotation failed");
+    } finally {
+      setRotating(null);
+    }
+  };
+
+  const savePermissions = async () => {
+    if (!permEditKey) return;
+    await supabase.from("merchant_api_keys").update({
+      permissions: permEditPerms,
+      updated_at: new Date().toISOString(),
+    }).eq("id", permEditKey.id);
+    toast.success("Permissions updated");
+    setPermEditOpen(false);
+    fetchKeys();
+  };
+
   const copyText = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copied`);
   };
 
   const maskKey = (key: string) => key.slice(0, 8) + "•".repeat(12) + key.slice(-4);
+
+  const isInGracePeriod = (k: ApiKey) =>
+    !k.is_active && k.rotation_expires_at && new Date(k.rotation_expires_at) > new Date();
 
   return (
     <div className="space-y-4">
@@ -165,17 +239,18 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
             <TableRow>
               <TableHead>Merchant</TableHead>
               <TableHead>API Key</TableHead>
+              <TableHead>Env</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Webhook</TableHead>
+              <TableHead>Permissions</TableHead>
               <TableHead>Created</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No API keys found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No API keys found</TableCell></TableRow>
             ) : filtered.map(k => (
               <TableRow key={k.id}>
                 <TableCell className="font-medium">{k.merchant_name}</TableCell>
@@ -188,27 +263,94 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={k.is_active ? "default" : "destructive"}>
-                    {k.is_active ? "Active" : "Revoked"}
+                  <Badge variant={k.environment === "test" ? "secondary" : "default"} className="text-xs">
+                    {k.environment === "test" ? "Test" : "Live"}
                   </Badge>
                 </TableCell>
-                <TableCell className="max-w-[150px] truncate text-xs font-mono">{k.webhook_url || "—"}</TableCell>
-                <TableCell className="text-xs text-muted-foreground">{format(new Date(k.created_at), "dd MMM yyyy")}</TableCell>
+                <TableCell>
+                  <div className="flex flex-col gap-1">
+                    <Badge variant={k.is_active ? "default" : "destructive"}>
+                      {k.is_active ? "Active" : "Revoked"}
+                    </Badge>
+                    {isInGracePeriod(k) && (
+                      <Badge variant="outline" className="text-xs text-amber-600 border-amber-400 gap-1">
+                        <Clock className="w-3 h-3" />
+                        Grace {formatDistanceToNow(new Date(k.rotation_expires_at!), { addSuffix: false })}
+                      </Badge>
+                    )}
+                  </div>
+                </TableCell>
                 <TableCell>
                   <Button
+                    variant="ghost"
                     size="sm"
-                    variant={k.is_active ? "destructive" : "outline"}
-                    disabled={revoking === k.id}
-                    onClick={() => toggleKey(k.id, k.is_active)}
+                    className="text-xs h-auto py-1"
+                    onClick={() => {
+                      setPermEditKey(k);
+                      setPermEditPerms(k.permissions || ["create_session", "check_status", "list_sessions"]);
+                      setPermEditOpen(true);
+                    }}
                   >
-                    {k.is_active ? "Revoke" : "Reactivate"}
+                    {(k.permissions || []).length} perms
                   </Button>
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground">{format(new Date(k.created_at), "dd MMM yyyy")}</TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={rotating === k.id || !k.is_active}
+                      onClick={() => handleRotate(k)}
+                      title="Rotate key"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={k.is_active ? "destructive" : "outline"}
+                      disabled={revoking === k.id}
+                      onClick={() => toggleKey(k.id, k.is_active)}
+                    >
+                      {k.is_active ? "Revoke" : "Reactivate"}
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </Card>
+
+      {/* Permissions Editor Dialog */}
+      <Dialog open={permEditOpen} onOpenChange={setPermEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Permissions</DialogTitle>
+            <DialogDescription>Select which actions this API key can perform.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {ALL_PERMISSIONS.map(p => (
+              <div key={p.value} className="flex items-center gap-2">
+                <Checkbox
+                  id={`perm-${p.value}`}
+                  checked={permEditPerms.includes(p.value)}
+                  onCheckedChange={(checked) => {
+                    setPermEditPerms(prev =>
+                      checked ? [...prev, p.value] : prev.filter(x => x !== p.value)
+                    );
+                  }}
+                />
+                <Label htmlFor={`perm-${p.value}`}>{p.label}</Label>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPermEditOpen(false)}>Cancel</Button>
+            <Button onClick={savePermissions} disabled={permEditPerms.length === 0}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Generate Key Dialog */}
       <Dialog open={generateOpen} onOpenChange={setGenerateOpen}>
@@ -256,6 +398,41 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
                   </SelectContent>
                 </Select>
               </div>
+
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Environment</label>
+                <RadioGroup value={newEnv} onValueChange={(v) => setNewEnv(v as "live" | "test")} className="flex gap-4">
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="live" id="env-live" />
+                    <Label htmlFor="env-live">Live</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="test" id="env-test" />
+                    <Label htmlFor="env-test">Test</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Permissions</label>
+                <div className="space-y-2">
+                  {ALL_PERMISSIONS.map(p => (
+                    <div key={p.value} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`new-perm-${p.value}`}
+                        checked={newPermissions.includes(p.value)}
+                        onCheckedChange={(checked) => {
+                          setNewPermissions(prev =>
+                            checked ? [...prev, p.value] : prev.filter(x => x !== p.value)
+                          );
+                        }}
+                      />
+                      <Label htmlFor={`new-perm-${p.value}`}>{p.label}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <label className="text-sm font-medium mb-1.5 block">Webhook URL (optional)</label>
                 <Input placeholder="https://..." value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)} />
@@ -277,7 +454,6 @@ export default function AdminApiKeys({ search }: AdminApiKeysProps) {
   );
 }
 
-// Hidden component that exposes openGenerate via ref pattern
 function GenerateKeyTrigger({ onOpen }: { onOpen: () => void }) {
   React.useEffect(() => {
     (window as any).__openGenerateApiKey = onOpen;
