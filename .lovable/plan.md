@@ -1,24 +1,37 @@
 
+Fix the cut-off by addressing both the page container and the API Keys table sizing.
 
-## Fix: API Keys Table Still Clipping
+1. Update `src/pages/AdminDashboard.tsx`
+- Remove or relax `overflow-x-hidden` on the main admin content column.
+- Keep vertical scrolling behavior, but stop the dashboard shell from clipping child content that needs horizontal scroll.
 
-### Problem
-From the screenshot, the "Reactivate" button is still cut off at the right edge. The `overflow-x-auto` wrapper exists but the parent `Card` component likely has `overflow: hidden` or the container above it constrains width. The table needs to scroll properly within its container.
+2. Update `src/components/admin/AdminApiKeys.tsx`
+- Keep the dual layout: desktop table + mobile cards.
+- Make the desktop table truly scrollable by increasing the table minimum width to match real column needs instead of `min-w-[800px]`.
+- Add no-wrap/min-width constraints to the right-side columns (`Created`, `Actions`) and the action button group so the “Reactivate” button cannot be squeezed.
+- Give the Actions column a fixed/min width and keep buttons on one line.
+- If needed, slightly compact earlier columns (masked key, permissions, date) so the action area keeps enough room.
 
-### Solution
+3. Tighten responsive table behavior
+- Apply consistent `whitespace-nowrap` to headers/cells that should never collapse.
+- Ensure the scroll container owns the overflow while the card simply clips its own border radius.
+- Avoid relying on nested overflow wrappers alone; size the table so horizontal scroll actually activates on medium desktop widths.
 
-**File: `src/components/admin/AdminApiKeys.tsx`**
+4. Check adjacent layout pressure in `src/components/admin/AdminApiRequests.tsx`
+- Make the header controls and segmented tabs wrap/scroll cleanly so they do not reduce available width for the keys panel.
+- Keep the existing admin segmented-control pattern, but allow overflow on smaller desktop/tablet widths if needed.
 
-1. **Summary cards grid** — Change from fixed `grid-cols-3` to `grid-cols-1 sm:grid-cols-3` so cards stack on mobile
-2. **Card wrapping the table** — Add `overflow-hidden` to the Card itself won't help; instead ensure the `overflow-x-auto` div has no width constraints. Add `rounded-lg` to the overflow div for visual consistency
-3. **Mobile card layout** — For screens below `md`, replace the table with a stacked card layout per API key showing all info vertically. This is the proper responsive pattern rather than forcing horizontal scroll on small screens.
+5. Verify after implementation
+- Recheck the API Keys tab at the current desktop viewport and around tablet widths.
+- Confirm both “Revoke” and “Reactivate” are fully visible, clickable, and no column text is clipped.
+- Confirm the mobile card layout still works below `md`.
 
-Specifically:
-- Use a `hidden md:block` wrapper for the table view
-- Use a `md:hidden` wrapper for a mobile card list view
-- Each mobile card shows: merchant name, masked key with copy, env badge, status badge, permissions count, created date, and action buttons in a row
-- Summary cards: `grid-cols-1 sm:grid-cols-3`
-
-### Changes
-- `src/components/admin/AdminApiKeys.tsx` — Add responsive mobile card layout alongside existing table, make summary cards responsive
-
+Technical notes
+- Root cause is not just “missing responsiveness”; it is a combination of:
+  - dashboard-level horizontal clipping in `AdminDashboard.tsx`
+  - a table min-width that is too small for 7 columns plus action buttons
+  - missing column-specific width constraints for the Actions area
+- Most likely file changes:
+  - `src/pages/AdminDashboard.tsx`
+  - `src/components/admin/AdminApiKeys.tsx`
+  - possibly small layout polish in `src/components/admin/AdminApiRequests.tsx`
