@@ -133,14 +133,14 @@ export function useKycStatus() {
   useEffect(() => {
     if (prevStatusRef.current === "pending" && status === "verified") {
       playKycChime("success");
-      fireSuccessConfetti();
-      haptics.success();
+      import("@/lib/confetti").then(m => m.fireSuccessConfetti());
+      import("@/lib/haptics").then(m => m.haptics.success());
       toast.success("Your identity has been verified! All features are now unlocked. 🎉");
       fireBrowserNotification("KYC Approved ✅", "Your identity has been verified! All features are now unlocked.");
     }
     if (prevStatusRef.current === "pending" && status === "rejected") {
       playKycChime("error");
-      haptics.error();
+      import("@/lib/haptics").then(m => m.haptics.error());
       const reason = rejectionReason || "Please resubmit with correct documents.";
       toast.error("KYC Verification Rejected", { description: reason, duration: 8000 });
       fireBrowserNotification("KYC Rejected ❌", reason);
