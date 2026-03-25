@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Coins, Pencil, Plus, Calculator, ScrollText, Layers, Building2, Users, UserCheck, Landmark, Trash2 } from "lucide-react";
+import { Coins, Pencil, Plus, Calculator, ScrollText, Layers, Building2, Users, UserCheck, Landmark, Trash2, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
