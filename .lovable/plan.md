@@ -1,52 +1,44 @@
 
 
-## Plan: Add Full API Key Management to the API Requests Tab
+## Plan: Create a Public Developer Portal for EasyPay Integration
 
 ### Problem
-The "API Requests" tab only shows incoming access requests from merchants. There is no way to:
-- View all active/revoked API keys across merchants
-- Generate a new API key for a merchant directly
-- Revoke keys from this view
-- Copy/share credentials
-
-API key management is currently buried inside individual merchant detail sheets.
+Currently, integration docs are buried inside the Merchant Dashboard's API tab. External gateways, businesses, or developers who want to connect with EasyPay have no public-facing entry point to learn how to integrate, get credentials, or understand the API.
 
 ### Solution
-Enhance `AdminApiRequests.tsx` to add a second sub-tab: **"API Keys"** alongside the existing **"Requests"** view, providing full key management.
+Create a public `/developers` page — a Developer Portal that explains how to integrate with EasyPay, with SDK docs, API reference, and a "Get Started" flow.
 
-### Changes to `AdminApiRequests.tsx`
+### New Page: `src/pages/DeveloperPortal.tsx`
 
-**1. Add internal sub-tabs: "Requests" | "API Keys"**
-- Use the standard segmented control pattern (brand-colored active state)
-- Default to "Requests" (current behavior preserved)
+**Sections:**
+1. **Hero** — "Build with EasyPay" headline, sub-text explaining payment collection, QR payments, webhooks
+2. **Integration Methods** — 3 cards:
+   - **SDK (Drop-in Button)** — embed `easypay-sdk.js`, code snippet with `EasyPay.init()` + `renderButton()`
+   - **REST API** — direct API calls to create sessions, check status, list sessions
+   - **QR Payments** — dynamic QR generation via API with polling
+3. **Quick Start** — step-by-step: Register as Merchant → Get API Keys → Install SDK → Accept Payments
+4. **API Reference** — collapsible sections for each endpoint:
+   - `create_session` — params, response, example
+   - `check_status` — params, response
+   - `list_sessions` — pagination params
+   - Authentication headers (`X-API-Key`, `X-App-Password`)
+   - Webhook verification (HMAC-SHA256)
+5. **Code Examples** — tabbed snippets (JavaScript, Python, cURL)
+6. **SDK Reference** — `EasyPay.init()`, `renderButton()`, `displayQR()`, `createPayment()`, `checkStatus()`
+7. **CTA Footer** — "Become a Merchant" button → links to `/merchant` or merchant application flow
 
-**2. New "API Keys" sub-tab content:**
-- Fetch all records from `merchant_api_keys` joined with merchant names
-- Summary cards: Total Keys, Active, Revoked
-- Search by merchant name or API key prefix
-- Table columns: Merchant, API Key (masked, copyable), Status (Active/Revoked), Webhook URL, Created Date, Actions
-- Actions per key: Copy API Key, Copy Secret (if just generated), Revoke (with confirmation), Toggle Active/Inactive
-- **"Generate Key" button** in header: opens a dialog to select a merchant and generate a new key pair
-
-**3. Generate Key dialog:**
-- Merchant selector (dropdown of active merchants)
-- Optional webhook URL input
-- On submit: generates `epk_`, `eps_`, `epp_` credentials, inserts into `merchant_api_keys`, shows secret once
-
-**4. Move Search + Refresh to header row (top right)**
-- Consolidate with the existing Refresh button per the admin UI pattern
-
-### Layout
-```text
-┌─ API Access Requests ──────────────── [Search] [+ Generate Key] [Refresh] ┐
-│                                                                            │
-│  [Requests] [API Keys]  ← segmented control                               │
-│                                                                            │
-│  (Requests tab: existing content)                                          │
-│  (API Keys tab: keys table with management)                                │
-└────────────────────────────────────────────────────────────────────────────┘
-```
+### Route
+- Add `/developers` route in `App.tsx` (public, no auth required)
 
 ### Files
-- `src/components/admin/AdminApiRequests.tsx` — sole file modified
+| File | Action |
+|------|--------|
+| `src/pages/DeveloperPortal.tsx` | Create — full developer docs page |
+| `src/App.tsx` | Add route `/developers` |
+
+### Design
+- Clean, documentation-style layout with the existing brand colors
+- Code blocks with copy buttons using `bg-muted/50 rounded-lg` pattern
+- Responsive — works on mobile and desktop
+- No authentication required — fully public
 
