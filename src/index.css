@@ -335,5 +335,5 @@ input[type="number"] {
   animation: splash-dot 0.9s ease-in-out infinite;
 }
 .splash-exit {
-  animation: splash-fade-out 0.4s ease-in-out forwards;
+  animation: splash-fade-out 0.25s ease-in-out forwards;
 }
