@@ -138,6 +138,34 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
     }
   };
 
+  // Debounced duplicate TxnID check
+  const checkDuplicateTxnId = (value: string) => {
+    if (duplicateCheckTimer.current) clearTimeout(duplicateCheckTimer.current);
+    if (!value.trim()) { setDuplicateTxnWarning(""); setCheckingDuplicate(false); return; }
+    setCheckingDuplicate(true);
+    duplicateCheckTimer.current = setTimeout(async () => {
+      try {
+        const trimmed = value.trim();
+        const { data } = await supabase
+          .from("fund_requests")
+          .select("id,created_at,status")
+          .eq("transaction_id_proof", trimmed)
+          .neq("status", "rejected")
+          .limit(1);
+        if (data && data.length > 0) {
+          const date = new Date(data[0].created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+          setDuplicateTxnWarning(`This Transaction ID was already submitted on ${date} (${data[0].status}). Duplicate IDs may delay processing.`);
+        } else {
+          setDuplicateTxnWarning("");
+        }
+      } catch {
+        setDuplicateTxnWarning("");
+      } finally {
+        setCheckingDuplicate(false);
+      }
+    }, 500);
+  };
+
   const handleProofContinue = () => {
     if (!txnId.trim() && !proofFile) { setError("Provide a Transaction ID or upload proof."); return; }
     setPin("");
