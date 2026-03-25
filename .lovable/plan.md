@@ -1,40 +1,40 @@
 
 
-## Redesign: Premium API Keys UI
+## Redesign: Premium Balance Card
 
-### Design Direction
-Replace the plain table and basic stat cards with a polished, modern aesthetic featuring glass-morphism stat cards, refined typography, subtle gradients, dot-pattern status indicators, and a cleaner table with better visual hierarchy.
+### Design Direction (inspired by the reference screenshot)
+Elevate the card with richer depth, layered glass-morphism backgrounds, organic bokeh-style decorative blurs, and better spatial hierarchy. The reference shows a deep emerald card with soft luminous blobs, frosted-glass action buttons, and generous vertical breathing room.
 
-### Changes in `src/components/admin/AdminApiKeys.tsx`
+### Changes in `src/components/BalanceCard.tsx`
 
-**1. Summary Cards -- Glass-morphism style**
-- Replace plain `Card` with gradient backgrounds + backdrop-blur
-- Total Keys: subtle primary gradient bg, Live icon with glow
-- Active: emerald gradient tint
-- Revoked: rose/red gradient tint
-- Add ring/border highlights, larger icon with rounded bg container
-- Use `tracking-tight` on numbers, `uppercase tracking-wider text-[10px]` on labels
+**1. Background & Depth**
+- Keep `gradient-hero` base but add multiple layered decorative blobs using `bg-emerald-400/15` and `bg-teal-300/10` with large `blur-3xl` for organic bokeh effect (replacing the current hard-edge circles)
+- Add a subtle inner border glow via `ring-1 ring-white/10`
+- Increase card corner radius and padding for a more spacious feel
 
-**2. Desktop Table -- Premium refinement**
-- Card wrapper: `border-0 shadow-lg rounded-2xl overflow-hidden`
-- Table header: `bg-muted/30` with `uppercase text-[11px] tracking-wider font-semibold text-muted-foreground/70` styling
-- Rows: remove default borders, use `hover:bg-primary/[0.03]` subtle hover, add `border-b border-border/50` thin separator
-- API Key code block: refined with `bg-gradient-to-r from-muted/80 to-muted/40 border border-border/50 rounded-md` 
-- Env badge: pill style with dot indicator (`w-1.5 h-1.5 rounded-full bg-emerald-500` for Live, `bg-amber-500` for Test) instead of solid badge
-- Status badge: softer colors -- Active gets `bg-emerald-500/10 text-emerald-600 border-emerald-500/20`, Revoked gets `bg-red-500/10 text-red-600 border-red-500/20`
-- Permissions: show as subtle `bg-primary/5 text-primary rounded-full px-2.5 py-0.5` chip
-- Action buttons: icon-only with tooltips for Rotate/Delete, text for Revoke/Reactivate with refined sizing
+**2. Greeting Row**
+- Add a wave emoji after "WELCOME BACK" label (matching reference)
+- Increase name font size slightly with better weight contrast
+- QR and Copy buttons: larger (w-10 h-10), more prominent frosted glass (`bg-white/12 backdrop-blur-xl border border-white/15 rounded-2xl`) with subtle shadow
 
-**3. Mobile Cards -- Elevated design**
-- `rounded-2xl border-0 shadow-md` wrapper
-- Top section: merchant name with env/status pills aligned right
-- API key section: full-width code block with gradient bg
-- Action row: refined button styling with `rounded-xl` corners
+**3. Balance Section**
+- More vertical spacing above/below
+- "AVAILABLE BALANCE" label with slightly larger tracking
+- "Tap to see balance" pill: refined with `backdrop-blur-xl border border-white/20` and a subtle inner shadow
+- When revealed: larger balance text (`text-[2.4rem]`) with a subtle text-shadow for depth
+- Add Money button: larger frosted glass card (`bg-white/12 backdrop-blur-xl border border-white/15 rounded-2xl`) with icon + label, more padding
 
-**4. Dialogs -- Polish**
-- Add subtle gradient header bg to Generate Key and Permissions dialogs
-- Credential reveal section: use card-in-card pattern with amber/warning tint background
-- Better spacing and label hierarchy
+**4. Bottom Section**
+- Wallet ID: slightly larger mono text with better letter-spacing
+- Share button: frosted glass with border, matching the elevated button style from reference
+- Thinner, more subtle divider (`bg-white/8`)
 
-All logic (fetching, mutations, realtime) remains unchanged. Only the JSX class names and minor structural nesting for visual purposes.
+**5. Animations**
+- Keep existing motion animations (entry, tap, balance reveal)
+- Add subtle `hover:bg-white/18` transitions on all interactive elements
+
+All logic (balance fetching, realtime, QR, share, copy, auto-hide timer) remains completely unchanged. Only visual class changes and minor structural adjustments for spacing.
+
+### File: `src/components/BalanceCard.tsx`
+Single file edit -- purely presentational changes to className values and decorative elements.
 
