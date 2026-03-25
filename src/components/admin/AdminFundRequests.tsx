@@ -153,8 +153,19 @@ export default function AdminFundRequests() {
   if (loading) return <div className="flex items-center justify-center py-12 text-muted-foreground">Loading fund requests…</div>;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
+    <Tabs defaultValue="requests" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="requests" className="gap-1.5">
+          Fund Requests
+          {pendingCount > 0 && <Badge variant="destructive" className="text-[10px] px-1">{pendingCount}</Badge>}
+        </TabsTrigger>
+        <TabsTrigger value="incoming" className="gap-1.5">
+          <Radio size={12} /> Incoming MFS
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="requests">
+      <div className="space-y-4">
         <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
           Fund Requests
           {pendingCount > 0 && <Badge variant="destructive" className="text-xs">{pendingCount} pending</Badge>}
