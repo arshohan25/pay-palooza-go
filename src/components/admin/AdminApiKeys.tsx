@@ -63,7 +63,8 @@ export default function AdminApiKeys({ search, onGenerateRef }: AdminApiKeysProp
   const [permEditKey, setPermEditKey] = useState<ApiKey | null>(null);
   const [permEditPerms, setPermEditPerms] = useState<string[]>([]);
   const [rotating, setRotating] = useState<string | null>(null);
-
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const openGenerateRef = useRef(openGenerate);
   const fetchKeys = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase
