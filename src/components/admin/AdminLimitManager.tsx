@@ -85,12 +85,12 @@ function GlobalDefaultsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
+      <div className="bg-muted/50 rounded-lg p-1 flex flex-wrap gap-0.5">
         {(["user", "merchant", "agent"] as const).map(role => (
-          <Button key={role} variant={roleFilter === role ? "default" : "outline"} size="sm" onClick={() => setRoleFilter(role)}>
-            {role === "user" ? <Users className="w-4 h-4 mr-1" /> : role === "merchant" ? <Store className="w-4 h-4 mr-1" /> : <UserCheck className="w-4 h-4 mr-1" />}
+          <button key={role} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${roleFilter === role ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setRoleFilter(role)}>
+            {role === "user" ? <Users className="w-3.5 h-3.5" /> : role === "merchant" ? <Store className="w-3.5 h-3.5" /> : <UserCheck className="w-3.5 h-3.5" />}
             {ROLE_LABELS[role]}
-          </Button>
+          </button>
         ))}
       </div>
 
