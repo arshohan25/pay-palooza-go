@@ -64,7 +64,8 @@ const ReferPage = ({ onBack }: ReferPageProps) => {
     toast.success(t("referralCodeCopied"));
   };
 
-  const shareText = `Use my referral code ${referralCode} on EasyPay and earn up to ৳${REWARD_PER_FRIEND}!`;
+  const deepLink = `https://pay-palooza-go.lovable.app/?ref=${referralCode}`;
+  const shareText = `Use my referral code ${referralCode} on EasyPay and earn up to ৳${REWARD_PER_FRIEND}! Sign up here: ${deepLink}`;
 
   const handleWhatsApp = () => {
     window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank");
