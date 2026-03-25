@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import QrScannerModal from "@/components/QrScannerModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, ShieldCheck, Clock, XCircle } from "lucide-react";
 import { clearTxnNotifs } from "@/lib/txnNotifStore";
@@ -15,37 +14,38 @@ import PromoSlider from "@/components/PromoSlider";
 import TransactionList from "@/components/TransactionList";
 import BottomNav from "@/components/BottomNav";
 import SideNav from "@/components/SideNav";
-import SendMoneyFlow from "@/components/SendMoneyFlow";
-import CashOutFlow from "@/components/CashOutFlow";
-import PaymentFlow from "@/components/PaymentFlow";
-import MobileRechargeFlow from "@/components/MobileRechargeFlow";
-import PayBillFlow from "@/components/PayBillFlow";
-import AddMoneyFlow from "@/components/AddMoneyFlow";
 
-import BankTransferFlow from "@/components/BankTransferFlow";
-import DynamicQrPaySheet from "@/components/DynamicQrPaySheet";
 import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
-
-import SavingsFlow from "@/components/SavingsFlow";
-import MerchantApplicationFlow from "@/components/MerchantApplicationFlow";
-import TransactionHistory from "@/pages/TransactionHistory";
-import AccountPage from "@/pages/AccountPage";
-import ReferPage from "@/pages/ReferPage";
-// Skeletons kept for potential future use
-// import { BalanceCardSkeleton, QuickActionsSkeleton, TransactionListSkeleton } from "@/components/HomeSkeletons";
-
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import InstallPrompt from "@/components/InstallPrompt";
-import AuthPage from "@/pages/AuthPage";
-import InboxPage from "@/pages/InboxPage";
 import SplashScreen from "@/components/SplashScreen";
 import OnboardingSlides, { hasSeenOnboarding, markOnboardingDone } from "@/components/OnboardingSlides";
 import TxnToast from "@/components/TxnToast";
-import KycFlow from "@/components/KycFlow";
 import { useKycStatus } from "@/hooks/use-kyc-status";
 import { parseQrData } from "@/lib/qrParser";
 import PlatformBanner from "@/components/PlatformBanner";
 import FestivalOverlay from "@/components/FestivalOverlay";
+
+// Lazy load heavy modal/flow components (only rendered on user interaction)
+const QrScannerModal = lazy(() => import("@/components/QrScannerModal"));
+const SendMoneyFlow = lazy(() => import("@/components/SendMoneyFlow"));
+const CashOutFlow = lazy(() => import("@/components/CashOutFlow"));
+const PaymentFlow = lazy(() => import("@/components/PaymentFlow"));
+const MobileRechargeFlow = lazy(() => import("@/components/MobileRechargeFlow"));
+const PayBillFlow = lazy(() => import("@/components/PayBillFlow"));
+const AddMoneyFlow = lazy(() => import("@/components/AddMoneyFlow"));
+const BankTransferFlow = lazy(() => import("@/components/BankTransferFlow"));
+const DynamicQrPaySheet = lazy(() => import("@/components/DynamicQrPaySheet"));
+const SavingsFlow = lazy(() => import("@/components/SavingsFlow"));
+const MerchantApplicationFlow = lazy(() => import("@/components/MerchantApplicationFlow"));
+const KycFlow = lazy(() => import("@/components/KycFlow"));
+const AuthPage = lazy(() => import("@/pages/AuthPage"));
+const InboxPage = lazy(() => import("@/pages/InboxPage"));
+
+// Lazy load tab pages (only shown when tab is active)
+const TransactionHistory = lazy(() => import("@/pages/TransactionHistory"));
+const AccountPage = lazy(() => import("@/pages/AccountPage"));
+const ReferPage = lazy(() => import("@/pages/ReferPage"));
 
 const Index = () => {
   const navigate = useNavigate();
