@@ -240,10 +240,10 @@ export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
   return (
     <motion.div
       ref={containerRef}
-      initial={{ opacity: 0 }}
+      initial={{ opacity: 1 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, scale: 0.97 }}
-      transition={{ duration: 0.4 }}
+      transition={{ duration: 0.3 }}
       className="fixed inset-0 z-[190] overflow-hidden flex flex-col select-none"
       style={{ background: slide.gradient }}
       onMouseMove={handleMouseMove}
@@ -376,17 +376,17 @@ export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
 
             {/* Text */}
             <motion.h2
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: current === 0 ? 1 : 0, y: current === 0 ? 0 : 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.18, duration: 0.45 }}
+              transition={{ delay: current === 0 ? 0 : 0.1, duration: 0.3 }}
               className="text-[28px] font-black text-white leading-tight tracking-tight mb-3"
             >
               {slide.title}
             </motion.h2>
             <motion.p
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: current === 0 ? 1 : 0, y: current === 0 ? 0 : 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25, duration: 0.4 }}
+              transition={{ delay: current === 0 ? 0 : 0.12, duration: 0.3 }}
               className="text-white/75 text-sm font-medium leading-relaxed"
             >
               {slide.subtitle}
