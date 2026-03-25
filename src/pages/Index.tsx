@@ -7,14 +7,12 @@ import { fetchBalance } from "@/lib/balanceStore";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import BalanceCard from "@/components/BalanceCard";
 import BottomNav from "@/components/BottomNav";
 
 import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import InstallPrompt from "@/components/InstallPrompt";
-import SplashScreen from "@/components/SplashScreen";
-import OnboardingSlides, { hasSeenOnboarding, markOnboardingDone } from "@/components/OnboardingSlides";
+import { hasSeenOnboarding, markOnboardingDone } from "@/components/OnboardingSlides";
 import TxnToast from "@/components/TxnToast";
 import { useKycStatus } from "@/hooks/use-kyc-status";
 import { parseQrData } from "@/lib/qrParser";
@@ -22,12 +20,15 @@ import { BalanceCardSkeleton, QuickActionsSkeleton, TransactionListSkeleton } fr
 
 // Lazy load below-fold / non-critical home components
 const AppHeader = lazy(() => import("@/components/AppHeader"));
+const BalanceCard = lazy(() => import("@/components/BalanceCard"));
 const QuickActions = lazy(() => import("@/components/QuickActions"));
 const PromoSlider = lazy(() => import("@/components/PromoSlider"));
 const TransactionList = lazy(() => import("@/components/TransactionList"));
 const SideNav = lazy(() => import("@/components/SideNav"));
 const PlatformBanner = lazy(() => import("@/components/PlatformBanner"));
 const FestivalOverlay = lazy(() => import("@/components/FestivalOverlay"));
+const SplashScreen = lazy(() => import("@/components/SplashScreen"));
+const OnboardingSlides = lazy(() => import("@/components/OnboardingSlides"));
 
 // Lazy load heavy modal/flow components (only rendered on user interaction)
 const QrScannerModal = lazy(() => import("@/components/QrScannerModal"));
