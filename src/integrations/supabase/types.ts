@@ -2567,6 +2567,50 @@ export type Database = {
         }
         Relationships: []
       }
+      mfs_incoming_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          matched_request_id: string | null
+          provider: string
+          raw_payload: Json | null
+          sender_number: string | null
+          status: string
+          txn_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          matched_request_id?: string | null
+          provider: string
+          raw_payload?: Json | null
+          sender_number?: string | null
+          status?: string
+          txn_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          matched_request_id?: string | null
+          provider?: string
+          raw_payload?: Json | null
+          sender_number?: string | null
+          status?: string
+          txn_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mfs_incoming_payments_matched_request_id_fkey"
+            columns: ["matched_request_id"]
+            isOneToOne: false
+            referencedRelation: "fund_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_templates: {
         Row: {
           body: string
