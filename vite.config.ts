@@ -22,6 +22,8 @@ export default defineConfig(({ mode }) => ({
           'vendor-query': ['@tanstack/react-query'],
           'vendor-supabase': ['@supabase/supabase-js'],
           'vendor-charts': ['recharts'],
+          'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
+          'vendor-dates': ['date-fns'],
           'vendor-ui': [
             '@radix-ui/react-dialog',
             '@radix-ui/react-popover',
