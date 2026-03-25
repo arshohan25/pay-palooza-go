@@ -326,9 +326,9 @@ export default function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
           >
             {/* Illustration with tap-hold bounce + parallax */}
             <motion.div
-              initial={{ scale: 0.6, opacity: 0, y: 20 }}
+              initial={{ scale: current === 0 ? 1 : 0.6, opacity: current === 0 ? 1 : 0, y: current === 0 ? 0 : 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              transition={{ delay: 0.05, type: "spring", stiffness: 220, damping: 18 }}
+              transition={{ delay: current === 0 ? 0 : 0.05, type: "spring", stiffness: 220, damping: 18 }}
               className="relative mb-8"
               style={{ x: iconXSpring, y: iconYSpring }}
             >
