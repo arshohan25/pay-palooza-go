@@ -93,36 +93,34 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
         initial={{ opacity: 0, y: 16, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
-        className="relative overflow-hidden rounded-3xl gradient-hero text-primary-foreground shadow-glow-lg"
+        className="relative overflow-hidden rounded-[2rem] gradient-hero text-primary-foreground shadow-glow-lg ring-1 ring-white/10"
       >
-        {/* Decorative circles */}
-        <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-white/5 pointer-events-none" />
-        <div className="absolute -bottom-10 -left-5 w-40 h-40 rounded-full bg-white/5 pointer-events-none" />
-        <div className="absolute top-3 right-20 w-16 h-16 rounded-full bg-white/5 pointer-events-none" />
+        {/* Bokeh decorative blobs */}
+        <div className="absolute -top-20 -right-20 w-56 h-56 rounded-full bg-emerald-400/15 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-16 w-64 h-64 rounded-full bg-teal-300/10 blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 right-1/4 w-32 h-32 rounded-full bg-white/5 blur-2xl pointer-events-none" />
 
-        <div className="relative p-4 sm:p-5">
+        <div className="relative p-5 sm:p-6">
           {/* Top row — Greeting left, QR + Copy right */}
-          <div className="flex items-start justify-between mb-3">
-            {/* LEFT: Greeting + name (yellow circle area) */}
+          <div className="flex items-start justify-between mb-5">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-60 leading-tight">{t("welcomeBack")}</p>
-              <p className="text-[15px] font-bold opacity-95 leading-tight tracking-tight">{userName}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] opacity-60 leading-tight">{t("welcomeBack")} 👋</p>
+              <p className="text-[17px] font-bold opacity-95 leading-tight tracking-tight mt-0.5">{userName}</p>
             </div>
 
-            {/* RIGHT: QR + Copy */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <motion.button
                 whileTap={{ scale: 0.88 }}
                 onClick={() => setShowQr(true)}
-                className="glass-hero w-8 h-8 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors tap-target"
+                className="w-10 h-10 rounded-2xl flex items-center justify-center bg-white/12 backdrop-blur-xl border border-white/15 shadow-lg hover:bg-white/18 transition-all tap-target"
                 title="Show QR Code"
               >
-                <QrCode size={13} />
+                <QrCode size={16} />
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.88 }}
                 onClick={handleCopyId}
-                className="glass-hero w-8 h-8 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors tap-target"
+                className="w-10 h-10 rounded-2xl flex items-center justify-center bg-white/12 backdrop-blur-xl border border-white/15 shadow-lg hover:bg-white/18 transition-all tap-target"
                 title="Copy Wallet ID"
               >
                 <AnimatePresence mode="wait" initial={false}>
@@ -133,18 +131,17 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
                     exit={{ opacity: 0, scale: 0.7 }}
                     transition={{ duration: 0.16 }}
                   >
-                    {copied ? <CheckCheck size={13} /> : <Copy size={13} />}
+                    {copied ? <CheckCheck size={16} /> : <Copy size={16} />}
                   </motion.span>
                 </AnimatePresence>
               </motion.button>
             </div>
           </div>
 
-          {/* Balance row — tap to reveal + Add Money inline on the right */}
-          <div className="mb-3 flex items-center gap-3">
-            {/* Balance tap area */}
+          {/* Balance row */}
+          <div className="mb-5 flex items-center gap-4">
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-55 mb-1.5">{t("availableBalance")}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] opacity-55 mb-2">{t("availableBalance")}</p>
               <motion.button
                 className="flex items-center group w-fit"
                 onClick={handleToggleBalance}
@@ -161,16 +158,16 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
                       transition={{ duration: 0.22 }}
                       className="flex items-baseline gap-1"
                     >
-                      <span className="text-lg font-semibold opacity-70">৳</span>
-                      <span className="text-[2rem] sm:text-[2.2rem] font-bold tracking-tight leading-none">
+                      <span className="text-xl font-semibold opacity-70">৳</span>
+                      <span className="text-[2.4rem] sm:text-[2.6rem] font-bold tracking-tight leading-none" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
                         {displayBalance.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                       <motion.span
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 0.55 }}
-                        className="flex items-center self-center ml-1"
+                        className="flex items-center self-center ml-1.5"
                       >
-                        <EyeOff size={12} />
+                        <EyeOff size={14} />
                       </motion.span>
                     </motion.div>
                   ) : (
@@ -180,51 +177,49 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -6 }}
                       transition={{ duration: 0.22 }}
-                      className="glass-hero rounded-2xl px-4 py-2 flex items-center gap-2"
+                      className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl px-5 py-2.5 flex items-center gap-2.5 shadow-inner"
                     >
-                      <Eye size={13} className="opacity-85" />
-                      <span className="text-[12.5px] font-semibold opacity-95 tracking-wide">{t("tapToSeeBalance")}</span>
+                      <Eye size={15} className="opacity-85" />
+                      <span className="text-[13px] font-semibold opacity-95 tracking-wide">{t("tapToSeeBalance")}</span>
                     </motion.div>
                   )}
                 </AnimatePresence>
               </motion.button>
             </div>
 
-            {/* RIGHT of balance: Add Money (white circle area) */}
             <motion.button
               whileTap={{ scale: 0.88 }}
               whileHover={{ scale: 1.05 }}
               onClick={onAddMoney}
-              className="flex flex-col items-center gap-1 bg-white/15 hover:bg-white/25 transition-colors rounded-2xl px-3 py-2 tap-target shrink-0"
+              className="flex flex-col items-center gap-1.5 bg-white/12 backdrop-blur-xl border border-white/15 hover:bg-white/18 transition-all rounded-2xl px-4 py-3 tap-target shrink-0 shadow-lg"
               title="Add Money"
             >
-              <div className="w-7 h-7 flex items-center justify-center">
+              <div className="w-8 h-8 flex items-center justify-center">
                 <AddMoneyIcon isHovered={false} />
               </div>
-              <span className="text-[9.5px] font-bold opacity-95 whitespace-nowrap">{t("addMoney")}</span>
+              <span className="text-[10px] font-bold opacity-95 whitespace-nowrap">{t("addMoney")}</span>
             </motion.button>
           </div>
 
           {/* Divider */}
-          <div className="h-px bg-white/12 mb-3" />
+          <div className="h-px bg-white/8 mb-4" />
 
-          {/* Bottom row: Wallet ID left | Share right (green circle area) */}
+          {/* Bottom row */}
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[9px] uppercase tracking-[0.14em] opacity-45 mb-0.5">{t("walletId")}</p>
-              <p className="text-[12px] font-mono font-semibold tracking-widest opacity-90">{userId}</p>
+              <p className="text-[9px] uppercase tracking-[0.16em] opacity-45 mb-1">{t("walletId")}</p>
+              <p className="text-[13px] font-mono font-semibold tracking-[0.12em] opacity-90">{userId}</p>
             </div>
 
-            {/* Share button */}
             <motion.button
               whileTap={{ scale: 0.88 }}
               whileHover={{ scale: 1.05 }}
               onClick={handleShare}
-              className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 border border-white/20 transition-colors rounded-xl px-2.5 py-1.5 tap-target"
+              className="flex items-center gap-2 bg-white/12 backdrop-blur-xl border border-white/15 hover:bg-white/18 transition-all rounded-2xl px-3.5 py-2 tap-target shadow-lg"
               title="Share QR / Wallet ID"
             >
-              <Share2 size={11} className="opacity-90" />
-              <span className="text-[10.5px] font-bold opacity-95 whitespace-nowrap">{t("share")}</span>
+              <Share2 size={13} className="opacity-90" />
+              <span className="text-[11px] font-bold opacity-95 whitespace-nowrap">{t("share")}</span>
             </motion.button>
           </div>
         </div>
