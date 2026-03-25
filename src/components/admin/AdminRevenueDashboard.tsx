@@ -29,6 +29,8 @@ export default function AdminRevenueDashboard() {
   );
 }
 
+// ProfitReportTab date filters moved to header row below
+
 function TotalRevenueTab() {
   const [treasury, setTreasury] = useState<any>(null);
   const [txnStats, setTxnStats] = useState({ totalFees: 0, totalCommissions: 0, txnCount: 0 });
