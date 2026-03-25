@@ -457,15 +457,15 @@ function LogsTab() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-36"><SelectValue placeholder="Filter type" /></SelectTrigger>
+          <SelectTrigger className="w-36 h-7 text-xs"><SelectValue placeholder="Filter type" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
             {TXN_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Button variant="outline" size="sm" onClick={exportCSV}>Export CSV</Button>
+        <Button variant="outline" size="icon" className="h-7 w-7" onClick={exportCSV}><Download className="w-3.5 h-3.5" /></Button>
       </div>
 
       <Card className="border-0 shadow-[var(--shadow-card)]">

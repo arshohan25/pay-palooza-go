@@ -147,9 +147,9 @@ export default function TeamActivityLog() {
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <Select value={selectedMember} onValueChange={setSelectedMember}>
-          <SelectTrigger className="w-48"><SelectValue placeholder="All Members" /></SelectTrigger>
+          <SelectTrigger className="w-48 h-7 text-xs"><SelectValue placeholder="All Members" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Members</SelectItem>
             {members.map(m => (
@@ -157,15 +157,14 @@ export default function TeamActivityLog() {
             ))}
           </SelectContent>
         </Select>
-        <div className="flex gap-2 items-center">
-          <Calendar className="w-4 h-4 text-muted-foreground" />
-          <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-36" />
-          <span className="text-muted-foreground text-sm">to</span>
-          <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-36" />
+        <div className="flex items-center gap-1.5">
+          <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-7 w-32 text-xs" />
+          <span className="text-muted-foreground text-xs">to</span>
+          <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-7 w-32 text-xs" />
+          <Button size="icon" variant="outline" className="h-7 w-7" onClick={loadLogs}>
+            <RefreshCw className="w-3.5 h-3.5" />
+          </Button>
         </div>
-        <Button size="sm" variant="outline" onClick={loadLogs}>
-          <RefreshCw className="w-4 h-4 mr-1" />Refresh
-        </Button>
       </div>
 
       {/* Timeline */}
