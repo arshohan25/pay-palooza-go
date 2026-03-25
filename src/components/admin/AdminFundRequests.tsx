@@ -166,6 +166,7 @@ export default function AdminFundRequests() {
 
       <TabsContent value="requests">
       <div className="space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
           Fund Requests
           {pendingCount > 0 && <Badge variant="destructive" className="text-xs">{pendingCount} pending</Badge>}
