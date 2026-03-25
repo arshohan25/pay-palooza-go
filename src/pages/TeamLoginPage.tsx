@@ -215,7 +215,7 @@ export default function TeamLoginPage() {
       <div className="w-full max-w-sm space-y-6">
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
-          <img src="/icons/easypay-logo.png" alt="EasyPay" className="w-16 h-16 rounded-2xl" />
+          <img src="/icons/easypay-logo.webp" alt="EasyPay" className="w-16 h-16 rounded-2xl" />
           <div className="text-center">
             <h1 className="text-xl font-bold text-foreground">Team Login</h1>
             <p className="text-sm text-muted-foreground">Sign in with your team credentials</p>

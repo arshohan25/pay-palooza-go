@@ -11,7 +11,7 @@ import { signUp, signIn, phoneToEmail, isPhoneRegistered } from "@/lib/auth";
 import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
 import { isWeakPin } from "@/lib/pinValidation";
 import { supabase } from "@/integrations/supabase/client";
-import logo from "@/assets/easypay-logo.png";
+import logo from "@/assets/easypay-logo.webp";
 import KycFlow from "@/components/KycFlow";
 
 // ─── Storage keys (only for UX preferences, NOT auth) ─────────────────────────
@@ -689,7 +689,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
               </motion.button>
               <div className="relative flex flex-col items-center gap-6 text-white">
                 <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200, damping: 16, delay: 0.1 }} className="relative">
-                  <img src={logo} alt="EasyPay" className="w-24 h-24 rounded-[28px] object-contain shadow-float" onError={(e) => { e.currentTarget.src = "/icons/easypay-logo.png"; }} />
+                  <img src={logo} alt="EasyPay" className="w-24 h-24 rounded-[28px] object-contain shadow-float" onError={(e) => { e.currentTarget.src = "/icons/easypay-logo.webp"; }} />
                   {[1.3, 1.6, 1.9].map((s, i) => (
                     <motion.div key={i} className="absolute inset-0 rounded-[28px] border border-white/20"
                       animate={{ scale: [1, s], opacity: [0.5, 0] }} transition={{ duration: 2.5, repeat: Infinity, delay: i * 0.4, ease: "easeOut" }} />

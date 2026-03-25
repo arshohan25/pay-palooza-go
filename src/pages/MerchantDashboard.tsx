@@ -1731,7 +1731,7 @@ const TxnTab = ({ txns, merchant }: { txns: TxnRow[]; merchant: MerchantInfo | n
     // Load logo
     let logo: string | null = null;
     try {
-      const res = await fetch("/icons/easypay-logo.png");
+      const res = await fetch("/icons/easypay-logo.webp");
       const blob = await res.blob();
       logo = await new Promise((resolve) => {
         const reader = new FileReader();

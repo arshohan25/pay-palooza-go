@@ -392,7 +392,7 @@ const QrScannerModal = ({ open, onClose, onScan, title = "Scan any QR" }: QrScan
             <div className="flex flex-col items-center gap-1.5">
               <span className="text-white/30 text-[9px] uppercase tracking-widest">Supports</span>
               <img
-                src="/icons/easypay-logo.png"
+                src="/icons/easypay-logo.webp"
                 alt="EasyPay"
                 className="h-5 opacity-60"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
