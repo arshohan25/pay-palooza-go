@@ -6,6 +6,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://lmgsxyzytssddijjxbzc.supabase.co" crossorigin />
+    <!-- Load fonts non-render-blocking -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Anek+Bangla:wght@400;500;600;700;800&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Anek+Bangla:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Anek+Bangla:wght@400;500;600;700;800&display=swap" /></noscript>
     <title>EasyPay – Mobile Financial Services</title>
     <meta name="description" content="Send money, pay bills, cash out and manage your finances securely with EasyPay.">
     <meta name="author" content="SwiftPay" />
@@ -44,7 +48,24 @@
 </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Inline splash for instant FCP before React hydrates -->
+      <div id="html-splash" style="position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,hsl(160,71%,40%),hsl(160,71%,40%,0.7) 60%,hsl(30,90%,55%,0.9))">
+        <div style="width:96px;height:96px;border-radius:26px;background:rgba(255,255,255,0.2);backdrop-filter:blur(12px);border:2px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);margin-bottom:32px">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="28" fill="white" fill-opacity="0.9"/><text x="32" y="40" text-anchor="middle" font-size="24" font-weight="900" fill="hsl(160,71%,40%)" font-family="system-ui,sans-serif">EP</text></svg>
+        </div>
+        <h1 style="font-size:2.25rem;font-weight:900;color:white;letter-spacing:-0.025em;margin:0;font-family:system-ui,-apple-system,sans-serif">EasyPay</h1>
+        <p style="color:rgba(255,255,255,0.7);font-size:0.875rem;font-weight:600;margin-top:8px">বাংলাদেশের সবচেয়ে সহজ ডিজিটাল ওয়ালেট</p>
+      </div>
+    </div>
+    <script>
+      // Remove HTML splash once React mounts
+      var _ro = new MutationObserver(function() {
+        var s = document.getElementById('html-splash');
+        if (s && document.querySelector('[data-reactroot], #root > :not(#html-splash)')) { s.remove(); _ro.disconnect(); }
+      });
+      _ro.observe(document.getElementById('root'), { childList: true });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
