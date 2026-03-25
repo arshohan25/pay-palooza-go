@@ -1848,11 +1848,14 @@ export type Database = {
           api_key: string
           app_password: string | null
           created_at: string
+          environment: string
           id: string
           ip_whitelist_enabled: boolean
           is_active: boolean
           merchant_id: string
+          permissions: string[]
           rate_limit_per_minute: number
+          rotation_expires_at: string | null
           secret_key: string
           updated_at: string
           webhook_url: string | null
@@ -1861,11 +1864,14 @@ export type Database = {
           api_key: string
           app_password?: string | null
           created_at?: string
+          environment?: string
           id?: string
           ip_whitelist_enabled?: boolean
           is_active?: boolean
           merchant_id: string
+          permissions?: string[]
           rate_limit_per_minute?: number
+          rotation_expires_at?: string | null
           secret_key: string
           updated_at?: string
           webhook_url?: string | null
@@ -1874,11 +1880,14 @@ export type Database = {
           api_key?: string
           app_password?: string | null
           created_at?: string
+          environment?: string
           id?: string
           ip_whitelist_enabled?: boolean
           is_active?: boolean
           merchant_id?: string
+          permissions?: string[]
           rate_limit_per_minute?: number
+          rotation_expires_at?: string | null
           secret_key?: string
           updated_at?: string
           webhook_url?: string | null
@@ -2125,6 +2134,45 @@ export type Database = {
           sort_order?: number | null
         }
         Relationships: []
+      }
+      merchant_idempotency_keys: {
+        Row: {
+          created_at: string
+          id: string
+          idempotency_key: string
+          merchant_id: string
+          session_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          merchant_id: string
+          session_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          merchant_id?: string
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_idempotency_keys_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchant_idempotency_keys_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_payment_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       merchant_ip_whitelist: {
         Row: {
