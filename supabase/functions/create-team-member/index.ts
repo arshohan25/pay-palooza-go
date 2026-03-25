@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
       status: "active",
     });
 
-    // Insert team_members record
+    // Insert team_members record (no plaintext password stored)
     await adminClient.from("team_members").insert({
       user_id: newUserId,
       display_name: displayName.trim(),
@@ -113,7 +113,6 @@ Deno.serve(async (req) => {
       notes: notes || null,
       created_by: adminId,
       username: normalizedUsername,
-      temp_password: password,
       email: email?.trim() || null,
     });
 

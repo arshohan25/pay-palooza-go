@@ -161,7 +161,7 @@ export default function TeamLoginPage() {
               .eq("user_id", user.id);
           }
 
-          if (!tm.has_changed_password && tm.temp_password) {
+          if (!tm.has_changed_password) {
             setShowPasswordChange(true);
             setLoading(false);
             return;
