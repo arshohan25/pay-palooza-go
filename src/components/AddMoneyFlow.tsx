@@ -72,6 +72,9 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   const pinRef = useRef<HTMLInputElement>(null);
   const [submittedRequestId, setSubmittedRequestId] = useState<string | null>(null);
   const [trackingStatus, setTrackingStatus] = useState<string>("pending");
+  const [duplicateTxnWarning, setDuplicateTxnWarning] = useState("");
+  const [checkingDuplicate, setCheckingDuplicate] = useState(false);
+  const duplicateCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const { accounts: depositAccounts, loading: depositLoading } = useDepositAccounts(source ?? undefined);
