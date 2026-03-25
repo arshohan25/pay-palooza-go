@@ -147,7 +147,7 @@ export default function TeamLoginPage() {
       if (user) {
         const { data: tm } = await supabase
           .from("team_members")
-          .select("has_logged_in, has_changed_password, temp_password")
+          .select("has_logged_in, has_changed_password")
           .eq("user_id", user.id)
           .maybeSingle();
 
@@ -196,7 +196,6 @@ export default function TeamLoginPage() {
           .update({
             has_changed_password: true,
             password_changed_at: new Date().toISOString(),
-            temp_password: null,
           } as any)
           .eq("user_id", user.id);
       }
