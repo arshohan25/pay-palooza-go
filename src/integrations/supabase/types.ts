@@ -4786,6 +4786,18 @@ export type Database = {
           total_spent: number
         }[]
       }
+      get_public_merchants: {
+        Args: never
+        Returns: {
+          business_name: string
+          category: string
+          created_at: string
+          id: string
+          qr_code_data: string
+          status: string
+          user_id: string
+        }[]
+      }
       get_public_session_info: { Args: { p_session_id: string }; Returns: Json }
       get_shop_products: {
         Args: never
