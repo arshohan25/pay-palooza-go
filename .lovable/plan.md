@@ -1,30 +1,19 @@
 
 
-# Fix: Restore Logo on Splash Screen
+# Remove Blank Space in Promo Slider
 
 ## Problem
-The splash screen shows "EP" text instead of the actual EasyPay logo. The `src/assets/easypay-logo.webp` file is imported as an ES module, but appears to hit a Vite bundling/caching issue causing the wrong content to render. The `public/icons/easypay-logo.webp` file contains the correct logo.
+The promo banner has visible blank space at the bottom of the card area, and the dot indicators sit below with extra gap, creating unnecessary vertical whitespace (highlighted in red in the screenshot).
 
 ## Solution
-In `SplashScreen.tsx`, switch from the ES module import (`import logo from "@/assets/easypay-logo.webp"`) to the public URL path (`/icons/easypay-logo.webp`). This bypasses Vite's asset pipeline and serves the file directly. Apply the same fix to any other components showing the same issue (`AuthPage.tsx`, `BiometricAuth.tsx`, `SideNav.tsx`).
+1. **Overlay the dot indicators on the banner** — position them absolutely at the bottom of the banner card instead of below it, eliminating the `space-y-2` gap.
+2. **Remove outer `space-y-2`** — the wrapper div currently adds 8px between the carousel and dots; with overlay dots this is unnecessary.
 
 ## Changes
 
-**`src/components/SplashScreen.tsx`**
-- Remove `import logo from "@/assets/easypay-logo.webp"`
-- Change `src={logo}` to `src="/icons/easypay-logo.webp"`
+**`src/components/PromoSlider.tsx`**
 
-**`src/pages/AuthPage.tsx`**
-- Remove `import logo from "@/assets/easypay-logo.webp"`
-- Change `src={logo}` to `src="/icons/easypay-logo.webp"`
-
-**`src/components/BiometricAuth.tsx`**
-- Remove `import logoImg from "@/assets/easypay-logo.webp"`
-- Change `src={logoImg}` to `src="/icons/easypay-logo.webp"`
-
-**`src/components/SideNav.tsx`**
-- Remove `import logo from "@/assets/easypay-logo.webp"`
-- Change `src={logo}` to `src="/icons/easypay-logo.webp"`
-
-All four files get the same one-line change: swap the bundled import for the direct public path.
+- Change the wrapper from `<div className="space-y-2">` to `<div className="relative">`.
+- Move the dot indicators inside the Embla viewport wrapper and position them with `absolute bottom-2 left-0 right-0` so they float over the bottom of the banner.
+- Add a slight semi-transparent backdrop behind dots for readability on media banners.
 
