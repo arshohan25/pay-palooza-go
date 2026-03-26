@@ -347,19 +347,7 @@ const Index = () => {
     );
     })();
 
-    return (
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.15, ease: [0.32, 0.72, 0, 1] }}
-        >
-          {content}
-        </motion.div>
-      </AnimatePresence>
-    );
+    return content;
   };
 
   // Resolve auth state first — before splash/onboarding

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { showTxnToast } from "@/components/TxnToast";
+import { getCachedSession } from "@/hooks/use-auth";
 import { haptics } from "@/lib/haptics";
 
 const TXN_LABELS: Record<string, string> = {
@@ -51,7 +51,7 @@ export function useTransactions(limit?: number, refreshKey?: number) {
 
   const fetchTxns = useCallback(async () => {
     setLoading(true);
-    const { data: { session } } = await supabase.auth.getSession();
+    const session = await getCachedSession();
     if (!session?.user) {
       setTransactions([]);
       setLoading(false);
@@ -82,7 +82,7 @@ export function useTransactions(limit?: number, refreshKey?: number) {
   // Realtime subscription — auto-refetch + toast on new inserts
   useEffect(() => {
     const setup = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const session = await getCachedSession();
       const userId = session?.user?.id;
       if (!userId) return;
 
