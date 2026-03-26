@@ -105,7 +105,7 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
           <div className="flex items-start justify-between mb-3">
             {/* LEFT: Greeting + name (yellow circle area) */}
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-60 leading-tight">{t("welcomeBack")}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-60 leading-tight">{t(getGreetingKey())} 👋</p>
               <p className="text-[15px] font-bold opacity-95 leading-tight tracking-tight">{userName}</p>
             </div>
 
