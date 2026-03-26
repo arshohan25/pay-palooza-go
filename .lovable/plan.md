@@ -1,59 +1,51 @@
 
 
-# Performance Optimization Plan
+# Fix: Recharge Balance Deduction Without Actual Processing
 
-## Identified Issues
+## Problem
+When a user does a mobile recharge, the flow:
+1. Calls `process-recharge` edge function (attempts operator API — likely fails silently, returns `api_available: false`)
+2. **Always** calls `recordTransaction()` which deducts the balance regardless of whether the recharge actually went through
 
-1. **Excessive `auth/v1/user` calls**: Network logs show 6+ duplicate auth user requests on a single page load. Every hook independently calls `supabase.auth.getSession()`, causing redundant network requests.
+The ৳50 was deducted from the user's wallet and recorded as a completed "recharge" transaction, but no actual recharge was delivered to the phone number. The money sits as a transaction record with `[LOCAL]` tag — effectively lost.
 
-2. **Heavy animation library on critical path**: `framer-motion` is imported eagerly in Index.tsx, BalanceCard, QuickActions, TransactionList. AnimatePresence wraps tab transitions causing unnecessary re-renders.
+## Root Cause
+Line 435 in `MobileRechargeFlow.tsx` calls `recordTransaction()` unconditionally — even when no real operator API processed the recharge. There's no validation that the recharge actually succeeded before taking the user's money.
 
-3. **QuickActions imports @dnd-kit eagerly** (618 lines): Drag-and-drop library loads on every home page visit even when user isn't reordering.
+## Fix
 
-4. **FestivalBodyEffect canvas animation**: Runs a full canvas animation with rockets/sparks on every page load when a festival theme is active, consuming CPU.
+### File: `src/components/MobileRechargeFlow.tsx`
+- Only deduct balance (call `recordTransaction`) when the operator API actually confirmed the recharge (`apiProcessed === true`)
+- When `apiProcessed === false` (LOCAL mode), do NOT deduct balance. Instead show a "pending" status or inform the user that no operator API is configured
+- Alternative: If LOCAL mode should still work (for demo/testing), make this explicit — but don't silently take money
 
-5. **Multiple realtime channels opened simultaneously**: account-lock, balance-realtime, txn-realtime all set up independently with separate auth checks.
+### Proposed Logic Change (lines ~435-443):
+```
+if (apiProcessed) {
+  // Real recharge confirmed — deduct balance
+  await recordTransaction({
+    type: "recharge",
+    amount: effectivePrice,
+    fee: 0,
+    recipientPhone: phone,
+    recipientName: detectedOp?.name,
+    reference: txnId.current,
+    description: packDesc + " [API]",
+  });
+} else {
+  // No operator API available — don't deduct, show error
+  toast.error("Recharge service unavailable. Please try again later.");
+  setProcessing(false);
+  return;
+}
+```
 
-6. **Embla carousel in PromoSlider**: Loaded eagerly with auto-play interval.
+### Edge Function: `supabase/functions/process-recharge/index.ts`
+- Move balance deduction INTO the edge function so it happens atomically with API confirmation
+- Alternatively, have the edge function return a clear `api_available: false` status that the client treats as a failure
 
-7. **TransactionList re-fetches on every `refreshKey` change** plus realtime — double-fetching pattern.
+## Recommendation
+The simpler fix is the client-side gate: don't call `recordTransaction` unless `apiProcessed` is true. When no API is configured, show an error toast instead of silently taking money.
 
-## Optimization Plan
-
-### 1. Deduplicate auth calls with cached session
-**File**: `src/hooks/use-auth.ts`
-- Cache the session/user in a module-level variable so other hooks can import `getCachedUser()` synchronously instead of calling `supabase.auth.getSession()` repeatedly.
-- Export a `getCachedSession()` helper.
-
-**Files**: `src/hooks/use-transactions.ts`, `src/lib/balanceStore.ts`
-- Replace `supabase.auth.getSession()` calls with `getCachedSession()` from use-auth.
-
-### 2. Lazy-load @dnd-kit in QuickActions
-**File**: `src/components/QuickActions.tsx`
-- Split the DnD reorder mode into a separate lazy-loaded component. The default grid renders without importing @dnd-kit at all.
-- Only import DndContext/SortableContext when user enters edit mode.
-
-### 3. Simplify tab transitions
-**File**: `src/pages/Index.tsx`
-- Remove the `AnimatePresence mode="wait"` wrapper around `mainContent()` (lines 351-362). Use a simple CSS transition or no animation. This eliminates expensive exit/enter animations on every tab switch.
-
-### 4. Throttle FestivalBodyEffect
-**File**: `src/components/FestivalBodyEffect.tsx`
-- Add a `sessionStorage` flag so the fireworks animation only plays once per session, not on every re-render/navigation.
-
-### 5. Reduce redundant re-renders in BalanceCard
-**File**: `src/components/BalanceCard.tsx`
-- Wrap with `React.memo` to prevent re-renders from parent state changes (20+ state variables in Index).
-
-### 6. Memoize mainContent in Index
-**File**: `src/pages/Index.tsx`
-- The `mainContent()` function is defined inline and recreated every render. Extract tab content into memoized components or use `useMemo` keyed on `activeTab` + `refreshKey`.
-
-### 7. Reduce network waterfall
-**File**: `src/pages/Index.tsx`
-- The home tab loads AppHeader, PlatformBanner, FestivalOverlay, BalanceCard, QuickActions, PromoSlider, TransactionList — each triggering independent DB queries. Batch the critical ones (balance + transactions + profile) into a single RPC or parallel Promise.all.
-
-## Summary of Changes
-- **7 files modified**: use-auth.ts, use-transactions.ts, balanceStore.ts, QuickActions.tsx, Index.tsx, FestivalBodyEffect.tsx, BalanceCard.tsx
-- **Expected impact**: ~50% fewer network requests on load, significantly reduced JS parse/execute time from lazy @dnd-kit, smoother tab switching, single-session fireworks
+Single file change: `src/components/MobileRechargeFlow.tsx`
 
