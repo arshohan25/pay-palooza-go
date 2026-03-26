@@ -1,28 +1,30 @@
 
 
-# Skip Auth Page for Returning Logged-in Users
+# Fix: Restore Logo on Splash Screen
 
 ## Problem
-After a successful login, revisiting the app shows the splash screen (every new browser session) and potentially flashes the auth page before the Supabase session resolves. The user wants to go straight to the home dashboard if already authenticated.
+The splash screen shows "EP" text instead of the actual EasyPay logo. The `src/assets/easypay-logo.webp` file is imported as an ES module, but appears to hit a Vite bundling/caching issue causing the wrong content to render. The `public/icons/easypay-logo.webp` file contains the correct logo.
 
 ## Solution
-Reorder the checks in `Index.tsx` so the **auth loading state is resolved first**, before showing splash/onboarding/auth screens. If the user is already authenticated, skip splash, onboarding, and auth page entirely.
+In `SplashScreen.tsx`, switch from the ES module import (`import logo from "@/assets/easypay-logo.webp"`) to the public URL path (`/icons/easypay-logo.webp`). This bypasses Vite's asset pipeline and serves the file directly. Apply the same fix to any other components showing the same issue (`AuthPage.tsx`, `BiometricAuth.tsx`, `SideNav.tsx`).
 
-## Changes (single file: `src/pages/Index.tsx`)
+## Changes
 
-1. **Move `authLoading` check to the top** — before splash and onboarding checks. Show skeleton while auth resolves.
+**`src/components/SplashScreen.tsx`**
+- Remove `import logo from "@/assets/easypay-logo.webp"`
+- Change `src={logo}` to `src="/icons/easypay-logo.webp"`
 
-2. **Skip splash screen if authenticated** — change the splash condition from `!splashDone` to `!splashDone && !isAuthenticated`. Returning logged-in users go straight to home.
+**`src/pages/AuthPage.tsx`**
+- Remove `import logo from "@/assets/easypay-logo.webp"`
+- Change `src={logo}` to `src="/icons/easypay-logo.webp"`
 
-3. **Skip onboarding if authenticated** — change the onboarding condition to also require `!isAuthenticated` (unless `replayOnboarding` is explicitly set).
+**`src/components/BiometricAuth.tsx`**
+- Remove `import logoImg from "@/assets/easypay-logo.webp"`
+- Change `src={logoImg}` to `src="/icons/easypay-logo.webp"`
 
-The auth page overlay at line 400 (`!isAuthenticated`) remains unchanged as a fallback for unauthenticated users who complete splash/onboarding.
+**`src/components/SideNav.tsx`**
+- Remove `import logo from "@/assets/easypay-logo.webp"`
+- Change `src={logo}` to `src="/icons/easypay-logo.webp"`
 
-## Flow After Fix
-
-```text
-Before:  Splash → Onboarding → Auth loading → Auth page / Home
-After:   Auth loading → (if authenticated) → Home
-                       → (if not authenticated) → Splash → Onboarding → Auth page
-```
+All four files get the same one-line change: swap the bundled import for the direct public path.
 
