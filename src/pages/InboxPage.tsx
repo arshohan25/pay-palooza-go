@@ -5,7 +5,7 @@ import {
   ChevronLeft, Send, MoreVertical, Plus,
   Smile, CheckCheck, Check, Wallet, CheckCircle2, Package,
   Mic, Play, Pause, X, UserPlus, ImagePlus,
-  Download,
+  Download, Loader2,
   Clock, UserCheck, Hourglass, Users, ArrowLeft,
   Shield, UserMinus, Edit3, Info, Lock, Search,
   Pin, PinOff, Copy, Forward, Trash2, MessageSquare,
@@ -542,12 +542,13 @@ const MessageBubble = ({ msg, contactName, onReact, onCopy, onDelete, onForward,
 };
 
 // ── New Contact Sheet ─────────────────────────────────────────────────────────
-interface NewContactSheetProps { onClose: () => void; onCreate: (phone: string) => void; }
+interface NewContactSheetProps { onClose: () => void; onCreate: (phone: string) => Promise<boolean>; }
 
 const NewContactSheet = ({ onClose, onCreate }: NewContactSheetProps) => {
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const validate = () => {
     if (!phone.trim()) { setError("Phone number is required"); return false; }
@@ -555,10 +556,15 @@ const NewContactSheet = ({ onClose, onCreate }: NewContactSheetProps) => {
     setError(""); return true;
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!validate()) return;
-    setSent(true);
-    setTimeout(() => { onCreate(phone.trim()); onClose(); }, 1800);
+    setIsLoading(true);
+    const success = await onCreate(phone.trim());
+    setIsLoading(false);
+    if (success) {
+      setSent(true);
+      setTimeout(() => { onClose(); }, 1800);
+    }
   };
 
   return (
@@ -608,9 +614,9 @@ const NewContactSheet = ({ onClose, onCreate }: NewContactSheetProps) => {
               {error && <p className="text-[11px] text-destructive mt-1">{error}</p>}
               <p className="text-[11px] text-muted-foreground mt-2">Enter the phone number of the person you want to chat with</p>
             </div>
-            <motion.button whileTap={{ scale: 0.97 }} onClick={handleSend}
-              className="w-full h-13 gradient-primary text-primary-foreground font-bold rounded-2xl shadow-glow flex items-center justify-center gap-2 py-4">
-              <UserPlus size={18} /> Start Conversation
+            <motion.button whileTap={{ scale: 0.97 }} onClick={handleSend} disabled={isLoading}
+              className="w-full h-13 gradient-primary text-primary-foreground font-bold rounded-2xl shadow-glow flex items-center justify-center gap-2 py-4 disabled:opacity-60">
+              {isLoading ? <><Loader2 size={18} className="animate-spin" /> Finding user...</> : <><UserPlus size={18} /> Start Conversation</>}
             </motion.button>
           </>
         )}
@@ -1287,16 +1293,18 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
     toast.success(next.includes(id) ? "Conversation pinned" : "Conversation unpinned");
   }, []);
 
-  const handleCreateContact = async (phone: string) => {
-    if (!user) return;
+  const handleCreateContact = async (phone: string): Promise<boolean> => {
+    if (!user) return false;
     const found = await chat.findUserByPhone(phone);
-    if (!found) { toast.error("User not found", { description: "No account with this phone number" }); return; }
-    if (found.user_id === user.id) { toast.error("That's your own number!"); return; }
+    if (!found) { toast.error("User not found", { description: "No account with this phone number" }); return false; }
+    if (found.user_id === user.id) { toast.error("That's your own number!"); return false; }
     const convId = await chat.createDirectConversation(found.user_id);
     if (convId) {
       toast.success("Conversation started!", { description: `You can now chat with ${found.name || phone}` });
       setActiveContactId(convId); chat.openConversation(convId);
+      return true;
     }
+    return false;
   };
 
   const handleCreateGroup = async (name: string, icon: string, memberConvIds: string[]) => {
