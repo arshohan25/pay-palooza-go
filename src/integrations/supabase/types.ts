@@ -4720,6 +4720,10 @@ export type Database = {
         Args: { p_order_id: string; p_reason?: string }
         Returns: Json
       }
+      check_merchant_apply_access: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
       check_referral_milestones: {
         Args: { p_referee_id: string }
         Returns: undefined
