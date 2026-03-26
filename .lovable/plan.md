@@ -1,25 +1,59 @@
 
 
-# Fix: Chat "Add by Phone" Does Nothing
+# Performance Optimization Plan
 
-## Problem
-When a user enters a phone number in the "Add by Phone" sheet and taps "Start Conversation," the sheet shows a premature "Conversation Started!" animation and closes — but no chat actually opens. Two bugs:
+## Identified Issues
 
-1. **Premature success**: The sheet shows success UI (`setSent(true)`) before the backend verifies whether the user exists. After 1.8 seconds it fires the async `onCreate` callback and immediately calls `onClose()`, never awaiting the result.
-2. **No error feedback**: If `findUserByPhone` returns null (user not found), the error toast fires after the sheet is already gone, and the success animation already played — so the user sees "Conversation Started!" but nothing actually happens.
+1. **Excessive `auth/v1/user` calls**: Network logs show 6+ duplicate auth user requests on a single page load. Every hook independently calls `supabase.auth.getSession()`, causing redundant network requests.
 
-## Fix
+2. **Heavy animation library on critical path**: `framer-motion` is imported eagerly in Index.tsx, BalanceCard, QuickActions, TransactionList. AnimatePresence wraps tab transitions causing unnecessary re-renders.
 
-### File: `src/pages/InboxPage.tsx`
+3. **QuickActions imports @dnd-kit eagerly** (618 lines): Drag-and-drop library loads on every home page visit even when user isn't reordering.
 
-**`NewContactSheet` component (lines ~545-619)**
-- Change `onCreate` prop type from `(phone: string) => void` to `(phone: string) => Promise<boolean>` so the sheet can await the result.
-- On "Start Conversation" click: show a loading spinner, call `await onCreate(phone)`, then either show the success animation (if true) or show an error inline (if false). Only call `onClose()` after a successful result + brief delay.
+4. **FestivalBodyEffect canvas animation**: Runs a full canvas animation with rockets/sparks on every page load when a festival theme is active, consuming CPU.
 
-**`handleCreateContact` function (lines ~1290-1300)**
-- Change return type to `Promise<boolean>` — return `true` on success, `false` on failure.
-- Keep existing logic (findUserByPhone, createDirectConversation, toast messages).
+5. **Multiple realtime channels opened simultaneously**: account-lock, balance-realtime, txn-realtime all set up independently with separate auth checks.
 
-### Summary
-Two changes in one file. The sheet now awaits the API result before showing success/failure, and closes only after a confirmed conversation is created.
+6. **Embla carousel in PromoSlider**: Loaded eagerly with auto-play interval.
+
+7. **TransactionList re-fetches on every `refreshKey` change** plus realtime — double-fetching pattern.
+
+## Optimization Plan
+
+### 1. Deduplicate auth calls with cached session
+**File**: `src/hooks/use-auth.ts`
+- Cache the session/user in a module-level variable so other hooks can import `getCachedUser()` synchronously instead of calling `supabase.auth.getSession()` repeatedly.
+- Export a `getCachedSession()` helper.
+
+**Files**: `src/hooks/use-transactions.ts`, `src/lib/balanceStore.ts`
+- Replace `supabase.auth.getSession()` calls with `getCachedSession()` from use-auth.
+
+### 2. Lazy-load @dnd-kit in QuickActions
+**File**: `src/components/QuickActions.tsx`
+- Split the DnD reorder mode into a separate lazy-loaded component. The default grid renders without importing @dnd-kit at all.
+- Only import DndContext/SortableContext when user enters edit mode.
+
+### 3. Simplify tab transitions
+**File**: `src/pages/Index.tsx`
+- Remove the `AnimatePresence mode="wait"` wrapper around `mainContent()` (lines 351-362). Use a simple CSS transition or no animation. This eliminates expensive exit/enter animations on every tab switch.
+
+### 4. Throttle FestivalBodyEffect
+**File**: `src/components/FestivalBodyEffect.tsx`
+- Add a `sessionStorage` flag so the fireworks animation only plays once per session, not on every re-render/navigation.
+
+### 5. Reduce redundant re-renders in BalanceCard
+**File**: `src/components/BalanceCard.tsx`
+- Wrap with `React.memo` to prevent re-renders from parent state changes (20+ state variables in Index).
+
+### 6. Memoize mainContent in Index
+**File**: `src/pages/Index.tsx`
+- The `mainContent()` function is defined inline and recreated every render. Extract tab content into memoized components or use `useMemo` keyed on `activeTab` + `refreshKey`.
+
+### 7. Reduce network waterfall
+**File**: `src/pages/Index.tsx`
+- The home tab loads AppHeader, PlatformBanner, FestivalOverlay, BalanceCard, QuickActions, PromoSlider, TransactionList — each triggering independent DB queries. Batch the critical ones (balance + transactions + profile) into a single RPC or parallel Promise.all.
+
+## Summary of Changes
+- **7 files modified**: use-auth.ts, use-transactions.ts, balanceStore.ts, QuickActions.tsx, Index.tsx, FestivalBodyEffect.tsx, BalanceCard.tsx
+- **Expected impact**: ~50% fewer network requests on load, significantly reduced JS parse/execute time from lazy @dnd-kit, smoother tab switching, single-session fireworks
 
