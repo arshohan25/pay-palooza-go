@@ -8,7 +8,10 @@ const translations = {
   logout: { en: "Logout", bn: "লগআউট" },
 
   // BalanceCard
-  welcomeBack: { en: "Welcome back 👋", bn: "স্বাগতম 👋" },
+  welcomeBack: { en: "Welcome back", bn: "স্বাগতম" },
+  goodMorning: { en: "Good Morning", bn: "সুপ্রভাত" },
+  goodAfternoon: { en: "Good Afternoon", bn: "শুভ অপরাহ্ন" },
+  goodEvening: { en: "Good Evening", bn: "শুভ সন্ধ্যা" },
   availableBalance: { en: "Available Balance", bn: "উপলব্ধ ব্যালেন্স" },
   tapToSeeBalance: { en: "Tap to see balance", bn: "ব্যালেন্স দেখতে ট্যাপ করুন" },
   addMoney: { en: "Add Money", bn: "টাকা যোগ" },
