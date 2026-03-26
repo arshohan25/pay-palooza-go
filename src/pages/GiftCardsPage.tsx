@@ -170,7 +170,7 @@ const GiftCardsPage = () => {
                           <span className="text-[10px] font-bold tracking-[0.2em] uppercase opacity-80">GIFT CARD</span>
                           <Badge variant={card.status === "active" ? "default" : "secondary"} className="text-[9px] h-4 px-1.5">{card.status}</Badge>
                         </div>
-                        <img src="/icons/easypay-logo.png" alt="EasyPay" className="h-6 object-contain brightness-0 invert" />
+                        <img src="/icons/easypay-logo.webp" alt="EasyPay" className="h-6 object-contain brightness-0 invert" />
                       </div>
 
                       {/* Chip */}
