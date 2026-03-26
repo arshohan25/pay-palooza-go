@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { signUpWithPhonePassword } from "@/lib/auth";
+
 
 const SuperDistributorCreateDistributor = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -52,47 +52,29 @@ const SuperDistributorCreateDistributor = () => {
     }
     setProcessing(true);
     try {
-      // 1. Normalize and validate phone
-      const cleaned = phone.replace(/\D/g, "").replace(/^(\+?88)/, "");
-      if (!/^01[3-9]\d{8}$/.test(cleaned)) {
-        toast({ title: "Invalid phone", description: "Enter a valid 11-digit Bangladeshi number", variant: "destructive" });
-        setProcessing(false);
-        return;
-      }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Not authenticated");
 
-      // Check if phone already registered
-      const { data: existing } = await supabase.from("profiles").select("id").eq("phone", cleaned).maybeSingle();
-      if (existing) { toast({ title: "Already Registered", description: "This number already has an account.", variant: "destructive" }); setProcessing(false); return; }
+      const parsedTerritories = territory.split(",").map(t => t.trim()).filter(Boolean);
 
-      // 2. Create auth account for distributor
-      const randomPin = String(Math.floor(1000 + Math.random() * 9000));
-      const { data: signUpData } = await signUpWithPhonePassword(cleaned, `${randomPin}EP`, {
-        display_name: name || businessName || cleaned,
-        name: name || null,
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-agent-or-distributor`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          type: "distributor",
+          phone,
+          name: name || null,
+          business_name: businessName,
+          max_float: Number(maxFloat) || 10000000,
+          commission_rate: (Number(commissionRate) || 0.20) / 100,
+          territories: parsedTerritories.length > 0 ? parsedTerritories : null,
+        }),
       });
-      const newUserId = signUpData.user?.id;
-      if (!newUserId) throw new Error("Failed to create account");
-
-      // 3. Assign distributor role
-      const { error: roleError } = await supabase.from("user_roles").insert({ user_id: newUserId, role: "distributor" as any });
-      if (roleError) throw roleError;
-
-      // 4. Get parent_id (current user's distributor entry, if any, or null for SD)
-      const territories = territory.split(",").map(t => t.trim()).filter(Boolean);
-
-      // 5. Create distributor record
-      const { error: distError } = await supabase.from("distributors").insert({
-        user_id: newUserId,
-        business_name: businessName,
-        max_float: Number(maxFloat) || 10000000,
-        commission_rate: (Number(commissionRate) || 0.20) / 100,
-        territory: territories.length > 0 ? territories : null,
-        status: "active" as any,
-      });
-      if (distError) throw distError;
-
-      // 6. Update profile name
-      await supabase.from("profiles").update({ name: name || null, phone: cleaned }).eq("user_id", newUserId);
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Failed to create distributor");
 
       setSuccess(true);
       toast({ title: "Distributor Created", description: `${businessName} account created successfully` });
