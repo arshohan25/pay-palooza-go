@@ -1,13 +1,14 @@
 
 
-# Reduce Promo Banner Height
+# Remove Disappearing Messages Timer from Support Chat
 
 ## Change
-In `src/components/PromoSlider.tsx`, reduce the banner height from `h-[140px]` to `h-[120px]` (20px reduction). Also reduce padding from `p-5` to `p-4` to keep content proportional.
+Remove the disappearing messages dropdown menu (timer icon + popover with Off/30s/5m/1h/24h options) from the support chat header bar.
 
-**File:** `src/components/PromoSlider.tsx` — line 121:
-- `h-[140px]` → `h-[120px]`
-- `p-5` → `p-4`
+**File:** `src/components/SupportChat.tsx`
+- Delete lines 327-350 (the `{/* Disappearing message timer */}` block containing the `DropdownMenu`)
+- Remove the `DISAPPEAR_OPTIONS` constant and `disappearTimer` state if they become unused
+- Remove unused imports (`Timer`, `DropdownMenu`, `DropdownMenuTrigger`, `DropdownMenuContent`, `DropdownMenuItem`, `Check`) if no longer referenced elsewhere in the file
 
-One line change, one file.
+Single file change.
 
