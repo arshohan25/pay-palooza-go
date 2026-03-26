@@ -1,0 +1,1 @@
+DROP POLICY "Authenticated can read active merchants" ON public.merchants;
