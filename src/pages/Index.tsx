@@ -7,6 +7,8 @@ import { fetchBalance } from "@/lib/balanceStore";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useProfile } from "@/hooks/use-profile";
+import { useI18n } from "@/lib/i18n";
 import BottomNav from "@/components/BottomNav";
 
 import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
