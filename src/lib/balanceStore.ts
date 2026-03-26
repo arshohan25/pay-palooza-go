@@ -5,6 +5,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { getCachedSession } from "@/hooks/use-auth";
 
 const CACHE_KEY = "mfs_cached_balance";
 const cached = parseFloat(localStorage.getItem(CACHE_KEY) || "0");
@@ -27,7 +28,7 @@ let currentUserId: string | null = null;
 export async function fetchBalance(userId?: string): Promise<number> {
   const uid = userId ?? currentUserId;
   if (!uid) {
-    const { data: { session } } = await supabase.auth.getSession();
+    const session = await getCachedSession();
     if (!session?.user) return balance;
     currentUserId = session.user.id;
     return fetchBalance(session.user.id);

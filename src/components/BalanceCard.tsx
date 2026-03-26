@@ -1,5 +1,5 @@
 import { Eye, EyeOff, Copy, CheckCheck, QrCode, Share2 } from "lucide-react";
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
 import UserQrModal from "@/components/UserQrModal";
 import WalletShareSheet from "@/components/WalletShareSheet";
@@ -22,7 +22,7 @@ interface BalanceCardProps {
   onAddMoney?: () => void;
 }
 
-const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
+const BalanceCard = React.memo(({ onAddMoney }: BalanceCardProps) => {
   const { t } = useI18n();
   const { displayName: userName, phone: profilePhone } = useProfile();
   const [showBalance, setShowBalance] = useState(false);
@@ -252,6 +252,8 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
       />
     </>
   );
-};
+});
+
+BalanceCard.displayName = "BalanceCard";
 
 export default BalanceCard;

@@ -43,6 +43,11 @@ export default function FestivalBodyEffect() {
   useEffect(() => {
     if (!isActive || !theme || theme.overlay_effect === "none") return;
 
+    // Only play once per session
+    const sessionKey = `festival_effect_played_${theme.id}`;
+    if (sessionStorage.getItem(sessionKey)) return;
+    sessionStorage.setItem(sessionKey, "1");
+
     setShow(true);
 
     const canvas = document.createElement("canvas");
