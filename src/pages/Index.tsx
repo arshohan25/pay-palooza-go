@@ -245,6 +245,15 @@ const Index = () => {
             )}
           </AnimatePresence>
 
+          {/* Greeting */}
+          <div className="mb-2">
+            <div className="flex items-center gap-1.5">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t("welcomeBack")}</p>
+              <span className="text-sm">👋</span>
+            </div>
+            <p className="text-[17px] font-bold text-foreground -mt-0.5">{displayName}</p>
+          </div>
+
           <BalanceCard onAddMoney={() => setShowAddMoney(true)} />
 
               {/* KYC prompt banner */}
