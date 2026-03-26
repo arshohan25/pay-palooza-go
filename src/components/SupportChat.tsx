@@ -10,15 +10,7 @@ import {
   getOrCreateConversationKey,
   startScreenshotDetection,
   isMessageExpired,
-  getExpiryTimestamp,
-  DISAPPEAR_OPTIONS,
 } from "@/lib/chatCrypto";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
 interface Message {
@@ -46,7 +38,7 @@ const SupportChat = ({ userId, conversationId: externalConvId }: SupportChatProp
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [remoteTyping, setRemoteTyping] = useState(false);
-  const [disappearTimer, setDisappearTimer] = useState(0);
+  
   const [screenshotAlert, setScreenshotAlert] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -275,7 +267,7 @@ const SupportChat = ({ userId, conversationId: externalConvId }: SupportChatProp
       read_at: null,
       is_deleted: false,
       is_encrypted: isEncrypted,
-      expires_at: disappearTimer > 0 ? getExpiryTimestamp(disappearTimer) : null,
+      expires_at: null,
     };
     setMessages(prev => [...prev, optimisticMsg]);
     setDecryptedCache(prev => ({ ...prev, [optimisticMsg.id]: text }));
@@ -288,10 +280,6 @@ const SupportChat = ({ userId, conversationId: externalConvId }: SupportChatProp
       content: encryptedContent,
       is_encrypted: isEncrypted,
     };
-    if (disappearTimer > 0) {
-      insertData.expires_at = getExpiryTimestamp(disappearTimer);
-    }
-
     const { error } = await supabase.from("support_messages").insert(insertData);
 
     if (error) {
@@ -324,30 +312,6 @@ const SupportChat = ({ userId, conversationId: externalConvId }: SupportChatProp
             {screenshotAlert ? "⚠️ Screenshot detected!" : "End-to-end encrypted • AES-256-GCM"}
           </span>
         </div>
-        {/* Disappearing message timer */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-6 w-6">
-              <Timer size={12} className={disappearTimer > 0 ? "text-primary" : "text-muted-foreground"} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-[120px]">
-            {DISAPPEAR_OPTIONS.map(opt => (
-              <DropdownMenuItem
-                key={opt.value}
-                onClick={() => {
-                  setDisappearTimer(opt.value);
-                  toast.info(opt.value === 0 ? "Disappearing messages off" : `Messages disappear after ${opt.label}`);
-                }}
-                className={`text-xs ${disappearTimer === opt.value ? "bg-primary/10 font-semibold" : ""}`}
-              >
-                <Timer size={12} className="mr-2" />
-                {opt.label}
-                {disappearTimer === opt.value && <Check size={12} className="ml-auto" />}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
 
       {/* Messages area */}
@@ -451,14 +415,6 @@ const SupportChat = ({ userId, conversationId: externalConvId }: SupportChatProp
 
       {/* Input area */}
       <div className="flex gap-2 pt-3 border-t border-border/50">
-        {disappearTimer > 0 && (
-          <div className="flex items-center gap-1 px-2 py-1 bg-primary/10 rounded-lg shrink-0">
-            <Timer size={10} className="text-primary" />
-            <span className="text-[9px] text-primary font-medium">
-              {DISAPPEAR_OPTIONS.find(o => o.value === disappearTimer)?.label}
-            </span>
-          </div>
-        )}
         <Input
           ref={inputRef}
           value={input}
