@@ -1,19 +1,29 @@
 
 
-# Remove Blank Space in Promo Slider
+# Minor Fix: forwardRef Warning on PinCircles
 
-## Problem
-The promo banner has visible blank space at the bottom of the card area, and the dot indicators sit below with extra gap, creating unnecessary vertical whitespace (highlighted in red in the screenshot).
+## Current State
+The app is working correctly after all recent changes. The only issue is a **React warning** in the console:
 
-## Solution
-1. **Overlay the dot indicators on the banner** — position them absolutely at the bottom of the banner card instead of below it, eliminating the `space-y-2` gap.
-2. **Remove outer `space-y-2`** — the wrapper div currently adds 8px between the carousel and dots; with overlay dots this is unnecessary.
+> "Function components cannot be given refs. Check the render method of AuthPage."
 
-## Changes
+This happens because `PinCircles` is a plain function component used inside `AnimatePresence`, and Framer Motion tries to attach a ref to it.
 
-**`src/components/PromoSlider.tsx`**
+## Fix
+Wrap `PinCircles` with `React.forwardRef` in `src/pages/AuthPage.tsx` so the ref passes through cleanly and the warning disappears.
 
-- Change the wrapper from `<div className="space-y-2">` to `<div className="relative">`.
-- Move the dot indicators inside the Embla viewport wrapper and position them with `absolute bottom-2 left-0 right-0` so they float over the bottom of the banner.
-- Add a slight semi-transparent backdrop behind dots for readability on media banners.
+## Change
+
+**`src/pages/AuthPage.tsx`** — Convert PinCircles from:
+```tsx
+function PinCircles({ pin, error, length, dark }) { ... }
+```
+to:
+```tsx
+const PinCircles = forwardRef<HTMLDivElement, Props>(({ pin, error, length, dark }, ref) => {
+  return <div ref={ref} ...>...</div>;
+});
+```
+
+This is a single-component, single-file change with zero risk.
 
