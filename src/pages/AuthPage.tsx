@@ -11,7 +11,7 @@ import { signUp, signIn, phoneToEmail, isPhoneRegistered } from "@/lib/auth";
 import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
 import { isWeakPin } from "@/lib/pinValidation";
 import { supabase } from "@/integrations/supabase/client";
-import logo from "@/assets/easypay-logo.webp";
+const logo = "/icons/easypay-logo.webp";
 import KycFlow from "@/components/KycFlow";
 
 // ─── Storage keys (only for UX preferences, NOT auth) ─────────────────────────

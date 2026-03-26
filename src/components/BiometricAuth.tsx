@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Fingerprint, KeyRound, AlertCircle, CheckCircle2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signIn } from "@/lib/auth";
-import logoImg from "@/assets/easypay-logo.webp";
+const logoImg = "/icons/easypay-logo.webp";
 
 const SESSION_KEY = "mfs_authenticated";
 const getPhone = () => localStorage.getItem("mfs_device_phone") ?? "";
