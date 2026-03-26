@@ -1,29 +1,21 @@
 
 
-# Minor Fix: forwardRef Warning on PinCircles
+# Review: Items to Update
 
-## Current State
-The app is working correctly after all recent changes. The only issue is a **React warning** in the console:
+After checking console logs, session replay, and codebase, here's what needs attention:
 
-> "Function components cannot be given refs. Check the render method of AuthPage."
+## 1. Fix: `BgOrbs` forwardRef Warning (Console Warning)
+The `BgOrbs` component in `AuthPage.tsx` still triggers "Function components cannot be given refs" — same issue we fixed for `PinCircles`. Needs the same `forwardRef` treatment.
 
-This happens because `PinCircles` is a plain function component used inside `AnimatePresence`, and Framer Motion tries to attach a ref to it.
+**File:** `src/pages/AuthPage.tsx` — wrap `BgOrbs` with `forwardRef`.
 
-## Fix
-Wrap `PinCircles` with `React.forwardRef` in `src/pages/AuthPage.tsx` so the ref passes through cleanly and the warning disappears.
+## 2. Apply: Border Radius Reduction (Pending from Last Approved Plan)
+The approved plan to change `rounded-3xl` → `rounded-[19px]` on the three main cards was not applied due to the lock file edit. Still needs implementation:
 
-## Change
+- `src/components/BalanceCard.tsx` — line 96: `rounded-3xl` → `rounded-[19px]`
+- `src/components/QuickActions.tsx` — line 437: `rounded-3xl` → `rounded-[19px]`
+- `src/components/PromoCard.tsx` — line 12: `rounded-3xl` → `rounded-[19px]`
 
-**`src/pages/AuthPage.tsx`** — Convert PinCircles from:
-```tsx
-function PinCircles({ pin, error, length, dark }) { ... }
-```
-to:
-```tsx
-const PinCircles = forwardRef<HTMLDivElement, Props>(({ pin, error, length, dark }, ref) => {
-  return <div ref={ref} ...>...</div>;
-});
-```
-
-This is a single-component, single-file change with zero risk.
+## Summary
+Two items, four files total. Both are small, safe changes.
 
