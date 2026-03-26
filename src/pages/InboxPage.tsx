@@ -5,7 +5,7 @@ import {
   ChevronLeft, Send, MoreVertical, Plus,
   Smile, CheckCheck, Check, Wallet, CheckCircle2, Package,
   Mic, Play, Pause, X, UserPlus, ImagePlus,
-  Download,
+  Download, Loader2,
   Clock, UserCheck, Hourglass, Users, ArrowLeft,
   Shield, UserMinus, Edit3, Info, Lock, Search,
   Pin, PinOff, Copy, Forward, Trash2, MessageSquare,
