@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { signUpWithPhonePassword } from "@/lib/auth";
+import { signUpWithPhonePassword } from "@/lib/auth";
 import { motion } from "framer-motion";
 import { ArrowLeft, UserPlus, Home, Building2, MapPin, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,49 +34,28 @@ const DistributorCreateAgent = () => {
     if (processing || !user) return;
     setProcessing(true);
     try {
-      // 1. Get distributor record
-      const { data: distData } = await supabase
-        .from("distributors")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-      if (!distData) throw new Error("Distributor record not found");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Not authenticated");
 
-      // 2. Create auth account for agent
-      const cleanedPhone = phone.replace(/\D/g, "").replace(/^(\+?88)/, "");
-      const randomPin = String(Math.floor(1000 + Math.random() * 9000));
-      const { data: signUpData } = await signUpWithPhonePassword(cleanedPhone, `${randomPin}EP`, {
-        display_name: name || businessName || cleanedPhone,
-        name: name || businessName || null,
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-agent-or-distributor`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          type: "agent",
+          phone,
+          name: name || null,
+          business_name: businessName || name || phone,
+          nid_number: nid || null,
+          territory_code: territory || null,
+          trade_license: tradeLicense || null,
+          max_float: Number(maxFloat) || 500000,
+        }),
       });
-      const newUserId = signUpData.user?.id;
-      if (!newUserId) throw new Error("Failed to create user account");
-
-      // 3. Assign agent role
-      const { error: roleError } = await supabase.from("user_roles").insert({
-        user_id: newUserId,
-        role: "agent" as any,
-      });
-      if (roleError) throw roleError;
-
-      // 4. Create agent record linked to this distributor
-      const { error: agentError } = await supabase.from("agents").insert({
-        user_id: newUserId,
-        distributor_id: distData.id,
-        business_name: businessName || name || phone,
-        nid_number: nid || null,
-        territory_code: territory || null,
-        trade_license: tradeLicense || null,
-        max_float: Number(maxFloat) || 500000,
-        status: "active" as any,
-      });
-      if (agentError) throw agentError;
-
-      // 5. Update profile with name + normalized phone
-      await supabase
-        .from("profiles")
-        .update({ name: name || null, phone: cleanedPhone })
-        .eq("user_id", newUserId);
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Failed to create agent");
 
       setDone(true);
       toast({ title: "Agent Created", description: `${businessName || name || phone} has been registered as an agent` });
