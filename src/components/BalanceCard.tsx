@@ -11,6 +11,13 @@ import { useProfile } from "@/hooks/use-profile";
 
 const REGISTERED_KEY = "mfs_registered_phone";
 
+function getGreetingKey(): string {
+  const h = new Date().getHours();
+  if (h < 12) return "goodMorning";
+  if (h < 17) return "goodAfternoon";
+  return "goodEvening";
+}
+
 interface BalanceCardProps {
   onAddMoney?: () => void;
 }
