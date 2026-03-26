@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import FeatureGuard from "@/components/FeatureGuard";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFundRequests } from "@/hooks/use-fund-requests";
@@ -552,4 +553,10 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   );
 };
 
-export default AddMoneyFlow;
+const AddMoneyFlowGuarded = (props: AddMoneyFlowProps) => (
+  <FeatureGuard featureKey="add_money" onClose={props.onClose}>
+    <AddMoneyFlow {...props} />
+  </FeatureGuard>
+);
+
+export default AddMoneyFlowGuarded;

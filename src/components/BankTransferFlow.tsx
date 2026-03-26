@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import FeatureGuard from "@/components/FeatureGuard";
 import { haptics } from "@/lib/haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFundRequests } from "@/hooks/use-fund-requests";
@@ -462,4 +463,10 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
   );
 };
 
-export default BankTransferFlow;
+const BankTransferFlowGuarded = (props: BankTransferFlowProps) => (
+  <FeatureGuard featureKey="bank_transfer" onClose={props.onClose}>
+    <BankTransferFlow {...props} />
+  </FeatureGuard>
+);
+
+export default BankTransferFlowGuarded;
