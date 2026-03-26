@@ -1,29 +1,15 @@
 
 
-# Minor Fix: forwardRef Warning on PinCircles
+# Reduce Border Radius on Main Cards by 5px
 
-## Current State
-The app is working correctly after all recent changes. The only issue is a **React warning** in the console:
+## Problem
+The main home page cards (Balance Card, Quick Actions, Promo Card) currently use `rounded-3xl` (24px border radius). The user wants to reduce this by 5px to ~19px.
 
-> "Function components cannot be given refs. Check the render method of AuthPage."
+## Changes
 
-This happens because `PinCircles` is a plain function component used inside `AnimatePresence`, and Framer Motion tries to attach a ref to it.
+1. **`src/components/BalanceCard.tsx`** (line 96) — Change `rounded-3xl` to `rounded-[19px]`
+2. **`src/components/QuickActions.tsx`** (line 437) — Change `rounded-3xl` to `rounded-[19px]`
+3. **`src/components/PromoCard.tsx`** (line 12) — Change `rounded-3xl` to `rounded-[19px]`
 
-## Fix
-Wrap `PinCircles` with `React.forwardRef` in `src/pages/AuthPage.tsx` so the ref passes through cleanly and the warning disappears.
-
-## Change
-
-**`src/pages/AuthPage.tsx`** — Convert PinCircles from:
-```tsx
-function PinCircles({ pin, error, length, dark }) { ... }
-```
-to:
-```tsx
-const PinCircles = forwardRef<HTMLDivElement, Props>(({ pin, error, length, dark }, ref) => {
-  return <div ref={ref} ...>...</div>;
-});
-```
-
-This is a single-component, single-file change with zero risk.
+Three single-line class name changes across three files.
 
