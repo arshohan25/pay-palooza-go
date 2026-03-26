@@ -1,14 +1,28 @@
 
 
-# Remove Disappearing Messages Timer from Support Chat
+# Move Greeting Outside Balance Card
 
-## Change
-Remove the disappearing messages dropdown menu (timer icon + popover with Off/30s/5m/1h/24h options) from the support chat header bar.
+## Problem
+The "WELCOME BACK" greeting and user name currently sit inside the top of the balance card. The user wants this greeting moved above the card as a standalone element (between the header and the balance card).
 
-**File:** `src/components/SupportChat.tsx`
-- Delete lines 327-350 (the `{/* Disappearing message timer */}` block containing the `DropdownMenu`)
-- Remove the `DISAPPEAR_OPTIONS` constant and `disappearTimer` state if they become unused
-- Remove unused imports (`Timer`, `DropdownMenu`, `DropdownMenuTrigger`, `DropdownMenuContent`, `DropdownMenuItem`, `Check`) if no longer referenced elsewhere in the file
+## Changes
 
-Single file change.
+**`src/pages/Index.tsx`**
+- Add a greeting row between `<FestivalOverlay />` and `<BalanceCard />` (around line 248):
+  ```
+  <div className="flex items-center gap-1.5">
+    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+      {t("welcomeBack")}
+    </p>
+    <span className="text-sm">👋</span>
+  </div>
+  <p className="text-[17px] font-bold text-foreground -mt-3">{displayName}</p>
+  ```
+- Import `useProfile` and `useI18n` to get `displayName` and `t`.
+
+**`src/components/BalanceCard.tsx`**
+- Remove the greeting block (lines 106-110): the "WELCOME BACK" text and `userName` display.
+- Adjust the top row so only the QR + Copy buttons remain on the right, and the left side starts with the balance section or is removed.
+
+Two files changed. The greeting moves from inside the card to a standalone position above it.
 
