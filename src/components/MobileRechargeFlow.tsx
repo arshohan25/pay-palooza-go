@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { toast } from "sonner";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
 import { requestLocation } from "@/lib/permissions";
@@ -429,8 +430,13 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
     }
     setApiStatus(null);
 
+    if (!apiProcessed) {
+      toast.error("Recharge service unavailable. Please try again later.");
+      setProcessing(false);
+      return;
+    }
+
     const packDesc = selectedPack ? selectedPack.name : `Recharge ৳${effectivePrice}`;
-    const modeTag = apiProcessed ? " [API]" : " [LOCAL]";
 
     await recordTransaction({
       type: "recharge",
@@ -439,11 +445,11 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
       recipientPhone: phone,
       recipientName: detectedOp?.name,
       reference: txnId.current,
-      description: packDesc + modeTag,
+      description: packDesc + " [API]",
     });
 
     showTxnToast({
-      type: apiProcessed ? "Live Recharge" : "Mobile Recharge",
+      type: "Live Recharge",
       amount: `৳${effectivePrice.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
       gradient: "gradient-accent",
     });
