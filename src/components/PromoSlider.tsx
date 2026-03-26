@@ -106,7 +106,7 @@ export default function PromoSlider({ onFeatureOpen }: PromoSliderProps) {
   if (visibleBanners.length === 0) return null;
 
   return (
-    <div className="space-y-2">
+    <div className="relative">
       <div ref={emblaRef} className="overflow-hidden rounded-2xl">
         <div className="flex">
           {visibleBanners.map((b) => {
