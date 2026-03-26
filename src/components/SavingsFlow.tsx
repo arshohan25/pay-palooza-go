@@ -619,4 +619,10 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   );
 };
 
-export default SavingsFlow;
+const SavingsFlowGuarded = (props: SavingsFlowProps) => (
+  <FeatureGuard featureKey="savings" onClose={props.onClose}>
+    <SavingsFlow {...props} />
+  </FeatureGuard>
+);
+
+export default SavingsFlowGuarded;

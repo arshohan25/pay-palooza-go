@@ -462,4 +462,10 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
   );
 };
 
-export default BankTransferFlow;
+const BankTransferFlowGuarded = (props: BankTransferFlowProps) => (
+  <FeatureGuard featureKey="bank_transfer" onClose={props.onClose}>
+    <BankTransferFlow {...props} />
+  </FeatureGuard>
+);
+
+export default BankTransferFlowGuarded;

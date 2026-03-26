@@ -552,4 +552,10 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
   );
 };
 
-export default AddMoneyFlow;
+const AddMoneyFlowGuarded = (props: AddMoneyFlowProps) => (
+  <FeatureGuard featureKey="add_money" onClose={props.onClose}>
+    <AddMoneyFlow {...props} />
+  </FeatureGuard>
+);
+
+export default AddMoneyFlowGuarded;
