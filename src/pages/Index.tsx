@@ -362,12 +362,42 @@ const Index = () => {
     );
   };
 
-  // Show splash first, then onboarding (once), then auth/home
-  if (!splashDone) {
-    return <Suspense fallback={null}><SplashScreen onDone={() => { sessionStorage.setItem("splashDone", "1"); setSplashDone(true); }} /></Suspense>;
+  // Resolve auth state first — before splash/onboarding
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="w-full max-w-xl mx-auto px-4 py-4 space-y-5">
+          <BalanceCardSkeleton />
+          <QuickActionsSkeleton />
+          <TransactionListSkeleton />
+        </div>
+      </div>
+    );
   }
 
-  if (!onboardingDone || replayOnboarding) {
+  // Authenticated users skip splash & onboarding entirely
+  if (!isAuthenticated) {
+    if (!splashDone) {
+      return <Suspense fallback={null}><SplashScreen onDone={() => { sessionStorage.setItem("splashDone", "1"); setSplashDone(true); }} /></Suspense>;
+    }
+
+    if (!onboardingDone) {
+      return (
+        <Suspense fallback={null}>
+          <AnimatePresence>
+            <OnboardingSlides onDone={() => {
+              setOnboardingDone(true);
+              setReplayOnboarding(false);
+              markOnboardingDone();
+            }} />
+          </AnimatePresence>
+        </Suspense>
+      );
+    }
+  }
+
+  // Allow replay onboarding for authenticated users (from account settings)
+  if (replayOnboarding) {
     return (
       <Suspense fallback={null}>
         <AnimatePresence>
@@ -378,19 +408,6 @@ const Index = () => {
           }} />
         </AnimatePresence>
       </Suspense>
-    );
-  }
-
-  // Show skeleton while checking auth state (meaningful content for Speed Index)
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="w-full max-w-xl mx-auto px-4 py-4 space-y-5">
-          <BalanceCardSkeleton />
-          <QuickActionsSkeleton />
-          <TransactionListSkeleton />
-        </div>
-      </div>
     );
   }
 
