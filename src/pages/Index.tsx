@@ -7,6 +7,8 @@ import { fetchBalance } from "@/lib/balanceStore";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useProfile } from "@/hooks/use-profile";
+import { useI18n } from "@/lib/i18n";
 import BottomNav from "@/components/BottomNav";
 
 import { useUserSessionTimeout } from "@/hooks/use-user-session-timeout";
@@ -57,6 +59,8 @@ const Index = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { isAuthenticated, loading: authLoading, signOut, user } = useAuth();
   const { status: kycStatus, rejectionReason } = useKycStatus();
+  const { displayName } = useProfile();
+  const { t } = useI18n();
   const [showKycFlow, setShowKycFlow] = useState(false);
   const [splashDone, setSplashDone]           = useState(() => sessionStorage.getItem("splashDone") === "1");
   const [onboardingDone, setOnboardingDone]  = useState(() => hasSeenOnboarding());
@@ -244,6 +248,15 @@ const Index = () => {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Greeting */}
+          <div className="mb-2">
+            <div className="flex items-center gap-1.5">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t("welcomeBack")}</p>
+              <span className="text-sm">👋</span>
+            </div>
+            <p className="text-[17px] font-bold text-foreground -mt-0.5">{displayName}</p>
+          </div>
 
           <BalanceCard onAddMoney={() => setShowAddMoney(true)} />
 
