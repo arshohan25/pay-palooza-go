@@ -1,34 +1,28 @@
 
 
-# Fix: Restore `has_role()` to use `_user_id` parameter
+# Skip Auth Page for Returning Logged-in Users
 
 ## Problem
-The `has_role(_user_id, _role)` function ignores its `_user_id` argument and always checks `auth.uid()`. This breaks any internal RPC that needs to verify another user's role (e.g., `release_escrow` checking if the caller is admin via `has_role(v_admin_id, 'admin')`). While current call sites pass `auth.uid()` so behavior happens to be correct today, this is fragile and semantically wrong.
+After a successful login, revisiting the app shows the splash screen (every new browser session) and potentially flashes the auth page before the Supabase session resolves. The user wants to go straight to the home dashboard if already authenticated.
 
-## Fix (single migration)
+## Solution
+Reorder the checks in `Index.tsx` so the **auth loading state is resolved first**, before showing splash/onboarding/auth screens. If the user is already authenticated, skip splash, onboarding, and auth page entirely.
 
-```sql
-CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role app_role)
-RETURNS boolean
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.user_roles
-    WHERE user_id = _user_id AND role = _role
-  );
-$$;
+## Changes (single file: `src/pages/Index.tsx`)
 
-REVOKE EXECUTE ON FUNCTION public.has_role FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.has_role TO authenticated;
+1. **Move `authLoading` check to the top** — before splash and onboarding checks. Show skeleton while auth resolves.
+
+2. **Skip splash screen if authenticated** — change the splash condition from `!splashDone` to `!splashDone && !isAuthenticated`. Returning logged-in users go straight to home.
+
+3. **Skip onboarding if authenticated** — change the onboarding condition to also require `!isAuthenticated` (unless `replayOnboarding` is explicitly set).
+
+The auth page overlay at line 400 (`!isAuthenticated`) remains unchanged as a fallback for unauthenticated users who complete splash/onboarding.
+
+## Flow After Fix
+
+```text
+Before:  Splash → Onboarding → Auth loading → Auth page / Home
+After:   Auth loading → (if authenticated) → Home
+                       → (if not authenticated) → Splash → Onboarding → Auth page
 ```
-
-- Uses `_user_id` parameter as intended
-- `SECURITY DEFINER` bypasses RLS on `user_roles` (preventing recursion)
-- `REVOKE FROM PUBLIC` + `GRANT TO authenticated` prevents anonymous callers from probing roles
-
-## Risk
-Zero — every existing call site already passes `auth.uid()` as `_user_id`, so behavior is identical. The fix simply makes the function correct for future use.
 
