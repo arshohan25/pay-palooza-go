@@ -106,7 +106,7 @@ export default function PromoSlider({ onFeatureOpen }: PromoSliderProps) {
   if (visibleBanners.length === 0) return null;
 
   return (
-    <div className="space-y-2">
+    <div className="relative">
       <div ref={emblaRef} className="overflow-hidden rounded-2xl">
         <div className="flex">
           {visibleBanners.map((b) => {
@@ -183,19 +183,21 @@ export default function PromoSlider({ onFeatureOpen }: PromoSliderProps) {
         </div>
       </div>
 
-      {/* Dot indicators */}
+      {/* Dot indicators overlaid on banner */}
       {visibleBanners.length > 1 && (
-        <div className="flex justify-center gap-1.5">
-          {visibleBanners.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => emblaApi?.scrollTo(i)}
-              className={cn(
-                "h-1.5 rounded-full transition-all duration-300",
-                i === selectedIdx ? "w-5 bg-primary" : "w-1.5 bg-muted-foreground/30"
-              )}
-            />
-          ))}
+        <div className="absolute bottom-2 left-0 right-0 z-20 flex justify-center gap-1.5">
+          <div className="flex gap-1.5 rounded-full bg-black/20 px-2 py-1 backdrop-blur-sm">
+            {visibleBanners.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => emblaApi?.scrollTo(i)}
+                className={cn(
+                  "h-1.5 rounded-full transition-all duration-300",
+                  i === selectedIdx ? "w-5 bg-white" : "w-1.5 bg-white/50"
+                )}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>
