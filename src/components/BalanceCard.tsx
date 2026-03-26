@@ -93,7 +93,7 @@ const BalanceCard = ({ onAddMoney }: BalanceCardProps) => {
         initial={{ opacity: 0, y: 16, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
-        className="relative overflow-hidden rounded-3xl gradient-hero text-primary-foreground shadow-glow-lg"
+        className="relative overflow-hidden rounded-[19px] gradient-hero text-primary-foreground shadow-glow-lg" text-primary-foreground shadow-glow-lg"
       >
         {/* Decorative circles */}
         <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-white/5 pointer-events-none" />

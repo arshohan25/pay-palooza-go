@@ -434,7 +434,7 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   const filteredMoreServices = visibleMoreServices;
 
   return (
-    <div className={`bg-card rounded-3xl shadow-card border border-border/60 ${compactMode ? "p-3" : "p-4 sm:p-5"}`}>
+    <div className={`bg-card rounded-[19px] shadow-card border border-border/60 ${compactMode ? "p-3" : "p-4 sm:p-5"}`}> border border-border/60 ${compactMode ? "p-3" : "p-4 sm:p-5"}`}>
       <AnimatePresence>
         {isDnDEnabled && isCustomOrder && (
           <motion.div
