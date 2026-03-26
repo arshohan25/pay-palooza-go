@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import FeatureGuard from "@/components/FeatureGuard";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Plus, TrendingUp, CheckCircle2, ChevronRight, Trash2, Clock, CalendarClock, Power } from "lucide-react";
 import { toast } from "sonner";
