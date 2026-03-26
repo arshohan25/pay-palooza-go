@@ -118,7 +118,7 @@ const GiftCardsPage = () => {
               {/* Top row */}
               <div className="relative flex items-start justify-between">
                 <span className="text-[10px] font-bold tracking-[0.2em] uppercase opacity-80">GIFT CARD</span>
-                <img src="/icons/easypay-logo.png" alt="EasyPay" className="h-7 object-contain brightness-0 invert" />
+                <img src="/icons/easypay-logo.webp" alt="EasyPay" className="h-7 object-contain brightness-0 invert" />
               </div>
 
               {/* EMV Chip */}
