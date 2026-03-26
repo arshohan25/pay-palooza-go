@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 
@@ -10,25 +10,55 @@ export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const latestSessionRef = useRef<Session | null | undefined>(undefined);
 
   useEffect(() => {
+    let isMounted = true;
+
+    const applyAuthState = (nextSession: Session | null) => {
+      latestSessionRef.current = nextSession;
+      if (!isMounted) return;
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+    };
+
     // Listen for auth changes FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
-        setLoading(false);
+        applyAuthState(newSession);
+        if (isMounted && latestSessionRef.current !== undefined) {
+          setLoading(false);
+        }
       }
     );
 
-    // Then check existing session
-    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
-      setSession(existingSession);
-      setUser(existingSession?.user ?? null);
-      setLoading(false);
-    });
+    // Then check existing session, but never let a stale null overwrite a live session
+    void (async () => {
+      try {
+        const [{ data: { session: existingSession } }, { data: { user: existingUser } }] = await Promise.all([
+          supabase.auth.getSession(),
+          supabase.auth.getUser(),
+        ]);
 
-    return () => subscription.unsubscribe();
+        const resolvedSession = existingSession ?? null;
+        const shouldApplyBootstrapSession =
+          latestSessionRef.current === undefined ||
+          (latestSessionRef.current === null && resolvedSession !== null);
+
+        if (shouldApplyBootstrapSession) {
+          applyAuthState(resolvedSession);
+        } else if (isMounted && latestSessionRef.current) {
+          setUser(existingUser ?? latestSessionRef.current.user ?? null);
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = useCallback(async () => {
