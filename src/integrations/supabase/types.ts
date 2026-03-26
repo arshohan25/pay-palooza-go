@@ -4909,6 +4909,10 @@ export type Database = {
         Args: { p_amount: number; p_goal_id: string; p_source?: string }
         Returns: Json
       }
+      set_kyc_exempt: {
+        Args: { exempt: boolean; target_user_id: string }
+        Returns: undefined
+      }
       submit_addmoney_request: {
         Args: {
           p_amount: number

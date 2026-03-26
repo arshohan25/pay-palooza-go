@@ -2325,10 +2325,10 @@ export default function AdminDashboard() {
                       className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors ${detailData.profile?.kyc_exempt ? "bg-primary" : "bg-input"}`}
                       onClick={async () => {
                         const newVal = !detailData.profile?.kyc_exempt;
-                        const { error } = await supabase
-                          .from("profiles")
-                          .update({ kyc_exempt: newVal } as any)
-                          .eq("user_id", detailUser.user_id);
+                        const { error } = await supabase.rpc("set_kyc_exempt", {
+                          target_user_id: detailUser.user_id,
+                          exempt: newVal,
+                        });
                         if (error) {
                           toast.error("Failed to update KYC exemption");
                           return;
