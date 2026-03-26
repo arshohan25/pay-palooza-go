@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, AlertCircle, Eye, EyeOff, ArrowRight, RefreshCw,
@@ -211,9 +211,9 @@ function OtpBoxes({ value, error }: { value: string; error: boolean }) {
 }
 
 // ─── PIN Dots (redesigned) ────────────────────────────────────────────────────
-function PinCircles({ pin, error, length = 4, dark = false }: { pin: string; error: boolean; length?: number; dark?: boolean }) {
+const PinCircles = forwardRef<HTMLDivElement, { pin: string; error: boolean; length?: number; dark?: boolean }>(({ pin, error, length = 4, dark = false }, ref) => {
   return (
-    <div className="flex justify-center gap-5">
+    <div ref={ref} className="flex justify-center gap-5">
       {Array.from({ length }).map((_, i) => {
         const filled = i < pin.length;
         const isNext = i === pin.length;
@@ -259,7 +259,8 @@ function PinCircles({ pin, error, length = 4, dark = false }: { pin: string; err
       })}
     </div>
   );
-}
+});
+PinCircles.displayName = "PinCircles";
 
 // ─── Hidden PIN Input (native keyboard) ──────────────────────────────────────
 function HiddenPinInput({
