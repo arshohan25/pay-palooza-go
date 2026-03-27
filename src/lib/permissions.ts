@@ -60,7 +60,7 @@ export async function requestContacts(): Promise<PermissionResult> {
   }
 
   try {
-    const contacts = await nav.contacts.select(["name", "tel"], { multiple: false });
+    const contacts = await nav.contacts.select(["name", "tel"], { multiple: true });
     await persistPermission("contacts", "granted");
     return { permission: "contacts", status: "granted", data: contacts };
   } catch (err: any) {
