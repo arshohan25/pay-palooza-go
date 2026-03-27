@@ -193,7 +193,7 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
     haptics.medium();
     if (step === "merchant") { onClose(); return; }
     if (step === "amount")   { goTo("merchant"); return; }
-    if (step === "pin")      { goTo("amount"); return; }
+    if (step === "pin")      { setPin(""); goTo("amount"); return; }
   };
 
   const handleSelectMerchant = (m: Merchant) => {

@@ -300,7 +300,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
       if (selectedPack && !isPhoneDummy) { goTo("number"); return; }
       goTo("number"); return;
     }
-    if (step === "pin")    { goTo("amount"); return; }
+    if (step === "pin")    { setPin(""); goTo("amount"); return; }
   };
 
   // Step 1 → Step 2: Continue goes straight to amount (skip packs)

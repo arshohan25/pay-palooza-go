@@ -37,6 +37,9 @@ const DynamicQrPaySheet = ({ open, onClose, sessionId, merchantId, amount: qrAmo
     setPin("");
     setErrorMsg("");
 
+    // Also reset pin whenever step changes away from pin
+    return () => { setPin(""); };
+
     (async () => {
       const { data: session, error } = await supabase
         .from("merchant_payment_sessions")

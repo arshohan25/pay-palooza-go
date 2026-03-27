@@ -250,7 +250,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     if (step === "recipient") { onClose(); return; }
     if (step === "amount")    { goTo("recipient"); return; }
     if (step === "confirm")   { goTo("amount"); return; }
-    if (step === "pin")       { goTo("confirm"); return; }
+    if (step === "pin")       { setPin(""); goTo("confirm"); return; }
   };
 
   // Merge recent + phone contacts, deduplicate by phone
