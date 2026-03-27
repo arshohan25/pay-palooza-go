@@ -206,37 +206,47 @@ export default function ShopPage() {
   const [visibleCount, setVisibleCount] = useState(20);
 
   // Load products
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const { data: prods } = await supabase
-        .from("merchant_products")
-        .select("*, merchants!inner(id, business_name, user_id)")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false });
+  const loadProducts = useCallback(async () => {
+    setLoading(true);
+    const { data: prods } = await supabase
+      .from("merchant_products")
+      .select("*, merchants!inner(id, business_name, user_id)")
+      .eq("is_active", true)
+      .order("created_at", { ascending: false });
 
-      if (prods) {
-        const merchantIds = [...new Set(prods.map((p: any) => p.merchant_id))];
-        const { data: stores } = await (supabase as any)
-          .from("vendor_stores")
-          .select("merchant_id, slug, store_name")
-          .in("merchant_id", merchantIds)
-          .eq("is_active", true);
+    if (prods) {
+      const merchantIds = [...new Set(prods.map((p: any) => p.merchant_id))];
+      const { data: stores } = await (supabase as any)
+        .from("vendor_stores")
+        .select("merchant_id, slug, store_name")
+        .in("merchant_id", merchantIds)
+        .eq("is_active", true);
 
-        const storeMap = new Map((stores ?? []).map((s: any) => [s.merchant_id, s]));
-        setProducts(prods.map((p: any) => {
-          const storeEntry = storeMap.get(p.merchant_id) as { store_name?: string; slug?: string } | undefined;
-          return {
-            ...p,
-            vendor_name: storeEntry?.store_name || (p.merchants as any)?.business_name || "Store",
-            vendor_slug: storeEntry?.slug,
-          };
-        }));
-      }
-      setLoading(false);
-    };
-    load();
+      const storeMap = new Map((stores ?? []).map((s: any) => [s.merchant_id, s]));
+      setProducts(prods.map((p: any) => {
+        const storeEntry = storeMap.get(p.merchant_id) as { store_name?: string; slug?: string } | undefined;
+        return {
+          ...p,
+          vendor_name: storeEntry?.store_name || (p.merchants as any)?.business_name || "Store",
+          vendor_slug: storeEntry?.slug,
+        };
+      }));
+    }
+    setLoading(false);
   }, []);
+
+  useEffect(() => { loadProducts(); }, [loadProducts]);
+
+  // Realtime: re-fetch when merchant_products change
+  useEffect(() => {
+    const channel = supabase
+      .channel("shop-page-products-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "merchant_products" }, () => {
+        loadProducts();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [loadProducts]);
 
   // Load shop-specific banners
   useEffect(() => {
