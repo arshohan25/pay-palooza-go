@@ -495,23 +495,6 @@ export default function ProductDetailPage() {
                   );
                 })()}
               </div>
-
-              {/* Key Highlights */}
-              {(product.category || (product as any).brand) && (
-                <div className="bg-card border border-border/60 rounded-xl overflow-hidden">
-                  <div className="flex items-center gap-2 px-3.5 py-2.5 bg-muted/30 border-b border-border/40">
-                    <Tag className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-xs font-semibold text-foreground">Key Highlights</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2 px-3.5 py-3">
-                    {product.category && <Badge variant="secondary" className="text-xs">{product.category}</Badge>}
-                    {(product as any).brand && <Badge variant="outline" className="text-xs">{(product as any).brand}</Badge>}
-                    <Badge variant={product.stock > 0 ? "default" : "destructive"} className="text-xs">
-                      {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
-                    </Badge>
-                  </div>
-                </div>
-              )}
             </TabsContent>
 
             <TabsContent value="specs" className="mt-3">
