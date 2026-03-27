@@ -1,3 +1,4 @@
+/* MerchantDashboard v2 */
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { isWithinInterval, format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
