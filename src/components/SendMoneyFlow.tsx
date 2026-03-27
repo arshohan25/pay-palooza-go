@@ -47,6 +47,23 @@ interface Contact {
   gradient: string;
 }
 
+const PASTEL_COLORS = [
+  "bg-emerald-100 text-emerald-700",
+  "bg-sky-100 text-sky-700",
+  "bg-pink-100 text-pink-700",
+  "bg-amber-100 text-amber-700",
+  "bg-teal-100 text-teal-700",
+  "bg-violet-100 text-violet-700",
+  "bg-rose-100 text-rose-700",
+  "bg-cyan-100 text-cyan-700",
+];
+
+const getContactColor = (name: string) => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return PASTEL_COLORS[Math.abs(hash) % PASTEL_COLORS.length];
+};
+
 const GRADIENTS = ["gradient-send", "gradient-cashout", "gradient-payment", "gradient-addmoney", "gradient-accent"];
 
 const QUICK_AMOUNTS = [100, 200, 500, 1000, 2000, 5000];
@@ -539,25 +556,24 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     );
   }
 
-  // ─── Contact row component ─────────────────────────────────────────────────
-  const ContactRow = ({ contact }: { contact: Contact & { source?: string } }) => (
-    <button
-      onClick={() => handleSelectContact(contact)}
-      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/50 active:bg-accent transition-colors"
-    >
-      <div className={`${contact.gradient} w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0`}>
-        {contact.initials}
-      </div>
-      <div className="flex-1 min-w-0 text-left">
-        <p className="text-sm font-semibold text-foreground truncate">{contact.name}</p>
-        <p className="text-xs text-muted-foreground">{contact.phone}</p>
-      </div>
-      {contact.source === "contacts" && (
-        <span className="text-[9px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full shrink-0">Contacts</span>
-      )}
-      <ChevronRight size={16} className="text-muted-foreground/50 shrink-0" />
-    </button>
-  );
+  // ─── Contact row component (bKash style) ────────────────────────────────────
+  const ContactRow = ({ contact }: { contact: Contact & { source?: string } }) => {
+    const colorClass = getContactColor(contact.name);
+    return (
+      <button
+        onClick={() => handleSelectContact(contact)}
+        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-accent/50 active:bg-accent/80 transition-colors"
+      >
+        <div className={`${colorClass} w-11 h-11 rounded-full flex items-center justify-center font-bold text-base shrink-0`}>
+          {contact.initials}
+        </div>
+        <div className="flex-1 min-w-0 text-left">
+          <p className="text-[15px] font-semibold text-foreground truncate leading-tight">{contact.name}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{contact.phone}</p>
+        </div>
+      </button>
+    );
+  };
 
   return (
     <motion.div
@@ -662,12 +678,12 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   </div>
                 )}
 
-                {/* All Contacts section (from device) */}
+                {/* All Contacts section (from device) — bKash style */}
                 {contactsFiltered.length > 0 && (
                   <div>
-                    <div className="px-4 py-2 flex items-center gap-2 mt-1">
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">All Contacts</span>
-                      <div className="flex-1 h-px bg-border" />
+                    <div className="px-4 py-2.5 flex items-center justify-between mt-1">
+                      <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">All Contacts</span>
+                      <span className="text-[11px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">{contactsFiltered.length}</span>
                     </div>
                     {contactsFiltered.map((c) => (
                       <ContactRow key={c.id} contact={c} />
@@ -695,14 +711,20 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   </motion.div>
                 )}
 
-                {/* Find in Contacts link — only show if no contacts loaded yet */}
+                {/* Allow Contact Access card — bKash style */}
                 {phoneContacts.length === 0 && (
                   <div className="px-4 pt-4 pb-2">
                     <PermissionGate permission="contacts" onGranted={handlePhoneContactsPicked}>
-                      <button className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/30 active:scale-[0.98] transition-all">
-                        <Contact2 size={16} />
-                        Import from Phone Contacts
-                      </button>
+                      <div className="w-full rounded-2xl bg-primary/5 border border-primary/15 p-4 flex items-center gap-3.5 active:scale-[0.98] transition-all cursor-pointer">
+                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          <Users size={22} className="text-primary" />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <p className="text-sm font-bold text-foreground">Allow Contact Access</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">See your phone contacts here for quick transfers</p>
+                        </div>
+                        <ChevronRight size={18} className="text-primary/60 shrink-0" />
+                      </div>
                     </PermissionGate>
                   </div>
                 )}
