@@ -542,22 +542,30 @@ const MessageBubble = ({ msg, contactName, onReact, onCopy, onDelete, onForward,
 };
 
 // ── New Contact Sheet ─────────────────────────────────────────────────────────
-interface NewContactSheetProps { onClose: () => void; onCreate: (phone: string) => Promise<boolean>; }
+interface NewContactSheetProps { onClose: () => void; onCreate: (phone: string) => Promise<boolean>; findUser: (phone: string) => Promise<{ user_id: string; name: string | null; phone: string; avatar_url: string | null } | null>; }
 
-const NewContactSheet = ({ onClose, onCreate }: NewContactSheetProps) => {
+const NewContactSheet = ({ onClose, onCreate, findUser }: NewContactSheetProps) => {
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep] = useState<"input" | "preview">("input");
+  const [foundUser, setFoundUser] = useState<{ user_id: string; name: string | null; phone: string; avatar_url: string | null } | null>(null);
 
-  const validate = () => {
-    if (!phone.trim()) { setError("Phone number is required"); return false; }
-    if (!/^[\d\-+\s]{10,}$/.test(phone.trim())) { setError("Enter a valid phone number"); return false; }
-    setError(""); return true;
+  const phoneValid = phone.length === 11 && phone.startsWith("01");
+
+  const handleSearch = async () => {
+    if (!phoneValid) { setError("Enter a valid 11-digit number starting with 01"); return; }
+    setIsLoading(true); setError("");
+    const result = await findUser(phone.trim());
+    setIsLoading(false);
+    if (!result) { setError("No EasyPay account found with this number"); return; }
+    setFoundUser(result);
+    setStep("preview");
   };
 
   const handleSend = async () => {
-    if (!validate()) return;
+    if (!foundUser) return;
     setIsLoading(true);
     const success = await onCreate(phone.trim());
     setIsLoading(false);
@@ -576,9 +584,17 @@ const NewContactSheet = ({ onClose, onCreate }: NewContactSheetProps) => {
         className="fixed bottom-0 left-0 right-0 z-[80] max-w-md mx-auto bg-card rounded-t-3xl px-5 pt-3 pb-8 shadow-elevated">
         <div className="w-10 h-1 bg-border rounded-full mx-auto mb-5" />
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-lg font-extrabold text-foreground">Add by Phone</h2>
-            <p className="text-xs text-muted-foreground">They'll get a request to connect</p>
+          <div className="flex items-center gap-2">
+            {step === "preview" && !sent && (
+              <button onClick={() => { setStep("input"); setFoundUser(null); setError(""); }}
+                className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
+                <ArrowLeft size={18} />
+              </button>
+            )}
+            <div>
+              <h2 className="text-lg font-extrabold text-foreground">Add by Phone</h2>
+              <p className="text-xs text-muted-foreground">{step === "input" ? "Search for an EasyPay user" : "Send a chat request"}</p>
+            </div>
           </div>
           <button onClick={onClose} className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
             <X size={18} />
@@ -592,8 +608,20 @@ const NewContactSheet = ({ onClose, onCreate }: NewContactSheetProps) => {
                   <UserCheck size={34} className="text-primary-foreground" />
                 </div>
                 <div className="text-center">
-                  <p className="font-bold text-foreground">Conversation Started!</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">You can now start chatting</p>
+                  <p className="font-bold text-foreground">Request Sent!</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">They'll receive your chat request</p>
+                </div>
+              </motion.div>
+            ) : step === "preview" && foundUser ? (
+              <motion.div key="preview" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col items-center gap-3 w-full">
+                <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center text-white font-bold text-2xl overflow-hidden">
+                  {foundUser.avatar_url
+                    ? <img src={foundUser.avatar_url} alt={foundUser.name || "User"} className="w-full h-full object-cover" />
+                    : getInitials(foundUser.name || foundUser.phone)}
+                </div>
+                <div className="text-center">
+                  <p className="font-bold text-foreground text-base">{foundUser.name || "EasyPay User"}</p>
+                  <p className="text-sm text-muted-foreground">+88 {foundUser.phone}</p>
                 </div>
               </motion.div>
             ) : (
@@ -604,21 +632,30 @@ const NewContactSheet = ({ onClose, onCreate }: NewContactSheetProps) => {
             )}
           </AnimatePresence>
         </div>
-        {!sent && (
+        {!sent && step === "input" && (
           <>
             <div className="mb-6">
               <label className="text-[12px] font-semibold text-muted-foreground mb-1.5 block">Phone Number</label>
-              <input type="tel" value={phone} onChange={(e) => { setPhone(e.target.value); setError(""); }}
+              <input type="tel" inputMode="numeric" value={phone} onChange={(e) => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 11)); setError(""); }}
                 placeholder="e.g. 01711223344"
                 className={`w-full h-12 px-4 bg-background border rounded-2xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition ${error ? "border-destructive" : "border-border"}`} />
               {error && <p className="text-[11px] text-destructive mt-1">{error}</p>}
-              <p className="text-[11px] text-muted-foreground mt-2">Enter the phone number of the person you want to chat with</p>
+              {phone.length > 0 && phone.length < 11 && !error && (
+                <p className="text-[11px] text-muted-foreground mt-1">{11 - phone.length} more digits needed</p>
+              )}
             </div>
-            <motion.button whileTap={{ scale: 0.97 }} onClick={handleSend} disabled={isLoading}
+            <motion.button whileTap={{ scale: 0.97 }} onClick={handleSearch} disabled={isLoading || !phoneValid}
               className="w-full h-13 gradient-primary text-primary-foreground font-bold rounded-2xl shadow-glow flex items-center justify-center gap-2 py-4 disabled:opacity-60">
-              {isLoading ? <><Loader2 size={18} className="animate-spin" /> Finding user...</> : <><UserPlus size={18} /> Start Conversation</>}
+              {isLoading ? <><Loader2 size={18} className="animate-spin" /> Searching...</> : <><Search size={18} /> Find User</>}
             </motion.button>
           </>
+        )}
+        {!sent && step === "preview" && foundUser && (
+          <motion.button initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            whileTap={{ scale: 0.97 }} onClick={handleSend} disabled={isLoading}
+            className="w-full h-13 gradient-primary text-primary-foreground font-bold rounded-2xl shadow-glow flex items-center justify-center gap-2 py-4 disabled:opacity-60">
+            {isLoading ? <><Loader2 size={18} className="animate-spin" /> Sending request...</> : <><UserPlus size={18} /> Send Chat Request</>}
+          </motion.button>
         )}
       </motion.div>
     </>
