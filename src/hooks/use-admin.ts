@@ -83,6 +83,7 @@ export async function fetchAllUsers(limit = 50) {
   const { data } = await supabase
     .from("profiles")
     .select("*")
+    .not("phone", "like", "staff-%")
     .order("created_at", { ascending: false })
     .limit(limit);
 
