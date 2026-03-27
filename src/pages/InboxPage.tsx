@@ -1597,10 +1597,10 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
             </motion.div>
             <div className="text-center">
               <p className="text-sm font-bold text-foreground mb-1">
-                {filterTab === "unread" ? "All caught up!" : filterTab === "groups" ? "No groups yet" : uiContacts.length === 0 ? "No conversations yet" : "No results found"}
+                {filterTab === "unread" ? "All caught up!" : filterTab === "groups" ? "No groups yet" : filterTab === "requests" ? "No pending requests" : uiContacts.length === 0 ? "No conversations yet" : "No results found"}
               </p>
               <p className="text-xs text-muted-foreground">
-                {filterTab === "unread" ? "You've read all your messages" : filterTab === "groups" ? "Create a group to chat with multiple people" : "Tap + to start a new conversation"}
+                {filterTab === "unread" ? "You've read all your messages" : filterTab === "groups" ? "Create a group to chat with multiple people" : filterTab === "requests" ? "When someone sends you a chat request, it will appear here" : "Tap + to start a new conversation"}
               </p>
             </div>
             {uiContacts.length === 0 && (
