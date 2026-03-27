@@ -1,46 +1,29 @@
 
 
-# Fix: Chat "Add by Phone" and Request System
+# Fix: Hide Team/Staff Members from Admin Users List
 
 ## Problem
-Console error reveals the root cause:
-```
-PGRST203: Could not choose the best candidate function between:
-  public.create_direct_chat_request(p_other_user_id => uuid)
-  public.create_direct_chat_request(p_other_user_id => uuid, p_metadata => jsonb)
-```
-
-Two overloaded versions of `create_direct_chat_request` exist in the database. PostgREST cannot disambiguate between them when called via the Supabase JS client, causing every chat creation attempt to fail silently.
+Team/staff members (e.g., staff-sa88, staff-co9k, staff-t00j) appear in the admin "Users" list alongside regular users. These are internal staff accounts created via `create-team-member` edge function with emails like `username@team.easypay.app`. They should not be shown in the regular users list.
 
 ## Fix
 
-### 1. Database migration -- merge the two functions into one
-Drop both overloaded functions and create a single function with `p_metadata` as an optional parameter (defaulting to `NULL`):
+### File: `src/hooks/use-admin.ts` — `fetchAllUsers` function
+Filter out team/staff accounts by excluding profiles whose `phone` starts with `"staff-"`:
 
-```sql
-DROP FUNCTION IF EXISTS public.create_direct_chat_request(uuid);
-DROP FUNCTION IF EXISTS public.create_direct_chat_request(uuid, jsonb);
-
-CREATE OR REPLACE FUNCTION public.create_direct_chat_request(
-  p_other_user_id uuid,
-  p_metadata jsonb DEFAULT NULL
-) RETURNS uuid ...
-```
-
-The function body stays the same -- create conversation, add participants, send notification. If `p_metadata` is not null, store it on the conversation.
-
-### 2. Client code -- always pass p_metadata
-**File**: `src/hooks/use-chat.ts` (line ~533-541)
-
-Update `createDirectConversation` to always pass both parameters to avoid ambiguity:
 ```typescript
-const { data, error } = await supabase.rpc(
-  "create_direct_chat_request" as any,
-  { p_other_user_id: otherUserId, p_metadata: metadata ?? null }
-);
+export async function fetchAllUsers(limit = 50) {
+  const { data } = await supabase
+    .from("profiles")
+    .select("*")
+    .not("phone", "like", "staff-%")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  // ... rest unchanged
+}
 ```
 
-## Summary
-- 1 database migration (merge overloaded functions)
-- 1 file edit (`src/hooks/use-chat.ts`)
+This single filter change removes all team accounts from the Users tab while keeping them accessible in the Team Management module.
+
+### Summary
+- 1 file edit: `src/hooks/use-admin.ts`
 
