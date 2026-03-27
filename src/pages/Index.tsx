@@ -43,8 +43,19 @@ const DynamicQrPaySheet = lazy(() => import("@/components/DynamicQrPaySheet"));
 const SavingsFlow = lazy(() => import("@/components/SavingsFlow"));
 const MerchantApplicationFlow = lazy(() => import("@/components/MerchantApplicationFlow"));
 const KycFlow = lazy(() => import("@/components/KycFlow"));
-const AuthPage = lazy(() => import("@/pages/AuthPage"));
-const InboxPage = lazy(() => import("@/pages/InboxPage"));
+const retryImport = <T,>(fn: () => Promise<T>, retries = 2): Promise<T> =>
+  fn().catch((err) => {
+    if (retries > 0) return new Promise<T>((res) => setTimeout(() => res(retryImport(fn, retries - 1)), 1000));
+    // Force reload once to clear stale HMR cache
+    if (!sessionStorage.getItem("chunk_reload")) {
+      sessionStorage.setItem("chunk_reload", "1");
+      window.location.reload();
+    }
+    throw err;
+  });
+
+const AuthPage = lazy(() => retryImport(() => import("@/pages/AuthPage")));
+const InboxPage = lazy(() => retryImport(() => import("@/pages/InboxPage")));
 
 // Lazy load tab pages (only shown when tab is active)
 const TransactionHistory = lazy(() => import("@/pages/TransactionHistory"));
