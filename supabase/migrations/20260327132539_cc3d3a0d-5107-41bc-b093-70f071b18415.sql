@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS status_text text DEFAULT NULL;
