@@ -1,33 +1,24 @@
 
 
-# Products Active but Not Showing on User App
+# Fix: Products Not Showing on User App
 
 ## Root Cause
-The ShopPage (`/shop`) does **not** have realtime subscriptions — unlike the ShopFlow component which subscribes to `postgres_changes`. When you toggle a product to active on the merchant dashboard, the shop page won't update until the user navigates to it fresh or refreshes.
-
-Additionally, the ShopPage fetches products directly from the `merchant_products` table (not the `get_shop_products` RPC), and both the RLS policy and query filter correctly for `is_active = true`. The data access is fine.
+The `merchants` table has a restrictive SELECT RLS policy: only the merchant owner (`auth.uid() = user_id`) or admins can read rows. The ShopPage query uses `merchants!inner(id, business_name, user_id)` — an inner join that requires reading the `merchants` table. Regular users are blocked by RLS, so the join returns no rows, and therefore no products appear.
 
 ## Fix
+Add a public SELECT policy on the `merchants` table that allows anyone to read active merchant records. This is safe because merchant profiles (business name, etc.) are meant to be public-facing storefront info.
 
-### 1. Add realtime subscription to ShopPage
-**File**: `src/pages/ShopPage.tsx` (~line 239)
-
-After the product-loading `useEffect`, add a realtime channel that re-fetches products when any `merchant_products` row changes (insert/update/delete). This mirrors the pattern already used in `ShopFlow.tsx`:
-
-```typescript
-useEffect(() => {
-  const channel = supabase
-    .channel("shop-page-products-rt")
-    .on("postgres_changes", { event: "*", schema: "public", table: "merchant_products" }, () => {
-      // re-run the load function
-    })
-    .subscribe();
-  return () => { supabase.removeChannel(channel); };
-}, []);
+### Database migration
+```sql
+CREATE POLICY "Anyone can view active merchants"
+  ON public.merchants
+  FOR SELECT
+  TO public
+  USING (status = 'active');
 ```
 
-The load function needs to be extracted into a `useCallback` so it can be called from both the initial `useEffect` and the realtime handler.
+This single policy change will make the existing ShopPage query work for all users — no code changes needed.
 
 ## Summary
-- 1 file edit: `src/pages/ShopPage.tsx` — extract fetch logic into reusable callback, add realtime subscription for `merchant_products` table changes
+- 1 database migration: add public read policy for active merchants
 
