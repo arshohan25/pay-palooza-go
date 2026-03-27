@@ -1134,7 +1134,7 @@ interface InboxPageProps {
   isActive?: boolean;
 }
 
-type FilterTab = "all" | "unread" | "groups";
+type FilterTab = "all" | "unread" | "groups" | "requests";
 
 export default function InboxPage({ onBack, onSendMoney, isActive = false }: InboxPageProps) {
   const { user } = useAuth();
