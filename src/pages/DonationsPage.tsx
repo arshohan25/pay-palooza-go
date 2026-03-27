@@ -120,7 +120,7 @@ const DonationsPage = () => {
     const num = parseFloat(amount);
     if (!num || num < 10) { toast.error("Minimum donation is ৳10"); return; }
     if (num > 100000) { toast.error("Maximum donation is ৳100,000"); return; }
-    setStep("pin");
+    setPin(""); setStep("pin");
   };
 
   const handlePinSubmit = async () => {
