@@ -121,7 +121,7 @@ const AgentBillPay = () => {
                 <Input type="password" inputMode="numeric" maxLength={4} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} placeholder="••••" className="text-center text-lg tracking-[0.5em] rounded-xl h-12 mt-1" />
               </div>
               <SlideToConfirm onConfirm={handlePay} disabled={!accountNo || !amount || pin.length < 4 || processing} label={processing ? "Processing…" : "Slide to Pay"} icon={Receipt} />
-              <Button variant="ghost" onClick={() => setStep("select")} className="w-full text-muted-foreground">Back</Button>
+              <Button variant="ghost" onClick={() => { setPin(""); setStep("select"); }} className="w-full text-muted-foreground">Back</Button>
             </Card>
           </motion.div>
         ) : (

@@ -82,7 +82,7 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
     haptics.medium();
     if (step === "bank") { onClose(); return; }
     if (step === "amount") { goTo("bank"); return; }
-    if (step === "pin") { goTo("amount"); return; }
+    if (step === "pin") { setPin(""); setPinError(""); setPinVerified(false); goTo("amount"); return; }
     if (step === "confirm") { goTo("pin"); return; }
   };
 

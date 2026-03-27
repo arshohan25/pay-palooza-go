@@ -94,7 +94,7 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
     if (step === "source") { goTo("amount"); return; }
     if (step === "send_to") { goTo("source"); return; }
     if (step === "proof") { goTo("send_to"); return; }
-    if (step === "pin") { goTo("proof"); return; }
+    if (step === "pin") { setPin(""); setPinError(""); goTo("proof"); return; }
   };
 
   const handleAmountContinue = () => {

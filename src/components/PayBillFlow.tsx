@@ -217,7 +217,7 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
     if (step === "type")    { onClose(); return; }
     if (step === "account") { goTo("type"); return; }
     if (step === "bill")    { goTo("account"); return; }
-    if (step === "pin")     { goTo("bill"); return; }
+    if (step === "pin")     { setPin(""); goTo("bill"); return; }
   };
 
   const handleSelectType = (bt: BillType) => {
