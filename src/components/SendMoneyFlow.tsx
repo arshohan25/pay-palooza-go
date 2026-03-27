@@ -848,9 +848,19 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   </div>
                 )}
 
-                <Button className="w-full h-12 gradient-send border-0 text-white font-semibold text-base rounded-xl" onClick={handleAmountContinue}>
-                  {t("reviewTransfer")}
-                </Button>
+                {amtNum > 0 && totalFromBalance > BALANCE && (
+                  <p className="text-center text-sm text-destructive font-medium">Insufficient balance</p>
+                )}
+                {amtNum > 0 && totalFromBalance <= BALANCE && amtNum > 50000 && (
+                  <p className="text-center text-sm text-destructive font-medium">Exceeds daily limit (৳50,000)</p>
+                )}
+                {amtNum > 0 && totalFromBalance <= BALANCE && amtNum <= 50000 && (
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+                    <Button className="w-full h-12 gradient-send border-0 text-white font-semibold text-base rounded-xl" onClick={handleAmountContinue}>
+                      {t("reviewTransfer")}
+                    </Button>
+                  </motion.div>
+                )}
               </div>
             )}
 

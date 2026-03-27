@@ -580,12 +580,22 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                   </div>
                 )}
 
-                <Button
-                  className="w-full h-12 gradient-cashout border-0 text-white font-semibold text-base"
-                  onClick={handleAmountContinue}
-                >
-                  {t("continueToPIN")}
-                </Button>
+                {parseFloat(amount) > 0 && totalFromBalance > BALANCE && (
+                  <p className="text-center text-sm text-destructive font-medium">Insufficient balance</p>
+                )}
+                {parseFloat(amount) > 0 && totalFromBalance <= BALANCE && parseFloat(amount) > 35000 && (
+                  <p className="text-center text-sm text-destructive font-medium">Exceeds daily limit (৳35,000)</p>
+                )}
+                {parseFloat(amount) > 0 && totalFromBalance <= BALANCE && parseFloat(amount) <= 35000 && (
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+                    <Button
+                      className="w-full h-12 gradient-cashout border-0 text-white font-semibold text-base"
+                      onClick={handleAmountContinue}
+                    >
+                      {t("continueToPIN")}
+                    </Button>
+                  </motion.div>
+                )}
               </div>
             )}
 

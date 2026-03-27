@@ -8,6 +8,7 @@ import { verifyPin } from "@/lib/verifyPin";
 import { useFeeConfig } from "@/hooks/use-fee-config";
 import { BANGLADESH_BANKS } from "@/lib/bangladeshBanks";
 import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
+import { getBalance } from "@/lib/balanceStore";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import {
   ChevronLeft, AlertCircle, CheckCircle2, Landmark, User, Hash, Clock, Trash2, ShieldCheck, Search, ChevronDown,
@@ -319,10 +320,20 @@ const BankTransferFlow = ({ onClose }: BankTransferFlowProps) => {
                       </button>
                     ))}
                   </div>
-                  <Button className="w-full h-11 bg-gradient-to-b from-blue-500 to-indigo-600 border-0 text-white font-semibold"
-                    onClick={handleAmountContinue}>
-                    Continue
-                  </Button>
+                  {parsedAmount > 0 && totalDeduction > getBalance() && (
+                    <p className="text-center text-sm text-destructive font-medium">Insufficient balance</p>
+                  )}
+                  {parsedAmount > 0 && totalDeduction <= getBalance() && parsedAmount > 50000 && (
+                    <p className="text-center text-sm text-destructive font-medium">Exceeds daily limit (৳50,000)</p>
+                  )}
+                  {parsedAmount > 0 && totalDeduction <= getBalance() && parsedAmount <= 50000 && (
+                    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+                      <Button className="w-full h-11 bg-gradient-to-b from-blue-500 to-indigo-600 border-0 text-white font-semibold"
+                        onClick={handleAmountContinue}>
+                        Continue
+                      </Button>
+                    </motion.div>
+                  )}
                 </div>
               )}
 
