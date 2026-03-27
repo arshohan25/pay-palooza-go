@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
 import { requestLocation } from "@/lib/permissions";
-import { recordTransaction } from "@/lib/balanceStore";
+import { recordTransaction, getBalance } from "@/lib/balanceStore";
 import { verifyPin } from "@/lib/verifyPin";
 import { checkDailyLimit } from "@/lib/dailyLimits";
 import { addTxnNotif } from "@/lib/txnNotifStore";
@@ -1006,15 +1006,28 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                 </div>
 
                 {/* Continue to PIN */}
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={handleAmountContinue}
-                  className="w-full h-14 rounded-2xl text-white font-bold text-base shadow-lg flex items-center justify-center gap-2"
-                  style={{ background: `linear-gradient(135deg, ${operator.brandColor}, ${operator.brandColorDark})` }}
-                >
-                  Continue · ৳{customAmountNum > 0 ? customAmountNum : "—"}
-                  <ChevronRight size={18} />
-                </motion.button>
+                {customAmountNum > 0 && customAmountNum > getBalance() && (
+                  <p className="text-center text-sm text-destructive font-medium">Insufficient balance</p>
+                )}
+                {customAmountNum > 0 && customAmountNum <= getBalance() && (customAmountNum < 20 || customAmountNum > 1000) && (
+                  <p className="text-center text-sm text-destructive font-medium">
+                    {customAmountNum < 20 ? "Minimum recharge ৳20" : "Maximum recharge ৳1,000"}
+                  </p>
+                )}
+                {customAmountNum >= 20 && customAmountNum <= 1000 && customAmountNum <= getBalance() && (
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={handleAmountContinue}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="w-full h-14 rounded-2xl text-white font-bold text-base shadow-lg flex items-center justify-center gap-2"
+                    style={{ background: `linear-gradient(135deg, ${operator.brandColor}, ${operator.brandColorDark})` }}
+                  >
+                    Continue · ৳{customAmountNum}
+                    <ChevronRight size={18} />
+                  </motion.button>
+                )}
               </div>
             )}
 

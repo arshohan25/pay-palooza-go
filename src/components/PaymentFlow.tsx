@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { haptics } from "@/lib/haptics";
 import { requestLocation } from "@/lib/permissions";
 import { fireSuccessConfetti } from "@/lib/confetti";
-import { transferMoney } from "@/lib/balanceStore";
+import { transferMoney, getBalance } from "@/lib/balanceStore";
 import { supabase } from "@/integrations/supabase/client";
 import { verifyPin } from "@/lib/verifyPin";
 import { checkDailyLimit } from "@/lib/dailyLimits";
@@ -553,9 +553,16 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
                   </div>
                 )}
 
-                <Button className="w-full h-12 gradient-payment border-0 text-white font-semibold text-base" onClick={handleAmountContinue}>
-                  {t("continueToPIN")}
-                </Button>
+                {amtNum > 0 && amtNum > getBalance() && (
+                  <p className="text-center text-sm text-destructive font-medium">Insufficient balance</p>
+                )}
+                {amtNum > 0 && amtNum <= getBalance() && (
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+                    <Button className="w-full h-12 gradient-payment border-0 text-white font-semibold text-base" onClick={handleAmountContinue}>
+                      {t("continueToPIN")}
+                    </Button>
+                  </motion.div>
+                )}
               </div>
             )}
 

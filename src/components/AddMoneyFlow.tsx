@@ -299,7 +299,14 @@ const AddMoneyFlow = ({ onClose }: AddMoneyFlowProps) => {
                         </button>
                       ))}
                     </div>
-                    <Button className="w-full h-11 bg-gradient-to-b from-emerald-500 to-green-600 border-0 text-white font-semibold" onClick={handleAmountContinue}>Continue</Button>
+                    {parseFloat(amount) > 0 && parseFloat(amount) > 100000 && (
+                      <p className="text-center text-sm text-destructive font-medium">Exceeds daily limit (৳100,000)</p>
+                    )}
+                    {parseFloat(amount) > 0 && parseFloat(amount) <= 100000 && (
+                      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+                        <Button className="w-full h-11 bg-gradient-to-b from-emerald-500 to-green-600 border-0 text-white font-semibold" onClick={handleAmountContinue}>Continue</Button>
+                      </motion.div>
+                    )}
                   </div>
                 )}
 
