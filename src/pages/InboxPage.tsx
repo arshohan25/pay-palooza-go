@@ -916,6 +916,15 @@ const ChatView = ({
                   >
                     {!contact.isGroup && (
                       <>
+                        <button onClick={() => { setShowChatMenu(false); toast.info("Notifications muted for this chat"); }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-foreground hover:bg-muted transition-colors">
+                          <Edit3 size={15} className="text-muted-foreground" /> Mute Notifications
+                        </button>
+                        <button onClick={() => { setShowChatMenu(false); toast.success("Chat cleared"); }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-foreground hover:bg-muted transition-colors">
+                          <Trash2 size={15} className="text-muted-foreground" /> Clear Chat
+                        </button>
+                        <div className="h-px bg-border/40 mx-3" />
                         <button onClick={() => { setShowChatMenu(false); setShowBlockDialog(true); }}
                           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-destructive hover:bg-destructive/10 transition-colors">
                           <UserMinus size={15} /> Block User
@@ -923,6 +932,27 @@ const ChatView = ({
                         <button onClick={() => { setShowChatMenu(false); setShowBlockDialog(true); }}
                           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-destructive hover:bg-destructive/10 transition-colors">
                           <Shield size={15} /> Report User
+                        </button>
+                      </>
+                    )}
+                    {contact.isGroup && (
+                      <>
+                        <button onClick={() => { setShowChatMenu(false); toast.info("Group info"); }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-foreground hover:bg-muted transition-colors">
+                          <Info size={15} className="text-muted-foreground" /> Group Info
+                        </button>
+                        <button onClick={() => { setShowChatMenu(false); toast.info("Add member coming soon"); }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-foreground hover:bg-muted transition-colors">
+                          <UserPlus size={15} className="text-muted-foreground" /> Add Member
+                        </button>
+                        <button onClick={() => { setShowChatMenu(false); toast.info("Notifications muted"); }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-foreground hover:bg-muted transition-colors">
+                          <Edit3 size={15} className="text-muted-foreground" /> Mute Notifications
+                        </button>
+                        <div className="h-px bg-border/40 mx-3" />
+                        <button onClick={() => { setShowChatMenu(false); toast("Left the group"); }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-destructive hover:bg-destructive/10 transition-colors">
+                          <X size={15} /> Leave Group
                         </button>
                       </>
                     )}
@@ -1229,11 +1259,13 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
     return times;
   })();
 
-  const uiMessages: UIMessage[] = chat.messages.map((msg) => {
-    const uiMsg = msgToUIMessage(msg, user?.id ?? "", othersReadTimes);
-    uiMsg.reactions = reactions[msg.id] ?? [];
-    return uiMsg;
-  });
+  const uiMessages: UIMessage[] = chat.messages
+    .filter((msg) => !msg.is_deleted)
+    .map((msg) => {
+      const uiMsg = msgToUIMessage(msg, user?.id ?? "", othersReadTimes);
+      uiMsg.reactions = reactions[msg.id] ?? [];
+      return uiMsg;
+    });
 
   const activeContact = activeContactId
     ? uiContacts.find((c) => c.id === activeContactId) ?? null
@@ -1245,6 +1277,8 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
     // Apply filter tab
     if (filterTab === "unread") list = list.filter((c) => c.unread > 0);
     else if (filterTab === "groups") list = list.filter((c) => c.isGroup);
+    else if (filterTab === "requests") list = list.filter((c) => c.pending);
+    else list = list.filter((c) => !c.pending); // "all" hides pending
 
     // Search filter
     if (search.trim()) {
@@ -1368,11 +1402,13 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
 
 
   const totalUnread = chat.totalUnread;
+  const pendingCount = useMemo(() => uiContacts.filter((c) => c.pending).length, [uiContacts]);
   const tabCounts = useMemo(() => ({
-    all: uiContacts.length,
+    all: uiContacts.filter((c) => !c.pending).length,
     unread: uiContacts.filter((c) => c.unread > 0).length,
     groups: uiContacts.filter((c) => c.isGroup).length,
-  }), [uiContacts]);
+    requests: pendingCount,
+  }), [uiContacts, pendingCount]);
 
 
   return (
@@ -1428,14 +1464,19 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
 
       {/* ── Filter Tabs ── */}
       <div className="flex gap-2 mb-3">
-        {(["all", "unread", "groups"] as FilterTab[]).map((tab) => (
+        {(["all", "unread", "groups", "requests"] as FilterTab[]).map((tab) => (
           <button key={tab} onClick={() => setFilterTab(tab)}
-            className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+            className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all relative ${
               filterTab === tab
                 ? "bg-primary text-primary-foreground shadow-glow"
                 : "bg-muted/60 text-muted-foreground hover:bg-muted"
             }`}>
-            {tab === "all" ? "All" : tab === "unread" ? `Unread${tabCounts.unread > 0 ? ` (${tabCounts.unread})` : ""}` : "Groups"}
+            {tab === "all" ? "All" : tab === "unread" ? `Unread${tabCounts.unread > 0 ? ` (${tabCounts.unread})` : ""}` : tab === "groups" ? "Groups" : "Requests"}
+            {tab === "requests" && tabCounts.requests > 0 && filterTab !== "requests" && (
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full flex items-center justify-center">
+                {tabCounts.requests}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -1574,7 +1615,7 @@ export default function InboxPage({ onBack, onSendMoney, isActive = false }: Inb
 
       {/* ── New Contact Sheet ── */}
       <AnimatePresence>
-        {showNewContact && <NewContactSheet onClose={() => setShowNewContact(false)} onCreate={handleCreateContact} />}
+        {showNewContact && <NewContactSheet onClose={() => setShowNewContact(false)} onCreate={handleCreateContact} findUser={chat.findUserByPhone} />}
       </AnimatePresence>
 
       {/* ── New Group Sheet ── */}
