@@ -3342,6 +3342,7 @@ export type Database = {
           referral_code: string | null
           scheduled_deletion_at: string | null
           status: string
+          status_text: string | null
           updated_at: string
           user_id: string
         }
@@ -3359,6 +3360,7 @@ export type Database = {
           referral_code?: string | null
           scheduled_deletion_at?: string | null
           status?: string
+          status_text?: string | null
           updated_at?: string
           user_id: string
         }
@@ -3376,6 +3378,7 @@ export type Database = {
           referral_code?: string | null
           scheduled_deletion_at?: string | null
           status?: string
+          status_text?: string | null
           updated_at?: string
           user_id?: string
         }
