@@ -80,7 +80,7 @@ export default function ProductDetailPage() {
   const [imgIdx, setImgIdx] = useState(0);
   const [qty, setQty] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [vendorInfo, setVendorInfo] = useState<{ name: string; slug?: string } | null>(null);
+  const [vendorInfo, setVendorInfo] = useState<{ name: string; slug?: string; category?: string } | null>(null);
   const [canReview, setCanReview] = useState(false);
   const [deliveredOrderId, setDeliveredOrderId] = useState<string | null>(null);
   const [reviewKey, setReviewKey] = useState(0);
@@ -140,7 +140,7 @@ export default function ProductDetailPage() {
     const load = async () => {
       const { data: prod } = await supabase
         .from("merchant_products")
-        .select("*, merchants!inner(id, business_name, user_id)")
+        .select("*, merchants!inner(id, business_name, user_id, category)")
         .eq("id", id)
         .single();
       if (prod) {
@@ -148,7 +148,7 @@ export default function ProductDetailPage() {
         const { data: store } = await (supabase as any)
           .from("vendor_stores").select("store_name, slug")
           .eq("merchant_id", prod.merchant_id).eq("is_active", true).maybeSingle();
-        setVendorInfo({ name: store?.store_name || (prod.merchants as any)?.business_name || "Store", slug: store?.slug });
+        setVendorInfo({ name: store?.store_name || (prod.merchants as any)?.business_name || "Store", slug: store?.slug, category: (prod.merchants as any)?.category });
         const { data: vars } = await (supabase as any)
           .from("product_variants").select("*").eq("product_id", id).eq("is_active", true);
         setVariants(vars ?? []);
@@ -363,7 +363,7 @@ export default function ProductDetailPage() {
                   <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                   <span>{product.rating || "4.5"}</span>
                   <span className="mx-0.5">·</span>
-                  <span className="truncate">{product.category}</span>
+                  <span className="truncate">{vendorInfo?.category || product.category}</span>
                 </div>
               </div>
             </div>
