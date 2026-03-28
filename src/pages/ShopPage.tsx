@@ -203,7 +203,7 @@ export default function ShopPage() {
   const [recommendedIds, setRecommendedIds] = useState<string[]>([]);
   const [recsLoading, setRecsLoading] = useState(false);
   const [flashSales, setFlashSales] = useState<any[]>([]);
-  const [visibleCount, setVisibleCount] = useState(20);
+  
 
   // Load products
   const loadProducts = useCallback(async () => {
@@ -342,11 +342,8 @@ export default function ShopPage() {
     return result;
   }, [products, selectedCategory, search, sortBy, filters]);
 
-  // Reset pagination when filters change
-  useEffect(() => { setVisibleCount(20); }, [selectedCategory, search, sortBy, filters]);
 
-  const paginatedProducts = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
-  const hasMore = visibleCount < filtered.length;
+
 
   const trendingProducts = useMemo(
     () => [...products].sort((a, b) => b.review_count - a.review_count).slice(0, 10),
@@ -537,7 +534,7 @@ export default function ShopPage() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
-            {paginatedProducts.map((product, i) => (
+            {filtered.map((product, i) => (
               <motion.div
                 key={product.id}
                 initial={{ opacity: 0, y: 12 }}
@@ -556,19 +553,6 @@ export default function ShopPage() {
           </motion.div>
         )}
 
-        {/* Load More */}
-        {!loading && hasMore && (
-          <div className="flex justify-center pt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-full px-6"
-              onClick={() => setVisibleCount((c) => c + 20)}
-            >
-              Load More ({filtered.length - visibleCount} remaining)
-            </Button>
-          </div>
-        )}
 
         {/* AI Recommendations */}
         {recommendedProducts.length > 0 && !search.trim() && selectedCategory === "All" && (

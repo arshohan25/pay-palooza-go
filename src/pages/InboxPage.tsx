@@ -466,7 +466,7 @@ const MessageBubble = ({ msg, contactName, onReact, onCopy, onDelete, onForward,
               </div>
             )}
             <div className="px-3.5 py-2.5 space-y-1">
-              <p className="text-[12px] font-bold text-foreground leading-tight line-clamp-2">{msg.productName || "Product"}</p>
+              <p className="text-[12px] font-bold text-foreground leading-tight truncate">{msg.productName || "Product"}</p>
               {msg.productPrice != null && (
                 <p className="text-sm font-extrabold text-primary">৳{msg.productPrice.toLocaleString()}</p>
               )}
