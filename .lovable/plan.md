@@ -1,30 +1,34 @@
 
 
-# Show All Contacts List Like bKash After Permission Granted
+# Redesign Stock + Quantity into One Row
 
-## Problem
-Currently, the Contact Picker API is called with `multiple: false`, so users can only pick one contact at a time. After picking, only that single contact shows in the list. The "Import from Phone Contacts" button shows as a dashed outline — not the seamless bKash-style experience where all contacts appear alphabetically after granting permission.
+## Current State
+- **Quantity** section (line 405-417): shows "Quantity" label on left, +/- selector beside it
+- **Stock info** is buried inside Key Highlights card as a badge (line 430-432)
+- These are separate sections
+
+## Goal
+Combine stock status and quantity selector into a single, clean row:
+- **Left side**: Stock indicator (e.g., green dot + "In Stock · 25 available")
+- **Right side**: Quantity selector (+/- buttons)
 
 ## Changes
 
-### 1. Enable multi-select in Contact Picker
-**File**: `src/lib/permissions.ts` (line 63)
-- Change `{ multiple: false }` → `{ multiple: true }` so users can select all their contacts at once
+### File: `src/pages/ProductDetailPage.tsx`
 
-### 2. Redesign contact list to match bKash style
-**File**: `src/components/SendMoneyFlow.tsx`
+**Replace the Quantity section (lines 405-417)** with a combined row:
 
-**Contact row styling** (line 542-560):
-- Add colored circle avatars with initials (pastel colors like bKash: green, blue, pink, yellow, teal, purple)
-- Show name prominently, phone number below in muted text
-- For contacts with multiple saved numbers, show a chevron-down to expand
-- Remove the "Contacts" badge chip — not needed when the whole section is contacts
+```
+┌─────────────────────────────────────────────────┐
+│  🟢 In Stock · 25 available      [ - ] 1 [ + ] │
+└─────────────────────────────────────────────────┘
+```
 
-**"All Contacts" section header** (line 665-676):
-- Change to Bengali-friendly label: "সব কন্ট্যাক্টস" / "All Contacts" matching bKash style
-- Show contact count in the header
+- Left: green/red dot icon + "In Stock" or "Out of Stock" text + count
+- Right: existing rounded pill quantity selector, pushed to the right with `ml-auto`
+- Wrapped in a subtle `bg-muted/20 rounded-xl px-4 py-3` container for polish
 
-**Import button replacement** (line 698-708):
-- When `phoneContacts.length === 0` AND permission is NOT yet granted: show a prominent "Allow Contact Access" card with explanation text instead of a dashed border button
-- When permission is granted but no contacts loaded yet: show a loading state
-- When contacts are loaded: the button is
+**Remove stock badge from Key Highlights** (line 430-432): delete the stock Badge from the highlights card since it's now shown in the quantity row.
+
+### Single file edit, no backend changes.
+
