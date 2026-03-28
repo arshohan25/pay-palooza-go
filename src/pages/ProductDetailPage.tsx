@@ -356,14 +356,15 @@ export default function ProductDetailPage() {
             <div className="flex items-center gap-2 min-w-0">
               <div className="relative w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                 <Store className="w-4 h-4 text-primary" />
-                <span className={cn(
-                  "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card",
-                  merchantOnline ? "bg-green-500 animate-pulse" : "bg-muted-foreground/40"
-                )} />
               </div>
               <div className="flex flex-col min-w-0">
                 <span className="text-sm font-semibold text-foreground truncate">{vendorInfo.name}</span>
-                <span className={cn("text-[10px] leading-tight", merchantOnline ? "text-green-600" : "text-muted-foreground")}>{merchantOnline ? "Online" : "Offline"}</span>
+                <div className="flex items-center gap-1 text-[10px] leading-tight text-muted-foreground">
+                  <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                  <span>{product.rating || "4.5"}</span>
+                  <span className="mx-0.5">·</span>
+                  <span className="truncate">{product.category}</span>
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
