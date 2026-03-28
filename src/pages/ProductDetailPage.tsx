@@ -738,7 +738,7 @@ function RelatedProductsRow({ title, products, seeAllLink, onNavigate }: {
                 )}
               </div>
               <div className="p-2 space-y-1">
-                <p className="text-[11px] font-medium text-foreground leading-tight line-clamp-2">{p.name}</p>
+                <p className="text-[11px] font-medium text-foreground leading-tight truncate">{p.name}</p>
                 <div className="flex items-baseline gap-1">
                   <span className="text-xs font-bold text-foreground">৳{p.price?.toLocaleString()}</span>
                   {p.original_price && p.original_price > p.price && (

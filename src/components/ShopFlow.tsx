@@ -899,7 +899,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
                             <BadgeCheck size={9} className="text-primary shrink-0" />
                             <span className="text-[9px] font-semibold text-primary truncate">{p.vendor_name}</span>
                           </div>
-                          <p className="text-[12.5px] font-bold text-foreground leading-tight line-clamp-2">{p.name}</p>
+                          <p className="text-[12.5px] font-bold text-foreground leading-tight truncate">{p.name}</p>
                           <div className="flex items-center gap-1">
                             <Star size={10} className="fill-amber-400 text-amber-400" />
                             <span className="text-[10px] font-semibold text-foreground">{p.rating}</span>
