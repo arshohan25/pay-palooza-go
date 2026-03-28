@@ -291,17 +291,17 @@ export default function ProductDetailPage() {
               {product.badge}
             </span>
           )}
-        </div>
 
-        {/* Dot indicators */}
-        {images.length > 1 && (
-          <div className="flex justify-center gap-1.5 py-2.5">
-            {images.map((_: string, i: number) => (
-              <button key={i} onClick={() => { setSwipeDir(i > imgIdx ? 1 : -1); setImgIdx(i); }}
-                className={cn("w-1.5 h-1.5 rounded-full transition-all duration-300", i === imgIdx ? "bg-primary w-4" : "bg-muted-foreground/25")} />
-            ))}
-          </div>
-        )}
+          {/* Dot indicators — inside image */}
+          {images.length > 1 && (
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 bg-foreground/20 backdrop-blur-sm rounded-full px-2 py-1">
+              {images.map((_: string, i: number) => (
+                <button key={i} onClick={() => { setSwipeDir(i > imgIdx ? 1 : -1); setImgIdx(i); }}
+                  className={cn("w-1.5 h-1.5 rounded-full transition-all duration-300", i === imgIdx ? "bg-background w-4" : "bg-background/40")} />
+              ))}
+            </div>
+          )}
+        </div>
       </motion.section>
 
       {/* ── Main content ── */}
