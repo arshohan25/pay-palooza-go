@@ -1,38 +1,37 @@
 
 
-# Premium Product Title & Infinite Scroll Cleanup
+# Move Dot Indicators Inside Image Carousel
 
-## Changes
+## Change
 
-### 1. Product titles: single line with ellipsis (4 files)
+**File: `src/pages/ProductDetailPage.tsx`** (lines 296-304)
 
-**`src/components/shop/ProductCard.tsx`** (line 82):
-- Change `line-clamp-2` → `truncate` on the product name `<h3>`
+Move the dot indicators from below the image (outside the image container) to inside the image container, positioned at the bottom center — overlaying the image like in the reference screenshot.
 
-**`src/components/ShopFlow.tsx`** (line 902):
-- Change `line-clamp-2` → `truncate` on `<p>` product name
+Current: dots are in a separate `div` with `py-2.5` below the image `div`
+Target: dots sit inside the `aspect-[4/4]` container, absolutely positioned at the bottom center with a subtle backdrop blur
 
-**`src/pages/ProductDetailPage.tsx`** (line 741):
-- Change `line-clamp-2` → `truncate` on related product name in the "You May Also Like" section
+```text
+Before:
+┌──────────────────┐
+│     Image         │  ← aspect-[4/4] relative container
+│              1/2  │
+└──────────────────┘
+      ●  ○            ← dots outside, below image
 
-**`src/pages/InboxPage.tsx`** (line 469):
-- Change `line-clamp-2` → `truncate` on the product name in inbox product cards
+After:
+┌──────────────────┐
+│     Image         │
+│      ●  ○    1/2  │  ← dots inside, absolute bottom-center
+└──────────────────┘
+```
 
-> The single product detail page title stays multi-line (full title visible as requested).
+### Implementation
+- Move the dot `div` (lines 297-304) inside the `aspect-[4/4]` container (before line 294, the closing `</div>`)
+- Change styling to `absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5` with a subtle `bg-foreground/20 backdrop-blur-sm rounded-full px-2 py-1` pill behind the dots
+- Remove the outer `py-2.5` padding since dots no longer need vertical spacing
 
-### 2. Remove "Load More" button — show all products (ShopPage.tsx)
-
-- Remove `visibleCount` state and `hasMore` logic
-- Use `filtered` directly instead of `paginatedProducts` in the product grid
-- Delete the "Load More" button block (lines 559-570)
-- Remove the `useEffect` that resets `visibleCount` on filter change
-
-### 3. Scrollbar — already hidden globally
-
-The `src/index.css` already has global scrollbar hiding (`scrollbar-width: none` + `::-webkit-scrollbar { display: none }`), so no changes needed.
-
-## Summary
-- 4 files: `line-clamp-2` → `truncate` for single-line product titles
-- 1 file: remove pagination logic in ShopPage for infinite scroll
+### Summary
+- 1 file, ~10 lines moved and restyled
 - No backend changes
 
