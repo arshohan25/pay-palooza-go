@@ -363,7 +363,7 @@ export default function ProductDetailPage() {
                   <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                   <span>{product.rating || "4.5"}</span>
                   <span className="mx-0.5">·</span>
-                  <span className="truncate">{product.category}</span>
+                  <span className="truncate">{vendorInfo?.category || product.category}</span>
                 </div>
               </div>
             </div>
