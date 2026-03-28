@@ -402,17 +402,27 @@ export default function ProductDetailPage() {
           </motion.div>
         ))}
 
-        {/* Quantity */}
-        <motion.div custom={6} variants={fadeUp} initial="hidden" animate="show" className="flex items-center gap-3">
-          <span className="text-sm font-semibold text-foreground">Quantity</span>
-          <div className="flex items-center border border-border rounded-full overflow-hidden">
-            <button onClick={() => setQty(Math.max(1, qty - 1))} className="w-9 h-9 flex items-center justify-center hover:bg-muted/50 transition-colors">
-              <Minus className="w-3.5 h-3.5" />
-            </button>
-            <span className="w-10 text-center text-sm font-bold">{qty}</span>
-            <button onClick={() => setQty(Math.min(product.stock, qty + 1))} className="w-9 h-9 flex items-center justify-center hover:bg-muted/50 transition-colors">
-              <Plus className="w-3.5 h-3.5" />
-            </button>
+        {/* Stock + Quantity Row */}
+        <motion.div custom={6} variants={fadeUp} initial="hidden" animate="show">
+          <div className="flex items-center justify-between bg-muted/20 border border-border/50 rounded-xl px-4 py-3">
+            <div className="flex items-center gap-2">
+              <div className={cn("w-2.5 h-2.5 rounded-full", product.stock > 0 ? "bg-green-500" : "bg-destructive")} />
+              <span className="text-sm font-semibold text-foreground">
+                {product.stock > 0 ? "In Stock" : "Out of Stock"}
+              </span>
+              {product.stock > 0 && (
+                <span className="text-xs text-muted-foreground">· {product.stock} available</span>
+              )}
+            </div>
+            <div className="flex items-center border border-border rounded-full overflow-hidden bg-background">
+              <button onClick={() => setQty(Math.max(1, qty - 1))} className="w-9 h-9 flex items-center justify-center hover:bg-muted/50 transition-colors">
+                <Minus className="w-3.5 h-3.5" />
+              </button>
+              <span className="w-10 text-center text-sm font-bold">{qty}</span>
+              <button onClick={() => setQty(Math.min(product.stock, qty + 1))} className="w-9 h-9 flex items-center justify-center hover:bg-muted/50 transition-colors">
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </motion.div>
 
@@ -427,9 +437,6 @@ export default function ProductDetailPage() {
               <div className="flex flex-wrap gap-2 px-3.5 py-3">
                 {product.category && <Badge variant="secondary" className="text-xs">{product.category}</Badge>}
                 {(product as any).brand && <Badge variant="outline" className="text-xs">{(product as any).brand}</Badge>}
-                <Badge variant={product.stock > 0 ? "default" : "destructive"} className="text-xs">
-                  {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
-                </Badge>
               </div>
             </div>
           </motion.div>
