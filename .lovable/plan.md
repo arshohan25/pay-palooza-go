@@ -1,37 +1,88 @@
+# Clean Up Route List — Only Main Apps at Top Level
 
+## Problem
 
-# Move Dot Indicators Inside Image Carousel
+The Lovable preview route picker shows all routes including sub-pages (/shop/:slug, /orders/:id, /careers, /coupons, /donations, /loan, /insurance, /giftcards, etc.). The user wants only main app entry points visible.
 
-## Change
+## Approach
 
-**File: `src/pages/ProductDetailPage.tsx`** (lines 296-304)
+Use React Router nested routes — sub-pages become children of their parent `<Route>`. The Lovable route picker only shows top-level routes, so nesting hides sub-routes from the picker while keeping them fully functional.
 
-Move the dot indicators from below the image (outside the image container) to inside the image container, positioned at the bottom center — overlaying the image like in the reference screenshot.
+## Top-level routes to keep (7 main apps + utilities)
 
-Current: dots are in a separate `div` with `py-2.5` below the image `div`
-Target: dots sit inside the `aspect-[4/4]` container, absolutely positioned at the bottom center with a subtle backdrop blur
+1. `/` — User App (home)
+2. `/admin` — Admin Dashboard
+3. `/agent/*` — Agent (with nested cashin, b2b, register, billpay, history, bank, analytics)
+4. `/merchant` — Merchant Dashboard
+5. `/distributor/*` — Distributor (with nested create-agent)
+6. `/super-distributor/*` — Super Distributor (with nested create-distributor)
+7. `/developers` — Developer Portal
+8. `/install`, `/install/:role`
+9. `/team-login`
+
+## Routes to nest under User App (`/`)
+
+These become child routes of `/` using an `<Outlet>`:
+
+- `/shop`, `/shop/checkout`, `/shop/:slug`
+- `/product/:id`
+- `/wishlist`, `/orders`, `/orders/:id`
+- `/careers`, `/coupons`, `/donations`, `/loan`, `/insurance`, `/giftcards`
+- `/checkout/:sessionId`, `/pay/qr/:sessionId`, `/pay`
+  &nbsp;
+
+## Changes
+
+### File: `src/App.tsx`
+
+1. Create a simple layout wrapper component that renders `<Outlet />` for nested routes
+2. Restructure routes:
 
 ```text
-Before:
-┌──────────────────┐
-│     Image         │  ← aspect-[4/4] relative container
-│              1/2  │
-└──────────────────┘
-      ●  ○            ← dots outside, below image
+<Route path="/" element={<AppLayout />}>
+  <Route index element={<Index />} />
+  <Route path="shop" element={<ShopPage />} />
+  <Route path="shop/checkout" element={<ShopCheckoutPage />} />
+  <Route path="shop/:slug" element={<VendorStorePage />} />
+  <Route path="product/:id" element={<ProductDetailPage />} />
+  ... all other user sub-routes
+</Route>
 
-After:
-┌──────────────────┐
-│     Image         │
-│      ●  ○    1/2  │  ← dots inside, absolute bottom-center
-└──────────────────┘
+<Route path="/admin" element={<RoleGuard ...><AdminDashboard /></RoleGuard>} />
+
+<Route path="/agent" element={<RoleGuard ...>}>
+  <Route index element={<AgentDashboard />} />
+  <Route path="cashin" element={<AgentCashIn />} />
+  ... other agent sub-routes
+</Route>
+
+<Route path="/distributor" element={<RoleGuard ...>}>
+  <Route index element={<DistributorDashboard />} />
+  <Route path="create-agent" element={<DistributorCreateAgent />} />
+</Route>
+
+<Route path="/super-distributor" element={<RoleGuard ...>}>
+  <Route index element={<SuperDistributorDashboard />} />
+  <Route path="create-distributor" element={<SuperDistributorCreateDistributor />} />
+</Route>
+
+<Route path="/merchant" element={<RoleGuard ...><MerchantDashboard /></RoleGuard>} />
+<Route path="/developers" element={<DeveloperPortal />} />
 ```
 
-### Implementation
-- Move the dot `div` (lines 297-304) inside the `aspect-[4/4]` container (before line 294, the closing `</div>`)
-- Change styling to `absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5` with a subtle `bg-foreground/20 backdrop-blur-sm rounded-full px-2 py-1` pill behind the dots
-- Remove the outer `py-2.5` padding since dots no longer need vertical spacing
+3. For agent/distributor/super-distributor parent routes with nested children, create a thin wrapper that renders `<RoleGuard>` + `<Outlet />` so child routes inherit the guard.
 
-### Summary
-- 1 file, ~10 lines moved and restyled
-- No backend changes
+### New file: `src/components/AppLayout.tsx` (tiny)
 
+Just renders `<Outlet />` — a passthrough layout wrapper required by React Router for nested routes.
+
+### New file: `src/components/RoleGuardLayout.tsx` (tiny)
+
+Wraps `<RoleGuard>` around `<Outlet />` for role-protected route groups.
+
+## Summary
+
+- 1 file restructured: `App.tsx`
+- 2 small new files: `AppLayout.tsx`, `RoleGuardLayout.tsx`
+- All existing URLs continue to work — no link changes needed
+- Route picker shows only: `/`, `/admin`, `/agent`, `/merchant`, `/distributor`, `/super-distributor`, `/developers`
