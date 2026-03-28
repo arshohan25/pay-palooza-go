@@ -553,7 +553,6 @@ export default function ShopPage() {
           </motion.div>
         )}
 
-        )}
 
         {/* AI Recommendations */}
         {recommendedProducts.length > 0 && !search.trim() && selectedCategory === "All" && (
