@@ -1,29 +1,38 @@
 
 
-# Replace Online/Offline Status with Store Rating in Vendor Row
-
-## Problem
-The vendor row on the product detail page shows "Online" / "Offline" status under the store name. The user wants this removed — online/offline should only be visible inside chat. Instead, show store rating or category for a more premium feel.
+# Premium Product Title & Infinite Scroll Cleanup
 
 ## Changes
 
-### File: `src/pages/ProductDetailPage.tsx`
+### 1. Product titles: single line with ellipsis (4 files)
 
-**Vendor row (lines 359-366)** — 2 changes:
+**`src/components/shop/ProductCard.tsx`** (line 82):
+- Change `line-clamp-2` → `truncate` on the product name `<h3>`
 
-1. **Remove the online/offline dot** on the store avatar (lines 359-362): delete the colored dot span
-2. **Replace "Online"/"Offline" text** (line 366) with store rating + category display:
-   ```
-   ⭐ 4.5 · Electronics
-   ```
-   Use `product.rating` for the rating and `product.category` for the category, styled in muted-foreground text.
+**`src/components/ShopFlow.tsx`** (line 902):
+- Change `line-clamp-2` → `truncate` on `<p>` product name
 
-**Chat button in bottom bar (line 567-568)** — keep the online dot here since it's chat-related. No change needed.
+**`src/pages/ProductDetailPage.tsx`** (line 741):
+- Change `line-clamp-2` → `truncate` on related product name in the "You May Also Like" section
 
-**Inline chat header (lines 596-604)** — keep online/offline status here. No change needed.
+**`src/pages/InboxPage.tsx`** (line 469):
+- Change `line-clamp-2` → `truncate` on the product name in inbox product cards
 
-### Summary
-- 1 file edit: `src/pages/ProductDetailPage.tsx`
-- Remove online indicator from vendor row, replace subtitle with rating + category
-- Online/offline status preserved only in chat contexts
+> The single product detail page title stays multi-line (full title visible as requested).
+
+### 2. Remove "Load More" button — show all products (ShopPage.tsx)
+
+- Remove `visibleCount` state and `hasMore` logic
+- Use `filtered` directly instead of `paginatedProducts` in the product grid
+- Delete the "Load More" button block (lines 559-570)
+- Remove the `useEffect` that resets `visibleCount` on filter change
+
+### 3. Scrollbar — already hidden globally
+
+The `src/index.css` already has global scrollbar hiding (`scrollbar-width: none` + `::-webkit-scrollbar { display: none }`), so no changes needed.
+
+## Summary
+- 4 files: `line-clamp-2` → `truncate` for single-line product titles
+- 1 file: remove pagination logic in ShopPage for infinite scroll
+- No backend changes
 
