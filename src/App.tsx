@@ -8,12 +8,12 @@ import { ThemeProvider } from "next-themes";
 import { I18nProvider } from "@/lib/i18n";
 import { FestivalThemeProvider } from "@/contexts/FestivalThemeContext";
 import FestivalBodyEffect from "@/components/FestivalBodyEffect";
+import AppLayout from "@/components/AppLayout";
+import RoleGuardLayout from "@/components/RoleGuardLayout";
 import RoleGuard from "@/components/RoleGuard";
 
-// Lazy load the home page (was eager — now split for smaller initial bundle)
+// Lazy load all pages
 const Index = lazy(() => import("./pages/Index"));
-
-// Lazy load all other routes
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AgentDashboard = lazy(() => import("./pages/AgentDashboard"));
 const AgentCashIn = lazy(() => import("./pages/AgentCashIn"));
@@ -69,42 +69,64 @@ const App = () => (
             <BrowserRouter>
               <Suspense fallback={<LazyFallback />}>
                 <Routes>
-                  <Route path="/" element={<Index />} />
+                  {/* User App — all consumer sub-routes nested */}
+                  <Route path="/" element={<AppLayout />}>
+                    <Route index element={<Index />} />
+                    <Route path="shop" element={<ShopPage />} />
+                    <Route path="shop/checkout" element={<ShopCheckoutPage />} />
+                    <Route path="shop/:slug" element={<VendorStorePage />} />
+                    <Route path="product/:id" element={<ProductDetailPage />} />
+                    <Route path="wishlist" element={<WishlistPage />} />
+                    <Route path="orders" element={<CustomerOrdersPage />} />
+                    <Route path="orders/:id" element={<OrderDetailPage />} />
+                    <Route path="checkout/:sessionId" element={<CheckoutPage />} />
+                    <Route path="pay/qr/:sessionId" element={<DynamicQrPage />} />
+                    <Route path="pay" element={<PayPage />} />
+                    <Route path="careers" element={<CareersPage />} />
+                    <Route path="coupons" element={<CouponsPage />} />
+                    <Route path="donations" element={<DonationsPage />} />
+                    <Route path="loan" element={<LoanPage />} />
+                    <Route path="insurance" element={<InsurancePage />} />
+                    <Route path="giftcards" element={<GiftCardsPage />} />
+                  </Route>
+
+                  {/* Admin */}
                   <Route path="/admin" element={<RoleGuard roles={["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"]}><AdminDashboard /></RoleGuard>} />
-                  <Route path="/agent" element={<RoleGuard roles={["agent", "admin"]}><AgentDashboard /></RoleGuard>} />
-                  <Route path="/agent/cashin" element={<RoleGuard roles={["agent", "admin"]}><AgentCashIn /></RoleGuard>} />
-                  <Route path="/agent/b2b" element={<RoleGuard roles={["agent", "admin"]}><AgentB2B /></RoleGuard>} />
-                  <Route path="/agent/register" element={<RoleGuard roles={["agent", "admin"]}><AgentRegister /></RoleGuard>} />
-                  <Route path="/agent/billpay" element={<RoleGuard roles={["agent", "admin"]}><AgentBillPay /></RoleGuard>} />
-                  <Route path="/agent/history" element={<RoleGuard roles={["agent", "admin"]}><AgentTransactionHistory /></RoleGuard>} />
-                  <Route path="/agent/bank" element={<RoleGuard roles={["agent", "admin"]}><AgentBankTransfer /></RoleGuard>} />
-                  <Route path="/agent/analytics" element={<RoleGuard roles={["agent", "admin"]}><AgentAnalyticsPage /></RoleGuard>} />
-                  <Route path="/distributor" element={<RoleGuard roles={["distributor", "admin"]}><DistributorDashboard /></RoleGuard>} />
-                  <Route path="/distributor/create-agent" element={<RoleGuard roles={["distributor", "admin"]}><DistributorCreateAgent /></RoleGuard>} />
-                  <Route path="/super-distributor" element={<RoleGuard roles={["super_distributor", "admin"]}><SuperDistributorDashboard /></RoleGuard>} />
-                  <Route path="/super-distributor/create-distributor" element={<RoleGuard roles={["super_distributor", "admin"]}><SuperDistributorCreateDistributor /></RoleGuard>} />
+
+                  {/* Agent */}
+                  <Route path="/agent" element={<RoleGuardLayout roles={["agent", "admin"]} />}>
+                    <Route index element={<AgentDashboard />} />
+                    <Route path="cashin" element={<AgentCashIn />} />
+                    <Route path="b2b" element={<AgentB2B />} />
+                    <Route path="register" element={<AgentRegister />} />
+                    <Route path="billpay" element={<AgentBillPay />} />
+                    <Route path="history" element={<AgentTransactionHistory />} />
+                    <Route path="bank" element={<AgentBankTransfer />} />
+                    <Route path="analytics" element={<AgentAnalyticsPage />} />
+                  </Route>
+
+                  {/* Distributor */}
+                  <Route path="/distributor" element={<RoleGuardLayout roles={["distributor", "admin"]} />}>
+                    <Route index element={<DistributorDashboard />} />
+                    <Route path="create-agent" element={<DistributorCreateAgent />} />
+                  </Route>
+
+                  {/* Super Distributor */}
+                  <Route path="/super-distributor" element={<RoleGuardLayout roles={["super_distributor", "admin"]} />}>
+                    <Route index element={<SuperDistributorDashboard />} />
+                    <Route path="create-distributor" element={<SuperDistributorCreateDistributor />} />
+                  </Route>
+
+                  {/* Merchant */}
                   <Route path="/merchant" element={<RoleGuard roles={["merchant", "admin"]} allowStaff><MerchantDashboard /></RoleGuard>} />
-                  <Route path="/checkout/:sessionId" element={<CheckoutPage />} />
-                  <Route path="/pay/qr/:sessionId" element={<DynamicQrPage />} />
-                  <Route path="/pay" element={<PayPage />} />
+
+                  {/* Standalone top-level routes */}
                   <Route path="/team-login" element={<TeamLoginPage />} />
                   <Route path="/install" element={<RoleInstallPage />} />
                   <Route path="/install/:role" element={<RoleInstallPage />} />
-                  <Route path="/shop" element={<ShopPage />} />
-                  <Route path="/shop/checkout" element={<ShopCheckoutPage />} />
-                  <Route path="/shop/:slug" element={<VendorStorePage />} />
-                  <Route path="/product/:id" element={<ProductDetailPage />} />
-                  <Route path="/wishlist" element={<WishlistPage />} />
-                  <Route path="/orders" element={<CustomerOrdersPage />} />
-                  <Route path="/orders/:id" element={<OrderDetailPage />} />
-                  <Route path="/careers" element={<CareersPage />} />
-                  <Route path="/coupons" element={<CouponsPage />} />
-                  <Route path="/donations" element={<DonationsPage />} />
-                  <Route path="/loan" element={<LoanPage />} />
-                  <Route path="/insurance" element={<InsurancePage />} />
-                  <Route path="/giftcards" element={<GiftCardsPage />} />
                   <Route path="/developers" element={<DeveloperPortal />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+
+                  {/* Catch-all */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
