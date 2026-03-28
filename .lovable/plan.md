@@ -1,34 +1,29 @@
 
 
-# Redesign Stock + Quantity into One Row
+# Replace Online/Offline Status with Store Rating in Vendor Row
 
-## Current State
-- **Quantity** section (line 405-417): shows "Quantity" label on left, +/- selector beside it
-- **Stock info** is buried inside Key Highlights card as a badge (line 430-432)
-- These are separate sections
-
-## Goal
-Combine stock status and quantity selector into a single, clean row:
-- **Left side**: Stock indicator (e.g., green dot + "In Stock · 25 available")
-- **Right side**: Quantity selector (+/- buttons)
+## Problem
+The vendor row on the product detail page shows "Online" / "Offline" status under the store name. The user wants this removed — online/offline should only be visible inside chat. Instead, show store rating or category for a more premium feel.
 
 ## Changes
 
 ### File: `src/pages/ProductDetailPage.tsx`
 
-**Replace the Quantity section (lines 405-417)** with a combined row:
+**Vendor row (lines 359-366)** — 2 changes:
 
-```
-┌─────────────────────────────────────────────────┐
-│  🟢 In Stock · 25 available      [ - ] 1 [ + ] │
-└─────────────────────────────────────────────────┘
-```
+1. **Remove the online/offline dot** on the store avatar (lines 359-362): delete the colored dot span
+2. **Replace "Online"/"Offline" text** (line 366) with store rating + category display:
+   ```
+   ⭐ 4.5 · Electronics
+   ```
+   Use `product.rating` for the rating and `product.category` for the category, styled in muted-foreground text.
 
-- Left: green/red dot icon + "In Stock" or "Out of Stock" text + count
-- Right: existing rounded pill quantity selector, pushed to the right with `ml-auto`
-- Wrapped in a subtle `bg-muted/20 rounded-xl px-4 py-3` container for polish
+**Chat button in bottom bar (line 567-568)** — keep the online dot here since it's chat-related. No change needed.
 
-**Remove stock badge from Key Highlights** (line 430-432): delete the stock Badge from the highlights card since it's now shown in the quantity row.
+**Inline chat header (lines 596-604)** — keep online/offline status here. No change needed.
 
-### Single file edit, no backend changes.
+### Summary
+- 1 file edit: `src/pages/ProductDetailPage.tsx`
+- Remove online indicator from vendor row, replace subtitle with rating + category
+- Online/offline status preserved only in chat contexts
 
