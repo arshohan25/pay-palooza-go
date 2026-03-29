@@ -292,8 +292,6 @@ export default function ProductDetailPage() {
               transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
               whileTap={{ scale: 1.03 }}
             />
-              transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
-            />
           </AnimatePresence>
 
           {/* Nav arrows (desktop) */}
