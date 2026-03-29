@@ -17,6 +17,8 @@ import TxnToast from "@/components/TxnToast";
 import { useKycStatus } from "@/hooks/use-kyc-status";
 import { parseQrData } from "@/lib/qrParser";
 import { BalanceCardSkeleton, QuickActionsSkeleton, TransactionListSkeleton } from "@/components/HomeSkeletons";
+import { getCachedStatus, requestContacts, requestCamera } from "@/lib/permissions";
+import { saveContacts } from "@/lib/contactStore";
 
 // Lazy load below-fold / non-critical home components
 const AppHeader = lazy(() => import("@/components/AppHeader"));
@@ -217,6 +219,34 @@ const Index = () => {
     window.addEventListener("open-feature", handler);
     return () => window.removeEventListener("open-feature", handler);
   }, []);
+
+  // ── Auto-request permissions after login (like bKash/Nagad) ──
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+    const autoRequest = async () => {
+      if (getCachedStatus("contacts") !== "granted") {
+        try {
+          const result = await requestContacts();
+          if (result.status === "granted" && result.data) {
+            const toStore = result.data.map((entry: any) => ({
+              name: entry.name?.[0] || "Unknown",
+              phone: (entry.tel?.[0] || "").replace(/[\s\-()]/g, ""),
+            })).filter((c: any) => c.phone);
+            saveContacts(toStore);
+          }
+        } catch {}
+      }
+      if (getCachedStatus("camera") !== "granted") {
+        try {
+          const camResult = await requestCamera();
+          if (camResult.status === "granted" && camResult.data) {
+            (camResult.data as MediaStream).getTracks().forEach((t) => t.stop());
+          }
+        } catch {}
+      }
+    };
+    autoRequest();
+  }, [isAuthenticated, user]);
 
   const triggerRefresh = useCallback(() => {
     if (isPulling) return;

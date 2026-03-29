@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
-import { requestLocation } from "@/lib/permissions";
+import { requestLocation, requestContacts, getCachedStatus } from "@/lib/permissions";
 import { recordTransaction, getBalance } from "@/lib/balanceStore";
 import { verifyPin } from "@/lib/verifyPin";
 import { checkDailyLimit } from "@/lib/dailyLimits";
@@ -34,7 +34,8 @@ import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n";
 import FeatureGuard from "@/components/FeatureGuard";
 import PermissionGate from "@/components/PermissionGate";
-import { Contact2 } from "lucide-react";
+import { Contact2, RefreshCw } from "lucide-react";
+import { loadContacts, saveContacts, mapStoredContactsToUI, type ContactUI } from "@/lib/contactStore";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Step = "number" | "packs" | "amount" | "pin" | "success";
@@ -231,7 +232,40 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
   const txnTime = useRef(new Date());
   const txnId   = useRef(generateTxnId());
 
-  // Fetch packs from DB
+  // ── Imported contacts ──
+  const [storedContacts, setStoredContacts] = useState<ContactUI[]>([]);
+  const [syncingContacts, setSyncingContacts] = useState(false);
+
+  useEffect(() => {
+    const stored = loadContacts();
+    if (stored.length > 0) setStoredContacts(mapStoredContactsToUI(stored));
+  }, []);
+
+  const handleSyncContacts = async () => {
+    setSyncingContacts(true);
+    try {
+      const result = await requestContacts();
+      if (result.status === "granted" && result.data) {
+        const toStore = result.data.map((entry: any) => ({
+          name: entry.name?.[0] || "Unknown",
+          phone: (entry.tel?.[0] || "").replace(/[\s\-()]/g, ""),
+        })).filter((c: any) => c.phone);
+        const merged = saveContacts(toStore);
+        setStoredContacts(mapStoredContactsToUI(merged));
+      }
+    } catch {}
+    setSyncingContacts(false);
+  };
+
+  const filteredStoredContacts = useMemo(() => {
+    if (!phone.trim()) return storedContacts;
+    const q = phone.replace(/\D/g, "");
+    return storedContacts.filter((c) =>
+      c.name.toLowerCase().includes(q) || c.phone.includes(q)
+    );
+  }, [storedContacts, phone]);
+
+
   const [dbPacks, setDbPacks] = useState<Pack[]>([]);
   const { isDisabled } = useGlobalToggles();
   const driveHidden = isDisabled("drive_offers");
@@ -594,27 +628,57 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                     </p>
                   )}
 
-                  {/* Pick from Contacts */}
-                  <PermissionGate
-                    permission="contacts"
-                    onGranted={(contacts) => {
-                      if (contacts?.[0]) {
-                        const tel = contacts[0].tel?.[0]?.replace(/\D/g, "").slice(-11) || "";
-                        if (tel.length === 11) {
-                          setPhone(tel);
-                          setError("");
-                        }
-                      }
-                    }}
-                  >
+                  {/* ── Contact list (Rocket/bKash style) ── */}
+                  {storedContacts.length === 0 ? (
                     <button
                       type="button"
-                      className="w-full h-11 border-2 border-dashed border-border rounded-xl flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/50 hover:bg-primary/5 active:scale-[0.98] transition-all"
+                      onClick={handleSyncContacts}
+                      disabled={syncingContacts}
+                      className="w-full h-14 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-3 text-sm font-semibold text-muted-foreground hover:text-foreground hover:border-primary/50 hover:bg-primary/5 active:scale-[0.98] transition-all"
                     >
-                      <Contact2 size={16} />
-                      Pick from Contacts
+                      <Contact2 size={18} />
+                      {syncingContacts ? "Importing…" : "Allow Contact Access"}
                     </button>
-                  </PermissionGate>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Contacts</p>
+                        <button
+                          onClick={handleSyncContacts}
+                          disabled={syncingContacts}
+                          className="p-1.5 rounded-lg hover:bg-muted active:scale-95 transition-all"
+                          title="Sync contacts"
+                        >
+                          <RefreshCw size={14} className={`text-muted-foreground ${syncingContacts ? "animate-spin" : ""}`} />
+                        </button>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto scrollbar-none space-y-1">
+                        {filteredStoredContacts.slice(0, 50).map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => {
+                              const digits = c.phone.replace(/\D/g, "").slice(-11);
+                              if (digits.length === 11) { setPhone(digits); setError(""); }
+                              haptics.light();
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-muted/50 active:bg-muted active:scale-[0.98] transition-all text-left"
+                          >
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${c.colorClass}`}>
+                              {c.initials}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-foreground truncate">{c.name}</p>
+                              <p className="text-xs text-muted-foreground">{c.phone}</p>
+                            </div>
+                          </button>
+                        ))}
+                        {filteredStoredContacts.length === 0 && (
+                          <p className="text-xs text-muted-foreground text-center py-3">No matching contacts</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Primary Continue CTA */}
                   <motion.button
