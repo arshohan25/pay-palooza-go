@@ -52,6 +52,8 @@ const LoanPage = () => {
       .then(({ data }) => { setApplications(data || []); setLoading(false); });
   }, [user]);
 
+  if (kycLoading) return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
+
   const handleApply = async () => {
     if (!user) { toast.error("Please sign in first"); return; }
     setSubmitting(true);

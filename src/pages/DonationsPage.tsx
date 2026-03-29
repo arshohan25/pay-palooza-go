@@ -44,15 +44,6 @@ const DonationsPage = () => {
   const { user } = useAuth();
   const { status: kycStatus, loading: kycLoading } = useKycStatus();
   const [step, setStep] = useState<Step>("cause");
-
-  useEffect(() => {
-    if (!kycLoading && kycStatus !== "verified") {
-      toast.error("Please complete KYC verification to use this feature.");
-      navigate("/");
-    }
-  }, [kycLoading, kycStatus, navigate]);
-
-  if (kycLoading) return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
   const [selectedCause, setSelectedCause] = useState<typeof CAUSES[0] | null>(null);
   const [amount, setAmount] = useState("");
   const [message, setMessage] = useState("");
