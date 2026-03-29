@@ -316,34 +316,72 @@ export default function ShopCheckoutPage() {
           <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
             Payment Method
           </p>
-          <button
-            onClick={() => setPayMethod("wallet")}
-            className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-colors text-left ${
-              payMethod === "wallet" ? "border-primary/30 bg-primary/5" : "border-border"
-            }`}
-          >
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <Wallet className="w-4 h-4 text-primary" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-foreground">EasyPay Wallet</p>
-              <p className="text-[11px] text-muted-foreground">
-                Balance: ৳{walletBalance.toLocaleString()}
-              </p>
-            </div>
-            <div
-              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                payMethod === "wallet" ? "border-primary" : "border-border"
+          {paymentMethods.length === 0 ? (
+            <button
+              onClick={() => setPayMethod("wallet")}
+              className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-colors text-left ${
+                payMethod === "wallet" ? "border-primary/30 bg-primary/5" : "border-border"
               }`}
             >
-              {payMethod === "wallet" && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
-            </div>
-          </button>
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Wallet className="w-4 h-4 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-foreground">EasyPay Wallet</p>
+                <p className="text-[11px] text-muted-foreground">Balance: ৳{walletBalance.toLocaleString()}</p>
+              </div>
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${payMethod === "wallet" ? "border-primary" : "border-border"}`}>
+                {payMethod === "wallet" && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+              </div>
+            </button>
+          ) : (
+            paymentMethods.map(m => {
+              const IconComp = PAY_ICON_MAP[m.icon] || CreditCard;
+              const isSelected = payMethod === m.key;
+              const isComingSoon = !["wallet", "cod"].includes(m.key);
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => !isComingSoon && setPayMethod(m.key)}
+                  disabled={isComingSoon}
+                  className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-colors text-left ${
+                    isSelected ? "border-primary/30 bg-primary/5" : "border-border"
+                  } ${isComingSoon ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <IconComp className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-bold text-foreground">{m.label}</p>
+                      {isComingSoon && (
+                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">Coming Soon</span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      {m.key === "wallet" ? `Balance: ৳${walletBalance.toLocaleString()}` : m.description || ""}
+                    </p>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected ? "border-primary" : "border-border"}`}>
+                    {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                  </div>
+                </button>
+              );
+            })
+          )}
           {payMethod === "wallet" && orderTotal > walletBalance && (
             <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-destructive/5 border border-destructive/20">
               <AlertCircle className="w-3.5 h-3.5 text-destructive shrink-0" />
               <p className="text-[11px] text-destructive font-semibold">
                 Insufficient balance. Need ৳{(orderTotal - walletBalance).toLocaleString()} more.
+              </p>
+            </div>
+          )}
+          {isCod && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-accent/50 border border-accent">
+              <Truck className="w-3.5 h-3.5 text-primary shrink-0" />
+              <p className="text-[11px] text-muted-foreground font-semibold">
+                No advance payment required. Pay ৳{orderTotal.toLocaleString()} on delivery.
               </p>
             </div>
           )}
