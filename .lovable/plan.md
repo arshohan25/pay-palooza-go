@@ -1,36 +1,34 @@
 
 
-# Auto-Request Permissions After Login & Show Contacts in Recharge Flow
+# Add KYC Status Column to Admin User Management Table
 
 ## Problem
-1. Contacts are only requested when user manually taps "Allow Contact Access" inside Send Money — should be requested automatically right after login (like bKash/Nagad/Rocket)
-2. Mobile Recharge flow has no contact list — just a "Pick from Contacts" button that opens native picker each time. It should show imported contacts below the number input (like the Rocket screenshot)
+The admin user table shows Name, Phone, Balance, and Status — but no KYC verification status. Admins must open individual user details to check KYC.
 
 ## Changes
 
-### 1. Auto-request permissions after login — `src/pages/Index.tsx`
-Add a `useEffect` that runs once after authentication:
-- Check if contacts permission is not yet "granted" in cache
-- If not, call `requestContacts()` silently — on grant, save all contacts to `contactStore`
-- Also request camera permission silently (for QR scanning)
-- This runs once per device (cached status prevents re-prompting)
+### 1. `src/hooks/use-admin.ts` — `fetchAllUsers()`
+- After fetching profiles, also fetch `kyc_verifications` table: `select("user_id, status").in("user_id", userIds)`
+- Build a `kycMap: Map<string, string>` (user_id → status like "verified", "pending", "rejected")
+- Attach `kyc_status` to each user object before returning
+- Also check `kyc_exempt` field from profiles (already in `select("*")`)
 
-### 2. Add contact list to Mobile Recharge — `src/components/MobileRechargeFlow.tsx`
-Replicate the Rocket-style UI from the screenshot:
-- Import `loadContacts` from `contactStore` and `requestContacts` from permissions
-- On mount, load stored contacts into state
-- Show contacts below the phone input field in the "number" step:
-  - **"Recent"** section (from recent recharges if available)
-  - **"Contacts"** section with all imported contacts (name + phone, with avatar initials)
-- Tapping a contact fills the phone input field
-- Replace the "Pick from Contacts" button with a "Sync" refresh icon in the contacts header
-- Keep "Allow Contact Access" card if no contacts are stored yet (same as SendMoney pattern)
+### 2. `src/pages/AdminDashboard.tsx` — Desktop table
+- Add a new `<th>KYC</th>` column header between "Balance" and "Status" (line ~1261)
+- Add a `<td>` rendering a color-coded Badge:
+  - **Verified** → green badge (✓ Verified)
+  - **Exempt** → blue badge (Exempt)
+  - **Pending** → yellow badge (Pending)
+  - **Rejected** → red badge (Rejected)
+  - **None** → gray badge (Not Started)
 
-### 3. Shared contact-to-UI mapper — `src/lib/contactStore.ts`
-Add a helper `mapStoredContactsToUI()` that converts `StoredContact[]` to the UI contact format with initials and color classes — avoids duplicating this logic between SendMoney and Recharge flows.
+### 3. `src/pages/AdminDashboard.tsx` — Mobile card layout
+- Add a KYC badge next to the existing status badge in the mobile card header area
+
+### 4. `src/hooks/use-admin.ts` — `exportUsersCSV()`
+- Add "KYC Status" column to the CSV export
 
 ## Files Changed
-- `src/pages/Index.tsx` — add post-login auto-permission request useEffect
-- `src/components/MobileRechargeFlow.tsx` — add contact list UI below phone input (Rocket style)
-- `src/lib/contactStore.ts` — add shared UI mapper helper
+- `src/hooks/use-admin.ts` — fetch KYC status alongside profiles, add to CSV export
+- `src/pages/AdminDashboard.tsx` — add KYC column to desktop table and mobile cards
 
