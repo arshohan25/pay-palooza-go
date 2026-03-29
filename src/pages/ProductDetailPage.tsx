@@ -543,7 +543,6 @@ export default function ProductDetailPage() {
                 })()}
               </div>
               </motion.div>
-              </motion.div>
             </TabsContent>
 
             <TabsContent value="specs" className="mt-3">
@@ -561,6 +560,7 @@ export default function ProductDetailPage() {
                   </div>
                 ))}
               </div>
+              </motion.div>
             </TabsContent>
 
             <TabsContent value="reviews" className="mt-3 -mx-4">
