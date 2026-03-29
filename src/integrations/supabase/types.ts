@@ -4918,18 +4918,31 @@ export type Database = {
         Args: { p_action: string; p_admin_note?: string; p_refund_id: string }
         Returns: Json
       }
-      record_transaction: {
-        Args: {
-          p_amount: number
-          p_description?: string
-          p_fee?: number
-          p_recipient_name?: string
-          p_recipient_phone?: string
-          p_reference?: string
-          p_type: Database["public"]["Enums"]["txn_type"]
-        }
-        Returns: Json
-      }
+      record_transaction:
+        | {
+            Args: {
+              p_amount: number
+              p_cashback?: number
+              p_fee?: number
+              p_metadata?: Json
+              p_note?: string
+              p_recipient?: string
+              p_type: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_amount: number
+              p_description?: string
+              p_fee?: number
+              p_recipient_name?: string
+              p_recipient_phone?: string
+              p_reference?: string
+              p_type: Database["public"]["Enums"]["txn_type"]
+            }
+            Returns: Json
+          }
       release_escrow: { Args: { p_order_id: string }; Returns: Json }
       require_kyc_verified: { Args: { p_user_id: string }; Returns: undefined }
       resolve_payment_merchant: {

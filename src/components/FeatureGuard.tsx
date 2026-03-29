@@ -4,10 +4,14 @@ import { useFeatureLocks } from "@/hooks/use-feature-locks";
 import { useKycStatus } from "@/hooks/use-kyc-status";
 import { toast } from "sonner";
 
+// Features that don't require KYC verification
+const KYC_EXEMPT_FEATURES = ["mobile_recharge", "add_money"];
+
 interface FeatureGuardProps {
   featureKey: string;
   onClose: () => void;
   children: React.ReactNode;
+  skipKyc?: boolean;
 }
 
 /**
@@ -17,7 +21,7 @@ interface FeatureGuardProps {
  * Once the guard has resolved and allowed, it keeps children mounted even during
  * background KYC revalidation to prevent active flows from being unmounted.
  */
-const FeatureGuard = ({ featureKey, onClose, children }: FeatureGuardProps) => {
+const FeatureGuard = ({ featureKey, onClose, children, skipKyc }: FeatureGuardProps) => {
   const { isDisabled, isHidden } = useGlobalToggles();
   const { isLocked } = useFeatureLocks();
   const { status: kycStatus, loading: kycLoading } = useKycStatus();
@@ -26,8 +30,10 @@ const FeatureGuard = ({ featureKey, onClose, children }: FeatureGuardProps) => {
   const globalOff = isDisabled(featureKey);
   const globalHidden = isHidden(featureKey);
   const lockStatus = isLocked(featureKey);
-  // Only evaluate KYC block when loading is complete
-  const kycBlocked = !kycLoading && kycStatus !== "verified";
+  // Skip KYC check for exempt features
+  const isKycExempt = skipKyc || KYC_EXEMPT_FEATURES.includes(featureKey);
+  // Only evaluate KYC block when loading is complete and feature is not exempt
+  const kycBlocked = !isKycExempt && !kycLoading && kycStatus !== "verified";
   const blocked = !kycLoading && (globalOff || globalHidden || lockStatus.locked || kycBlocked);
 
   useEffect(() => {
