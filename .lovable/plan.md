@@ -1,39 +1,36 @@
 
 
-# Import Phone Contacts Into App (bKash/Nagad Style)
+# Auto-Request Permissions After Login & Show Contacts in Recharge Flow
 
 ## Problem
-Currently, the app uses the **Web Contact Picker API** which opens the native OS contact picker every time. Users must manually select contacts each session. The user wants contacts to be **imported once and stored in-app**, displayed within the app's own UI — like bKash, Nagad, and Rocket do.
-
-## Current Behavior
-1. User taps "Allow Contact Access" → native picker opens (screenshot)
-2. User manually selects contacts → they appear in the list
-3. On next visit, the native picker opens **again** (line 246-254 in SendMoneyFlow)
-
-## Desired Behavior
-1. First time: Tap "Allow Contact Access" → native picker opens → user selects ALL contacts → contacts are **saved to localStorage**
-2. Every subsequent visit: Contacts load instantly from local storage, no native picker
-3. A "Refresh/Sync Contacts" button to re-import if needed
+1. Contacts are only requested when user manually taps "Allow Contact Access" inside Send Money — should be requested automatically right after login (like bKash/Nagad/Rocket)
+2. Mobile Recharge flow has no contact list — just a "Pick from Contacts" button that opens native picker each time. It should show imported contacts below the number input (like the Rocket screenshot)
 
 ## Changes
 
-### 1. New utility: `src/lib/contactStore.ts`
-- `saveContacts(contacts: Contact[])` — persist to localStorage key `ezypay_phone_contacts`
-- `loadContacts(): Contact[]` — read from localStorage
-- `clearContacts()` — for refresh flow
-- Normalize and deduplicate by phone number before saving
+### 1. Auto-request permissions after login — `src/pages/Index.tsx`
+Add a `useEffect` that runs once after authentication:
+- Check if contacts permission is not yet "granted" in cache
+- If not, call `requestContacts()` silently — on grant, save all contacts to `contactStore`
+- Also request camera permission silently (for QR scanning)
+- This runs once per device (cached status prevents re-prompting)
 
-### 2. Update `src/components/SendMoneyFlow.tsx`
-- **On mount**: Load contacts from `contactStore.loadContacts()` instead of calling `requestContacts()` (remove lines 245-254 that re-trigger native picker)
-- **On "Allow Contact Access" grant**: Save picked contacts via `contactStore.saveContacts()`, then set `phoneContacts` state
-- **Add "Sync Contacts" button**: Small refresh icon next to "All Contacts" header — triggers native picker again, merges new contacts with existing, saves to store
-- Keep all existing contact display UI (ContactRow, color-coded avatars, search/filter)
+### 2. Add contact list to Mobile Recharge — `src/components/MobileRechargeFlow.tsx`
+Replicate the Rocket-style UI from the screenshot:
+- Import `loadContacts` from `contactStore` and `requestContacts` from permissions
+- On mount, load stored contacts into state
+- Show contacts below the phone input field in the "number" step:
+  - **"Recent"** section (from recent recharges if available)
+  - **"Contacts"** section with all imported contacts (name + phone, with avatar initials)
+- Tapping a contact fills the phone input field
+- Replace the "Pick from Contacts" button with a "Sync" refresh icon in the contacts header
+- Keep "Allow Contact Access" card if no contacts are stored yet (same as SendMoney pattern)
 
-### 3. Update `src/lib/permissions.ts` — `requestContacts()`
-- No structural change needed — the function already returns picked contacts
-- The key change is in SendMoneyFlow: stop auto-calling `requestContacts()` on mount when cached as "granted"
+### 3. Shared contact-to-UI mapper — `src/lib/contactStore.ts`
+Add a helper `mapStoredContactsToUI()` that converts `StoredContact[]` to the UI contact format with initials and color classes — avoids duplicating this logic between SendMoney and Recharge flows.
 
 ## Files Changed
-- **New**: `src/lib/contactStore.ts` — localStorage persistence for imported contacts
-- **Edit**: `src/components/SendMoneyFlow.tsx` — load from store on mount, save on import, add sync button
+- `src/pages/Index.tsx` — add post-login auto-permission request useEffect
+- `src/components/MobileRechargeFlow.tsx` — add contact list UI below phone input (Rocket style)
+- `src/lib/contactStore.ts` — add shared UI mapper helper
 
