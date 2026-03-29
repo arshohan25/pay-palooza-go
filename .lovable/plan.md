@@ -1,27 +1,54 @@
 
 
-# Fix: Add Missing KYC Check to `transfer_money` RPC
+# Enforce KYC on All Unguarded Pages
 
 ## Problem
-The `transfer_money` database function is **missing** the `require_kyc_verified` call. While `record_transaction` and `savings_deposit` both enforce KYC server-side, `transfer_money` does not — meaning Send Money, Cash In, and other transfer operations can proceed without KYC verification at the database level.
+Six standalone route pages allow financial actions **without any KYC check**:
+- `/donations` — DonationsPage (accepts donations with PIN/balance deduction)
+- `/loan` — LoanPage (loan applications)
+- `/insurance` — InsurancePage (insurance purchases)
+- `/giftcards` — GiftCardsPage (gift card purchases)
+- `/coupons` — CouponsPage (coupon usage)
+- `/refer` — ReferPage (referral rewards — read-only, low risk)
 
-The first migration attempted to add it, but the function currently in the database does not include the check.
+The modal-based flows (Send Money, Cash Out, Payment, etc.) are properly guarded by `FeatureGuard`, but these page-based flows bypass KYC entirely.
 
-## Root Cause
-The migration that was supposed to add `require_kyc_verified` to `transfer_money` either failed to apply or was overwritten by a subsequent migration that recreated the function without the check.
+## Solution
+Add a **KYC gate** at the top of each financial page that redirects unverified users back to home with a toast message. Use the existing `useKycStatus` hook.
 
-## Fix
+### Pages to protect (require KYC)
+1. **DonationsPage** — involves balance deduction
+2. **LoanPage** — financial product
+3. **InsurancePage** — financial product
+4. **GiftCardsPage** — involves balance deduction
 
-### Database Migration
-Create a new migration that adds `PERFORM require_kyc_verified(v_sender_id);` to the `transfer_money` function, placed right after the authentication check (`auth.uid()`) and before balance/validation logic.
+### Pages to leave unprotected
+- **CouponsPage** — browsing coupons is harmless (actual purchase goes through guarded checkout)
+- **ReferPage** — read-only referral info, no financial action
 
-The full function will be recreated with `CREATE OR REPLACE FUNCTION` preserving all existing logic but inserting the KYC check at line 18 (after `IF v_sender_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;`).
+### Implementation pattern (same for all 4 pages)
+```tsx
+import { useKycStatus } from "@/hooks/use-kyc-status";
 
-## Verification
-- `record_transaction` — already has KYC check with recharge/addmoney exemption ✓
-- `savings_deposit` — already has KYC check ✓
-- `transfer_money` — will be fixed by this migration
+// Inside component:
+const { status: kycStatus, loading: kycLoading } = useKycStatus();
+
+useEffect(() => {
+  if (!kycLoading && kycStatus !== "verified") {
+    toast.error("Please complete KYC verification to use this feature.");
+    navigate("/");
+  }
+}, [kycLoading, kycStatus]);
+
+if (kycLoading) return <loading skeleton>;
+```
+
+### Server-side enforcement
+The `record_transaction` RPC already enforces KYC for non-exempt types, and `donations`, `gift_cards`, `loan`, `insurance` transaction types are NOT in the exempt list — so server-side is already covered. This change adds the missing client-side guard.
 
 ## Files Changed
-- 1 new database migration — adds `require_kyc_verified` call to `transfer_money` RPC
+- `src/pages/DonationsPage.tsx` — add KYC gate
+- `src/pages/LoanPage.tsx` — add KYC gate
+- `src/pages/InsurancePage.tsx` — add KYC gate
+- `src/pages/GiftCardsPage.tsx` — add KYC gate
 
