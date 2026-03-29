@@ -46,7 +46,7 @@ interface CheckoutPaymentMethod {
   is_enabled: boolean;
   sort_order: number;
 }
-
+const PAY_ICON_MAP: Record<string, any> = { wallet: Wallet, truck: Truck, smartphone: Smartphone, "credit-card": CreditCard };
 
 interface DeliveryZone {
   id: string;
