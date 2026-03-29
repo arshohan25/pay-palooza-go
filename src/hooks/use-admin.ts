@@ -87,6 +87,27 @@ export async function fetchAllUsers(limit = 50) {
     .order("created_at", { ascending: false })
     .limit(limit);
 
+  const users = data ?? [];
+
+  // Fetch KYC statuses for all users
+  const userIds = users.map((u: any) => u.user_id);
+  let kycMap: Record<string, string> = {};
+  if (userIds.length > 0) {
+    const { data: kycData } = await supabase
+      .from("kyc_verifications")
+      .select("user_id, status")
+      .in("user_id", userIds);
+    if (kycData) {
+      kycMap = Object.fromEntries(kycData.map((k: any) => [k.user_id, k.status]));
+    }
+  }
+
+  // Attach kyc_status to each user
+  const enriched = users.map((u: any) => ({
+    ...u,
+    kyc_status: u.kyc_exempt ? "exempt" : (kycMap[u.user_id] || "not_started"),
+  }));
+
   // Audit log: record admin viewing user list
   const { data: { session } } = await supabase.auth.getSession();
   if (session?.user) {
@@ -95,11 +116,11 @@ export async function fetchAllUsers(limit = 50) {
       action: "view_all_profiles",
       entity_type: "user_list",
       entity_id: session.user.id,
-      details: { count: data?.length ?? 0 },
+      details: { count: enriched.length },
     }).then(); // fire-and-forget
   }
 
-  return data ?? [];
+  return enriched;
 }
 
 export async function fetchFraudAlerts(limit = 50) {
@@ -250,11 +271,12 @@ export async function bulkSoftDeleteUsers(userIds: string[]) {
 }
 
 export function exportUsersCSV(users: any[]) {
-  const headers = ["Name", "Phone", "Balance", "Status", "Created At"];
+  const headers = ["Name", "Phone", "Balance", "KYC Status", "Status", "Created At"];
   const rows = users.map(u => [
     u.name || "",
     u.phone || "",
     u.balance?.toString() || "0",
+    u.kyc_status || "not_started",
     u.status || "active",
     u.created_at || "",
   ]);

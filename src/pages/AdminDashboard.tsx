@@ -1258,6 +1258,7 @@ export default function AdminDashboard() {
                           <th className="text-left px-4 py-3 font-medium">Name</th>
                           <th className="text-left px-4 py-3 font-medium">Phone</th>
                           <th className="text-left px-4 py-3 font-medium">Balance</th>
+                          <th className="text-left px-4 py-3 font-medium">KYC</th>
                           <th className="text-left px-4 py-3 font-medium">Status</th>
                           <th className="text-left px-4 py-3 font-medium">Action</th>
                         </tr>
@@ -1277,6 +1278,24 @@ export default function AdminDashboard() {
                               <td className="px-4 py-3 font-medium text-foreground">{user.name || "—"}</td>
                               <td className="px-4 py-3 text-muted-foreground">{user.phone}</td>
                               <td className="px-4 py-3 font-semibold text-foreground">৳{parseFloat(user.balance).toLocaleString()}</td>
+                              <td className="px-4 py-3">
+                                <Badge
+                                  variant="outline"
+                                  className={`text-xs ${
+                                    user.kyc_status === "verified" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700" :
+                                    user.kyc_status === "exempt" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-300 dark:border-blue-700" :
+                                    user.kyc_status === "pending" ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700" :
+                                    user.kyc_status === "rejected" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 border-red-300 dark:border-red-700" :
+                                    "bg-muted text-muted-foreground"
+                                  }`}
+                                >
+                                  {user.kyc_status === "verified" ? "✓ Verified" :
+                                   user.kyc_status === "exempt" ? "Exempt" :
+                                   user.kyc_status === "pending" ? "Pending" :
+                                   user.kyc_status === "rejected" ? "Rejected" :
+                                   "Not Started"}
+                                </Badge>
+                              </td>
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-1.5">
                                   <Badge
@@ -1350,13 +1369,31 @@ export default function AdminDashboard() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-2">
                                 <p className="font-semibold text-foreground text-sm truncate">{user.name || "—"}</p>
-                                <Badge
-                                  variant={user.status === "suspended" ? "destructive" : isDeactivated ? "outline" : "secondary"}
-                                  className={`text-[10px] shrink-0 ${isDeactivated ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border-orange-300 dark:border-orange-700" : ""}`}
-                                >
-                                  {user.status || "active"}
-                                  {isDeactivated && graceDays !== null && ` · ${graceDays}d`}
-                                </Badge>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-[10px] ${
+                                      user.kyc_status === "verified" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700" :
+                                      user.kyc_status === "exempt" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-300 dark:border-blue-700" :
+                                      user.kyc_status === "pending" ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700" :
+                                      user.kyc_status === "rejected" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 border-red-300 dark:border-red-700" :
+                                      "bg-muted text-muted-foreground"
+                                    }`}
+                                  >
+                                    {user.kyc_status === "verified" ? "✓ KYC" :
+                                     user.kyc_status === "exempt" ? "Exempt" :
+                                     user.kyc_status === "pending" ? "KYC ⏳" :
+                                     user.kyc_status === "rejected" ? "KYC ✗" :
+                                     "No KYC"}
+                                  </Badge>
+                                  <Badge
+                                    variant={user.status === "suspended" ? "destructive" : isDeactivated ? "outline" : "secondary"}
+                                    className={`text-[10px] ${isDeactivated ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border-orange-300 dark:border-orange-700" : ""}`}
+                                  >
+                                    {user.status || "active"}
+                                    {isDeactivated && graceDays !== null && ` · ${graceDays}d`}
+                                  </Badge>
+                                </div>
                               </div>
                               <p className="text-xs text-muted-foreground">{user.phone}</p>
                               <p className="text-sm font-semibold text-foreground mt-1">৳{parseFloat(user.balance).toLocaleString()}</p>
