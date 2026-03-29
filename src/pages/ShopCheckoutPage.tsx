@@ -90,7 +90,7 @@ export default function ShopCheckoutPage() {
     return () => { unsub(); };
   }, []);
 
-  // Load delivery zones
+  // Load delivery zones + payment methods
   useEffect(() => {
     if (!user) return;
     supabase
@@ -98,6 +98,12 @@ export default function ShopCheckoutPage() {
       .select("*, courier_providers(name)")
       .eq("is_active", true)
       .then(({ data }) => setDeliveryZones((data as any[]) ?? []));
+    supabase
+      .from("checkout_payment_methods")
+      .select("*")
+      .eq("is_enabled", true)
+      .order("sort_order", { ascending: true })
+      .then(({ data }) => setPaymentMethods((data as any[]) ?? []));
   }, [user]);
 
   // Match delivery zone by city
