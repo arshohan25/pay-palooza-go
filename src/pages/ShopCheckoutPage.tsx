@@ -251,8 +251,10 @@ export default function ShopCheckoutPage() {
               <span className="font-semibold text-foreground">Estimated 3-5 business days</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <Wallet className="w-3.5 h-3.5 text-primary" />
-              <span className="font-semibold text-foreground">৳{orderTotal.toLocaleString()} deducted from wallet</span>
+              {isCod ? <Truck className="w-3.5 h-3.5 text-primary" /> : <Wallet className="w-3.5 h-3.5 text-primary" />}
+              <span className="font-semibold text-foreground">
+                {isCod ? `Pay ৳${orderTotal.toLocaleString()} on delivery` : `৳${orderTotal.toLocaleString()} deducted from wallet`}
+              </span>
             </div>
             {selectedAddress && (
               <div className="flex items-center gap-2 text-sm">
