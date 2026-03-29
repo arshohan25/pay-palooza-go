@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, MapPin, Wallet, CreditCard, ShoppingCart, Package,
-  X, Ticket, Gift, AlertCircle, Loader2,
+  X, Ticket, Gift, AlertCircle, Loader2, Truck, Smartphone, Ban,
 } from "lucide-react";
 import AddressManager from "@/components/shop/AddressManager";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,17 @@ interface AppliedCoupon {
   discount_value: number;
   max_discount: number | null;
 }
+interface CheckoutPaymentMethod {
+  id: string;
+  key: string;
+  label: string;
+  icon: string;
+  description: string | null;
+  is_enabled: boolean;
+  sort_order: number;
+}
+const PAY_ICON_MAP: Record<string, any> = { wallet: Wallet, truck: Truck, smartphone: Smartphone, "credit-card": CreditCard };
+
 interface DeliveryZone {
   id: string;
   zone_name: string;
@@ -46,8 +57,6 @@ interface DeliveryZone {
   courier_providers: { name: string } | null;
 }
 
-type PaymentMethod = "wallet" | "card";
-
 export default function ShopCheckoutPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -55,7 +64,8 @@ export default function ShopCheckoutPage() {
 
   const [walletBalance, setWalletBalance] = useState(getBalance());
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
-  const [payMethod, setPayMethod] = useState<PaymentMethod>("wallet");
+  const [payMethod, setPayMethod] = useState("wallet");
+  const [paymentMethods, setPaymentMethods] = useState<CheckoutPaymentMethod[]>([]);
   const [promoInput, setPromoInput] = useState("");
   const [appliedPromo, setAppliedPromo] = useState<AppliedCoupon | null>(null);
   const [promoLoading, setPromoLoading] = useState(false);
@@ -80,7 +90,7 @@ export default function ShopCheckoutPage() {
     return () => { unsub(); };
   }, []);
 
-  // Load delivery zones
+  // Load delivery zones + payment methods
   useEffect(() => {
     if (!user) return;
     supabase
@@ -88,6 +98,12 @@ export default function ShopCheckoutPage() {
       .select("*, courier_providers(name)")
       .eq("is_active", true)
       .then(({ data }) => setDeliveryZones((data as any[]) ?? []));
+    supabase
+      .from("checkout_payment_methods")
+      .select("*")
+      .eq("is_enabled", true)
+      .order("sort_order", { ascending: true })
+      .then(({ data }) => setPaymentMethods((data as any[]) ?? []));
   }, [user]);
 
   // Match delivery zone by city
@@ -133,19 +149,24 @@ export default function ShopCheckoutPage() {
     setPromoLoading(false);
   };
 
+  const isCod = payMethod === "cod";
+  const needsPin = payMethod === "wallet";
+
   const handleCheckout = async () => {
-    if (pin.length < 4) { setPinError("Enter your 4-digit PIN."); return; }
+    if (needsPin && pin.length < 4) { setPinError("Enter your 4-digit PIN."); return; }
     if (!selectedAddress) { toast.error("Please select a delivery address"); return; }
     if (processing) return;
     setProcessing(true);
     setPinError("");
 
-    const pinValid = await verifyPin(pin);
-    if (!pinValid) {
-      setPinError("Incorrect PIN. Please try again.");
-      setPin("");
-      setProcessing(false);
-      return;
+    if (needsPin) {
+      const pinValid = await verifyPin(pin);
+      if (!pinValid) {
+        setPinError("Incorrect PIN. Please try again.");
+        setPin("");
+        setProcessing(false);
+        return;
+      }
     }
     haptics.success();
 
@@ -230,8 +251,10 @@ export default function ShopCheckoutPage() {
               <span className="font-semibold text-foreground">Estimated 3-5 business days</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <Wallet className="w-3.5 h-3.5 text-primary" />
-              <span className="font-semibold text-foreground">৳{orderTotal.toLocaleString()} deducted from wallet</span>
+              {isCod ? <Truck className="w-3.5 h-3.5 text-primary" /> : <Wallet className="w-3.5 h-3.5 text-primary" />}
+              <span className="font-semibold text-foreground">
+                {isCod ? `Pay ৳${orderTotal.toLocaleString()} on delivery` : `৳${orderTotal.toLocaleString()} deducted from wallet`}
+              </span>
             </div>
             {selectedAddress && (
               <div className="flex items-center gap-2 text-sm">
@@ -293,34 +316,72 @@ export default function ShopCheckoutPage() {
           <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
             Payment Method
           </p>
-          <button
-            onClick={() => setPayMethod("wallet")}
-            className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-colors text-left ${
-              payMethod === "wallet" ? "border-primary/30 bg-primary/5" : "border-border"
-            }`}
-          >
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <Wallet className="w-4 h-4 text-primary" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-foreground">EasyPay Wallet</p>
-              <p className="text-[11px] text-muted-foreground">
-                Balance: ৳{walletBalance.toLocaleString()}
-              </p>
-            </div>
-            <div
-              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                payMethod === "wallet" ? "border-primary" : "border-border"
+          {paymentMethods.length === 0 ? (
+            <button
+              onClick={() => setPayMethod("wallet")}
+              className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-colors text-left ${
+                payMethod === "wallet" ? "border-primary/30 bg-primary/5" : "border-border"
               }`}
             >
-              {payMethod === "wallet" && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
-            </div>
-          </button>
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Wallet className="w-4 h-4 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-foreground">EasyPay Wallet</p>
+                <p className="text-[11px] text-muted-foreground">Balance: ৳{walletBalance.toLocaleString()}</p>
+              </div>
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${payMethod === "wallet" ? "border-primary" : "border-border"}`}>
+                {payMethod === "wallet" && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+              </div>
+            </button>
+          ) : (
+            paymentMethods.map(m => {
+              const IconComp = PAY_ICON_MAP[m.icon] || CreditCard;
+              const isSelected = payMethod === m.key;
+              const isComingSoon = !["wallet", "cod"].includes(m.key);
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => !isComingSoon && setPayMethod(m.key)}
+                  disabled={isComingSoon}
+                  className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-colors text-left ${
+                    isSelected ? "border-primary/30 bg-primary/5" : "border-border"
+                  } ${isComingSoon ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <IconComp className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-bold text-foreground">{m.label}</p>
+                      {isComingSoon && (
+                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">Coming Soon</span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      {m.key === "wallet" ? `Balance: ৳${walletBalance.toLocaleString()}` : m.description || ""}
+                    </p>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected ? "border-primary" : "border-border"}`}>
+                    {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                  </div>
+                </button>
+              );
+            })
+          )}
           {payMethod === "wallet" && orderTotal > walletBalance && (
             <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-destructive/5 border border-destructive/20">
               <AlertCircle className="w-3.5 h-3.5 text-destructive shrink-0" />
               <p className="text-[11px] text-destructive font-semibold">
                 Insufficient balance. Need ৳{(orderTotal - walletBalance).toLocaleString()} more.
+              </p>
+            </div>
+          )}
+          {isCod && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-accent/50 border border-accent">
+              <Truck className="w-3.5 h-3.5 text-primary shrink-0" />
+              <p className="text-[11px] text-muted-foreground font-semibold">
+                No advance payment required. Pay ৳{orderTotal.toLocaleString()} on delivery.
               </p>
             </div>
           )}
@@ -435,7 +496,8 @@ export default function ShopCheckoutPage() {
           </div>
         </div>
 
-        {/* PIN */}
+        {/* PIN — only for wallet */}
+        {needsPin && (
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
           <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
             Confirm PIN
@@ -478,6 +540,7 @@ export default function ShopCheckoutPage() {
             placeholder="••••"
           />
         </div>
+        )}
 
       </div>
 
@@ -488,16 +551,16 @@ export default function ShopCheckoutPage() {
       >
         <SlideToConfirm
           onConfirm={handleCheckout}
-          label={`Place Order · ৳${orderTotal.toLocaleString()}`}
+          label={isCod ? `Place COD Order · ৳${orderTotal.toLocaleString()}` : `Place Order · ৳${orderTotal.toLocaleString()}`}
           gradient="gradient-primary"
           disabled={
-            pin.length < 4 ||
+            (needsPin && pin.length < 4) ||
             !selectedAddress ||
             (payMethod === "wallet" && orderTotal > walletBalance) ||
             processing
           }
-          pinComplete={pin.length === 4}
-          icon={ShoppingCart}
+          pinComplete={needsPin ? pin.length === 4 : true}
+          icon={isCod ? Truck : ShoppingCart}
         />
       </div>
     </div>

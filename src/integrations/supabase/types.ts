@@ -540,6 +540,39 @@ export type Database = {
           },
         ]
       }
+      checkout_payment_methods: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_enabled: boolean | null
+          key: string
+          label: string
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          key: string
+          label: string
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          key?: string
+          label?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
       commission_logs: {
         Row: {
           agent_amount: number
