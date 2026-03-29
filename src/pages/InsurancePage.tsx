@@ -5,6 +5,7 @@ import { ArrowLeft, Shield, Heart, Zap, Smartphone, Loader2, CheckCircle2 } from
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useKycStatus } from "@/hooks/use-kyc-status";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +39,17 @@ const PLANS: Record<string, { name: string; coverage: number; premium: number; d
 const InsurancePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { status: kycStatus, loading: kycLoading } = useKycStatus();
   const [category, setCategory] = useState("life");
+
+  useEffect(() => {
+    if (!kycLoading && kycStatus !== "verified") {
+      toast.error("Please complete KYC verification to use this feature.");
+      navigate("/");
+    }
+  }, [kycLoading, kycStatus, navigate]);
+
+  if (kycLoading) return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
   const [selectedPlan, setSelectedPlan] = useState<typeof PLANS["life"][0] | null>(null);
   const [purchasing, setPurchasing] = useState(false);
   const [policies, setPolicies] = useState<any[]>([]);

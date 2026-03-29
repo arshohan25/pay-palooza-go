@@ -5,6 +5,7 @@ import { ArrowLeft, Gift, Copy, Share2, Loader2, ShoppingBag, Coffee, Gamepad2, 
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useKycStatus } from "@/hooks/use-kyc-status";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +22,17 @@ const DENOMINATIONS = [100, 250, 500, 1000, 2000];
 const GiftCardsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { status: kycStatus, loading: kycLoading } = useKycStatus();
   const [brand, setBrand] = useState("shopping");
+
+  useEffect(() => {
+    if (!kycLoading && kycStatus !== "verified") {
+      toast.error("Please complete KYC verification to use this feature.");
+      navigate("/");
+    }
+  }, [kycLoading, kycStatus, navigate]);
+
+  if (kycLoading) return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
   const [denomination, setDenomination] = useState(500);
   const [purchasing, setPurchasing] = useState(false);
   const [cards, setCards] = useState<any[]>([]);

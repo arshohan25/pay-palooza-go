@@ -24,7 +24,17 @@ const statusConfig: Record<string, { icon: React.ReactNode; color: string; label
 const LoanPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { status: kycStatus, loading: kycLoading } = useKycStatus();
   const [amount, setAmount] = useState(5000);
+
+  useEffect(() => {
+    if (!kycLoading && kycStatus !== "verified") {
+      toast.error("Please complete KYC verification to use this feature.");
+      navigate("/");
+    }
+  }, [kycLoading, kycStatus, navigate]);
+
+  if (kycLoading) return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
   const [tenure, setTenure] = useState(60);
   const [submitting, setSubmitting] = useState(false);
   const [applications, setApplications] = useState<any[]>([]);
