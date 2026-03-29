@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, MapPin, Wallet, CreditCard, ShoppingCart, Package,
-  X, Ticket, Gift, AlertCircle, Loader2,
+  X, Ticket, Gift, AlertCircle, Loader2, Truck, Smartphone, Ban,
 } from "lucide-react";
 import AddressManager from "@/components/shop/AddressManager";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,17 @@ interface AppliedCoupon {
   discount_value: number;
   max_discount: number | null;
 }
-interface DeliveryZone {
+interface CheckoutPaymentMethod {
+  id: string;
+  key: string;
+  label: string;
+  icon: string;
+  description: string | null;
+  is_enabled: boolean;
+  sort_order: number;
+}
+
+const PAY_ICON_MAP: Record<string, any> = { wallet: Wallet, truck: Truck, smartphone: Smartphone, "credit-card": CreditCard };
   id: string;
   zone_name: string;
   cities: string[];
