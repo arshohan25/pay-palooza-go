@@ -149,19 +149,24 @@ export default function ShopCheckoutPage() {
     setPromoLoading(false);
   };
 
+  const isCod = payMethod === "cod";
+  const needsPin = payMethod === "wallet";
+
   const handleCheckout = async () => {
-    if (pin.length < 4) { setPinError("Enter your 4-digit PIN."); return; }
+    if (needsPin && pin.length < 4) { setPinError("Enter your 4-digit PIN."); return; }
     if (!selectedAddress) { toast.error("Please select a delivery address"); return; }
     if (processing) return;
     setProcessing(true);
     setPinError("");
 
-    const pinValid = await verifyPin(pin);
-    if (!pinValid) {
-      setPinError("Incorrect PIN. Please try again.");
-      setPin("");
-      setProcessing(false);
-      return;
+    if (needsPin) {
+      const pinValid = await verifyPin(pin);
+      if (!pinValid) {
+        setPinError("Incorrect PIN. Please try again.");
+        setPin("");
+        setProcessing(false);
+        return;
+      }
     }
     haptics.success();
 
