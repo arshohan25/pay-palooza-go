@@ -1,54 +1,39 @@
 
 
-# Enforce KYC on All Unguarded Pages
+# Import Phone Contacts Into App (bKash/Nagad Style)
 
 ## Problem
-Six standalone route pages allow financial actions **without any KYC check**:
-- `/donations` — DonationsPage (accepts donations with PIN/balance deduction)
-- `/loan` — LoanPage (loan applications)
-- `/insurance` — InsurancePage (insurance purchases)
-- `/giftcards` — GiftCardsPage (gift card purchases)
-- `/coupons` — CouponsPage (coupon usage)
-- `/refer` — ReferPage (referral rewards — read-only, low risk)
+Currently, the app uses the **Web Contact Picker API** which opens the native OS contact picker every time. Users must manually select contacts each session. The user wants contacts to be **imported once and stored in-app**, displayed within the app's own UI — like bKash, Nagad, and Rocket do.
 
-The modal-based flows (Send Money, Cash Out, Payment, etc.) are properly guarded by `FeatureGuard`, but these page-based flows bypass KYC entirely.
+## Current Behavior
+1. User taps "Allow Contact Access" → native picker opens (screenshot)
+2. User manually selects contacts → they appear in the list
+3. On next visit, the native picker opens **again** (line 246-254 in SendMoneyFlow)
 
-## Solution
-Add a **KYC gate** at the top of each financial page that redirects unverified users back to home with a toast message. Use the existing `useKycStatus` hook.
+## Desired Behavior
+1. First time: Tap "Allow Contact Access" → native picker opens → user selects ALL contacts → contacts are **saved to localStorage**
+2. Every subsequent visit: Contacts load instantly from local storage, no native picker
+3. A "Refresh/Sync Contacts" button to re-import if needed
 
-### Pages to protect (require KYC)
-1. **DonationsPage** — involves balance deduction
-2. **LoanPage** — financial product
-3. **InsurancePage** — financial product
-4. **GiftCardsPage** — involves balance deduction
+## Changes
 
-### Pages to leave unprotected
-- **CouponsPage** — browsing coupons is harmless (actual purchase goes through guarded checkout)
-- **ReferPage** — read-only referral info, no financial action
+### 1. New utility: `src/lib/contactStore.ts`
+- `saveContacts(contacts: Contact[])` — persist to localStorage key `ezypay_phone_contacts`
+- `loadContacts(): Contact[]` — read from localStorage
+- `clearContacts()` — for refresh flow
+- Normalize and deduplicate by phone number before saving
 
-### Implementation pattern (same for all 4 pages)
-```tsx
-import { useKycStatus } from "@/hooks/use-kyc-status";
+### 2. Update `src/components/SendMoneyFlow.tsx`
+- **On mount**: Load contacts from `contactStore.loadContacts()` instead of calling `requestContacts()` (remove lines 245-254 that re-trigger native picker)
+- **On "Allow Contact Access" grant**: Save picked contacts via `contactStore.saveContacts()`, then set `phoneContacts` state
+- **Add "Sync Contacts" button**: Small refresh icon next to "All Contacts" header — triggers native picker again, merges new contacts with existing, saves to store
+- Keep all existing contact display UI (ContactRow, color-coded avatars, search/filter)
 
-// Inside component:
-const { status: kycStatus, loading: kycLoading } = useKycStatus();
-
-useEffect(() => {
-  if (!kycLoading && kycStatus !== "verified") {
-    toast.error("Please complete KYC verification to use this feature.");
-    navigate("/");
-  }
-}, [kycLoading, kycStatus]);
-
-if (kycLoading) return <loading skeleton>;
-```
-
-### Server-side enforcement
-The `record_transaction` RPC already enforces KYC for non-exempt types, and `donations`, `gift_cards`, `loan`, `insurance` transaction types are NOT in the exempt list — so server-side is already covered. This change adds the missing client-side guard.
+### 3. Update `src/lib/permissions.ts` — `requestContacts()`
+- No structural change needed — the function already returns picked contacts
+- The key change is in SendMoneyFlow: stop auto-calling `requestContacts()` on mount when cached as "granted"
 
 ## Files Changed
-- `src/pages/DonationsPage.tsx` — add KYC gate
-- `src/pages/LoanPage.tsx` — add KYC gate
-- `src/pages/InsurancePage.tsx` — add KYC gate
-- `src/pages/GiftCardsPage.tsx` — add KYC gate
+- **New**: `src/lib/contactStore.ts` — localStorage persistence for imported contacts
+- **Edit**: `src/components/SendMoneyFlow.tsx` — load from store on mount, save on import, add sync button
 
