@@ -4931,6 +4931,7 @@ export type Database = {
         Returns: Json
       }
       release_escrow: { Args: { p_order_id: string }; Returns: Json }
+      require_kyc_verified: { Args: { p_user_id: string }; Returns: undefined }
       resolve_payment_merchant: {
         Args: { p_identifier: string }
         Returns: Json
@@ -4965,20 +4966,35 @@ export type Database = {
         }
         Returns: Json
       }
-      transfer_money: {
-        Args: {
-          p_amount: number
-          p_commission?: number
-          p_description?: string
-          p_fee?: number
-          p_recipient_name?: string
-          p_recipient_phone: string
-          p_recipient_type?: Database["public"]["Enums"]["txn_type"]
-          p_reference?: string
-          p_type?: Database["public"]["Enums"]["txn_type"]
-        }
-        Returns: Json
-      }
+      transfer_money:
+        | {
+            Args: {
+              p_amount: number
+              p_commission?: number
+              p_description?: string
+              p_fee?: number
+              p_recipient_name?: string
+              p_recipient_phone: string
+              p_recipient_type?: Database["public"]["Enums"]["txn_type"]
+              p_reference?: string
+              p_type?: Database["public"]["Enums"]["txn_type"]
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_amount: number
+              p_commission?: number
+              p_description?: string
+              p_fee?: number
+              p_recipient_name?: string
+              p_recipient_phone?: string
+              p_recipient_type: Database["public"]["Enums"]["txn_type"]
+              p_reference?: string
+              p_type: Database["public"]["Enums"]["txn_type"]
+            }
+            Returns: Json
+          }
       treasury_debit_for_addmoney: {
         Args: { p_amount: number; p_user_id: string }
         Returns: Json
