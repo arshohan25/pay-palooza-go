@@ -10,8 +10,9 @@ import { toast } from "sonner";
 import {
   Package, Store, Star, Ticket, Search, RefreshCw, Trash2, Eye, Edit2,
   ShoppingBag, TrendingUp, AlertTriangle, MoreHorizontal, Plus, Tag,
-  Image, Megaphone,
+  Image, Megaphone, CreditCard, Wallet, Truck, Smartphone,
 } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import AdminBannerManager from "./AdminBannerManager";
@@ -32,7 +33,7 @@ async function auditLog(action: string, entityType: string, entityId: string, de
   }
 }
 
-type SubTab = "dashboard" | "products" | "stores" | "reviews" | "coupons" | "banners" | "marketing" | "inventory" | "flash_sales" | "couriers" | "zones" | "returns";
+type SubTab = "dashboard" | "products" | "stores" | "reviews" | "coupons" | "banners" | "marketing" | "inventory" | "flash_sales" | "couriers" | "zones" | "returns" | "payments";
 
 const SUB_TABS: { key: SubTab; label: string; icon: any }[] = [
   { key: "dashboard", label: "Dashboard", icon: TrendingUp },
@@ -40,6 +41,7 @@ const SUB_TABS: { key: SubTab; label: string; icon: any }[] = [
   { key: "stores", label: "Vendor Stores", icon: Store },
   { key: "reviews", label: "Reviews", icon: Star },
   { key: "coupons", label: "Coupons", icon: Ticket },
+  { key: "payments", label: "Payments", icon: CreditCard },
   { key: "inventory", label: "Inventory", icon: AlertTriangle },
   { key: "flash_sales", label: "Flash Sales", icon: Tag },
   { key: "couriers", label: "Couriers", icon: Store },
