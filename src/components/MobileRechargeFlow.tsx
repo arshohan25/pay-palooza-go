@@ -34,7 +34,8 @@ import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n";
 import FeatureGuard from "@/components/FeatureGuard";
 import PermissionGate from "@/components/PermissionGate";
-import { Contact2 } from "lucide-react";
+import { Contact2, RefreshCw } from "lucide-react";
+import { loadContacts, saveContacts, mapStoredContactsToUI, type ContactUI } from "@/lib/contactStore";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Step = "number" | "packs" | "amount" | "pin" | "success";
