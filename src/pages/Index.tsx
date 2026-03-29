@@ -69,8 +69,9 @@ const Index = () => {
   const { isAuthenticated, loading: authLoading, signOut, user } = useAuth();
   const { status: kycStatus, rejectionReason } = useKycStatus();
   const [showKycFlow, setShowKycFlow] = useState(false);
-  const [splashDone, setSplashDone]           = useState(() => sessionStorage.getItem("splashDone") === "1");
+  const [splashDone, setSplashDone]           = useState(() => localStorage.getItem("splashDone") === "1");
   const [onboardingDone, setOnboardingDone]  = useState(() => hasSeenOnboarding());
+  const hasAuthenticated = localStorage.getItem("mfs_has_authenticated") === "1";
   const [replayOnboarding, setReplayOnboarding] = useState(false);
   const [activeTab, setActiveTab]         = useState("home");
 
