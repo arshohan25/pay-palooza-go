@@ -232,7 +232,40 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
   const txnTime = useRef(new Date());
   const txnId   = useRef(generateTxnId());
 
-  // Fetch packs from DB
+  // ── Imported contacts ──
+  const [storedContacts, setStoredContacts] = useState<ContactUI[]>([]);
+  const [syncingContacts, setSyncingContacts] = useState(false);
+
+  useEffect(() => {
+    const stored = loadContacts();
+    if (stored.length > 0) setStoredContacts(mapStoredContactsToUI(stored));
+  }, []);
+
+  const handleSyncContacts = async () => {
+    setSyncingContacts(true);
+    try {
+      const result = await requestContacts();
+      if (result.status === "granted" && result.data) {
+        const toStore = result.data.map((entry: any) => ({
+          name: entry.name?.[0] || "Unknown",
+          phone: (entry.tel?.[0] || "").replace(/[\s\-()]/g, ""),
+        })).filter((c: any) => c.phone);
+        const merged = saveContacts(toStore);
+        setStoredContacts(mapStoredContactsToUI(merged));
+      }
+    } catch {}
+    setSyncingContacts(false);
+  };
+
+  const filteredStoredContacts = useMemo(() => {
+    if (!phone.trim()) return storedContacts;
+    const q = phone.replace(/\D/g, "");
+    return storedContacts.filter((c) =>
+      c.name.toLowerCase().includes(q) || c.phone.includes(q)
+    );
+  }, [storedContacts, phone]);
+
+
   const [dbPacks, setDbPacks] = useState<Pack[]>([]);
   const { isDisabled } = useGlobalToggles();
   const driveHidden = isDisabled("drive_offers");
