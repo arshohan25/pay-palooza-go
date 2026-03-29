@@ -64,7 +64,8 @@ export default function ShopCheckoutPage() {
 
   const [walletBalance, setWalletBalance] = useState(getBalance());
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
-  const [payMethod, setPayMethod] = useState<PaymentMethod>("wallet");
+  const [payMethod, setPayMethod] = useState("wallet");
+  const [paymentMethods, setPaymentMethods] = useState<CheckoutPaymentMethod[]>([]);
   const [promoInput, setPromoInput] = useState("");
   const [appliedPromo, setAppliedPromo] = useState<AppliedCoupon | null>(null);
   const [promoLoading, setPromoLoading] = useState(false);
