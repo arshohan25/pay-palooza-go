@@ -76,6 +76,8 @@ export function useAuth() {
     localStorage.removeItem("mfs_registered_phone");
     localStorage.removeItem("mfs_display_photo");
     localStorage.removeItem("mfs_cached_user_id");
+    localStorage.removeItem("mfs_has_authenticated");
+    localStorage.removeItem("splashDone");
     await supabase.auth.signOut();
     setSession(null);
     setUser(null);

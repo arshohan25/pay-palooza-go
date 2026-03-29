@@ -69,8 +69,9 @@ const Index = () => {
   const { isAuthenticated, loading: authLoading, signOut, user } = useAuth();
   const { status: kycStatus, rejectionReason } = useKycStatus();
   const [showKycFlow, setShowKycFlow] = useState(false);
-  const [splashDone, setSplashDone]           = useState(() => sessionStorage.getItem("splashDone") === "1");
+  const [splashDone, setSplashDone]           = useState(() => localStorage.getItem("splashDone") === "1");
   const [onboardingDone, setOnboardingDone]  = useState(() => hasSeenOnboarding());
+  const hasAuthenticated = localStorage.getItem("mfs_has_authenticated") === "1";
   const [replayOnboarding, setReplayOnboarding] = useState(false);
   const [activeTab, setActiveTab]         = useState("home");
 
@@ -361,6 +362,26 @@ const Index = () => {
     return content;
   };
 
+  // If user previously authenticated, skip splash/onboarding while auth resolves
+  if (hasAuthenticated) {
+    if (authLoading) {
+      return (
+        <div className="min-h-screen bg-background">
+          <div className="w-full max-w-xl mx-auto px-4 py-4 space-y-5">
+            <BalanceCardSkeleton />
+            <QuickActionsSkeleton />
+            <TransactionListSkeleton />
+          </div>
+        </div>
+      );
+    }
+    // Session expired — clear flag so auth page shows
+    if (!isAuthenticated) {
+      localStorage.removeItem("mfs_has_authenticated");
+      localStorage.removeItem("splashDone");
+    }
+  }
+
   // Resolve auth state first — before splash/onboarding
   if (authLoading) {
     return (
@@ -377,7 +398,7 @@ const Index = () => {
   // Authenticated users skip splash & onboarding entirely
   if (!isAuthenticated) {
     if (!splashDone) {
-      return <Suspense fallback={null}><SplashScreen onDone={() => { sessionStorage.setItem("splashDone", "1"); setSplashDone(true); }} /></Suspense>;
+      return <Suspense fallback={null}><SplashScreen onDone={() => { localStorage.setItem("splashDone", "1"); setSplashDone(true); }} /></Suspense>;
     }
 
     if (!onboardingDone) {
@@ -416,9 +437,7 @@ const Index = () => {
         {!isAuthenticated && (
           <Suspense fallback={null}>
             <AuthPage onAuthenticated={() => {
-              // Auth state is now managed by useAuth hook via Supabase session
-              // onAuthenticated is called after successful sign-up/sign-in
-              // The useAuth hook will automatically pick up the session change
+              localStorage.setItem("mfs_has_authenticated", "1");
             }} />
           </Suspense>
         )}
