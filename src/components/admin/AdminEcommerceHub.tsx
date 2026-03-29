@@ -480,6 +480,103 @@ function CouponsTab() {
   );
 }
 
+/* ═══════════════════════ PAYMENT METHODS TAB ═══════════════════════ */
+const ICON_MAP: Record<string, any> = { wallet: Wallet, truck: Truck, smartphone: Smartphone, "credit-card": CreditCard };
+
+function PaymentMethodsTab() {
+  const [methods, setMethods] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editLabel, setEditLabel] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("checkout_payment_methods")
+      .select("*")
+      .order("sort_order", { ascending: true });
+    setMethods(data ?? []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const toggleEnabled = async (id: string, current: boolean) => {
+    await supabase.from("checkout_payment_methods").update({ is_enabled: !current }).eq("id", id);
+    auditLog("toggle_payment_method", "checkout_payment_methods", id, { is_enabled: !current });
+    toast.success(current ? "Payment method disabled" : "Payment method enabled");
+    load();
+  };
+
+  const saveEdit = async (id: string) => {
+    const updates: any = {};
+    if (editLabel.trim()) updates.label = editLabel.trim();
+    if (editDesc.trim()) updates.description = editDesc.trim();
+    if (Object.keys(updates).length === 0) { setEditId(null); return; }
+    await supabase.from("checkout_payment_methods").update(updates).eq("id", id);
+    auditLog("edit_payment_method", "checkout_payment_methods", id, updates);
+    toast.success("Payment method updated");
+    setEditId(null);
+    load();
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <p className="text-sm text-muted-foreground flex-1">{methods.length} payment methods</p>
+        <Button variant="outline" size="icon" onClick={load}><RefreshCw className="w-4 h-4" /></Button>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-12 text-muted-foreground">Loading payment methods…</div>
+      ) : (
+        <div className="space-y-2">
+          {methods.map(m => {
+            const IconComp = ICON_MAP[m.icon] || CreditCard;
+            return (
+              <Card key={m.id} className="border shadow-sm">
+                <CardContent className="p-3 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <IconComp className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    {editId === m.id ? (
+                      <div className="space-y-1.5">
+                        <Input value={editLabel} onChange={e => setEditLabel(e.target.value)} placeholder="Label" className="h-7 text-xs" />
+                        <Input value={editDesc} onChange={e => setEditDesc(e.target.value)} placeholder="Description" className="h-7 text-xs" />
+                        <div className="flex gap-1">
+                          <Button size="sm" className="h-6 text-[10px]" onClick={() => saveEdit(m.id)}>Save</Button>
+                          <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => setEditId(null)}>Cancel</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="font-medium text-sm text-foreground">{m.label}</p>
+                        <p className="text-xs text-muted-foreground">{m.description || "—"}</p>
+                        <p className="text-[10px] text-muted-foreground font-mono">key: {m.key}</p>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Badge variant={m.is_enabled ? "default" : "secondary"} className="text-[10px]">
+                      {m.is_enabled ? "On" : "Off"}
+                    </Badge>
+                    <Switch checked={m.is_enabled} onCheckedChange={() => toggleEnabled(m.id, m.is_enabled)} />
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditId(m.id); setEditLabel(m.label); setEditDesc(m.description || ""); }}>
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ═══════════════════════ MAIN HUB ═══════════════════════ */
 export default function AdminEcommerceHub() {
   const [subTab, setSubTab] = useState<SubTab>("dashboard");
@@ -522,6 +619,7 @@ export default function AdminEcommerceHub() {
       {subTab === "banners" && <AdminBannerManager />}
       {subTab === "marketing" && <AdminMarketingTools />}
       {subTab === "returns" && <AdminReturnRequests />}
+      {subTab === "payments" && <PaymentMethodsTab />}
     </div>
   );
 }
