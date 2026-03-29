@@ -1,7 +1,7 @@
 // QR code generator with centered logo overlay
 import QRCode from "qrcode";
 
-const LOGO_PATH = "/icons/easypay-logo.webp";
+const LOGO_PATH = "/icons/easypay-logo.png";
 
 let cachedLogo: HTMLImageElement | null = null;
 
