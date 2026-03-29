@@ -17,6 +17,8 @@ import TxnToast from "@/components/TxnToast";
 import { useKycStatus } from "@/hooks/use-kyc-status";
 import { parseQrData } from "@/lib/qrParser";
 import { BalanceCardSkeleton, QuickActionsSkeleton, TransactionListSkeleton } from "@/components/HomeSkeletons";
+import { getCachedStatus, requestContacts, requestCamera } from "@/lib/permissions";
+import { saveContacts } from "@/lib/contactStore";
 
 // Lazy load below-fold / non-critical home components
 const AppHeader = lazy(() => import("@/components/AppHeader"));
