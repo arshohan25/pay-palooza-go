@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { haptics } from "@/lib/haptics";
 import { supabase } from "@/integrations/supabase/client";
 import { requestLocation, getCachedStatus, requestContacts } from "@/lib/permissions";
+import { loadContacts as loadStoredContacts, saveContacts as saveStoredContacts, hasStoredContacts, type StoredContact } from "@/lib/contactStore";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { useFeeConfig } from "@/hooks/use-fee-config";
 import { transferMoney, getBalance } from "@/lib/balanceStore";
@@ -27,6 +28,7 @@ import {
   Banknote,
   ChevronRight,
   Contact2,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import QrScannerModal from "@/components/QrScannerModal";
@@ -241,15 +243,21 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     autoResolve();
   }, [prefilledPhone]);
 
-  // Auto-load phone contacts if permission was previously granted
+  // Load contacts from local store on mount (no native picker)
   useEffect(() => {
-    if (getCachedStatus("contacts") === "granted") {
-      (async () => {
-        const result = await requestContacts();
-        if (result.status === "granted" && result.data) {
-          handlePhoneContactsPicked(result.data);
-        }
-      })();
+    const stored = loadStoredContacts();
+    if (stored.length > 0) {
+      const mapped: Contact[] = stored.map((c, i) => {
+        const initials = c.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase() || c.phone.slice(-2);
+        return {
+          id: `contact-${c.phone}`,
+          name: c.name,
+          phone: c.phone,
+          initials,
+          gradient: GRADIENTS[i % GRADIENTS.length],
+        };
+      });
+      setPhoneContacts(mapped);
     }
   }, []);
 
@@ -301,6 +309,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
   const handlePhoneContactsPicked = (data: any) => {
     if (!data || !Array.isArray(data)) return;
+    const toStore: StoredContact[] = [];
     const newContacts: Contact[] = [];
     for (const entry of data) {
       const name = entry.name?.[0] || "Unknown";
@@ -308,6 +317,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
       if (!tel) continue;
       const phone = normalizePhone(tel);
       if (!phone) continue;
+      toStore.push({ name, phone });
       const initials = name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase() || phone.slice(-2);
       newContacts.push({
         id: `contact-${phone}`,
@@ -317,6 +327,8 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
         gradient: GRADIENTS[newContacts.length % GRADIENTS.length],
       });
     }
+    // Persist to localStorage
+    if (toStore.length > 0) saveStoredContacts(toStore);
     if (newContacts.length > 0) {
       setPhoneContacts((prev) => {
         const seen = new Set(prev.map((c) => normalizePhone(c.phone)));
@@ -329,6 +341,13 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
         }
         return merged;
       });
+    }
+  };
+
+  const handleSyncContacts = async () => {
+    const result = await requestContacts();
+    if (result.status === "granted" && result.data) {
+      handlePhoneContactsPicked(result.data);
     }
   };
 
@@ -683,7 +702,12 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   <div>
                     <div className="px-4 py-2.5 flex items-center justify-between mt-1">
                       <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">All Contacts</span>
-                      <span className="text-[11px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">{contactsFiltered.length}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">{contactsFiltered.length}</span>
+                        <button onClick={handleSyncContacts} className="p-1 rounded-full hover:bg-muted transition-colors" title="Sync Contacts">
+                          <RefreshCw size={14} className="text-muted-foreground" />
+                        </button>
+                      </div>
                     </div>
                     {contactsFiltered.map((c) => (
                       <ContactRow key={c.id} contact={c} />
