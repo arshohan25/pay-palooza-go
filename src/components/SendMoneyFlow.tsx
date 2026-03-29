@@ -350,7 +350,6 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
       handlePhoneContactsPicked(result.data);
     }
   };
-  };
 
   const [validating, setValidating] = useState(false);
   // Track resolved phone separately from display value (important for wallet IDs)
