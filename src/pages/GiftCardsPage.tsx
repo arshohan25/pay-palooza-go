@@ -24,15 +24,6 @@ const GiftCardsPage = () => {
   const { user } = useAuth();
   const { status: kycStatus, loading: kycLoading } = useKycStatus();
   const [brand, setBrand] = useState("shopping");
-
-  useEffect(() => {
-    if (!kycLoading && kycStatus !== "verified") {
-      toast.error("Please complete KYC verification to use this feature.");
-      navigate("/");
-    }
-  }, [kycLoading, kycStatus, navigate]);
-
-  if (kycLoading) return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
   const [denomination, setDenomination] = useState(500);
   const [purchasing, setPurchasing] = useState(false);
   const [cards, setCards] = useState<any[]>([]);
@@ -44,6 +35,15 @@ const GiftCardsPage = () => {
     supabase.from("gift_cards").select("*").eq("purchaser_id", user.id).order("created_at", { ascending: false })
       .then(({ data }) => { setCards(data || []); setLoading(false); });
   }, [user]);
+
+  useEffect(() => {
+    if (!kycLoading && kycStatus !== "verified") {
+      toast.error("Please complete KYC verification to use this feature.");
+      navigate("/");
+    }
+  }, [kycLoading, kycStatus, navigate]);
+
+  if (kycLoading) return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
 
   const handlePurchase = async () => {
     if (!user) { toast.error("Please sign in first"); return; }

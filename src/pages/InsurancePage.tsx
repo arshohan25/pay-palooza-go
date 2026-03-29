@@ -41,15 +41,6 @@ const InsurancePage = () => {
   const { user } = useAuth();
   const { status: kycStatus, loading: kycLoading } = useKycStatus();
   const [category, setCategory] = useState("life");
-
-  useEffect(() => {
-    if (!kycLoading && kycStatus !== "verified") {
-      toast.error("Please complete KYC verification to use this feature.");
-      navigate("/");
-    }
-  }, [kycLoading, kycStatus, navigate]);
-
-  if (kycLoading) return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
   const [selectedPlan, setSelectedPlan] = useState<typeof PLANS["life"][0] | null>(null);
   const [purchasing, setPurchasing] = useState(false);
   const [policies, setPolicies] = useState<any[]>([]);
@@ -61,6 +52,15 @@ const InsurancePage = () => {
     supabase.from("insurance_policies").select("*").eq("user_id", user.id).order("created_at", { ascending: false })
       .then(({ data }) => { setPolicies(data || []); setLoading(false); });
   }, [user]);
+
+  useEffect(() => {
+    if (!kycLoading && kycStatus !== "verified") {
+      toast.error("Please complete KYC verification to use this feature.");
+      navigate("/");
+    }
+  }, [kycLoading, kycStatus, navigate]);
+
+  if (kycLoading) return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
 
   const handlePurchase = async (plan: typeof PLANS["life"][0]) => {
     if (!user) { toast.error("Please sign in first"); return; }
