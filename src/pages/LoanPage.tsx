@@ -27,6 +27,10 @@ const LoanPage = () => {
   const { user } = useAuth();
   const { status: kycStatus, loading: kycLoading } = useKycStatus();
   const [amount, setAmount] = useState(5000);
+  const [tenure, setTenure] = useState(60);
+  const [submitting, setSubmitting] = useState(false);
+  const [applications, setApplications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!kycLoading && kycStatus !== "verified") {
@@ -34,12 +38,6 @@ const LoanPage = () => {
       navigate("/");
     }
   }, [kycLoading, kycStatus, navigate]);
-
-  if (kycLoading) return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
-  const [tenure, setTenure] = useState(60);
-  const [submitting, setSubmitting] = useState(false);
-  const [applications, setApplications] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
 
   const emi = useMemo(() => {
     const interest = (amount * INTEREST_RATE * (tenure / 365)) / 100;
