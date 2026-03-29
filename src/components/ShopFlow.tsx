@@ -1521,7 +1521,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
 };
 
 const ShopFlowGuarded = (props: ShopFlowProps) => (
-  <FeatureGuard featureKey="payment" onClose={props.onClose}>
+  <FeatureGuard featureKey="payment" onClose={props.onClose} skipKyc>
     <ShopFlow {...props} />
   </FeatureGuard>
 );
