@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { haptics } from "@/lib/haptics";
 import { supabase } from "@/integrations/supabase/client";
 import { requestLocation, getCachedStatus, requestContacts } from "@/lib/permissions";
+import { loadContacts as loadStoredContacts, saveContacts as saveStoredContacts, hasStoredContacts, type StoredContact } from "@/lib/contactStore";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { useFeeConfig } from "@/hooks/use-fee-config";
 import { transferMoney, getBalance } from "@/lib/balanceStore";
