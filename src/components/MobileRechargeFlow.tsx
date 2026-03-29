@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
-import { requestLocation } from "@/lib/permissions";
+import { requestLocation, requestContacts, getCachedStatus } from "@/lib/permissions";
 import { recordTransaction, getBalance } from "@/lib/balanceStore";
 import { verifyPin } from "@/lib/verifyPin";
 import { checkDailyLimit } from "@/lib/dailyLimits";
