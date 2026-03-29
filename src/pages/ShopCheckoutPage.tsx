@@ -496,7 +496,8 @@ export default function ShopCheckoutPage() {
           </div>
         </div>
 
-        {/* PIN */}
+        {/* PIN — only for wallet */}
+        {needsPin && (
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
           <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
             Confirm PIN
@@ -539,6 +540,7 @@ export default function ShopCheckoutPage() {
             placeholder="••••"
           />
         </div>
+        )}
 
       </div>
 
@@ -549,16 +551,16 @@ export default function ShopCheckoutPage() {
       >
         <SlideToConfirm
           onConfirm={handleCheckout}
-          label={`Place Order · ৳${orderTotal.toLocaleString()}`}
+          label={isCod ? `Place COD Order · ৳${orderTotal.toLocaleString()}` : `Place Order · ৳${orderTotal.toLocaleString()}`}
           gradient="gradient-primary"
           disabled={
-            pin.length < 4 ||
+            (needsPin && pin.length < 4) ||
             !selectedAddress ||
             (payMethod === "wallet" && orderTotal > walletBalance) ||
             processing
           }
-          pinComplete={pin.length === 4}
-          icon={ShoppingCart}
+          pinComplete={needsPin ? pin.length === 4 : true}
+          icon={isCod ? Truck : ShoppingCart}
         />
       </div>
     </div>
