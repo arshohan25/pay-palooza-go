@@ -88,6 +88,15 @@ export default function ProductDetailPage() {
   const [relatedFromVendor, setRelatedFromVendor] = useState<any[]>([]);
   const [relatedOthers, setRelatedOthers] = useState<any[]>([]);
   const [chattingWithMerchant, setChattingWithMerchant] = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
+  const [headerOpaque, setHeaderOpaque] = useState(false);
+
+  // Scroll-based header opacity
+  useEffect(() => {
+    const onScroll = () => setHeaderOpaque(window.scrollY > 300);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const merchantUserId = product?.merchants?.user_id;
   const merchantOnline = merchantUserId ? isOnline(merchantUserId) : false;
@@ -227,25 +236,39 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = () => {
     addToCart({ ...product, price: finalPrice, vendor_name: vendorInfo?.name, vendor_slug: vendorInfo?.slug }, qty);
+    setAddedToCart(true);
+    setTimeout(() => setAddedToCart(false), 600);
   };
 
   return (
     <div className="min-h-screen bg-background pb-28">
       {/* ── Sticky header ── */}
-      <div className="sticky top-0 z-50 bg-card/70 backdrop-blur-xl border-b border-border/50 flex items-center justify-between px-3 py-2.5">
+      <motion.div
+        className={cn("sticky top-0 z-50 backdrop-blur-xl border-b border-border/50 flex items-center justify-between px-3 py-2.5 transition-colors duration-300",
+          headerOpaque ? "bg-card/90" : "bg-card/0")}
+        initial={false}
+      >
         <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate(-1)}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div className="flex items-center gap-0.5">
-          <Button variant="ghost" size="icon" className="rounded-full" onClick={() => toggleWishlist(product.id)}>
-            <Heart className={cn("w-5 h-5 transition-colors", isWishlisted(product.id) ? "fill-destructive text-destructive" : "")} />
-          </Button>
+          <motion.div whileTap={{ scale: 0.75 }} className="relative">
+            <Button variant="ghost" size="icon" className="rounded-full" onClick={() => toggleWishlist(product.id)}>
+              <AnimatePresence mode="wait">
+                <motion.div key={isWishlisted(product.id) ? "filled" : "empty"}
+                  initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 25 }}>
+                  <Heart className={cn("w-5 h-5 transition-colors", isWishlisted(product.id) ? "fill-destructive text-destructive" : "")} />
+                </motion.div>
+              </AnimatePresence>
+            </Button>
+          </motion.div>
           <Button variant="ghost" size="icon" className="rounded-full"><Share2 className="w-5 h-5" /></Button>
           <Button variant="ghost" size="icon" className="rounded-full relative" onClick={() => navigate("/shop/checkout")}>
             <ShoppingCart className="w-5 h-5" />
           </Button>
         </div>
-      </div>
+      </motion.div>
 
       {/* ── Image carousel ── */}
       <motion.section custom={0} variants={fadeUp} initial="hidden" animate="show" className="relative bg-card overflow-hidden">
@@ -263,10 +286,11 @@ export default function ProductDetailPage() {
               src={images[imgIdx] || "/placeholder.svg"}
               alt={product.name}
               className="absolute inset-0 w-full h-full object-contain"
-              initial={{ opacity: 0, x: swipeDir * 60 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: swipeDir * -60 }}
+              initial={{ opacity: 0, x: swipeDir * 80, scale: 0.96 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: swipeDir * -80, scale: 0.96 }}
               transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+              whileTap={{ scale: 1.03 }}
             />
           </AnimatePresence>
 
@@ -385,8 +409,10 @@ export default function ProductDetailPage() {
             <p className="text-sm font-semibold text-foreground">{name}</p>
             <div className="flex flex-wrap gap-2">
               {options.map((v) => (
-                <button key={v.id} onClick={() => setSelectedVariant(selectedVariant?.id === v.id ? null : v)}
+                <motion.button key={v.id} onClick={() => setSelectedVariant(selectedVariant?.id === v.id ? null : v)}
                   disabled={v.stock <= 0}
+                  whileTap={{ scale: 0.9 }}
+                  layout
                   className={cn(
                     "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200",
                     selectedVariant?.id === v.id
@@ -397,7 +423,7 @@ export default function ProductDetailPage() {
                   {v.image_url && <img src={v.image_url} alt="" className="w-5 h-5 rounded-full object-cover" />}
                   {v.variant_value}
                   {v.price_adjustment !== 0 && <span className="text-muted-foreground">({v.price_adjustment > 0 ? "+" : ""}৳{v.price_adjustment})</span>}
-                </button>
+                </motion.button>
               ))}
             </div>
           </motion.div>
@@ -416,13 +442,21 @@ export default function ProductDetailPage() {
               )}
             </div>
             <div className="flex items-center border border-border rounded-full overflow-hidden bg-background">
-              <button onClick={() => setQty(Math.max(1, qty - 1))} className="w-9 h-9 flex items-center justify-center hover:bg-muted/50 transition-colors">
+              <motion.button whileTap={{ scale: 0.8 }} onClick={() => setQty(Math.max(1, qty - 1))} className="w-9 h-9 flex items-center justify-center hover:bg-muted/50 transition-colors">
                 <Minus className="w-3.5 h-3.5" />
-              </button>
-              <span className="w-10 text-center text-sm font-bold">{qty}</span>
-              <button onClick={() => setQty(Math.min(product.stock, qty + 1))} className="w-9 h-9 flex items-center justify-center hover:bg-muted/50 transition-colors">
+              </motion.button>
+              <div className="w-10 text-center text-sm font-bold overflow-hidden relative h-6">
+                <AnimatePresence mode="popLayout">
+                  <motion.span key={qty} initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -12, opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    className="absolute inset-0 flex items-center justify-center">
+                    {qty}
+                  </motion.span>
+                </AnimatePresence>
+              </div>
+              <motion.button whileTap={{ scale: 0.8 }} onClick={() => setQty(Math.min(product.stock, qty + 1))} className="w-9 h-9 flex items-center justify-center hover:bg-muted/50 transition-colors">
                 <Plus className="w-3.5 h-3.5" />
-              </button>
+              </motion.button>
             </div>
           </div>
         </motion.div>
@@ -453,8 +487,10 @@ export default function ProductDetailPage() {
             { icon: Banknote, label: "Cash on Delivery Available", color: "text-primary" },
             { icon: RefreshCw, label: "Easy Return", sub: "14 days return policy", color: "text-accent" },
             { icon: ShieldCheck, label: "100% Authentic", sub: "Genuine product guarantee", color: "text-primary" },
-          ].map(({ icon: Icon, label, sub, color }) => (
-            <div key={label} className="flex items-center gap-3 px-3.5 py-3">
+          ].map(({ icon: Icon, label, sub, color }, idx) => (
+            <motion.div key={label} className="flex items-center gap-3 px-3.5 py-3"
+              initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: idx * 0.08, duration: 0.35 }}>
               <div className={cn("w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center shrink-0", color)}>
                 <Icon className="w-4 h-4" />
               </div>
@@ -462,7 +498,7 @@ export default function ProductDetailPage() {
                 <p className="text-xs font-semibold text-foreground">{label}</p>
                 {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
               </div>
-            </div>
+            </motion.div>
           ))}
         </motion.div>
 
@@ -476,6 +512,7 @@ export default function ProductDetailPage() {
             </TabsList>
 
             <TabsContent value="description" className="mt-3 space-y-3">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
               {/* Product Details Card */}
               <div className="bg-card border border-border/60 rounded-xl overflow-hidden">
                 <div className="flex items-center gap-2 px-3.5 py-2.5 bg-muted/30 border-b border-border/40">
@@ -503,9 +540,11 @@ export default function ProductDetailPage() {
                   );
                 })()}
               </div>
+              </motion.div>
             </TabsContent>
 
             <TabsContent value="specs" className="mt-3">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
               <div className="bg-card border border-border/60 rounded-xl divide-y divide-border/40 overflow-hidden">
                 {[
                   product.category && ["Category", product.category],
@@ -519,6 +558,7 @@ export default function ProductDetailPage() {
                   </div>
                 ))}
               </div>
+              </motion.div>
             </TabsContent>
 
             <TabsContent value="reviews" className="mt-3 -mx-4">
@@ -569,14 +609,29 @@ export default function ProductDetailPage() {
               merchantOnline ? "bg-emerald-500" : "bg-muted-foreground/40")} />
           </Button>
         )}
-        <Button variant="outline" size="lg" className="flex-1 rounded-xl h-11 text-sm font-bold"
-          onClick={handleAddToCart} disabled={product.stock <= 0}>
-          Add to Cart
-        </Button>
-        <Button size="lg" className="flex-1 rounded-xl h-11 text-sm font-bold"
-          onClick={() => { handleAddToCart(); navigate("/shop/checkout"); }} disabled={product.stock <= 0}>
-          Buy Now
-        </Button>
+        <motion.div whileTap={{ scale: 0.96 }}>
+          <Button variant="outline" size="lg" className="flex-1 rounded-xl h-11 text-sm font-bold min-w-0"
+            onClick={handleAddToCart} disabled={product.stock <= 0}>
+            <AnimatePresence mode="wait">
+              {addedToCart ? (
+                <motion.span key="check" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }}
+                  className="flex items-center gap-1.5">
+                  <Check className="w-4 h-4 text-primary" /> Added!
+                </motion.span>
+              ) : (
+                <motion.span key="text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  Add to Cart
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </Button>
+        </motion.div>
+        <motion.div whileTap={{ scale: 0.96 }}>
+          <Button size="lg" className="flex-1 rounded-xl h-11 text-sm font-bold min-w-0"
+            onClick={() => { handleAddToCart(); navigate("/shop/checkout"); }} disabled={product.stock <= 0}>
+            Buy Now
+          </Button>
+        </motion.div>
       </div>
 
       {/* ── Inline Chat Overlay ── */}
@@ -726,7 +781,9 @@ function RelatedProductsRow({ title, products, seeAllLink, onNavigate }: {
           const discount = p.original_price && p.original_price > p.price
             ? Math.round(((p.original_price - p.price) / p.original_price) * 100) : 0;
           return (
-            <button key={p.id} onClick={() => onNavigate(p.id)}
+            <motion.button key={p.id} onClick={() => onNavigate(p.id)}
+              whileHover={{ y: -3 }}
+              whileTap={{ scale: 0.97 }}
               className="snap-start shrink-0 w-[140px] bg-card border border-border/60 rounded-xl overflow-hidden text-left hover:shadow-md transition-shadow">
               <div className="aspect-square relative bg-muted/30">
                 <img src={p.image_url || "/placeholder.svg"} alt={p.name}
@@ -752,7 +809,7 @@ function RelatedProductsRow({ title, products, seeAllLink, onNavigate }: {
                   </div>
                 )}
               </div>
-            </button>
+            </motion.button>
           );
         })}
       </div>
