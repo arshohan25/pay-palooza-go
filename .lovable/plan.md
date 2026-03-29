@@ -1,48 +1,68 @@
 
 
-# Premium Product Detail Page — Animations & Micro-interactions
+# Add Admin-Controlled Payment Methods (incl. Cash on Delivery)
 
 ## Overview
-Add polished micro-interactions and animations to `src/pages/ProductDetailPage.tsx` for a premium shopping experience.
+Create a database-driven payment methods system where admins manage available checkout payment options from the E-Commerce Hub. The shop checkout page dynamically shows only enabled methods.
 
-## Changes (1 file: `src/pages/ProductDetailPage.tsx`)
+## Database Changes
 
-### 1. Wishlist Heart — Bounce on Toggle
-- Wrap heart icon button with `motion.button` + `whileTap={{ scale: 0.75 }}` 
-- Add scale pop animation on fill change using `AnimatePresence` + `motion.div` with key on wishlisted state
+### New table: `checkout_payment_methods`
+```sql
+CREATE TABLE checkout_payment_methods (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  key TEXT UNIQUE NOT NULL,          -- 'wallet', 'cod', 'bkash', 'card'
+  label TEXT NOT NULL,               -- 'EasyPay Wallet', 'Cash on Delivery'
+  icon TEXT DEFAULT 'wallet',        -- icon identifier
+  description TEXT,                  -- 'Pay from your wallet balance'
+  is_enabled BOOLEAN DEFAULT true,
+  sort_order INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 
-### 2. Quantity Buttons — Press Effect + Number Animation
-- Wrap +/- buttons with `motion.button` + `whileTap={{ scale: 0.8 }}`
-- Animate qty number with `AnimatePresence` + `motion.span` keyed on qty (vertical slide + fade)
+-- Seed default methods
+INSERT INTO checkout_payment_methods (key, label, icon, description, sort_order) VALUES
+  ('wallet', 'EasyPay Wallet', 'wallet', 'Pay from your wallet balance', 0),
+  ('cod', 'Cash on Delivery', 'truck', 'Pay when you receive your order', 1),
+  ('bkash', 'bKash', 'smartphone', 'Pay via bKash mobile banking', 2),
+  ('nagad', 'Nagad', 'smartphone', 'Pay via Nagad mobile banking', 3),
+  ('card', 'Credit/Debit Card', 'credit-card', 'Pay with Visa or Mastercard', 4);
 
-### 3. Add to Cart — Success Checkmark Feedback
-- New state: `addedToCart` (boolean, auto-resets after 600ms)
-- On click, show animated checkmark icon replacing "Add to Cart" text briefly via `AnimatePresence`
-- `whileTap={{ scale: 0.96 }}` on both bottom bar buttons
+-- RLS: public read, admin write
+ALTER TABLE checkout_payment_methods ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can read" ON checkout_payment_methods FOR SELECT USING (true);
+CREATE POLICY "Admin can manage" ON checkout_payment_methods FOR ALL TO authenticated
+  USING (public.has_role(auth.uid(), 'admin'))
+  WITH CHECK (public.has_role(auth.uid(), 'admin'));
+```
 
-### 4. Variant Chips — Spring Press
-- `motion.button` with `whileTap={{ scale: 0.9 }}` and `layout` prop for smooth selection ring transition
+### Update `place_shop_order` RPC
+- When `p_payment_method = 'cod'`, skip wallet deduction and set `escrow_status = 'pending_cod'` instead of `'held'`.
 
-### 5. Image Carousel — Subtle Zoom on Hold
-- Add `whileTap={{ scale: 1.03 }}` on the carousel image for pinch-to-zoom feel
-- Slightly increase x offset (60→80) and add scale (0.96→1) on image transitions
+## Frontend Changes
 
-### 6. Sticky Header — Scroll-based Opacity
-- Track scroll with `useEffect` + `scroll` event listener, store in state
-- Header bg transitions from `bg-card/0` to `bg-card/70` once scrolled past image (~400px)
+### 1. Admin: Payment Methods sub-tab in E-Commerce Hub
+**File: `src/components/admin/AdminEcommerceHub.tsx`**
+- Add `"payments"` to SubTab type and SUB_TABS array (icon: CreditCard, label: "Payments")
+- New `PaymentMethodsTab` component inline — table with toggle switches, edit label/description, reorder
 
-### 7. Related Product Cards — Hover/Press Effects
-- Add `whileHover={{ y: -3 }}` and `whileTap={{ scale: 0.97 }}` on related product cards
+### 2. Checkout: Dynamic payment method selection
+**File: `src/pages/ShopCheckoutPage.tsx`**
+- Fetch enabled methods from `checkout_payment_methods` table ordered by `sort_order`
+- Replace hardcoded wallet-only button with a list of enabled methods
+- Update `PaymentMethod` type from `"wallet" | "card"` to `string`
+- For `cod`: skip PIN entry, skip balance check, show "No advance payment required" message
+- For `wallet`: keep existing balance check + PIN flow
+- For `bkash`/`nagad`/`card`: show "Coming soon" badge (disabled)
+- Update success screen to show appropriate message per method (e.g., "Pay ৳X on delivery")
 
-### 8. Delivery Trust Icons — Staggered Entrance
-- Each trust row item wrapped in `motion.div` with stagger delay based on index
+### 3. Icon mapping utility
+Map icon strings (`wallet`, `truck`, `smartphone`, `credit-card`) to Lucide icons in the checkout UI.
 
-### 9. Tab Content — Crossfade
-- Wrap `TabsContent` children in `motion.div` with `initial={{ opacity: 0 }}` `animate={{ opacity: 1 }}` for smooth tab switching
-
-## Technical Notes
-- All changes in one file
-- Uses existing `framer-motion` imports
-- New state: `addedToCart` (boolean), `headerOpaque` (boolean)
-- No new dependencies, no backend changes
+## Summary
+- 1 new database table + seed data
+- 1 RPC update (COD handling)
+- 2 files modified: `AdminEcommerceHub.tsx`, `ShopCheckoutPage.tsx`
+- Admin controls which payment methods appear at checkout
+- Cash on Delivery works end-to-end without wallet deduction
 
