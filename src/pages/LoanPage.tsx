@@ -5,6 +5,7 @@ import { ArrowLeft, Clock, CheckCircle2, XCircle, Loader2, AlertCircle, Landmark
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useKycStatus } from "@/hooks/use-kyc-status";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,11 +25,19 @@ const statusConfig: Record<string, { icon: React.ReactNode; color: string; label
 const LoanPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { status: kycStatus, loading: kycLoading } = useKycStatus();
   const [amount, setAmount] = useState(5000);
   const [tenure, setTenure] = useState(60);
   const [submitting, setSubmitting] = useState(false);
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!kycLoading && kycStatus !== "verified") {
+      toast.error("Please complete KYC verification to use this feature.");
+      navigate("/");
+    }
+  }, [kycLoading, kycStatus, navigate]);
 
   const emi = useMemo(() => {
     const interest = (amount * INTEREST_RATE * (tenure / 365)) / 100;
@@ -42,6 +51,8 @@ const LoanPage = () => {
     supabase.from("loan_applications").select("*").eq("user_id", user.id).order("created_at", { ascending: false })
       .then(({ data }) => { setApplications(data || []); setLoading(false); });
   }, [user]);
+
+  if (kycLoading) return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
 
   const handleApply = async () => {
     if (!user) { toast.error("Please sign in first"); return; }

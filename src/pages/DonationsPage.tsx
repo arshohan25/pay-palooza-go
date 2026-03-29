@@ -5,6 +5,7 @@ import { ArrowLeft, Heart, GraduationCap, Stethoscope, Droplets, Wheat, Baby, Ch
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useKycStatus } from "@/hooks/use-kyc-status";
 import { verifyPin } from "@/lib/verifyPin";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
@@ -41,6 +42,7 @@ const spring = { type: "spring" as const, stiffness: 500, damping: 32 };
 const DonationsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { status: kycStatus, loading: kycLoading } = useKycStatus();
   const [step, setStep] = useState<Step>("cause");
   const [selectedCause, setSelectedCause] = useState<typeof CAUSES[0] | null>(null);
   const [amount, setAmount] = useState("");
@@ -113,6 +115,15 @@ const DonationsPage = () => {
       fetchRecurring();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (!kycLoading && kycStatus !== "verified") {
+      toast.error("Please complete KYC verification to use this feature.");
+      navigate("/");
+    }
+  }, [kycLoading, kycStatus, navigate]);
+
+  if (kycLoading) return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
 
   const handleSelectCause = (cause: typeof CAUSES[0]) => { setSelectedCause(cause); setStep("amount"); localStorage.setItem("mfs_fav_donation_cause", cause.id); };
 
