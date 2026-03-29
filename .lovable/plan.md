@@ -1,23 +1,40 @@
 
 
-# Add Uploaded Logo to Splash Screen
+# Ensure Authenticated Users Never See Auth Page Again
 
-## Overview
-Replace the current generated logo with the user's uploaded EasyPay logo image across the splash screen and HTML splash fallback.
+## Current Behavior
+The app already uses Supabase's persisted session (`persistSession: true`) to skip the auth page for logged-in users. However, the splash screen and onboarding still replay on every new browser tab because `splashDone` uses `sessionStorage` (cleared per tab/session) and `onboardingDone` uses `localStorage` (persists).
 
-## Steps
+The real issue: when a logged-in user opens a new tab, there's a brief `authLoading` window where the session hasn't resolved yet. During this window, the code falls through to `!isAuthenticated` and shows splash → onboarding → auth page before the session loads.
 
-### 1. Copy logo to project
-- Copy `user-uploads://photo_2026-03-02_15-11-13-3.png` → `public/icons/easypay-logo.png` (overwrite existing empty/generated file)
+## Plan
 
-### 2. Update `index.html` — HTML splash fallback
-- Replace the inline SVG placeholder (the "EP" text circle) with an `<img src="/icons/easypay-logo.png" width="64" height="64" alt="EasyPay">` tag
-- This ensures the real logo shows even before React mounts
+### File: `src/pages/Index.tsx`
 
-### 3. Verify `src/components/SplashScreen.tsx`
-- Already references `/icons/easypay-logo.png` with preload logic — no changes needed there
+1. **Use `localStorage` for `splashDone` instead of `sessionStorage`** — so it persists across tabs and browser restarts, matching the user's expectation that once logged in, these screens never appear again.
+
+2. **Guard splash/onboarding behind a "never logged in" check** — add a `localStorage` flag `mfs_has_authenticated` that is set to `"1"` after successful first login. If this flag exists, skip splash, onboarding, AND auth page display entirely (show loading skeleton instead while `authLoading` resolves).
+
+3. **Set the flag on authentication** — in the `AuthPage onAuthenticated` callback and also when `isAuthenticated` becomes true, persist `localStorage.setItem("mfs_has_authenticated", "1")`.
+
+4. **Clear the flag on sign-out** — in the `signOut` function (already in `use-auth.ts`), remove `mfs_has_authenticated` so the auth page becomes accessible again after explicit logout.
+
+### File: `src/hooks/use-auth.ts`
+
+5. **Add `mfs_has_authenticated` to the signOut cleanup list** — ensures clearing app data or signing out resets access to the auth page.
+
+### Logic Summary
+
+```text
+App opens
+  → Check localStorage("mfs_has_authenticated")
+  → If "1" AND authLoading: show skeleton (not splash/auth)
+  → If "1" AND isAuthenticated: show dashboard
+  → If "1" AND !isAuthenticated AND !authLoading: session expired → clear flag, show auth
+  → If not set: show splash → onboarding → auth (normal first-time flow)
+```
 
 ## Files Changed
-- `public/icons/easypay-logo.png` — replaced with uploaded logo
-- `index.html` — swap SVG for `<img>` in HTML splash
+- `src/pages/Index.tsx` — add `hasAuthenticated` localStorage check, skip splash/onboarding/auth when flag is set
+- `src/hooks/use-auth.ts` — clear `mfs_has_authenticated` on signOut
 
