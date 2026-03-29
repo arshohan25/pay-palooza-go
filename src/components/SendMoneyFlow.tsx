@@ -309,6 +309,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
   const handlePhoneContactsPicked = (data: any) => {
     if (!data || !Array.isArray(data)) return;
+    const toStore: StoredContact[] = [];
     const newContacts: Contact[] = [];
     for (const entry of data) {
       const name = entry.name?.[0] || "Unknown";
@@ -316,6 +317,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
       if (!tel) continue;
       const phone = normalizePhone(tel);
       if (!phone) continue;
+      toStore.push({ name, phone });
       const initials = name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase() || phone.slice(-2);
       newContacts.push({
         id: `contact-${phone}`,
@@ -325,6 +327,8 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
         gradient: GRADIENTS[newContacts.length % GRADIENTS.length],
       });
     }
+    // Persist to localStorage
+    if (toStore.length > 0) saveStoredContacts(toStore);
     if (newContacts.length > 0) {
       setPhoneContacts((prev) => {
         const seen = new Set(prev.map((c) => normalizePhone(c.phone)));
@@ -338,6 +342,14 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
         return merged;
       });
     }
+  };
+
+  const handleSyncContacts = async () => {
+    const result = await requestContacts();
+    if (result.status === "granted" && result.data) {
+      handlePhoneContactsPicked(result.data);
+    }
+  };
   };
 
   const [validating, setValidating] = useState(false);
