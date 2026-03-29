@@ -47,7 +47,8 @@ interface CheckoutPaymentMethod {
   sort_order: number;
 }
 
-const PAY_ICON_MAP: Record<string, any> = { wallet: Wallet, truck: Truck, smartphone: Smartphone, "credit-card": CreditCard };
+
+interface DeliveryZone {
   id: string;
   zone_name: string;
   cities: string[];
@@ -55,8 +56,6 @@ const PAY_ICON_MAP: Record<string, any> = { wallet: Wallet, truck: Truck, smartp
   estimated_days: string;
   courier_providers: { name: string } | null;
 }
-
-type PaymentMethod = "wallet" | "card";
 
 export default function ShopCheckoutPage() {
   const navigate = useNavigate();
