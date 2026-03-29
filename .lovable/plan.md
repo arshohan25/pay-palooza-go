@@ -1,28 +1,23 @@
 
 
-# Fix Splash Screen Logo Not Showing
+# Add Uploaded Logo to Splash Screen
 
-## Problem
-The splash screen exits after ~550ms (300ms delay + 250ms exit animation). The logo image `/icons/easypay-logo.png` may not finish loading in that window, resulting in a blank logo box.
+## Overview
+Replace the current generated logo with the user's uploaded EasyPay logo image across the splash screen and HTML splash fallback.
 
-## Solution
+## Steps
 
-### File: `src/components/SplashScreen.tsx`
-1. **Preload the logo before showing content** — add state `logoLoaded` and preload the image in a `useEffect`. Only start the exit timer after the logo has loaded (or after a fallback timeout).
-2. **Use a link preload in `index.html`** — add `<link rel="preload" as="image" href="/icons/easypay-logo.png">` so the browser fetches the logo early, before React even mounts.
+### 1. Copy logo to project
+- Copy `user-uploads://photo_2026-03-02_15-11-13-3.png` → `public/icons/easypay-logo.png` (overwrite existing empty/generated file)
 
-### File: `index.html`
-- Add `<link rel="preload" as="image" href="/icons/easypay-logo.png">` in the `<head>` section.
+### 2. Update `index.html` — HTML splash fallback
+- Replace the inline SVG placeholder (the "EP" text circle) with an `<img src="/icons/easypay-logo.png" width="64" height="64" alt="EasyPay">` tag
+- This ensures the real logo shows even before React mounts
 
-### Logic Change in SplashScreen
-```
-- Load logo via new Image() on mount
-- Once loaded (or after 2s fallback), set logoLoaded = true
-- Start exit timer only when logoLoaded is true
-- This ensures the logo is visible before the splash fades out
-```
+### 3. Verify `src/components/SplashScreen.tsx`
+- Already references `/icons/easypay-logo.png` with preload logic — no changes needed there
 
-## Summary
-- 2 files changed: `index.html`, `src/components/SplashScreen.tsx`
-- No backend changes
+## Files Changed
+- `public/icons/easypay-logo.png` — replaced with uploaded logo
+- `index.html` — swap SVG for `<img>` in HTML splash
 
