@@ -88,6 +88,15 @@ export default function ProductDetailPage() {
   const [relatedFromVendor, setRelatedFromVendor] = useState<any[]>([]);
   const [relatedOthers, setRelatedOthers] = useState<any[]>([]);
   const [chattingWithMerchant, setChattingWithMerchant] = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
+  const [headerOpaque, setHeaderOpaque] = useState(false);
+
+  // Scroll-based header opacity
+  useEffect(() => {
+    const onScroll = () => setHeaderOpaque(window.scrollY > 300);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const merchantUserId = product?.merchants?.user_id;
   const merchantOnline = merchantUserId ? isOnline(merchantUserId) : false;
