@@ -4988,6 +4988,20 @@ export type Database = {
               p_fee?: number
               p_recipient_name?: string
               p_recipient_phone: string
+              p_recipient_type?: string
+              p_reference?: string
+              p_type?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_amount: number
+              p_commission?: number
+              p_description?: string
+              p_fee?: number
+              p_recipient_name?: string
+              p_recipient_phone: string
               p_recipient_type?: Database["public"]["Enums"]["txn_type"]
               p_reference?: string
               p_type?: Database["public"]["Enums"]["txn_type"]
