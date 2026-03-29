@@ -28,7 +28,7 @@ import {
   Banknote,
   ChevronRight,
   Contact2,
-} from "lucide-react";
+  RefreshCw,
 import { Button } from "@/components/ui/button";
 import QrScannerModal from "@/components/QrScannerModal";
 import { useI18n } from "@/lib/i18n";
@@ -242,15 +242,21 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     autoResolve();
   }, [prefilledPhone]);
 
-  // Auto-load phone contacts if permission was previously granted
+  // Load contacts from local store on mount (no native picker)
   useEffect(() => {
-    if (getCachedStatus("contacts") === "granted") {
-      (async () => {
-        const result = await requestContacts();
-        if (result.status === "granted" && result.data) {
-          handlePhoneContactsPicked(result.data);
-        }
-      })();
+    const stored = loadStoredContacts();
+    if (stored.length > 0) {
+      const mapped: Contact[] = stored.map((c, i) => {
+        const initials = c.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase() || c.phone.slice(-2);
+        return {
+          id: `contact-${c.phone}`,
+          name: c.name,
+          phone: c.phone,
+          initials,
+          gradient: GRADIENTS[i % GRADIENTS.length],
+        };
+      });
+      setPhoneContacts(mapped);
     }
   }, []);
 
