@@ -1,40 +1,38 @@
 
 
-# Ensure Authenticated Users Never See Auth Page Again
+# Fix: Enforce KYC Verification Server-Side on All Transactions
 
-## Current Behavior
-The app already uses Supabase's persisted session (`persistSession: true`) to skip the auth page for logged-in users. However, the splash screen and onboarding still replay on every new browser tab because `splashDone` uses `sessionStorage` (cleared per tab/session) and `onboardingDone` uses `localStorage` (persists).
+## Problem
+Currently, KYC verification is only enforced **client-side** via `FeatureGuard`. A user can bypass this by calling the database RPCs directly (e.g. via browser console or API). The `record_transaction` and `transfer_money` functions have no KYC check.
 
-The real issue: when a logged-in user opens a new tab, there's a brief `authLoading` window where the session hasn't resolved yet. During this window, the code falls through to `!isAuthenticated` and shows splash → onboarding → auth page before the session loads.
+## Solution
+Add a server-side KYC verification check inside both `record_transaction` and `transfer_money` RPCs. If the user has not completed KYC (and is not KYC-exempt), the transaction is rejected.
 
-## Plan
+## Database Migration
 
-### File: `src/pages/Index.tsx`
+Add a reusable helper function and update both RPCs:
 
-1. **Use `localStorage` for `splashDone` instead of `sessionStorage`** — so it persists across tabs and browser restarts, matching the user's expectation that once logged in, these screens never appear again.
+### 1. New helper: `require_kyc_verified(p_user_id uuid)`
+A `SECURITY DEFINER` function that checks:
+- If `profiles.kyc_exempt = true` → pass
+- If a `kyc_verifications` record exists with `status = 'verified'` → pass
+- Otherwise → raise exception `'KYC verification required to perform transactions'`
 
-2. **Guard splash/onboarding behind a "never logged in" check** — add a `localStorage` flag `mfs_has_authenticated` that is set to `"1"` after successful first login. If this flag exists, skip splash, onboarding, AND auth page display entirely (show loading skeleton instead while `authLoading` resolves).
+### 2. Update `record_transaction`
+Add `PERFORM require_kyc_verified(v_user_id);` right after the authentication check (after `v_user_id := auth.uid()`), before any balance operations.
 
-3. **Set the flag on authentication** — in the `AuthPage onAuthenticated` callback and also when `isAuthenticated` becomes true, persist `localStorage.setItem("mfs_has_authenticated", "1")`.
+### 3. Update `transfer_money`
+Same — add `PERFORM require_kyc_verified(v_sender_id);` after the auth check.
 
-4. **Clear the flag on sign-out** — in the `signOut` function (already in `use-auth.ts`), remove `mfs_has_authenticated` so the auth page becomes accessible again after explicit logout.
-
-### File: `src/hooks/use-auth.ts`
-
-5. **Add `mfs_has_authenticated` to the signOut cleanup list** — ensures clearing app data or signing out resets access to the auth page.
-
-### Logic Summary
-
-```text
-App opens
-  → Check localStorage("mfs_has_authenticated")
-  → If "1" AND authLoading: show skeleton (not splash/auth)
-  → If "1" AND isAuthenticated: show dashboard
-  → If "1" AND !isAuthenticated AND !authLoading: session expired → clear flag, show auth
-  → If not set: show splash → onboarding → auth (normal first-time flow)
-```
+### 4. Update `savings_deposit`
+Same pattern — add KYC check after auth.
 
 ## Files Changed
-- `src/pages/Index.tsx` — add `hasAuthenticated` localStorage check, skip splash/onboarding/auth when flag is set
-- `src/hooks/use-auth.ts` — clear `mfs_has_authenticated` on signOut
+- **1 database migration** — creates `require_kyc_verified` function and updates `record_transaction`, `transfer_money`, and `savings_deposit` RPCs
+- **No frontend changes needed** — client-side `FeatureGuard` already blocks UI; this adds the critical server-side enforcement layer
+
+## Security Impact
+- Prevents any direct RPC call from bypassing KYC
+- KYC-exempt users (set by admin) continue to work normally
+- All existing UI flows remain unchanged
 
