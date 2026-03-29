@@ -5,6 +5,7 @@ import { ArrowLeft, Clock, CheckCircle2, XCircle, Loader2, AlertCircle, Landmark
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useKycStatus } from "@/hooks/use-kyc-status";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
