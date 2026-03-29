@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-const logo = "/icons/easypay-logo.webp";
+const logo = "/icons/easypay-logo.png";
 
 interface SplashScreenProps {
   onDone: () => void;
@@ -44,7 +44,7 @@ export default function SplashScreen({ onDone }: SplashScreenProps) {
             className="w-16 h-16 object-contain"
             width={64}
             height={64}
-            onError={(e) => { e.currentTarget.src = "/icons/easypay-logo.webp"; }}
+            onError={(e) => { e.currentTarget.src = "/icons/easypay-logo.png"; }}
           />
           {/* Shine — CSS animation */}
           <div className="absolute inset-0 rounded-[26px] overflow-hidden splash-shine">
