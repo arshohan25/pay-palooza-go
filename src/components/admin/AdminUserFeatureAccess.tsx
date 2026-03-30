@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Users, Shield, UserCog, Search, Trash2, Save } from "lucide-react";
+import { Loader2, Users, Shield, UserCog, Search, Trash2, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -41,6 +42,9 @@ export default function AdminUserFeatureAccess() {
   const [features, setFeatures] = useState<FeatureToggle[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [selectedFeatures, setSelectedFeatures] = useState<Set<string>>(new Set());
+  const [bulkGroup, setBulkGroup] = useState("");
+  const [bulkVis, setBulkVis] = useState("");
 
   // Individual user search
   const [searchPhone, setSearchPhone] = useState("");
@@ -188,59 +192,137 @@ export default function AdminUserFeatureAccess() {
     );
   }
 
+  const toggleFeatureSelection = (key: string) => {
+    setSelectedFeatures((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const toggleAllFeatures = () => {
+    if (selectedFeatures.size === features.length) {
+      setSelectedFeatures(new Set());
+    } else {
+      setSelectedFeatures(new Set(features.map((f) => f.feature_key)));
+    }
+  };
+
+  const bulkApply = async (groupType: string, groups: readonly string[]) => {
+    if (!bulkGroup || !bulkVis || selectedFeatures.size === 0) return;
+    setSaving(true);
+    const keys = Array.from(selectedFeatures);
+    await Promise.all(keys.map((key) => setGroupVis(groupType, bulkGroup, key, bulkVis)));
+    setSelectedFeatures(new Set());
+    setBulkGroup("");
+    setBulkVis("");
+    setSaving(false);
+    toast.success(`Applied to ${keys.length} features`);
+  };
+
   const renderGroupGrid = (groupType: string, groups: readonly string[], label: string) => (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="min-w-[160px]">Feature</TableHead>
-            {groups.map((g) => (
-              <TableHead key={g} className="text-center capitalize min-w-[100px]">
-                {g}
-                <Badge variant="secondary" className="ml-1 text-[10px]">
-                  {groupType === "usage_badge"
-                    ? badgeCounts.find((b) => b.badge === g)?.count ?? 0
-                    : roleCounts.find((r) => r.role === g)?.count ?? 0}
-                </Badge>
+    <div className="space-y-3">
+      {/* Bulk toolbar */}
+      {selectedFeatures.size > 0 && (
+        <div className="flex flex-wrap items-center gap-2 p-3 rounded-lg bg-muted/60 border">
+          <Badge variant="secondary" className="text-xs">{selectedFeatures.size} selected</Badge>
+          <Select value={bulkGroup} onValueChange={setBulkGroup}>
+            <SelectTrigger className="h-7 text-[11px] w-[110px]">
+              <SelectValue placeholder={`Pick ${label}`} />
+            </SelectTrigger>
+            <SelectContent>
+              {groups.map((g) => (
+                <SelectItem key={g} value={g} className="capitalize">{g}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={bulkVis} onValueChange={setBulkVis}>
+            <SelectTrigger className="h-7 text-[11px] w-[100px]">
+              <SelectValue placeholder="Visibility" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="—">— Default</SelectItem>
+              {VIS_OPTIONS.map((v) => (
+                <SelectItem key={v.value} value={v.value}>
+                  <span className={v.color}>{v.label}</span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button size="sm" className="h-7 text-xs gap-1" disabled={!bulkGroup || !bulkVis || saving} onClick={() => bulkApply(groupType, groups)}>
+            <Save className="w-3 h-3" /> Apply
+          </Button>
+          <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={() => { setSelectedFeatures(new Set()); setBulkGroup(""); setBulkVis(""); }}>
+            <X className="w-3 h-3" /> Clear
+          </Button>
+        </div>
+      )}
+
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[40px]">
+                <Checkbox
+                  checked={selectedFeatures.size === features.length && features.length > 0}
+                  onCheckedChange={toggleAllFeatures}
+                />
               </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {features.map((f) => (
-            <TableRow key={f.feature_key}>
-              <TableCell className="font-medium text-sm">
-                {f.label}
-                <span className="block text-[10px] font-mono text-muted-foreground">{f.feature_key}</span>
-              </TableCell>
-              {groups.map((g) => {
-                const currentVis = getGroupVis(groupType, g, f.feature_key);
-                return (
-                  <TableCell key={g} className="text-center">
-                    <Select
-                      value={currentVis}
-                      onValueChange={(val) => setGroupVis(groupType, g, f.feature_key, val)}
-                      disabled={saving}
-                    >
-                      <SelectTrigger className="h-7 text-[11px] w-[90px] mx-auto">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="—">— Default</SelectItem>
-                        {VIS_OPTIONS.map((v) => (
-                          <SelectItem key={v.value} value={v.value}>
-                            <span className={v.color}>{v.label}</span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                );
-              })}
+              <TableHead className="min-w-[160px]">Feature</TableHead>
+              {groups.map((g) => (
+                <TableHead key={g} className="text-center capitalize min-w-[100px]">
+                  {g}
+                  <Badge variant="secondary" className="ml-1 text-[10px]">
+                    {groupType === "usage_badge"
+                      ? badgeCounts.find((b) => b.badge === g)?.count ?? 0
+                      : roleCounts.find((r) => r.role === g)?.count ?? 0}
+                  </Badge>
+                </TableHead>
+              ))}
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {features.map((f) => (
+              <TableRow key={f.feature_key} className={selectedFeatures.has(f.feature_key) ? "bg-muted/40" : ""}>
+                <TableCell>
+                  <Checkbox
+                    checked={selectedFeatures.has(f.feature_key)}
+                    onCheckedChange={() => toggleFeatureSelection(f.feature_key)}
+                  />
+                </TableCell>
+                <TableCell className="font-medium text-sm">
+                  {f.label}
+                  <span className="block text-[10px] font-mono text-muted-foreground">{f.feature_key}</span>
+                </TableCell>
+                {groups.map((g) => {
+                  const currentVis = getGroupVis(groupType, g, f.feature_key);
+                  return (
+                    <TableCell key={g} className="text-center">
+                      <Select
+                        value={currentVis}
+                        onValueChange={(val) => setGroupVis(groupType, g, f.feature_key, val)}
+                        disabled={saving}
+                      >
+                        <SelectTrigger className="h-7 text-[11px] w-[90px] mx-auto">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="—">— Default</SelectItem>
+                          {VIS_OPTIONS.map((v) => (
+                            <SelectItem key={v.value} value={v.value}>
+                              <span className={v.color}>{v.label}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                  );
+                })}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 
