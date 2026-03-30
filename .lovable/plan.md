@@ -1,30 +1,22 @@
 
 
-# Add Pending KYC Badge (Yellow/Orange)
+# Fix KYC Badge Loading Flash on Account Page
 
 ## Problem
-The `KycBadge` component on the Account page only has two states: Verified (green) and Unverified (red). Users who have submitted KYC but are awaiting review still see "Unverified" in red, which is misleading.
+The `KycBadge` renders immediately with default status `"none"` (red "Unverified") while the hook is still fetching, causing a flash for verified/pending users.
 
-## Changes
+## Fix
 
-### 1. `src/pages/AccountPage.tsx`
-- Update `KycBadge` to accept `status: KycStatus` instead of `verified: boolean`
-- Add a third state: **Pending** — displayed as a yellow/orange badge with a `Clock` icon and "Pending" label
-- Three states:
-  - `verified` → green badge with checkmark, "Verified"
-  - `pending` → amber/orange badge with clock icon, "Pending"
-  - `none` / `rejected` → red badge with alert icon, "Unverified"
-- Update the call site from `<KycBadge verified={kycStatus === "verified"} />` to `<KycBadge status={kycStatus} />`
+### `src/pages/AccountPage.tsx`
+1. Destructure `loading` from `useKycStatus()` on line 147:
+   - `const { status: kycStatus, loading: kycLoading } = useKycStatus();`
+2. Update `KycBadge` component to accept an optional `loading` prop — when `true`, render a small skeleton pill instead of any status badge
+3. Pass loading to badge: `<KycBadge status={kycStatus} loading={kycLoading} />`
 
-### 2. `src/lib/i18n.tsx`
-- Add translation key `kycPending` with `{ en: "Pending", bn: "অপেক্ষমাণ" }` (can reuse existing `pending` key if already suitable)
-
-## Technical Details
-- Import `Clock` icon from lucide-react for the pending state
-- Amber styling: `bg-amber-500/12 text-amber-600 border-amber-500/20`
-- The existing `useKycStatus()` hook already returns `"pending"` status, so no backend changes needed
+### Technical detail
+- The skeleton pill will use the existing `Skeleton` component with matching dimensions (`w-16 h-4 rounded-full`)
+- Once loading resolves, the correct badge (Verified/Pending/Unverified) appears without any flash
 
 ## Files Changed
-- `src/pages/AccountPage.tsx` — Update KycBadge component and its usage
-- `src/lib/i18n.tsx` — Add `kycPending` translation key (if needed)
+- `src/pages/AccountPage.tsx` — Add loading prop to KycBadge, show skeleton while loading
 
