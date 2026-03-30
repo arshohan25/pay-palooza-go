@@ -1,64 +1,29 @@
 
 
-# User Usage Performance Tracker & Rewards System
+# Show Only Missing Features in Feature Unlock Dropdown
 
-## What You Want
-A dedicated admin module that shows each user's usage performance metrics (transaction volume, frequency, spending patterns, account age, activity score) and lets admins reward high-performing users with extra features, coupons, discounts, and special offers — all based on their usage data.
+## Problem
+When assigning a "Feature Unlock" reward, the admin sees a free-text input for "Feature Key". Instead, it should show a dropdown listing only features the selected user(s) **don't already have** (i.e., features that are hidden/disabled for them and not yet overridden to visible).
 
-## New Components & Changes
+## Changes
 
-### 1. Database: `user_rewards` table (migration)
-Stores rewards/offers assigned to specific users by admins:
-- `id`, `user_id` (references profiles), `reward_type` (enum: `coupon`, `feature_unlock`, `discount`, `bonus_balance`, `custom_offer`)
-- `reward_value` (JSON — coupon code, feature key, discount %, bonus amount, etc.)
-- `reason` (text — e.g. "Power user reward", "Top 10 transactor")
-- `status` (active / claimed / expired)
-- `expires_at`, `created_by` (admin), `created_at`
-- RLS: admins full access, users can read own rows
+### `src/components/admin/AdminUserPerformanceTracker.tsx`
 
-### 2. New Admin Component: `AdminUserPerformanceTracker.tsx`
-A full-page admin panel with:
+1. **Fetch all feature keys** — When the reward dialog opens, load all features from `global_feature_toggles` (feature_key + label)
 
-**Performance Dashboard (top section)**
-- Summary cards: Total users by badge (New/Basic/Active/Power), avg transactions/user, top spenders
-- Search bar to find users by phone/name
+2. **Fetch selected users' existing overrides** — Query `user_feature_overrides` for the selected user IDs where `visibility = 'visible'` to get features they already have
 
-**User Performance Table**
-- Columns: User (phone + name), Badge, Account Age, Total Txns, Monthly Txns, Total Volume (৳), Last Active, Activity Score
-- Sortable by any column, filterable by badge
-- Each row expandable to show transaction breakdown by type (send/cashout/recharge etc.)
+3. **Compute missing features** — Filter the full feature list to exclude features the user(s) already have visible overrides for. For multi-user selection, show features that at least one selected user is missing
 
-**Reward Actions (per user or bulk)**
-- Select users → "Reward" button opens a dialog with options:
-  - **Assign Coupon**: Pick from existing coupons or create a one-time coupon for this user
-  - **Unlock Feature**: Grant access to a hidden/disabled feature
-  - **Give Discount**: Set a % or flat discount on next N transactions
-  - **Bonus Offer**: Custom text-based offer with expiry
-- Bulk selection: select multiple users by badge filter (e.g. "All Power users") and apply reward to all
+4. **Replace Input with Select dropdown** — When `rewardType === "feature_unlock"`, replace the free-text `Input` with a `Select` dropdown populated with the missing features (showing label, value = feature_key)
 
-**Reward History Tab**
-- Table of all issued rewards with user, type, value, status, issued date
+5. **Empty state** — If all features are already unlocked for the selected user(s), show a message: "All features already unlocked for selected user(s)"
 
-### 3. User-Facing: Rewards Inbox on Account Page
-- New "My Rewards" section showing active rewards/offers assigned to the user
-- Claimable coupons auto-populate in checkout coupon field
-- Feature unlocks take effect immediately via existing override system
-
-### 4. Integration Points
-- Feature unlocks use existing `user_feature_overrides` table (inserts a `visible` override for the user)
-- Coupon rewards create a user-specific entry linking to `coupons` table
-- Activity score computed from existing `transactions` + `profiles` data (reuses `get_user_usage_badge` logic but with more granular metrics)
+## Technical Detail
+- Fetch features + overrides when dialog opens (`useEffect` on `rewardDialog` + `rewardType`)
+- For single user selection: straightforward filter. For bulk: show union of missing features across all selected users
+- Reuses existing `global_feature_toggles` table data already used in `AdminUserFeatureAccess`
 
 ## Files Changed
-- **Migration SQL** — `user_rewards` table + RLS + enum type
-- **New**: `src/components/admin/AdminUserPerformanceTracker.tsx` — main admin panel
-- **Edit**: `src/pages/AdminDashboard.tsx` — add new section/nav item for "User Performance"
-- **Edit**: `src/pages/AccountPage.tsx` — add "My Rewards" section for users
-- **Edit**: `src/pages/ShopCheckoutPage.tsx` — auto-apply user-specific coupon rewards
-
-## Technical Details
-- Performance metrics computed client-side from `transactions` table aggregation (grouped by user_id via admin RPC)
-- New RPC `get_user_performance_stats` returns aggregated metrics for admin view (bypasses row-per-user RLS)
-- Reward assignment logged in `audit_logs` for compliance
-- Existing `get_user_usage_badge` RPC reused for badge classification
+- `src/components/admin/AdminUserPerformanceTracker.tsx` — Replace text input with smart dropdown for feature_unlock type
 
