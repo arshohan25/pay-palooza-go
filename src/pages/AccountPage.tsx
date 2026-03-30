@@ -55,13 +55,19 @@ const REGISTERED_KEY = "mfs_registered_phone";
 const getRegisteredPhone = () => localStorage.getItem(REGISTERED_KEY) ?? "";
 
 /* ─── KYC badge ─── */
-const KycBadge = ({ verified }: { verified: boolean }) => {
+const KycBadge = ({ status }: { status: KycStatus }) => {
   const { t } = useI18n();
-  return verified ? (
+  if (status === "verified") return (
     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/12 text-primary border border-primary/20">
       <BadgeCheck size={11} /> {t("verified")}
     </span>
-  ) : (
+  );
+  if (status === "pending") return (
+    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/12 text-amber-600 border border-amber-500/20">
+      <Clock size={11} /> {t("kycPending")}
+    </span>
+  );
+  return (
     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20">
       <AlertCircle size={11} /> {t("unverified")}
     </span>
@@ -250,7 +256,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-[17px] font-bold">{displayName}</p>
-                <KycBadge verified={kycStatus === "verified"} />
+                <KycBadge status={kycStatus} />
               </div>
               <p className="text-[13px] opacity-80 mt-0.5 font-medium">{registeredPhone ? `+88 ${registeredPhone}` : "—"}</p>
               {userEmail && (
