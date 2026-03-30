@@ -776,8 +776,12 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
             />
 
             {/* Top bar */}
-            <div className="relative z-10 px-4 pt-4 flex items-center justify-end"
+            <div className="relative z-10 px-4 pt-4 flex items-center justify-between"
               style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1rem)" }}>
+              <motion.button whileTap={{ scale: 0.92 }} onClick={toggleLang}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/12 text-white text-xs font-bold">
+                <Globe size={11} /> {lang === "en" ? "বাংলা" : "EN"}
+              </motion.button>
               <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6, type: "spring", stiffness: 300, damping: 20 }}
                 className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/8 backdrop-blur-sm border border-white/10">
                 <Shield size={10} className="text-emerald-300/80" />
