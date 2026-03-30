@@ -10,6 +10,7 @@ import {
   Sun, Grid3X3, Minimize2, Store,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import ChangePinFlow from "@/components/ChangePinFlow";
