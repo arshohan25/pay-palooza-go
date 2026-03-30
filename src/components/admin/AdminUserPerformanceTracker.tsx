@@ -96,7 +96,7 @@ export default function AdminUserPerformanceTracker() {
     // Get the selected users' badges for group override checking
     const selectedIds = Array.from(selected);
     const selectedBadges = new Set(
-      users.filter(u => selectedIds.includes(u.user_id)).map(u => u.badge).filter(Boolean)
+      users.filter(u => selectedIds.includes(u.user_id)).map(u => getBadge(u.total_txns, u.created_at)).filter(Boolean)
     );
 
     const [{ data: allFeatures }, { data: userOverrides }, { data: groupOverrides }] = await Promise.all([
