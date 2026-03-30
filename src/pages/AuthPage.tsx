@@ -81,6 +81,8 @@ const T = {
     resettingPin: "Resetting PIN…",
     pinResetSuccess: "PIN reset successfully! Sign in with your new PIN.",
     pinResetFailed: "PIN reset failed. Please try again.",
+    goodMorning: "Good Morning", goodAfternoon: "Good Afternoon", goodEvening: "Good Evening",
+    secured: "Secured", sending: "Sending…",
   },
   bn: {
     appName: "ইজিপে", tagline: "বাংলাদেশের সবচেয়ে সহজ ডিজিটাল ওয়ালেট",
@@ -141,6 +143,8 @@ const T = {
     resettingPin: "পিন রিসেট হচ্ছে…",
     pinResetSuccess: "পিন সফলভাবে রিসেট হয়েছে! নতুন পিন দিয়ে সাইন ইন করুন।",
     pinResetFailed: "পিন রিসেট ব্যর্থ। আবার চেষ্টা করুন।",
+    goodMorning: "সুপ্রভাত", goodAfternoon: "শুভ অপরাহ্ন", goodEvening: "শুভ সন্ধ্যা",
+    secured: "সুরক্ষিত", sending: "পাঠানো হচ্ছে…",
   },
 } as const;
 
@@ -785,7 +789,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
               <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6, type: "spring", stiffness: 300, damping: 20 }}
                 className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/8 backdrop-blur-sm border border-white/10">
                 <Shield size={10} className="text-emerald-300/80" />
-                <span className="text-[9px] font-bold text-white/60 tracking-wide uppercase">Secured</span>
+                <span className="text-[9px] font-bold text-white/60 tracking-wide uppercase">{t.secured}</span>
               </motion.div>
             </div>
 
@@ -822,8 +826,8 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 transition={{ delay: 0.3, duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
                 className="text-center text-white mb-8"
               >
-                <p className="text-sm font-medium text-white/50 mb-1">{(() => { const h = new Date().getHours(); return h < 12 ? "Good Morning ☀️" : h < 17 ? "Good Afternoon 🌤️" : "Good Evening 🌙"; })()}</p>
-                <h2 className="text-2xl font-black tracking-tight mb-1.5">Welcome Back</h2>
+                <p className="text-sm font-medium text-white/50 mb-1">{(() => { const h = new Date().getHours(); return h < 12 ? `${t.goodMorning} ☀️` : h < 17 ? `${t.goodAfternoon} 🌤️` : `${t.goodEvening} 🌙`; })()}</p>
+                <h2 className="text-2xl font-black tracking-tight mb-1.5" style={{ fontFamily: lang === "bn" ? "'Anek Bangla', sans-serif" : undefined }}>{t.welcomeBack}</h2>
                 <p className="text-xs text-white/35 font-medium tracking-wide">
                   {phone ? `${phone.slice(0, 3)}${"•".repeat(Math.max(0, phone.length - 5))}${phone.slice(-2)}` : ""}
                 </p>
@@ -878,7 +882,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
                 className="flex items-center gap-4 px-5 py-2.5 rounded-2xl bg-white/[0.06] backdrop-blur-sm border border-white/[0.08]"
               >
                 <button onClick={() => { setPin(""); setOtp(""); handleForgotSendOtp(); }}
-                  className="text-[11px] text-white/40 hover:text-white/70 transition-colors font-semibold">{forgotOtpSending ? "Sending…" : t.forgotPin}</button>
+                  className="text-[11px] text-white/40 hover:text-white/70 transition-colors font-semibold">{forgotOtpSending ? t.sending : t.forgotPin}</button>
                 <div className="w-px h-3 bg-white/12" />
                 <button onClick={() => setShowPin(v => !v)}
                   className="flex items-center gap-1 text-[11px] text-white/40 hover:text-white/70 transition-colors font-semibold">
