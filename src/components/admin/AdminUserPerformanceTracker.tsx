@@ -101,6 +101,20 @@ export default function AdminUserPerformanceTracker() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Fetch features + overrides when reward dialog opens for feature_unlock
+  useEffect(() => {
+    if (!rewardDialog || rewardType !== "feature_unlock" || selected.size === 0) return;
+    setLoadingFeatures(true);
+    Promise.all([
+      supabase.from("global_feature_toggles").select("feature_key, label"),
+      supabase.from("user_feature_overrides").select("user_id, feature_key, visibility").in("user_id", Array.from(selected)).eq("visibility", "visible"),
+    ]).then(([{ data: feats }, { data: ovs }]) => {
+      setAllFeatures((feats as any[]) ?? []);
+      setUserOverrides((ovs as any[]) ?? []);
+      setLoadingFeatures(false);
+    });
+  }, [rewardDialog, rewardType, selected]);
+
   const enriched = useMemo(() =>
     users.map(u => ({ ...u, badge: getBadge(u.total_txns, u.created_at), score: activityScore(u) })),
     [users]
