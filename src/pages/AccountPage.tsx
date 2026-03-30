@@ -138,6 +138,7 @@ interface AccountPageProps { onSignOut?: () => void; onReplayOnboarding?: () => 
 
 const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const { t, lang, toggleLang } = useI18n();
+  const { status: kycStatus } = useKycStatus();
   const [copied, setCopied]             = useState(false);
   const [biometric, setBiometric]       = useState(false);
   const [pushNotifs, setPushNotifs]     = useState(true);
