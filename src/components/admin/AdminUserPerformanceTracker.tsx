@@ -89,7 +89,7 @@ export default function AdminUserPerformanceTracker() {
     setLoading(true);
     const [{ data: perfData }, { data: rewardData }] = await Promise.all([
       supabase.rpc("get_user_performance_stats") as any,
-      supabase.from("user_rewards").select("*").order("created_at", { ascending: false }).limit(500),
+      (supabase.from as any)("user_rewards").select("*").order("created_at", { ascending: false }).limit(500),
     ]);
     setUsers((perfData as UserPerf[]) ?? []);
     setRewards((rewardData as UserReward[]) ?? []);
