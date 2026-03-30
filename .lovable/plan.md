@@ -1,35 +1,39 @@
 
 
-# Fix Feature Unlock Dropdown — Exclude Already-Visible Features
+# Fix Feature Unlock Dropdown — Show Only Truly Missing Features
 
 ## Problem
-The "Feature Unlock" dropdown shows features like Cash Out, Cash In, Add Money, Payment, etc. — but these are **already visible** to users via global toggles (they're enabled by default). The dropdown should only show features that are currently **hidden or disabled** for the selected user(s), so admins can unlock features users don't have yet.
+The current filter on line 130 excludes ALL globally visible features. But some globally visible features are **hidden from specific users** via badge group overrides (e.g. "New" badge hides `account_icon_size`, `account_live_chat`, etc.). These should appear in the dropdown since the user doesn't actually have them.
 
-## Fix
+The logic should mirror the same resolution hierarchy used by `useGlobalToggles`: **user override > badge group override > global toggle**.
 
-### `src/components/admin/AdminUserPerformanceTracker.tsx`
+## Fix in `AdminUserPerformanceTracker.tsx`
 
-Update `loadAvailableFeatures` to also fetch the `is_enabled` and `visibility` columns from `global_feature_toggles`, then:
+Replace the filtering logic in `loadAvailableFeatures` (lines 127-134) with resolved visibility logic:
 
-1. **Exclude role-specific features** (existing prefix filter — keep as-is)
-2. **Exclude globally visible features** — if `is_enabled === true` and `visibility === 'visible'` (or null/default), the user already has it → exclude
-3. **Exclude features with badge/role group overrides that resolve to `visible`** — check `user_feature_overrides` for group-level rows matching the selected user's badge where `visibility = 'visible'`
-4. **Exclude features the user already has a `visible` user-specific override for** (existing logic — keep as-is)
+1. For each feature (after excluding role prefixes):
+   - Check if the user has a **user-specific override** → use that visibility
+   - Else check if the user's **badge group** has an override → use that visibility
+   - Else use the **global toggle** visibility (is_enabled + visibility column)
+2. Only show features where the **resolved visibility is `hidden` or `disabled`** — these are the ones the user doesn't have
 
-In short: only show features where the **resolved visibility** for the user is `hidden` or `disabled` — those are the ones worth unlocking.
-
-### Logic Change
 ```
-// Fetch global toggles with is_enabled + visibility
-// Fetch all overrides (user-specific + group) for selected users
-// For each feature:
-//   - Skip if role-prefixed
-//   - Skip if globally visible (is_enabled=true, visibility='visible')
-//   - Skip if user already has visible override
-//   - Skip if user's badge group has visible override
-// → Only show features that are hidden/disabled for user
+// For each feature, resolve effective visibility:
+for each feature in allFeatures (excluding role prefixes):
+  resolved = "visible" // default
+  
+  // Check user-specific override first
+  if userOverrides has this feature → resolved = that visibility
+  // Else check badge group override
+  else if badgeGroupOverrides has this feature for user's badge → resolved = that visibility
+  // Else use global
+  else → resolved = global toggle (is_enabled=true & visibility=visible → "visible", is_enabled=false → "disabled")
+
+  if resolved === "hidden" or resolved === "disabled" → include in dropdown
 ```
+
+This means features like `account_icon_size` that are globally `visible` but hidden via the "New" badge override **will correctly appear** in the dropdown for "New" badge users.
 
 ## Files Changed
-- `src/components/admin/AdminUserPerformanceTracker.tsx` — Update filtering logic in `loadAvailableFeatures`
+- `src/components/admin/AdminUserPerformanceTracker.tsx` — Rewrite filtering in `loadAvailableFeatures` to resolve per-feature visibility using the override hierarchy
 
