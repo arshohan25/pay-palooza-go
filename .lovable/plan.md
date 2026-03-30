@@ -1,48 +1,53 @@
 
 
-# Redesign PIN Login Screen — Premium, Modern, with Entrance Animations
+# Fix Bangla Language Support Across Splash and PIN Screens
 
-## Current State
-The `login_pin` screen (lines 763-842 in AuthPage.tsx) uses a basic `gradient-hero` background, a plain Lock icon in a circle, simple PinCircles dots, and minimal layout. It works but feels utilitarian.
+## Problem
+Several strings on the PIN login screen are hardcoded in English and do not switch when the user toggles to Bangla. The splash screen always shows Bangla tagline but is not language-aware. The inline HTML splash in `index.html` uses system fonts instead of the Bangla font.
 
-## Design Vision
-A premium, glassmorphism-heavy PIN screen inspired by high-end fintech apps:
+## Hardcoded English strings found
 
-1. **Staggered entrance animation** — Logo, greeting, PIN dots, and footer all animate in sequence with spring physics (fade-up + scale) for a polished first impression
-2. **User avatar area** — Show EasyPay logo with a frosted glass ring and animated gradient border glow, replacing the plain Lock icon
-3. **Personalized greeting** — "Welcome back" with the masked phone number (01•••••3012) styled elegantly
-4. **Redesigned PIN dots** — Larger dots (22px) inside a frosted glass pill container with subtle inner shadow, giving a tactile feel
-5. **Ambient background** — Keep gradient-hero but add a large animated radial gradient spotlight that slowly drifts, plus existing BgOrbs with increased opacity
-6. **Time-based greeting** — "Good Morning/Afternoon/Evening" based on time of day
-7. **Footer** — Forgot PIN and Show/Hide in a frosted glass bar at the bottom, plus a security badge
+| Location | Current (hardcoded) | Should be (Bangla) |
+|----------|--------------------|--------------------|
+| PIN screen greeting | "Good Morning ☀️" | "সুপ্রভাত ☀️" |
+| PIN screen greeting | "Good Afternoon 🌤️" | "শুভ অপরাহ্ন 🌤️" |
+| PIN screen greeting | "Good Evening 🌙" | "শুভ সন্ধ্যা 🌙" |
+| PIN screen heading | "Welcome Back" | "স্বাগতম" |
+| PIN screen badge | "Secured" | "সুরক্ষিত" |
+| PIN footer | "Sending…" | "পাঠানো হচ্ছে…" |
 
-## Technical Changes
+Note: The i18n.tsx file already has `goodMorning`, `goodAfternoon`, `goodEvening`, `welcomeBack` translations. The AuthPage has its own `T` object with `welcomeBack` too. We just need to wire them up.
 
-### `src/pages/AuthPage.tsx` — Login PIN section (lines 763-842)
+## Changes
 
-Replace the `login_pin` AnimatePresence block with:
+### 1. `src/pages/AuthPage.tsx` — Wire up translations on PIN screen
+- **Line 825**: Replace hardcoded greeting with `t.` lookups. The AuthPage `T` object doesn't have greeting keys yet, so add `goodMorning`, `goodAfternoon`, `goodEvening`, `secured` to both `T.en` and `T.bn`
+- **Line 826**: Replace `"Welcome Back"` with `t.welcomeBack` (already exists in T)
+- **Line 788**: Replace `"Secured"` with `t.secured` (new key)
+- **Line 881**: Replace `"Sending…"` with appropriate translated string (use existing pattern)
 
-- **Entrance container**: `motion.div` with `initial={{ opacity: 0 }}` → `animate={{ opacity: 1 }}` + 0.15s duration
-- **Logo block**: EasyPay logo image (already imported as `logo`) in a 72px frosted circle with animated gradient ring — `initial={{ scale: 0.6, opacity: 0 }}` → spring animate with 0.2s delay
-- **Greeting text**: Time-based greeting ("Good Morning") + "Welcome back" subtitle + masked phone — `initial={{ opacity: 0, y: 20 }}` with 0.3s delay
-- **PIN area**: Frosted glass container (`bg-white/8 backdrop-blur-md border border-white/12 rounded-3xl`) holding PinCircles + HiddenPinInput — `initial={{ opacity: 0, y: 24 }}` with 0.4s delay
-- **Error/status area**: Kept as-is but inside the glass container
-- **Footer actions**: Frosted glass bar at bottom with Forgot PIN | Show/Hide | Security badge — `initial={{ opacity: 0, y: 16 }}` with 0.5s delay
-- **Background accent**: Additional animated radial gradient circle (slow drift animation, 12s cycle)
-
-Helper function added at component level:
-```typescript
-function getTimeGreeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return "Good Morning";
-  if (h < 17) return "Good Afternoon";
-  return "Good Evening";
-}
+### 2. `src/pages/AuthPage.tsx` — Add missing keys to T object
+Add to `T.en`:
+```
+goodMorning: "Good Morning", goodAfternoon: "Good Afternoon", goodEvening: "Good Evening",
+secured: "Secured",
+```
+Add to `T.bn`:
+```
+goodMorning: "সুপ্রভাত", goodAfternoon: "শুভ অপরাহ্ন", goodEvening: "শুভ সন্ধ্যা",
+secured: "সুরক্ষিত",
 ```
 
-### No new files needed
-All changes are within the existing `login_pin` block in AuthPage.tsx. Uses existing imports (motion, framer-motion), existing components (PinCircles, HiddenPinInput, BgOrbs), and existing CSS variables.
+### 3. `src/components/SplashScreen.tsx` — Make language-aware
+- Read `localStorage.getItem("mfs_ui_lang")` to determine language
+- Switch app name between "EasyPay" / "ইজিপে" and tagline accordingly
+- Ensure `font-family` includes `'Anek Bangla'` for proper Bangla rendering
+
+### 4. `index.html` — Inline HTML splash font fix
+- Add `'Anek Bangla'` to the inline splash's font-family so the Bangla tagline renders with the correct font even before React mounts (graceful fallback since font loads async)
 
 ## Files Changed
-- `src/pages/AuthPage.tsx` — Replace login_pin section (~80 lines) with premium redesigned version
+- `src/pages/AuthPage.tsx` — Add translation keys, replace hardcoded strings
+- `src/components/SplashScreen.tsx` — Language-aware text
+- `index.html` — Add Bangla font to inline splash styles
 
