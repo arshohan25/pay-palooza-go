@@ -84,6 +84,36 @@ export default function AdminUserPerformanceTracker() {
   const [rewardExpiry, setRewardExpiry] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [tab, setTab] = useState("performance");
+  const [availableFeatures, setAvailableFeatures] = useState<{ feature_key: string; label: string }[]>([]);
+  const [featuresLoading, setFeaturesLoading] = useState(false);
+
+  const EXCLUDED_PREFIXES = ["merchant_", "agent_", "distributor_", "super_distributor_", "team_"];
+
+  const loadAvailableFeatures = useCallback(async () => {
+    if (selected.size === 0) return;
+    setFeaturesLoading(true);
+    const [{ data: allFeatures }, { data: existingOverrides }] = await Promise.all([
+      supabase.from("global_feature_toggles").select("feature_key, label"),
+      supabase.from("user_feature_overrides").select("feature_key, user_id, visibility")
+        .in("user_id", Array.from(selected))
+        .eq("visibility", "visible" as any),
+    ]);
+
+    const userSpecificVisible = new Set(
+      (existingOverrides ?? [])
+        .filter((o: any) => Array.from(selected).every(uid =>
+          (existingOverrides ?? []).some((ov: any) => ov.user_id === uid && ov.feature_key === o.feature_key && ov.visibility === "visible")
+        ))
+        .map((o: any) => o.feature_key)
+    );
+
+    const filtered = (allFeatures ?? [])
+      .filter((f: any) => !EXCLUDED_PREFIXES.some(p => f.feature_key.startsWith(p)))
+      .filter((f: any) => !userSpecificVisible.has(f.feature_key));
+
+    setAvailableFeatures(filtered as { feature_key: string; label: string }[]);
+    setFeaturesLoading(false);
+  }, [selected]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -97,6 +127,10 @@ export default function AdminUserPerformanceTracker() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => {
+    if (rewardDialog && rewardType === "feature_unlock") loadAvailableFeatures();
+  }, [rewardDialog, rewardType, loadAvailableFeatures]);
 
   const enriched = useMemo(() =>
     users.map(u => ({ ...u, badge: getBadge(u.total_txns, u.created_at), score: activityScore(u) })),
@@ -383,9 +417,26 @@ export default function AdminUserPerformanceTracker() {
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">
-                {rewardType === "coupon" ? "Coupon Code" : rewardType === "feature_unlock" ? "Feature Key" : rewardType === "discount" ? "Discount %" : rewardType === "bonus_balance" ? "Amount (৳)" : "Offer Description"}
+                {rewardType === "coupon" ? "Coupon Code" : rewardType === "feature_unlock" ? "Feature to Unlock" : rewardType === "discount" ? "Discount %" : rewardType === "bonus_balance" ? "Amount (৳)" : "Offer Description"}
               </label>
-              <Input value={rewardValue} onChange={e => setRewardValue(e.target.value)} placeholder={rewardType === "coupon" ? "POWER50" : rewardType === "feature_unlock" ? "account_live_chat" : rewardType === "discount" ? "15" : rewardType === "bonus_balance" ? "100" : "Special offer…"} />
+              {rewardType === "feature_unlock" ? (
+                featuresLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-2"><Loader2 className="h-4 w-4 animate-spin" /> Loading features…</div>
+                ) : availableFeatures.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-2">All features already unlocked for selected user(s)</p>
+                ) : (
+                  <Select value={rewardValue} onValueChange={setRewardValue}>
+                    <SelectTrigger><SelectValue placeholder="Select a feature…" /></SelectTrigger>
+                    <SelectContent>
+                      {availableFeatures.map(f => (
+                        <SelectItem key={f.feature_key} value={f.feature_key}>{f.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )
+              ) : (
+                <Input value={rewardValue} onChange={e => setRewardValue(e.target.value)} placeholder={rewardType === "coupon" ? "POWER50" : rewardType === "discount" ? "15" : rewardType === "bonus_balance" ? "100" : "Special offer…"} />
+              )}
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">Reason</label>
