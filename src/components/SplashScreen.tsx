@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-const logo = "/icons/easypay-logo.png";
+const logo = "/icons/easypay-logo.webp";
 
 interface SplashScreenProps {
   onDone: () => void;
