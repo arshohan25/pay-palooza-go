@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Copy, CheckCheck, ChevronRight,
@@ -55,8 +56,9 @@ const REGISTERED_KEY = "mfs_registered_phone";
 const getRegisteredPhone = () => localStorage.getItem(REGISTERED_KEY) ?? "";
 
 /* ─── KYC badge ─── */
-const KycBadge = ({ status }: { status: KycStatus }) => {
+const KycBadge = ({ status, loading }: { status: KycStatus; loading?: boolean }) => {
   const { t } = useI18n();
+  if (loading) return <Skeleton className="w-16 h-4 rounded-full" />;
   if (status === "verified") return (
     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/12 text-primary border border-primary/20">
       <BadgeCheck size={11} /> {t("verified")}
@@ -144,7 +146,7 @@ interface AccountPageProps { onSignOut?: () => void; onReplayOnboarding?: () => 
 
 const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const { t, lang, toggleLang } = useI18n();
-  const { status: kycStatus } = useKycStatus();
+  const { status: kycStatus, loading: kycLoading } = useKycStatus();
   const [copied, setCopied]             = useState(false);
   const [biometric, setBiometric]       = useState(false);
   const [pushNotifs, setPushNotifs]     = useState(true);
@@ -256,7 +258,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-[17px] font-bold">{displayName}</p>
-                <KycBadge status={kycStatus} />
+                <KycBadge status={kycStatus} loading={kycLoading} />
               </div>
               <p className="text-[13px] opacity-80 mt-0.5 font-medium">{registeredPhone ? `+88 ${registeredPhone}` : "—"}</p>
               {userEmail && (
