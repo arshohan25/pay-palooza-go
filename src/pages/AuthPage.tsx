@@ -776,11 +776,8 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
             />
 
             {/* Top bar */}
-            <div className="relative z-10 px-4 pt-4 flex items-center justify-between"
+            <div className="relative z-10 px-4 pt-4 flex items-center justify-end"
               style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1rem)" }}>
-              <button onClick={handleBack} className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-white/12 flex items-center justify-center text-white active:scale-90 transition-transform">
-                <ChevronLeft size={18} />
-              </button>
               <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6, type: "spring", stiffness: 300, damping: 20 }}
                 className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/8 backdrop-blur-sm border border-white/10">
                 <Shield size={10} className="text-emerald-300/80" />
