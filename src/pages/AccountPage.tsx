@@ -389,6 +389,24 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
           />}
         </Section>
 
+        {/* ── My Rewards ── */}
+        {myRewards.length > 0 && (
+          <Section title="My Rewards">
+            {myRewards.map(r => (
+              <div key={r.id} className="flex items-center gap-3 px-4 py-3">
+                <div className="h-9 w-9 rounded-full gradient-primary flex items-center justify-center text-white">
+                  <Gift className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium capitalize">{r.reward_type.replace("_", " ")}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">{r.reason ?? JSON.stringify(r.reward_value)}</p>
+                </div>
+                <Badge variant={r.status === "active" ? "default" : "secondary"} className="text-[10px]">{r.status}</Badge>
+              </div>
+            ))}
+          </Section>
+        )}
+
         {/* ── Insights & Limits ── */}
         <Section title={t("sectionInsightsLimits")}>
           {!isDisabled("account_spending_insights") && <MenuRow icon={BarChart3}  iconClass="gradient-payment"  label={t("spendingInsights")} sub={t("insightsSub")}        onClick={() => setSubPage("insights")} />}
