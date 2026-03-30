@@ -69,7 +69,7 @@ const Index = () => {
   useUserSessionTimeout("user");
   const [searchParams, setSearchParams] = useSearchParams();
   const { isAuthenticated, loading: authLoading, signOut, user } = useAuth();
-  const { status: kycStatus, rejectionReason } = useKycStatus();
+  const { status: kycStatus, rejectionReason, loading: kycLoading } = useKycStatus();
   const [showKycFlow, setShowKycFlow] = useState(false);
   const [splashDone, setSplashDone]           = useState(() => localStorage.getItem("splashDone") === "1");
   const [onboardingDone, setOnboardingDone]  = useState(() => hasSeenOnboarding());
@@ -290,7 +290,7 @@ const Index = () => {
           <BalanceCard onAddMoney={() => setShowAddMoney(true)} />
 
               {/* KYC prompt banner */}
-              {kycStatus !== "verified" && (
+              {!kycLoading && kycStatus !== "verified" && (
                 <motion.button
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
