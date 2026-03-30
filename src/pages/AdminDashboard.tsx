@@ -1888,6 +1888,9 @@ export default function AdminDashboard() {
         {/* ═══ FESTIVAL THEMES ═══ */}
         {activeTab === "festival_themes" && <AdminFestivalThemes />}
 
+        {/* ═══ USER PERFORMANCE & REWARDS ═══ */}
+        {activeTab === "user_performance" && <AdminUserPerformanceTracker />}
+
         {/* ═══ E-COMMERCE ═══ */}
         {/* ═══ SERVICES ═══ */}
         {activeTab === "loans" && <AdminLoanManagement />}
