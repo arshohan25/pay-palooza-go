@@ -174,7 +174,7 @@ export default function AdminUserPerformanceTracker() {
       created_by: session.user.id,
     }));
 
-    const { error } = await supabase.from("user_rewards").insert(rows as any);
+    const { error } = await (supabase.from as any)("user_rewards").insert(rows);
     if (error) toast.error("Failed: " + error.message);
     else {
       toast.success(`Reward assigned to ${selected.size} user(s)`);
