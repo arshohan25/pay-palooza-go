@@ -342,6 +342,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "feedback", label: "Feedback", icon: Star },
       { id: "changelog", label: "Changelog", icon: FileText },
       { id: "festival_themes", label: "Festivals", icon: Star },
+      { id: "user_performance", label: "User Perf.", icon: TrendingUp },
     ],
   },
   {
