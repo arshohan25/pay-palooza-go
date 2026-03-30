@@ -9,7 +9,13 @@ export default function SplashScreen({ onDone }: SplashScreenProps) {
   const [exiting, setExiting] = useState(false);
   const [logoLoaded, setLogoLoaded] = useState(false);
 
-  // Preload logo
+  const lang = (() => {
+    try { return localStorage.getItem("mfs_ui_lang") === "bn" ? "bn" : "en"; } catch { return "en"; }
+  })();
+
+  const appName = lang === "bn" ? "ইজিপে" : "EasyPay";
+  const tagline = lang === "bn" ? "বাংলাদেশের সবচেয়ে সহজ ডিজিটাল ওয়ালেট" : "Bangladesh's Simplest Digital Wallet";
+
   useEffect(() => {
     const img = new Image();
     img.src = logo;
@@ -19,7 +25,6 @@ export default function SplashScreen({ onDone }: SplashScreenProps) {
     return () => clearTimeout(fallback);
   }, []);
 
-  // Start exit only after logo loaded
   useEffect(() => {
     if (!logoLoaded) return;
     const timer = setTimeout(() => {
@@ -50,7 +55,7 @@ export default function SplashScreen({ onDone }: SplashScreenProps) {
         <div className="relative w-24 h-24 rounded-[26px] bg-white/20 backdrop-blur-md border-2 border-white/30 flex items-center justify-center shadow-2xl splash-logo-box">
           <img
             src={logo}
-            alt="EasyPay"
+            alt={appName}
             className={`w-16 h-16 object-contain transition-opacity duration-300 ${logoLoaded ? "opacity-100" : "opacity-0"}`}
             width={64}
             height={64}
@@ -62,8 +67,8 @@ export default function SplashScreen({ onDone }: SplashScreenProps) {
       </div>
 
       <div className="text-center splash-text">
-        <h1 className="text-4xl font-black text-white tracking-tight leading-none">EasyPay</h1>
-        <p className="text-white/70 text-sm font-semibold mt-2 tracking-wide">বাংলাদেশের সবচেয়ে সহজ ডিজিটাল ওয়ালেট</p>
+        <h1 className="text-4xl font-black text-white tracking-tight leading-none" style={{ fontFamily: lang === "bn" ? "'Anek Bangla', sans-serif" : undefined }}>{appName}</h1>
+        <p className="text-white/70 text-sm font-semibold mt-2 tracking-wide" style={{ fontFamily: "'Anek Bangla', sans-serif" }}>{tagline}</p>
       </div>
 
       <div className="flex gap-2 mt-10 splash-dots">
