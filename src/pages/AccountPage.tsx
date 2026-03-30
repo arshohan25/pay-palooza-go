@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Copy, CheckCheck, ChevronRight,
