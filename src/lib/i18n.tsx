@@ -98,6 +98,7 @@ const translations = {
   signOutAccount: { en: "Sign out of your account", bn: "আপনার অ্যাকাউন্ট থেকে সাইন আউট করুন" },
   verified: { en: "Verified", bn: "যাচাইকৃত" },
   unverified: { en: "Unverified", bn: "অযাচাইকৃত" },
+  kycPending: { en: "Pending", bn: "অপেক্ষমাণ" },
   language: { en: "Language", bn: "ভাষা" },
   languageSub: { en: "Switch between English and Bengali", bn: "ইংরেজি ও বাংলার মধ্যে পরিবর্তন করুন" },
   sectionAccount: { en: "Account", bn: "অ্যাকাউন্ট" },
