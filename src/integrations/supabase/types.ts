@@ -4474,6 +4474,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_feature_overrides: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          feature_key: string
+          group_type: string | null
+          group_value: string | null
+          id: string
+          user_id: string | null
+          visibility: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          feature_key: string
+          group_type?: string | null
+          group_value?: string | null
+          id?: string
+          user_id?: string | null
+          visibility?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          feature_key?: string
+          group_type?: string | null
+          group_value?: string | null
+          id?: string
+          user_id?: string | null
+          visibility?: string
+        }
+        Relationships: []
+      }
       user_feedback: {
         Row: {
           comment: string | null
@@ -4870,6 +4903,11 @@ export type Database = {
           staff_role: string
         }[]
       }
+      get_user_feature_visibility: {
+        Args: { p_feature_key: string; p_user_id: string }
+        Returns: string
+      }
+      get_user_usage_badge: { Args: { p_user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
