@@ -1,19 +1,30 @@
 
 
-# Show KYC Badge Based on Actual Verification Status
+# Add Pending KYC Badge (Yellow/Orange)
 
 ## Problem
-The Account page always renders `<KycBadge verified />` (hardcoded `true`), so every user sees "Verified" even if they haven't completed KYC.
+The `KycBadge` component on the Account page only has two states: Verified (green) and Unverified (red). Users who have submitted KYC but are awaiting review still see "Unverified" in red, which is misleading.
 
-## Fix
+## Changes
 
-### `src/pages/AccountPage.tsx`
-1. Import `useKycStatus` hook (already used elsewhere in the app)
-2. In the component body, call `const { status: kycStatus } = useKycStatus();`
-3. Change line 251 from `<KycBadge verified />` to `<KycBadge verified={kycStatus === "verified"} />`
+### 1. `src/pages/AccountPage.tsx`
+- Update `KycBadge` to accept `status: KycStatus` instead of `verified: boolean`
+- Add a third state: **Pending** — displayed as a yellow/orange badge with a `Clock` icon and "Pending" label
+- Three states:
+  - `verified` → green badge with checkmark, "Verified"
+  - `pending` → amber/orange badge with clock icon, "Pending"
+  - `none` / `rejected` → red badge with alert icon, "Unverified"
+- Update the call site from `<KycBadge verified={kycStatus === "verified"} />` to `<KycBadge status={kycStatus} />`
 
-The existing `KycBadge` component already handles both states (green "Verified" vs red "Unverified"), so no other changes needed.
+### 2. `src/lib/i18n.tsx`
+- Add translation key `kycPending` with `{ en: "Pending", bn: "অপেক্ষমাণ" }` (can reuse existing `pending` key if already suitable)
+
+## Technical Details
+- Import `Clock` icon from lucide-react for the pending state
+- Amber styling: `bg-amber-500/12 text-amber-600 border-amber-500/20`
+- The existing `useKycStatus()` hook already returns `"pending"` status, so no backend changes needed
 
 ## Files Changed
-- `src/pages/AccountPage.tsx` — 3 lines (add import, add hook call, fix prop)
+- `src/pages/AccountPage.tsx` — Update KycBadge component and its usage
+- `src/lib/i18n.tsx` — Add `kycPending` translation key (if needed)
 
