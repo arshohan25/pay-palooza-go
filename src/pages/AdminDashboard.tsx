@@ -48,6 +48,7 @@ import UserLockDialog from "@/components/admin/UserLockDialog";
 import AdminOrderManagement from "@/components/admin/AdminOrderManagement";
 import AdminGatewayConfig from "@/components/admin/AdminGatewayConfig";
 import AdminGlobalToggles from "@/components/admin/AdminGlobalToggles";
+import AdminUserFeatureAccess from "@/components/admin/AdminUserFeatureAccess";
 import AdminRechargePackManager from "@/components/admin/AdminRechargePackManager";
 import AdminRechargeAnalytics from "@/components/admin/AdminRechargeAnalytics";
 import AdminRechargeImportExport from "@/components/admin/AdminRechargeImportExport";
@@ -1702,7 +1703,14 @@ export default function AdminDashboard() {
         {activeTab === "gateways" && <AdminGatewayConfig />}
 
         {/* ═══ GLOBAL FEATURE TOGGLES ═══ */}
-        {activeTab === "toggles" && <AdminGlobalToggles />}
+        {activeTab === "toggles" && (
+          <div className="space-y-8">
+            <AdminGlobalToggles />
+            <div className="border-t pt-6">
+              <AdminUserFeatureAccess />
+            </div>
+          </div>
+        )}
 
         {/* ═══ RECHARGE PACK MANAGER ═══ */}
         {activeTab === "recharge" && <RechargeSection />}
