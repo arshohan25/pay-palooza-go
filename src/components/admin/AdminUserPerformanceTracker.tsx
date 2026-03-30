@@ -84,6 +84,9 @@ export default function AdminUserPerformanceTracker() {
   const [rewardExpiry, setRewardExpiry] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [tab, setTab] = useState("performance");
+  const [allFeatures, setAllFeatures] = useState<{ feature_key: string; label: string }[]>([]);
+  const [userOverrides, setUserOverrides] = useState<{ user_id: string; feature_key: string }[]>([]);
+  const [loadingFeatures, setLoadingFeatures] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
