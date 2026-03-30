@@ -84,6 +84,36 @@ export default function AdminUserPerformanceTracker() {
   const [rewardExpiry, setRewardExpiry] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [tab, setTab] = useState("performance");
+  const [availableFeatures, setAvailableFeatures] = useState<{ feature_key: string; label: string }[]>([]);
+  const [featuresLoading, setFeaturesLoading] = useState(false);
+
+  const EXCLUDED_PREFIXES = ["merchant_", "agent_", "distributor_", "super_distributor_", "team_"];
+
+  const loadAvailableFeatures = useCallback(async () => {
+    if (selected.size === 0) return;
+    setFeaturesLoading(true);
+    const [{ data: allFeatures }, { data: existingOverrides }] = await Promise.all([
+      supabase.from("global_feature_toggles").select("feature_key, label"),
+      supabase.from("user_feature_overrides").select("feature_key, user_id, visibility")
+        .in("user_id", Array.from(selected))
+        .eq("visibility", "visible" as any),
+    ]);
+
+    const userSpecificVisible = new Set(
+      (existingOverrides ?? [])
+        .filter((o: any) => Array.from(selected).every(uid =>
+          (existingOverrides ?? []).some((ov: any) => ov.user_id === uid && ov.feature_key === o.feature_key && ov.visibility === "visible")
+        ))
+        .map((o: any) => o.feature_key)
+    );
+
+    const filtered = (allFeatures ?? [])
+      .filter((f: any) => !EXCLUDED_PREFIXES.some(p => f.feature_key.startsWith(p)))
+      .filter((f: any) => !userSpecificVisible.has(f.feature_key));
+
+    setAvailableFeatures(filtered as { feature_key: string; label: string }[]);
+    setFeaturesLoading(false);
+  }, [selected]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
