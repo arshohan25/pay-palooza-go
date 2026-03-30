@@ -764,78 +764,126 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
       <AnimatePresence mode="wait">
         {mode === "login_pin" && (
           <motion.div key="login_pin" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
             className="flex-1 flex flex-col gradient-hero relative overflow-hidden">
             <BgOrbs />
+            {/* Ambient drifting spotlight */}
+            <motion.div
+              className="absolute w-[400px] h-[400px] rounded-full pointer-events-none z-0"
+              style={{ background: "radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)", top: "10%", left: "20%" }}
+              animate={{ x: [0, 60, -30, 0], y: [0, -40, 30, 0] }}
+              transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+            />
+
+            {/* Top bar */}
             <div className="relative z-10 px-4 pt-4 flex items-center justify-between"
               style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1rem)" }}>
-              <button onClick={handleBack} className="w-10 h-10 rounded-full bg-white/12 border border-white/15 flex items-center justify-center text-white active:scale-90 transition-transform">
+              <button onClick={handleBack} className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-white/12 flex items-center justify-center text-white active:scale-90 transition-transform">
                 <ChevronLeft size={18} />
               </button>
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/12 border border-white/15">
-                <CheckCircle2 size={11} className="text-white/70" />
-                <span className="text-[10px] font-bold text-white/70">{t.trustedVerified}</span>
-              </div>
+              <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6, type: "spring", stiffness: 300, damping: 20 }}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/8 backdrop-blur-sm border border-white/10">
+                <Shield size={10} className="text-emerald-300/80" />
+                <span className="text-[9px] font-bold text-white/60 tracking-wide uppercase">Secured</span>
+              </motion.div>
             </div>
-            <div className="relative z-10 flex-1 flex flex-col items-center px-6 pt-8 pb-6"
+
+            {/* Main content */}
+            <div className="relative z-10 flex-1 flex flex-col items-center px-6 pt-6 pb-6"
               style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1.5rem)" }}>
-              {/* Top section */}
-              <div className="flex flex-col items-center gap-4 mb-6">
-                <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200, damping: 16 }} className="relative">
-                  <div className="w-16 h-16 rounded-full bg-white/12 backdrop-blur-sm border border-white/20 flex items-center justify-center">
-                    <Lock size={26} className="text-white" />
-                  </div>
-                  <motion.div className="absolute inset-0 rounded-full border border-white/15"
-                    animate={{ scale: [1, 1.5], opacity: [0.4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }} />
-                </motion.div>
-                <div className="text-center text-white space-y-0.5">
-                  <h2 className="text-xl font-black">{t.enterPin}</h2>
-                  <p className="text-xs text-white/45">{t.trustedDevice}</p>
-                </div>
-              </div>
 
-              {/* PIN dots with hidden input */}
-              <div className="relative mb-3">
-                <PinCircles pin={pin} error={!!error} dark />
-                <HiddenPinInput
-                  value={pin}
-                  onChange={(v) => {
-                    setPin(v);
-                    setError("");
-                    if (v.length === 4) setTimeout(() => handleLoginPin(v), 260);
-                  }}
-                  disabled={isSubmitting}
+              {/* Logo with frosted glass ring */}
+              <motion.div
+                initial={{ scale: 0.6, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 18 }}
+                className="relative mb-5"
+              >
+                {/* Animated gradient ring */}
+                <motion.div
+                  className="absolute -inset-1.5 rounded-full"
+                  style={{ background: "conic-gradient(from 0deg, rgba(255,255,255,0.15), rgba(255,255,255,0.03), rgba(255,255,255,0.15))" }}
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
                 />
-              </div>
+                <div className="relative w-[72px] h-[72px] rounded-full bg-white/10 backdrop-blur-md border border-white/15 flex items-center justify-center">
+                  <img src={logo} alt="EasyPay" className="w-10 h-10 object-contain" />
+                </div>
+                {/* Pulse ring */}
+                <motion.div className="absolute inset-0 rounded-full border border-white/10"
+                  animate={{ scale: [1, 1.6], opacity: [0.3, 0] }} transition={{ duration: 2.5, repeat: Infinity, ease: "easeOut" }} />
+              </motion.div>
 
-              {/* Error / Status */}
-              <div className="h-8 flex items-center justify-center">
-                {error ? (
-                  <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-                    className="text-xs text-destructive-foreground/80 flex items-center gap-1.5">
-                    <AlertCircle size={12} /> {error}
-                  </motion.p>
-                ) : isSubmitting ? (
-                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-white/50">{t.signingIn}</motion.p>
-                ) : showPin && pin.length > 0 ? (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                    <span className="text-lg font-black tracking-[0.6em] text-white/70 pl-[0.6em]">{pin}</span>
-                  </motion.div>
-                ) : null}
-              </div>
+              {/* Greeting text */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
+                className="text-center text-white mb-8"
+              >
+                <p className="text-sm font-medium text-white/50 mb-1">{(() => { const h = new Date().getHours(); return h < 12 ? "Good Morning ☀️" : h < 17 ? "Good Afternoon 🌤️" : "Good Evening 🌙"; })()}</p>
+                <h2 className="text-2xl font-black tracking-tight mb-1.5">Welcome Back</h2>
+                <p className="text-xs text-white/35 font-medium tracking-wide">
+                  {phone ? `${phone.slice(0, 3)}${"•".repeat(Math.max(0, phone.length - 5))}${phone.slice(-2)}` : ""}
+                </p>
+              </motion.div>
 
-              {/* Spacer instead of keypad */}
+              {/* PIN area — frosted glass container */}
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
+                className="w-full max-w-[280px] bg-white/[0.07] backdrop-blur-md border border-white/[0.1] rounded-3xl px-6 py-7 flex flex-col items-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]"
+              >
+                <p className="text-[11px] font-semibold text-white/40 uppercase tracking-[0.15em] mb-5">{t.enterPin}</p>
+                <div className="relative mb-4">
+                  <PinCircles pin={pin} error={!!error} dark />
+                  <HiddenPinInput
+                    value={pin}
+                    onChange={(v) => {
+                      setPin(v);
+                      setError("");
+                      if (v.length === 4) setTimeout(() => handleLoginPin(v), 260);
+                    }}
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                {/* Error / Status */}
+                <div className="h-7 flex items-center justify-center">
+                  {error ? (
+                    <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                      className="text-xs text-red-300/90 flex items-center gap-1.5">
+                      <AlertCircle size={12} /> {error}
+                    </motion.p>
+                  ) : isSubmitting ? (
+                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-white/45">{t.signingIn}</motion.p>
+                  ) : showPin && pin.length > 0 ? (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                      <span className="text-lg font-black tracking-[0.6em] text-white/60 pl-[0.6em]">{pin}</span>
+                    </motion.div>
+                  ) : null}
+                </div>
+              </motion.div>
+
+              {/* Spacer */}
               <div className="flex-1" />
 
-              {/* Footer actions */}
-              <div className="flex items-center gap-5 mt-4">
+              {/* Footer actions — frosted glass bar */}
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.55, duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
+                className="flex items-center gap-4 px-5 py-2.5 rounded-2xl bg-white/[0.06] backdrop-blur-sm border border-white/[0.08]"
+              >
                 <button onClick={() => { setPin(""); setOtp(""); handleForgotSendOtp(); }}
-                  className="text-xs text-white/40 hover:text-white/70 transition-colors font-semibold">{forgotOtpSending ? "Sending…" : t.forgotPin}</button>
-                <div className="w-px h-3 bg-white/15" />
+                  className="text-[11px] text-white/40 hover:text-white/70 transition-colors font-semibold">{forgotOtpSending ? "Sending…" : t.forgotPin}</button>
+                <div className="w-px h-3 bg-white/12" />
                 <button onClick={() => setShowPin(v => !v)}
-                  className="flex items-center gap-1 text-xs text-white/40 hover:text-white/70 transition-colors font-semibold">
-                  {showPin ? <EyeOff size={12} /> : <Eye size={12} />} {showPin ? t.hidePin : t.showPin}
+                  className="flex items-center gap-1 text-[11px] text-white/40 hover:text-white/70 transition-colors font-semibold">
+                  {showPin ? <EyeOff size={11} /> : <Eye size={11} />} {showPin ? t.hidePin : t.showPin}
                 </button>
-              </div>
+              </motion.div>
             </div>
           </motion.div>
         )}
