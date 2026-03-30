@@ -108,44 +108,30 @@ export default function AdminUserPerformanceTracker() {
         .eq("group_type", "usage_badge" as any),
     ]);
 
-    // Resolve effective visibility per feature using hierarchy:
-    // user override > badge group override > global toggle
-    // Only show features where resolved visibility is hidden or disabled
+    // Features already visible via user-specific override for ALL selected users
+    const userVisibleKeys = new Set(
+      (userOverrides ?? [])
+        .filter((o: any) => o.visibility === "visible" && selectedIds.every(uid =>
+          (userOverrides ?? []).some((ov: any) => ov.user_id === uid && ov.feature_key === o.feature_key && ov.visibility === "visible")
+        ))
+        .map((o: any) => o.feature_key)
+    );
+
+    // Features visible via badge group override for any of the selected users' badges
+    const badgeVisibleKeys = new Set(
+      (groupOverrides ?? [])
+        .filter((o: any) => o.visibility === "visible" && selectedBadges.has(o.group_value))
+        .map((o: any) => o.feature_key)
+    );
+
     const filtered = (allFeatures ?? [])
       .filter((f: any) => !EXCLUDED_PREFIXES.some(p => f.feature_key.startsWith(p)))
-      .filter((f: any) => {
-        // 1. Check user-specific override (visible for ALL selected users means they have it)
-        const allUsersHaveVisible = selectedIds.every(uid =>
-          (userOverrides ?? []).some((ov: any) =>
-            ov.user_id === uid && ov.feature_key === f.feature_key && ov.visibility === "visible"
-          )
-        );
-        if (allUsersHaveVisible) return false; // all selected users already have it
-
-        // Check if any selected user has a user-specific override
-        const anyUserOverride = (userOverrides ?? []).find((ov: any) =>
-          selectedIds.includes(ov.user_id) && ov.feature_key === f.feature_key
-        );
-
-        // 2. Check badge group override for selected users' badges
-        const badgeOverride = (groupOverrides ?? []).find((o: any) =>
-          o.feature_key === f.feature_key && selectedBadges.has(o.group_value)
-        );
-
-        // 3. Resolve effective visibility
-        let resolved: string;
-        if (anyUserOverride) {
-          resolved = anyUserOverride.visibility;
-        } else if (badgeOverride) {
-          resolved = badgeOverride.visibility;
-        } else {
-          // Global toggle fallback
-          resolved = f.is_enabled && (f.visibility === "visible" || !f.visibility) ? "visible" : "disabled";
-        }
-
-        // Only include features that are hidden or disabled for the user
-        return resolved === "hidden" || resolved === "disabled";
-      });
+      // Exclude globally visible features
+      .filter((f: any) => !(f.is_enabled && (f.visibility === "visible" || !f.visibility)))
+      // Exclude features already visible via user override
+      .filter((f: any) => !userVisibleKeys.has(f.feature_key))
+      // Exclude features already visible via badge group override
+      .filter((f: any) => !badgeVisibleKeys.has(f.feature_key));
 
     setAvailableFeatures(filtered as { feature_key: string; label: string }[]);
     setFeaturesLoading(false);
