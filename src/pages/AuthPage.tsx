@@ -365,9 +365,12 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
   const t = T[lang];
   const toggleLang = () => { const next: Lang = lang === "en" ? "bn" : "en"; setLang(next); localStorage.setItem(LANG_KEY, next); };
 
-  const [mode, setMode]             = useState<Mode>("landing");
+  const [mode, setMode]             = useState<Mode>(() => {
+    const saved = localStorage.getItem(DEVICE_KEY);
+    return saved ? "login_pin" : "landing";
+  });
   const [direction, setDir]         = useState(1);
-  const [phone, setPhone]           = useState("");
+  const [phone, setPhone]           = useState(() => localStorage.getItem(DEVICE_KEY) ?? "");
   const [otp, setOtp]               = useState("");
   const [pin, setPin]               = useState("");
   const [confirmPin, setConfirmPin] = useState("");
@@ -663,7 +666,7 @@ export default function AuthPage({ onAuthenticated }: AuthPageProps) {
       if (confirmStage) { setConfirmStage(false); setConfirmPin(""); return; }
       setPin(""); setConfirmPin(""); goTo("register_otp", -1); return;
     }
-    if (mode === "login_pin")     { setPin(""); goTo("login_phone", -1); return; }
+    if (mode === "login_pin")     { setPin(""); goTo("landing", -1); return; }
     if (mode === "forgot_otp")    { setOtp(""); goTo("login_pin", -1); return; }
     if (mode === "forgot_pin")    {
       if (confirmStage) { setConfirmStage(false); setConfirmPin(""); return; }
