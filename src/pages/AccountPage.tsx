@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Copy, CheckCheck, ChevronRight,
   Shield, Bell, Fingerprint, BarChart3, CreditCard,
-  Gift, Lock, LogOut, BadgeCheck, AlertCircle,
+  Gift, Lock, LogOut, BadgeCheck, AlertCircle, Clock,
   BellOff, Pencil, PlayCircle, Globe,
   MessageCircle, Mail, ClipboardList, ShieldBan, GripVertical,
   Sun, Grid3X3, Minimize2, Store,
@@ -27,7 +27,7 @@ import { generateWalletId } from "@/lib/walletId";
 import { useI18n } from "@/lib/i18n";
 import { useUserRoles } from "@/hooks/use-user-roles";
 import { useCustomization } from "@/hooks/use-customization";
-import { useKycStatus } from "@/hooks/use-kyc-status";
+import { useKycStatus, KycStatus } from "@/hooks/use-kyc-status";
 import { supabase } from "@/integrations/supabase/client";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { useMerchantApplyAccess } from "@/hooks/use-merchant-apply-access";
