@@ -42,6 +42,9 @@ export default function AdminUserFeatureAccess() {
   const [features, setFeatures] = useState<FeatureToggle[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [selectedFeatures, setSelectedFeatures] = useState<Set<string>>(new Set());
+  const [bulkGroup, setBulkGroup] = useState("");
+  const [bulkVis, setBulkVis] = useState("");
 
   // Individual user search
   const [searchPhone, setSearchPhone] = useState("");
