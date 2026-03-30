@@ -119,6 +119,7 @@ import AdminLoanManagement from "@/components/admin/AdminLoanManagement";
 import AdminInsuranceManagement from "@/components/admin/AdminInsuranceManagement";
 import AdminGiftCardManagement from "@/components/admin/AdminGiftCardManagement";
 import AdminProfileEditor from "@/components/admin/AdminProfileEditor";
+import AdminUserPerformanceTracker from "@/components/admin/AdminUserPerformanceTracker";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
 import { useRealtimeIndicator } from "@/hooks/use-realtime-indicator";
 import RealtimeUpdateIndicator from "@/components/admin/RealtimeUpdateIndicator";
@@ -341,6 +342,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "feedback", label: "Feedback", icon: Star },
       { id: "changelog", label: "Changelog", icon: FileText },
       { id: "festival_themes", label: "Festivals", icon: Star },
+      { id: "user_performance", label: "User Perf.", icon: TrendingUp },
     ],
   },
   {
@@ -1885,6 +1887,9 @@ export default function AdminDashboard() {
 
         {/* ═══ FESTIVAL THEMES ═══ */}
         {activeTab === "festival_themes" && <AdminFestivalThemes />}
+
+        {/* ═══ USER PERFORMANCE & REWARDS ═══ */}
+        {activeTab === "user_performance" && <AdminUserPerformanceTracker />}
 
         {/* ═══ E-COMMERCE ═══ */}
         {/* ═══ SERVICES ═══ */}

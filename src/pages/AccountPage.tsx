@@ -10,6 +10,7 @@ import {
   Sun, Grid3X3, Minimize2, Store,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import ChangePinFlow from "@/components/ChangePinFlow";
@@ -162,6 +163,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const [showSupport, setShowSupport] = useState(false);
   const [showMerchantApp, setShowMerchantApp] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [myRewards, setMyRewards] = useState<{ id: string; reward_type: string; reward_value: any; reason: string | null; status: string }[]>([]);
 
   const { roles } = useUserRoles();
   const { displayName, avatar_url } = useProfile();
@@ -176,20 +178,20 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const registeredPhone = getRegisteredPhone();
   const walletId = useMemo(() => generateWalletId(registeredPhone || "WALLET_USER"), [registeredPhone]);
 
-  // Fetch email from profile
+  // Fetch email + rewards from profile
   useEffect(() => {
-    const fetchEmail = async () => {
+    const fetchData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
       setUserId(session.user.id);
-      const { data } = await supabase
-        .from("profiles")
-        .select("email")
-        .eq("user_id", session.user.id)
-        .single();
-      if (data?.email) setUserEmail(data.email);
+      const [{ data: profileData }, { data: rewardData }] = await Promise.all([
+        supabase.from("profiles").select("email").eq("user_id", session.user.id).single(),
+        (supabase.from as any)("user_rewards").select("id, reward_type, reward_value, reason, status").eq("user_id", session.user.id).eq("status", "active"),
+      ]);
+      if (profileData?.email) setUserEmail(profileData.email);
+      if (rewardData) setMyRewards(rewardData);
     };
-    fetchEmail();
+    fetchData();
   }, []);
   if (subPage === "limits")   return <LimitsPage           onBack={() => setSubPage(null)} />;
   if (subPage === "insights") return <SpendingInsightsPage onBack={() => setSubPage(null)} />;
@@ -388,6 +390,24 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
             }}
           />}
         </Section>
+
+        {/* ── My Rewards ── */}
+        {myRewards.length > 0 && (
+          <Section title="My Rewards">
+            {myRewards.map(r => (
+              <div key={r.id} className="flex items-center gap-3 px-4 py-3">
+                <div className="h-9 w-9 rounded-full gradient-primary flex items-center justify-center text-white">
+                  <Gift className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium capitalize">{r.reward_type.replace("_", " ")}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">{r.reason ?? JSON.stringify(r.reward_value)}</p>
+                </div>
+                <Badge variant={r.status === "active" ? "default" : "secondary"} className="text-[10px]">{r.status}</Badge>
+              </div>
+            ))}
+          </Section>
+        )}
 
         {/* ── Insights & Limits ── */}
         <Section title={t("sectionInsightsLimits")}>

@@ -4907,6 +4907,20 @@ export type Database = {
         Args: { p_feature_key: string; p_user_id: string }
         Returns: string
       }
+      get_user_performance_stats: {
+        Args: never
+        Returns: {
+          created_at: string
+          last_active: string
+          monthly_txns: number
+          name: string
+          phone: string
+          total_txns: number
+          total_volume: number
+          txn_breakdown: Json
+          user_id: string
+        }[]
+      }
       get_user_usage_badge: { Args: { p_user_id: string }; Returns: string }
       has_role: {
         Args: {
