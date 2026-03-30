@@ -383,7 +383,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
         <Section title={t("sectionInsightsLimits")}>
           {!isDisabled("account_spending_insights") && <MenuRow icon={BarChart3}  iconClass="gradient-payment"  label={t("spendingInsights")} sub={t("insightsSub")}        onClick={() => setSubPage("insights")} />}
           {!isDisabled("account_limits_charges") && <MenuRow icon={CreditCard} iconClass="gradient-cashout"  label={t("limitsCharges")}  sub={t("limitsSub")}   onClick={() => setSubPage("limits")} />}
-          <MenuRow icon={ClipboardList} iconClass="gradient-send" label="My Fund Requests" sub="Track deposit & withdrawal status" onClick={() => setSubPage("requests")} />
+          
         </Section>
 
         {/* ── Notifications ── */}
