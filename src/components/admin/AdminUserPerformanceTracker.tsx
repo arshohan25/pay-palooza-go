@@ -128,6 +128,10 @@ export default function AdminUserPerformanceTracker() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  useEffect(() => {
+    if (rewardDialog && rewardType === "feature_unlock") loadAvailableFeatures();
+  }, [rewardDialog, rewardType, loadAvailableFeatures]);
+
   const enriched = useMemo(() =>
     users.map(u => ({ ...u, badge: getBadge(u.total_txns, u.created_at), score: activityScore(u) })),
     [users]
