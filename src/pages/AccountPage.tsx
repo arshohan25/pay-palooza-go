@@ -27,6 +27,7 @@ import { generateWalletId } from "@/lib/walletId";
 import { useI18n } from "@/lib/i18n";
 import { useUserRoles } from "@/hooks/use-user-roles";
 import { useCustomization } from "@/hooks/use-customization";
+import { useKycStatus } from "@/hooks/use-kyc-status";
 import { supabase } from "@/integrations/supabase/client";
 import { useGlobalToggles } from "@/hooks/use-global-toggles";
 import { useMerchantApplyAccess } from "@/hooks/use-merchant-apply-access";
@@ -137,6 +138,7 @@ interface AccountPageProps { onSignOut?: () => void; onReplayOnboarding?: () => 
 
 const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
   const { t, lang, toggleLang } = useI18n();
+  const { status: kycStatus } = useKycStatus();
   const [copied, setCopied]             = useState(false);
   const [biometric, setBiometric]       = useState(false);
   const [pushNotifs, setPushNotifs]     = useState(true);
@@ -248,7 +250,7 @@ const AccountPage = ({ onSignOut, onReplayOnboarding }: AccountPageProps) => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-[17px] font-bold">{displayName}</p>
-                <KycBadge verified />
+                <KycBadge verified={kycStatus === "verified"} />
               </div>
               <p className="text-[13px] opacity-80 mt-0.5 font-medium">{registeredPhone ? `+88 ${registeredPhone}` : "—"}</p>
               {userEmail && (
