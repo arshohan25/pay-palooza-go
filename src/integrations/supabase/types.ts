@@ -4633,6 +4633,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_rewards: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          reason: string | null
+          reward_type: string
+          reward_value: Json
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          reason?: string | null
+          reward_type: string
+          reward_value?: Json
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          reason?: string | null
+          reward_type?: string
+          reward_value?: Json
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
