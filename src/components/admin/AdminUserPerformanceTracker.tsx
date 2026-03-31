@@ -92,28 +92,53 @@ export default function AdminUserPerformanceTracker() {
   const loadAvailableFeatures = useCallback(async () => {
     if (selected.size === 0) return;
     setFeaturesLoading(true);
-    const [{ data: allFeatures }, { data: existingOverrides }] = await Promise.all([
-      supabase.from("global_feature_toggles").select("feature_key, label"),
+
+    // Determine badges for selected users so we can check group overrides
+    const selectedIds = Array.from(selected);
+    const selectedUsers = users.filter(u => selectedIds.includes(u.user_id));
+    const selectedBadges = [...new Set(selectedUsers.map(u => getBadge(u.total_txns, u.created_at).toLowerCase()))];
+
+    const [{ data: allFeatures }, { data: userOverrides }, { data: groupOverrides }] = await Promise.all([
+      supabase.from("global_feature_toggles").select("feature_key, label, is_enabled, visibility"),
       supabase.from("user_feature_overrides").select("feature_key, user_id, visibility")
-        .in("user_id", Array.from(selected))
-        .eq("visibility", "visible" as any),
+        .in("user_id", selectedIds),
+      supabase.from("user_feature_overrides").select("feature_key, visibility, group_type, group_value")
+        .is("user_id", null)
+        .eq("group_type", "usage_badge" as any)
+        .in("group_value", selectedBadges),
     ]);
 
-    const userSpecificVisible = new Set(
-      (existingOverrides ?? [])
-        .filter((o: any) => Array.from(selected).every(uid =>
-          (existingOverrides ?? []).some((ov: any) => ov.user_id === uid && ov.feature_key === o.feature_key && ov.visibility === "visible")
+    const userVisibleKeys = new Set(
+      (userOverrides ?? [])
+        .filter((o: any) => o.visibility === "visible")
+        .filter((o: any) => selectedIds.every(uid =>
+          (userOverrides ?? []).some((ov: any) => ov.user_id === uid && ov.feature_key === o.feature_key && ov.visibility === "visible")
         ))
+        .map((o: any) => o.feature_key)
+    );
+
+    const badgeVisibleKeys = new Set(
+      (groupOverrides ?? [])
+        .filter((o: any) => o.visibility === "visible")
         .map((o: any) => o.feature_key)
     );
 
     const filtered = (allFeatures ?? [])
       .filter((f: any) => !EXCLUDED_PREFIXES.some(p => f.feature_key.startsWith(p)))
-      .filter((f: any) => !userSpecificVisible.has(f.feature_key));
+      .filter((f: any) => {
+        // Already has user-specific visible override
+        if (userVisibleKeys.has(f.feature_key)) return false;
+        // Already visible via badge group override
+        if (badgeVisibleKeys.has(f.feature_key)) return false;
+        // Already globally visible by default
+        if (f.is_enabled && (f.visibility === "visible" || !f.visibility)) return false;
+        // Feature is hidden/disabled — show in dropdown
+        return true;
+      });
 
     setAvailableFeatures(filtered as { feature_key: string; label: string }[]);
     setFeaturesLoading(false);
-  }, [selected]);
+  }, [selected, users]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
