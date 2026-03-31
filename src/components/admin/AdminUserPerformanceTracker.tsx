@@ -433,28 +433,31 @@ export default function AdminUserPerformanceTracker() {
                     </TableRow>
                     {expanded.has(u.user_id) && (
                       <TableRow key={`${u.user_id}-exp`}>
-                        <TableCell colSpan={9} className="bg-muted/30 px-6 py-3">
-                          <div className="flex flex-wrap gap-3 text-xs mb-2">
+                        <TableCell colSpan={9} className="bg-muted/30 px-3 md:px-6 py-3">
+                          <div className="flex flex-wrap gap-2 md:gap-3 text-xs mb-2">
                             <span className="text-muted-foreground">Account age: <b>{Math.round((Date.now() - new Date(u.created_at).getTime()) / 86400000)}d</b></span>
                             {Object.entries(u.txn_breakdown ?? {}).map(([type, count]) => (
                               <Badge key={type} variant="secondary" className="text-[10px]">{type}: {String(count)}</Badge>
                             ))}
                           </div>
-                          {/* Per-user reward history */}
                           {(() => {
                             const userRewards = rewards.filter(r => r.user_id === u.user_id);
                             if (userRewards.length === 0) return <p className="text-[11px] text-muted-foreground">No rewards assigned</p>;
                             return (
                               <div className="mt-1">
                                 <p className="text-xs font-medium mb-1 flex items-center gap-1"><Gift className="h-3 w-3 text-primary" /> Reward History ({userRewards.length})</p>
-                                <div className="space-y-1">
+                                <div className="space-y-1.5">
                                   {userRewards.map(r => (
-                                    <div key={r.id} className="flex items-center gap-2 text-[11px] bg-background/60 rounded px-2 py-1">
-                                      <Badge variant="outline" className="capitalize text-[9px]">{r.reward_type.replace("_", " ")}</Badge>
-                                      <span className="truncate max-w-[100px]">{JSON.stringify(r.reward_value)}</span>
-                                      {getStatusBadge(r)}
-                                      <span className="text-muted-foreground ml-auto">{formatDate(r.created_at)}</span>
-                                      {r.expires_at && <span className={`text-[10px] ${isExpired(r) ? "text-destructive" : "text-muted-foreground"}`}>exp: {formatDate(r.expires_at)}</span>}
+                                    <div key={r.id} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-[11px] bg-background/60 rounded px-2 py-1.5">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <Badge variant="outline" className="capitalize text-[9px]">{r.reward_type.replace("_", " ")}</Badge>
+                                        <span className="truncate max-w-[100px]">{JSON.stringify(r.reward_value)}</span>
+                                        {getStatusBadge(r)}
+                                      </div>
+                                      <div className="flex items-center gap-1.5 sm:ml-auto text-muted-foreground">
+                                        <span>{formatDate(r.created_at)}</span>
+                                        {r.expires_at && <span className={`text-[10px] ${isExpired(r) ? "text-destructive" : "text-muted-foreground"}`}>exp: {formatDate(r.expires_at)}</span>}
+                                      </div>
                                     </div>
                                   ))}
                                 </div>
