@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import {
   Search, Gift, Award, TrendingUp, Users, ChevronDown, ChevronUp,
-  Star, Unlock, Percent, RefreshCw, Loader2,
+  Star, Unlock, Percent, RefreshCw, Loader2, Ban, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { getCachedSession } from "@/hooks/use-auth";
 
@@ -70,6 +70,7 @@ type SortKey = "phone" | "badge" | "total_txns" | "monthly_txns" | "total_volume
 export default function AdminUserPerformanceTracker() {
   const [users, setUsers] = useState<UserPerf[]>([]);
   const [rewards, setRewards] = useState<UserReward[]>([]);
+  const [adminNames, setAdminNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [badgeFilter, setBadgeFilter] = useState("all");
@@ -86,6 +87,15 @@ export default function AdminUserPerformanceTracker() {
   const [tab, setTab] = useState("performance");
   const [availableFeatures, setAvailableFeatures] = useState<{ feature_key: string; label: string }[]>([]);
   const [featuresLoading, setFeaturesLoading] = useState(false);
+
+  // Reward History filters
+  const [rhSearch, setRhSearch] = useState("");
+  const [rhTypeFilter, setRhTypeFilter] = useState("all");
+  const [rhStatusFilter, setRhStatusFilter] = useState("all");
+  const [rhDateFrom, setRhDateFrom] = useState("");
+  const [rhDateTo, setRhDateTo] = useState("");
+  const [rhPage, setRhPage] = useState(0);
+  const RH_PAGE_SIZE = 20;
 
   const EXCLUDED_PREFIXES = ["merchant_", "agent_", "distributor_", "super_distributor_", "team_"];
 
@@ -149,8 +159,23 @@ export default function AdminUserPerformanceTracker() {
       supabase.rpc("get_user_performance_stats") as any,
       (supabase.from as any)("user_rewards").select("*").order("created_at", { ascending: false }).limit(500),
     ]);
+    const rewardsList = (rewardData as UserReward[]) ?? [];
     setUsers((perfData as UserPerf[]) ?? []);
-    setRewards((rewardData as UserReward[]) ?? []);
+    setRewards(rewardsList);
+
+    // Resolve admin names for created_by
+    const adminIds = [...new Set(rewardsList.map(r => r.created_by).filter(Boolean))];
+    if (adminIds.length > 0) {
+      const { data: adminProfiles } = await supabase
+        .from("profiles")
+        .select("user_id, name, phone")
+        .in("user_id", adminIds);
+      const nameMap: Record<string, string> = {};
+      (adminProfiles ?? []).forEach((p: any) => {
+        nameMap[p.user_id] = p.name || p.phone || p.user_id.slice(0, 8);
+      });
+      setAdminNames(nameMap);
+    }
     setLoading(false);
   }, []);
 
@@ -164,6 +189,48 @@ export default function AdminUserPerformanceTracker() {
     users.map(u => ({ ...u, badge: getBadge(u.total_txns, u.created_at), score: activityScore(u) })),
     [users]
   );
+
+  // Filtered & paginated rewards for Reward History tab
+  const filteredRewards = useMemo(() => {
+    let list = rewards;
+    if (rhSearch) {
+      const q = rhSearch.toLowerCase();
+      list = list.filter(r => {
+        const user = enriched.find(u => u.user_id === r.user_id);
+        return (user?.phone ?? "").includes(q) || (user?.name ?? "").toLowerCase().includes(q);
+      });
+    }
+    if (rhTypeFilter !== "all") list = list.filter(r => r.reward_type === rhTypeFilter);
+    if (rhStatusFilter !== "all") list = list.filter(r => {
+      if (rhStatusFilter === "expired") return r.status === "active" && r.expires_at && new Date(r.expires_at) < new Date();
+      if (rhStatusFilter === "revoked") return r.status === "revoked";
+      return r.status === rhStatusFilter;
+    });
+    if (rhDateFrom) list = list.filter(r => r.created_at >= rhDateFrom);
+    if (rhDateTo) list = list.filter(r => r.created_at <= rhDateTo + "T23:59:59");
+    return list;
+  }, [rewards, rhSearch, rhTypeFilter, rhStatusFilter, rhDateFrom, rhDateTo, enriched]);
+
+  const rhTotalPages = Math.max(1, Math.ceil(filteredRewards.length / RH_PAGE_SIZE));
+  const pagedRewards = filteredRewards.slice(rhPage * RH_PAGE_SIZE, (rhPage + 1) * RH_PAGE_SIZE);
+
+  // Reset page when filters change
+  useEffect(() => { setRhPage(0); }, [rhSearch, rhTypeFilter, rhStatusFilter, rhDateFrom, rhDateTo]);
+
+  const revokeReward = async (rewardId: string) => {
+    const { error } = await (supabase.from as any)("user_rewards").update({ status: "revoked" }).eq("id", rewardId);
+    if (error) toast.error("Failed to revoke");
+    else { toast.success("Reward revoked"); fetchData(); }
+  };
+
+  const isExpired = (r: UserReward) => r.expires_at && new Date(r.expires_at) < new Date();
+
+  const getStatusBadge = (r: UserReward) => {
+    if (r.status === "revoked") return <Badge variant="destructive" className="text-[10px]">Revoked</Badge>;
+    if (r.status === "claimed") return <Badge variant="secondary" className="text-[10px]">Claimed</Badge>;
+    if (isExpired(r)) return <Badge variant="outline" className="text-[10px] border-destructive text-destructive">Expired</Badge>;
+    return <Badge className="text-[10px] bg-emerald-600/15 text-emerald-600 border-emerald-600/30" variant="outline">Active</Badge>;
+  };
 
   const filtered = useMemo(() => {
     let list = enriched;
@@ -367,15 +434,33 @@ export default function AdminUserPerformanceTracker() {
                     {expanded.has(u.user_id) && (
                       <TableRow key={`${u.user_id}-exp`}>
                         <TableCell colSpan={9} className="bg-muted/30 px-6 py-3">
-                          <div className="flex flex-wrap gap-3 text-xs">
+                          <div className="flex flex-wrap gap-3 text-xs mb-2">
                             <span className="text-muted-foreground">Account age: <b>{Math.round((Date.now() - new Date(u.created_at).getTime()) / 86400000)}d</b></span>
                             {Object.entries(u.txn_breakdown ?? {}).map(([type, count]) => (
                               <Badge key={type} variant="secondary" className="text-[10px]">{type}: {String(count)}</Badge>
                             ))}
-                            {rewards.filter(r => r.user_id === u.user_id).length > 0 && (
-                              <span className="text-primary font-medium"><Gift className="h-3 w-3 inline mr-0.5" /> {rewards.filter(r => r.user_id === u.user_id).length} reward(s)</span>
-                            )}
                           </div>
+                          {/* Per-user reward history */}
+                          {(() => {
+                            const userRewards = rewards.filter(r => r.user_id === u.user_id);
+                            if (userRewards.length === 0) return <p className="text-[11px] text-muted-foreground">No rewards assigned</p>;
+                            return (
+                              <div className="mt-1">
+                                <p className="text-xs font-medium mb-1 flex items-center gap-1"><Gift className="h-3 w-3 text-primary" /> Reward History ({userRewards.length})</p>
+                                <div className="space-y-1">
+                                  {userRewards.map(r => (
+                                    <div key={r.id} className="flex items-center gap-2 text-[11px] bg-background/60 rounded px-2 py-1">
+                                      <Badge variant="outline" className="capitalize text-[9px]">{r.reward_type.replace("_", " ")}</Badge>
+                                      <span className="truncate max-w-[100px]">{JSON.stringify(r.reward_value)}</span>
+                                      {getStatusBadge(r)}
+                                      <span className="text-muted-foreground ml-auto">{formatDate(r.created_at)}</span>
+                                      {r.expires_at && <span className={`text-[10px] ${isExpired(r) ? "text-destructive" : "text-muted-foreground"}`}>exp: {formatDate(r.expires_at)}</span>}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </TableCell>
                       </TableRow>
                     )}
@@ -388,6 +473,37 @@ export default function AdminUserPerformanceTracker() {
         </TabsContent>
 
         <TabsContent value="rewards" className="space-y-3">
+          {/* Search & Filter Controls */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <div className="relative flex-1 min-w-[160px]">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search by phone or name…" value={rhSearch} onChange={e => setRhSearch(e.target.value)} className="pl-8 h-9" />
+            </div>
+            <Select value={rhTypeFilter} onValueChange={setRhTypeFilter}>
+              <SelectTrigger className="w-[140px] h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="coupon">Coupon</SelectItem>
+                <SelectItem value="feature_unlock">Feature Unlock</SelectItem>
+                <SelectItem value="discount">Discount</SelectItem>
+                <SelectItem value="bonus_balance">Bonus Balance</SelectItem>
+                <SelectItem value="custom_offer">Custom Offer</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={rhStatusFilter} onValueChange={setRhStatusFilter}>
+              <SelectTrigger className="w-[120px] h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="claimed">Claimed</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+                <SelectItem value="revoked">Revoked</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input type="date" value={rhDateFrom} onChange={e => setRhDateFrom(e.target.value)} className="w-[130px] h-9" placeholder="From" />
+            <Input type="date" value={rhDateTo} onChange={e => setRhDateTo(e.target.value)} className="w-[130px] h-9" placeholder="To" />
+          </div>
+
           <div className="rounded-xl border bg-card overflow-hidden">
             <Table>
               <TableHeader>
@@ -395,29 +511,62 @@ export default function AdminUserPerformanceTracker() {
                   <TableHead>User</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Value</TableHead>
-                  <TableHead>Reason</TableHead>
+                  <TableHead className="hidden md:table-cell">Reason</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="hidden md:table-cell">Expires</TableHead>
+                  <TableHead className="hidden lg:table-cell">Assigned By</TableHead>
                   <TableHead>Issued</TableHead>
+                  <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rewards.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No rewards issued yet</TableCell></TableRow>
+                {filteredRewards.length === 0 && (
+                  <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No rewards found</TableCell></TableRow>
                 )}
-                {rewards.map(r => (
+                {pagedRewards.map(r => (
                   <TableRow key={r.id}>
-                    <TableCell className="text-sm font-mono">{enriched.find(u => u.user_id === r.user_id)?.phone ?? r.user_id.slice(0, 8)}</TableCell>
+                    <TableCell className="text-sm">
+                      <p className="font-mono">{enriched.find(u => u.user_id === r.user_id)?.phone ?? r.user_id.slice(0, 8)}</p>
+                      <p className="text-[10px] text-muted-foreground truncate max-w-[100px]">{enriched.find(u => u.user_id === r.user_id)?.name ?? ""}</p>
+                    </TableCell>
                     <TableCell><Badge variant="outline" className="capitalize">{r.reward_type.replace("_", " ")}</Badge></TableCell>
                     <TableCell className="text-sm max-w-[120px] truncate">{JSON.stringify(r.reward_value)}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground max-w-[140px] truncate">{r.reason ?? "—"}</TableCell>
-                    <TableCell>
-                      <Badge variant={r.status === "active" ? "default" : r.status === "claimed" ? "secondary" : "outline"} className="text-[10px]">{r.status}</Badge>
+                    <TableCell className="text-sm text-muted-foreground max-w-[140px] truncate hidden md:table-cell">{r.reason ?? "—"}</TableCell>
+                    <TableCell>{getStatusBadge(r)}</TableCell>
+                    <TableCell className={`text-sm hidden md:table-cell ${isExpired(r) ? "text-destructive" : "text-muted-foreground"}`}>
+                      {r.expires_at ? formatDate(r.expires_at) : "—"}
+                    </TableCell>
+                    <TableCell className="text-sm hidden lg:table-cell text-muted-foreground">
+                      {adminNames[r.created_by] ?? r.created_by?.slice(0, 8) ?? "—"}
                     </TableCell>
                     <TableCell className="text-sm">{formatDate(r.created_at)}</TableCell>
+                    <TableCell>
+                      {r.status === "active" && !isExpired(r) && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => revokeReward(r.id)} title="Revoke">
+                          <Ban className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] text-muted-foreground">
+              {filteredRewards.length} reward{filteredRewards.length !== 1 ? "s" : ""} found
+            </p>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" className="h-7 w-7" disabled={rhPage === 0} onClick={() => setRhPage(p => p - 1)}>
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </Button>
+              <span className="text-xs px-2">{rhPage + 1} / {rhTotalPages}</span>
+              <Button variant="outline" size="icon" className="h-7 w-7" disabled={rhPage >= rhTotalPages - 1} onClick={() => setRhPage(p => p + 1)}>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
         </TabsContent>
       </Tabs>
