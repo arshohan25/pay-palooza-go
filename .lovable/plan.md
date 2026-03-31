@@ -1,21 +1,33 @@
+# Fix Feature Unlock Dropdown — Show Only Missing Features for Each Individual user
 
+## Problem
 
-# Smart Feature Dropdown for User Rewards
+The Feature Unlock dropdown still shows features users already have (Cash Out, Add Money, Payment, etc.) because the filter only checks for explicit `visible` user overrides. It doesn't check whether the feature is already globally enabled and visible by default.
 
-## What Changes
-Replace the free-text "Feature Key" input in the Assign Reward dialog with a Select dropdown that only shows **user-applicable features**, excluding role-specific and already-unlocked ones.
+## Fix in `src/components/admin/AdminUserPerformanceTracker.tsx`
 
-## Filtering Logic
-1. **Fetch all features** from `global_feature_toggles` when reward dialog opens with type `feature_unlock`
-2. **Exclude non-user features** by prefix: `merchant_`, `agent_`, `distributor_`, `super_distributor_`, `team_`
-3. **Exclude already-unlocked features** — query `user_feature_overrides` for selected user(s) where `visibility = 'visible'`, remove those feature keys from the list
-4. **Show friendly labels** from the `label` column, with `feature_key` as the value
+Update `loadAvailableFeatures` to:
 
-## UI
-- Replace `<Input>` with `<Select>` dropdown when `rewardType === "feature_unlock"`
-- Each option shows the feature label (e.g. "Live Chat" not "account_live_chat")
-- If no features remain, show disabled state with message "All features already unlocked"
+1. **Fetch `is_enabled` and `visibility**` from `global_feature_toggles` (currently only fetches `feature_key, label`)
+2. **Also fetch badge/role group overrides** for selected users (currently only checks user-specific overrides)
+3. **Compute resolved visibility** per feature using the same priority logic as `useGlobalToggles`:
+  - User-specific override > Badge group override > Role group override > Global default
+4. **Exclude features where resolved visibility = `visible**` — these are features the user already has
+5. **Only show features resolving to `hidden` or `disabled**` — these are the ones worth unlocking
 
-## File Changed
-- `src/components/admin/AdminUserPerformanceTracker.tsx` — Add state for available features, fetch logic on dialog open, replace Input with Select for feature_unlock type
+### Filtering Logic
 
+```
+For each feature:
+  - Skip if role-prefixed (merchant_, agent_, etc.)
+  - Check if user has a 'visible' individual override → already has it → skip
+  - Check if user's badge group has a 'visible' override → already has it → skip
+  - Check if globally enabled with visibility='visible' → already has it → skip
+  - Otherwise → show in dropdown (user doesn't have this feature)
+```
+
+This ensures only features like "Become a Merchant", "Live Chat", "Icon Size", "Compact Mode" etc. that are actually hidden/disabled for the selected user appear in the dropdown. Future new features added to `global_feature_toggles` will automatically appear if they're not visible to the user.
+
+## Files Changed
+
+- `src/components/admin/AdminUserPerformanceTracker.tsx` — Update `loadAvailableFeatures` query and filtering logic
