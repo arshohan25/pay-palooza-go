@@ -615,7 +615,7 @@ export default function AdminUserPerformanceTracker() {
 
       {/* Reward Dialog */}
       <Dialog open={rewardDialog} onOpenChange={setRewardDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md w-[95vw]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><Award className="h-5 w-5 text-primary" /> Assign Reward</DialogTitle>
             <DialogDescription>Reward {selected.size} selected user{selected.size > 1 ? "s" : ""}.</DialogDescription>
