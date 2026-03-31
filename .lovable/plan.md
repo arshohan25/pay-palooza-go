@@ -1,42 +1,39 @@
 
 
-# Add More Unlockable Features to Global Feature Toggles
+# Filter Out Non-Regular Users from Performance Tracker
 
-## What This Does
-Insert new premium/advanced features into `global_feature_toggles` that are globally enabled but **hidden for New and Basic users** via badge-level overrides. These features become available as reward unlocks for admins to grant as users grow.
+## Problem
+The User Performance Tracker shows staff members (staff-*), agents, merchants, distributors, and super distributors alongside regular users. Only regular "user" role accounts should appear.
 
-## New Features to Add
+## Solution
 
-| Feature Key | Label | Description |
-|---|---|---|
-| `account_budget_manager` | Budget Manager | Set spending budgets and track limits |
-| `account_scheduled_payments` | Scheduled Payments | Schedule recurring transfers |
-| `account_transaction_export` | Export Transactions | Download transaction history as CSV/PDF |
-| `account_favorites` | Favorite Contacts | Save frequently used recipients |
-| `account_auto_save` | Auto Save | Automatic savings from transactions |
-| `account_bill_reminders` | Bill Reminders | Get notified before bill due dates |
-| `account_split_bill` | Split Bill | Split payments among friends |
-| `account_virtual_card` | Virtual Card | Generate virtual debit cards |
-| `account_cashback_rewards` | Cashback Rewards | Earn cashback on transactions |
-| `account_priority_support` | Priority Support | Access to priority customer support |
-| `account_multi_wallet` | Multi Wallet | Create multiple wallet accounts |
-| `account_transaction_tags` | Transaction Tags | Tag and categorize transactions |
+### 1. Update the `get_user_performance_stats` RPC (database migration)
+Add a filter to exclude:
+- Staff accounts (phone starts with `staff-`)
+- Users who have any non-user role (agent, merchant, distributor, super_distributor, admin, etc.)
 
-## Badge Override Strategy
-- **New** users: All 12 features hidden
-- **Basic** users: 8 features hidden (unlock budget, favorites, bill reminders, transaction tags)
-- **Active** users: 4 features hidden (unlock most, keep virtual card, cashback, priority support, multi wallet locked)
-- **Power** users: All visible by default
+```sql
+CREATE OR REPLACE FUNCTION public.get_user_performance_stats()
+...
+  FROM profiles p
+  WHERE p.phone NOT LIKE 'staff-%'
+    AND NOT EXISTS (
+      SELECT 1 FROM user_roles ur
+      WHERE ur.user_id = p.user_id
+        AND ur.role NOT IN ('user')
+    )
+  ...
+```
 
-## Data Changes (no code changes needed)
-1. **INSERT** 12 rows into `global_feature_toggles` (all `is_enabled: true`, `visibility: visible`)
-2. **INSERT** badge-level overrides into `user_feature_overrides`:
-   - 12 overrides for `new` badge (all hidden)
-   - 8 overrides for `basic` badge
-   - 4 overrides for `active` badge
+This filters at the database level so the frontend receives only regular consumer users.
 
-## Technical Details
-- Uses the `supabase--read_query` insert tool for data operations (no migration needed)
-- The existing `useGlobalToggles` hook and `AdminUserPerformanceTracker` feature unlock dropdown will automatically pick up these new features
-- Admins can individually unlock any feature for any user via the Assign Reward dialog
+### 2. Add client-side safety filter (AdminUserPerformanceTracker.tsx)
+In `fetchData`, after setting users, also filter out any `staff-` prefixed phones as a fallback:
+```ts
+setUsers((perfData as UserPerf[])?.filter(u => !u.phone?.startsWith("staff-")) ?? []);
+```
+
+## Files Changed
+- **New migration** — Update `get_user_performance_stats` function to exclude staff/agent/merchant/distributor/SD
+- `src/components/admin/AdminUserPerformanceTracker.tsx` — Client-side safety filter
 
