@@ -117,23 +117,26 @@ export default function AdminUserPerformanceTracker() {
         .map((o: any) => o.feature_key)
     );
 
-    const badgeVisibleKeys = new Set(
-      (groupOverrides ?? [])
-        .filter((o: any) => o.visibility === "visible")
-        .map((o: any) => o.feature_key)
-    );
-
     const filtered = (allFeatures ?? [])
       .filter((f: any) => !EXCLUDED_PREFIXES.some(p => f.feature_key.startsWith(p)))
       .filter((f: any) => {
-        // Already has user-specific visible override
+        // Resolve visibility: user override > badge override > global
+        // 1. User-specific override — if 'visible' for ALL selected, skip
         if (userVisibleKeys.has(f.feature_key)) return false;
-        // Already visible via badge group override
-        if (badgeVisibleKeys.has(f.feature_key)) return false;
-        // Already globally visible by default
-        if (f.is_enabled && (f.visibility === "visible" || !f.visibility)) return false;
-        // Feature is hidden/disabled — show in dropdown
-        return true;
+
+        // 2. Badge group override — takes priority over global
+        const badgeOverride = (groupOverrides ?? []).find(
+          (o: any) => o.feature_key === f.feature_key
+        );
+        if (badgeOverride) {
+          // Badge says visible → user has it → skip
+          // Badge says hidden/disabled → user doesn't have it → keep
+          return badgeOverride.visibility !== "visible";
+        }
+
+        // 3. Global default — if globally visible, user already has it
+        const globallyVisible = f.is_enabled && (f.visibility === "visible" || !f.visibility);
+        return !globallyVisible;
       });
 
     setAvailableFeatures(filtered as { feature_key: string; label: string }[]);
