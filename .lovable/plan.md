@@ -1,58 +1,42 @@
 
 
-# Fix: Create `user_rewards` Table & Verify End-to-End Flow
+# Add More Unlockable Features to Global Feature Toggles
 
-## Problem
-The `user_rewards` table does not exist in the database. Every request to it returns a 404 error (`Could not find the table 'public.user_rewards'`). This breaks both:
-1. Admin reward assignment
-2. User "My Rewards" section on the Account page
+## What This Does
+Insert new premium/advanced features into `global_feature_toggles` that are globally enabled but **hidden for New and Basic users** via badge-level overrides. These features become available as reward unlocks for admins to grant as users grow.
 
-## Plan
+## New Features to Add
 
-### 1. Create `user_rewards` table (database migration)
-```sql
-CREATE TABLE public.user_rewards (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  reward_type text NOT NULL,
-  reward_value jsonb NOT NULL DEFAULT '{}',
-  reason text,
-  status text NOT NULL DEFAULT 'active',
-  expires_at timestamptz,
-  created_by uuid REFERENCES auth.users(id),
-  created_at timestamptz NOT NULL DEFAULT now()
-);
+| Feature Key | Label | Description |
+|---|---|---|
+| `account_budget_manager` | Budget Manager | Set spending budgets and track limits |
+| `account_scheduled_payments` | Scheduled Payments | Schedule recurring transfers |
+| `account_transaction_export` | Export Transactions | Download transaction history as CSV/PDF |
+| `account_favorites` | Favorite Contacts | Save frequently used recipients |
+| `account_auto_save` | Auto Save | Automatic savings from transactions |
+| `account_bill_reminders` | Bill Reminders | Get notified before bill due dates |
+| `account_split_bill` | Split Bill | Split payments among friends |
+| `account_virtual_card` | Virtual Card | Generate virtual debit cards |
+| `account_cashback_rewards` | Cashback Rewards | Earn cashback on transactions |
+| `account_priority_support` | Priority Support | Access to priority customer support |
+| `account_multi_wallet` | Multi Wallet | Create multiple wallet accounts |
+| `account_transaction_tags` | Transaction Tags | Tag and categorize transactions |
 
-ALTER TABLE public.user_rewards ENABLE ROW LEVEL SECURITY;
+## Badge Override Strategy
+- **New** users: All 12 features hidden
+- **Basic** users: 8 features hidden (unlock budget, favorites, bill reminders, transaction tags)
+- **Active** users: 4 features hidden (unlock most, keep virtual card, cashback, priority support, multi wallet locked)
+- **Power** users: All visible by default
 
--- Admins can do everything
-CREATE POLICY "Admins full access on user_rewards"
-  ON public.user_rewards FOR ALL TO authenticated
-  USING (public.has_role(auth.uid(), 'admin'));
+## Data Changes (no code changes needed)
+1. **INSERT** 12 rows into `global_feature_toggles` (all `is_enabled: true`, `visibility: visible`)
+2. **INSERT** badge-level overrides into `user_feature_overrides`:
+   - 12 overrides for `new` badge (all hidden)
+   - 8 overrides for `basic` badge
+   - 4 overrides for `active` badge
 
--- Users can read their own active rewards
-CREATE POLICY "Users read own rewards"
-  ON public.user_rewards FOR SELECT TO authenticated
-  USING (user_id = auth.uid());
-
--- Index for fast user lookups
-CREATE INDEX idx_user_rewards_user_id ON public.user_rewards(user_id);
-CREATE INDEX idx_user_rewards_status ON public.user_rewards(status);
-```
-
-### 2. No code changes needed
-The existing code in `AdminUserPerformanceTracker.tsx` and `AccountPage.tsx` already:
-- Inserts rewards into `user_rewards`
-- Creates `user_feature_overrides` entries for `feature_unlock` type rewards (making the feature visible to the user)
-- Displays active rewards in "My Rewards" on the Account page
-
-Once the table exists, the full flow will work:
-1. Admin selects user(s) → opens reward dialog → picks "Feature Unlock" → selects a feature → assigns
-2. A row is inserted into `user_rewards` (for tracking/display)
-3. A `user_feature_overrides` row is upserted with `visibility: "visible"` (unlocks the feature)
-4. User sees the reward in Account → "My Rewards" section
-5. The unlocked feature becomes visible on their home/account page via the `useGlobalToggles` hook
-
-## File Changed
-- **New migration**: Create `user_rewards` table with RLS policies
+## Technical Details
+- Uses the `supabase--read_query` insert tool for data operations (no migration needed)
+- The existing `useGlobalToggles` hook and `AdminUserPerformanceTracker` feature unlock dropdown will automatically pick up these new features
+- Admins can individually unlock any feature for any user via the Assign Reward dialog
 
