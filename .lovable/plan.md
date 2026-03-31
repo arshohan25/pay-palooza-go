@@ -1,33 +1,50 @@
-# Fix Feature Unlock Dropdown — Show Only Missing Features for Each Individual user
+
+
+# Fix Feature Unlock Dropdown — Use Resolved Visibility
 
 ## Problem
+The filter excludes all globally visible features (line 134), but many features ARE globally visible yet **hidden for specific badge groups** (e.g., "New" users have `account_icon_size`, `account_grid_layout`, `account_compact_mode`, `account_become_merchant`, `account_live_chat`, `account_onboarding` hidden via badge overrides). These should appear in the dropdown because the user doesn't actually have them.
 
-The Feature Unlock dropdown still shows features users already have (Cash Out, Add Money, Payment, etc.) because the filter only checks for explicit `visible` user overrides. It doesn't check whether the feature is already globally enabled and visible by default.
-
-## Fix in `src/components/admin/AdminUserPerformanceTracker.tsx`
-
-Update `loadAvailableFeatures` to:
-
-1. **Fetch `is_enabled` and `visibility**` from `global_feature_toggles` (currently only fetches `feature_key, label`)
-2. **Also fetch badge/role group overrides** for selected users (currently only checks user-specific overrides)
-3. **Compute resolved visibility** per feature using the same priority logic as `useGlobalToggles`:
-  - User-specific override > Badge group override > Role group override > Global default
-4. **Exclude features where resolved visibility = `visible**` — these are features the user already has
-5. **Only show features resolving to `hidden` or `disabled**` — these are the ones worth unlocking
-
-### Filtering Logic
+## Fix
+Replace the current filtering logic with **resolved visibility calculation** matching the same priority as `useGlobalToggles`:
 
 ```
-For each feature:
-  - Skip if role-prefixed (merchant_, agent_, etc.)
-  - Check if user has a 'visible' individual override → already has it → skip
-  - Check if user's badge group has a 'visible' override → already has it → skip
-  - Check if globally enabled with visibility='visible' → already has it → skip
-  - Otherwise → show in dropdown (user doesn't have this feature)
+For each feature (after prefix exclusion):
+  1. Check user-specific override → if 'visible', skip (already has it)
+  2. Check badge group override → if 'visible', skip; if 'hidden'/'disabled', KEEP (user doesn't have it)
+  3. Fall back to global toggle → if enabled+visible, skip (default access)
+  4. If global is disabled/hidden → KEEP (user doesn't have it)
 ```
 
-This ensures only features like "Become a Merchant", "Live Chat", "Icon Size", "Compact Mode" etc. that are actually hidden/disabled for the selected user appear in the dropdown. Future new features added to `global_feature_toggles` will automatically appear if they're not visible to the user.
+The key change: a feature that is globally visible but **overridden to hidden/disabled by the user's badge group** should appear in the dropdown. Currently line 134 skips it because it only checks the global state.
 
-## Files Changed
+## Implementation
+In `loadAvailableFeatures`, replace the triple filter (lines 126-137) with resolved visibility logic:
 
-- `src/components/admin/AdminUserPerformanceTracker.tsx` — Update `loadAvailableFeatures` query and filtering logic
+```typescript
+const filtered = (allFeatures ?? [])
+  .filter(f => !EXCLUDED_PREFIXES.some(p => f.feature_key.startsWith(p)))
+  .filter(f => {
+    // Resolve visibility: user override > badge override > global
+    // 1. User-specific override (must be visible for ALL selected users)
+    if (userVisibleKeys.has(f.feature_key)) return false;
+    
+    // 2. Badge group override
+    const badgeOverride = (groupOverrides ?? []).find(
+      o => o.feature_key === f.feature_key
+    );
+    if (badgeOverride) {
+      // Badge says visible → user has it → skip
+      // Badge says hidden/disabled → user doesn't have it → keep
+      return badgeOverride.visibility !== "visible";
+    }
+    
+    // 3. Global default
+    const globallyVisible = f.is_enabled && (f.visibility === "visible" || !f.visibility);
+    return !globallyVisible; // if globally visible, user has it; otherwise keep
+  });
+```
+
+## File Changed
+- `src/components/admin/AdminUserPerformanceTracker.tsx` — Fix filtering in `loadAvailableFeatures` (lines 126-137)
+
