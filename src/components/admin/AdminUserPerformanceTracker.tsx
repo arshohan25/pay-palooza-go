@@ -341,7 +341,7 @@ export default function AdminUserPerformanceTracker() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-lg font-bold flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary" /> User Performance & Rewards</h3>
         <Button variant="outline" size="sm" onClick={fetchData}><RefreshCw className="h-3.5 w-3.5 mr-1" /> Refresh</Button>
       </div>
@@ -433,28 +433,31 @@ export default function AdminUserPerformanceTracker() {
                     </TableRow>
                     {expanded.has(u.user_id) && (
                       <TableRow key={`${u.user_id}-exp`}>
-                        <TableCell colSpan={9} className="bg-muted/30 px-6 py-3">
-                          <div className="flex flex-wrap gap-3 text-xs mb-2">
+                        <TableCell colSpan={9} className="bg-muted/30 px-3 md:px-6 py-3">
+                          <div className="flex flex-wrap gap-2 md:gap-3 text-xs mb-2">
                             <span className="text-muted-foreground">Account age: <b>{Math.round((Date.now() - new Date(u.created_at).getTime()) / 86400000)}d</b></span>
                             {Object.entries(u.txn_breakdown ?? {}).map(([type, count]) => (
                               <Badge key={type} variant="secondary" className="text-[10px]">{type}: {String(count)}</Badge>
                             ))}
                           </div>
-                          {/* Per-user reward history */}
                           {(() => {
                             const userRewards = rewards.filter(r => r.user_id === u.user_id);
                             if (userRewards.length === 0) return <p className="text-[11px] text-muted-foreground">No rewards assigned</p>;
                             return (
                               <div className="mt-1">
                                 <p className="text-xs font-medium mb-1 flex items-center gap-1"><Gift className="h-3 w-3 text-primary" /> Reward History ({userRewards.length})</p>
-                                <div className="space-y-1">
+                                <div className="space-y-1.5">
                                   {userRewards.map(r => (
-                                    <div key={r.id} className="flex items-center gap-2 text-[11px] bg-background/60 rounded px-2 py-1">
-                                      <Badge variant="outline" className="capitalize text-[9px]">{r.reward_type.replace("_", " ")}</Badge>
-                                      <span className="truncate max-w-[100px]">{JSON.stringify(r.reward_value)}</span>
-                                      {getStatusBadge(r)}
-                                      <span className="text-muted-foreground ml-auto">{formatDate(r.created_at)}</span>
-                                      {r.expires_at && <span className={`text-[10px] ${isExpired(r) ? "text-destructive" : "text-muted-foreground"}`}>exp: {formatDate(r.expires_at)}</span>}
+                                    <div key={r.id} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-[11px] bg-background/60 rounded px-2 py-1.5">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <Badge variant="outline" className="capitalize text-[9px]">{r.reward_type.replace("_", " ")}</Badge>
+                                        <span className="truncate max-w-[100px]">{JSON.stringify(r.reward_value)}</span>
+                                        {getStatusBadge(r)}
+                                      </div>
+                                      <div className="flex items-center gap-1.5 sm:ml-auto text-muted-foreground">
+                                        <span>{formatDate(r.created_at)}</span>
+                                        {r.expires_at && <span className={`text-[10px] ${isExpired(r) ? "text-destructive" : "text-muted-foreground"}`}>exp: {formatDate(r.expires_at)}</span>}
+                                      </div>
                                     </div>
                                   ))}
                                 </div>
@@ -474,13 +477,13 @@ export default function AdminUserPerformanceTracker() {
 
         <TabsContent value="rewards" className="space-y-3">
           {/* Search & Filter Controls */}
-          <div className="flex flex-wrap gap-2 items-center">
-            <div className="relative flex-1 min-w-[160px]">
+          <div className="grid grid-cols-2 md:flex md:flex-wrap gap-2 items-center">
+            <div className="relative col-span-2 md:flex-1 md:min-w-[160px]">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search by phone or name…" value={rhSearch} onChange={e => setRhSearch(e.target.value)} className="pl-8 h-9" />
             </div>
             <Select value={rhTypeFilter} onValueChange={setRhTypeFilter}>
-              <SelectTrigger className="w-[140px] h-9"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="coupon">Coupon</SelectItem>
@@ -491,7 +494,7 @@ export default function AdminUserPerformanceTracker() {
               </SelectContent>
             </Select>
             <Select value={rhStatusFilter} onValueChange={setRhStatusFilter}>
-              <SelectTrigger className="w-[120px] h-9"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
@@ -500,57 +503,96 @@ export default function AdminUserPerformanceTracker() {
                 <SelectItem value="revoked">Revoked</SelectItem>
               </SelectContent>
             </Select>
-            <Input type="date" value={rhDateFrom} onChange={e => setRhDateFrom(e.target.value)} className="w-[130px] h-9" placeholder="From" />
-            <Input type="date" value={rhDateTo} onChange={e => setRhDateTo(e.target.value)} className="w-[130px] h-9" placeholder="To" />
+            <Input type="date" value={rhDateFrom} onChange={e => setRhDateFrom(e.target.value)} className="h-9" placeholder="From" />
+            <Input type="date" value={rhDateTo} onChange={e => setRhDateTo(e.target.value)} className="h-9" placeholder="To" />
           </div>
 
-          <div className="rounded-xl border bg-card overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Value</TableHead>
-                  <TableHead className="hidden md:table-cell">Reason</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="hidden md:table-cell">Expires</TableHead>
-                  <TableHead className="hidden lg:table-cell">Assigned By</TableHead>
-                  <TableHead>Issued</TableHead>
-                  <TableHead className="w-10" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredRewards.length === 0 && (
-                  <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No rewards found</TableCell></TableRow>
-                )}
-                {pagedRewards.map(r => (
-                  <TableRow key={r.id}>
-                    <TableCell className="text-sm">
-                      <p className="font-mono">{enriched.find(u => u.user_id === r.user_id)?.phone ?? r.user_id.slice(0, 8)}</p>
-                      <p className="text-[10px] text-muted-foreground truncate max-w-[100px]">{enriched.find(u => u.user_id === r.user_id)?.name ?? ""}</p>
-                    </TableCell>
-                    <TableCell><Badge variant="outline" className="capitalize">{r.reward_type.replace("_", " ")}</Badge></TableCell>
-                    <TableCell className="text-sm max-w-[120px] truncate">{JSON.stringify(r.reward_value)}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground max-w-[140px] truncate hidden md:table-cell">{r.reason ?? "—"}</TableCell>
-                    <TableCell>{getStatusBadge(r)}</TableCell>
-                    <TableCell className={`text-sm hidden md:table-cell ${isExpired(r) ? "text-destructive" : "text-muted-foreground"}`}>
-                      {r.expires_at ? formatDate(r.expires_at) : "—"}
-                    </TableCell>
-                    <TableCell className="text-sm hidden lg:table-cell text-muted-foreground">
-                      {adminNames[r.created_by] ?? r.created_by?.slice(0, 8) ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-sm">{formatDate(r.created_at)}</TableCell>
-                    <TableCell>
+          {/* Mobile card layout */}
+          <div className="md:hidden space-y-2">
+            {filteredRewards.length === 0 && <p className="text-center py-8 text-muted-foreground text-sm">No rewards found</p>}
+            {pagedRewards.map(r => {
+              const user = enriched.find(u => u.user_id === r.user_id);
+              return (
+                <div key={r.id} className="rounded-lg border bg-card p-3 space-y-2">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-mono font-medium">{user?.phone ?? r.user_id.slice(0, 8)}</p>
+                      <p className="text-[11px] text-muted-foreground">{user?.name ?? ""}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {getStatusBadge(r)}
                       {r.status === "active" && !isExpired(r) && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => revokeReward(r.id)} title="Revoke">
-                          <Ban className="h-3.5 w-3.5" />
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={() => revokeReward(r.id)} title="Revoke">
+                          <Ban className="h-3 w-3" />
                         </Button>
                       )}
-                    </TableCell>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 items-center">
+                    <Badge variant="outline" className="capitalize text-[10px]">{r.reward_type.replace("_", " ")}</Badge>
+                    <span className="text-xs text-muted-foreground truncate max-w-[140px]">{JSON.stringify(r.reward_value)}</span>
+                  </div>
+                  {r.reason && <p className="text-[11px] text-muted-foreground">Reason: {r.reason}</p>}
+                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+                    <span>Issued: {formatDate(r.created_at)}</span>
+                    {r.expires_at && <span className={isExpired(r) ? "text-destructive" : ""}>Expires: {formatDate(r.expires_at)}</span>}
+                    <span>By: {adminNames[r.created_by] ?? r.created_by?.slice(0, 8) ?? "—"}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop table */}
+          <div className="rounded-xl border bg-card overflow-hidden hidden md:block">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Value</TableHead>
+                    <TableHead>Reason</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Expires</TableHead>
+                    <TableHead className="hidden lg:table-cell">Assigned By</TableHead>
+                    <TableHead>Issued</TableHead>
+                    <TableHead className="w-10" />
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredRewards.length === 0 && (
+                    <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No rewards found</TableCell></TableRow>
+                  )}
+                  {pagedRewards.map(r => (
+                    <TableRow key={r.id}>
+                      <TableCell className="text-sm">
+                        <p className="font-mono">{enriched.find(u => u.user_id === r.user_id)?.phone ?? r.user_id.slice(0, 8)}</p>
+                        <p className="text-[10px] text-muted-foreground truncate max-w-[100px]">{enriched.find(u => u.user_id === r.user_id)?.name ?? ""}</p>
+                      </TableCell>
+                      <TableCell><Badge variant="outline" className="capitalize">{r.reward_type.replace("_", " ")}</Badge></TableCell>
+                      <TableCell className="text-sm max-w-[120px] truncate">{JSON.stringify(r.reward_value)}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground max-w-[140px] truncate">{r.reason ?? "—"}</TableCell>
+                      <TableCell>{getStatusBadge(r)}</TableCell>
+                      <TableCell className={`text-sm ${isExpired(r) ? "text-destructive" : "text-muted-foreground"}`}>
+                        {r.expires_at ? formatDate(r.expires_at) : "—"}
+                      </TableCell>
+                      <TableCell className="text-sm hidden lg:table-cell text-muted-foreground">
+                        {adminNames[r.created_by] ?? r.created_by?.slice(0, 8) ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-sm">{formatDate(r.created_at)}</TableCell>
+                      <TableCell>
+                        {r.status === "active" && !isExpired(r) && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => revokeReward(r.id)} title="Revoke">
+                            <Ban className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
 
           {/* Pagination */}
@@ -573,7 +615,7 @@ export default function AdminUserPerformanceTracker() {
 
       {/* Reward Dialog */}
       <Dialog open={rewardDialog} onOpenChange={setRewardDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md w-[95vw]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><Award className="h-5 w-5 text-primary" /> Assign Reward</DialogTitle>
             <DialogDescription>Reward {selected.size} selected user{selected.size > 1 ? "s" : ""}.</DialogDescription>
