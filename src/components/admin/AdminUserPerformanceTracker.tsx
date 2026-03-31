@@ -71,6 +71,7 @@ type SortKey = "phone" | "badge" | "total_txns" | "monthly_txns" | "total_volume
 export default function AdminUserPerformanceTracker() {
   const [users, setUsers] = useState<UserPerf[]>([]);
   const [rewards, setRewards] = useState<UserReward[]>([]);
+  const [adminNames, setAdminNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [badgeFilter, setBadgeFilter] = useState("all");
@@ -87,6 +88,15 @@ export default function AdminUserPerformanceTracker() {
   const [tab, setTab] = useState("performance");
   const [availableFeatures, setAvailableFeatures] = useState<{ feature_key: string; label: string }[]>([]);
   const [featuresLoading, setFeaturesLoading] = useState(false);
+
+  // Reward History filters
+  const [rhSearch, setRhSearch] = useState("");
+  const [rhTypeFilter, setRhTypeFilter] = useState("all");
+  const [rhStatusFilter, setRhStatusFilter] = useState("all");
+  const [rhDateFrom, setRhDateFrom] = useState("");
+  const [rhDateTo, setRhDateTo] = useState("");
+  const [rhPage, setRhPage] = useState(0);
+  const RH_PAGE_SIZE = 20;
 
   const EXCLUDED_PREFIXES = ["merchant_", "agent_", "distributor_", "super_distributor_", "team_"];
 
