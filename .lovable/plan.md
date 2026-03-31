@@ -1,39 +1,27 @@
 
 
-# Filter Out Non-Regular Users from Performance Tracker
+# Track Performance Based on Outgoing Transactions Only
 
 ## Problem
-The User Performance Tracker shows staff members (staff-*), agents, merchants, distributors, and super distributors alongside regular users. Only regular "user" role accounts should appear.
+Currently, the `get_user_performance_stats` RPC counts **all** transaction types (including incoming ones like `receive`, `cashin`, `addmoney`). Performance and badge assignment should only reflect **outgoing** activity — transactions the user actively initiates.
 
-## Solution
+## Outgoing Types
+`send`, `cashout`, `banktransfer`, `payment`, `recharge`, `paybill`
 
-### 1. Update the `get_user_performance_stats` RPC (database migration)
-Add a filter to exclude:
-- Staff accounts (phone starts with `staff-`)
-- Users who have any non-user role (agent, merchant, distributor, super_distributor, admin, etc.)
+Excluded (incoming/passive): `receive`, `cashin`, `addmoney`
 
-```sql
-CREATE OR REPLACE FUNCTION public.get_user_performance_stats()
-...
-  FROM profiles p
-  WHERE p.phone NOT LIKE 'staff-%'
-    AND NOT EXISTS (
-      SELECT 1 FROM user_roles ur
-      WHERE ur.user_id = p.user_id
-        AND ur.role NOT IN ('user')
-    )
-  ...
-```
+## Changes
 
-This filters at the database level so the frontend receives only regular consumer users.
+### 1. Update `get_user_performance_stats` RPC (migration)
+Add a `WHERE t2.type IN ('send','cashout','banktransfer','payment','recharge','paybill')` filter inside the lateral join so only outgoing transactions are counted for `total_txns`, `monthly_txns`, `total_volume`, `txn_breakdown`, and `last_active`.
 
-### 2. Add client-side safety filter (AdminUserPerformanceTracker.tsx)
-In `fetchData`, after setting users, also filter out any `staff-` prefixed phones as a fallback:
-```ts
-setUsers((perfData as UserPerf[])?.filter(u => !u.phone?.startsWith("staff-")) ?? []);
-```
+### 2. Update badge logic label in frontend
+No code change needed — the `getBadge` function uses `total_txns` which will now reflect outgoing-only counts. The thresholds (Power: 50, Active: 20, Basic: 5) remain the same but now measure meaningful user-initiated activity.
+
+### 3. Update activity score tooltip (optional clarity)
+Add a small note in the UI that scores are based on outgoing transactions.
 
 ## Files Changed
-- **New migration** — Update `get_user_performance_stats` function to exclude staff/agent/merchant/distributor/SD
-- `src/components/admin/AdminUserPerformanceTracker.tsx` — Client-side safety filter
+- **New migration** — Update `get_user_performance_stats` to filter by outgoing transaction types only
+- `src/components/admin/AdminUserPerformanceTracker.tsx` — Minor label update to clarify "outgoing transactions"
 
