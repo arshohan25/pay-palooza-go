@@ -192,7 +192,7 @@ export default function AdminUserPerformanceTracker() {
     if (rhSearch) {
       const q = rhSearch.toLowerCase();
       list = list.filter(r => {
-        const user = enrichedRef.find(u => u.user_id === r.user_id);
+        const user = enriched.find(u => u.user_id === r.user_id);
         return (user?.phone ?? "").includes(q) || (user?.name ?? "").toLowerCase().includes(q);
       });
     }
@@ -205,7 +205,7 @@ export default function AdminUserPerformanceTracker() {
     if (rhDateFrom) list = list.filter(r => r.created_at >= rhDateFrom);
     if (rhDateTo) list = list.filter(r => r.created_at <= rhDateTo + "T23:59:59");
     return list;
-  }, [rewards, rhSearch, rhTypeFilter, rhStatusFilter, rhDateFrom, rhDateTo]);
+  }, [rewards, rhSearch, rhTypeFilter, rhStatusFilter, rhDateFrom, rhDateTo, enriched]);
 
   const rhTotalPages = Math.max(1, Math.ceil(filteredRewards.length / RH_PAGE_SIZE));
   const pagedRewards = filteredRewards.slice(rhPage * RH_PAGE_SIZE, (rhPage + 1) * RH_PAGE_SIZE);
