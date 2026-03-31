@@ -186,6 +186,11 @@ export default function AdminUserPerformanceTracker() {
     if (rewardDialog && rewardType === "feature_unlock") loadAvailableFeatures();
   }, [rewardDialog, rewardType, loadAvailableFeatures]);
 
+  const enriched = useMemo(() =>
+    users.map(u => ({ ...u, badge: getBadge(u.total_txns, u.created_at), score: activityScore(u) })),
+    [users]
+  );
+
   // Filtered & paginated rewards for Reward History tab
   const filteredRewards = useMemo(() => {
     let list = rewards;
@@ -225,13 +230,8 @@ export default function AdminUserPerformanceTracker() {
     if (r.status === "revoked") return <Badge variant="destructive" className="text-[10px]">Revoked</Badge>;
     if (r.status === "claimed") return <Badge variant="secondary" className="text-[10px]">Claimed</Badge>;
     if (isExpired(r)) return <Badge variant="outline" className="text-[10px] border-destructive text-destructive">Expired</Badge>;
-    return <Badge className="text-[10px] bg-emerald-500/15 text-emerald-600 border-emerald-500/30" variant="outline">Active</Badge>;
+    return <Badge className="text-[10px] bg-emerald-600/15 text-emerald-600 border-emerald-600/30" variant="outline">Active</Badge>;
   };
-
-  const enriched = useMemo(() =>
-    users.map(u => ({ ...u, badge: getBadge(u.total_txns, u.created_at), score: activityScore(u) })),
-    [users]
-  );
 
   const filtered = useMemo(() => {
     let list = enriched;
