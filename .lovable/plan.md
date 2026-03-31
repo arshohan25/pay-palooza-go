@@ -1,27 +1,58 @@
 
 
-# Make User Performance Tracker Responsive
+# Fix: Create `user_rewards` Table & Verify End-to-End Flow
 
-## Changes
+## Problem
+The `user_rewards` table does not exist in the database. Every request to it returns a 404 error (`Could not find the table 'public.user_rewards'`). This breaks both:
+1. Admin reward assignment
+2. User "My Rewards" section on the Account page
 
-### 1. Reward History tab — mobile card layout
-On mobile (`md:hidden`), replace the table with a stacked card list showing all fields vertically. Hide the table on mobile (`hidden md:block`).
+## Plan
 
-### 2. Reward History filters — stack on mobile
-Change the filter bar to use `grid grid-cols-2` on mobile so date inputs and selects don't overflow. Search spans full width.
+### 1. Create `user_rewards` table (database migration)
+```sql
+CREATE TABLE public.user_rewards (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  reward_type text NOT NULL,
+  reward_value jsonb NOT NULL DEFAULT '{}',
+  reason text,
+  status text NOT NULL DEFAULT 'active',
+  expires_at timestamptz,
+  created_by uuid REFERENCES auth.users(id),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 
-### 3. Performance table — expanded row mobile fix
-The per-user reward history items inside expanded rows use `flex-col` on small screens instead of horizontal flex.
+ALTER TABLE public.user_rewards ENABLE ROW LEVEL SECURITY;
 
-### 4. Reward Dialog — full-width on mobile
-Change dialog to `max-w-md w-[95vw]` so it doesn't clip on narrow screens.
+-- Admins can do everything
+CREATE POLICY "Admins full access on user_rewards"
+  ON public.user_rewards FOR ALL TO authenticated
+  USING (public.has_role(auth.uid(), 'admin'));
 
-### 5. Header — wrap on small screens
-Make the title + refresh button wrap with `flex-wrap` so they don't overflow.
+-- Users can read their own active rewards
+CREATE POLICY "Users read own rewards"
+  ON public.user_rewards FOR SELECT TO authenticated
+  USING (user_id = auth.uid());
 
-### 6. Pagination — compact on mobile
-Already fine, just ensure text doesn't clip.
+-- Index for fast user lookups
+CREATE INDEX idx_user_rewards_user_id ON public.user_rewards(user_id);
+CREATE INDEX idx_user_rewards_status ON public.user_rewards(status);
+```
+
+### 2. No code changes needed
+The existing code in `AdminUserPerformanceTracker.tsx` and `AccountPage.tsx` already:
+- Inserts rewards into `user_rewards`
+- Creates `user_feature_overrides` entries for `feature_unlock` type rewards (making the feature visible to the user)
+- Displays active rewards in "My Rewards" on the Account page
+
+Once the table exists, the full flow will work:
+1. Admin selects user(s) → opens reward dialog → picks "Feature Unlock" → selects a feature → assigns
+2. A row is inserted into `user_rewards` (for tracking/display)
+3. A `user_feature_overrides` row is upserted with `visibility: "visible"` (unlocks the feature)
+4. User sees the reward in Account → "My Rewards" section
+5. The unlocked feature becomes visible on their home/account page via the `useGlobalToggles` hook
 
 ## File Changed
-- `src/components/admin/AdminUserPerformanceTracker.tsx` — Add mobile card layout for reward history, responsive filter grid, mobile-friendly expanded rows and dialog
+- **New migration**: Create `user_rewards` table with RLS policies
 
