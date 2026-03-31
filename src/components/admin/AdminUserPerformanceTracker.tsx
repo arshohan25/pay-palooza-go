@@ -397,7 +397,7 @@ export default function AdminUserPerformanceTracker() {
                   <TableHead className="w-8"><Checkbox checked={selected.size === filtered.length && filtered.length > 0} onCheckedChange={selectAll} /></TableHead>
                   <TableHead className="cursor-pointer" onClick={() => toggleSort("phone")}>User <SortIcon k="phone" /></TableHead>
                   <TableHead className="cursor-pointer" onClick={() => toggleSort("badge")}>Badge <SortIcon k="badge" /></TableHead>
-                  <TableHead className="cursor-pointer text-right" onClick={() => toggleSort("total_txns")}>Txns <SortIcon k="total_txns" /></TableHead>
+                  <TableHead className="cursor-pointer text-right" onClick={() => toggleSort("total_txns")} title="Outgoing transactions only (send, cash out, transfer, payment, recharge, bill pay)">Txns ↗ <SortIcon k="total_txns" /></TableHead>
                   <TableHead className="cursor-pointer text-right hidden md:table-cell" onClick={() => toggleSort("monthly_txns")}>Monthly <SortIcon k="monthly_txns" /></TableHead>
                   <TableHead className="cursor-pointer text-right hidden md:table-cell" onClick={() => toggleSort("total_volume")}>Volume <SortIcon k="total_volume" /></TableHead>
                   <TableHead className="cursor-pointer text-right hidden lg:table-cell" onClick={() => toggleSort("last_active")}>Last Active <SortIcon k="last_active" /></TableHead>
