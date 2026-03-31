@@ -160,7 +160,7 @@ export default function AdminUserPerformanceTracker() {
       (supabase.from as any)("user_rewards").select("*").order("created_at", { ascending: false }).limit(500),
     ]);
     const rewardsList = (rewardData as UserReward[]) ?? [];
-    setUsers((perfData as UserPerf[]) ?? []);
+    setUsers((perfData as UserPerf[])?.filter(u => !u.phone?.startsWith("staff-")) ?? []);
     setRewards(rewardsList);
 
     // Resolve admin names for created_by
