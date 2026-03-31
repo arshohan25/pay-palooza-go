@@ -14,7 +14,6 @@ import { toast } from "sonner";
 import {
   Search, Gift, Award, TrendingUp, Users, ChevronDown, ChevronUp,
   Star, Unlock, Percent, RefreshCw, Loader2, Ban, ChevronLeft, ChevronRight,
-  Calendar, Filter,
 } from "lucide-react";
 import { getCachedSession } from "@/hooks/use-auth";
 
