@@ -160,8 +160,23 @@ export default function AdminUserPerformanceTracker() {
       supabase.rpc("get_user_performance_stats") as any,
       (supabase.from as any)("user_rewards").select("*").order("created_at", { ascending: false }).limit(500),
     ]);
+    const rewardsList = (rewardData as UserReward[]) ?? [];
     setUsers((perfData as UserPerf[]) ?? []);
-    setRewards((rewardData as UserReward[]) ?? []);
+    setRewards(rewardsList);
+
+    // Resolve admin names for created_by
+    const adminIds = [...new Set(rewardsList.map(r => r.created_by).filter(Boolean))];
+    if (adminIds.length > 0) {
+      const { data: adminProfiles } = await supabase
+        .from("profiles")
+        .select("user_id, name, phone")
+        .in("user_id", adminIds);
+      const nameMap: Record<string, string> = {};
+      (adminProfiles ?? []).forEach((p: any) => {
+        nameMap[p.user_id] = p.name || p.phone || p.user_id.slice(0, 8);
+      });
+      setAdminNames(nameMap);
+    }
     setLoading(false);
   }, []);
 
@@ -170,6 +185,48 @@ export default function AdminUserPerformanceTracker() {
   useEffect(() => {
     if (rewardDialog && rewardType === "feature_unlock") loadAvailableFeatures();
   }, [rewardDialog, rewardType, loadAvailableFeatures]);
+
+  // Filtered & paginated rewards for Reward History tab
+  const filteredRewards = useMemo(() => {
+    let list = rewards;
+    if (rhSearch) {
+      const q = rhSearch.toLowerCase();
+      list = list.filter(r => {
+        const user = enrichedRef.find(u => u.user_id === r.user_id);
+        return (user?.phone ?? "").includes(q) || (user?.name ?? "").toLowerCase().includes(q);
+      });
+    }
+    if (rhTypeFilter !== "all") list = list.filter(r => r.reward_type === rhTypeFilter);
+    if (rhStatusFilter !== "all") list = list.filter(r => {
+      if (rhStatusFilter === "expired") return r.status === "active" && r.expires_at && new Date(r.expires_at) < new Date();
+      if (rhStatusFilter === "revoked") return r.status === "revoked";
+      return r.status === rhStatusFilter;
+    });
+    if (rhDateFrom) list = list.filter(r => r.created_at >= rhDateFrom);
+    if (rhDateTo) list = list.filter(r => r.created_at <= rhDateTo + "T23:59:59");
+    return list;
+  }, [rewards, rhSearch, rhTypeFilter, rhStatusFilter, rhDateFrom, rhDateTo]);
+
+  const rhTotalPages = Math.max(1, Math.ceil(filteredRewards.length / RH_PAGE_SIZE));
+  const pagedRewards = filteredRewards.slice(rhPage * RH_PAGE_SIZE, (rhPage + 1) * RH_PAGE_SIZE);
+
+  // Reset page when filters change
+  useEffect(() => { setRhPage(0); }, [rhSearch, rhTypeFilter, rhStatusFilter, rhDateFrom, rhDateTo]);
+
+  const revokeReward = async (rewardId: string) => {
+    const { error } = await (supabase.from as any)("user_rewards").update({ status: "revoked" }).eq("id", rewardId);
+    if (error) toast.error("Failed to revoke");
+    else { toast.success("Reward revoked"); fetchData(); }
+  };
+
+  const isExpired = (r: UserReward) => r.expires_at && new Date(r.expires_at) < new Date();
+
+  const getStatusBadge = (r: UserReward) => {
+    if (r.status === "revoked") return <Badge variant="destructive" className="text-[10px]">Revoked</Badge>;
+    if (r.status === "claimed") return <Badge variant="secondary" className="text-[10px]">Claimed</Badge>;
+    if (isExpired(r)) return <Badge variant="outline" className="text-[10px] border-destructive text-destructive">Expired</Badge>;
+    return <Badge className="text-[10px] bg-emerald-500/15 text-emerald-600 border-emerald-500/30" variant="outline">Active</Badge>;
+  };
 
   const enriched = useMemo(() =>
     users.map(u => ({ ...u, badge: getBadge(u.total_txns, u.created_at), score: activityScore(u) })),
