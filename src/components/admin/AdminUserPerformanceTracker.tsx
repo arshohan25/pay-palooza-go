@@ -646,7 +646,7 @@ export default function AdminUserPerformanceTracker() {
                 ) : (
                   <Select value={rewardValue} onValueChange={setRewardValue}>
                     <SelectTrigger><SelectValue placeholder="Select a feature…" /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-52 overflow-y-auto">
                       {availableFeatures.map(f => (
                         <SelectItem key={f.feature_key} value={f.feature_key}>{f.label}</SelectItem>
                       ))}
