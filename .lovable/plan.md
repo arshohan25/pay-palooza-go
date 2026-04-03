@@ -1,68 +1,90 @@
-# Redesign Agent Customer Registration Flow
+
+
+# Redesign Agent Register KYC Flow — Real-Time Status + Customer Onboarding
 
 ## Overview
 
-Transform the current simple form into a multi-step premium flow: Phone Entry → OTP Verification → Account Creation → Full KYC (NID capture, OCR, face verify, etc.) — all driven by the agent on behalf of the customer.
+After the agent submits KYC on behalf of a customer, the flow will show a **real-time KYC status tracker** that listens for admin approval/rejection. Once approved, the customer receives a download link and the agent can guide them through first login (phone → OTP → set PIN).
 
-## Flow Steps
+## Flow (Updated Steps)
 
 ```text
-┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│  Step 1:     │    │  Step 2:     │    │  Step 3:     │    │  Step 4:     │
-│  Phone Entry │───▶│  OTP Verify  │───▶│  Basic Info  │───▶│  KYC Flow    │
-│  + Send OTP  │    │  6-digit     │    │  Name + NID  │    │  (embedded)  │
-└──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
-                                                                   │
-                                                            ┌──────▼──────┐
-                                                            │  Step 5:    │
-                                                            │  Success    │
-                                                            └─────────────┘
+Phone → OTP → Info → KYC Capture → KYC Submitted (Real-time tracker)
+                                          │
+                                    ┌─────┴──────┐
+                                    │  APPROVED   │  REJECTED
+                                    ▼             ▼
+                              Download Link    Rejection reason
+                              + "Open App"     + "Retry KYC" button
+                                    │
+                                    ▼
+                              Customer Login Guide
+                              (Phone → Auto-detect OTP → Set PIN)
 ```
 
 ## Technical Details
 
-### 1. Update `send-otp` Edge Function
+### 1. AgentRegister.tsx — New post-KYC steps
 
-- Add a new purpose `"agent_register"` that skips the "phone must be registered" check (since the customer doesn't exist yet)
-- Still enforces rate limiting and returns `dev_otp` in dev mode
+Replace the simple "success" step with three new steps:
 
-### 2. Redesign `AgentRegister.tsx` (~400 lines)
+- **`kyc_waiting`**: Real-time KYC status card. Subscribes to `postgres_changes` on `kyc_verifications` table filtered by `targetUserId`. Shows animated pending spinner, live status badge (Pending → Verified/Rejected). Plays chime + confetti on approval.
 
-Complete rewrite with a multi-step stepper design:
+- **`approved`** (on verified): Shows success animation, EasyPay download link (`https://pay-palooza-go.lovable.app`), QR code for download, and a "Guide Customer Login" button to proceed.
 
-**Step 1 — Phone Entry**: Premium glassmorphic card with phone input, animated "Send OTP" button. Calls `send-otp` with `purpose: "agent_register"`. Checks if phone is already registered first.
+- **`rejected`** (on rejected): Shows rejection reason from `reviewer_notes`, option to retry KYC from NID capture step, and animated error state.
 
-**Step 2 — OTP Verification**: 6-digit OTP input using `InputOTP` component. Auto-submit on complete. Resend timer (60s countdown). Stores `dev_otp` from response for auto-fill in dev mode.
+- **`customer_login`**: A guided 3-step mini-flow showing the customer what to do after downloading:
+  1. Enter phone number (pre-filled, read-only)
+  2. OTP verification with auto-detect hint (using `OTPCredential` API where supported)
+  3. Set 4-digit PIN (with confirmation)
 
-**Step 3 — Basic Info**: Name + NID number fields (minimal). Creates the Supabase Auth account via `signUpWithPhonePassword`.
+### 2. Real-time subscription logic
 
-**Step 4 — Embedded KYC**: Renders the existing `KycFlow` component in "agent mode". Need to modify `KycFlow` to accept an optional `agentMode` prop that:
+```typescript
+// Subscribe to KYC status changes for the new customer
+const channel = supabase
+  .channel(`agent-kyc-${targetUserId}`)
+  .on("postgres_changes", {
+    event: "UPDATE",
+    schema: "public",
+    table: "kyc_verifications",
+    filter: `user_id=eq.${targetUserId}`,
+  }, (payload) => {
+    if (payload.new.status === "verified") goTo("approved");
+    if (payload.new.status === "rejected") {
+      setRejectionReason(payload.new.reviewer_notes);
+      goTo("rejected");
+    }
+  })
+  .subscribe();
+```
 
-- Skips the intro/terms steps (agent has already verified identity)
-- Uses the newly created user's ID for submission
-- Skips KYC status check (fresh account)
+### 3. OTP Auto-detect (WebOTP API)
 
-**Step 5 — Success**: Animated completion screen with customer details summary.
+For the customer login step, use the `OTPCredential` API for auto-detection:
+```typescript
+if ("OTPCredential" in window) {
+  const ac = new AbortController();
+  navigator.credentials.get({ otp: { transport: ["sms"] }, signal: ac.signal })
+    .then(otp => setOtpValue(otp.code));
+}
+```
+This shows the native "auto-fill OTP" prompt on supported Android Chrome browsers.
 
-### 3. Modify `KycFlow.tsx` (minimal changes)
+### 4. Customer PIN Setup
 
-- Add optional props: `agentMode?: boolean`, `targetUserId?: string`
-- When `agentMode` is true:
-  - Skip intro and terms steps, start directly at `nid_capture`
-  - Use `targetUserId` instead of current user for KYC submission
-  - Show "Customer KYC" labels instead of "Your KYC"
+After OTP verification, show a PIN setup screen (4-digit, with confirmation and weak-PIN validation using existing `isWeakPin`). This calls `changePin()` from `@/lib/auth` to replace the random PIN set during registration.
 
-### 4. UI Design
+### 5. UI Design
 
-- Animated step indicator (horizontal dots/progress bar) at the top
-- Each step animates in with Framer Motion slide transitions
-- Glassmorphic cards matching the app's premium visual identity
-- Spring animations on buttons and step transitions
-- Gradient header consistent with agent portal style
-- OTP input with large, spaced digit boxes and auto-focus
+- **KYC Waiting**: Pulsing gradient ring animation around a shield icon, live "Waiting for approval..." text with dot animation, elapsed time counter
+- **Approved**: Confetti burst, green gradient success card, app download QR code, prominent CTA button
+- **Rejected**: Red gradient card with `AlertTriangle` icon, rejection reason in a bordered callout, "Retry" button
+- **Customer Login Guide**: Step-by-step cards with numbered circles, auto-detect OTP badge, PIN dot indicators matching AuthPage style
 
 ## Files Changed
 
-- `supabase/functions/send-otp/index.ts` — Add `agent_register` purpose
-- `src/pages/AgentRegister.tsx` — Full rewrite with 5-step flow
-- `src/components/KycFlow.tsx` — Add `agentMode` + `targetUserId` props with conditional logic
+- `src/pages/AgentRegister.tsx` — Add `kyc_waiting`, `approved`, `rejected`, `customer_login` steps with real-time subscription, OTP auto-detect, and PIN setup
+- No changes to `KycFlow.tsx` — it already works correctly in agent mode
+
