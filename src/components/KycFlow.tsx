@@ -1106,9 +1106,14 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) { toast.error(t("notAuthenticated")); return; }
-      const userId = session.user.id;
+      let userId: string;
+      if (agentMode && targetUserId) {
+        userId = targetUserId;
+      } else {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) { toast.error(t("notAuthenticated")); setSubmitting(false); return; }
+        userId = session.user.id;
+      }
 
       // Check if this NID is already verified by another account
       if (nidNumber.trim()) {
