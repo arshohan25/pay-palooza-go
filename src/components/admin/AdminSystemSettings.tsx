@@ -191,6 +191,12 @@ function AppConfigTab() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="0.33">20 seconds</SelectItem>
+                      <SelectItem value="0.5">30 seconds</SelectItem>
+                      <SelectItem value="0.75">45 seconds</SelectItem>
+                      <SelectItem value="1">1 minute</SelectItem>
+                      <SelectItem value="2">2 minutes</SelectItem>
+                      <SelectItem value="3">3 minutes</SelectItem>
                       <SelectItem value="5">5 minutes</SelectItem>
                       <SelectItem value="10">10 minutes</SelectItem>
                       <SelectItem value="15">15 minutes</SelectItem>
