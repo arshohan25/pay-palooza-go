@@ -864,19 +864,24 @@ const ReviewDoc = ({
 );
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-interface KycFlowProps { onClose: () => void; }
+interface KycFlowProps {
+  onClose: () => void;
+  agentMode?: boolean;
+  targetUserId?: string;
+}
 
-const KycFlow = ({ onClose }: KycFlowProps) => {
+const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => {
   const { t } = useI18n();
-  const [step, setStep]         = useState<Step>("intro");
+  const [step, setStep]         = useState<Step>(agentMode ? "nid_capture" : "intro");
   const [direction, setDir]     = useState(1);
   
   // KYC existing status check
   const [kycStatus, setKycStatus] = useState<null | "pending" | "verified" | "rejected">(null);
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
-  const [statusLoading, setStatusLoading] = useState(true);
+  const [statusLoading, setStatusLoading] = useState(agentMode ? false : true);
 
   useEffect(() => {
+    if (agentMode) return; // Skip status check in agent mode
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setStatusLoading(false); return; }
@@ -895,7 +900,7 @@ const KycFlow = ({ onClose }: KycFlowProps) => {
       }
       setStatusLoading(false);
     })();
-  }, []);
+  }, [agentMode]);
 
   // NID capture states: raw = just captured (pre-crop), final = cropped
   const [nidFrontRaw, setNidFrontRaw] = useState<string | null>(null);
