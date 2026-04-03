@@ -1,22 +1,68 @@
-# Add 20-Second Minimum to Session Timeout Options
+# Redesign Agent Customer Registration Flow
 
-## What Changes
+## Overview
 
-### 1. Admin UI — Timeout dropdown options (AdminSystemSettings.tsx)
+Transform the current simple form into a multi-step premium flow: Phone Entry → OTP Verification → Account Creation → Full KYC (NID capture, OCR, face verify, etc.) — all driven by the agent on behalf of the customer.
 
-Add lower time options starting from 20 seconds before the existing 5-minute option:
+## Flow Steps
 
-- 20 seconds, 30 seconds, 45 seconds, 1 minute, 2 minutes, 3 minutes (new)
-- 5 minutes, 10 minutes, ... 8 hours (existing)
+```text
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│  Step 1:     │    │  Step 2:     │    │  Step 3:     │    │  Step 4:     │
+│  Phone Entry │───▶│  OTP Verify  │───▶│  Basic Info  │───▶│  KYC Flow    │
+│  + Send OTP  │    │  6-digit     │    │  Name + NID  │    │  (embedded)  │
+└──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
+                                                                   │
+                                                            ┌──────▼──────┐
+                                                            │  Step 5:    │
+                                                            │  Success    │
+                                                            └─────────────┘
+```
 
-The stored value will use fractional minutes (e.g., `"0.33"` for 20s, `"0.5"` for 30s).
+## Technical Details
 
-### 2. Session timeout hooks — Support sub-minute values
+### 1. Update `send-otp` Edge Function
 
-Both `use-session-timeout.ts` (team) and `use-user-session-timeout.ts` (regular users) parse the config as integer minutes via `parseInt`. Update both to use `parseFloat` so fractional minute values (like `0.33`) convert correctly to milliseconds.
+- Add a new purpose `"agent_register"` that skips the "phone must be registered" check (since the customer doesn't exist yet)
+- Still enforces rate limiting and returns `dev_otp` in dev mode
+
+### 2. Redesign `AgentRegister.tsx` (~400 lines)
+
+Complete rewrite with a multi-step stepper design:
+
+**Step 1 — Phone Entry**: Premium glassmorphic card with phone input, animated "Send OTP" button. Calls `send-otp` with `purpose: "agent_register"`. Checks if phone is already registered first.
+
+**Step 2 — OTP Verification**: 6-digit OTP input using `InputOTP` component. Auto-submit on complete. Resend timer (60s countdown). Stores `dev_otp` from response for auto-fill in dev mode.
+
+**Step 3 — Basic Info**: Name + NID number fields (minimal). Creates the Supabase Auth account via `signUpWithPhonePassword`.
+
+**Step 4 — Embedded KYC**: Renders the existing `KycFlow` component in "agent mode". Need to modify `KycFlow` to accept an optional `agentMode` prop that:
+
+- Skips the intro/terms steps (agent has already verified identity)
+- Uses the newly created user's ID for submission
+- Skips KYC status check (fresh account)
+
+**Step 5 — Success**: Animated completion screen with customer details summary.
+
+### 3. Modify `KycFlow.tsx` (minimal changes)
+
+- Add optional props: `agentMode?: boolean`, `targetUserId?: string`
+- When `agentMode` is true:
+  - Skip intro and terms steps, start directly at `nid_capture`
+  - Use `targetUserId` instead of current user for KYC submission
+  - Show "Customer KYC" labels instead of "Your KYC"
+
+### 4. UI Design
+
+- Animated step indicator (horizontal dots/progress bar) at the top
+- Each step animates in with Framer Motion slide transitions
+- Glassmorphic cards matching the app's premium visual identity
+- Spring animations on buttons and step transitions
+- Gradient header consistent with agent portal style
+- OTP input with large, spaced digit boxes and auto-focus
 
 ## Files Changed
 
-- `src/components/admin/AdminSystemSettings.tsx` — Add 20s, 30s, 45s, 1m, 2m, 3m options to the Select dropdown
-- `src/hooks/use-session-timeout.ts` — Change `parseInt` to `parseFloat`
-- `src/hooks/use-user-session-timeout.ts` — Change `parseInt` to `parseFloat`
+- `supabase/functions/send-otp/index.ts` — Add `agent_register` purpose
+- `src/pages/AgentRegister.tsx` — Full rewrite with 5-step flow
+- `src/components/KycFlow.tsx` — Add `agentMode` + `targetUserId` props with conditional logic
