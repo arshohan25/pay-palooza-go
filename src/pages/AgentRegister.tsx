@@ -17,7 +17,7 @@ import { usePhoneValidation } from "@/hooks/use-phone-validation";
 import { signUpWithPhonePassword } from "@/lib/auth";
 import { isWeakPin } from "@/lib/pinValidation";
 import { haptics } from "@/lib/haptics";
-import { fireConfetti } from "@/lib/confetti";
+import { fireSuccessConfetti } from "@/lib/confetti";
 import KycFlow from "@/components/KycFlow";
 
 type FlowStep = "phone" | "otp" | "info" | "kyc" | "kyc_waiting" | "approved" | "rejected" | "customer_login";
