@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { haptics } from "@/lib/haptics";
 import { supabase } from "@/integrations/supabase/client";
 import { requestLocation, getCachedStatus, requestContacts } from "@/lib/permissions";
-import { loadContacts as loadStoredContacts, saveContacts as saveStoredContacts, hasStoredContacts, type StoredContact } from "@/lib/contactStore";
+import { loadContacts as loadStoredContacts, saveContacts as saveStoredContacts, hasStoredContacts, getContactsWithFallback, type StoredContact } from "@/lib/contactStore";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { useFeeConfig } from "@/hooks/use-fee-config";
 import { transferMoney, getBalance } from "@/lib/balanceStore";
@@ -245,20 +245,18 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
   // Load contacts from local store on mount (no native picker)
   useEffect(() => {
-    const stored = loadStoredContacts();
-    if (stored.length > 0) {
-      const mapped: Contact[] = stored.map((c, i) => {
-        const initials = c.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase() || c.phone.slice(-2);
-        return {
-          id: `contact-${c.phone}`,
-          name: c.name,
-          phone: c.phone,
-          initials,
-          gradient: GRADIENTS[i % GRADIENTS.length],
-        };
-      });
-      setPhoneContacts(mapped);
-    }
+    const stored = getContactsWithFallback();
+    const mapped: Contact[] = stored.map((c, i) => {
+      const initials = c.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase() || c.phone.slice(-2);
+      return {
+        id: `contact-${c.phone}`,
+        name: c.name,
+        phone: c.phone,
+        initials,
+        gradient: GRADIENTS[i % GRADIENTS.length],
+      };
+    });
+    setPhoneContacts(mapped);
   }, []);
 
   const stepIndex = STEPS.indexOf(step);

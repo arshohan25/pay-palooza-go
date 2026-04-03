@@ -41,6 +41,29 @@ export function hasStoredContacts(): boolean {
   return loadContacts().length > 0;
 }
 
+// ── Seed / demo contacts (bKash-style fallback) ─────────────────────────────
+const SEED_CONTACTS: StoredContact[] = [
+  { name: "Rahim Uddin", phone: "01711223344" },
+  { name: "Fatima Akter", phone: "01811223355" },
+  { name: "Kamal Hossain", phone: "01911223366" },
+  { name: "Nasima Begum", phone: "01611223377" },
+  { name: "Arif Rahman", phone: "01511223388" },
+  { name: "Sumaiya Islam", phone: "01311223399" },
+  { name: "Jamal Miah", phone: "01411223300" },
+  { name: "Ruma Khatun", phone: "01711998877" },
+  { name: "Shakib Hasan", phone: "01811665544" },
+  { name: "Nusrat Jahan", phone: "01911332211" },
+];
+
+export function getSeedContacts(): StoredContact[] {
+  return SEED_CONTACTS;
+}
+
+export function getContactsWithFallback(): StoredContact[] {
+  const stored = loadContacts();
+  return stored.length > 0 ? stored : SEED_CONTACTS;
+}
+
 // ── Shared UI mapper ─────────────────────────────────────────────────────────
 const AVATAR_COLORS = [
   "bg-rose-100 text-rose-700",
