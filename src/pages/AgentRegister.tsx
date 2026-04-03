@@ -111,38 +111,18 @@ const AgentRegister = () => {
     try {
       const cleanedPhone = phone.replace(/\D/g, "").replace(/^(\+?88)/, "");
 
-      const { data, error } = await supabase
-        .from("otp_codes")
-        .select("id, code, expires_at, verified")
-        .eq("phone", cleanedPhone)
-        .eq("purpose", "agent_register")
-        .eq("verified", false)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const { data, error } = await supabase.functions.invoke("verify-otp", {
+        body: { phone: cleanedPhone, code: otpValue, purpose: "agent_register" },
+      });
 
       if (error) throw error;
-      if (!data) {
-        toast({ title: "Invalid OTP", description: "No pending OTP found. Please request again.", variant: "destructive" });
-        setVerifyingOtp(false);
-        return;
-      }
 
-      if (new Date(data.expires_at) < new Date()) {
-        toast({ title: "OTP Expired", description: "Please request a new OTP.", variant: "destructive" });
-        setVerifyingOtp(false);
-        return;
-      }
-
-      if (data.code !== otpValue) {
-        toast({ title: "Wrong OTP", description: "The code you entered is incorrect.", variant: "destructive" });
+      if (!data?.verified) {
+        toast({ title: "Invalid OTP", description: data?.error || "Verification failed.", variant: "destructive" });
         setOtpValue("");
         setVerifyingOtp(false);
         return;
       }
-
-      // Mark OTP as verified
-      await supabase.from("otp_codes").update({ verified: true }).eq("id", data.id);
 
       haptics.success();
       goTo("info");
