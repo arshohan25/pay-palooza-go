@@ -951,7 +951,7 @@ const KycFlow = ({ onClose, agentMode = false, targetUserId }: KycFlowProps) => 
     haptics.medium();
     if (step === "intro")           { onClose(); return; }
     if (step === "terms")           { goTo("intro", -1); return; }
-    if (step === "nid_capture")     { goTo("terms", -1); return; }
+    if (step === "nid_capture")     { agentMode ? onClose() : goTo("terms", -1); return; }
     if (step === "nid_details")     { goTo("nid_capture", -1); return; }
     if (step === "additional_info") { goTo("nid_details", -1); return; }
     if (step === "selfie")          { goTo("additional_info", -1); return; }
