@@ -20,41 +20,41 @@ import { BalanceCardSkeleton, QuickActionsSkeleton, TransactionListSkeleton } fr
 import { getCachedStatus, requestContacts, requestCamera } from "@/lib/permissions";
 import { saveContacts } from "@/lib/contactStore";
 
-// Lazy load below-fold / non-critical home components
-const AppHeader = lazy(() => import("@/components/AppHeader"));
-const BalanceCard = lazy(() => import("@/components/BalanceCard"));
-const QuickActions = lazy(() => import("@/components/QuickActions"));
-const PromoSlider = lazy(() => import("@/components/PromoSlider"));
-const TransactionList = lazy(() => import("@/components/TransactionList"));
-const SideNav = lazy(() => import("@/components/SideNav"));
-const PlatformBanner = lazy(() => import("@/components/PlatformBanner"));
-const FestivalOverlay = lazy(() => import("@/components/FestivalOverlay"));
-const SplashScreen = lazy(() => import("@/components/SplashScreen"));
-const OnboardingSlides = lazy(() => import("@/components/OnboardingSlides"));
-
-// Lazy load heavy modal/flow components (only rendered on user interaction)
-const QrScannerModal = lazy(() => import("@/components/QrScannerModal"));
-const SendMoneyFlow = lazy(() => import("@/components/SendMoneyFlow"));
-const CashOutFlow = lazy(() => import("@/components/CashOutFlow"));
-const PaymentFlow = lazy(() => import("@/components/PaymentFlow"));
-const MobileRechargeFlow = lazy(() => import("@/components/MobileRechargeFlow"));
-const PayBillFlow = lazy(() => import("@/components/PayBillFlow"));
-const AddMoneyFlow = lazy(() => import("@/components/AddMoneyFlow"));
-const BankTransferFlow = lazy(() => import("@/components/BankTransferFlow"));
-const DynamicQrPaySheet = lazy(() => import("@/components/DynamicQrPaySheet"));
-const SavingsFlow = lazy(() => import("@/components/SavingsFlow"));
-const MerchantApplicationFlow = lazy(() => import("@/components/MerchantApplicationFlow"));
-const KycFlow = lazy(() => import("@/components/KycFlow"));
 const retryImport = <T,>(fn: () => Promise<T>, retries = 2): Promise<T> =>
   fn().catch((err) => {
     if (retries > 0) return new Promise<T>((res) => setTimeout(() => res(retryImport(fn, retries - 1)), 1000));
-    // Force reload once to clear stale HMR cache
     if (!sessionStorage.getItem("chunk_reload")) {
       sessionStorage.setItem("chunk_reload", "1");
       window.location.reload();
     }
     throw err;
   });
+
+// Lazy load below-fold / non-critical home components
+const AppHeader = lazy(() => retryImport(() => import("@/components/AppHeader")));
+const BalanceCard = lazy(() => retryImport(() => import("@/components/BalanceCard")));
+const QuickActions = lazy(() => retryImport(() => import("@/components/QuickActions")));
+const PromoSlider = lazy(() => retryImport(() => import("@/components/PromoSlider")));
+const TransactionList = lazy(() => retryImport(() => import("@/components/TransactionList")));
+const SideNav = lazy(() => retryImport(() => import("@/components/SideNav")));
+const PlatformBanner = lazy(() => retryImport(() => import("@/components/PlatformBanner")));
+const FestivalOverlay = lazy(() => retryImport(() => import("@/components/FestivalOverlay")));
+const SplashScreen = lazy(() => retryImport(() => import("@/components/SplashScreen")));
+const OnboardingSlides = lazy(() => retryImport(() => import("@/components/OnboardingSlides")));
+
+// Lazy load heavy modal/flow components (only rendered on user interaction)
+const QrScannerModal = lazy(() => retryImport(() => import("@/components/QrScannerModal")));
+const SendMoneyFlow = lazy(() => retryImport(() => import("@/components/SendMoneyFlow")));
+const CashOutFlow = lazy(() => retryImport(() => import("@/components/CashOutFlow")));
+const PaymentFlow = lazy(() => retryImport(() => import("@/components/PaymentFlow")));
+const MobileRechargeFlow = lazy(() => retryImport(() => import("@/components/MobileRechargeFlow")));
+const PayBillFlow = lazy(() => retryImport(() => import("@/components/PayBillFlow")));
+const AddMoneyFlow = lazy(() => retryImport(() => import("@/components/AddMoneyFlow")));
+const BankTransferFlow = lazy(() => retryImport(() => import("@/components/BankTransferFlow")));
+const DynamicQrPaySheet = lazy(() => retryImport(() => import("@/components/DynamicQrPaySheet")));
+const SavingsFlow = lazy(() => retryImport(() => import("@/components/SavingsFlow")));
+const MerchantApplicationFlow = lazy(() => retryImport(() => import("@/components/MerchantApplicationFlow")));
+const KycFlow = lazy(() => retryImport(() => import("@/components/KycFlow")));
 
 const AuthPage = lazy(() => retryImport(() => import("@/pages/AuthPage")));
 const InboxPage = lazy(() => retryImport(() => import("@/pages/InboxPage")));

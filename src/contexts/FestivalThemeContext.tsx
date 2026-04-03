@@ -88,7 +88,7 @@ export function FestivalThemeProvider({ children }: { children: ReactNode }) {
 
         if (t.body_pattern && t.body_pattern !== "none") {
           // Lazy-load festival pattern CSS only when needed
-          import("@/styles/festival-patterns.css").then(() => {
+          import("@/styles/festival-patterns.css").catch(() => {}).then(() => {
             document.body.classList.add(`festival-body-${t.body_pattern}`);
           });
         }
