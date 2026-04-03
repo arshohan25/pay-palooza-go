@@ -237,8 +237,8 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
   const [syncingContacts, setSyncingContacts] = useState(false);
 
   useEffect(() => {
-    const stored = loadContacts();
-    if (stored.length > 0) setStoredContacts(mapStoredContactsToUI(stored));
+    const stored = getContactsWithFallback();
+    setStoredContacts(mapStoredContactsToUI(stored));
   }, []);
 
   const handleSyncContacts = async () => {

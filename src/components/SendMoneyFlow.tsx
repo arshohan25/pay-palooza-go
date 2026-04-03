@@ -245,20 +245,18 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
   // Load contacts from local store on mount (no native picker)
   useEffect(() => {
-    const stored = loadStoredContacts();
-    if (stored.length > 0) {
-      const mapped: Contact[] = stored.map((c, i) => {
-        const initials = c.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase() || c.phone.slice(-2);
-        return {
-          id: `contact-${c.phone}`,
-          name: c.name,
-          phone: c.phone,
-          initials,
-          gradient: GRADIENTS[i % GRADIENTS.length],
-        };
-      });
-      setPhoneContacts(mapped);
-    }
+    const stored = getContactsWithFallback();
+    const mapped: Contact[] = stored.map((c, i) => {
+      const initials = c.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase() || c.phone.slice(-2);
+      return {
+        id: `contact-${c.phone}`,
+        name: c.name,
+        phone: c.phone,
+        initials,
+        gradient: GRADIENTS[i % GRADIENTS.length],
+      };
+    });
+    setPhoneContacts(mapped);
   }, []);
 
   const stepIndex = STEPS.indexOf(step);
