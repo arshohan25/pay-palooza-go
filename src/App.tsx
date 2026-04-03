@@ -11,14 +11,23 @@ import FestivalBodyEffect from "@/components/FestivalBodyEffect";
 import AppLayout from "@/components/AppLayout";
 import RoleGuardLayout from "@/components/RoleGuardLayout";
 import RoleGuard from "@/components/RoleGuard";
+const retryImport = <T,>(fn: () => Promise<T>, retries = 2): Promise<T> =>
+  fn().catch((err) => {
+    if (retries > 0) return new Promise<T>((res) => setTimeout(() => res(retryImport(fn, retries - 1)), 1000));
+    if (!sessionStorage.getItem("chunk_reload")) {
+      sessionStorage.setItem("chunk_reload", "1");
+      window.location.reload();
+    }
+    throw err;
+  });
 
 // Lazy load all pages
-const Index = lazy(() => import("./pages/Index"));
-const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
-const AgentDashboard = lazy(() => import("./pages/AgentDashboard"));
-const AgentCashIn = lazy(() => import("./pages/AgentCashIn"));
-const AgentB2B = lazy(() => import("./pages/AgentB2B"));
-const AgentRegister = lazy(() => import("./pages/AgentRegister"));
+const Index = lazy(() => retryImport(() => import("./pages/Index")));
+const AdminDashboard = lazy(() => retryImport(() => import("./pages/AdminDashboard")));
+const AgentDashboard = lazy(() => retryImport(() => import("./pages/AgentDashboard")));
+const AgentCashIn = lazy(() => retryImport(() => import("./pages/AgentCashIn")));
+const AgentB2B = lazy(() => retryImport(() => import("./pages/AgentB2B")));
+const AgentRegister = lazy(() => retryImport(() => import("./pages/AgentRegister")));
 const AgentBillPay = lazy(() => import("./pages/AgentBillPay"));
 const AgentTransactionHistory = lazy(() => import("./pages/AgentTransactionHistory"));
 const AgentBankTransfer = lazy(() => import("./pages/AgentBankTransfer"));
