@@ -1,27 +1,37 @@
 
 
-# Track Performance Based on Outgoing Transactions Only
+# Fix: Contacts Not Displaying in Send Money & Recharge
 
 ## Problem
-Currently, the `get_user_performance_stats` RPC counts **all** transaction types (including incoming ones like `receive`, `cashin`, `addmoney`). Performance and badge assignment should only reflect **outgoing** activity — transactions the user actively initiates.
+Both Send Money and Mobile Recharge flows show empty contact lists because:
+1. The Contact Picker API (`navigator.contacts`) is not supported in most browsers
+2. No stored contacts exist in localStorage
+3. No prior transactions exist to populate "Recent" contacts
 
-## Outgoing Types
-`send`, `cashout`, `banktransfer`, `payment`, `recharge`, `paybill`
+bKash/Nagad/Upay native apps always show contacts because they have native access. In a web app, we need a different approach.
 
-Excluded (incoming/passive): `receive`, `cashin`, `addmoney`
+## Solution
+Add **seed/demo contacts** that always appear when no real contacts are available, giving the UI a populated look like bKash/Nagad. These will be clearly marked and serve as both demo data and quick-access shortcuts.
 
-## Changes
+### 1. Add seed contacts to `contactStore.ts`
+Create a `getSeedContacts()` function that returns a set of sample Bangladeshi contacts (e.g., "Rahim Uddin", "Fatima Akter", etc.) when no real contacts exist in localStorage. These give the UI a populated bKash-like feel.
 
-### 1. Update `get_user_performance_stats` RPC (migration)
-Add a `WHERE t2.type IN ('send','cashout','banktransfer','payment','recharge','paybill')` filter inside the lateral join so only outgoing transactions are counted for `total_txns`, `monthly_txns`, `total_volume`, `txn_breakdown`, and `last_active`.
+### 2. Update `SendMoneyFlow.tsx` — show seed contacts as fallback
+- In the `useEffect` that loads contacts, if `loadStoredContacts()` returns empty, fall back to `getSeedContacts()`
+- Show seed contacts in the "All Contacts" section so the list is never empty
+- Keep the "Allow Contact Access" card at the bottom for users to import real contacts
 
-### 2. Update badge logic label in frontend
-No code change needed — the `getBadge` function uses `total_txns` which will now reflect outgoing-only counts. The thresholds (Power: 50, Active: 20, Basic: 5) remain the same but now measure meaningful user-initiated activity.
+### 3. Update `MobileRechargeFlow.tsx` — same seed contact fallback
+- Apply the same pattern: if `loadContacts()` returns empty, use seed contacts
+- Show them in the contact list below the phone input
 
-### 3. Update activity score tooltip (optional clarity)
-Add a small note in the UI that scores are based on outgoing transactions.
+### 4. Visual treatment
+- Seed contacts render identically to real contacts (colored avatar + initials + name + phone)
+- When a user taps a seed contact, the phone number populates the input field normally
+- Once the user syncs real contacts, seeds are replaced
 
 ## Files Changed
-- **New migration** — Update `get_user_performance_stats` to filter by outgoing transaction types only
-- `src/components/admin/AdminUserPerformanceTracker.tsx` — Minor label update to clarify "outgoing transactions"
+- `src/lib/contactStore.ts` — Add `getSeedContacts()` function with sample data
+- `src/components/SendMoneyFlow.tsx` — Use seed contacts when no stored contacts exist
+- `src/components/MobileRechargeFlow.tsx` — Same seed contact fallback
 
