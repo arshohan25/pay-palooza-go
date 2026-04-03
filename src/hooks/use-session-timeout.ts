@@ -41,7 +41,7 @@ export function useSessionTimeout() {
         .maybeSingle();
 
       if (!cancelled && data?.description) {
-        const mins = parseInt(data.description, 10);
+        const mins = parseFloat(data.description);
         if (mins > 0) timeoutMinutesRef.current = mins;
       }
     };
