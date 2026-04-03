@@ -188,8 +188,8 @@ const AgentRegister = () => {
       });
 
       // Get the new user's ID from the auth response
-      if (result?.user?.id) {
-        setNewUserId(result.user.id);
+      if (result?.data?.user?.id) {
+        setNewUserId(result.data.user.id);
       }
 
       haptics.success();
