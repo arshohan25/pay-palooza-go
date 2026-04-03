@@ -146,7 +146,7 @@ const AgentRegister = () => {
           if (newStatus === "verified") {
             setKycStatus("verified");
             haptics.success();
-            fireConfetti();
+            fireSuccessConfetti();
             goTo("approved");
           } else if (newStatus === "rejected") {
             setKycStatus("rejected");
