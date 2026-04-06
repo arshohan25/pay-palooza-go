@@ -1,90 +1,40 @@
 
 
-# Redesign Agent Register KYC Flow — Real-Time Status + Customer Onboarding
+# Remove All Old Local Cache on App Start
 
-## Overview
+## What Changes
 
-After the agent submits KYC on behalf of a customer, the flow will show a **real-time KYC status tracker** that listens for admin approval/rejection. Once approved, the customer receives a download link and the agent can guide them through first login (phone → OTP → set PIN).
-
-## Flow (Updated Steps)
-
-```text
-Phone → OTP → Info → KYC Capture → KYC Submitted (Real-time tracker)
-                                          │
-                                    ┌─────┴──────┐
-                                    │  APPROVED   │  REJECTED
-                                    ▼             ▼
-                              Download Link    Rejection reason
-                              + "Open App"     + "Retry KYC" button
-                                    │
-                                    ▼
-                              Customer Login Guide
-                              (Phone → Auto-detect OTP → Set PIN)
-```
+Add a **cache version** mechanism in `src/main.tsx` that clears all legacy localStorage and sessionStorage keys when the app loads. This ensures stale data from previous versions doesn't cause issues.
 
 ## Technical Details
 
-### 1. AgentRegister.tsx — New post-KYC steps
+### 1. `src/main.tsx` — Add cache purge logic before React renders
 
-Replace the simple "success" step with three new steps:
+Add a cache version constant (e.g. `CACHE_VERSION = "2"`). On load, check `localStorage.getItem("app_cache_version")`. If it differs from the current version (or is missing), clear all localStorage and sessionStorage, then set the new version key.
 
-- **`kyc_waiting`**: Real-time KYC status card. Subscribes to `postgres_changes` on `kyc_verifications` table filtered by `targetUserId`. Shows animated pending spinner, live status badge (Pending → Verified/Rejected). Plays chime + confetti on approval.
+This removes all legacy keys like:
+- `mfs_*` (balance cache, user name, phone, photo, device fingerprint, lock attempts, etc.)
+- `easypay_*` (cart, recently viewed, pinned chats)
+- `splashDone`, `shop_wishlist`, `ezypay_phone_contacts`
+- `chunk_reload`, `festival_*`, `dismissed_announcements`
 
-- **`approved`** (on verified): Shows success animation, EasyPay download link (`https://pay-palooza-go.lovable.app`), QR code for download, and a "Guide Customer Login" button to proceed.
+After clearing, the app starts fresh — auth state comes from Supabase (not localStorage), balance fetches from DB, profile fetches from DB, etc.
 
-- **`rejected`** (on rejected): Shows rejection reason from `reviewer_notes`, option to retry KYC from NID capture step, and animated error state.
-
-- **`customer_login`**: A guided 3-step mini-flow showing the customer what to do after downloading:
-  1. Enter phone number (pre-filled, read-only)
-  2. OTP verification with auto-detect hint (using `OTPCredential` API where supported)
-  3. Set 4-digit PIN (with confirmation)
-
-### 2. Real-time subscription logic
+### 2. Logic
 
 ```typescript
-// Subscribe to KYC status changes for the new customer
-const channel = supabase
-  .channel(`agent-kyc-${targetUserId}`)
-  .on("postgres_changes", {
-    event: "UPDATE",
-    schema: "public",
-    table: "kyc_verifications",
-    filter: `user_id=eq.${targetUserId}`,
-  }, (payload) => {
-    if (payload.new.status === "verified") goTo("approved");
-    if (payload.new.status === "rejected") {
-      setRejectionReason(payload.new.reviewer_notes);
-      goTo("rejected");
-    }
-  })
-  .subscribe();
-```
-
-### 3. OTP Auto-detect (WebOTP API)
-
-For the customer login step, use the `OTPCredential` API for auto-detection:
-```typescript
-if ("OTPCredential" in window) {
-  const ac = new AbortController();
-  navigator.credentials.get({ otp: { transport: ["sms"] }, signal: ac.signal })
-    .then(otp => setOtpValue(otp.code));
+const CACHE_VERSION = "2";
+const storedVersion = localStorage.getItem("app_cache_version");
+if (storedVersion !== CACHE_VERSION) {
+  localStorage.clear();
+  sessionStorage.clear();
+  localStorage.setItem("app_cache_version", CACHE_VERSION);
 }
 ```
-This shows the native "auto-fill OTP" prompt on supported Android Chrome browsers.
 
-### 4. Customer PIN Setup
-
-After OTP verification, show a PIN setup screen (4-digit, with confirmation and weak-PIN validation using existing `isWeakPin`). This calls `changePin()` from `@/lib/auth` to replace the random PIN set during registration.
-
-### 5. UI Design
-
-- **KYC Waiting**: Pulsing gradient ring animation around a shield icon, live "Waiting for approval..." text with dot animation, elapsed time counter
-- **Approved**: Confetti burst, green gradient success card, app download QR code, prominent CTA button
-- **Rejected**: Red gradient card with `AlertTriangle` icon, rejection reason in a bordered callout, "Retry" button
-- **Customer Login Guide**: Step-by-step cards with numbered circles, auto-detect OTP badge, PIN dot indicators matching AuthPage style
+This runs synchronously before `createRoot`, so the app always starts with clean state. Future version bumps just increment the constant.
 
 ## Files Changed
 
-- `src/pages/AgentRegister.tsx` — Add `kyc_waiting`, `approved`, `rejected`, `customer_login` steps with real-time subscription, OTP auto-detect, and PIN setup
-- No changes to `KycFlow.tsx` — it already works correctly in agent mode
+- `src/main.tsx` — Add cache version check + clear before React renders
 
