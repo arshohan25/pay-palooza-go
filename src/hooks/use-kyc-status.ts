@@ -1,11 +1,27 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
 export type KycStatus = "none" | "pending" | "verified" | "rejected";
 
-/** Synthesized chime via Web Audio API — no external files needed */
+interface KycState {
+  status: KycStatus;
+  rejectionReason: string | null;
+}
+
+const EMPTY_KYC_STATE: KycState = {
+  status: "none",
+  rejectionReason: null,
+};
+
+let kycChannel: ReturnType<typeof supabase.channel> | null = null;
+let kycChannelUserId: string | null = null;
+let kycSubscribers = 0;
+let notificationPermissionRequested = false;
+let lastHandledTransitionKey: string | null = null;
+
 const playKycChime = (type: "success" | "error") => {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -14,175 +30,215 @@ const playKycChime = (type: "success" | "error") => {
 
     if (type === "success") {
       const notes = [660, 880, 1100];
-      notes.forEach((freq, i) => {
+      notes.forEach((freq, index) => {
         const osc = ctx.createOscillator();
         osc.connect(gain);
         osc.type = "sine";
-        osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.13);
-        osc.start(ctx.currentTime + i * 0.13);
-        osc.stop(ctx.currentTime + i * 0.13 + 0.12);
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + index * 0.13);
+        osc.start(ctx.currentTime + index * 0.13);
+        osc.stop(ctx.currentTime + index * 0.13 + 0.12);
       });
       gain.gain.setValueAtTime(0.15, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
     } else {
       const notes = [440, 330];
-      notes.forEach((freq, i) => {
+      notes.forEach((freq, index) => {
         const osc = ctx.createOscillator();
         osc.connect(gain);
         osc.type = "sine";
-        osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.15);
-        osc.start(ctx.currentTime + i * 0.15);
-        osc.stop(ctx.currentTime + i * 0.15 + 0.14);
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + index * 0.15);
+        osc.start(ctx.currentTime + index * 0.15);
+        osc.stop(ctx.currentTime + index * 0.15 + 0.14);
       });
       gain.gain.setValueAtTime(0.13, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
     }
-  } catch { /* Web Audio not available */ }
+  } catch {
+    // Web Audio not available
+  }
 };
 
 const fireBrowserNotification = (title: string, body: string) => {
-  if (!("Notification" in window)) return;
-  if (Notification.permission !== "granted") return;
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
   try {
-    const n = new Notification(title, {
+    const notification = new Notification(title, {
       body,
       icon: "/icons/icon-192.png",
-      tag: "kyc-status-" + Date.now(),
+      tag: `kyc-status-${Date.now()}`,
     });
-    n.onclick = () => { window.focus(); n.close(); };
-  } catch { /* not available */ }
+    notification.onclick = () => {
+      window.focus();
+      notification.close();
+    };
+  } catch {
+    // Notifications not available
+  }
 };
+
+async function fetchKycState(userId?: string): Promise<KycState> {
+  if (!userId) return EMPTY_KYC_STATE;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("kyc_exempt")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (profile?.kyc_exempt) {
+    return {
+      status: "verified",
+      rejectionReason: null,
+    };
+  }
+
+  const { data } = await supabase
+    .from("kyc_verifications")
+    .select("status, reviewer_notes")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data) return EMPTY_KYC_STATE;
+
+  const status = data.status as string;
+  if (status === "verified" || status === "pending" || status === "rejected") {
+    return {
+      status,
+      rejectionReason: status === "rejected" ? data.reviewer_notes || null : null,
+    };
+  }
+
+  return {
+    status: "pending",
+    rejectionReason: null,
+  };
+}
 
 export function useKycStatus() {
   const { user, loading: authLoading } = useAuth();
-  const [status, setStatus] = useState<KycStatus>("none");
-  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const prevStatusRef = useRef<KycStatus | null>(null);
-  const initialLoadDone = useRef(false);
 
-  // Request browser notification permission on mount
+  const query = useQuery({
+    queryKey: ["kyc-status", user?.id],
+    queryFn: () => fetchKycState(user?.id),
+    enabled: !authLoading,
+    staleTime: 30_000,
+  });
+
+  const status = query.data?.status ?? "none";
+  const rejectionReason = query.data?.rejectionReason ?? null;
+
   useEffect(() => {
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission().catch(() => {});
+    if (
+      notificationPermissionRequested ||
+      !("Notification" in window) ||
+      Notification.permission !== "default"
+    ) {
+      return;
     }
+
+    notificationPermissionRequested = true;
+    Notification.requestPermission().catch(() => {});
   }, []);
 
-  const fetchStatus = useCallback(async (silent = false) => {
-    if (authLoading) {
-      // Auth still resolving — stay in loading state
-      setLoading(true);
-      return;
-    }
-    if (!user) {
-      setStatus("none");
-      setLoading(false);
-      initialLoadDone.current = false;
-      return;
-    }
-    // Only set loading=true for the initial fetch, not background refreshes
-    if (!silent && !initialLoadDone.current) {
-      setLoading(true);
-    }
-
-    // Check if user is KYC-exempt first
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("kyc_exempt")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (profile?.kyc_exempt) {
-      setStatus("verified");
-      setRejectionReason(null);
-      setLoading(false);
-      initialLoadDone.current = true;
-      return;
-    }
-
-    const { data } = await supabase
-      .from("kyc_verifications")
-      .select("status, reviewer_notes")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (data) {
-      const s = data.status as string;
-      if (s === "verified" || s === "pending" || s === "rejected") {
-        setStatus(s);
-        if (s === "rejected") {
-          setRejectionReason(data.reviewer_notes || null);
-        } else {
-          setRejectionReason(null);
-        }
-      } else {
-        setStatus("pending");
-        setRejectionReason(null);
-      }
-    } else {
-      setStatus("none");
-      setRejectionReason(null);
-    }
-    setLoading(false);
-    initialLoadDone.current = true;
-  }, [user, authLoading]);
-
-  // Detect pending → verified / rejected transitions
   useEffect(() => {
-    if (prevStatusRef.current === "pending" && status === "verified") {
-      playKycChime("success");
-      import("@/lib/confetti").then(m => m.fireSuccessConfetti());
-      import("@/lib/haptics").then(m => m.haptics.success());
-      toast.success("Your identity has been verified! All features are now unlocked. 🎉");
-      fireBrowserNotification("KYC Approved ✅", "Your identity has been verified! All features are now unlocked.");
+    if (!user?.id) {
+      prevStatusRef.current = null;
+      return;
     }
-    if (prevStatusRef.current === "pending" && status === "rejected") {
-      playKycChime("error");
-      import("@/lib/haptics").then(m => m.haptics.error());
-      const reason = rejectionReason || "Please resubmit with correct documents.";
-      toast.error("KYC Verification Rejected", { description: reason, duration: 8000 });
-      fireBrowserNotification("KYC Rejected ❌", reason);
+
+    const previousStatus = prevStatusRef.current;
+    if (previousStatus === "pending" && (status === "verified" || status === "rejected")) {
+      const transitionKey = `${user.id}:${previousStatus}->${status}:${rejectionReason ?? ""}`;
+
+      if (lastHandledTransitionKey !== transitionKey) {
+        lastHandledTransitionKey = transitionKey;
+
+        if (status === "verified") {
+          playKycChime("success");
+          import("@/lib/confetti").then((module) => module.fireSuccessConfetti());
+          import("@/lib/haptics").then((module) => module.haptics.success());
+          toast.success("Your identity has been verified! All features are now unlocked. 🎉");
+          fireBrowserNotification(
+            "KYC Approved ✅",
+            "Your identity has been verified! All features are now unlocked."
+          );
+        } else {
+          const reason = rejectionReason || "Please resubmit with correct documents.";
+          playKycChime("error");
+          import("@/lib/haptics").then((module) => module.haptics.error());
+          toast.error("KYC Verification Rejected", {
+            description: reason,
+            duration: 8000,
+          });
+          fireBrowserNotification("KYC Rejected ❌", reason);
+        }
+      }
     }
-    if (status !== "none" || prevStatusRef.current !== null) {
+
+    if (status !== "none" || previousStatus !== null) {
       prevStatusRef.current = status;
     }
-  }, [status, rejectionReason]);
+  }, [rejectionReason, status, user?.id]);
 
   useEffect(() => {
-    fetchStatus();
-  }, [fetchStatus]);
+    if (!user?.id) return;
 
-  // Realtime: listen for KYC record updates and profile kyc_exempt changes only
-  useEffect(() => {
-    if (!user) return;
+    kycSubscribers += 1;
 
-    const channel = supabase
-      .channel("kyc-status-" + user.id)
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "kyc_verifications",
-        filter: `user_id=eq.${user.id}`,
-      }, () => {
-        fetchStatus(true); // silent — don't set loading
-      })
-      .on("postgres_changes", {
-        event: "UPDATE",
-        schema: "public",
-        table: "profiles",
-        filter: `user_id=eq.${user.id}`,
-      }, (payload: any) => {
-        // Only refetch if kyc_exempt changed, not on balance updates
-        if (payload.old?.kyc_exempt !== payload.new?.kyc_exempt) {
-          fetchStatus(true); // silent
-        }
-      })
-      .subscribe();
+    if (!kycChannel || kycChannelUserId !== user.id) {
+      if (kycChannel) {
+        supabase.removeChannel(kycChannel);
+      }
 
-    return () => { supabase.removeChannel(channel); };
-  }, [user, fetchStatus]);
+      kycChannelUserId = user.id;
+      kycChannel = supabase
+        .channel(`kyc-status-${user.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "kyc_verifications",
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => {
+            queryClient.invalidateQueries({ queryKey: ["kyc-status", user.id] });
+          }
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "profiles",
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload: any) => {
+            if (payload.old?.kyc_exempt !== payload.new?.kyc_exempt) {
+              queryClient.invalidateQueries({ queryKey: ["kyc-status", user.id] });
+            }
+          }
+        )
+        .subscribe();
+    }
 
-  return { status, loading, rejectionReason, refetch: fetchStatus };
+    return () => {
+      kycSubscribers -= 1;
+      if (kycSubscribers <= 0 && kycChannel) {
+        supabase.removeChannel(kycChannel);
+        kycChannel = null;
+        kycChannelUserId = null;
+      }
+    };
+  }, [queryClient, user?.id]);
+
+  return {
+    status,
+    loading: authLoading || query.isLoading,
+    rejectionReason,
+    refetch: () => query.refetch(),
+  };
 }

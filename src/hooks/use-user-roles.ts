@@ -1,39 +1,33 @@
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { useAuth } from "@/hooks/use-auth";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
+async function fetchUserRoles(userId?: string) {
+  if (!userId) return [] as AppRole[];
+
+  const { data } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+
+  return (data?.map((row) => row.role) ?? []) as AppRole[];
+}
+
 export function useUserRoles() {
-  const [roles, setRoles] = useState<AppRole[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user, loading: authLoading } = useAuth();
 
-  useEffect(() => {
-    const fetch = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        setRoles([]);
-        setLoading(false);
-        return;
-      }
+  const query = useQuery({
+    queryKey: ["user-roles", user?.id],
+    queryFn: () => fetchUserRoles(user?.id),
+    enabled: !!user && !authLoading,
+    staleTime: 60_000,
+  });
 
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", session.user.id);
-
-      setRoles(data?.map((r) => r.role) ?? []);
-      setLoading(false);
-    };
-
-    fetch();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      fetch();
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  return { roles, loading };
+  return {
+    roles: query.data ?? [],
+    loading: authLoading || (!!user && query.isLoading),
+  };
 }
