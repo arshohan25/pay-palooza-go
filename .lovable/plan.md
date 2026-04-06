@@ -1,40 +1,69 @@
 
 
-# Remove All Old Local Cache on App Start
+# Set Up Capacitor for Native Android APK Builds
 
-## What Changes
+## Overview
 
-Add a **cache version** mechanism in `src/main.tsx` that clears all legacy localStorage and sessionStorage keys when the app loads. This ensures stale data from previous versions doesn't cause issues.
+Configure Capacitor to wrap the existing PWA into a native Android shell, enabling APK generation for each role-specific app.
 
-## Technical Details
+## Steps
 
-### 1. `src/main.tsx` — Add cache purge logic before React renders
+### 1. Install Capacitor dependencies
 
-Add a cache version constant (e.g. `CACHE_VERSION = "2"`). On load, check `localStorage.getItem("app_cache_version")`. If it differs from the current version (or is missing), clear all localStorage and sessionStorage, then set the new version key.
+Install the required packages:
+- `@capacitor/core`
+- `@capacitor/cli` (dev dependency)
+- `@capacitor/android`
 
-This removes all legacy keys like:
-- `mfs_*` (balance cache, user name, phone, photo, device fingerprint, lock attempts, etc.)
-- `easypay_*` (cart, recently viewed, pinned chats)
-- `splashDone`, `shop_wishlist`, `ezypay_phone_contacts`
-- `chunk_reload`, `festival_*`, `dismissed_announcements`
+### 2. Initialize Capacitor
 
-After clearing, the app starts fresh — auth state comes from Supabase (not localStorage), balance fetches from DB, profile fetches from DB, etc.
-
-### 2. Logic
+Run `npx cap init` and create `capacitor.config.ts` with:
 
 ```typescript
-const CACHE_VERSION = "2";
-const storedVersion = localStorage.getItem("app_cache_version");
-if (storedVersion !== CACHE_VERSION) {
-  localStorage.clear();
-  sessionStorage.clear();
-  localStorage.setItem("app_cache_version", CACHE_VERSION);
-}
+import type { CapacitorConfig } from '@capacitor/cli';
+
+const config: CapacitorConfig = {
+  appId: 'app.lovable.904c7dc7c25743d9b10405d6719732a4',
+  appName: 'pay-palooza-go',
+  webDir: 'dist',
+  server: {
+    url: 'https://904c7dc7-c257-43d9-b104-05d6719732a4.lovableproject.com?forceHideBadge=true',
+    cleartext: true
+  }
+};
+
+export default config;
 ```
 
-This runs synchronously before `createRoot`, so the app always starts with clean state. Future version bumps just increment the constant.
+### 3. Build script for role-specific APKs
+
+Create a helper script `scripts/build-role-apk.sh` that:
+1. Copies the role-specific manifest over `manifest.json`
+2. Runs `npm run build`
+3. Runs `npx cap sync android`
+4. Outputs instructions to build the APK via Android Studio or Gradle
+
+### 4. What you need to do locally
+
+After I set this up, you will need to:
+
+1. **Export to GitHub** via the "Export to Github" button in Lovable
+2. **Clone and pull** the repo locally
+3. Run `npm install`
+4. Run `npx cap add android` to scaffold the Android project
+5. Run `npm run build && npx cap sync android`
+6. Run `npx cap open android` to open in Android Studio
+7. In Android Studio: **Build → Build APK** to generate the `.apk` file
+
+For role-specific APKs, you would change the manifest before building, or create separate Capacitor configs per role.
 
 ## Files Changed
 
-- `src/main.tsx` — Add cache version check + clear before React renders
+- `capacitor.config.ts` — New Capacitor configuration file
+- `package.json` — Add Capacitor dependencies
+- `scripts/build-role-apk.sh` — Helper script for role-specific builds
+
+## Important Note
+
+Capacitor requires **Android Studio** installed on your local machine to compile the APK. This cannot be done inside Lovable's editor. For full details, see the [Capacitor blog post](https://docs.lovable.dev/tips-tricks/native-mobile-apps).
 
