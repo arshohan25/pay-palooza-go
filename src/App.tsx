@@ -58,17 +58,7 @@ const InsurancePage = lazy(() => import("./pages/InsurancePage"));
 const GiftCardsPage = lazy(() => import("./pages/GiftCardsPage"));
 const DeveloperPortal = lazy(() => import("./pages/DeveloperPortal"));
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000,       // 5 min — avoid needless refetches
-      gcTime: 10 * 60 * 1000,          // 10 min garbage collection
-      refetchOnWindowFocus: false,     // stop refetch on every tab switch
-      refetchOnReconnect: false,
-      retry: 1,                        // single retry instead of 3
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 const LazyFallback = () => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, ShieldCheck, Clock, XCircle } from "lucide-react";
@@ -194,24 +194,23 @@ const Index = () => {
   }, [user, isAuthenticated, signOut]);
 
   // Listen for "open-feature" events from notification center
-  const featureMap = useMemo<Record<string, () => void>>(() => ({
-    "send-money": () => setShowSendMoney(true),
-    "cash-out": () => setShowCashOut(true),
-    "add-money": () => setShowAddMoney(true),
-    "mobile-recharge": () => setShowRecharge(true),
-    "pay-bill": () => setShowPayBill(true),
-    "payment": () => setShowPayment(true),
-    "bank-transfer": () => setShowBankTransfer(true),
-    "shop": () => navigate("/shop"),
-    "savings": () => setShowSavings(true),
-    "merchant-apply": () => setShowMerchantApply(true),
-    "scan-pay": () => setShowScanPay(true),
-    "kyc": () => setShowKycFlow(true),
-  }), [navigate]);
-
   useEffect(() => {
     const handler = (e: Event) => {
       const feature = (e as CustomEvent).detail as string;
+      const featureMap: Record<string, () => void> = {
+        "send-money": () => setShowSendMoney(true),
+        "cash-out": () => setShowCashOut(true),
+        "add-money": () => setShowAddMoney(true),
+        "mobile-recharge": () => setShowRecharge(true),
+        "pay-bill": () => setShowPayBill(true),
+        "payment": () => setShowPayment(true),
+        "bank-transfer": () => setShowBankTransfer(true),
+        "shop": () => navigate("/shop"),
+        "savings": () => setShowSavings(true),
+        "merchant-apply": () => setShowMerchantApply(true),
+        "scan-pay": () => setShowScanPay(true),
+        "kyc": () => setShowKycFlow(true),
+      };
       if (featureMap[feature]) {
         setActiveTab("home");
         featureMap[feature]();
@@ -219,7 +218,7 @@ const Index = () => {
     };
     window.addEventListener("open-feature", handler);
     return () => window.removeEventListener("open-feature", handler);
-  }, [featureMap]);
+  }, []);
 
   // ── Auto-request permissions after login (like bKash/Nagad) ──
   useEffect(() => {
