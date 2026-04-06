@@ -11,7 +11,11 @@ export function getCachedUser(): User | null {
 
 export async function getCachedSession(): Promise<Session | null> {
   if (_sessionResolved) return _cachedSession;
-  const { data: { session } } = await supabase.auth.getSession();
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
   _cachedSession = session;
   _sessionResolved = true;
   return session;
@@ -24,6 +28,7 @@ export async function signOut() {
   localStorage.removeItem("mfs_cached_user_id");
   localStorage.removeItem("mfs_has_authenticated");
   localStorage.removeItem("splashDone");
+
   await supabase.auth.signOut();
   _cachedSession = null;
   _sessionResolved = true;
@@ -36,29 +41,33 @@ export function useAuth() {
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      if (!mounted) return;
-      _cachedSession = s;
+    supabase.auth
+      .getSession()
+      .then(({ data: { session: restoredSession } }) => {
+        if (!mounted) return;
+        _cachedSession = restoredSession;
+        _sessionResolved = true;
+        setSession(restoredSession);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        _cachedSession = null;
+        _sessionResolved = true;
+        setSession(null);
+        setLoading(false);
+      });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      _cachedSession = nextSession;
       _sessionResolved = true;
-      setSession(s);
-      setLoading(false);
-    }).catch(() => {
+
       if (!mounted) return;
-      _sessionResolved = true;
-      setSession(null);
+      setSession(nextSession);
       setLoading(false);
     });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, newSession) => {
-        _cachedSession = newSession;
-        _sessionResolved = true;
-        if (mounted) {
-          setSession(newSession);
-          setLoading(false);
-        }
-      }
-    );
 
     return () => {
       mounted = false;
@@ -69,6 +78,7 @@ export function useAuth() {
   const handleSignOut = useCallback(async () => {
     await signOut();
     setSession(null);
+    setLoading(false);
   }, []);
 
   return {
@@ -78,4 +88,10 @@ export function useAuth() {
     isAuthenticated: !!session,
     signOut: handleSignOut,
   };
+}
+
+if (import.meta.hot) {
+  import.meta.hot.accept(() => {
+    import.meta.hot?.invalidate();
+  });
 }

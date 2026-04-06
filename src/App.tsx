@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, forwardRef } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,7 +21,6 @@ const retryImport = <T,>(fn: () => Promise<T>, retries = 2): Promise<T> =>
     throw err;
   });
 
-// Lazy load all pages
 const Index = lazy(() => retryImport(() => import("./pages/Index")));
 const AdminDashboard = lazy(() => retryImport(() => import("./pages/AdminDashboard")));
 const AgentDashboard = lazy(() => retryImport(() => import("./pages/AgentDashboard")));
@@ -61,19 +60,21 @@ const DeveloperPortal = lazy(() => import("./pages/DeveloperPortal"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30_000,        // 30s — avoid refetching on every remount
-      gcTime: 5 * 60_000,       // 5min garbage collection
+      staleTime: 30_000,
+      gcTime: 5 * 60_000,
       refetchOnWindowFocus: false,
       retry: 1,
     },
   },
 });
 
-const LazyFallback = () => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
-    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+const LazyFallback = forwardRef<HTMLDivElement>((_, ref) => (
+  <div ref={ref} className="fixed inset-0 z-50 flex items-center justify-center bg-background">
+    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
   </div>
-);
+));
+
+LazyFallback.displayName = "LazyFallback";
 
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="mfs-theme">
@@ -87,7 +88,6 @@ const App = () => (
             <BrowserRouter>
               <Suspense fallback={<LazyFallback />}>
                 <Routes>
-                  {/* User App — all consumer sub-routes nested */}
                   <Route path="/" element={<AppLayout />}>
                     <Route index element={<Index />} />
                     <Route path="shop" element={<ShopPage />} />
@@ -108,10 +108,8 @@ const App = () => (
                     <Route path="giftcards" element={<GiftCardsPage />} />
                   </Route>
 
-                  {/* Admin */}
                   <Route path="/admin" element={<RoleGuard roles={["admin", "compliance", "finance", "support", "operations", "marketing", "hr", "audit", "risk", "developer", "manager"]}><AdminDashboard /></RoleGuard>} />
 
-                  {/* Agent */}
                   <Route path="/agent" element={<RoleGuardLayout roles={["agent", "admin"]} />}>
                     <Route index element={<AgentDashboard />} />
                     <Route path="cashin" element={<AgentCashIn />} />
@@ -123,28 +121,22 @@ const App = () => (
                     <Route path="analytics" element={<AgentAnalyticsPage />} />
                   </Route>
 
-                  {/* Distributor */}
                   <Route path="/distributor" element={<RoleGuardLayout roles={["distributor", "admin"]} />}>
                     <Route index element={<DistributorDashboard />} />
                     <Route path="create-agent" element={<DistributorCreateAgent />} />
                   </Route>
 
-                  {/* Super Distributor */}
                   <Route path="/super-distributor" element={<RoleGuardLayout roles={["super_distributor", "admin"]} />}>
                     <Route index element={<SuperDistributorDashboard />} />
                     <Route path="create-distributor" element={<SuperDistributorCreateDistributor />} />
                   </Route>
 
-                  {/* Merchant */}
                   <Route path="/merchant" element={<RoleGuard roles={["merchant", "admin"]} allowStaff><MerchantDashboard /></RoleGuard>} />
 
-                  {/* Standalone top-level routes */}
                   <Route path="/team-login" element={<TeamLoginPage />} />
                   <Route path="/install" element={<RoleInstallPage />} />
                   <Route path="/install/:role" element={<RoleInstallPage />} />
                   <Route path="/developers" element={<DeveloperPortal />} />
-
-                  {/* Catch-all */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
