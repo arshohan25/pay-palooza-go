@@ -220,10 +220,10 @@ const Index = () => {
     return () => window.removeEventListener("open-feature", handler);
   }, []);
 
-  // ── Auto-request permissions after login (like bKash/Nagad) ──
+  // ── Auto-request permissions after login (deferred to not block interactivity) ──
   useEffect(() => {
     if (!isAuthenticated || !user) return;
-    const autoRequest = async () => {
+    const timeoutId = setTimeout(async () => {
       if (getCachedStatus("contacts") !== "granted") {
         try {
           const result = await requestContacts();
@@ -244,8 +244,8 @@ const Index = () => {
           }
         } catch {}
       }
-    };
-    autoRequest();
+    }, 3000); // Defer 3s so UI is interactive first
+    return () => clearTimeout(timeoutId);
   }, [isAuthenticated, user]);
 
   const triggerRefresh = useCallback(() => {
