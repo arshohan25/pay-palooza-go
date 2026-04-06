@@ -1,3 +1,12 @@
+// ── Cache version gate — clears stale localStorage/sessionStorage ──
+const CACHE_VERSION = "2";
+const storedVersion = localStorage.getItem("app_cache_version");
+if (storedVersion !== CACHE_VERSION) {
+  localStorage.clear();
+  sessionStorage.clear();
+  localStorage.setItem("app_cache_version", CACHE_VERSION);
+}
+
 import { captureInstallPrompt } from "./lib/installPromptStore";
 
 // Capture before React renders so the event is never lost
