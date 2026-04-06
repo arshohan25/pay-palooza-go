@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.904c7dc7c25743d9b10405d6719732a4',
+  appId: 'com.easypay.palooza',
   appName: 'pay-palooza-go',
   webDir: 'dist',
   server: {
