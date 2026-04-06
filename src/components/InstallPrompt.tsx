@@ -200,9 +200,9 @@ const InstallPrompt = ({ isAuthenticated = true }: { isAuthenticated?: boolean }
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center"
+                    className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center"
                   >
-                    <CheckCircle2 size={18} className="text-emerald-500" />
+                    <CheckCircle2 size={18} className="text-primary" />
                   </motion.div>
                 )}
               </div>
