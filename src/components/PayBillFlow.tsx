@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, forwardRef } from "react";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { haptics } from "@/lib/haptics";
 import { requestLocation } from "@/lib/permissions";
@@ -30,7 +30,6 @@ import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n";
 import FeatureGuard from "@/components/FeatureGuard";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
 type Step = "type" | "account" | "bill" | "pin" | "success";
 
 interface BillType {
@@ -50,7 +49,6 @@ interface Provider {
   short: string;
 }
 
-// ─── Bill catalogue ───────────────────────────────────────────────────────────
 const BILL_TYPES: BillType[] = [
   {
     id: "electricity",
@@ -61,9 +59,9 @@ const BILL_TYPES: BillType[] = [
     accountPlaceholder: "e.g. 1234567890",
     accountMaxLength: 13,
     providers: [
-      { id: "desco",  name: "DESCO",  short: "DE" },
-      { id: "dpdc",   name: "DPDC",   short: "DP" },
-      { id: "bpdb",   name: "BPDB",   short: "BP" },
+      { id: "desco", name: "DESCO", short: "DE" },
+      { id: "dpdc", name: "DPDC", short: "DP" },
+      { id: "bpdb", name: "BPDB", short: "BP" },
       { id: "wzpdcl", name: "WZPDCL", short: "WZ" },
     ],
   },
@@ -76,9 +74,9 @@ const BILL_TYPES: BillType[] = [
     accountPlaceholder: "e.g. 01-123456-00",
     accountMaxLength: 14,
     providers: [
-      { id: "titas",    name: "Titas Gas",    short: "TG" },
-      { id: "bakhrabad",name: "Bakhrabad Gas", short: "BG" },
-      { id: "jalalabad",name: "Jalalabad Gas", short: "JG" },
+      { id: "titas", name: "Titas Gas", short: "TG" },
+      { id: "bakhrabad", name: "Bakhrabad Gas", short: "BG" },
+      { id: "jalalabad", name: "Jalalabad Gas", short: "JG" },
     ],
   },
   {
@@ -90,9 +88,9 @@ const BILL_TYPES: BillType[] = [
     accountPlaceholder: "e.g. W-789012",
     accountMaxLength: 12,
     providers: [
-      { id: "wasa",   name: "WASA (Dhaka)",      short: "DW" },
-      { id: "cwasa",  name: "CWASA (Chittagong)", short: "CW" },
-      { id: "kwasa",  name: "KWASA (Khulna)",     short: "KW" },
+      { id: "wasa", name: "WASA (Dhaka)", short: "DW" },
+      { id: "cwasa", name: "CWASA (Chittagong)", short: "CW" },
+      { id: "kwasa", name: "KWASA (Khulna)", short: "KW" },
     ],
   },
   {
@@ -104,10 +102,10 @@ const BILL_TYPES: BillType[] = [
     accountPlaceholder: "e.g. ISP-100234",
     accountMaxLength: 15,
     providers: [
-      { id: "link3",      name: "Link3",          short: "L3" },
-      { id: "aamranet",   name: "Aamra Networks",  short: "AN" },
-      { id: "carnival",   name: "Carnival",        short: "CN" },
-      { id: "infoland",   name: "Infoland",        short: "IL" },
+      { id: "link3", name: "Link3", short: "L3" },
+      { id: "aamranet", name: "Aamra Networks", short: "AN" },
+      { id: "carnival", name: "Carnival", short: "CN" },
+      { id: "infoland", name: "Infoland", short: "IL" },
     ],
   },
   {
@@ -119,47 +117,55 @@ const BILL_TYPES: BillType[] = [
     accountPlaceholder: "e.g. 5678901",
     accountMaxLength: 12,
     providers: [
-      { id: "dishtv",  name: "Dish TV",      short: "DT" },
-      { id: "toffee",  name: "Toffee (BTCL)", short: "TF" },
-      { id: "akash",   name: "Akash DTH",    short: "AK" },
+      { id: "dishtv", name: "Dish TV", short: "DT" },
+      { id: "toffee", name: "Toffee (BTCL)", short: "TF" },
+      { id: "akash", name: "Akash DTH", short: "AK" },
     ],
   },
 ];
 
-// Bill amount is entered manually by the user (no mock generation)
-
 const generateTxnId = () => {
-  const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let r = "";
-  for (let i = 0; i < 12; i++) r += CHARS[Math.floor(Math.random() * 36)];
-  return r;
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let value = "";
+  for (let index = 0; index < 12; index += 1) {
+    value += chars[Math.floor(Math.random() * 36)];
+  }
+  return value;
 };
 
-// ─── Step config ─────────────────────────────────────────────────────────────
 const STEPS: Step[] = ["type", "account", "bill", "pin"];
 const STEP_LABELS: Record<Step, string> = {
-  type: "Bill Type", account: "Account", bill: "Details", pin: "PIN", success: "Done",
+  type: "Bill Type",
+  account: "Account",
+  bill: "Details",
+  pin: "PIN",
+  success: "Done",
 };
 
-// ─── Slide animation ─────────────────────────────────────────────────────────
 const slideVariants = {
-  enter: (dir: number) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0 }),
+  enter: (direction: number) => ({ x: direction > 0 ? "100%" : "-100%", opacity: 0 }),
   center: { x: 0, opacity: 1 },
-  exit:  (dir: number) => ({ x: dir < 0 ? "100%" : "-100%", opacity: 0 }),
+  exit: (direction: number) => ({ x: direction < 0 ? "100%" : "-100%", opacity: 0 }),
 };
 
-// ─── Native PIN input ─────────────────────────────────────────────────────────
-interface PinInputProps { pin: string; onChange: (p: string) => void; error: string; }
+interface PinInputProps {
+  pin: string;
+  onChange: (pin: string) => void;
+  error: string;
+}
+
 const PinInput = ({ pin, onChange, error }: PinInputProps) => (
   <div className="space-y-5">
     <div className="flex justify-center gap-4">
-      {[0,1,2,3].map((i) => (
+      {[0, 1, 2, 3].map((index) => (
         <motion.div
-          key={i}
-          animate={{ scale: pin.length > i ? 1.15 : 1 }}
+          key={index}
+          animate={{ scale: pin.length > index ? 1.15 : 1 }}
           transition={{ type: "spring", stiffness: 400, damping: 20 }}
           className={`w-5 h-5 rounded-full border-2 transition-colors ${
-            pin.length > i ? "gradient-primary border-transparent shadow-md" : "border-muted-foreground/40 bg-transparent"
+            pin.length > index
+              ? "gradient-primary border-transparent shadow-md"
+              : "border-muted-foreground/40 bg-transparent"
           }`}
         />
       ))}
@@ -175,7 +181,11 @@ const PinInput = ({ pin, onChange, error }: PinInputProps) => (
       pattern="[0-9]*"
       maxLength={4}
       value={pin}
-      onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); if (v.length > pin.length) haptics.light(); onChange(v); }}
+      onChange={(event) => {
+        const value = event.target.value.replace(/\D/g, "").slice(0, 4);
+        if (value.length > pin.length) haptics.light();
+        onChange(value);
+      }}
       autoFocus
       className="w-full h-14 text-center text-3xl font-bold tracking-[1rem] bg-card border-2 border-border rounded-2xl focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground/30"
       placeholder="••••"
@@ -183,27 +193,35 @@ const PinInput = ({ pin, onChange, error }: PinInputProps) => (
   </div>
 );
 
-// ─── PayBillFlow ─────────────────────────────────────────────────────────────
-interface PayBillFlowProps { onClose: () => void; }
+interface PayBillFlowProps {
+  onClose: () => void;
+}
 
-const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
+const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, ref) => {
   const { t } = useI18n();
-  const [step, setStep]             = useState<Step>("type");
-  const [direction, setDirection]   = useState(1);
-  const [billType, setBillType]     = useState<BillType | null>(null);
-  const [provider, setProvider]     = useState<Provider | null>(null);
-  const [accountNo, setAccountNo]   = useState("");
-  const [pin, setPin]               = useState("");
-  const [error, setError]           = useState("");
+  const [step, setStep] = useState<Step>("type");
+  const [direction, setDirection] = useState(1);
+  const [billType, setBillType] = useState<BillType | null>(null);
+  const [provider, setProvider] = useState<Provider | null>(null);
+  const [accountNo, setAccountNo] = useState("");
+  const [pin, setPin] = useState("");
+  const [error, setError] = useState("");
   const [billAmount, setBillAmount] = useState("");
-  const [showShare, setShowShare]   = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const [processing, setProcessing] = useState(false);
 
   const txnTime = useRef(new Date());
-  const txnId   = useRef(generateTxnId());
+  const txnId = useRef(generateTxnId());
 
-  useEffect(() => { if (step === "success") { fireSuccessConfetti(); addTxnNotif(); } }, [step]);
+  useEffect(() => {
+    if (step === "success") {
+      fireSuccessConfetti();
+      addTxnNotif();
+    }
+  }, [step]);
 
   const stepIndex = STEPS.indexOf(step);
+  const fee = 0;
 
   const goTo = (next: Step) => {
     haptics.medium();
@@ -214,74 +232,108 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
 
   const goBack = () => {
     haptics.medium();
-    if (step === "type")    { onClose(); return; }
-    if (step === "account") { goTo("type"); return; }
-    if (step === "bill")    { goTo("account"); return; }
-    if (step === "pin")     { setPin(""); goTo("bill"); return; }
+    if (step === "type") {
+      onClose();
+      return;
+    }
+    if (step === "account") {
+      goTo("type");
+      return;
+    }
+    if (step === "bill") {
+      goTo("account");
+      return;
+    }
+    if (step === "pin") {
+      setPin("");
+      goTo("bill");
+    }
   };
 
-  const handleSelectType = (bt: BillType) => {
-    setBillType(bt);
+  const handleSelectType = (nextBillType: BillType) => {
+    setBillType(nextBillType);
     setProvider(null);
     setAccountNo("");
     goTo("account");
   };
 
   const handleAccountContinue = () => {
-    if (!provider) { setError("Please select a provider."); return; }
+    if (!provider) {
+      setError("Please select a provider.");
+      return;
+    }
+
     const trimmed = accountNo.trim();
-    if (trimmed.length < 4) { setError(`Enter a valid ${billType?.accountLabel ?? "account number"}.`); return; }
+    if (trimmed.length < 4) {
+      setError(`Enter a valid ${billType?.accountLabel ?? "account number"}.`);
+      return;
+    }
+
     setBillAmount("");
     txnTime.current = new Date();
     txnId.current = generateTxnId();
     goTo("bill");
   };
 
-  const [processing, setProcessing] = useState(false);
   const handlePinConfirm = async () => {
-    if (pin.length < 4) { setError("Enter your 4-digit PIN."); return; }
+    if (pin.length < 4) {
+      setError("Enter your 4-digit PIN.");
+      return;
+    }
     if (processing) return;
+
     setProcessing(true);
 
-    // Verify PIN
     const pinValid = await verifyPin(pin);
-    if (!pinValid) { setError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
-
-    // Check daily limit
-    const dueAmt = parseFloat(billAmount) || 0;
-    const limitCheck = await checkDailyLimit("paybill", dueAmt);
-    if (!limitCheck.allowed) {
-      setError(`Daily limit exceeded. Used ৳${limitCheck.used.toLocaleString()} of ৳${limitCheck.limit.toLocaleString()} today.`);
+    if (!pinValid) {
+      setError("Incorrect PIN. Please try again.");
+      setPin("");
       setProcessing(false);
       return;
     }
 
-    // Silently capture location for fraud detection
+    const dueAmount = parseFloat(billAmount) || 0;
+    const limitCheck = await checkDailyLimit("paybill", dueAmount);
+    if (!limitCheck.allowed) {
+      setError(
+        `Daily limit exceeded. Used ৳${limitCheck.used.toLocaleString()} of ৳${limitCheck.limit.toLocaleString()} today.`
+      );
+      setProcessing(false);
+      return;
+    }
+
     requestLocation().catch(() => {});
     haptics.success();
+
     await recordTransaction({
       type: "paybill",
-      amount: dueAmt,
+      amount: dueAmount,
       fee: 0,
       recipientName: `${provider?.name} - ${billType?.name}`,
       description: `${billType?.name} bill - ${provider?.name} (${accountNo})`,
       reference: txnId.current,
     });
-    showTxnToast({ type: "Bill Payment", amount: `৳${dueAmt.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-primary" });
+
+    showTxnToast({
+      type: "Bill Payment",
+      amount: `৳${dueAmount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
+      gradient: "gradient-primary",
+    });
+
     setDirection(1);
     setStep("success");
+    setProcessing(false);
   };
-
-  const FEE = 0; // bill payments are free
 
   return (
     <motion.div
+      ref={ref}
       initial={{ y: "100%" }}
       animate={{ y: 0 }}
       exit={{ y: "100%" }}
       transition={{ type: "spring", stiffness: 500, damping: 40 }}
-      className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
-      {/* Header */}
+      className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto"
+    >
       {step !== "success" && (
         <motion.div
           className="gradient-primary px-4 pt-3 pb-3 text-primary-foreground"
@@ -311,7 +363,6 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
         </motion.div>
       )}
 
-      {/* Animated content */}
       <div className="flex-1 overflow-hidden relative">
         <AnimatePresence custom={direction} mode="wait">
           <motion.div
@@ -324,27 +375,25 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
             transition={{ type: "spring", stiffness: 320, damping: 32 }}
             className="absolute inset-0 overflow-y-auto scrollbar-none"
           >
-
-            {/* ── STEP 1: Bill Type ── */}
             {step === "type" && (
               <div className="px-4 pt-6 pb-32 space-y-3">
                 <p className="text-sm font-semibold text-foreground mb-4">{t("selectBillType")}</p>
-                {BILL_TYPES.map((bt) => {
-                  const Icon = bt.icon;
+                {BILL_TYPES.map((item) => {
+                  const Icon = item.icon;
                   return (
                     <motion.button
-                      key={bt.id}
+                      key={item.id}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => handleSelectType(bt)}
+                      onClick={() => handleSelectType(item)}
                       className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card border border-border shadow-card hover:shadow-elevated active:scale-[0.98] transition-all text-left"
                     >
-                      <div className={`${bt.gradient} w-12 h-12 rounded-xl flex items-center justify-center text-white shrink-0`}>
+                      <div className={`${item.gradient} w-12 h-12 rounded-xl flex items-center justify-center text-white shrink-0`}>
                         <Icon size={22} strokeWidth={2} />
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-bold text-foreground">{bt.name}</p>
+                        <p className="text-sm font-bold text-foreground">{item.name}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {bt.providers.map((p) => p.name).join(" · ")}
+                          {item.providers.map((providerItem) => providerItem.name).join(" · ")}
                         </p>
                       </div>
                       <ChevronRight size={18} className="text-muted-foreground shrink-0" />
@@ -354,10 +403,8 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
               </div>
             )}
 
-            {/* ── STEP 2: Provider + Account ── */}
             {step === "account" && billType && (
               <div className="px-4 pt-6 pb-32 space-y-5">
-                {/* Bill type pill */}
                 <div className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border shadow-card">
                   <div className={`${billType.gradient} w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0`}>
                     <billType.icon size={18} strokeWidth={2} />
@@ -368,16 +415,18 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
                   </div>
                 </div>
 
-                {/* Provider selection */}
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-foreground">{t("selectProvider")}</label>
                   <div className="grid grid-cols-2 gap-2">
-                    {billType.providers.map((p) => {
-                      const selected = provider?.id === p.id;
+                    {billType.providers.map((providerItem) => {
+                      const selected = provider?.id === providerItem.id;
                       return (
                         <button
-                          key={p.id}
-                          onClick={() => { setProvider(p); setError(""); }}
+                          key={providerItem.id}
+                          onClick={() => {
+                            setProvider(providerItem);
+                            setError("");
+                          }}
                           className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
                             selected
                               ? "border-primary bg-primary/5 shadow-card"
@@ -385,9 +434,9 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
                           }`}
                         >
                           <div className={`${billType.gradient} w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs shrink-0`}>
-                            {p.short}
+                            {providerItem.short}
                           </div>
-                          <span className="text-xs font-semibold text-foreground leading-tight">{p.name}</span>
+                          <span className="text-xs font-semibold text-foreground leading-tight">{providerItem.name}</span>
                           {selected && <CheckCircle2 size={14} className="text-primary ml-auto shrink-0" />}
                         </button>
                       );
@@ -395,7 +444,6 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
                   </div>
                 </div>
 
-                {/* Account number */}
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-foreground">{billType.accountLabel}</label>
                   <Input
@@ -404,8 +452,13 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
                     placeholder={billType.accountPlaceholder}
                     value={accountNo}
                     maxLength={billType.accountMaxLength}
-                    onChange={(e) => { setAccountNo(e.target.value); setError(""); }}
-                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+                    onChange={(event) => {
+                      setAccountNo(event.target.value);
+                      setError("");
+                    }}
+                    onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
+                      if (event.key === "Enter") event.currentTarget.blur();
+                    }}
                     className="h-12 text-base bg-card border-border font-mono tracking-wider"
                   />
                   {error && (
@@ -424,52 +477,49 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
               </div>
             )}
 
-            {/* ── STEP 3: Bill details ── */}
             {step === "bill" && billType && provider && (
               <div className="px-4 pt-6 pb-32 space-y-5">
-                {/* Available balance & daily limit */}
                 <div className="flex justify-end">
                   <div className="flex flex-col items-end gap-0.5">
                     <AvailableBalanceBadge />
                     <DailyLimitBadge txnType="paybill" />
                   </div>
                 </div>
-                {/* Summary card */}
-                <div className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
-                  {/* Colored top bar */}
-                  <div className={`${billType.gradient} px-5 py-4 text-white`}>
+
+                <div className="rounded-3xl bg-card border border-border shadow-card overflow-hidden">
+                  <div className={`${billType.gradient} p-4 text-white`}>
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-                        <billType.icon size={18} strokeWidth={2} />
+                      <div className="w-11 h-11 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center shrink-0">
+                        <billType.icon size={22} strokeWidth={2} />
                       </div>
                       <div>
-                        <p className="text-xs text-white/70">{provider.name}</p>
-                        <p className="text-sm font-bold">{billType.name} Bill</p>
+                        <p className="text-xs text-white/75">{provider.name}</p>
+                        <p className="text-base font-extrabold">{billType.name} Bill</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Details */}
-                  <div className="px-5 py-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">Account No.</span>
-                      <span className="text-xs font-semibold text-foreground">{accountNo}</span>
+                  <div className="p-4 space-y-4">
+                    <div className="rounded-2xl bg-muted/50 border border-border px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">{billType.accountLabel}</p>
+                      <p className="text-base font-bold text-foreground mt-0.5">{accountNo}</p>
                     </div>
 
-                    <div className="border-t border-border pt-3 mt-1 space-y-2">
+                    <div className="space-y-2">
                       <label className="text-sm font-semibold text-foreground">Enter Bill Amount</label>
-                      <div className="relative flex items-center">
-                        <span className="absolute left-4 text-2xl font-bold text-muted-foreground">৳</span>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          placeholder="0"
-                          value={billAmount}
-                          onChange={(e) => { const v = e.target.value; if (v === "" || /^\d*\.?\d*$/.test(v)) { setBillAmount(v); setError(""); } }}
-                          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                          className="w-full pl-10 pr-4 h-16 text-3xl font-bold text-foreground bg-card border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                      </div>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        min="1"
+                        step="1"
+                        value={billAmount}
+                        onChange={(event) => {
+                          setBillAmount(event.target.value);
+                          setError("");
+                        }}
+                        placeholder="e.g. 1250"
+                        className="h-12 text-lg font-semibold"
+                      />
                       {error && (
                         <p className="text-xs text-destructive flex items-center gap-1">
                           <AlertCircle size={12} /> {error}
@@ -477,132 +527,130 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">Service Fee</span>
-                      <span className="text-xs font-semibold text-primary">Free</span>
+                    <div className="rounded-2xl border border-border divide-y divide-border bg-muted/30 overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-3 text-sm">
+                        <span className="text-muted-foreground">Bill Amount</span>
+                        <span className="font-bold text-foreground">৳{(parseFloat(billAmount) || 0).toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between px-4 py-3 text-sm">
+                        <span className="text-muted-foreground">Fee</span>
+                        <span className="font-bold text-foreground">Free</span>
+                      </div>
+                      <div className="flex items-center justify-between px-4 py-3 text-sm">
+                        <span className="text-muted-foreground">Total</span>
+                        <span className="font-extrabold text-lg text-foreground">৳{((parseFloat(billAmount) || 0) + fee).toLocaleString()}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                {/* Info note */}
-                <div className="flex items-start gap-2 px-1">
-                  <FileText size={14} className="text-muted-foreground mt-0.5 shrink-0" />
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Payment will be deducted from your wallet balance. A confirmation SMS will be sent to your registered number.
-                  </p>
                 </div>
 
                 <Button
                   className="w-full h-11 gradient-primary border-0 text-white font-semibold"
                   onClick={() => {
-                    const val = parseFloat(billAmount);
-                    if (!billAmount || isNaN(val) || val <= 0) { setError("Enter a valid bill amount."); return; }
+                    if ((parseFloat(billAmount) || 0) <= 0) {
+                      setError("Enter a valid bill amount.");
+                      return;
+                    }
                     goTo("pin");
                   }}
-                  disabled={!billAmount || parseFloat(billAmount) <= 0}
                 >
-                  Pay ৳{(parseFloat(billAmount) || 0).toLocaleString()}
+                  {t("continue")}
                 </Button>
               </div>
             )}
 
-            {/* ── STEP 4: PIN ── */}
-            {step === "pin" && billType && (
-              <div className="px-4 pt-8 pb-32 space-y-8">
-                <div className="text-center space-y-1">
-                  <p className="text-base font-bold text-foreground">{t("confirmPayment")}</p>
+            {step === "pin" && (
+              <div className="px-4 pt-8 pb-32 space-y-6">
+                <div className="text-center space-y-2">
+                  <div className="mx-auto w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center text-white shadow-card">
+                    <FileText size={24} />
+                  </div>
+                  <h2 className="text-xl font-extrabold text-foreground">Confirm payment</h2>
                   <p className="text-sm text-muted-foreground">
-                    Paying <span className="font-semibold text-foreground">৳{(parseFloat(billAmount) || 0).toLocaleString()}</span> for {billType.name} bill
+                    Enter your PIN to pay ৳{((parseFloat(billAmount) || 0) + fee).toLocaleString()} to {provider?.name}
                   </p>
                 </div>
-                <PinInput pin={pin} onChange={(p) => { setPin(p); setError(""); }} error={error} />
-                <div className="px-4">
-                  <SlideToConfirm
-                    onConfirm={handlePinConfirm}
-                    label={t("slideToPayBill")}
-                    gradient="gradient-primary"
-                    disabled={pin.length < 4 || processing}
-                    pinComplete={pin.length === 4}
-                    icon={Zap}
-                  />
-                </div>
+
+                <PinInput
+                  pin={pin}
+                  onChange={(value) => {
+                    setPin(value);
+                    setError("");
+                  }}
+                  error={error}
+                />
+
+                <SlideToConfirm
+                  disabled={pin.length < 4 || processing}
+                  onConfirm={handlePinConfirm}
+                  label={processing ? "Processing..." : `Slide to pay ৳${((parseFloat(billAmount) || 0) + fee).toLocaleString()}`}
+                />
               </div>
             )}
 
-            {/* ── SUCCESS ── */}
-            {step === "success" && billType && provider && (
-              <div className="px-4 pt-10 pb-20 flex flex-col items-center gap-6">
-                {/* Success icon */}
-                <motion.div
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  className={`${billType.gradient} w-24 h-24 rounded-full flex items-center justify-center shadow-elevated`}
-                >
-                  <CheckCircle2 size={48} className="text-white" />
-                </motion.div>
+            {step === "success" && (
+              <div className="px-4 pt-10 pb-10 min-h-full flex flex-col justify-between">
+                <div className="space-y-6">
+                  <div className="text-center space-y-3">
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                      className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center"
+                    >
+                      <CheckCircle2 className="w-10 h-10 text-primary" />
+                    </motion.div>
+                    <div>
+                      <h2 className="text-2xl font-extrabold text-foreground">Bill paid successfully</h2>
+                      <p className="text-sm text-muted-foreground mt-1">Your utility payment has been completed instantly.</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-3xl bg-card border border-border shadow-card overflow-hidden">
+                    <div className={`${billType?.gradient ?? "gradient-primary"} p-5 text-white text-center`}>
+                      <p className="text-xs uppercase tracking-[0.18em] text-white/75">Total Paid</p>
+                      <p className="text-4xl font-extrabold mt-1">৳{(parseFloat(billAmount) || 0).toLocaleString()}</p>
+                    </div>
+
+                    <div className="p-4 divide-y divide-border/70">
+                      {[
+                        { label: "Bill Type", value: `${billType?.name ?? ""} (${provider?.name ?? ""})` },
+                        { label: "Account No.", value: accountNo },
+                        { label: "Fee", value: "Free" },
+                        {
+                          label: "Date",
+                          value: txnTime.current.toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          }),
+                        },
+                        {
+                          label: "Time",
+                          value: txnTime.current.toLocaleTimeString("en-US", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                          }),
+                        },
+                        { label: "Transaction ID", value: txnId.current },
+                      ].map((row) => (
+                        <div key={row.label} className="py-3 flex items-start justify-between gap-3">
+                          <span className="text-sm text-muted-foreground">{row.label}</span>
+                          <span className="text-sm font-semibold text-foreground text-right break-all">{row.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
 
                 <motion.div
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ y: 24, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.15 }}
-                  className="text-center space-y-1"
-                >
-                  <p className="text-2xl font-extrabold text-foreground">{t("paymentSuccessfulBill")}</p>
-                  <p className="text-sm text-muted-foreground">{billType.name} bill paid to {provider.name}</p>
-                </motion.div>
-
-                {/* Receipt */}
-                <motion.div
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.25 }}
-                  className="w-full rounded-2xl border border-border bg-card shadow-card overflow-hidden"
-                >
-                  {/* Amount band */}
-                  <div className={`${billType.gradient} px-5 py-5 text-center text-white`}>
-                    <p className="text-xs text-white/70 mb-1">Amount Paid</p>
-                    <p className="text-4xl font-extrabold">৳{(parseFloat(billAmount) || 0).toLocaleString()}</p>
-                  </div>
-
-                  {/* Receipt rows */}
-                  <div className="px-5 py-4 space-y-3">
-                    {[
-                      { label: "Bill Type",    value: `${billType.name} (${provider.name})` },
-                      { label: "Account No.",  value: accountNo },
-                      { label: "Amount",      value: `৳${(parseFloat(billAmount) || 0).toLocaleString()}` },
-                      { label: "Service Fee",  value: FEE === 0 ? "Free" : `৳${FEE}` },
-                      { label: "Fee Source",   value: "N/A (Free)" },
-                      { label: "Transaction ID",value: txnId.current },
-                      {
-                        label: "Date & Time",
-                        value: txnTime.current.toLocaleString("en-GB", {
-                          day: "2-digit", month: "short", year: "numeric",
-                          hour: "2-digit", minute: "2-digit",
-                        }),
-                      },
-                      { label: "Status",       value: "✓ Paid" },
-                    ].map(({ label, value }) => (
-                      <div key={label} className="flex items-center justify-between gap-3">
-                        <span className="text-xs text-muted-foreground shrink-0">{label}</span>
-                        <span className={`text-xs font-semibold text-right break-all ${
-                          label === "Status" ? "text-primary" : "text-foreground"
-                        }`}>{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.35 }}
                   className="w-full space-y-3"
                 >
-                  <Button
-                    className="w-full h-11 gradient-primary border-0 text-white font-semibold"
-                    onClick={onClose}
-                  >
+                  <Button className="w-full h-11 gradient-primary border-0 text-white font-semibold" onClick={onClose}>
                     {t("done")}
                   </Button>
                   <Button variant="outline" className="w-full h-11" onClick={() => setShowShare(true)}>
@@ -611,12 +659,10 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
                 </motion.div>
               </div>
             )}
-
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* Share Receipt Sheet */}
       <ShareReceiptSheet
         open={showShare}
         onClose={() => setShowShare(false)}
@@ -630,20 +676,37 @@ const PayBillFlow = ({ onClose }: PayBillFlowProps) => {
             { label: "Account No.", value: accountNo },
             { label: "Amount", value: `৳${(parseFloat(billAmount) || 0).toLocaleString()}` },
             { label: "Fee", value: "Free" },
-            { label: "Date", value: txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) },
-            { label: "Time", value: txnTime.current.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) },
+            {
+              label: "Date",
+              value: txnTime.current.toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              }),
+            },
+            {
+              label: "Time",
+              value: txnTime.current.toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              }),
+            },
           ],
         }}
       />
     </motion.div>
   );
-};
+});
 
-const PayBillFlowGuarded = (props: PayBillFlowProps) => (
+PayBillFlow.displayName = "PayBillFlow";
+
+const PayBillFlowGuarded = forwardRef<HTMLDivElement, PayBillFlowProps>((props, ref) => (
   <FeatureGuard featureKey="pay_bill" onClose={props.onClose}>
-    <PayBillFlow {...props} />
+    <PayBillFlow {...props} ref={ref} />
   </FeatureGuard>
-);
+));
+
+PayBillFlowGuarded.displayName = "PayBillFlowGuarded";
 
 export default PayBillFlowGuarded;
-
