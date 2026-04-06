@@ -95,14 +95,11 @@ export function FestivalThemeProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    // Defer festival theme fetch to not block TTI
-    if ("requestIdleCallback" in window) {
-      (window as any).requestIdleCallback(fetchTheme);
-    } else {
-      setTimeout(fetchTheme, 200);
-    }
+    // Defer festival theme fetch to not block TTI — use longer delay
+    const timeoutId = setTimeout(fetchTheme, 2000);
 
     return () => {
+      clearTimeout(timeoutId);
       clearPalette();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
