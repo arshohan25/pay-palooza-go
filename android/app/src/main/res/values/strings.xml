@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">pay-palooza-go</string>
-    <string name="title_activity_main">pay-palooza-go</string>
+    <string name="app_name">EasyPay</string>
+    <string name="title_activity_main">EasyPay</string>
     <string name="package_name">com.easypay.palooza</string>
     <string name="custom_url_scheme">com.easypay.palooza</string>
 </resources>
