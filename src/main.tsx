@@ -29,9 +29,29 @@ document.addEventListener("keydown", (e) => {
 
 createRoot(document.getElementById("root")!).render(<App />);
 
-// Register service worker after page becomes interactive (non-blocking)
-if ("serviceWorker" in navigator) {
+// Initialize native Capacitor plugins
+import("./lib/capacitorInit").then((m) => m.initCapacitorPlugins());
+
+// Register service worker only in browser (not in native Capacitor shell)
+const isNative = (() => {
+  try { return !!(window as any).Capacitor?.isNativePlatform?.(); } catch { return false; }
+})();
+
+const isInIframe = (() => {
+  try { return window.self !== window.top; } catch { return true; }
+})();
+
+const isPreviewHost =
+  window.location.hostname.includes("id-preview--") ||
+  window.location.hostname.includes("lovableproject.com");
+
+if ("serviceWorker" in navigator && !isNative && !isInIframe && !isPreviewHost) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js", { scope: "/" });
+  });
+} else if (isNative || isInIframe || isPreviewHost) {
+  // Unregister any stale service workers in native/preview contexts
+  navigator.serviceWorker?.getRegistrations().then((regs) => {
+    regs.forEach((r) => r.unregister());
   });
 }
