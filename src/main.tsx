@@ -29,14 +29,7 @@ document.addEventListener("keydown", (e) => {
 
 createRoot(document.getElementById("root")!).render(<App />);
 
-// Initialize native Capacitor plugins
-import("./lib/capacitorInit").then((m) => m.initCapacitorPlugins());
-
-// Register service worker only in browser (not in native Capacitor shell)
-const isNative = (() => {
-  try { return !!(window as any).Capacitor?.isNativePlatform?.(); } catch { return false; }
-})();
-
+// Register service worker
 const isInIframe = (() => {
   try { return window.self !== window.top; } catch { return true; }
 })();
@@ -45,12 +38,12 @@ const isPreviewHost =
   window.location.hostname.includes("id-preview--") ||
   window.location.hostname.includes("lovableproject.com");
 
-if ("serviceWorker" in navigator && !isNative && !isInIframe && !isPreviewHost) {
+if ("serviceWorker" in navigator && !isInIframe && !isPreviewHost) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js", { scope: "/" });
   });
-} else if (isNative || isInIframe || isPreviewHost) {
-  // Unregister any stale service workers in native/preview contexts
+} else if (isInIframe || isPreviewHost) {
+  // Unregister any stale service workers in preview contexts
   navigator.serviceWorker?.getRegistrations().then((regs) => {
     regs.forEach((r) => r.unregister());
   });
