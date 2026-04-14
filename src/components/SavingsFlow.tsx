@@ -230,15 +230,18 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     if (!amt || amt <= 0) { setError("Enter a valid amount"); return; }
     if (amt > balance) { setError("Insufficient balance"); return; }
     if (!selectedGoal) { setError("Select a savings goal"); return; }
-    setProcessing(true); setError("");
+    if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
+    setProcessing(true); setError(""); setPinError("");
     try {
+      const pinValid = await verifyPin(pin);
+      if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
       const { data, error: rpcError } = await supabase.rpc("savings_deposit", { p_goal_id: selectedGoal.id, p_amount: amt, p_source: "manual" });
       if (rpcError) throw rpcError;
       const result = typeof data === "string" ? JSON.parse(data) : data;
       await fetchBalance();
       if (result.goal_completed) { fireSuccessConfetti(); toast.success(`🎉 "${selectedGoal.name}" goal completed!`); }
       else { toast.success(`৳${amt.toLocaleString()} saved to "${selectedGoal.name}"`); }
-      setStep("home"); setAmount(""); setSelectedGoal(null);
+      setStep("home"); setAmount(""); setSelectedGoal(null); setPin("");
     } catch (err: any) { setError(err.message || "Failed to save"); }
     finally { setProcessing(false); }
   };
@@ -268,9 +271,12 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     const amt = parseFloat(autoAmount);
     if (!amt || amt <= 0) { setError("Select or enter an amount"); return; }
     if (!termsAccepted) { setError("Please accept Terms & Conditions"); return; }
+    if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
     if (!user) return;
-    setProcessing(true); setError("");
+    setProcessing(true); setError(""); setPinError("");
     try {
+      const pinValid = await verifyPin(pin);
+      if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
       const nextRun = new Date();
       if (autoFreq === "daily") nextRun.setDate(nextRun.getDate() + 1);
       else if (autoFreq === "weekly") nextRun.setDate(nextRun.getDate() + 7);
@@ -283,7 +289,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       if (insertErr) throw insertErr;
       fireSuccessConfetti();
       toast.success("Auto-save + investment plan activated!");
-      setAutoAmount(""); setAutoCustom(false); setTermsAccepted(false); loadAutoSaves();
+      setAutoAmount(""); setAutoCustom(false); setTermsAccepted(false); setPin(""); loadAutoSaves();
     } catch (err: any) { setError(err.message || "Failed to create schedule"); }
     finally { setProcessing(false); }
   };
