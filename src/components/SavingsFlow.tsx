@@ -132,6 +132,10 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTermsSheet, setShowTermsSheet] = useState(false);
 
+  // ─── PIN state (shared across all confirm actions) ────────
+  const [pin, setPin] = useState("");
+  const [pinError, setPinError] = useState("");
+
   // ─── Gold state ────────
   const [goldStep, setGoldStep] = useState<GoldStep>("portfolio");
   const [goldHolding, setGoldHolding] = useState<GoldHolding>(() => {
