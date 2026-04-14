@@ -9,7 +9,7 @@ import {
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings, FileText,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
   Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck, Image, Bell, Shield, Star, Building2, Megaphone, CalendarClock,
-  ShoppingBag, Heart, Bot,
+  ShoppingBag, Heart, Bot, Sparkles,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -118,6 +118,7 @@ import AdminFraudAutoRules from "@/components/admin/AdminFraudAutoRules";
 import AdminLoanManagement from "@/components/admin/AdminLoanManagement";
 import AdminInsuranceManagement from "@/components/admin/AdminInsuranceManagement";
 import AdminGiftCardManagement from "@/components/admin/AdminGiftCardManagement";
+import AdminAiAgent from "@/components/admin/AdminAiAgent";
 import AdminProfileEditor from "@/components/admin/AdminProfileEditor";
 import AdminUserPerformanceTracker from "@/components/admin/AdminUserPerformanceTracker";
 import { useSupportNotifications } from "@/hooks/use-support-notifications";
@@ -323,6 +324,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
     label: "⭐ Pro Fintech",
     pro: true,
     items: [
+      { id: "ai_agent", label: "AI Agent", icon: Sparkles },
       { id: "ai_fraud", label: "AI Fraud", icon: ShieldCheck },
       { id: "auto_rules", label: "Auto Rules", icon: Bot },
       { id: "geo_tracking", label: "Geo Track", icon: Building2 },
@@ -1803,6 +1805,9 @@ export default function AdminDashboard() {
 
         {/* ═══ LOYALTY POINTS ═══ */}
         {activeTab === "loyalty" && <AdminLoyaltyPoints />}
+
+        {/* ═══ AI USER AGENT ═══ */}
+        {activeTab === "ai_agent" && <AdminAiAgent />}
 
         {/* ═══ AI FRAUD DETECTION ═══ */}
         {activeTab === "ai_fraud" && <AdminAiFraudDetection />}
