@@ -107,6 +107,14 @@ Deno.serve(async (req) => {
       },
     });
 
+    // Log PIN change history
+    await adminClient.from("pin_change_history").insert({
+      user_id: targetUserId,
+      change_type: "admin_reset",
+      method: "admin_panel",
+      changed_by: adminId,
+    });
+
     return new Response(
       JSON.stringify({ success: true, message: "PIN reset successfully" }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
