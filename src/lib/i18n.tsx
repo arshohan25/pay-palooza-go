@@ -337,7 +337,7 @@ const translations = {
   expiry: { en: "Expiry", bn: "মেয়াদ" },
   detectedOperator: { en: "Detected operator", bn: "শনাক্তকৃত অপারেটর" },
   unknownOperator: { en: "Unknown operator", bn: "অজানা অপারেটর" },
-  browseByOperator: { en: "Browse by operator", bn: "অপারেটর দিয়ে ব্রাউজ" },
+  browseByOperator: { en: "Browse Package & Special Offer", bn: "প্যাকেজ ও বিশেষ অফার ব্রাউজ করুন" },
   recharging: { en: "Recharging", bn: "রিচার্জ হচ্ছে" },
   rechargeSuccessful: { en: "Recharge Successful!", bn: "রিচার্জ সফল!" },
   scanAgentQr: { en: "Scan Agent QR", bn: "এজেন্ট কিউআর স্ক্যান" },
