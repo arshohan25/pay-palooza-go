@@ -6,7 +6,6 @@ import {
   ShoppingBag, Coffee, Gamepad2, Music, Tv, Plane,
   Heart, BookOpen, Shirt, Fuel, Smartphone, Sparkles,
   Palette, Dumbbell, GraduationCap, Utensils, Layers,
-  ChevronDown, ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +14,7 @@ import { useKycStatus } from "@/hooks/use-kyc-status";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAiRewards } from "@/hooks/use-ai-rewards";
 import AiRewardBanner from "@/components/AiRewardBanner";
 
@@ -68,7 +68,6 @@ const GiftCardsPage = () => {
   const [cards, setCards] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"buy" | "my">("buy");
-  const [showAllCategories, setShowAllCategories] = useState(false);
   const { rewards: aiGiftRewards, claimReward } = useAiRewards("gift_card");
 
   useEffect(() => {
@@ -118,7 +117,6 @@ const GiftCardsPage = () => {
   };
 
   const selectedBrand = BRANDS.find(b => b.id === brand) || BRANDS[0];
-  const visibleBrands = showAllCategories ? BRANDS : BRANDS.slice(0, 9);
 
   return (
     <div className="min-h-screen bg-background">
@@ -162,51 +160,34 @@ const GiftCardsPage = () => {
             <motion.div key="buy" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }} className="space-y-5">
 
-              {/* Category Selection */}
+              {/* Category Dropdown */}
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-bold text-foreground tracking-tight">Select Category</p>
-                  <Badge variant="outline" className="text-[10px] font-medium px-2 py-0.5 bg-primary/5 text-primary border-primary/20">
-                    {BRANDS.length - 1} categories
-                  </Badge>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {visibleBrands.map((b, idx) => {
-                    const isSelected = brand === b.id;
-                    return (
-                      <motion.button key={b.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: idx * 0.02 }} whileTap={{ scale: 0.95 }} onClick={() => setBrand(b.id)}
-                        className={`relative flex flex-col items-center gap-1 p-2 pb-2.5 rounded-2xl text-xs font-semibold transition-all overflow-hidden h-[88px] ${
-                          isSelected ? "ring-2 ring-primary shadow-lg shadow-primary/20" : "ring-1 ring-border/30 hover:ring-border/60"
-                        }`}>
-                        {/* Background image */}
-                        <img src={b.img} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
-                        {/* Dark overlay for text readability */}
-                        <div className={`absolute inset-0 ${isSelected ? "bg-black/30" : "bg-black/50"} transition-all`} />
-
-                        <div className={`relative z-10 w-7 h-7 rounded-lg flex items-center justify-center mt-1 ${
-                          isSelected ? "bg-white/30 backdrop-blur-sm" : "bg-white/20 backdrop-blur-sm"
-                        }`}>
-                          <b.icon className="w-3.5 h-3.5 text-white" />
+                <p className="text-sm font-bold text-foreground tracking-tight mb-2">Select Category</p>
+                <Select value={brand} onValueChange={setBrand}>
+                  <SelectTrigger className="w-full rounded-2xl h-12 bg-muted/30 ring-1 ring-border/30 text-sm font-semibold backdrop-blur">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl overflow-hidden shrink-0 ring-1 ring-border/20">
+                        <img src={selectedBrand.img} alt="" className="w-full h-full object-cover" />
+                      </div>
+                      <SelectValue placeholder="Choose a category" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl max-h-[320px]">
+                    {BRANDS.map(b => (
+                      <SelectItem key={b.id} value={b.id} className="rounded-xl py-2.5 px-3 cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 ring-1 ring-border/20">
+                            <img src={b.img} alt="" className="w-full h-full object-cover" />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <b.icon className="w-3.5 h-3.5 text-muted-foreground" />
+                            <span className="text-sm font-medium">{b.name}</span>
+                          </div>
                         </div>
-                        <span className="relative z-10 truncate w-full text-center leading-tight text-[10px] text-white font-bold drop-shadow-md">
-                          {b.id === "all" ? "All" : b.name}
-                        </span>
-
-                        {isSelected && (
-                          <div className="absolute inset-0 bg-gradient-to-t from-primary/30 via-transparent to-transparent pointer-events-none z-[5]" />
-                        )}
-                      </motion.button>
-                    );
-                  })}
-                </div>
-
-                {BRANDS.length > 9 && (
-                  <motion.button whileTap={{ scale: 0.97 }} onClick={() => setShowAllCategories(!showAllCategories)}
-                    className="w-full mt-2 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1 bg-muted/30 ring-1 ring-border/20">
-                    {showAllCategories ? <>Show Less <ChevronUp className="w-3.5 h-3.5" /></> : <>Show All {BRANDS.length - 1} Categories <ChevronDown className="w-3.5 h-3.5" /></>}
-                  </motion.button>
-                )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Universal info */}
@@ -223,21 +204,21 @@ const GiftCardsPage = () => {
                 </motion.div>
               )}
 
-              {/* Denomination */}
+              {/* Amount Dropdown */}
               <div>
-                <p className="text-sm font-bold text-foreground tracking-tight mb-3">Select Amount</p>
-                <div className="flex flex-wrap gap-2">
-                  {DENOMINATIONS.map(d => (
-                    <motion.button key={d} whileTap={{ scale: 0.93 }} onClick={() => setDenomination(d)}
-                      className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                        denomination === d
-                          ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 ring-2 ring-primary/30"
-                          : "bg-muted/50 text-muted-foreground ring-1 ring-border/30 hover:ring-border/60"
-                      }`}>
-                      ৳{d.toLocaleString()}
-                    </motion.button>
-                  ))}
-                </div>
+                <p className="text-sm font-bold text-foreground tracking-tight mb-2">Select Amount</p>
+                <Select value={String(denomination)} onValueChange={v => setDenomination(Number(v))}>
+                  <SelectTrigger className="w-full rounded-2xl h-12 bg-muted/30 ring-1 ring-border/30 text-sm font-bold backdrop-blur">
+                    <SelectValue placeholder="Choose amount" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl">
+                    {DENOMINATIONS.map(d => (
+                      <SelectItem key={d} value={String(d)} className="rounded-xl py-2.5 px-3 cursor-pointer text-sm font-semibold">
+                        ৳{d.toLocaleString()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Preview Card with real image */}
