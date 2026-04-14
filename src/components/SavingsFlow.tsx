@@ -268,9 +268,14 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   };
 
   const handleDeleteGoal = async (goalId: string) => {
+    if (deletePin.length < 4) { setDeletePinError("Enter your 4-digit PIN"); return; }
+    setDeleting(true); setDeletePinError("");
+    const pinValid = await verifyPin(deletePin);
+    if (!pinValid) { setDeletePinError("Incorrect PIN"); setDeletePin(""); setDeleting(false); return; }
     const { error } = await supabase.from("savings_goals").delete().eq("id", goalId);
-    if (error) { toast.error("Failed to delete goal"); return; }
+    if (error) { toast.error("Failed to delete goal"); setDeleting(false); return; }
     toast.success("Goal deleted"); loadGoals();
+    setDeleteTarget(null); setDeletePin(""); setDeleting(false);
   };
 
   const handleCreateAutoSave = async () => {
@@ -306,8 +311,13 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   };
 
   const deleteAutoSave = async (id: string) => {
+    if (deletePin.length < 4) { setDeletePinError("Enter your 4-digit PIN"); return; }
+    setDeleting(true); setDeletePinError("");
+    const pinValid = await verifyPin(deletePin);
+    if (!pinValid) { setDeletePinError("Incorrect PIN"); setDeletePin(""); setDeleting(false); return; }
     await supabase.from("savings_auto_save").delete().eq("id", id);
     loadAutoSaves(); toast.success("Schedule removed");
+    setDeleteTarget(null); setDeletePin(""); setDeleting(false);
   };
 
   // ─── Gold handlers ────────
@@ -554,7 +564,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                           <div className="flex items-center gap-1">
                             {goal.status === "completed" ? <CheckCircle2 size={20} className="text-primary shrink-0" />
                               : <button onClick={() => { setSelectedGoal(goal); setStep("add"); }}><ChevronRight size={16} className="text-muted-foreground/50 shrink-0" /></button>}
-                            <button onClick={() => handleDeleteGoal(goal.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 size={14} /></button>
+                            <button onClick={() => { setDeleteTarget({ type: "goal", id: goal.id, label: goal.name }); setDeletePin(""); setDeletePinError(""); }} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 size={14} /></button>
                           </div>
                         </div>
                         <div className="h-2 rounded-full bg-muted overflow-hidden">
@@ -832,7 +842,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                             )}
                           </div>
                           {!schedule.settled && <Switch checked={schedule.is_active} onCheckedChange={() => toggleAutoSave(schedule.id, schedule.is_active)} />}
-                          <button onClick={() => deleteAutoSave(schedule.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 size={14} /></button>
+                          <button onClick={() => { setDeleteTarget({ type: "auto", id: schedule.id, label: `৳${Number(schedule.amount).toLocaleString()} ${schedule.frequency}` }); setDeletePin(""); setDeletePinError(""); }} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 size={14} /></button>
                         </div>
                       </div>
                     );
