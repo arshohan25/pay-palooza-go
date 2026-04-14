@@ -98,6 +98,7 @@ const priorityColors: Record<string, string> = {
 export default function AdminAiAgent() {
   const [analysisData, setAnalysisData] = useState<AgentResponse | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [autoApplying, setAutoApplying] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>("recommendations");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -122,6 +123,19 @@ export default function AdminAiAgent() {
       toast.error(e.message || "Analysis failed");
     } finally {
       setAnalyzing(false);
+    }
+  };
+
+  const runAutoRewards = async () => {
+    setAutoApplying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("auto-user-rewards", { body: {} });
+      if (error) throw error;
+      toast.success(`Auto-applied ${data.rewards_generated} rewards to ${data.users_analyzed} users`);
+    } catch (e: any) {
+      toast.error(e.message || "Auto-reward failed");
+    } finally {
+      setAutoApplying(false);
     }
   };
 
@@ -182,6 +196,19 @@ export default function AdminAiAgent() {
             >
               <MessageCircle className="h-3.5 w-3.5 mr-1.5" />
               {showChat ? "Dashboard" : "Chat"}
+            </Button>
+            <Button
+              size="sm"
+              onClick={runAutoRewards}
+              disabled={autoApplying}
+              className="bg-white/15 hover:bg-white/25 text-white border-0 backdrop-blur-sm"
+            >
+              {autoApplying ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <Target className="h-3.5 w-3.5 mr-1.5" />
+              )}
+              {autoApplying ? "Applying…" : "Auto Rewards"}
             </Button>
             <Button
               size="sm"
