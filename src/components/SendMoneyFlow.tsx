@@ -651,7 +651,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                       value={inputVal}
                       onChange={(e) => handleInputChange(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                      className="w-full pl-10 pr-11 h-12 text-sm bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-[hsl(330_80%_55%)]/50 placeholder:text-muted-foreground/60 transition-all"
+                      className="w-full pl-10 pr-20 h-12 text-sm bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-[hsl(330_80%_55%)]/50 placeholder:text-muted-foreground/60 transition-all"
                       autoFocus
                     />
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
