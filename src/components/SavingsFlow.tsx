@@ -5,7 +5,7 @@ import {
   ArrowLeft, Plus, TrendingUp, TrendingDown, CheckCircle2, ChevronRight,
   Trash2, Clock, CalendarClock, Power, Gem, BarChart3, Wallet,
   ArrowUpRight, ArrowDownRight, ShieldCheck, Coins, LineChart,
-  RefreshCw, Sparkles, Target, PiggyBank, CircleDollarSign
+  RefreshCw, Sparkles, Target, CircleDollarSign
 } from "lucide-react";
 import { toast } from "sonner";
 import { getBalance, onBalanceChange, fetchBalance } from "@/lib/balanceStore";
