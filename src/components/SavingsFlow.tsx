@@ -307,33 +307,39 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   // ─── Gold handlers ────────
   const currentGoldPrice = goldKarat === "24k" ? MOCK_GOLD_24K_PRICE : MOCK_GOLD_PRICE;
 
-  const handleBuyGold = () => {
+  const handleBuyGold = async () => {
     const grams = parseFloat(goldGrams);
     if (!grams || grams <= 0) { setError("Enter valid grams"); return; }
     const cost = Math.round(grams * currentGoldPrice);
     if (cost > balance) { setError("Insufficient balance"); return; }
-    setProcessing(true);
+    if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
+    setProcessing(true); setPinError("");
+    const pinValid = await verifyPin(pin);
+    if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
     setTimeout(() => {
       const totalGrams = goldHolding.grams + grams;
       const totalCost = (goldHolding.grams * goldHolding.avgBuyPrice) + cost;
       setGoldHolding({ grams: totalGrams, avgBuyPrice: Math.round(totalCost / totalGrams) });
       fireSuccessConfetti();
       toast.success(`🪙 Purchased ${grams}g gold for ৳${cost.toLocaleString()}`);
-      setGoldGrams(""); setGoldStep("portfolio"); setError(""); setProcessing(false);
+      setGoldGrams(""); setGoldStep("portfolio"); setError(""); setProcessing(false); setPin("");
     }, 1200);
   };
 
-  const handleSellGold = () => {
+  const handleSellGold = async () => {
     const grams = parseFloat(goldGrams);
     if (!grams || grams <= 0) { setError("Enter valid grams"); return; }
     if (grams > goldHolding.grams) { setError("Insufficient gold balance"); return; }
-    setProcessing(true);
+    if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
+    setProcessing(true); setPinError("");
+    const pinValid = await verifyPin(pin);
+    if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
     setTimeout(() => {
       const revenue = Math.round(grams * currentGoldPrice);
       const remaining = goldHolding.grams - grams;
       setGoldHolding({ grams: remaining, avgBuyPrice: remaining > 0 ? goldHolding.avgBuyPrice : 0 });
       toast.success(`💰 Sold ${grams}g gold for ৳${revenue.toLocaleString()}`);
-      setGoldGrams(""); setGoldStep("portfolio"); setError(""); setProcessing(false);
+      setGoldGrams(""); setGoldStep("portfolio"); setError(""); setProcessing(false); setPin("");
     }, 1200);
   };
 
