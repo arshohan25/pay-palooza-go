@@ -160,6 +160,12 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
 
+  // ─── Delete confirmation state ────────
+  const [deleteTarget, setDeleteTarget] = useState<{ type: "goal" | "auto"; id: string; label: string } | null>(null);
+  const [deletePin, setDeletePin] = useState("");
+  const [deletePinError, setDeletePinError] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
   // ─── Gold state ────────
   const [goldStep, setGoldStep] = useState<GoldStep>("portfolio");
   const [goldHolding, setGoldHolding] = useState<GoldHolding>(() => {
