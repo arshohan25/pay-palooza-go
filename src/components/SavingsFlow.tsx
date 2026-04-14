@@ -348,13 +348,16 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const goldProfitPct = goldHolding.avgBuyPrice > 0 ? ((MOCK_GOLD_PRICE - goldHolding.avgBuyPrice) / goldHolding.avgBuyPrice * 100) : 0;
 
   // ─── Stock handlers ────────
-  const handleBuyStock = () => {
+  const handleBuyStock = async () => {
     if (!selectedStock) return;
     const qty = parseInt(stockQty);
     if (!qty || qty <= 0) { setError("Enter valid quantity"); return; }
     const cost = Math.round(qty * selectedStock.price);
     if (cost > balance) { setError("Insufficient balance"); return; }
-    setProcessing(true);
+    if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
+    setProcessing(true); setPinError("");
+    const pinValid = await verifyPin(pin);
+    if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
     setTimeout(() => {
       setStockHoldings(prev => {
         const existing = prev.find(h => h.symbol === selectedStock.symbol);
@@ -369,17 +372,20 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       });
       fireSuccessConfetti();
       toast.success(`📈 Bought ${qty} ${selectedStock.symbol} for ৳${cost.toLocaleString()}`);
-      setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setError(""); setProcessing(false);
+      setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setError(""); setProcessing(false); setPin("");
     }, 1200);
   };
 
-  const handleSellStock = () => {
+  const handleSellStock = async () => {
     if (!selectedStock) return;
     const qty = parseInt(stockQty);
     const holding = stockHoldings.find(h => h.symbol === selectedStock.symbol);
     if (!qty || qty <= 0) { setError("Enter valid quantity"); return; }
     if (!holding || qty > holding.qty) { setError("Insufficient shares"); return; }
-    setProcessing(true);
+    if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
+    setProcessing(true); setPinError("");
+    const pinValid = await verifyPin(pin);
+    if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
     setTimeout(() => {
       setStockHoldings(prev => prev.map(h => {
         if (h.symbol !== selectedStock.symbol) return h;
@@ -388,7 +394,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       }).filter(Boolean));
       const revenue = Math.round(qty * selectedStock.price);
       toast.success(`💰 Sold ${qty} ${selectedStock.symbol} for ৳${revenue.toLocaleString()}`);
-      setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setError(""); setProcessing(false);
+      setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setError(""); setProcessing(false); setPin("");
     }, 1200);
   };
 
