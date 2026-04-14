@@ -36,7 +36,7 @@ const BRANDS = [
   { id: "art", name: "Art & Craft", icon: Palette, color: "from-purple-400 to-violet-600" },
 ];
 
-const DENOMINATIONS = [100, 250, 500, 1000, 2000];
+const DENOMINATIONS = [50, 100, 250, 500, 1000, 2000, 5000];
 
 const GiftCardsPage = () => {
   const navigate = useNavigate();
