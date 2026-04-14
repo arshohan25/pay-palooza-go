@@ -35,6 +35,7 @@ const AppHeader = lazy(() => retryImport(() => import("@/components/AppHeader"))
 const BalanceCard = lazy(() => retryImport(() => import("@/components/BalanceCard")));
 const QuickActions = lazy(() => retryImport(() => import("@/components/QuickActions")));
 const PromoSlider = lazy(() => retryImport(() => import("@/components/PromoSlider")));
+const AiPersonalOffers = lazy(() => retryImport(() => import("@/components/AiPersonalOffers")));
 const TransactionList = lazy(() => retryImport(() => import("@/components/TransactionList")));
 const SideNav = lazy(() => retryImport(() => import("@/components/SideNav")));
 const PlatformBanner = lazy(() => retryImport(() => import("@/components/PlatformBanner")));
@@ -339,6 +340,7 @@ const Index = () => {
                 onSavings={() => setShowSavings(true)}
               />
               
+              <AiPersonalOffers />
               <PromoSlider onFeatureOpen={(feature) => {
                 const map: Record<string, () => void> = {
                   sendmoney: () => setShowSendMoney(true),
