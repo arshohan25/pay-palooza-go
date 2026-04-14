@@ -1,5 +1,5 @@
 // ── Cache version gate — clears stale localStorage/sessionStorage ──
-const CACHE_VERSION = "3";
+const CACHE_VERSION = "4";
 const storedVersion = localStorage.getItem("app_cache_version");
 if (storedVersion !== CACHE_VERSION) {
   localStorage.clear();
