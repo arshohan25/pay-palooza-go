@@ -117,7 +117,6 @@ const GiftCardsPage = () => {
   };
 
   const selectedBrand = BRANDS.find(b => b.id === brand) || BRANDS[0];
-  const visibleBrands = showAllCategories ? BRANDS : BRANDS.slice(0, 9);
 
   return (
     <div className="min-h-screen bg-background">
