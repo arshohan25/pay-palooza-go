@@ -795,7 +795,6 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
 
                 <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
                 <SlideToConfirm onConfirm={handleCreateAutoSave} label={processing ? "Creating…" : "Slide to Start Plan"} disabled={pin.length < 4 || processing || !termsAccepted} pinComplete={pin.length === 4 && termsAccepted} />
-                </motion.button>
               </div>
 
               {/* Existing schedules */}
