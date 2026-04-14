@@ -3181,6 +3181,39 @@ export type Database = {
         }
         Relationships: []
       }
+      pin_change_history: {
+        Row: {
+          change_type: string
+          changed_by: string | null
+          created_at: string
+          device_info: string | null
+          id: string
+          ip_address: unknown
+          method: string
+          user_id: string
+        }
+        Insert: {
+          change_type?: string
+          changed_by?: string | null
+          created_at?: string
+          device_info?: string | null
+          id?: string
+          ip_address?: unknown
+          method?: string
+          user_id: string
+        }
+        Update: {
+          change_type?: string
+          changed_by?: string | null
+          created_at?: string
+          device_info?: string | null
+          id?: string
+          ip_address?: unknown
+          method?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pin_reset_attempts: {
         Row: {
           attempted_at: string
