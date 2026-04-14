@@ -104,6 +104,30 @@ type StockStep = "market" | "portfolio" | "trade";
 
 interface SavingsFlowProps { onClose: () => void; }
 
+// ─── Reusable PIN input ─────────────────────────────────────────────
+const SavingsPinInput = ({ pin, onChange, error }: { pin: string; onChange: (p: string) => void; error: string }) => (
+  <div className="space-y-3">
+    <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground text-center">Enter PIN to Confirm</p>
+    <div className="flex justify-center gap-3">
+      {[0, 1, 2, 3].map((i) => (
+        <motion.div key={i} animate={{ scale: pin.length > i ? 1.15 : 1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 20 }}
+          className={`w-4 h-4 rounded-full border-2 transition-colors ${pin.length > i ? "bg-primary border-transparent" : "border-muted-foreground/40 bg-transparent"}`}
+        />
+      ))}
+    </div>
+    {error && (
+      <p className="text-xs text-destructive flex items-center justify-center gap-1">
+        <AlertCircle size={12} /> {error}
+      </p>
+    )}
+    <input type="password" inputMode="numeric" pattern="[0-9]*" maxLength={4} value={pin}
+      onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); if (v.length > pin.length) haptics.light(); onChange(v); }}
+      className="w-full h-14 text-center text-3xl font-bold tracking-[1rem] bg-card border-2 border-border rounded-2xl focus:outline-none focus:border-primary transition-colors"
+      placeholder="••••" />
+  </div>
+);
+
 const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const { t } = useI18n();
   const { user } = useAuth();
