@@ -274,6 +274,14 @@ export async function changePin(newPin: string) {
     password: pinToPassword(newPin),
   });
   if (error) throw error;
+
+  // Log PIN change history
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    await supabase.functions.invoke("log-pin-change", {
+      body: { change_type: "self_change", method: "manual" },
+    });
+  }
 }
 
 /** Get user profile */

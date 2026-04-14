@@ -147,6 +147,13 @@ Deno.serve(async (req) => {
       .order("attempted_at", { ascending: false })
       .limit(1);
 
+    // Log PIN change history
+    await supabaseAdmin.from("pin_change_history").insert({
+      user_id: profile.user_id,
+      change_type: "forgot_pin",
+      method: "otp_verified",
+    });
+
     return new Response(
       JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

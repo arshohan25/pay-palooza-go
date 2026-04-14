@@ -9,7 +9,7 @@ import {
   LayoutDashboard, UserCog, Receipt, AlertTriangle, Settings, FileText,
   ChevronLeft, Coins, Scale, BarChart3, MessageCircle, Lock, RotateCcw, Package, CreditCard, ToggleRight, Smartphone,
   Menu, ScanFace, Gift, Award, Wallet, Radio, Plug, ShieldCheck, Image, Bell, Shield, Star, Building2, Megaphone, CalendarClock,
-  ShoppingBag, Heart, Bot, Sparkles,
+  ShoppingBag, Heart, Bot, Sparkles, Key,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -104,6 +104,7 @@ import AdminComplaintManager from "@/components/admin/AdminComplaintManager";
 import AdminDeviceManager from "@/components/admin/AdminDeviceManager";
 import AdminAutoSaveMonitor from "@/components/admin/AdminAutoSaveMonitor";
 import AdminOtpMonitor from "@/components/admin/AdminOtpMonitor";
+import AdminPinHistory from "@/components/admin/AdminPinHistory";
 import AdminCommissionLedger from "@/components/admin/AdminCommissionLedger";
 import AdminAnnouncementManager from "@/components/admin/AdminAnnouncementManager";
 import AdminBlacklistManager from "@/components/admin/AdminBlacklistManager";
@@ -307,6 +308,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "webhooks", label: "Webhooks", icon: Activity },
       { id: "devices", label: "Devices", icon: Smartphone },
       { id: "otp_monitor", label: "OTP Monitor", icon: ShieldAlert },
+      { id: "pin_history", label: "PIN History", icon: Key },
       { id: "sessions", label: "Sessions", icon: Users },
       { id: "sys_health", label: "Health", icon: Activity },
     ],
@@ -1871,6 +1873,9 @@ export default function AdminDashboard() {
 
         {/* ═══ OTP MONITOR ═══ */}
         {activeTab === "otp_monitor" && <AdminOtpMonitor />}
+
+        {/* ═══ PIN HISTORY ═══ */}
+        {activeTab === "pin_history" && <AdminPinHistory />}
 
         {/* ═══ COMMISSION LEDGER ═══ */}
         {activeTab === "commission_ledger" && <AdminCommissionLedger />}
