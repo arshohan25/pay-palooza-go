@@ -6,7 +6,7 @@ import {
   Trash2, Clock, CalendarClock, Power, Gem, BarChart3, Wallet,
   ArrowUpRight, ArrowDownRight, ShieldCheck, Coins, LineChart,
   RefreshCw, Sparkles, Target, CircleDollarSign, FileText, Lock,
-  AlertTriangle, X, ChevronDown, Gift
+  AlertTriangle, X, ChevronDown, Gift, AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { getBalance, onBalanceChange, fetchBalance } from "@/lib/balanceStore";
@@ -16,6 +16,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { verifyPin } from "@/lib/verifyPin";
+import SlideToConfirm from "@/components/SlideToConfirm";
+import { haptics } from "@/lib/haptics";
 
 // ─── Types ───────────────────────────────────────────────────────────
 interface SavingsGoal {

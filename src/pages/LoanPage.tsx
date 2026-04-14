@@ -8,8 +8,11 @@ import {
   Percent, ArrowUpRight, Info, PiggyBank, BarChart3, RefreshCw, Target,
   CircleDollarSign, BadgeCheck, Timer, ArrowDownRight, Receipt, Star,
   Gauge, Shield, Eye, EyeOff, DollarSign, CalendarClock, Ban, Heart,
-  HandCoins, Scale
+  HandCoins, Scale, AlertCircle, Lock
 } from "lucide-react";
+import { verifyPin } from "@/lib/verifyPin";
+import SlideToConfirm from "@/components/SlideToConfirm";
+import { haptics } from "@/lib/haptics";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
