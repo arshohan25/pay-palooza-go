@@ -588,17 +588,8 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       placeholder="017X-XXXX-XXXX"
                       value={formatPhone(phone)}
                       onChange={(e) => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 11)); setError(""); }}
-                      className="pl-9 pr-12 h-12 text-base bg-card border-border tracking-wide"
+                      className="pl-9 h-12 text-base bg-card border-border tracking-wide"
                     />
-                    <button
-                      type="button"
-                      onClick={handleSyncContacts}
-                      disabled={syncingContacts}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-accent/50 active:scale-95 transition-all"
-                      title="Pick from contacts"
-                    >
-                      <Contact2 size={18} className="text-primary" />
-                    </button>
                   </div>
 
                   {/* Live operator detection badge */}
