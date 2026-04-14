@@ -104,6 +104,7 @@ import AdminComplaintManager from "@/components/admin/AdminComplaintManager";
 import AdminDeviceManager from "@/components/admin/AdminDeviceManager";
 import AdminAutoSaveMonitor from "@/components/admin/AdminAutoSaveMonitor";
 import AdminOtpMonitor from "@/components/admin/AdminOtpMonitor";
+import AdminPinHistory from "@/components/admin/AdminPinHistory";
 import AdminCommissionLedger from "@/components/admin/AdminCommissionLedger";
 import AdminAnnouncementManager from "@/components/admin/AdminAnnouncementManager";
 import AdminBlacklistManager from "@/components/admin/AdminBlacklistManager";
