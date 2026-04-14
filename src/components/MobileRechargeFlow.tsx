@@ -588,8 +588,17 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       placeholder="017X-XXXX-XXXX"
                       value={formatPhone(phone)}
                       onChange={(e) => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 11)); setError(""); }}
-                      className="pl-9 h-12 text-base bg-card border-border tracking-wide"
+                      className="pl-9 pr-12 h-12 text-base bg-card border-border tracking-wide"
                     />
+                    <button
+                      type="button"
+                      onClick={handleSyncContacts}
+                      disabled={syncingContacts}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-accent/50 active:scale-95 transition-all"
+                      title="Pick from contacts"
+                    >
+                      <Contact2 size={18} className="text-primary" />
+                    </button>
                   </div>
 
                   {/* Live operator detection badge */}
@@ -628,18 +637,8 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                     </p>
                   )}
 
-                  {/* ── Contact list (Rocket/bKash style) ── */}
-                  {storedContacts.length === 0 ? (
-                    <button
-                      type="button"
-                      onClick={handleSyncContacts}
-                      disabled={syncingContacts}
-                      className="w-full h-14 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-3 text-sm font-semibold text-muted-foreground hover:text-foreground hover:border-primary/50 hover:bg-primary/5 active:scale-[0.98] transition-all"
-                    >
-                      <Contact2 size={18} />
-                      {syncingContacts ? "Importing…" : "Allow Contact Access"}
-                    </button>
-                  ) : (
+                  {/* ── Contact list ── */}
+                  {storedContacts.length === 0 ? null : (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Contacts</p>
