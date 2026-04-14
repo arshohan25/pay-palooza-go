@@ -68,7 +68,6 @@ const GiftCardsPage = () => {
   const [cards, setCards] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"buy" | "my">("buy");
-  const [showAllCategories, setShowAllCategories] = useState(false);
   const { rewards: aiGiftRewards, claimReward } = useAiRewards("gift_card");
 
   useEffect(() => {
