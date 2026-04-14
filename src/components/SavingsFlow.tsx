@@ -793,11 +793,8 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
 
                 {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
 
-                <motion.button whileTap={{ scale: 0.96 }} onClick={handleCreateAutoSave}
-                  disabled={processing || !termsAccepted}
-                  className="w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg disabled:opacity-40"
-                  style={{ background: "linear-gradient(135deg, hsl(162 72% 32%), hsl(178 62% 22%))" }}>
-                  {processing ? "Creating…" : "Start Savings Plan"}
+                <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
+                <SlideToConfirm onConfirm={handleCreateAutoSave} label={processing ? "Creating…" : "Slide to Start Plan"} disabled={pin.length < 4 || processing || !termsAccepted} pinComplete={pin.length === 4 && termsAccepted} />
                 </motion.button>
               </div>
 
@@ -969,10 +966,8 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 )}
                 {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
               </div>
-              <motion.button whileTap={{ scale: 0.96 }} onClick={goldStep === "buy" ? handleBuyGold : handleSellGold} disabled={processing}
-                className={`w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg disabled:opacity-60 ${goldStep === "buy" ? "bg-gradient-to-r from-amber-500 to-amber-600" : "bg-gradient-to-r from-amber-600 to-amber-700"}`}>
-                {processing ? <RefreshCw size={18} className="animate-spin mx-auto" /> : goldStep === "buy" ? "Confirm Purchase" : "Confirm Sale"}
-              </motion.button>
+              <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
+              <SlideToConfirm onConfirm={goldStep === "buy" ? handleBuyGold : handleSellGold} label={processing ? "Processing…" : goldStep === "buy" ? "Slide to Buy Gold" : "Slide to Sell Gold"} disabled={pin.length < 4 || processing} pinComplete={pin.length === 4} />
             </motion.div>
           )}
 
@@ -1153,10 +1148,8 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 )}
                 {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
               </div>
-              <motion.button whileTap={{ scale: 0.96 }} onClick={stockAction === "buy" ? handleBuyStock : handleSellStock} disabled={processing}
-                className={`w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg disabled:opacity-60 ${stockAction === "buy" ? "bg-gradient-to-r from-emerald-500 to-emerald-600" : "bg-gradient-to-r from-red-500 to-red-600"}`}>
-                {processing ? <RefreshCw size={18} className="animate-spin mx-auto" /> : stockAction === "buy" ? "Place Buy Order" : "Place Sell Order"}
-              </motion.button>
+              <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
+              <SlideToConfirm onConfirm={stockAction === "buy" ? handleBuyStock : handleSellStock} label={processing ? "Processing…" : stockAction === "buy" ? "Slide to Buy" : "Slide to Sell"} disabled={pin.length < 4 || processing} pinComplete={pin.length === 4} />
             </motion.div>
           )}
         </AnimatePresence>
