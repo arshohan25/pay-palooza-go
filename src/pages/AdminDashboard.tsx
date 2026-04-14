@@ -308,6 +308,7 @@ const DEFAULT_NAV_GROUPS: NavGroup[] = [
       { id: "webhooks", label: "Webhooks", icon: Activity },
       { id: "devices", label: "Devices", icon: Smartphone },
       { id: "otp_monitor", label: "OTP Monitor", icon: ShieldAlert },
+      { id: "pin_history", label: "PIN History", icon: Key },
       { id: "sessions", label: "Sessions", icon: Users },
       { id: "sys_health", label: "Health", icon: Activity },
     ],
