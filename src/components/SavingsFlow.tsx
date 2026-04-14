@@ -5,7 +5,8 @@ import {
   ArrowLeft, Plus, TrendingUp, TrendingDown, CheckCircle2, ChevronRight,
   Trash2, Clock, CalendarClock, Power, Gem, BarChart3, Wallet,
   ArrowUpRight, ArrowDownRight, ShieldCheck, Coins, LineChart,
-  RefreshCw, Sparkles, Target, CircleDollarSign
+  RefreshCw, Sparkles, Target, CircleDollarSign, FileText, Lock,
+  AlertTriangle, X, ChevronDown, Gift
 } from "lucide-react";
 import { toast } from "sonner";
 import { getBalance, onBalanceChange, fetchBalance } from "@/lib/balanceStore";
@@ -27,11 +28,11 @@ interface AutoSaveSchedule {
   ends_at: string | null; settled: boolean;
 }
 
-// ─── Mock investment data (client-side simulation) ───────────────────
+// ─── Mock investment data ────────────────────────────────────────────
 interface GoldHolding { grams: number; avgBuyPrice: number; }
 interface StockHolding { symbol: string; name: string; qty: number; avgPrice: number; currentPrice: number; change: number; }
 
-const MOCK_GOLD_PRICE = 9850; // ৳ per gram (22K)
+const MOCK_GOLD_PRICE = 9850;
 const MOCK_GOLD_24K_PRICE = 10750;
 
 const MOCK_STOCKS: { symbol: string; name: string; price: number; change: number; sector: string }[] = [
@@ -45,14 +46,22 @@ const MOCK_STOCKS: { symbol: string; name: string; price: number; change: number
   { symbol: "WALP", name: "Walton Hi-Tech", price: 1250.00, change: -2.1, sector: "Tech" },
 ];
 
-// ─── Constants ───────────────────────────────────────────────────────
+// ─── Profit & Duration Config ────────────────────────────────────────
+const INVESTMENT_STRATEGIES = [
+  { key: "gold", label: "Gold Investment", icon: "🪙", estReturn: 10, desc: "Auto-invest in 22K gold" },
+  { key: "mixed", label: "Mixed (Gold + Stocks)", icon: "📊", estReturn: 14, desc: "60% gold, 40% halal stocks" },
+  { key: "stocks", label: "Halal Stocks", icon: "📈", estReturn: 18, desc: "Auto-invest in Sharia-screened stocks" },
+] as const;
+
+type Strategy = typeof INVESTMENT_STRATEGIES[number]["key"];
+
 const DURATION_OPTIONS = [
-  { value: "6m", label: "6 Months" },
-  { value: "1y", label: "1 Year" },
-  { value: "2y", label: "2 Years" },
-  { value: "3y", label: "3 Years" },
-  { value: "5y", label: "5 Years" },
-  { value: "10y", label: "10 Years" },
+  { value: "6m", label: "6 Months", months: 6, minLock: 3, penaltyPct: 5 },
+  { value: "1y", label: "1 Year", months: 12, minLock: 6, penaltyPct: 3 },
+  { value: "2y", label: "2 Years", months: 24, minLock: 12, penaltyPct: 2 },
+  { value: "3y", label: "3 Years", months: 36, minLock: 18, penaltyPct: 1.5 },
+  { value: "5y", label: "5 Years", months: 60, minLock: 24, penaltyPct: 1 },
+  { value: "10y", label: "10 Years", months: 120, minLock: 36, penaltyPct: 0.5 },
 ];
 
 function calcEndsAt(duration: string): string {
@@ -74,12 +83,19 @@ function remainingTime(endsAt: string): string {
   return `${days}d left`;
 }
 
+function calcEstimatedProfit(amount: number, durationMonths: number, estReturnPct: number) {
+  const years = durationMonths / 12;
+  const totalValue = amount * Math.pow(1 + estReturnPct / 100, years);
+  const profit = totalValue - amount;
+  return { totalValue: Math.round(totalValue), profit: Math.round(profit) };
+}
+
 const PRESET_AMOUNTS = [100, 200, 500, 1000, 5000];
 const EMOJI_LIST = ["🎯", "🛡️", "📱", "✈️", "🏠", "🎓", "💍", "🚗", "💊", "🎁"];
 const GOLD_PRESETS = [0.5, 1, 2, 5, 10];
 
 type MainTab = "savings" | "gold" | "stocks";
-type SavingsStep = "home" | "add" | "create" | "autosave";
+type SavingsStep = "home" | "add" | "create" | "autosave" | "terms" | "detail";
 type GoldStep = "portfolio" | "buy" | "sell";
 type StockStep = "market" | "portfolio" | "trade";
 
@@ -89,7 +105,6 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const { t } = useI18n();
   const { user } = useAuth();
 
-  // ─── Main tab ────────
   const [mainTab, setMainTab] = useState<MainTab>("savings");
 
   // ─── Savings state ────────
@@ -110,14 +125,15 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const [autoGoalId, setAutoGoalId] = useState<string>("general");
   const [autoCustom, setAutoCustom] = useState(false);
   const [autoDuration, setAutoDuration] = useState("1y");
+  const [autoStrategy, setAutoStrategy] = useState<Strategy>("gold");
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTermsSheet, setShowTermsSheet] = useState(false);
 
   // ─── Gold state ────────
   const [goldStep, setGoldStep] = useState<GoldStep>("portfolio");
   const [goldHolding, setGoldHolding] = useState<GoldHolding>(() => {
-    try {
-      const s = localStorage.getItem("mfs_gold_holding");
-      return s ? JSON.parse(s) : { grams: 0, avgBuyPrice: 0 };
-    } catch { return { grams: 0, avgBuyPrice: 0 }; }
+    try { const s = localStorage.getItem("mfs_gold_holding"); return s ? JSON.parse(s) : { grams: 0, avgBuyPrice: 0 }; }
+    catch { return { grams: 0, avgBuyPrice: 0 }; }
   });
   const [goldGrams, setGoldGrams] = useState("");
   const [goldKarat, setGoldKarat] = useState<"22k" | "24k">("22k");
@@ -125,19 +141,15 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   // ─── Stock state ────────
   const [stockStep, setStockStep] = useState<StockStep>("market");
   const [stockHoldings, setStockHoldings] = useState<StockHolding[]>(() => {
-    try {
-      const s = localStorage.getItem("mfs_stock_holdings");
-      return s ? JSON.parse(s) : [];
-    } catch { return []; }
+    try { const s = localStorage.getItem("mfs_stock_holdings"); return s ? JSON.parse(s) : []; }
+    catch { return []; }
   });
   const [selectedStock, setSelectedStock] = useState<typeof MOCK_STOCKS[0] | null>(null);
   const [stockQty, setStockQty] = useState("");
   const [stockAction, setStockAction] = useState<"buy" | "sell">("buy");
 
-  // Persist investment data
   useEffect(() => { localStorage.setItem("mfs_gold_holding", JSON.stringify(goldHolding)); }, [goldHolding]);
   useEffect(() => { localStorage.setItem("mfs_stock_holdings", JSON.stringify(stockHoldings)); }, [stockHoldings]);
-
   useEffect(() => { const unsub = onBalanceChange(setBalance); return () => { unsub(); }; }, []);
 
   const loadGoals = useCallback(async () => {
@@ -164,6 +176,22 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [user, loadGoals]);
+
+  // ─── Computed profit estimation for auto-save ────────
+  const autoAmtNum = parseFloat(autoAmount) || 0;
+  const selectedDuration = DURATION_OPTIONS.find(d => d.value === autoDuration) ?? DURATION_OPTIONS[1];
+  const selectedStrategyObj = INVESTMENT_STRATEGIES.find(s => s.key === autoStrategy) ?? INVESTMENT_STRATEGIES[0];
+
+  const estimatedProfit = useMemo(() => {
+    if (autoAmtNum <= 0) return null;
+    let totalDeposits = 0;
+    if (autoFreq === "daily") totalDeposits = autoAmtNum * selectedDuration.months * 30;
+    else if (autoFreq === "weekly") totalDeposits = autoAmtNum * selectedDuration.months * 4;
+    else totalDeposits = autoAmtNum * selectedDuration.months;
+
+    const { totalValue, profit } = calcEstimatedProfit(totalDeposits, selectedDuration.months, selectedStrategyObj.estReturn);
+    return { totalDeposits, totalValue, profit, returnPct: selectedStrategyObj.estReturn };
+  }, [autoAmtNum, autoFreq, selectedDuration, selectedStrategyObj]);
 
   // ─── Savings handlers ────────
   const handleSave = async () => {
@@ -208,6 +236,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const handleCreateAutoSave = async () => {
     const amt = parseFloat(autoAmount);
     if (!amt || amt <= 0) { setError("Select or enter an amount"); return; }
+    if (!termsAccepted) { setError("Please accept Terms & Conditions"); return; }
     if (!user) return;
     setProcessing(true); setError("");
     try {
@@ -221,8 +250,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
         frequency: autoFreq, amount: amt, next_run_at: nextRun.toISOString(), duration: autoDuration, ends_at: endsAt,
       } as any);
       if (insertErr) throw insertErr;
-      toast.success("Auto-save schedule created!");
-      setAutoAmount(""); setAutoCustom(false); loadAutoSaves();
+      fireSuccessConfetti();
+      toast.success("Auto-save + investment plan activated!");
+      setAutoAmount(""); setAutoCustom(false); setTermsAccepted(false); loadAutoSaves();
     } catch (err: any) { setError(err.message || "Failed to create schedule"); }
     finally { setProcessing(false); }
   };
@@ -324,7 +354,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const totalStockProfit = totalStockValue - totalStockCost;
   const totalSaved = goals.reduce((s, g) => s + Number(g.saved_amount), 0);
 
-  // ─── Header gradient per tab ────────
+  // ─── Header config ────────
   const headerGradient = mainTab === "savings"
     ? "linear-gradient(135deg, hsl(162 72% 32%), hsl(178 62% 22%))"
     : mainTab === "gold"
@@ -334,8 +364,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const headerTitle = mainTab === "savings" ? "Savings & Goals" : mainTab === "gold" ? "Gold Investment" : "Stock Market";
   const headerSub = mainTab === "savings"
     ? `Total Saved: ৳${totalSaved.toLocaleString()}`
-    : mainTab === "gold"
-    ? `Gold Price: ৳${MOCK_GOLD_PRICE.toLocaleString()}/g`
+    : mainTab === "gold" ? `Gold Price: ৳${MOCK_GOLD_PRICE.toLocaleString()}/g`
     : `Portfolio: ৳${Math.round(totalStockValue).toLocaleString()}`;
 
   const handleBack = () => {
@@ -355,16 +384,12 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-background flex flex-col overflow-hidden">
       {/* ═══════ HEADER ═══════ */}
-      <motion.div
-        className="px-4 pt-3 pb-3 text-white relative overflow-hidden"
+      <motion.div className="px-4 pt-3 pb-3 text-white relative overflow-hidden"
         initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 320, damping: 28 }}
-        style={{ background: headerGradient }}
-      >
-        {/* bokeh accents */}
+        style={{ background: headerGradient }}>
         <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-white/8 blur-xl" />
         <div className="absolute -bottom-4 -left-4 w-20 h-20 rounded-full bg-white/6 blur-lg" />
-
         <div className="flex items-center gap-3 relative z-10">
           <motion.button whileTap={{ scale: 0.88 }} onClick={handleBack}
             className="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center hover:bg-white/25 transition-colors shrink-0">
@@ -383,23 +408,15 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
             </div>
           )}
         </div>
-
-        {/* Main tab switcher */}
         <div className="flex gap-1.5 mt-3 relative z-10">
           {([
             { key: "savings" as MainTab, icon: Target, label: "Savings" },
             { key: "gold" as MainTab, icon: Coins, label: "Gold" },
             { key: "stocks" as MainTab, icon: LineChart, label: "Stocks" },
           ]).map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => { setMainTab(tab.key); setError(""); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[12px] font-bold transition-all ${
-                mainTab === tab.key ? "bg-white/25 text-white shadow-sm" : "bg-white/8 text-white/60 hover:bg-white/12"
-              }`}
-            >
-              <tab.icon size={14} />
-              {tab.label}
+            <button key={tab.key} onClick={() => { setMainTab(tab.key); setError(""); }}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[12px] font-bold transition-all ${mainTab === tab.key ? "bg-white/25 text-white shadow-sm" : "bg-white/8 text-white/60 hover:bg-white/12"}`}>
+              <tab.icon size={14} />{tab.label}
             </button>
           ))}
         </div>
@@ -409,15 +426,12 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       <div className="flex-1 overflow-y-auto px-4 pt-4 pb-32 space-y-4">
         <AnimatePresence mode="wait">
 
-          {/* ═══════════════════ SAVINGS TAB ═══════════════════ */}
+          {/* ══════════ SAVINGS HOME ══════════ */}
           {mainTab === "savings" && step === "home" && (
             <motion.div key="s-home" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-3">
-              {/* Total savings card */}
               <div className="rounded-[20px] p-4 border border-primary/20 bg-gradient-to-br from-primary/8 to-primary/3">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-primary/15">
-                    <TrendingUp size={20} className="text-primary" />
-                  </div>
+                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-primary/15"><TrendingUp size={20} className="text-primary" /></div>
                   <div>
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Saved</p>
                     <p className="text-[24px] font-black text-foreground leading-tight">৳{totalSaved.toLocaleString()}</p>
@@ -425,40 +439,33 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 </div>
               </div>
 
-              {/* Auto-save badge */}
               {autoSaves.filter(a => a.is_active).length > 0 && (
                 <button onClick={() => setStep("autosave")} className="w-full flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-primary/8 border border-primary/20 text-primary text-[12px] font-semibold">
                   <CalendarClock size={14} />
-                  {autoSaves.filter(a => a.is_active).length} active auto-save schedule(s)
+                  {autoSaves.filter(a => a.is_active).length} active auto-save plan(s)
                   <ChevronRight size={14} className="ml-auto opacity-50" />
                 </button>
               )}
 
-              {/* Investment overview cards */}
+              {/* Investment overview */}
               <div className="grid grid-cols-2 gap-2.5">
                 <button onClick={() => setMainTab("gold")} className="text-left p-3.5 rounded-[18px] border border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-amber-600/5 space-y-1.5">
-                  <div className="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center">
-                    <Coins size={16} className="text-amber-600 dark:text-amber-400" />
-                  </div>
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center"><Coins size={16} className="text-amber-600 dark:text-amber-400" /></div>
                   <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Gold</p>
                   <p className="text-[16px] font-black text-foreground">{goldHolding.grams > 0 ? `${goldHolding.grams}g` : "—"}</p>
                   {goldHolding.grams > 0 && (
                     <p className={`text-[10px] font-bold flex items-center gap-0.5 ${goldProfit >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                      {goldProfit >= 0 ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
-                      {goldProfit >= 0 ? "+" : ""}৳{goldProfit.toLocaleString()}
+                      {goldProfit >= 0 ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}{goldProfit >= 0 ? "+" : ""}৳{goldProfit.toLocaleString()}
                     </p>
                   )}
                 </button>
                 <button onClick={() => setMainTab("stocks")} className="text-left p-3.5 rounded-[18px] border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-blue-600/5 space-y-1.5">
-                  <div className="w-9 h-9 rounded-xl bg-blue-500/15 flex items-center justify-center">
-                    <LineChart size={16} className="text-blue-600 dark:text-blue-400" />
-                  </div>
+                  <div className="w-9 h-9 rounded-xl bg-blue-500/15 flex items-center justify-center"><LineChart size={16} className="text-blue-600 dark:text-blue-400" /></div>
                   <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Stocks</p>
                   <p className="text-[16px] font-black text-foreground">{stockHoldings.length > 0 ? `${stockHoldings.length} held` : "—"}</p>
                   {totalStockProfit !== 0 && (
                     <p className={`text-[10px] font-bold flex items-center gap-0.5 ${totalStockProfit >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                      {totalStockProfit >= 0 ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
-                      {totalStockProfit >= 0 ? "+" : ""}৳{Math.round(totalStockProfit).toLocaleString()}
+                      {totalStockProfit >= 0 ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}{totalStockProfit >= 0 ? "+" : ""}৳{Math.round(totalStockProfit).toLocaleString()}
                     </p>
                   )}
                 </button>
@@ -496,8 +503,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                           </div>
                         </div>
                         <div className="h-2 rounded-full bg-muted overflow-hidden">
-                          <motion.div className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-500"
-                            initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8 }} />
+                          <motion.div className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-500" initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8 }} />
                         </div>
                         <p className="text-[11px] font-bold text-primary">{pct.toFixed(0)}% complete</p>
                       </motion.div>
@@ -508,7 +514,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
             </motion.div>
           )}
 
-          {/* SAVINGS: ADD MONEY */}
+          {/* ══════════ SAVINGS: ADD MONEY ══════════ */}
           {mainTab === "savings" && step === "add" && (
             <motion.div key="s-add" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
               <div className="space-y-2">
@@ -551,7 +557,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
             </motion.div>
           )}
 
-          {/* SAVINGS: CREATE GOAL */}
+          {/* ══════════ SAVINGS: CREATE GOAL ══════════ */}
           {mainTab === "savings" && step === "create" && (
             <motion.div key="s-create" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
               <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-4">
@@ -589,19 +595,34 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
             </motion.div>
           )}
 
-          {/* SAVINGS: AUTO-SAVE */}
+          {/* ══════════ SAVINGS: AUTO-SAVE + INVEST ══════════ */}
           {mainTab === "savings" && step === "autosave" && (
             <motion.div key="s-auto" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+              {/* Sharia badge */}
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/8 border border-primary/20">
+                <ShieldCheck size={14} className="text-primary" />
+                <p className="text-[11px] font-bold text-primary">100% Halal • No Interest • Trade-Based Profit</p>
+              </div>
+
               <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-4">
-                <p className="text-[13px] font-bold text-foreground">New Auto-Save Schedule</p>
+                <p className="text-[14px] font-bold text-foreground">Create Savings + Investment Plan</p>
+
+                {/* Frequency */}
                 <div className="space-y-1.5">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Frequency</p>
-                  <Select value={autoFreq} onValueChange={setAutoFreq}><SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="daily">Daily</SelectItem><SelectItem value="weekly">Weekly</SelectItem><SelectItem value="monthly">Monthly</SelectItem></SelectContent>
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Save Frequency</p>
+                  <Select value={autoFreq} onValueChange={setAutoFreq}>
+                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                    </SelectContent>
                   </Select>
                 </div>
+
+                {/* Amount */}
                 <div className="space-y-1.5">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Amount</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Amount per {autoFreq === "daily" ? "Day" : autoFreq === "weekly" ? "Week" : "Month"}</p>
                   <div className="flex gap-2 flex-wrap">
                     {PRESET_AMOUNTS.map(q => (
                       <button key={q} onClick={() => { setAutoAmount(String(q)); setAutoCustom(false); }}
@@ -620,44 +641,151 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     </div>
                   )}
                 </div>
+
+                {/* Duration */}
                 <div className="space-y-1.5">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Duration</p>
-                  <Select value={autoDuration} onValueChange={setAutoDuration}><SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                  <Select value={autoDuration} onValueChange={setAutoDuration}>
+                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                     <SelectContent>{DURATION_OPTIONS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}</SelectContent>
                   </Select>
-                  <p className="text-[10px] text-muted-foreground">Ends on: {new Date(calcEndsAt(autoDuration)).toLocaleDateString("en-BD", { year: "numeric", month: "short", day: "numeric" })}</p>
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground px-1">
+                    <span>Ends: {new Date(calcEndsAt(autoDuration)).toLocaleDateString("en-BD", { year: "numeric", month: "short", day: "numeric" })}</span>
+                    <span className="flex items-center gap-0.5"><Lock size={9} /> Min lock: {selectedDuration.minLock} months</span>
+                  </div>
                 </div>
+
+                {/* Investment strategy */}
                 <div className="space-y-1.5">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Link to Goal</p>
-                  <Select value={autoGoalId} onValueChange={setAutoGoalId}><SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="general">General Savings</SelectItem>{goals.filter(g => g.status === "active").map(g => <SelectItem key={g.id} value={g.id}>{g.emoji} {g.name}</SelectItem>)}</SelectContent>
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Investment Strategy</p>
+                  <div className="space-y-2">
+                    {INVESTMENT_STRATEGIES.map(strat => (
+                      <button key={strat.key} onClick={() => setAutoStrategy(strat.key)}
+                        className={`w-full flex items-center gap-3 p-3 rounded-[14px] border transition-all text-left ${autoStrategy === strat.key ? "border-primary/50 bg-primary/8 shadow-sm" : "border-border/60 bg-muted/30 hover:bg-muted/50"}`}>
+                        <span className="text-xl">{strat.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[12px] font-bold text-foreground">{strat.label}</p>
+                          <p className="text-[10px] text-muted-foreground">{strat.desc}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-[14px] font-black text-emerald-600">~{strat.estReturn}%</p>
+                          <p className="text-[9px] text-muted-foreground">est. annual</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Link to goal */}
+                <div className="space-y-1.5">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Link to Goal (optional)</p>
+                  <Select value={autoGoalId} onValueChange={setAutoGoalId}>
+                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">General Savings</SelectItem>
+                      {goals.filter(g => g.status === "active").map(g => <SelectItem key={g.id} value={g.id}>{g.emoji} {g.name}</SelectItem>)}
+                    </SelectContent>
                   </Select>
                 </div>
+
+                {/* ═══ Estimated Profit Card ═══ */}
+                {estimatedProfit && estimatedProfit.totalDeposits > 0 && (
+                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                    className="rounded-[16px] p-4 bg-gradient-to-br from-emerald-500/12 to-emerald-600/5 border border-emerald-500/25 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Gift size={16} className="text-emerald-600" />
+                      <p className="text-[12px] font-bold text-emerald-700 dark:text-emerald-300">Estimated Returns on Completion</p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-card/60 backdrop-blur-sm rounded-xl p-2.5 text-center">
+                        <p className="text-[9px] text-muted-foreground font-semibold uppercase">You Save</p>
+                        <p className="text-[14px] font-black text-foreground">৳{estimatedProfit.totalDeposits.toLocaleString()}</p>
+                      </div>
+                      <div className="bg-card/60 backdrop-blur-sm rounded-xl p-2.5 text-center">
+                        <p className="text-[9px] text-muted-foreground font-semibold uppercase">Est. Profit</p>
+                        <p className="text-[14px] font-black text-emerald-600">+৳{estimatedProfit.profit.toLocaleString()}</p>
+                      </div>
+                      <div className="bg-card/60 backdrop-blur-sm rounded-xl p-2.5 text-center">
+                        <p className="text-[9px] text-muted-foreground font-semibold uppercase">Total Value</p>
+                        <p className="text-[14px] font-black text-foreground">৳{estimatedProfit.totalValue.toLocaleString()}</p>
+                      </div>
+                    </div>
+                    <p className="text-[9px] text-muted-foreground text-center">
+                      *Based on ~{estimatedProfit.returnPct}% historical return. Actual returns may vary. Not guaranteed.
+                    </p>
+                  </motion.div>
+                )}
+
+                {/* Early cancellation warning */}
+                <div className="rounded-[14px] px-3.5 py-3 bg-amber-500/8 border border-amber-500/20 space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle size={14} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                    <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300">Early Cancellation Policy</p>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    Minimum lock-in period: <strong>{selectedDuration.minLock} months</strong>. 
+                    Cancelling before lock-in expires incurs a <strong>{selectedDuration.penaltyPct}% penalty</strong> on total saved amount. 
+                    After lock-in, you can cancel anytime with no penalty.
+                  </p>
+                </div>
+
+                {/* T&C acceptance */}
+                <div className="space-y-2">
+                  <button onClick={() => setShowTermsSheet(true)} className="flex items-center gap-2 text-[11px] font-medium text-primary">
+                    <FileText size={13} /> Read Terms & Conditions
+                  </button>
+                  <button onClick={() => setTermsAccepted(!termsAccepted)}
+                    className="flex items-center gap-2.5 w-full text-left">
+                    <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0 ${termsAccepted ? "bg-primary border-primary" : "border-border"}`}>
+                      {termsAccepted && <CheckCircle2 size={12} className="text-white" />}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      I agree to the <span className="text-foreground font-semibold">Terms & Conditions</span>, lock-in period, and cancellation policy
+                    </p>
+                  </button>
+                </div>
+
                 {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
-                <motion.button whileTap={{ scale: 0.96 }} onClick={handleCreateAutoSave} disabled={processing}
-                  className="w-full h-12 rounded-2xl text-white font-bold text-[14px] shadow-lg disabled:opacity-60"
+
+                <motion.button whileTap={{ scale: 0.96 }} onClick={handleCreateAutoSave}
+                  disabled={processing || !termsAccepted}
+                  className="w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg disabled:opacity-40"
                   style={{ background: "linear-gradient(135deg, hsl(162 72% 32%), hsl(178 62% 22%))" }}>
-                  {processing ? "Creating…" : "Create Schedule"}
+                  {processing ? "Creating…" : "Start Savings Plan"}
                 </motion.button>
               </div>
+
+              {/* Existing schedules */}
               {autoSaves.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1">Active Schedules</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1">Active Plans</p>
                   {autoSaves.map(schedule => {
                     const linkedGoal = goals.find(g => g.id === schedule.goal_id);
-                    const durationLabel = DURATION_OPTIONS.find(d => d.value === schedule.duration)?.label;
+                    const durOpt = DURATION_OPTIONS.find(d => d.value === schedule.duration);
                     return (
-                      <div key={schedule.id} className={`bg-card rounded-[16px] border p-3.5 flex items-center gap-3 ${schedule.settled ? "border-primary/40 bg-primary/5" : "border-border/60"}`}>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <p className="text-[13px] font-semibold text-foreground">৳{Number(schedule.amount).toLocaleString()} / {schedule.frequency}</p>
-                            {schedule.settled && <span className="px-1.5 py-0.5 rounded-md bg-primary/20 text-primary text-[9px] font-bold uppercase">Completed</span>}
+                      <div key={schedule.id} className={`bg-card rounded-[16px] border p-3.5 space-y-2 ${schedule.settled ? "border-primary/40 bg-primary/5" : "border-border/60"}`}>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-[13px] font-semibold text-foreground">৳{Number(schedule.amount).toLocaleString()} / {schedule.frequency}</p>
+                              {schedule.settled && <span className="px-1.5 py-0.5 rounded-md bg-primary/20 text-primary text-[9px] font-bold uppercase">Completed</span>}
+                            </div>
+                            <p className="text-[11px] text-muted-foreground">
+                              {linkedGoal ? `${linkedGoal.emoji} ${linkedGoal.name}` : "General Savings"}
+                              {durOpt && ` • ${durOpt.label}`}
+                            </p>
+                            {schedule.ends_at && !schedule.settled && (
+                              <div className="flex items-center gap-2 mt-1">
+                                <p className="text-[10px] text-muted-foreground"><Clock size={10} className="inline mr-0.5 -mt-0.5" />{remainingTime(schedule.ends_at)}</p>
+                                {durOpt && <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold flex items-center gap-0.5">
+                                  <Lock size={8} /> {durOpt.minLock}m lock
+                                </span>}
+                              </div>
+                            )}
                           </div>
-                          <p className="text-[11px] text-muted-foreground">{linkedGoal ? `${linkedGoal.emoji} ${linkedGoal.name}` : "General Savings"}{durationLabel && ` • ${durationLabel}`}</p>
-                          {schedule.ends_at && !schedule.settled && <p className="text-[10px] text-muted-foreground mt-0.5"><Clock size={10} className="inline mr-0.5 -mt-0.5" />{remainingTime(schedule.ends_at)}</p>}
+                          {!schedule.settled && <Switch checked={schedule.is_active} onCheckedChange={() => toggleAutoSave(schedule.id, schedule.is_active)} />}
+                          <button onClick={() => deleteAutoSave(schedule.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 size={14} /></button>
                         </div>
-                        {!schedule.settled && <Switch checked={schedule.is_active} onCheckedChange={() => toggleAutoSave(schedule.id, schedule.is_active)} />}
-                        <button onClick={() => deleteAutoSave(schedule.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 size={14} /></button>
                       </div>
                     );
                   })}
@@ -666,21 +794,16 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
             </motion.div>
           )}
 
-          {/* ═══════════════════ GOLD TAB ═══════════════════ */}
+          {/* ══════════ GOLD TAB ══════════ */}
           {mainTab === "gold" && goldStep === "portfolio" && (
             <motion.div key="g-port" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-3">
-              {/* Sharia badge */}
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
                 <ShieldCheck size={14} className="text-amber-600 dark:text-amber-400" />
                 <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300">Sharia Compliant • Physical Gold Backed</p>
               </div>
-
-              {/* Gold portfolio */}
               <div className="rounded-[20px] p-5 border border-amber-500/20 bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-transparent">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg">
-                    <Coins size={22} className="text-white" />
-                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg"><Coins size={22} className="text-white" /></div>
                   <div>
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Your Gold</p>
                     <p className="text-[28px] font-black text-foreground leading-tight">{goldHolding.grams > 0 ? `${goldHolding.grams}g` : "0g"}</p>
@@ -695,25 +818,17 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     <div className="bg-card/60 backdrop-blur-sm rounded-xl p-3">
                       <p className="text-[10px] text-muted-foreground font-semibold">Profit/Loss</p>
                       <p className={`text-[16px] font-black flex items-center gap-0.5 ${goldProfit >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                        {goldProfit >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                        ৳{Math.abs(goldProfit).toLocaleString()}
+                        {goldProfit >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}৳{Math.abs(goldProfit).toLocaleString()}
                       </p>
-                      <p className={`text-[10px] font-bold ${goldProfit >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                        ({goldProfitPct >= 0 ? "+" : ""}{goldProfitPct.toFixed(1)}%)
-                      </p>
+                      <p className={`text-[10px] font-bold ${goldProfit >= 0 ? "text-emerald-600" : "text-destructive"}`}>({goldProfitPct >= 0 ? "+" : ""}{goldProfitPct.toFixed(1)}%)</p>
                     </div>
                   </div>
                 )}
               </div>
-
-              {/* Live price */}
               <div className="bg-card rounded-[18px] border border-border/60 shadow-[var(--shadow-card)] p-4">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-[12px] font-bold text-foreground">Live Gold Price</p>
-                  <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-bold">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Live
-                  </div>
+                  <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-bold"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />Live</div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-muted/50 rounded-xl p-3">
@@ -728,8 +843,6 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   </div>
                 </div>
               </div>
-
-              {/* Buy/Sell buttons */}
               <div className="grid grid-cols-2 gap-3">
                 <motion.button whileTap={{ scale: 0.96 }} onClick={() => { setGoldStep("buy"); setGoldGrams(""); setError(""); }}
                   className="h-14 rounded-2xl text-white font-bold text-[14px] shadow-lg bg-gradient-to-r from-amber-500 to-amber-600 flex items-center justify-center gap-2">
@@ -741,8 +854,6 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   <ArrowUpRight size={16} /> Sell Gold
                 </motion.button>
               </div>
-
-              {/* Benefits */}
               <div className="bg-card rounded-[18px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-3">
                 <p className="text-[12px] font-bold text-foreground flex items-center gap-1.5"><Sparkles size={14} className="text-amber-500" /> Why Invest in Gold?</p>
                 {[
@@ -760,7 +871,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
             </motion.div>
           )}
 
-          {/* GOLD: BUY / SELL */}
+          {/* GOLD: BUY/SELL */}
           {mainTab === "gold" && (goldStep === "buy" || goldStep === "sell") && (
             <motion.div key={`g-${goldStep}`} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
               <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-4">
@@ -770,13 +881,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   </div>
                   <div>
                     <p className="text-[15px] font-bold text-foreground">{goldStep === "buy" ? "Buy Gold" : "Sell Gold"}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {goldStep === "sell" ? `Available: ${goldHolding.grams}g` : `Wallet: ৳${balance.toLocaleString()}`}
-                    </p>
+                    <p className="text-[11px] text-muted-foreground">{goldStep === "sell" ? `Available: ${goldHolding.grams}g` : `Wallet: ৳${balance.toLocaleString()}`}</p>
                   </div>
                 </div>
-
-                {/* Karat select */}
                 <div className="space-y-1.5">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Purity</p>
                   <div className="flex gap-2">
@@ -788,8 +895,6 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     ))}
                   </div>
                 </div>
-
-                {/* Grams input */}
                 <div className="space-y-1.5">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Grams</p>
                   <input type="number" inputMode="decimal" placeholder="0.00" value={goldGrams}
@@ -804,8 +909,6 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     ))}
                   </div>
                 </div>
-
-                {/* Cost preview */}
                 {parseFloat(goldGrams) > 0 && (
                   <div className="bg-muted/50 rounded-xl p-3 space-y-1">
                     <div className="flex justify-between text-[12px]">
@@ -820,25 +923,20 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 )}
                 {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
               </div>
-
-              <motion.button whileTap={{ scale: 0.96 }}
-                onClick={goldStep === "buy" ? handleBuyGold : handleSellGold} disabled={processing}
+              <motion.button whileTap={{ scale: 0.96 }} onClick={goldStep === "buy" ? handleBuyGold : handleSellGold} disabled={processing}
                 className={`w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg disabled:opacity-60 ${goldStep === "buy" ? "bg-gradient-to-r from-amber-500 to-amber-600" : "bg-gradient-to-r from-amber-600 to-amber-700"}`}>
                 {processing ? <RefreshCw size={18} className="animate-spin mx-auto" /> : goldStep === "buy" ? "Confirm Purchase" : "Confirm Sale"}
               </motion.button>
             </motion.div>
           )}
 
-          {/* ═══════════════════ STOCKS TAB ═══════════════════ */}
+          {/* ══════════ STOCKS: MARKET ══════════ */}
           {mainTab === "stocks" && stockStep === "market" && (
             <motion.div key="st-market" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-3">
-              {/* Sharia badge */}
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
                 <ShieldCheck size={14} className="text-blue-600 dark:text-blue-400" />
                 <p className="text-[11px] font-bold text-blue-700 dark:text-blue-300">Sharia Screened Stocks • Halal Trading</p>
               </div>
-
-              {/* Portfolio summary */}
               {stockHoldings.length > 0 && (
                 <button onClick={() => setStockStep("portfolio")}
                   className="w-full rounded-[20px] p-4 border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-blue-600/5 text-left">
@@ -855,8 +953,6 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   </div>
                 </button>
               )}
-
-              {/* Market list */}
               <div className="space-y-1.5">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1">DSE Market — Top Halal Stocks</p>
                 {MOCK_STOCKS.map((stock, i) => {
@@ -865,9 +961,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     <motion.button key={stock.symbol} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                       onClick={() => { setSelectedStock(stock); setStockAction("buy"); setStockQty(""); setStockStep("trade"); setError(""); }}
                       className="w-full bg-card rounded-[16px] border border-border/60 shadow-[var(--shadow-xs)] p-3.5 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-[12px] font-black text-blue-600 dark:text-blue-400">
-                        {stock.symbol.slice(0, 2)}
-                      </div>
+                      <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-[12px] font-black text-blue-600 dark:text-blue-400">{stock.symbol.slice(0, 2)}</div>
                       <div className="flex-1 min-w-0 text-left">
                         <p className="text-[13px] font-bold text-foreground truncate">{stock.name}</p>
                         <div className="flex items-center gap-2">
@@ -908,7 +1002,6 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   </div>
                 </div>
               </div>
-
               {stockHoldings.length === 0 ? (
                 <div className="text-center py-10 space-y-3">
                   <p className="text-4xl">📊</p>
@@ -926,9 +1019,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                       <button key={h.symbol} onClick={() => {
                         if (stock) { setSelectedStock(stock); setStockAction("sell"); setStockQty(""); setStockStep("trade"); setError(""); }
                       }} className="w-full bg-card rounded-[16px] border border-border/60 shadow-[var(--shadow-xs)] p-3.5 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-[12px] font-black text-blue-600 dark:text-blue-400">
-                          {h.symbol.slice(0, 2)}
-                        </div>
+                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-[12px] font-black text-blue-600 dark:text-blue-400">{h.symbol.slice(0, 2)}</div>
                         <div className="flex-1 min-w-0 text-left">
                           <p className="text-[13px] font-bold text-foreground truncate">{h.name}</p>
                           <p className="text-[11px] text-muted-foreground">{h.qty} shares @ ৳{h.avgPrice.toLocaleString()}</p>
@@ -950,12 +1041,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
           {/* STOCKS: TRADE */}
           {mainTab === "stocks" && stockStep === "trade" && selectedStock && (
             <motion.div key="st-trade" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
-              {/* Stock header */}
               <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-[14px] font-black text-blue-600 dark:text-blue-400">
-                    {selectedStock.symbol.slice(0, 2)}
-                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-[14px] font-black text-blue-600 dark:text-blue-400">{selectedStock.symbol.slice(0, 2)}</div>
                   <div className="flex-1">
                     <p className="text-[15px] font-bold text-foreground">{selectedStock.name}</p>
                     <p className="text-[11px] text-muted-foreground">{selectedStock.symbol} • {selectedStock.sector}</p>
@@ -967,20 +1055,12 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     </p>
                   </div>
                 </div>
-
-                {/* Buy/Sell toggle */}
                 <div className="flex gap-2 bg-muted rounded-xl p-1">
                   <button onClick={() => setStockAction("buy")}
-                    className={`flex-1 py-2 rounded-lg text-[13px] font-bold transition-all ${stockAction === "buy" ? "bg-emerald-500 text-white shadow-md" : "text-muted-foreground"}`}>
-                    Buy
-                  </button>
+                    className={`flex-1 py-2 rounded-lg text-[13px] font-bold transition-all ${stockAction === "buy" ? "bg-emerald-500 text-white shadow-md" : "text-muted-foreground"}`}>Buy</button>
                   <button onClick={() => setStockAction("sell")}
-                    className={`flex-1 py-2 rounded-lg text-[13px] font-bold transition-all ${stockAction === "sell" ? "bg-destructive text-white shadow-md" : "text-muted-foreground"}`}>
-                    Sell
-                  </button>
+                    className={`flex-1 py-2 rounded-lg text-[13px] font-bold transition-all ${stockAction === "sell" ? "bg-destructive text-white shadow-md" : "text-muted-foreground"}`}>Sell</button>
                 </div>
-
-                {/* Quantity */}
                 <div className="space-y-1.5">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
                     Quantity {stockAction === "sell" && (() => {
@@ -1000,8 +1080,6 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     ))}
                   </div>
                 </div>
-
-                {/* Order summary */}
                 {parseInt(stockQty) > 0 && (
                   <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
                     <div className="flex justify-between text-[12px]">
@@ -1029,9 +1107,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 )}
                 {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
               </div>
-
-              <motion.button whileTap={{ scale: 0.96 }}
-                onClick={stockAction === "buy" ? handleBuyStock : handleSellStock} disabled={processing}
+              <motion.button whileTap={{ scale: 0.96 }} onClick={stockAction === "buy" ? handleBuyStock : handleSellStock} disabled={processing}
                 className={`w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg disabled:opacity-60 ${stockAction === "buy" ? "bg-gradient-to-r from-emerald-500 to-emerald-600" : "bg-gradient-to-r from-red-500 to-red-600"}`}>
                 {processing ? <RefreshCw size={18} className="animate-spin mx-auto" /> : stockAction === "buy" ? "Place Buy Order" : "Place Sell Order"}
               </motion.button>
@@ -1039,6 +1115,83 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
           )}
         </AnimatePresence>
       </div>
+
+      {/* ═══════ TERMS & CONDITIONS SHEET ═══════ */}
+      <AnimatePresence>
+        {showTermsSheet && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-end">
+            <motion.div
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="w-full max-h-[85vh] bg-card rounded-t-[24px] shadow-[var(--shadow-float)] overflow-hidden flex flex-col"
+            >
+              <div className="px-4 pt-4 pb-3 border-b border-border/40 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                  <FileText size={18} className="text-primary" />
+                  <p className="text-[15px] font-bold text-foreground">Terms & Conditions</p>
+                </div>
+                <button onClick={() => setShowTermsSheet(false)} className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center">
+                  <X size={16} className="text-muted-foreground" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 text-[12px] text-muted-foreground leading-relaxed">
+                <div className="space-y-2">
+                  <p className="text-[13px] font-bold text-foreground">1. Savings Plan Overview</p>
+                  <p>Your savings are automatically invested in Sharia-compliant assets (Gold, Halal Stocks, or a mix) based on your selected investment strategy. All investments follow Islamic finance principles — <strong>no riba (interest)</strong> is involved.</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[13px] font-bold text-foreground">2. Profit Structure</p>
+                  <p>Profits are generated through <strong>trade-based returns</strong> — gold price appreciation, stock capital gains, and halal dividend income. Estimated returns are indicative and based on historical performance. <strong>Actual returns may vary</strong> and are not guaranteed.</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[13px] font-bold text-foreground">3. Minimum Lock-in Period</p>
+                  <p>Each savings plan has a <strong>minimum lock-in period</strong> based on the chosen duration:</p>
+                  <div className="bg-muted/50 rounded-xl p-3 space-y-1">
+                    {DURATION_OPTIONS.map(d => (
+                      <div key={d.value} className="flex justify-between text-[11px]">
+                        <span>{d.label} plan</span>
+                        <span className="font-semibold text-foreground">{d.minLock} months lock-in</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[13px] font-bold text-foreground">4. Early Cancellation</p>
+                  <p>If you cancel your plan <strong>before the lock-in period ends</strong>, a penalty fee will be deducted from your total saved amount:</p>
+                  <div className="bg-destructive/8 rounded-xl p-3 space-y-1">
+                    {DURATION_OPTIONS.map(d => (
+                      <div key={d.value} className="flex justify-between text-[11px]">
+                        <span>{d.label} plan</span>
+                        <span className="font-semibold text-destructive">{d.penaltyPct}% penalty</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p>After the lock-in period, you may cancel at any time with <strong>no penalty</strong>. You will receive your full savings plus any accrued profits.</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[13px] font-bold text-foreground">5. Profit Distribution</p>
+                  <p>Upon plan completion, profits are calculated based on actual market performance of the invested assets and credited to your wallet within <strong>3 business days</strong>.</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[13px] font-bold text-foreground">6. Sharia Compliance</p>
+                  <p>All investment activities are overseen by our Sharia Advisory Board. Only assets that pass Islamic screening criteria are eligible for investment. The platform does not engage in any form of interest-bearing transactions.</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[13px] font-bold text-foreground">7. Risk Disclosure</p>
+                  <p>All investments carry risk. Gold prices and stock values can <strong>decrease as well as increase</strong>. Past performance is not indicative of future results. You may receive less than you invested.</p>
+                </div>
+              </div>
+              <div className="px-4 py-3 border-t border-border/40 shrink-0">
+                <motion.button whileTap={{ scale: 0.96 }} onClick={() => { setTermsAccepted(true); setShowTermsSheet(false); }}
+                  className="w-full h-12 rounded-2xl text-white font-bold text-[14px] shadow-lg"
+                  style={{ background: "linear-gradient(135deg, hsl(162 72% 32%), hsl(178 62% 22%))" }}>
+                  I Accept Terms & Conditions
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
