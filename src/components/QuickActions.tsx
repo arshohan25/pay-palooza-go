@@ -294,7 +294,10 @@ const QuickActions = ({ onSendMoney, onCashOut, onPayment, onRecharge, onPayBill
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [ripples, setRipples] = useState<Record<string, RippleState | null>>({});
   const rippleCounterRef = useRef(0);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(() => sessionStorage.getItem("moreServicesExpanded") === "true");
+  useEffect(() => {
+    sessionStorage.setItem("moreServicesExpanded", String(expanded));
+  }, [expanded]);
   const moreRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll into view when expanded
