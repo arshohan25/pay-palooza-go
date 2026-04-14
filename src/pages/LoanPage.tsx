@@ -83,6 +83,8 @@ const LoanPage = () => {
   const [activeTab, setActiveTab] = useState<TabType>("apply");
   const [showBalance, setShowBalance] = useState(true);
   const { rewards: aiLoanRewards, claimReward: claimLoanReward } = useAiRewards("loan");
+  const [loanPin, setLoanPin] = useState("");
+  const [loanPinError, setLoanPinError] = useState("");
 
   useEffect(() => {
     if (!kycLoading && kycStatus !== "verified") {
@@ -164,28 +166,35 @@ const LoanPage = () => {
     if (!user) { toast.error("Please sign in first"); return; }
     if (!eligibility?.eligible) { toast.error("You are not eligible yet"); return; }
     setTermsAccepted(false);
+    setLoanPin("");
+    setLoanPinError("");
     setTermsOpen(true);
   };
 
   const handleConfirmLoan = async () => {
     if (!termsAccepted) { toast.error("Please accept the terms"); return; }
+    if (loanPin.length < 4) { setLoanPinError("Enter your 4-digit PIN"); return; }
+    setSubmitting(true); setLoanPinError("");
+    const pinValid = await verifyPin(loanPin);
+    if (!pinValid) { setLoanPinError("Incorrect PIN. Please try again."); setLoanPin(""); setSubmitting(false); return; }
     setTermsOpen(false);
-    setSubmitting(true);
     const { error } = await supabase.from("loan_applications").insert({
       user_id: user!.id,
       amount: amountNum,
       tenure_days: tenureNum,
-      interest_rate: SERVICE_FEE_PERCENT, // stored as service fee %
+      interest_rate: SERVICE_FEE_PERCENT,
       emi_amount: calc.monthlyPayment,
     } as any);
     if (error) toast.error("Failed to submit application");
     else {
+      haptics.success();
       toast.success("Qard Hasan application submitted!");
       const { data } = await supabase.from("loan_applications").select("*").eq("user_id", user!.id).order("created_at", { ascending: false });
       setApplications(data || []);
       setActiveTab("active");
     }
     setSubmitting(false);
+    setLoanPin("");
   };
 
   const activeLoans = applications.filter(a => ["disbursed", "approved", "pending"].includes(a.status));
