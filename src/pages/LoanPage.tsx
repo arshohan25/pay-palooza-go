@@ -94,7 +94,7 @@ const LoanPage = () => {
       supabase
         .from("profiles")
         .select("created_at")
-        .eq("id", user.id)
+        .eq("user_id", user.id)
         .single(),
     ]);
 
