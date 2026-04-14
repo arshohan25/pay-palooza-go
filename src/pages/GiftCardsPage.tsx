@@ -6,7 +6,6 @@ import {
   ShoppingBag, Coffee, Gamepad2, Music, Tv, Plane,
   Heart, BookOpen, Shirt, Fuel, Smartphone, Sparkles,
   Palette, Dumbbell, GraduationCap, Utensils, Layers,
-  ChevronDown, ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
