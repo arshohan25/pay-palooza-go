@@ -8,8 +8,11 @@ import {
   Percent, ArrowUpRight, Info, PiggyBank, BarChart3, RefreshCw, Target,
   CircleDollarSign, BadgeCheck, Timer, ArrowDownRight, Receipt, Star,
   Gauge, Shield, Eye, EyeOff, DollarSign, CalendarClock, Ban, Heart,
-  HandCoins, Scale
+  HandCoins, Scale, AlertCircle, Lock
 } from "lucide-react";
+import { verifyPin } from "@/lib/verifyPin";
+import SlideToConfirm from "@/components/SlideToConfirm";
+import { haptics } from "@/lib/haptics";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -80,6 +83,8 @@ const LoanPage = () => {
   const [activeTab, setActiveTab] = useState<TabType>("apply");
   const [showBalance, setShowBalance] = useState(true);
   const { rewards: aiLoanRewards, claimReward: claimLoanReward } = useAiRewards("loan");
+  const [loanPin, setLoanPin] = useState("");
+  const [loanPinError, setLoanPinError] = useState("");
 
   useEffect(() => {
     if (!kycLoading && kycStatus !== "verified") {
@@ -161,28 +166,35 @@ const LoanPage = () => {
     if (!user) { toast.error("Please sign in first"); return; }
     if (!eligibility?.eligible) { toast.error("You are not eligible yet"); return; }
     setTermsAccepted(false);
+    setLoanPin("");
+    setLoanPinError("");
     setTermsOpen(true);
   };
 
   const handleConfirmLoan = async () => {
     if (!termsAccepted) { toast.error("Please accept the terms"); return; }
+    if (loanPin.length < 4) { setLoanPinError("Enter your 4-digit PIN"); return; }
+    setSubmitting(true); setLoanPinError("");
+    const pinValid = await verifyPin(loanPin);
+    if (!pinValid) { setLoanPinError("Incorrect PIN. Please try again."); setLoanPin(""); setSubmitting(false); return; }
     setTermsOpen(false);
-    setSubmitting(true);
     const { error } = await supabase.from("loan_applications").insert({
       user_id: user!.id,
       amount: amountNum,
       tenure_days: tenureNum,
-      interest_rate: SERVICE_FEE_PERCENT, // stored as service fee %
+      interest_rate: SERVICE_FEE_PERCENT,
       emi_amount: calc.monthlyPayment,
     } as any);
     if (error) toast.error("Failed to submit application");
     else {
+      haptics.success();
       toast.success("Qard Hasan application submitted!");
       const { data } = await supabase.from("loan_applications").select("*").eq("user_id", user!.id).order("created_at", { ascending: false });
       setApplications(data || []);
       setActiveTab("active");
     }
     setSubmitting(false);
+    setLoanPin("");
   };
 
   const activeLoans = applications.filter(a => ["disbursed", "approved", "pending"].includes(a.status));
@@ -871,19 +883,37 @@ const LoanPage = () => {
                 I agree to the <span className="text-foreground font-semibold">Qard Hasan Terms</span>, including the {SERVICE_FEE_PERCENT}% service fee and repayment policies. I understand this loan is interest-free.
               </span>
             </label>
-            <Button
-              onClick={handleConfirmLoan}
-              disabled={!termsAccepted || submitting}
-              className="w-full h-12 rounded-2xl font-bold text-sm shadow-[var(--shadow-glow)] transition-all disabled:opacity-40 disabled:shadow-none"
-              style={termsAccepted ? { background: "var(--gradient-primary)" } : undefined}
-            >
-              {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                <>
-                  <ShieldCheck className="w-4 h-4 mr-1.5" />
-                  Confirm ৳{amountNum.toLocaleString()} Qard Hasan
-                </>
-              )}
-            </Button>
+
+            {termsAccepted && (
+              <div className="space-y-3">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground text-center">Enter PIN to Confirm</p>
+                <div className="flex justify-center gap-3">
+                  {[0, 1, 2, 3].map((i) => (
+                    <motion.div key={i} animate={{ scale: loanPin.length > i ? 1.15 : 1 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                      className={`w-4 h-4 rounded-full border-2 transition-colors ${loanPin.length > i ? "bg-primary border-transparent" : "border-muted-foreground/40 bg-transparent"}`}
+                    />
+                  ))}
+                </div>
+                {loanPinError && (
+                  <p className="text-xs text-destructive flex items-center justify-center gap-1">
+                    <AlertCircle size={12} /> {loanPinError}
+                  </p>
+                )}
+                <input type="password" inputMode="numeric" pattern="[0-9]*" maxLength={4} value={loanPin}
+                  onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); if (v.length > loanPin.length) haptics.light(); setLoanPin(v); setLoanPinError(""); }}
+                  className="w-full h-14 text-center text-3xl font-bold tracking-[1rem] bg-card border-2 border-border rounded-2xl focus:outline-none focus:border-primary transition-colors"
+                  placeholder="••••" />
+              </div>
+            )}
+
+            <SlideToConfirm
+              onConfirm={handleConfirmLoan}
+              label={submitting ? "Applying…" : `Slide to Apply ৳${amountNum.toLocaleString()}`}
+              disabled={!termsAccepted || loanPin.length < 4 || submitting}
+              pinComplete={loanPin.length === 4 && termsAccepted}
+              icon={Lock}
+            />
           </div>
         </SheetContent>
       </Sheet>

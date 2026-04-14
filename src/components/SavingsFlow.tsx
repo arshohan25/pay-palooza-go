@@ -6,7 +6,7 @@ import {
   Trash2, Clock, CalendarClock, Power, Gem, BarChart3, Wallet,
   ArrowUpRight, ArrowDownRight, ShieldCheck, Coins, LineChart,
   RefreshCw, Sparkles, Target, CircleDollarSign, FileText, Lock,
-  AlertTriangle, X, ChevronDown, Gift
+  AlertTriangle, X, ChevronDown, Gift, AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { getBalance, onBalanceChange, fetchBalance } from "@/lib/balanceStore";
@@ -16,6 +16,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { verifyPin } from "@/lib/verifyPin";
+import SlideToConfirm from "@/components/SlideToConfirm";
+import { haptics } from "@/lib/haptics";
 
 // ─── Types ───────────────────────────────────────────────────────────
 interface SavingsGoal {
@@ -101,6 +104,30 @@ type StockStep = "market" | "portfolio" | "trade";
 
 interface SavingsFlowProps { onClose: () => void; }
 
+// ─── Reusable PIN input ─────────────────────────────────────────────
+const SavingsPinInput = ({ pin, onChange, error }: { pin: string; onChange: (p: string) => void; error: string }) => (
+  <div className="space-y-3">
+    <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground text-center">Enter PIN to Confirm</p>
+    <div className="flex justify-center gap-3">
+      {[0, 1, 2, 3].map((i) => (
+        <motion.div key={i} animate={{ scale: pin.length > i ? 1.15 : 1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 20 }}
+          className={`w-4 h-4 rounded-full border-2 transition-colors ${pin.length > i ? "bg-primary border-transparent" : "border-muted-foreground/40 bg-transparent"}`}
+        />
+      ))}
+    </div>
+    {error && (
+      <p className="text-xs text-destructive flex items-center justify-center gap-1">
+        <AlertCircle size={12} /> {error}
+      </p>
+    )}
+    <input type="password" inputMode="numeric" pattern="[0-9]*" maxLength={4} value={pin}
+      onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); if (v.length > pin.length) haptics.light(); onChange(v); }}
+      className="w-full h-14 text-center text-3xl font-bold tracking-[1rem] bg-card border-2 border-border rounded-2xl focus:outline-none focus:border-primary transition-colors"
+      placeholder="••••" />
+  </div>
+);
+
 const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const { t } = useI18n();
   const { user } = useAuth();
@@ -128,6 +155,10 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const [autoStrategy, setAutoStrategy] = useState<Strategy>("gold");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTermsSheet, setShowTermsSheet] = useState(false);
+
+  // ─── PIN state (shared across all confirm actions) ────────
+  const [pin, setPin] = useState("");
+  const [pinError, setPinError] = useState("");
 
   // ─── Gold state ────────
   const [goldStep, setGoldStep] = useState<GoldStep>("portfolio");
@@ -199,15 +230,18 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     if (!amt || amt <= 0) { setError("Enter a valid amount"); return; }
     if (amt > balance) { setError("Insufficient balance"); return; }
     if (!selectedGoal) { setError("Select a savings goal"); return; }
-    setProcessing(true); setError("");
+    if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
+    setProcessing(true); setError(""); setPinError("");
     try {
+      const pinValid = await verifyPin(pin);
+      if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
       const { data, error: rpcError } = await supabase.rpc("savings_deposit", { p_goal_id: selectedGoal.id, p_amount: amt, p_source: "manual" });
       if (rpcError) throw rpcError;
       const result = typeof data === "string" ? JSON.parse(data) : data;
       await fetchBalance();
       if (result.goal_completed) { fireSuccessConfetti(); toast.success(`🎉 "${selectedGoal.name}" goal completed!`); }
       else { toast.success(`৳${amt.toLocaleString()} saved to "${selectedGoal.name}"`); }
-      setStep("home"); setAmount(""); setSelectedGoal(null);
+      setStep("home"); setAmount(""); setSelectedGoal(null); setPin("");
     } catch (err: any) { setError(err.message || "Failed to save"); }
     finally { setProcessing(false); }
   };
@@ -237,9 +271,12 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     const amt = parseFloat(autoAmount);
     if (!amt || amt <= 0) { setError("Select or enter an amount"); return; }
     if (!termsAccepted) { setError("Please accept Terms & Conditions"); return; }
+    if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
     if (!user) return;
-    setProcessing(true); setError("");
+    setProcessing(true); setError(""); setPinError("");
     try {
+      const pinValid = await verifyPin(pin);
+      if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
       const nextRun = new Date();
       if (autoFreq === "daily") nextRun.setDate(nextRun.getDate() + 1);
       else if (autoFreq === "weekly") nextRun.setDate(nextRun.getDate() + 7);
@@ -252,7 +289,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       if (insertErr) throw insertErr;
       fireSuccessConfetti();
       toast.success("Auto-save + investment plan activated!");
-      setAutoAmount(""); setAutoCustom(false); setTermsAccepted(false); loadAutoSaves();
+      setAutoAmount(""); setAutoCustom(false); setTermsAccepted(false); setPin(""); loadAutoSaves();
     } catch (err: any) { setError(err.message || "Failed to create schedule"); }
     finally { setProcessing(false); }
   };
@@ -270,33 +307,39 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   // ─── Gold handlers ────────
   const currentGoldPrice = goldKarat === "24k" ? MOCK_GOLD_24K_PRICE : MOCK_GOLD_PRICE;
 
-  const handleBuyGold = () => {
+  const handleBuyGold = async () => {
     const grams = parseFloat(goldGrams);
     if (!grams || grams <= 0) { setError("Enter valid grams"); return; }
     const cost = Math.round(grams * currentGoldPrice);
     if (cost > balance) { setError("Insufficient balance"); return; }
-    setProcessing(true);
+    if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
+    setProcessing(true); setPinError("");
+    const pinValid = await verifyPin(pin);
+    if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
     setTimeout(() => {
       const totalGrams = goldHolding.grams + grams;
       const totalCost = (goldHolding.grams * goldHolding.avgBuyPrice) + cost;
       setGoldHolding({ grams: totalGrams, avgBuyPrice: Math.round(totalCost / totalGrams) });
       fireSuccessConfetti();
       toast.success(`🪙 Purchased ${grams}g gold for ৳${cost.toLocaleString()}`);
-      setGoldGrams(""); setGoldStep("portfolio"); setError(""); setProcessing(false);
+      setGoldGrams(""); setGoldStep("portfolio"); setError(""); setProcessing(false); setPin("");
     }, 1200);
   };
 
-  const handleSellGold = () => {
+  const handleSellGold = async () => {
     const grams = parseFloat(goldGrams);
     if (!grams || grams <= 0) { setError("Enter valid grams"); return; }
     if (grams > goldHolding.grams) { setError("Insufficient gold balance"); return; }
-    setProcessing(true);
+    if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
+    setProcessing(true); setPinError("");
+    const pinValid = await verifyPin(pin);
+    if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
     setTimeout(() => {
       const revenue = Math.round(grams * currentGoldPrice);
       const remaining = goldHolding.grams - grams;
       setGoldHolding({ grams: remaining, avgBuyPrice: remaining > 0 ? goldHolding.avgBuyPrice : 0 });
       toast.success(`💰 Sold ${grams}g gold for ৳${revenue.toLocaleString()}`);
-      setGoldGrams(""); setGoldStep("portfolio"); setError(""); setProcessing(false);
+      setGoldGrams(""); setGoldStep("portfolio"); setError(""); setProcessing(false); setPin("");
     }, 1200);
   };
 
@@ -305,13 +348,16 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const goldProfitPct = goldHolding.avgBuyPrice > 0 ? ((MOCK_GOLD_PRICE - goldHolding.avgBuyPrice) / goldHolding.avgBuyPrice * 100) : 0;
 
   // ─── Stock handlers ────────
-  const handleBuyStock = () => {
+  const handleBuyStock = async () => {
     if (!selectedStock) return;
     const qty = parseInt(stockQty);
     if (!qty || qty <= 0) { setError("Enter valid quantity"); return; }
     const cost = Math.round(qty * selectedStock.price);
     if (cost > balance) { setError("Insufficient balance"); return; }
-    setProcessing(true);
+    if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
+    setProcessing(true); setPinError("");
+    const pinValid = await verifyPin(pin);
+    if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
     setTimeout(() => {
       setStockHoldings(prev => {
         const existing = prev.find(h => h.symbol === selectedStock.symbol);
@@ -326,17 +372,20 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       });
       fireSuccessConfetti();
       toast.success(`📈 Bought ${qty} ${selectedStock.symbol} for ৳${cost.toLocaleString()}`);
-      setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setError(""); setProcessing(false);
+      setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setError(""); setProcessing(false); setPin("");
     }, 1200);
   };
 
-  const handleSellStock = () => {
+  const handleSellStock = async () => {
     if (!selectedStock) return;
     const qty = parseInt(stockQty);
     const holding = stockHoldings.find(h => h.symbol === selectedStock.symbol);
     if (!qty || qty <= 0) { setError("Enter valid quantity"); return; }
     if (!holding || qty > holding.qty) { setError("Insufficient shares"); return; }
-    setProcessing(true);
+    if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
+    setProcessing(true); setPinError("");
+    const pinValid = await verifyPin(pin);
+    if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
     setTimeout(() => {
       setStockHoldings(prev => prev.map(h => {
         if (h.symbol !== selectedStock.symbol) return h;
@@ -345,7 +394,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       }).filter(Boolean));
       const revenue = Math.round(qty * selectedStock.price);
       toast.success(`💰 Sold ${qty} ${selectedStock.symbol} for ৳${revenue.toLocaleString()}`);
-      setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setError(""); setProcessing(false);
+      setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setError(""); setProcessing(false); setPin("");
     }, 1200);
   };
 
@@ -549,11 +598,8 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 </div>
                 {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
               </div>
-              <motion.button whileTap={{ scale: 0.96 }} onClick={handleSave} disabled={processing}
-                className="w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg disabled:opacity-60"
-                style={{ background: "linear-gradient(135deg, hsl(162 72% 32%), hsl(178 62% 22%))" }}>
-                {processing ? "Processing…" : "Save Now"}
-              </motion.button>
+              <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
+              <SlideToConfirm onConfirm={handleSave} label={processing ? "Processing…" : "Slide to Save"} disabled={pin.length < 4 || processing} pinComplete={pin.length === 4} />
             </motion.div>
           )}
 
@@ -747,12 +793,8 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
 
                 {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
 
-                <motion.button whileTap={{ scale: 0.96 }} onClick={handleCreateAutoSave}
-                  disabled={processing || !termsAccepted}
-                  className="w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg disabled:opacity-40"
-                  style={{ background: "linear-gradient(135deg, hsl(162 72% 32%), hsl(178 62% 22%))" }}>
-                  {processing ? "Creating…" : "Start Savings Plan"}
-                </motion.button>
+                <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
+                <SlideToConfirm onConfirm={handleCreateAutoSave} label={processing ? "Creating…" : "Slide to Start Plan"} disabled={pin.length < 4 || processing || !termsAccepted} pinComplete={pin.length === 4 && termsAccepted} />
               </div>
 
               {/* Existing schedules */}
@@ -923,10 +965,8 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 )}
                 {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
               </div>
-              <motion.button whileTap={{ scale: 0.96 }} onClick={goldStep === "buy" ? handleBuyGold : handleSellGold} disabled={processing}
-                className={`w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg disabled:opacity-60 ${goldStep === "buy" ? "bg-gradient-to-r from-amber-500 to-amber-600" : "bg-gradient-to-r from-amber-600 to-amber-700"}`}>
-                {processing ? <RefreshCw size={18} className="animate-spin mx-auto" /> : goldStep === "buy" ? "Confirm Purchase" : "Confirm Sale"}
-              </motion.button>
+              <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
+              <SlideToConfirm onConfirm={goldStep === "buy" ? handleBuyGold : handleSellGold} label={processing ? "Processing…" : goldStep === "buy" ? "Slide to Buy Gold" : "Slide to Sell Gold"} disabled={pin.length < 4 || processing} pinComplete={pin.length === 4} />
             </motion.div>
           )}
 
@@ -1107,10 +1147,8 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 )}
                 {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
               </div>
-              <motion.button whileTap={{ scale: 0.96 }} onClick={stockAction === "buy" ? handleBuyStock : handleSellStock} disabled={processing}
-                className={`w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg disabled:opacity-60 ${stockAction === "buy" ? "bg-gradient-to-r from-emerald-500 to-emerald-600" : "bg-gradient-to-r from-red-500 to-red-600"}`}>
-                {processing ? <RefreshCw size={18} className="animate-spin mx-auto" /> : stockAction === "buy" ? "Place Buy Order" : "Place Sell Order"}
-              </motion.button>
+              <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
+              <SlideToConfirm onConfirm={stockAction === "buy" ? handleBuyStock : handleSellStock} label={processing ? "Processing…" : stockAction === "buy" ? "Slide to Buy" : "Slide to Sell"} disabled={pin.length < 4 || processing} pinComplete={pin.length === 4} />
             </motion.div>
           )}
         </AnimatePresence>
