@@ -122,11 +122,12 @@ const GiftCardsPage = () => {
             {/* Brand Selection */}
             <div>
               <p className="text-sm font-semibold text-foreground mb-2">Select Category</p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {BRANDS.map(b => (
                   <button key={b.id} onClick={() => setBrand(b.id)}
-                    className={`flex items-center gap-2 p-3 rounded-xl text-sm font-semibold transition-all ${brand === b.id ? "bg-primary text-primary-foreground shadow-md" : "bg-muted text-muted-foreground"}`}>
-                    <b.icon className="w-4 h-4" />{b.name}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl text-xs font-semibold transition-all ${brand === b.id ? "bg-primary text-primary-foreground shadow-md scale-[1.03]" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+                    <b.icon className="w-5 h-5" />
+                    <span className="truncate w-full text-center leading-tight">{b.name}</span>
                   </button>
                 ))}
               </div>
