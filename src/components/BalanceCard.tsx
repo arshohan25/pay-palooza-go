@@ -113,7 +113,7 @@ const BalanceCard = React.memo(({ onAddMoney }: BalanceCardProps) => {
             {/* LEFT: Greeting + name (yellow circle area) */}
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-60 leading-tight">{t(getGreetingKey())} 👋</p>
-              <p className="text-[15px] font-bold opacity-95 leading-tight tracking-tight">{userName}</p>
+              <p className="text-[15px] font-bold opacity-95 leading-tight tracking-tight text-shine">{userName}</p>
             </div>
 
             {/* RIGHT: QR + Copy */}
@@ -169,7 +169,7 @@ const BalanceCard = React.memo(({ onAddMoney }: BalanceCardProps) => {
                       className="flex items-baseline gap-1"
                     >
                       <span className="text-lg font-semibold opacity-70">৳</span>
-                      <span className="text-[2rem] sm:text-[2.2rem] font-bold tracking-tight leading-none">
+                      <span className="text-[2rem] sm:text-[2.2rem] font-bold tracking-tight leading-none text-shine">
                         {displayBalance.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                       <motion.span
