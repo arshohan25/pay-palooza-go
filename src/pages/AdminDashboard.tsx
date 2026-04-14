@@ -1873,6 +1873,9 @@ export default function AdminDashboard() {
         {/* ═══ OTP MONITOR ═══ */}
         {activeTab === "otp_monitor" && <AdminOtpMonitor />}
 
+        {/* ═══ PIN HISTORY ═══ */}
+        {activeTab === "pin_history" && <AdminPinHistory />}
+
         {/* ═══ COMMISSION LEDGER ═══ */}
         {activeTab === "commission_ledger" && <AdminCommissionLedger />}
 
