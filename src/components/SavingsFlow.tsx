@@ -1246,6 +1246,42 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ─── Delete confirmation overlay ─── */}
+      <AnimatePresence>
+        {deleteTarget && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/50 flex items-end justify-center" onClick={() => setDeleteTarget(null)}>
+            <motion.div initial={{ y: 200 }} animate={{ y: 0 }} exit={{ y: 200 }}
+              transition={{ type: "spring", stiffness: 340, damping: 28 }}
+              className="w-full max-w-md bg-card rounded-t-3xl p-5 space-y-4 pb-8" onClick={(e) => e.stopPropagation()}>
+              <div className="w-10 h-1 rounded-full bg-muted mx-auto" />
+              <div className="text-center space-y-1">
+                <div className="w-12 h-12 mx-auto rounded-2xl bg-destructive/10 flex items-center justify-center">
+                  <Trash2 className="w-6 h-6 text-destructive" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">Confirm Deletion</h3>
+                <p className="text-sm text-muted-foreground">
+                  Delete <span className="font-semibold text-foreground">"{deleteTarget.label}"</span>? This cannot be undone.
+                </p>
+              </div>
+              <SavingsPinInput pin={deletePin} onChange={(p) => { setDeletePin(p); setDeletePinError(""); }} error={deletePinError} />
+              <div className="flex gap-3">
+                <motion.button whileTap={{ scale: 0.96 }} onClick={() => setDeleteTarget(null)}
+                  className="flex-1 h-12 rounded-2xl border-2 border-border font-bold text-sm text-muted-foreground">
+                  Cancel
+                </motion.button>
+                <motion.button whileTap={{ scale: 0.96 }}
+                  disabled={deletePin.length < 4 || deleting}
+                  onClick={() => deleteTarget.type === "goal" ? handleDeleteGoal(deleteTarget.id) : deleteAutoSave(deleteTarget.id)}
+                  className="flex-1 h-12 rounded-2xl bg-destructive text-destructive-foreground font-bold text-sm disabled:opacity-40">
+                  {deleting ? "Deleting…" : "Delete"}
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
