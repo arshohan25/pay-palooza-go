@@ -111,7 +111,7 @@ input[type="number"] {
     --ring: 162 72% 44%;
 
     --gradient-primary: linear-gradient(135deg, hsl(162 72% 44%), hsl(174 68% 32%));
-    --gradient-hero: linear-gradient(150deg, hsl(162 72% 36%) 0%, hsl(178 60% 24%) 60%, hsl(192 52% 20%) 100%);
+    --gradient-hero: linear-gradient(150deg, hsl(162 60% 22%) 0%, hsl(180 50% 14%) 60%, hsl(200 45% 10%) 100%);
     --shadow-card: 0 2px 12px -2px hsl(0 0% 0% / 0.18), 0 1px 3px hsl(0 0% 0% / 0.12);
     --shadow-elevated: 0 8px 32px -6px hsl(0 0% 0% / 0.28), 0 2px 8px hsl(0 0% 0% / 0.12);
     --shadow-float: 0 16px 48px -12px hsl(0 0% 0% / 0.36), 0 4px 16px hsl(0 0% 0% / 0.16);
