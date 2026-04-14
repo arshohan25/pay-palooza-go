@@ -387,7 +387,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
         {/* Main tab switcher */}
         <div className="flex gap-1.5 mt-3 relative z-10">
           {([
-            { key: "savings" as MainTab, icon: PiggyBank, label: "Savings" },
+            { key: "savings" as MainTab, icon: Target, label: "Savings" },
             { key: "gold" as MainTab, icon: Coins, label: "Gold" },
             { key: "stocks" as MainTab, icon: LineChart, label: "Stocks" },
           ]).map(tab => (
