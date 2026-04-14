@@ -883,19 +883,37 @@ const LoanPage = () => {
                 I agree to the <span className="text-foreground font-semibold">Qard Hasan Terms</span>, including the {SERVICE_FEE_PERCENT}% service fee and repayment policies. I understand this loan is interest-free.
               </span>
             </label>
-            <Button
-              onClick={handleConfirmLoan}
-              disabled={!termsAccepted || submitting}
-              className="w-full h-12 rounded-2xl font-bold text-sm shadow-[var(--shadow-glow)] transition-all disabled:opacity-40 disabled:shadow-none"
-              style={termsAccepted ? { background: "var(--gradient-primary)" } : undefined}
-            >
-              {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                <>
-                  <ShieldCheck className="w-4 h-4 mr-1.5" />
-                  Confirm ৳{amountNum.toLocaleString()} Qard Hasan
-                </>
-              )}
-            </Button>
+
+            {termsAccepted && (
+              <div className="space-y-3">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground text-center">Enter PIN to Confirm</p>
+                <div className="flex justify-center gap-3">
+                  {[0, 1, 2, 3].map((i) => (
+                    <motion.div key={i} animate={{ scale: loanPin.length > i ? 1.15 : 1 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                      className={`w-4 h-4 rounded-full border-2 transition-colors ${loanPin.length > i ? "bg-primary border-transparent" : "border-muted-foreground/40 bg-transparent"}`}
+                    />
+                  ))}
+                </div>
+                {loanPinError && (
+                  <p className="text-xs text-destructive flex items-center justify-center gap-1">
+                    <AlertCircle size={12} /> {loanPinError}
+                  </p>
+                )}
+                <input type="password" inputMode="numeric" pattern="[0-9]*" maxLength={4} value={loanPin}
+                  onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); if (v.length > loanPin.length) haptics.light(); setLoanPin(v); setLoanPinError(""); }}
+                  className="w-full h-14 text-center text-3xl font-bold tracking-[1rem] bg-card border-2 border-border rounded-2xl focus:outline-none focus:border-primary transition-colors"
+                  placeholder="••••" />
+              </div>
+            )}
+
+            <SlideToConfirm
+              onConfirm={handleConfirmLoan}
+              label={submitting ? "Applying…" : `Slide to Apply ৳${amountNum.toLocaleString()}`}
+              disabled={!termsAccepted || loanPin.length < 4 || submitting}
+              pinComplete={loanPin.length === 4 && termsAccepted}
+              icon={Lock}
+            />
           </div>
         </SheetContent>
       </Sheet>
