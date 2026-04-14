@@ -654,12 +654,21 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                       className="w-full pl-10 pr-11 h-12 text-sm bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-[hsl(330_80%_55%)]/50 placeholder:text-muted-foreground/60 transition-all"
                       autoFocus
                     />
-                    <button
-                      onClick={() => setShowScanner(true)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-accent/50 active:scale-95 transition-all"
-                    >
-                      <QrCode size={18} className="text-[hsl(330_80%_55%)]" />
-                    </button>
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+                      <button
+                        onClick={handleSyncContacts}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-accent/50 active:scale-95 transition-all"
+                        title="Pick from contacts"
+                      >
+                        <Users size={18} className="text-[hsl(330_80%_55%)]" />
+                      </button>
+                      <button
+                        onClick={() => setShowScanner(true)}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-accent/50 active:scale-95 transition-all"
+                      >
+                        <QrCode size={18} className="text-[hsl(330_80%_55%)]" />
+                      </button>
+                    </div>
                   </div>
                   {error && (
                     <p className="text-xs text-destructive flex items-center gap-1 mt-2"><AlertCircle size={12} /> {error}</p>
@@ -733,23 +742,6 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   </motion.div>
                 )}
 
-                {/* Allow Contact Access card — bKash style */}
-                {phoneContacts.length === 0 && (
-                  <div className="px-4 pt-4 pb-2">
-                    <PermissionGate permission="contacts" onGranted={handlePhoneContactsPicked}>
-                      <div className="w-full rounded-2xl bg-primary/5 border border-primary/15 p-4 flex items-center gap-3.5 active:scale-[0.98] transition-all cursor-pointer">
-                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                          <Users size={22} className="text-primary" />
-                        </div>
-                        <div className="flex-1 text-left">
-                          <p className="text-sm font-bold text-foreground">Allow Contact Access</p>
-                          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">See your phone contacts here for quick transfers</p>
-                        </div>
-                        <ChevronRight size={18} className="text-primary/60 shrink-0" />
-                      </div>
-                    </PermissionGate>
-                  </div>
-                )}
 
                 {/* Continue button — fixed at bottom */}
                 <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-4 py-4 bg-background/95 backdrop-blur-sm border-t border-border">
