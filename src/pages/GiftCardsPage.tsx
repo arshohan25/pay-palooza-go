@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Gift, Copy, Share2, Loader2, ShoppingBag, Coffee, Gamepad2, Music } from "lucide-react";
+import {
+  ArrowLeft, Gift, Copy, Share2, Loader2,
+  ShoppingBag, Coffee, Gamepad2, Music, Tv, Plane,
+  Heart, BookOpen, Shirt, Fuel, Smartphone, Sparkles,
+  Palette, Dumbbell, GraduationCap, Utensils,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -17,6 +22,18 @@ const BRANDS = [
   { id: "food", name: "Food & Dining", icon: Coffee, color: "from-amber-500 to-orange-600" },
   { id: "gaming", name: "Gaming", icon: Gamepad2, color: "from-violet-500 to-purple-600" },
   { id: "entertainment", name: "Entertainment", icon: Music, color: "from-blue-500 to-indigo-600" },
+  { id: "streaming", name: "Streaming", icon: Tv, color: "from-red-500 to-rose-700" },
+  { id: "travel", name: "Travel", icon: Plane, color: "from-sky-500 to-cyan-600" },
+  { id: "health", name: "Health & Wellness", icon: Heart, color: "from-emerald-500 to-green-600" },
+  { id: "education", name: "Education", icon: GraduationCap, color: "from-indigo-500 to-blue-700" },
+  { id: "fashion", name: "Fashion", icon: Shirt, color: "from-fuchsia-500 to-pink-600" },
+  { id: "fuel", name: "Fuel & Gas", icon: Fuel, color: "from-slate-600 to-zinc-800" },
+  { id: "mobile", name: "Mobile Recharge", icon: Smartphone, color: "from-teal-500 to-emerald-600" },
+  { id: "beauty", name: "Beauty & Spa", icon: Sparkles, color: "from-rose-400 to-pink-500" },
+  { id: "books", name: "Books & Media", icon: BookOpen, color: "from-yellow-600 to-amber-700" },
+  { id: "fitness", name: "Fitness & Sports", icon: Dumbbell, color: "from-lime-600 to-green-700" },
+  { id: "restaurant", name: "Restaurant", icon: Utensils, color: "from-orange-500 to-red-600" },
+  { id: "art", name: "Art & Craft", icon: Palette, color: "from-purple-400 to-violet-600" },
 ];
 
 const DENOMINATIONS = [100, 250, 500, 1000, 2000];
