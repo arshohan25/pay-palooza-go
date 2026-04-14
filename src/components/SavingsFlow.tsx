@@ -598,11 +598,8 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 </div>
                 {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
               </div>
-              <motion.button whileTap={{ scale: 0.96 }} onClick={handleSave} disabled={processing}
-                className="w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg disabled:opacity-60"
-                style={{ background: "linear-gradient(135deg, hsl(162 72% 32%), hsl(178 62% 22%))" }}>
-                {processing ? "Processing…" : "Save Now"}
-              </motion.button>
+              <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
+              <SlideToConfirm onConfirm={handleSave} label={processing ? "Processing…" : "Slide to Save"} disabled={pin.length < 4 || processing} pinComplete={pin.length === 4} />
             </motion.div>
           )}
 
