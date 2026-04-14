@@ -160,6 +160,12 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
 
+  // ─── Delete confirmation state ────────
+  const [deleteTarget, setDeleteTarget] = useState<{ type: "goal" | "auto"; id: string; label: string } | null>(null);
+  const [deletePin, setDeletePin] = useState("");
+  const [deletePinError, setDeletePinError] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
   // ─── Gold state ────────
   const [goldStep, setGoldStep] = useState<GoldStep>("portfolio");
   const [goldHolding, setGoldHolding] = useState<GoldHolding>(() => {
@@ -262,9 +268,14 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   };
 
   const handleDeleteGoal = async (goalId: string) => {
+    if (deletePin.length < 4) { setDeletePinError("Enter your 4-digit PIN"); return; }
+    setDeleting(true); setDeletePinError("");
+    const pinValid = await verifyPin(deletePin);
+    if (!pinValid) { setDeletePinError("Incorrect PIN"); setDeletePin(""); setDeleting(false); return; }
     const { error } = await supabase.from("savings_goals").delete().eq("id", goalId);
-    if (error) { toast.error("Failed to delete goal"); return; }
+    if (error) { toast.error("Failed to delete goal"); setDeleting(false); return; }
     toast.success("Goal deleted"); loadGoals();
+    setDeleteTarget(null); setDeletePin(""); setDeleting(false);
   };
 
   const handleCreateAutoSave = async () => {
@@ -300,8 +311,13 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   };
 
   const deleteAutoSave = async (id: string) => {
+    if (deletePin.length < 4) { setDeletePinError("Enter your 4-digit PIN"); return; }
+    setDeleting(true); setDeletePinError("");
+    const pinValid = await verifyPin(deletePin);
+    if (!pinValid) { setDeletePinError("Incorrect PIN"); setDeletePin(""); setDeleting(false); return; }
     await supabase.from("savings_auto_save").delete().eq("id", id);
     loadAutoSaves(); toast.success("Schedule removed");
+    setDeleteTarget(null); setDeletePin(""); setDeleting(false);
   };
 
   // ─── Gold handlers ────────
@@ -548,7 +564,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                           <div className="flex items-center gap-1">
                             {goal.status === "completed" ? <CheckCircle2 size={20} className="text-primary shrink-0" />
                               : <button onClick={() => { setSelectedGoal(goal); setStep("add"); }}><ChevronRight size={16} className="text-muted-foreground/50 shrink-0" /></button>}
-                            <button onClick={() => handleDeleteGoal(goal.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 size={14} /></button>
+                            <button onClick={() => { setDeleteTarget({ type: "goal", id: goal.id, label: goal.name }); setDeletePin(""); setDeletePinError(""); }} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 size={14} /></button>
                           </div>
                         </div>
                         <div className="h-2 rounded-full bg-muted overflow-hidden">
@@ -826,7 +842,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                             )}
                           </div>
                           {!schedule.settled && <Switch checked={schedule.is_active} onCheckedChange={() => toggleAutoSave(schedule.id, schedule.is_active)} />}
-                          <button onClick={() => deleteAutoSave(schedule.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 size={14} /></button>
+                          <button onClick={() => { setDeleteTarget({ type: "auto", id: schedule.id, label: `৳${Number(schedule.amount).toLocaleString()} ${schedule.frequency}` }); setDeletePin(""); setDeletePinError(""); }} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 size={14} /></button>
                         </div>
                       </div>
                     );
@@ -1224,6 +1240,42 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   className="w-full h-12 rounded-2xl text-white font-bold text-[14px] shadow-lg"
                   style={{ background: "linear-gradient(135deg, hsl(162 72% 32%), hsl(178 62% 22%))" }}>
                   I Accept Terms & Conditions
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── Delete confirmation overlay ─── */}
+      <AnimatePresence>
+        {deleteTarget && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/50 flex items-end justify-center" onClick={() => setDeleteTarget(null)}>
+            <motion.div initial={{ y: 200 }} animate={{ y: 0 }} exit={{ y: 200 }}
+              transition={{ type: "spring", stiffness: 340, damping: 28 }}
+              className="w-full max-w-md bg-card rounded-t-3xl p-5 space-y-4 pb-8" onClick={(e) => e.stopPropagation()}>
+              <div className="w-10 h-1 rounded-full bg-muted mx-auto" />
+              <div className="text-center space-y-1">
+                <div className="w-12 h-12 mx-auto rounded-2xl bg-destructive/10 flex items-center justify-center">
+                  <Trash2 className="w-6 h-6 text-destructive" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">Confirm Deletion</h3>
+                <p className="text-sm text-muted-foreground">
+                  Delete <span className="font-semibold text-foreground">"{deleteTarget.label}"</span>? This cannot be undone.
+                </p>
+              </div>
+              <SavingsPinInput pin={deletePin} onChange={(p) => { setDeletePin(p); setDeletePinError(""); }} error={deletePinError} />
+              <div className="flex gap-3">
+                <motion.button whileTap={{ scale: 0.96 }} onClick={() => setDeleteTarget(null)}
+                  className="flex-1 h-12 rounded-2xl border-2 border-border font-bold text-sm text-muted-foreground">
+                  Cancel
+                </motion.button>
+                <motion.button whileTap={{ scale: 0.96 }}
+                  disabled={deletePin.length < 4 || deleting}
+                  onClick={() => deleteTarget.type === "goal" ? handleDeleteGoal(deleteTarget.id) : deleteAutoSave(deleteTarget.id)}
+                  className="flex-1 h-12 rounded-2xl bg-destructive text-destructive-foreground font-bold text-sm disabled:opacity-40">
+                  {deleting ? "Deleting…" : "Delete"}
                 </motion.button>
               </div>
             </motion.div>
