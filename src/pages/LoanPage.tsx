@@ -17,6 +17,8 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAiRewards } from "@/hooks/use-ai-rewards";
+import AiRewardBanner from "@/components/AiRewardBanner";
 
 const AMOUNTS = [1000, 3000, 5000, 10000, 25000, 50000];
 const TENURES = [30, 60, 90, 180, 365];
@@ -61,6 +63,7 @@ const LoanPage = () => {
   const [termsOpen, setTermsOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showEligibilityDetails, setShowEligibilityDetails] = useState(false);
+  const { rewards: aiLoanRewards, claimReward: claimLoanReward } = useAiRewards("loan");
 
   useEffect(() => {
     if (!kycLoading && kycStatus !== "verified") {
@@ -166,6 +169,13 @@ const LoanPage = () => {
       </div>
 
       <div className="max-w-md mx-auto pb-8 space-y-4 pt-4">
+
+        {/* AI Loan Recommendations */}
+        {aiLoanRewards.length > 0 && (
+          <div className="mx-4">
+            <AiRewardBanner rewards={aiLoanRewards} onClaim={claimLoanReward} />
+          </div>
+        )}
 
         {/* ── Credit Score Hero ── */}
         <motion.div

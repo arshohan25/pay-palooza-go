@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAiRewards } from "@/hooks/use-ai-rewards";
+import AiRewardBanner from "@/components/AiRewardBanner";
 
 interface Coupon {
   id: string;
@@ -26,6 +28,8 @@ export default function CouponsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const { rewards: aiCouponRewards, claimReward } = useAiRewards("coupon");
+  const { rewards: aiOfferRewards, claimReward: claimOffer } = useAiRewards("offer");
 
   useEffect(() => {
     const load = async () => {
@@ -76,6 +80,14 @@ export default function CouponsPage() {
           <h2 className="text-lg font-bold text-foreground">Exclusive Deals</h2>
           <p className="text-xs text-muted-foreground mt-1">Copy a code and use it at checkout</p>
         </div>
+
+        {/* AI Recommended Coupons & Offers */}
+        {(aiCouponRewards.length > 0 || aiOfferRewards.length > 0) && (
+          <AiRewardBanner rewards={[...aiCouponRewards, ...aiOfferRewards]} onClaim={(id) => {
+            const isCoupon = aiCouponRewards.some(r => r.id === id);
+            return isCoupon ? claimReward(id) : claimOffer(id);
+          }} />
+        )}
 
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => (

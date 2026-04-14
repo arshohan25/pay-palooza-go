@@ -9,6 +9,8 @@ import { useKycStatus } from "@/hooks/use-kyc-status";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAiRewards } from "@/hooks/use-ai-rewards";
+import AiRewardBanner from "@/components/AiRewardBanner";
 
 const BRANDS = [
   { id: "shopping", name: "Shopping", icon: ShoppingBag, color: "from-pink-500 to-rose-600" },
@@ -29,6 +31,7 @@ const GiftCardsPage = () => {
   const [cards, setCards] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"buy" | "my">("buy");
+  const { rewards: aiGiftRewards, claimReward } = useAiRewards("gift_card");
 
   useEffect(() => {
     if (!user) return;
@@ -91,6 +94,11 @@ const GiftCardsPage = () => {
           <button onClick={() => setTab("buy")} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${tab === "buy" ? "bg-background shadow text-foreground" : "text-muted-foreground"}`}>Buy Card</button>
           <button onClick={() => setTab("my")} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${tab === "my" ? "bg-background shadow text-foreground" : "text-muted-foreground"}`}>My Cards</button>
         </div>
+
+        {/* AI Recommended Gift Cards */}
+        {aiGiftRewards.length > 0 && (
+          <AiRewardBanner rewards={aiGiftRewards} onClaim={claimReward} />
+        )}
 
         {tab === "buy" ? (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
