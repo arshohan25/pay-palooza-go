@@ -7,7 +7,8 @@ import {
   TrendingDown, CreditCard, ShoppingBag, Wallet, FileText, ChevronDown,
   Percent, ArrowUpRight, Info, PiggyBank, BarChart3, RefreshCw, Target,
   CircleDollarSign, BadgeCheck, Timer, ArrowDownRight, Receipt, Star,
-  Gauge, Shield, Eye, EyeOff, DollarSign, CalendarClock, Ban
+  Gauge, Shield, Eye, EyeOff, DollarSign, CalendarClock, Ban, Heart,
+  HandCoins, Scale
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,7 +19,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Progress } from "@/components/ui/progress";
 import { useAiRewards } from "@/hooks/use-ai-rewards";
 import AiRewardBanner from "@/components/AiRewardBanner";
 
@@ -31,7 +31,9 @@ const TENURES = [
   { days: 270, label: "9 Months" },
   { days: 365, label: "1 Year" },
 ];
-const INTEREST_RATE = 5;
+
+// Flat one-time service fee — NOT interest. Sharia-compliant.
+const SERVICE_FEE_PERCENT = 3;
 
 const MIN_TOTAL_TXNS = 15;
 const MIN_ADD_MONEY_AMOUNT = 5000;
@@ -52,12 +54,12 @@ interface EligibilityResult {
   }[];
 }
 
-const statusConfig: Record<string, { icon: React.ReactNode; color: string; label: string; bg: string; glow: string }> = {
-  pending: { icon: <Clock className="w-3.5 h-3.5" />, color: "text-amber-500", label: "Under Review", bg: "bg-amber-500/10", glow: "shadow-amber-500/20" },
-  approved: { icon: <CheckCircle2 className="w-3.5 h-3.5" />, color: "text-emerald-500", label: "Approved", bg: "bg-emerald-500/10", glow: "shadow-emerald-500/20" },
-  rejected: { icon: <XCircle className="w-3.5 h-3.5" />, color: "text-destructive", label: "Rejected", bg: "bg-destructive/10", glow: "shadow-destructive/20" },
-  disbursed: { icon: <Banknote className="w-3.5 h-3.5" />, color: "text-blue-500", label: "Active Loan", bg: "bg-blue-500/10", glow: "shadow-blue-500/20" },
-  repaid: { icon: <BadgeCheck className="w-3.5 h-3.5" />, color: "text-muted-foreground", label: "Fully Repaid", bg: "bg-muted", glow: "" },
+const statusConfig: Record<string, { icon: React.ReactNode; color: string; label: string; bg: string }> = {
+  pending: { icon: <Clock className="w-3.5 h-3.5" />, color: "text-amber-500", label: "Under Review", bg: "bg-amber-500/10" },
+  approved: { icon: <CheckCircle2 className="w-3.5 h-3.5" />, color: "text-emerald-500", label: "Approved", bg: "bg-emerald-500/10" },
+  rejected: { icon: <XCircle className="w-3.5 h-3.5" />, color: "text-destructive", label: "Rejected", bg: "bg-destructive/10" },
+  disbursed: { icon: <Banknote className="w-3.5 h-3.5" />, color: "text-blue-500", label: "Active", bg: "bg-blue-500/10" },
+  repaid: { icon: <BadgeCheck className="w-3.5 h-3.5" />, color: "text-muted-foreground", label: "Settled", bg: "bg-muted" },
 };
 
 type TabType = "apply" | "active" | "history";
@@ -76,7 +78,6 @@ const LoanPage = () => {
   const [termsOpen, setTermsOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("apply");
-  const [detailApp, setDetailApp] = useState<any | null>(null);
   const [showBalance, setShowBalance] = useState(true);
   const { rewards: aiLoanRewards, claimReward: claimLoanReward } = useAiRewards("loan");
 
@@ -90,18 +91,19 @@ const LoanPage = () => {
   const amountNum = parseInt(amount) || 5000;
   const tenureNum = parseInt(tenure) || 90;
 
-  const emi = useMemo(() => {
-    const interest = (amountNum * INTEREST_RATE * (tenureNum / 365)) / 100;
-    const total = amountNum + interest;
+  const calc = useMemo(() => {
+    // Flat one-time service fee — no compounding, no time-based interest
+    const serviceFee = Math.round(amountNum * SERVICE_FEE_PERCENT / 100);
+    const totalPayable = amountNum + serviceFee;
     const installments = Math.ceil(tenureNum / 30);
-    const processingFee = Math.round(amountNum * 0.01);
+    const monthlyPayment = Math.round(totalPayable / installments);
+
     return {
-      total: Math.round(total),
-      interest: Math.round(interest),
-      monthly: Math.round(total / installments),
+      serviceFee,
+      totalPayable,
       installments,
-      processingFee,
-      dailyRate: parseFloat((INTEREST_RATE / 365).toFixed(4)),
+      monthlyPayment,
+      loanAmount: amountNum,
     };
   }, [amountNum, tenureNum]);
 
@@ -124,13 +126,13 @@ const LoanPage = () => {
 
     const checks = [
       { label: "Account Age", passed: accountAgeDays >= MIN_ACCOUNT_AGE_DAYS, current: `${accountAgeDays} days`, required: `${MIN_ACCOUNT_AGE_DAYS}+ days`, icon: <Calendar className="w-4 h-4" />, weight: 25 },
-      { label: "Transaction Volume", passed: totalTxns >= MIN_TOTAL_TXNS, current: `${totalTxns}`, required: `${MIN_TOTAL_TXNS}+`, icon: <TrendingUp className="w-4 h-4" />, weight: 25 },
-      { label: "Total Add Money", passed: addMoneyTotal >= MIN_ADD_MONEY_AMOUNT, current: `৳${addMoneyTotal.toLocaleString()}`, required: `৳${MIN_ADD_MONEY_AMOUNT.toLocaleString()}+`, icon: <Wallet className="w-4 h-4" />, weight: 20 },
-      { label: "Payment Activity", passed: paymentCount >= MIN_PAYMENT_COUNT, current: `${paymentCount}`, required: `${MIN_PAYMENT_COUNT}+`, icon: <CreditCard className="w-4 h-4" />, weight: 15 },
-      { label: "Shopping History", passed: shoppingCount >= 2, current: `${shoppingCount}`, required: "2+", icon: <ShoppingBag className="w-4 h-4" />, weight: 15 },
+      { label: "Transactions", passed: totalTxns >= MIN_TOTAL_TXNS, current: `${totalTxns}`, required: `${MIN_TOTAL_TXNS}+`, icon: <TrendingUp className="w-4 h-4" />, weight: 25 },
+      { label: "Add Money", passed: addMoneyTotal >= MIN_ADD_MONEY_AMOUNT, current: `৳${addMoneyTotal.toLocaleString()}`, required: `৳${MIN_ADD_MONEY_AMOUNT.toLocaleString()}+`, icon: <Wallet className="w-4 h-4" />, weight: 20 },
+      { label: "Payments", passed: paymentCount >= MIN_PAYMENT_COUNT, current: `${paymentCount}`, required: `${MIN_PAYMENT_COUNT}+`, icon: <CreditCard className="w-4 h-4" />, weight: 15 },
+      { label: "Shopping", passed: shoppingCount >= 2, current: `${shoppingCount}`, required: "2+", icon: <ShoppingBag className="w-4 h-4" />, weight: 15 },
     ];
-    const passedCount = checks.filter(c => c.passed).length;
     const score = checks.reduce((acc, c) => acc + (c.passed ? c.weight : 0), 0);
+    const passedCount = checks.filter(c => c.passed).length;
     const maxAmount = score >= 80 ? 50000 : score >= 60 ? 25000 : score >= 40 ? 10000 : 5000;
     setEligibility({ eligible: passedCount >= 4, score, checks, maxAmount });
     setEligibilityLoading(false);
@@ -143,7 +145,6 @@ const LoanPage = () => {
       .then(({ data }) => {
         setApplications(data || []);
         setLoading(false);
-        // Auto-switch to active tab if there are active loans
         if (data && data.some(a => ["disbursed", "approved"].includes(a.status))) {
           setActiveTab("active");
         }
@@ -158,21 +159,25 @@ const LoanPage = () => {
 
   const handleApply = () => {
     if (!user) { toast.error("Please sign in first"); return; }
-    if (!eligibility?.eligible) { toast.error("You are not eligible for a loan yet"); return; }
+    if (!eligibility?.eligible) { toast.error("You are not eligible yet"); return; }
     setTermsAccepted(false);
     setTermsOpen(true);
   };
 
   const handleConfirmLoan = async () => {
-    if (!termsAccepted) { toast.error("Please accept the terms & conditions"); return; }
+    if (!termsAccepted) { toast.error("Please accept the terms"); return; }
     setTermsOpen(false);
     setSubmitting(true);
     const { error } = await supabase.from("loan_applications").insert({
-      user_id: user!.id, amount: amountNum, tenure_days: tenureNum, interest_rate: INTEREST_RATE, emi_amount: emi.monthly,
+      user_id: user!.id,
+      amount: amountNum,
+      tenure_days: tenureNum,
+      interest_rate: SERVICE_FEE_PERCENT, // stored as service fee %
+      emi_amount: calc.monthlyPayment,
     } as any);
     if (error) toast.error("Failed to submit application");
     else {
-      toast.success("Loan application submitted!");
+      toast.success("Qard Hasan application submitted!");
       const { data } = await supabase.from("loan_applications").select("*").eq("user_id", user!.id).order("created_at", { ascending: false });
       setApplications(data || []);
       setActiveTab("active");
@@ -185,7 +190,6 @@ const LoanPage = () => {
   const scoreColor = !eligibility ? "hsl(var(--primary))" : eligibility.score >= 80 ? "hsl(142, 71%, 45%)" : eligibility.score >= 60 ? "hsl(36, 95%, 55%)" : "hsl(0, 74%, 55%)";
   const scoreGrade = !eligibility ? "—" : eligibility.score >= 80 ? "Excellent" : eligibility.score >= 60 ? "Good" : eligibility.score >= 40 ? "Fair" : "Building";
 
-  // Simulated repayment data for active loans
   const getLoanProgress = (app: any) => {
     const startDate = new Date(app.applied_at || app.created_at);
     const now = new Date();
@@ -194,7 +198,8 @@ const LoanPage = () => {
     const progress = Math.min(100, Math.round((elapsed / totalDays) * 100));
     const installmentsPaid = Math.floor(elapsed / 30);
     const totalInstallments = Math.ceil(totalDays / 30);
-    const totalAmount = Number(app.amount) + (Number(app.amount) * (app.interest_rate || INTEREST_RATE) * (totalDays / 365)) / 100;
+    const fee = Number(app.amount) * ((app.interest_rate || SERVICE_FEE_PERCENT) / 100);
+    const totalAmount = Number(app.amount) + fee;
     const paidAmount = Math.min(totalAmount, (totalAmount / totalInstallments) * installmentsPaid);
     const remaining = Math.max(0, totalAmount - paidAmount);
     const nextDueDate = new Date(startDate);
@@ -202,16 +207,9 @@ const LoanPage = () => {
     const daysUntilDue = Math.max(0, Math.floor((nextDueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
 
     return {
-      progress,
-      elapsed,
-      totalDays,
-      installmentsPaid,
-      totalInstallments,
-      totalAmount: Math.round(totalAmount),
-      paidAmount: Math.round(paidAmount),
-      remaining: Math.round(remaining),
-      nextDueDate,
-      daysUntilDue,
+      progress, elapsed, totalDays, installmentsPaid, totalInstallments,
+      totalAmount: Math.round(totalAmount), paidAmount: Math.round(paidAmount),
+      remaining: Math.round(remaining), nextDueDate, daysUntilDue, fee: Math.round(fee),
       isOverdue: daysUntilDue <= 0 && installmentsPaid < totalInstallments,
     };
   };
@@ -231,12 +229,12 @@ const LoanPage = () => {
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
           <div className="flex-1">
-            <h1 className="text-base font-bold text-foreground">Instant Loan</h1>
-            <p className="text-[10px] text-muted-foreground">Powered by EasyPay Credit</p>
+            <h1 className="text-base font-bold text-foreground">Qard Hasan</h1>
+            <p className="text-[10px] text-muted-foreground">Interest-Free · Sharia Compliant</p>
           </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10">
-            <Gauge className="w-3 h-3 text-primary" />
-            <span className="text-[11px] font-semibold text-primary">{eligibility?.score ?? 0}%</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10">
+            <Heart className="w-3 h-3 text-emerald-500" />
+            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">Halal</span>
           </div>
         </div>
 
@@ -246,7 +244,7 @@ const LoanPage = () => {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all relative ${
+              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
                 activeTab === tab.key
                   ? "text-primary-foreground"
                   : "text-muted-foreground bg-muted/30 hover:bg-muted/50"
@@ -268,6 +266,7 @@ const LoanPage = () => {
 
       <div className="max-w-md mx-auto pb-8">
         <AnimatePresence mode="wait">
+
           {/* ═══════════ APPLY TAB ═══════════ */}
           {activeTab === "apply" && (
             <motion.div
@@ -285,6 +284,21 @@ const LoanPage = () => {
                 </div>
               )}
 
+              {/* ── Islamic Finance Banner ── */}
+              <div className="mx-4">
+                <div className="rounded-2xl bg-emerald-500/[0.06] ring-1 ring-emerald-500/15 p-4 flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                    <Scale className="w-5 h-5 text-emerald-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-foreground">100% Interest-Free (Riba-Free)</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
+                      Qard Hasan — a benevolent loan with only a one-time flat {SERVICE_FEE_PERCENT}% service fee. No compounding, no hidden charges, fully Sharia compliant.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* ── Credit Score Hero ── */}
               <div className="mx-4">
                 <div className="relative rounded-[20px] overflow-hidden" style={{ background: "var(--gradient-hero)" }}>
@@ -296,15 +310,15 @@ const LoanPage = () => {
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-lg bg-white/[0.12] flex items-center justify-center backdrop-blur-sm">
-                            <Landmark className="w-3.5 h-3.5 text-white" />
+                            <Gauge className="w-3.5 h-3.5 text-white" />
                           </div>
-                          <span className="text-white/50 text-[10px] font-semibold tracking-widest uppercase">Credit Score</span>
+                          <span className="text-white/50 text-[10px] font-semibold tracking-widest uppercase">Trust Score</span>
                         </div>
 
                         {eligibilityLoading ? (
                           <div className="flex items-center gap-2 pt-2">
                             <Loader2 className="w-4 h-4 animate-spin text-white/40" />
-                            <span className="text-white/40 text-xs">Analyzing profile...</span>
+                            <span className="text-white/40 text-xs">Analyzing...</span>
                           </div>
                         ) : (
                           <>
@@ -315,13 +329,11 @@ const LoanPage = () => {
                                 <span className="text-[10px] font-semibold" style={{ color: scoreColor }}>{scoreGrade}</span>
                               </div>
                             </div>
-
-                            {/* Max eligible amount */}
                             <div className="flex items-center gap-2 mt-1">
                               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/[0.08]">
                                 <Target className="w-3 h-3 text-emerald-400" />
                                 <span className="text-[10px] text-white/60 font-medium">
-                                  Max Eligible: <span className="text-white font-bold">৳{(eligibility?.maxAmount ?? 0).toLocaleString()}</span>
+                                  Max: <span className="text-white font-bold">৳{(eligibility?.maxAmount ?? 0).toLocaleString()}</span>
                                 </span>
                               </div>
                             </div>
@@ -329,7 +341,7 @@ const LoanPage = () => {
                         )}
                       </div>
 
-                      {/* Radial Score Ring */}
+                      {/* Radial Ring */}
                       {!eligibilityLoading && eligibility && (
                         <div className="relative w-[88px] h-[88px]">
                           <svg className="w-full h-full -rotate-90" viewBox="0 0 88 88">
@@ -343,11 +355,10 @@ const LoanPage = () => {
                             />
                           </svg>
                           <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            {eligibility.eligible ? (
-                              <ShieldCheck className="w-6 h-6 text-emerald-400" />
-                            ) : (
-                              <AlertTriangle className="w-6 h-6 text-amber-400" />
-                            )}
+                            {eligibility.eligible
+                              ? <ShieldCheck className="w-6 h-6 text-emerald-400" />
+                              : <AlertTriangle className="w-6 h-6 text-amber-400" />
+                            }
                             <span className="text-[9px] text-white/50 font-semibold mt-0.5">
                               {eligibility.eligible ? "Eligible" : "Building"}
                             </span>
@@ -356,14 +367,12 @@ const LoanPage = () => {
                       )}
                     </div>
 
-                    {/* Criteria Grid */}
+                    {/* Criteria */}
                     {!eligibilityLoading && eligibility && (
                       <div className="mt-4 grid grid-cols-5 gap-1.5">
                         {eligibility.checks.map((check, i) => (
                           <div key={i} className="flex flex-col items-center gap-1 px-1 py-2 rounded-xl bg-white/[0.06]">
-                            <div className={check.passed ? "text-emerald-400" : "text-white/20"}>
-                              {check.icon}
-                            </div>
+                            <div className={check.passed ? "text-emerald-400" : "text-white/20"}>{check.icon}</div>
                             <span className="text-[8px] text-white/40 font-medium text-center leading-tight">{check.label}</span>
                             {check.passed
                               ? <CheckCircle2 className="w-3 h-3 text-emerald-400" />
@@ -377,17 +386,17 @@ const LoanPage = () => {
                 </div>
               </div>
 
-              {/* ── Loan Configuration Card ── */}
+              {/* ── Loan Config Card ── */}
               <div className="mx-4">
                 <div className="rounded-[20px] bg-card ring-1 ring-border/40 overflow-hidden">
                   <div className="p-5 space-y-5">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "var(--gradient-primary)" }}>
-                        <CircleDollarSign className="w-4 h-4 text-primary-foreground" />
+                        <HandCoins className="w-4 h-4 text-primary-foreground" />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-foreground">Configure Your Loan</p>
-                        <p className="text-[10px] text-muted-foreground">Select amount and repayment duration</p>
+                        <p className="text-sm font-bold text-foreground">Configure Qard Hasan</p>
+                        <p className="text-[10px] text-muted-foreground">Select amount & repayment period</p>
                       </div>
                     </div>
 
@@ -409,8 +418,11 @@ const LoanPage = () => {
                         <SelectContent className="rounded-2xl">
                           {AMOUNTS.map(a => (
                             <SelectItem key={a} value={a.toString()} className="rounded-xl">
-                              <div className="flex items-center justify-between gap-6">
+                              <div className="flex items-center justify-between gap-4">
                                 <span className="font-bold">৳{a.toLocaleString()}</span>
+                                <span className="text-[9px] text-muted-foreground">
+                                  Fee: ৳{Math.round(a * SERVICE_FEE_PERCENT / 100).toLocaleString()}
+                                </span>
                                 {eligibility && a > eligibility.maxAmount && (
                                   <span className="text-[9px] text-destructive font-medium">Over limit</span>
                                 )}
@@ -421,9 +433,9 @@ const LoanPage = () => {
                       </Select>
                     </div>
 
-                    {/* Tenure Dropdown */}
+                    {/* Duration Dropdown */}
                     <div className="space-y-2">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Repayment Duration</label>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Repayment Period</label>
                       <Select value={tenure} onValueChange={setTenure}>
                         <SelectTrigger className="w-full h-14 rounded-2xl bg-muted/30 border-border/40 px-4">
                           <div className="flex items-center gap-3">
@@ -450,29 +462,28 @@ const LoanPage = () => {
                     </div>
                   </div>
 
-                  {/* EMI Summary */}
+                  {/* Payment Summary */}
                   <div className="mx-5 border-t border-border/30" />
                   <div className="p-5">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Monthly EMI</p>
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Monthly Installment</p>
                         <div className="flex items-baseline gap-1 mt-1">
-                          <span className="text-[34px] font-black text-foreground leading-none tabular-nums">৳{emi.monthly.toLocaleString()}</span>
+                          <span className="text-[34px] font-black text-foreground leading-none tabular-nums">৳{calc.monthlyPayment.toLocaleString()}</span>
                           <span className="text-xs text-muted-foreground font-medium">/mo</span>
                         </div>
                       </div>
                       <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: "var(--gradient-primary)" }}>
-                        <Percent className="w-6 h-6 text-primary-foreground" />
+                        <HandCoins className="w-6 h-6 text-primary-foreground" />
                       </div>
                     </div>
 
-                    {/* Breakdown Grid */}
                     <div className="grid grid-cols-2 gap-2">
                       {[
-                        { label: "Principal", value: `৳${amountNum.toLocaleString()}`, icon: <DollarSign className="w-3 h-3" /> },
-                        { label: `Interest (${INTEREST_RATE}%)`, value: `৳${emi.interest.toLocaleString()}`, icon: <Percent className="w-3 h-3" /> },
-                        { label: "Processing Fee", value: `৳${emi.processingFee.toLocaleString()}`, icon: <Receipt className="w-3 h-3" /> },
-                        { label: "Total Payable", value: `৳${emi.total.toLocaleString()}`, icon: <Banknote className="w-3 h-3" />, highlight: true },
+                        { label: "Loan Amount", value: `৳${calc.loanAmount.toLocaleString()}`, icon: <DollarSign className="w-3 h-3" />, highlight: false },
+                        { label: `Service Fee (${SERVICE_FEE_PERCENT}%)`, value: `৳${calc.serviceFee.toLocaleString()}`, icon: <Receipt className="w-3 h-3" />, highlight: false },
+                        { label: "Total Payable", value: `৳${calc.totalPayable.toLocaleString()}`, icon: <Banknote className="w-3 h-3" />, highlight: true },
+                        { label: "Installments", value: `${calc.installments} months`, icon: <Calendar className="w-3 h-3" />, highlight: false },
                       ].map((item, i) => (
                         <div key={i} className={`p-3 rounded-xl ${item.highlight ? "bg-primary/[0.06] ring-1 ring-primary/15" : "bg-muted/30"}`}>
                           <div className="flex items-center gap-1.5 mb-1">
@@ -484,23 +495,23 @@ const LoanPage = () => {
                       ))}
                     </div>
 
-                    {/* Schedule Preview */}
-                    <div className="mt-3 flex items-center gap-2 px-3 py-2.5 rounded-xl bg-muted/20 ring-1 ring-border/20">
-                      <Timer className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                    {/* No-interest highlight */}
+                    <div className="mt-3 flex items-center gap-2 px-3 py-2.5 rounded-xl bg-emerald-500/[0.04] ring-1 ring-emerald-500/10">
+                      <Heart className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
                       <span className="text-[10px] text-muted-foreground">
-                        {emi.installments} installments · {emi.dailyRate}% daily · Auto-debit from wallet
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">0% Interest</span> — Only a flat ৳{calc.serviceFee.toLocaleString()} service fee · Auto-debit from wallet
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* ── Key Features ── */}
+              {/* ── Features ── */}
               <div className="mx-4 grid grid-cols-3 gap-2">
                 {[
-                  { icon: <Sparkles className="w-4 h-4" />, label: "Instant\nApproval", color: "text-amber-500" },
-                  { icon: <Shield className="w-4 h-4" />, label: "No Hidden\nCharges", color: "text-emerald-500" },
-                  { icon: <RefreshCw className="w-4 h-4" />, label: "Flexible\nRepayment", color: "text-blue-500" },
+                  { icon: <Heart className="w-4 h-4" />, label: "Zero\nInterest", color: "text-emerald-500" },
+                  { icon: <Shield className="w-4 h-4" />, label: "Sharia\nCompliant", color: "text-blue-500" },
+                  { icon: <RefreshCw className="w-4 h-4" />, label: "Flexible\nRepayment", color: "text-amber-500" },
                 ].map((f, i) => (
                   <div key={i} className="rounded-2xl bg-card ring-1 ring-border/40 p-3 flex flex-col items-center text-center gap-1.5">
                     <div className={`w-9 h-9 rounded-xl bg-muted/40 flex items-center justify-center ${f.color}`}>{f.icon}</div>
@@ -509,7 +520,7 @@ const LoanPage = () => {
                 ))}
               </div>
 
-              {/* ── Apply Button ── */}
+              {/* Apply Button */}
               <div className="mx-4">
                 <Button
                   onClick={handleApply}
@@ -520,24 +531,15 @@ const LoanPage = () => {
                   {submitting ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : !eligibility?.eligible ? (
-                    <>
-                      <TrendingDown className="w-4 h-4 mr-2" />
-                      Improve Score to Apply
-                    </>
+                    <><TrendingDown className="w-4 h-4 mr-2" />Improve Score to Apply</>
                   ) : amountNum > (eligibility?.maxAmount ?? 0) ? (
-                    <>
-                      <Ban className="w-4 h-4 mr-2" />
-                      Amount Exceeds Limit
-                    </>
+                    <><Ban className="w-4 h-4 mr-2" />Amount Exceeds Limit</>
                   ) : (
-                    <>
-                      <ArrowUpRight className="w-4 h-4 mr-1.5" />
-                      Apply for ৳{amountNum.toLocaleString()} Loan
-                    </>
+                    <><ArrowUpRight className="w-4 h-4 mr-1.5" />Apply for ৳{amountNum.toLocaleString()} Qard Hasan</>
                   )}
                 </Button>
                 <p className="text-center text-[9px] text-muted-foreground/60 mt-2">
-                  By applying you agree to credit assessment and auto-debit policies
+                  No riba · One-time service fee only · Fully transparent
                 </p>
               </div>
             </motion.div>
@@ -559,10 +561,9 @@ const LoanPage = () => {
                     <PiggyBank className="w-7 h-7 text-muted-foreground/40" />
                   </div>
                   <p className="text-sm font-bold text-foreground">No Active Loans</p>
-                  <p className="text-xs text-muted-foreground mt-1">Apply for a loan to see it here</p>
+                  <p className="text-xs text-muted-foreground mt-1">Apply for Qard Hasan to see it here</p>
                   <Button onClick={() => setActiveTab("apply")} variant="outline" className="mt-4 rounded-xl text-xs">
-                    <ArrowUpRight className="w-3.5 h-3.5 mr-1.5" />
-                    Apply Now
+                    <ArrowUpRight className="w-3.5 h-3.5 mr-1.5" />Apply Now
                   </Button>
                 </div>
               ) : (
@@ -580,19 +581,14 @@ const LoanPage = () => {
                       className="mx-4"
                     >
                       <div className="rounded-[20px] bg-card ring-1 ring-border/40 overflow-hidden">
-                        {/* Header */}
                         <div className="p-5 pb-3">
                           <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${sc.bg}`}>
+                            <div className="flex items-center gap-2.5">
+                              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${sc.bg}`}>
                                 <span className={sc.color}>{sc.icon}</span>
                               </div>
                               <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-lg font-black text-foreground tabular-nums">
-                                    ৳{Number(app.amount).toLocaleString()}
-                                  </span>
-                                </div>
+                                <span className="text-lg font-black text-foreground tabular-nums">৳{Number(app.amount).toLocaleString()}</span>
                                 <p className="text-[10px] text-muted-foreground">
                                   {new Date(app.applied_at || app.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                                 </p>
@@ -604,13 +600,12 @@ const LoanPage = () => {
                             </div>
                           </div>
 
-                          {/* Progress for disbursed */}
                           {isDisbursed && (
                             <div className="space-y-3">
-                              {/* Progress bar */}
+                              {/* Progress */}
                               <div>
                                 <div className="flex items-center justify-between mb-1.5">
-                                  <span className="text-[10px] text-muted-foreground font-medium">Repayment Progress</span>
+                                  <span className="text-[10px] text-muted-foreground font-medium">Settlement Progress</span>
                                   <span className="text-[10px] font-bold text-primary">{lp.progress}%</span>
                                 </div>
                                 <div className="h-2.5 rounded-full bg-muted/40 overflow-hidden">
@@ -624,12 +619,12 @@ const LoanPage = () => {
                                 </div>
                               </div>
 
-                              {/* Key metrics */}
+                              {/* Paid / Remaining */}
                               <div className="grid grid-cols-2 gap-2">
                                 <div className="p-3 rounded-xl bg-emerald-500/[0.06] ring-1 ring-emerald-500/10">
                                   <div className="flex items-center gap-1.5 mb-1">
                                     <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                                    <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium">Paid</span>
+                                    <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium">Repaid</span>
                                   </div>
                                   <p className="text-sm font-bold text-foreground tabular-nums">
                                     <button onClick={() => setShowBalance(!showBalance)} className="inline-flex items-center gap-1">
@@ -649,7 +644,7 @@ const LoanPage = () => {
                                 </div>
                               </div>
 
-                              {/* Next Due / Schedule */}
+                              {/* Next Due & Installments */}
                               <div className="flex gap-2">
                                 <div className={`flex-1 p-3 rounded-xl ring-1 ${lp.isOverdue ? "bg-destructive/[0.06] ring-destructive/15" : "bg-muted/30 ring-border/20"}`}>
                                   <div className="flex items-center gap-1.5 mb-1">
@@ -668,28 +663,46 @@ const LoanPage = () => {
                                     <BarChart3 className="w-3 h-3 text-muted-foreground" />
                                     <span className="text-[9px] text-muted-foreground font-medium">Installments</span>
                                   </div>
-                                  <p className="text-xs font-bold text-foreground">
-                                    {lp.installmentsPaid}/{lp.totalInstallments}
-                                  </p>
+                                  <p className="text-xs font-bold text-foreground">{lp.installmentsPaid}/{lp.totalInstallments}</p>
                                   <p className="text-[9px] text-muted-foreground mt-0.5">completed</p>
                                 </div>
                               </div>
 
-                              {/* Settlement info */}
-                              <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-primary/[0.04] ring-1 ring-primary/10">
-                                <Info className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                              {/* Settlement Info */}
+                              <div className="p-3 rounded-xl bg-muted/20 ring-1 ring-border/20">
+                                <div className="flex items-center gap-1.5 mb-2">
+                                  <Timer className="w-3.5 h-3.5 text-primary" />
+                                  <span className="text-[10px] font-semibold text-foreground">Settlement Details</span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2">
+                                  <div>
+                                    <p className="text-[9px] text-muted-foreground">Service Fee</p>
+                                    <p className="text-[11px] font-bold text-foreground">৳{lp.fee.toLocaleString()}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-[9px] text-muted-foreground">Total Due</p>
+                                    <p className="text-[11px] font-bold text-foreground">৳{lp.totalAmount.toLocaleString()}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-[9px] text-muted-foreground">Days Left</p>
+                                    <p className="text-[11px] font-bold text-foreground">{Math.max(0, lp.totalDays - lp.elapsed)}</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-500/[0.04] ring-1 ring-emerald-500/10">
+                                <Heart className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
                                 <span className="text-[10px] text-muted-foreground">
-                                  Settlement: {lp.totalDays - lp.elapsed} days remaining · EMI ৳{Number(app.emi_amount).toLocaleString()}/mo
+                                  <span className="font-bold text-emerald-600 dark:text-emerald-400">0% Interest</span> — Service fee ৳{lp.fee.toLocaleString()} already included
                                 </span>
                               </div>
                             </div>
                           )}
 
-                          {/* Pending/Approved status info */}
                           {app.status === "pending" && (
                             <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-amber-500/[0.05] ring-1 ring-amber-500/10">
                               <Clock className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 animate-pulse" />
-                              <span className="text-[10px] text-muted-foreground">Your application is under review. Usually takes 1-2 business days.</span>
+                              <span className="text-[10px] text-muted-foreground">Under review. Usually takes 1-2 business days.</span>
                             </div>
                           )}
 
@@ -701,22 +714,21 @@ const LoanPage = () => {
                           )}
                         </div>
 
-                        {/* Quick Stats Footer */}
+                        {/* Footer */}
                         <div className="border-t border-border/30 px-5 py-3 flex items-center justify-between bg-muted/10">
-                          <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-3">
                             <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                              <Percent className="w-3 h-3" />
-                              {app.interest_rate || INTEREST_RATE}% p.a.
+                              <Heart className="w-3 h-3 text-emerald-500" />
+                              0% Interest
                             </div>
                             <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                               <Timer className="w-3 h-3" />
-                              {app.tenure_days}d tenure
+                              {app.tenure_days}d
                             </div>
                           </div>
-                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                            <Banknote className="w-3 h-3" />
+                          <span className="text-[10px] text-muted-foreground font-medium">
                             ৳{Number(app.emi_amount).toLocaleString()}/mo
-                          </div>
+                          </span>
                         </div>
                       </div>
                     </motion.div>
@@ -746,16 +758,15 @@ const LoanPage = () => {
                     <FileText className="w-7 h-7 text-muted-foreground/40" />
                   </div>
                   <p className="text-sm font-bold text-foreground">No History Yet</p>
-                  <p className="text-xs text-muted-foreground mt-1">Completed and rejected loans appear here</p>
+                  <p className="text-xs text-muted-foreground mt-1">Settled and rejected loans appear here</p>
                 </div>
               ) : (
                 <>
-                  {/* Summary Stats */}
                   <div className="grid grid-cols-2 gap-2 mb-1">
                     <div className="rounded-2xl bg-card ring-1 ring-border/40 p-4">
                       <div className="flex items-center gap-1.5 mb-2">
                         <BadgeCheck className="w-4 h-4 text-emerald-500" />
-                        <span className="text-[10px] text-muted-foreground font-medium">Total Repaid</span>
+                        <span className="text-[10px] text-muted-foreground font-medium">Total Settled</span>
                       </div>
                       <p className="text-lg font-black text-foreground tabular-nums">
                         ৳{historyLoans.filter(a => a.status === "repaid").reduce((s, a) => s + Number(a.amount), 0).toLocaleString()}
@@ -789,7 +800,7 @@ const LoanPage = () => {
                             </div>
                             <div>
                               <span className="text-base font-black text-foreground tabular-nums">৳{Number(app.amount).toLocaleString()}</span>
-                              <p className="text-[10px] text-muted-foreground">{app.tenure_days} days tenure</p>
+                              <p className="text-[10px] text-muted-foreground">{app.tenure_days} days · 0% interest</p>
                             </div>
                           </div>
                           <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${sc.bg} ${sc.color}`}>
@@ -826,8 +837,8 @@ const LoanPage = () => {
           <div className="px-5 pt-5 pb-3">
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2 text-foreground text-sm">
-                <FileText className="w-4 h-4 text-primary" />
-                Loan Terms & Conditions
+                <Scale className="w-4 h-4 text-primary" />
+                Qard Hasan Terms & Conditions
               </SheetTitle>
             </SheetHeader>
           </div>
@@ -835,14 +846,15 @@ const LoanPage = () => {
           <ScrollArea className="h-[45vh] px-5">
             <div className="space-y-4 pb-4">
               {[
-                { title: "1. Loan Agreement", text: "By applying, you enter a binding agreement with EasyPay. Loan amount, tenure, and rate are final after submission." },
-                { title: "2. Interest & Fees", text: `Flat interest rate of ${INTEREST_RATE}% p.a. Processing fee: 1% of principal. No hidden charges. Late payment penalty: 2% per month on outstanding.` },
-                { title: "3. Repayment", text: "EMI auto-deducted from wallet monthly. Maintain sufficient balance. 3 consecutive misses may trigger default." },
-                { title: "4. Eligibility", text: "Approval depends on transaction history, account standing, and KYC. EasyPay may reject without specific reasons." },
-                { title: "5. Prepayment", text: "Full prepayment allowed without penalty. Partial prepayments are not permitted." },
-                { title: "6. Default & Recovery", text: "On default: account restrictions, deductions from incoming funds, credit bureau reporting, and legal proceedings may follow." },
-                { title: "7. Data Usage", text: "Transaction data used solely for creditworthiness. No third-party sharing except as required by law." },
-                { title: "8. Governing Law", text: "Governed by laws of the People's Republic of Bangladesh. Disputes resolved through appropriate judicial authorities." },
+                { title: "1. Sharia Compliance", text: "This is a Qard Hasan (benevolent loan) — completely interest-free (riba-free). The borrower repays only the principal amount plus a one-time flat service fee." },
+                { title: "2. Service Fee", text: `A flat ${SERVICE_FEE_PERCENT}% one-time service fee of ৳${calc.serviceFee.toLocaleString()} is charged to cover administrative and operational costs. This fee does not compound or increase over time.` },
+                { title: "3. Repayment", text: "Equal monthly installments auto-deducted from your wallet. Maintain sufficient balance. 3 consecutive misses may result in account restrictions." },
+                { title: "4. No Penalty Interest", text: "Late payments do not accrue additional interest or riba. However, repeated defaults may affect your Trust Score and future eligibility." },
+                { title: "5. Eligibility", text: "Approval depends on Trust Score, transaction history, and KYC verification. EasyPay reserves the right to decline applications." },
+                { title: "6. Early Settlement", text: "Full early repayment is allowed at any time without penalty. Service fee remains unchanged regardless of early settlement." },
+                { title: "7. Default & Recovery", text: "On default: account restrictions, deductions from incoming funds, and Trust Score reduction. No additional interest or charges are levied." },
+                { title: "8. Data Privacy", text: "Transaction data is used solely for Trust Score calculation. No third-party sharing except as required by law." },
+                { title: "9. Governing Principle", text: "This agreement follows Islamic finance principles (Qard Hasan). Governed by laws of the People's Republic of Bangladesh." },
               ].map((s, i) => (
                 <div key={i}>
                   <h4 className="text-[11px] font-bold text-foreground uppercase tracking-wider mb-1">{s.title}</h4>
@@ -856,7 +868,7 @@ const LoanPage = () => {
             <label className="flex items-start gap-3 cursor-pointer">
               <Checkbox checked={termsAccepted} onCheckedChange={(v) => setTermsAccepted(v === true)} className="mt-0.5" />
               <span className="text-[11px] text-muted-foreground leading-relaxed">
-                I agree to the <span className="text-foreground font-semibold">Terms & Conditions</span>, including interest, repayment, and default policies.
+                I agree to the <span className="text-foreground font-semibold">Qard Hasan Terms</span>, including the {SERVICE_FEE_PERCENT}% service fee and repayment policies. I understand this loan is interest-free.
               </span>
             </label>
             <Button
@@ -868,7 +880,7 @@ const LoanPage = () => {
               {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (
                 <>
                   <ShieldCheck className="w-4 h-4 mr-1.5" />
-                  Confirm ৳{amountNum.toLocaleString()} Loan
+                  Confirm ৳{amountNum.toLocaleString()} Qard Hasan
                 </>
               )}
             </Button>
