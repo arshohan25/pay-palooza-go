@@ -21,6 +21,8 @@ import {
   AlertCircle,
   CreditCard,
   Hash,
+  Ticket,
+  Loader2,
   QrCode,
   ShoppingBag,
 } from "lucide-react";
@@ -116,6 +118,11 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
   const [showScanner, setShowScanner] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [recentMerchants, setRecentMerchants] = useState<Merchant[]>([]);
+  const [resolvedMerchantUserId, setResolvedMerchantUserId] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState("");
+  const [showCouponInput, setShowCouponInput] = useState(false);
   const txnTime = useRef(new Date());
   const genId = () => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; };
   const txnId   = useRef(genId());
@@ -136,6 +143,7 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
         return;
       }
       setResolvedMerchantPhone(validation.phone || "");
+      setResolvedMerchantUserId(validation.userId || null);
       setMerchant({ id: "prefilled", name: validation.name || "Merchant", merchantId: prefilledMerchantId, category: "Payment", initials: "MR", gradient: "gradient-payment" });
       goTo("amount");
     };
@@ -209,7 +217,7 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
   const [validating, setValidating] = useState(false);
   const [resolvedMerchantPhone, setResolvedMerchantPhone] = useState("");
 
-  const validateMerchantExists = async (merchantId: string): Promise<{ exists: boolean; name?: string; phone?: string }> => {
+  const validateMerchantExists = async (merchantId: string): Promise<{ exists: boolean; name?: string; phone?: string; userId?: string }> => {
     const { data, error } = await supabase.rpc("resolve_transfer_recipient", {
       p_identifier: merchantId,
       p_flow: "payment",
@@ -217,9 +225,44 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
     if (error) return { exists: false };
     const result = typeof data === "string" ? JSON.parse(data) : data;
     if (result?.found) {
-      return { exists: true, name: result.recipient_name || undefined, phone: result.recipient_phone };
+      return { exists: true, name: result.recipient_name || undefined, phone: result.recipient_phone, userId: result.recipient_id };
     }
     return { exists: false };
+  };
+
+  const handleApplyCoupon = async () => {
+    const code = couponCode.trim();
+    if (!code) return;
+    const currentAmt = parseFloat(amount) || 0;
+    if (currentAmt <= 0) { setCouponError("Enter an amount first"); return; }
+    setCouponLoading(true);
+    setCouponError("");
+    try {
+      const { data, error } = await supabase.functions.invoke("apply-coupon", {
+        body: { code, cart_total: currentAmt, merchant_id: resolvedMerchantUserId || null },
+      });
+      if (error) { setCouponError("Failed to validate coupon"); setCouponLoading(false); return; }
+      if (data?.valid === false) { setCouponError(data.error || "Invalid coupon"); setCouponLoading(false); return; }
+      const c = data?.coupon || data;
+      if (c?.id) {
+        setPendingCoupon({
+          id: c.id,
+          code: c.code || code,
+          discount_type: c.discount_type,
+          discount_value: c.discount_value,
+          max_discount: c.max_discount || null,
+          min_order_amount: c.min_order_amount || null,
+          applicable_flow: c.applicable_flow || "payment",
+        });
+        setShowCouponInput(false);
+        setCouponCode("");
+      } else {
+        setCouponError("Invalid coupon code");
+      }
+    } catch {
+      setCouponError("Something went wrong");
+    }
+    setCouponLoading(false);
   };
 
   const handleQrScan = async (rawResult: string) => {
@@ -253,6 +296,7 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
     }
 
     setResolvedMerchantPhone(validation.phone || "");
+    setResolvedMerchantUserId(validation.userId || null);
     const found = recentMerchants.find((m) => m.merchantId.toLowerCase() === result.toLowerCase());
     if (found) {
       setMerchant(found);
@@ -277,6 +321,7 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
     }
 
     setResolvedMerchantPhone(validation.phone || "");
+    setResolvedMerchantUserId(validation.userId || null);
     const found = recentMerchants.find((m) => m.merchantId.toLowerCase() === trimmed.toLowerCase());
     if (found) {
       setMerchant(found);
@@ -547,6 +592,49 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
                     className="bg-card border-border"
                   />
                 </div>
+
+                {/* Inline coupon input */}
+                {!pendingCoupon && (
+                  <div className="space-y-2">
+                    {!showCouponInput ? (
+                      <button
+                        onClick={() => setShowCouponInput(true)}
+                        className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                      >
+                        <Ticket size={13} />
+                        Have a coupon?
+                      </button>
+                    ) : (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        className="space-y-1.5"
+                      >
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Enter code"
+                            value={couponCode}
+                            onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }}
+                            className="flex-1 h-9 text-xs uppercase border-dashed bg-card border-border font-mono tracking-wider"
+                          />
+                          <Button
+                            size="sm"
+                            className="h-9 px-4 text-xs font-semibold"
+                            onClick={handleApplyCoupon}
+                            disabled={couponLoading || !couponCode.trim()}
+                          >
+                            {couponLoading ? <Loader2 size={14} className="animate-spin" /> : "Apply"}
+                          </Button>
+                        </div>
+                        {couponError && (
+                          <p className="text-[11px] text-destructive flex items-center gap-1">
+                            <AlertCircle size={11} /> {couponError}
+                          </p>
+                        )}
+                      </motion.div>
+                    )}
+                  </div>
+                )}
 
                 {amtNum > 0 && (
                   <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2 text-sm">
