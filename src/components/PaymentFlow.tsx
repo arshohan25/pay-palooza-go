@@ -16,6 +16,12 @@ import ShareReceiptSheet from "@/components/ShareReceiptSheet";
 import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
 import DailyLimitBadge from "@/components/DailyLimitBadge";
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
   ChevronLeft,
   CheckCircle2,
   AlertCircle,
@@ -25,6 +31,8 @@ import {
   Loader2,
   QrCode,
   ShoppingBag,
+  Tag,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -122,7 +130,9 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
   const [couponCode, setCouponCode] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState("");
-  const [showCouponInput, setShowCouponInput] = useState(false);
+  const [showCouponSheet, setShowCouponSheet] = useState(false);
+  const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
+  const [couponsLoading, setCouponsLoading] = useState(false);
   const txnTime = useRef(new Date());
   const genId = () => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; };
   const txnId   = useRef(genId());
@@ -254,7 +264,7 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
           min_order_amount: c.min_order_amount || null,
           applicable_flow: c.applicable_flow || "payment",
         });
-        setShowCouponInput(false);
+        setShowCouponSheet(false);
         setCouponCode("");
       } else {
         setCouponError("Invalid coupon code");
@@ -263,6 +273,55 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
       setCouponError("Something went wrong");
     }
     setCouponLoading(false);
+  };
+
+  const fetchAvailableCoupons = async () => {
+    setCouponsLoading(true);
+    try {
+      const now = new Date().toISOString();
+      const { data } = await supabase
+        .from("coupons")
+        .select("*")
+        .eq("is_active", true)
+        .or("applicable_flow.is.null,applicable_flow.eq.payment,applicable_flow.eq.all")
+        .or(`expires_at.is.null,expires_at.gt.${now}`)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      setAvailableCoupons(data || []);
+    } catch {
+      setAvailableCoupons([]);
+    }
+    setCouponsLoading(false);
+  };
+
+  const openCouponSheet = () => {
+    setShowCouponSheet(true);
+    fetchAvailableCoupons();
+  };
+
+  const handleApplyCouponFromList = (code: string) => {
+    setCouponCode(code);
+    const currentAmt = parseFloat(amount) || 0;
+    if (currentAmt <= 0) { setCouponError("Enter an amount first"); return; }
+    setCouponLoading(true);
+    setCouponError("");
+    supabase.functions.invoke("apply-coupon", {
+      body: { code, cart_total: currentAmt, merchant_id: resolvedMerchantUserId || null },
+    }).then(({ data, error }) => {
+      if (error) { setCouponError("Failed to validate coupon"); setCouponLoading(false); return; }
+      if (data?.valid === false) { setCouponError(data.error || "Invalid coupon"); setCouponLoading(false); return; }
+      const c = data?.coupon || data;
+      if (c?.id) {
+        setPendingCoupon({
+          id: c.id, code: c.code || code, discount_type: c.discount_type,
+          discount_value: c.discount_value, max_discount: c.max_discount || null,
+          min_order_amount: c.min_order_amount || null, applicable_flow: c.applicable_flow || "payment",
+        });
+        setShowCouponSheet(false);
+        setCouponCode("");
+      } else { setCouponError("Invalid coupon code"); }
+      setCouponLoading(false);
+    }).catch(() => { setCouponError("Something went wrong"); setCouponLoading(false); });
   };
 
   const handleQrScan = async (rawResult: string) => {
@@ -593,32 +652,99 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
                   />
                 </div>
 
-                {/* bKash-style coupon input */}
+                {/* bKash-style coupon link + bottom sheet */}
                 {!pendingCoupon ? (
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-border bg-muted/30">
-                      <Ticket size={18} className="text-muted-foreground/50 shrink-0" />
-                      <input
-                        placeholder="Enter promo code"
-                        value={couponCode}
-                        onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }}
-                        className="flex-1 bg-transparent text-sm font-medium tracking-wide uppercase placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground/60 outline-none text-foreground"
-                      />
-                      <button
+                  <button
+                    type="button"
+                    onClick={openCouponSheet}
+                    className="flex items-center gap-2 text-primary font-semibold text-sm py-1"
+                  >
+                    <Tag size={16} />
+                    <span>কুপন / প্রোমো কোড</span>
+                  </button>
+                ) : null}
+
+                {/* Coupon bottom sheet */}
+                <Sheet open={showCouponSheet} onOpenChange={setShowCouponSheet}>
+                  <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh] overflow-y-auto px-4 pb-6">
+                    <SheetHeader className="flex flex-row items-center justify-between pb-3 border-b border-border">
+                      <SheetTitle className="text-base font-bold">
+                        কুপন {availableCoupons.length > 0 && `(${availableCoupons.length})`}
+                      </SheetTitle>
+                    </SheetHeader>
+
+                    {/* Manual input row */}
+                    <div className="flex items-center gap-2 mt-4">
+                      <div className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border bg-muted/30">
+                        <Ticket size={16} className="text-muted-foreground/50 shrink-0" />
+                        <input
+                          placeholder="কুপন কোড লিখুন"
+                          value={couponCode}
+                          onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }}
+                          className="flex-1 bg-transparent text-sm font-medium tracking-wide uppercase placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground/60 outline-none text-foreground"
+                        />
+                      </div>
+                      <Button
+                        size="sm"
                         onClick={handleApplyCoupon}
                         disabled={couponLoading || !couponCode.trim()}
-                        className="text-primary font-bold text-sm px-1 disabled:opacity-40 transition-opacity shrink-0"
+                        className="h-10 px-4 font-bold"
                       >
-                        {couponLoading ? <Loader2 size={16} className="animate-spin" /> : "APPLY"}
-                      </button>
+                        {couponLoading ? <Loader2 size={16} className="animate-spin" /> : "যোগ করুন"}
+                      </Button>
                     </div>
                     {couponError && (
-                      <p className="text-[11px] text-destructive flex items-center gap-1 px-1">
+                      <p className="text-[11px] text-destructive flex items-center gap-1 px-1 mt-1">
                         <AlertCircle size={11} /> {couponError}
                       </p>
                     )}
-                  </div>
-                ) : null}
+
+                    {/* Available coupons list */}
+                    <div className="mt-4 space-y-2.5">
+                      {couponsLoading ? (
+                        <div className="flex justify-center py-6">
+                          <Loader2 size={22} className="animate-spin text-muted-foreground" />
+                        </div>
+                      ) : availableCoupons.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground text-sm">
+                          <Ticket size={32} className="mx-auto mb-2 opacity-30" />
+                          <p>কোনো কুপন পাওয়া যায়নি</p>
+                        </div>
+                      ) : (
+                        availableCoupons.map((c) => (
+                          <div
+                            key={c.id}
+                            className="flex items-center justify-between p-3 rounded-xl border border-border bg-card"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
+                                  {c.discount_type === "percentage" ? `${c.discount_value}% OFF` : `৳${c.discount_value} OFF`}
+                                </span>
+                                <span className="text-xs font-mono font-bold text-foreground tracking-wider">{c.code}</span>
+                              </div>
+                              {c.description && (
+                                <p className="text-[11px] text-muted-foreground mt-1 truncate">{c.description}</p>
+                              )}
+                              {c.min_order_amount && (
+                                <p className="text-[10px] text-muted-foreground/70 mt-0.5">Min ৳{c.min_order_amount}</p>
+                              )}
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleApplyCouponFromList(c.code)}
+                              disabled={couponLoading}
+                              className="h-8 text-xs font-bold border-primary text-primary hover:bg-primary hover:text-primary-foreground shrink-0 ml-2"
+                            >
+                              Apply
+                            </Button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </SheetContent>
+                </Sheet>
 
                 {amtNum > 0 && (
                   <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2 text-sm">
