@@ -355,6 +355,11 @@ function AgentListTab() {
             </div>
             <div><Label>NID Number</Label><Input value={editForm.nid_number} onChange={e => setEditForm(f => ({ ...f, nid_number: e.target.value }))} /></div>
             <div><Label>Trade License</Label><Input value={editForm.trade_license} onChange={e => setEditForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
+            <div><Label>Address</Label><Input placeholder="Shop address" value={editForm.address} onChange={e => setEditForm(f => ({ ...f, address: e.target.value }))} /></div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>Latitude</Label><Input type="number" step="any" placeholder="e.g. 23.8103" value={editForm.latitude} onChange={e => setEditForm(f => ({ ...f, latitude: e.target.value }))} /></div>
+              <div><Label>Longitude</Label><Input type="number" step="any" placeholder="e.g. 90.4125" value={editForm.longitude} onChange={e => setEditForm(f => ({ ...f, longitude: e.target.value }))} /></div>
+            </div>
             <Button className="w-full" onClick={saveEdit} disabled={editSaving}>
               {editSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</> : <><Save className="w-4 h-4 mr-2" />Save Changes</>}
             </Button>
