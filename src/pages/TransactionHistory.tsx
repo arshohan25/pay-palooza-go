@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import {
   Search, X, CalendarIcon, SlidersHorizontal,
-  CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw, Share2, Coins, TrendingUp, BadgeDollarSign, ChevronDown, AlertCircle,
+  CheckCircle2, Copy, Hash, Tag, Clock, User, FileText, RefreshCw, Share2, Coins, TrendingUp, BadgeDollarSign, ChevronDown, AlertCircle, Phone,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,7 @@ interface Transaction {
   commission: number;
   _isCashback?: boolean;
   status: string;
+  recipient_phone?: string | null;
 }
 
 const CATEGORIES: { id: TxCategory; label: string }[] = [
@@ -141,6 +142,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           commission: t.commission || 0,
           _isCashback: isCashback,
           status: t.status,
+          recipient_phone: t.recipient_phone,
         };
       }), [dbTxns, filterTypes]);
 
@@ -638,6 +640,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                   {[
                     { icon: Hash,     label: "Transaction ID", value: txId,                                   copy: true  },
                     { icon: User,     label: "Name / Party",   value: selectedTx.name,                        copy: false },
+                    ...(selectedTx.recipient_phone ? [{ icon: Phone, label: "Receiver Number", value: selectedTx.recipient_phone, copy: true }] : []),
                     { icon: Tag,      label: "Category",       value: catLabel,                               copy: false },
                     { icon: FileText, label: "Description",    value: selectedTx.detail,                     copy: false },
                     ...(agentView
@@ -759,6 +762,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
               txnId: txId,
               rows: [
                 { label: "Party", value: selectedTx.name },
+                ...(selectedTx.recipient_phone ? [{ label: "Receiver", value: selectedTx.recipient_phone }] : []),
                 { label: "Category", value: catLabel },
                 { label: "Description", value: selectedTx.detail },
                 ...(agentView

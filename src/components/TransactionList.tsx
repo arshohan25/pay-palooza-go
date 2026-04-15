@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronRight, X, Copy, CheckCircle2, Hash, User, Tag, FileText, Clock, Coins, AlertCircle, Shield } from "lucide-react";
+import { ChevronRight, X, Copy, CheckCircle2, Hash, User, Tag, FileText, Clock, Coins, AlertCircle, Shield, Phone } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { useTransactions, DbTransaction } from "@/hooks/use-transactions";
@@ -107,6 +107,7 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
   const rows: { icon: React.ElementType; label: string; value: string; copy: boolean; accent?: string }[] = [
     { icon: Hash,     label: t("transactionId"), value: txId,                                  copy: true, accent: "text-primary"  },
     { icon: User,     label: t("nameParty"),      value: display.name,                          copy: false },
+    ...(tx.recipient_phone ? [{ icon: Phone, label: "Receiver Number", value: tx.recipient_phone, copy: true }] : []),
     { icon: Tag,      label: t("type"),            value: display.label,                         copy: false },
     { icon: FileText, label: t("description"),     value: tx.description || display.label,       copy: false },
     ...(tx.fee > 0 ? [{ icon: Coins, label: "Charge / Fee", value: `৳${fmtDec(tx.fee)}`, copy: false, accent: "text-amber-600 dark:text-amber-400" }] : []),
