@@ -144,7 +144,7 @@ function AgentListTab() {
       }
       toast.success(`Agent created! Temp PIN: ${pin}`, { duration: 10000 });
       setCreateOpen(false);
-      setForm({ phone: "", name: "", business_name: "", territory_code: "", nid_number: "", trade_license: "", max_float: "500000" });
+      setForm({ phone: "", name: "", business_name: "", territory_code: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
       load();
     } catch (err: any) { toast.error(err.message || "Failed to create agent"); }
     finally { setCreating(false); }
