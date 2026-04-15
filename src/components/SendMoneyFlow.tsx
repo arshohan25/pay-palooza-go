@@ -547,7 +547,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
         type: "send",
         recipientName: recipient?.name,
         reference: txnId.current,
-        description: (addCashOutCharge ? "[+Cash Out Charge] " : "") + (note || ""),
+        description: (addCashOutCharge ? "[+Cash Out Charge] " : "") + (note || "") + (resolvedWalletId ? ` [Wallet: ${resolvedWalletId}]` : ""),
       });
       onSuccess?.(actualSendAmount);
       showTxnToast({ type: "Send Money", amount: `৳${actualSendAmount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-send" });
