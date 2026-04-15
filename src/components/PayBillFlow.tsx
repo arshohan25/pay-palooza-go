@@ -210,6 +210,7 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
   const [billAmount, setBillAmount] = useState("");
   const [showShare, setShowShare] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [pendingCoupon] = useState<PendingCoupon | null>(() => getPendingCoupon("bill_pay"));
 
   const txnTime = useRef(new Date());
   const txnId = useRef(generateTxnId());

@@ -122,6 +122,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const [amount, setAmount] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
+  const [pendingCoupon] = useState<PendingCoupon | null>(() => getPendingCoupon("cash_out"));
   const [showScanner, setShowScanner] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [recentAgents, setRecentAgents] = useState<Agent[]>([]);

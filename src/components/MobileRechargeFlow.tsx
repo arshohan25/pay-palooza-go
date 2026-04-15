@@ -219,6 +219,7 @@ interface MobileRechargeFlowProps { onClose: () => void; }
 const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
   const { t } = useI18n();
   const [step, setStep]               = useState<Step>("number");
+  const [pendingCoupon] = useState<PendingCoupon | null>(() => getPendingCoupon("recharge"));
   const [direction, setDirection]     = useState(1);
   const [phone, setPhone]             = useState("");
   const [selectedOp, setSelectedOp]   = useState<OperatorDef | null>(null);
