@@ -1,20 +1,28 @@
 
 
-# Fix: Remove Auto-Applied Coupon, Keep Manual Input Only
+# Redesign Coupon Input — bKash Style
 
-## Problem
-When a user visits the Coupons page and taps "Redeem", the coupon is stored in `sessionStorage` and auto-loaded into the Payment flow on mount (line 117). The user wants coupons to only be applied manually via the inline "Have a coupon?" input during payment.
+## What Changes
 
-## Changes
+Replace the current collapsible text-link + dashed input with a bKash-inspired coupon input: a persistent, pill-shaped row with a coupon icon on the left, placeholder text "Enter promo code", and a bold "APPLY" text button on the right — always visible in the amount step (no toggle needed). Clean, flat, single-line design.
 
-### 1. Remove auto-load from PaymentFlow.tsx
-- Change line 117 from `useState<PendingCoupon | null>(() => getPendingCoupon("payment"))` to `useState<PendingCoupon | null>(null)`
-- Remove the `getPendingCoupon` import if no longer needed
+## Design Reference (bKash Style)
 
-### 2. Update CouponsPage.tsx "Redeem" button behavior
-- Instead of setting `pendingCoupon` in sessionStorage and navigating to the payment flow, the "Redeem" button should copy the coupon code to clipboard with a toast like "Code copied — paste it during payment" (or simply remove the auto-navigate behavior)
+```text
+┌─────────────────────────────────────────┐
+│ 🎟  Enter promo code              APPLY │
+└─────────────────────────────────────────┘
+```
 
-### Files Modified
-- `src/components/PaymentFlow.tsx` — remove auto-coupon initialization
-- `src/pages/CouponsPage.tsx` — change Redeem to copy code instead of auto-applying
+- Full-width pill shape (`rounded-xl`) with subtle border
+- Left: `Ticket` icon in muted color
+- Center: inline input, no separate border, transparent background
+- Right: "APPLY" as a bold text button (primary color), not a filled button
+- No collapsible toggle — always visible when no coupon is applied
+- Error text appears below as a subtle red line
+- On success: replaces with applied coupon chip (code + discount + ✕ to remove)
+
+## File Modified
+
+- `src/components/PaymentFlow.tsx` — lines 596–637: replace the toggle + dashed input with the bKash-style persistent pill input
 
