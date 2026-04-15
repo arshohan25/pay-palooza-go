@@ -13,6 +13,7 @@ import { getBalance, onBalanceChange, fetchBalance } from "@/lib/balanceStore";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
+import { useGoldPrice } from "@/hooks/use-gold-price";
 import { useAuth } from "@/hooks/use-auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
