@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Ticket, Copy, Clock, CheckCircle2, Sparkles,
-  ShoppingBag, Send, CreditCard, Smartphone, FileText, Zap, Tag
+  ShoppingBag, CreditCard, Smartphone, FileText, Zap, Tag
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ interface Coupon {
 
 const FLOW_MAP: Record<string, { label: string; icon: typeof ShoppingBag; route: string }> = {
   shop:       { label: "Shop",        icon: ShoppingBag, route: "/shop" },
-  send_money: { label: "Send Money",  icon: Send,        route: "/?flow=send_money" },
+  
   payment:    { label: "Payment",     icon: CreditCard,  route: "/?flow=payment" },
   cash_out:   { label: "Cash Out",    icon: Zap,         route: "/?flow=cash_out" },
   recharge:   { label: "Recharge",    icon: Smartphone,  route: "/?flow=recharge" },
