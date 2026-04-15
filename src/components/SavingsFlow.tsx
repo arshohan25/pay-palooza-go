@@ -13,6 +13,7 @@ import { getBalance, onBalanceChange, fetchBalance } from "@/lib/balanceStore";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
+import { useGoldPrice } from "@/hooks/use-gold-price";
 import { useAuth } from "@/hooks/use-auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -35,8 +36,7 @@ interface AutoSaveSchedule {
 interface GoldHolding { grams: number; avgBuyPrice: number; }
 interface StockHolding { symbol: string; name: string; qty: number; avgPrice: number; currentPrice: number; change: number; }
 
-const MOCK_GOLD_PRICE = 16200;
-const MOCK_GOLD_24K_PRICE = 19500;
+// Gold prices fetched live via useGoldPrice hook
 
 const MOCK_STOCKS: { symbol: string; name: string; price: number; change: number; sector: string }[] = [
   { symbol: "GRPH", name: "Grameenphone", price: 385.50, change: 2.4, sector: "Telecom" },
@@ -157,6 +157,7 @@ const SavingsPinInput = ({ pin, onChange, error }: { pin: string; onChange: (p: 
 const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const { t } = useI18n();
   const { user } = useAuth();
+  const { price22k: LIVE_GOLD_PRICE, price24k: LIVE_GOLD_24K_PRICE, updatedAt: goldUpdatedAt, loading: goldPriceLoading, refresh: refreshGoldPrice } = useGoldPrice();
 
   const [mainTab, setMainTab] = useState<MainTab>("savings");
 
@@ -376,7 +377,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   };
 
   // ─── Gold handlers ────────
-  const currentGoldPrice = goldKarat === "24k" ? MOCK_GOLD_24K_PRICE : MOCK_GOLD_PRICE;
+  const currentGoldPrice = goldKarat === "24k" ? LIVE_GOLD_24K_PRICE : LIVE_GOLD_PRICE;
 
   const handleBuyGold = async () => {
     const grams = parseFloat(goldGrams);
@@ -420,9 +421,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     finally { setProcessing(false); }
   };
 
-  const goldValue = Math.round(goldHolding.grams * MOCK_GOLD_PRICE);
+  const goldValue = Math.round(goldHolding.grams * LIVE_GOLD_PRICE);
   const goldProfit = goldValue - Math.round(goldHolding.grams * goldHolding.avgBuyPrice);
-  const goldProfitPct = goldHolding.avgBuyPrice > 0 ? ((MOCK_GOLD_PRICE - goldHolding.avgBuyPrice) / goldHolding.avgBuyPrice * 100) : 0;
+  const goldProfitPct = goldHolding.avgBuyPrice > 0 ? ((LIVE_GOLD_PRICE - goldHolding.avgBuyPrice) / goldHolding.avgBuyPrice * 100) : 0;
 
   // ─── Stock handlers ────────
   const handleBuyStock = async () => {
@@ -485,7 +486,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const headerTitle = mainTab === "savings" ? "Savings & Goals" : mainTab === "gold" ? "Gold Investment" : "Stock Market";
   const headerSub = mainTab === "savings"
     ? `Total Saved: ৳${totalSaved.toLocaleString()}`
-    : mainTab === "gold" ? `Gold Price: ৳${MOCK_GOLD_PRICE.toLocaleString()}/g`
+    : mainTab === "gold" ? `Gold Price: ৳${LIVE_GOLD_PRICE.toLocaleString()}/g`
     : `Portfolio: ৳${Math.round(totalStockValue).toLocaleString()}`;
 
   const handleBack = () => {
@@ -972,7 +973,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
             <motion.div key="g-port" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-3">
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
                 <ShieldCheck size={14} className="text-amber-600 dark:text-amber-400" />
-                <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300"><p className="text-[11px] font-bold text-amber-700 dark:text-amber-300">Sharia Compliant • BAJUS Certified Rate</p></p>
+                <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300">Sharia Compliant • BAJUS Certified Rate</p>
               </div>
               <div className="rounded-[20px] p-5 border border-amber-500/20 bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-transparent">
                 <div className="flex items-center gap-3 mb-4">
@@ -1001,17 +1002,25 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
               <div className="bg-card rounded-[18px] border border-border/60 shadow-[var(--shadow-card)] p-4">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-[12px] font-bold text-foreground">Live Gold Price</p>
-                  <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-bold"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />Live</div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={refreshGoldPrice} className="p-1 rounded-lg hover:bg-muted transition-colors" disabled={goldPriceLoading}>
+                      <RefreshCw size={12} className={`text-muted-foreground ${goldPriceLoading ? "animate-spin" : ""}`} />
+                    </button>
+                    <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-bold"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />Live</div>
+                  </div>
                 </div>
+                {goldUpdatedAt && (
+                  <p className="text-[9px] text-muted-foreground mb-2">Updated: {new Date(goldUpdatedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</p>
+                )}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-muted/50 rounded-xl p-3">
                     <p className="text-[10px] text-muted-foreground font-semibold">22K Gold</p>
-                    <p className="text-[18px] font-black text-amber-600 dark:text-amber-400">৳{MOCK_GOLD_PRICE.toLocaleString()}</p>
+                    <p className="text-[18px] font-black text-amber-600 dark:text-amber-400">৳{LIVE_GOLD_PRICE.toLocaleString()}</p>
                     <p className="text-[10px] text-muted-foreground">per gram</p>
                   </div>
                   <div className="bg-muted/50 rounded-xl p-3">
                     <p className="text-[10px] text-muted-foreground font-semibold">24K Gold</p>
-                    <p className="text-[18px] font-black text-amber-600 dark:text-amber-400">৳{MOCK_GOLD_24K_PRICE.toLocaleString()}</p>
+                    <p className="text-[18px] font-black text-amber-600 dark:text-amber-400">৳{LIVE_GOLD_24K_PRICE.toLocaleString()}</p>
                     <p className="text-[10px] text-muted-foreground">per gram</p>
                   </div>
                 </div>
@@ -1063,7 +1072,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     {(["22k", "24k"] as const).map(k => (
                       <button key={k} onClick={() => setGoldKarat(k)}
                         className={`flex-1 py-2.5 rounded-xl text-[13px] font-bold transition-all ${goldKarat === k ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 ring-1 ring-amber-500/30" : "bg-muted text-muted-foreground"}`}>
-                        {k.toUpperCase()} — ৳{(k === "22k" ? MOCK_GOLD_PRICE : MOCK_GOLD_24K_PRICE).toLocaleString()}/g
+                        {k.toUpperCase()} — ৳{(k === "22k" ? LIVE_GOLD_PRICE : LIVE_GOLD_24K_PRICE).toLocaleString()}/g
                       </button>
                     ))}
                   </div>
