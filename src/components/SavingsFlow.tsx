@@ -115,7 +115,7 @@ const EMOJI_LIST = ["🎯", "🛡️", "📱", "✈️", "🏠", "🎓", "💍",
 const GOLD_PRESETS = [0.5, 1, 2, 5, 10];
 
 type MainTab = "savings" | "gold" | "stocks";
-type SavingsStep = "home" | "add" | "create" | "autosave" | "terms" | "detail";
+type SavingsStep = "home" | "add" | "create" | "autosave" | "review" | "terms" | "detail";
 type GoldStep = "portfolio" | "buy" | "sell";
 type StockStep = "market" | "portfolio" | "trade";
 
