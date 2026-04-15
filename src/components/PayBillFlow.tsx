@@ -504,6 +504,7 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                     <button onClick={() => { clearPendingCoupon(); window.location.reload(); }} className="text-xs text-destructive font-medium">Remove</button>
                   </motion.div>
                 )}
+                <div className="flex justify-end">
                   <div className="flex flex-col items-end gap-0.5">
                     <AvailableBalanceBadge />
                     <DailyLimitBadge txnType="paybill" />
