@@ -18,7 +18,6 @@ import DailyLimitBadge from "@/components/DailyLimitBadge";
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
