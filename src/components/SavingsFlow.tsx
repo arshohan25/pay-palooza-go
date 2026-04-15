@@ -67,6 +67,15 @@ function getEstReturn(strategyKey: string, durationMonths: number, frequency?: s
   return Math.min(base + bonus, 6.0);
 }
 
+function getReturnRange(strategyKey: string): string {
+  const rates = STRATEGY_RETURNS[strategyKey];
+  if (!rates) return "0–0";
+  const values = Object.values(rates);
+  const min = Math.min(...values);
+  const max = Math.min(Math.max(...values) + 0.5, 6.0); // max includes daily freq bonus
+  return `${min}–${max}`;
+}
+
 const INVESTMENT_STRATEGIES = [
   { key: "gold", label: "Gold Investment", icon: "🪙", desc: "Auto-invest in 22K gold" },
   { key: "mixed", label: "Mixed (Gold + Stocks)", icon: "📊", desc: "60% gold, 40% halal stocks" },
@@ -767,7 +776,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                           <p className="text-[10px] text-muted-foreground">{strat.desc}</p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="text-[14px] font-black text-emerald-600">~{getEstReturn(strat.key, selectedDuration.months, autoFreq)}%</p>
+                          <p className="text-[14px] font-black text-emerald-600">~{getReturnRange(strat.key)}%</p>
                           <p className="text-[9px] text-muted-foreground">est. annual</p>
                         </div>
                       </button>
