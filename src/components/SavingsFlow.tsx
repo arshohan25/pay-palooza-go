@@ -35,8 +35,8 @@ interface AutoSaveSchedule {
 interface GoldHolding { grams: number; avgBuyPrice: number; }
 interface StockHolding { symbol: string; name: string; qty: number; avgPrice: number; currentPrice: number; change: number; }
 
-const MOCK_GOLD_PRICE = 9850;
-const MOCK_GOLD_24K_PRICE = 10750;
+const MOCK_GOLD_PRICE = 16200;
+const MOCK_GOLD_24K_PRICE = 19500;
 
 const MOCK_STOCKS: { symbol: string; name: string; price: number; change: number; sector: string }[] = [
   { symbol: "GRPH", name: "Grameenphone", price: 385.50, change: 2.4, sector: "Telecom" },
@@ -972,7 +972,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
             <motion.div key="g-port" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-3">
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
                 <ShieldCheck size={14} className="text-amber-600 dark:text-amber-400" />
-                <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300">Sharia Compliant • Physical Gold Backed</p>
+                <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300"><p className="text-[11px] font-bold text-amber-700 dark:text-amber-300">Sharia Compliant • BAJUS Certified Rate</p></p>
               </div>
               <div className="rounded-[20px] p-5 border border-amber-500/20 bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-transparent">
                 <div className="flex items-center gap-3 mb-4">
