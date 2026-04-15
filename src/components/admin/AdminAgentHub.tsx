@@ -174,7 +174,10 @@ function AgentListTab() {
       max_float: parseInt(editForm.max_float) || editAgent.max_float,
       nid_number: editForm.nid_number || null,
       trade_license: editForm.trade_license || null,
-    }).eq("id", editAgent.id);
+      latitude: editForm.latitude ? parseFloat(editForm.latitude) : null,
+      longitude: editForm.longitude ? parseFloat(editForm.longitude) : null,
+      address: editForm.address || "",
+    } as any).eq("id", editAgent.id);
     if (error) { toast.error("Failed to update"); } else {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
