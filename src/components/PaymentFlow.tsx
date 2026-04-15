@@ -649,9 +649,20 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
                   <div className="flex justify-between text-muted-foreground">
                     <span>Amount</span><span className="text-foreground font-medium">৳{amtNum.toLocaleString()}</span>
                   </div>
+                  {couponDiscount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-primary font-medium">🎟️ Coupon ({pendingCoupon?.code})</span>
+                      <span className="text-primary font-bold">-৳{couponDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-muted-foreground">
                     <span>Fee</span><span className="text-primary font-semibold">Free</span>
                   </div>
+                  {couponDiscount > 0 && (
+                    <div className="flex justify-between font-bold text-foreground">
+                      <span>You Pay</span><span>৳{effectiveAmount.toLocaleString()}</span>
+                    </div>
+                  )}
                   {note && (
                     <div className="flex justify-between text-muted-foreground">
                       <span>Note</span><span className="text-foreground font-medium">{note}</span>

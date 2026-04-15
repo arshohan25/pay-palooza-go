@@ -538,13 +538,19 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                         <span className="text-muted-foreground">Bill Amount</span>
                         <span className="font-bold text-foreground">৳{(parseFloat(billAmount) || 0).toLocaleString()}</span>
                       </div>
+                      {pendingCoupon && calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) > 0 && (
+                        <div className="flex items-center justify-between px-4 py-3 text-sm">
+                          <span className="text-primary font-medium">🎟️ Coupon ({pendingCoupon.code})</span>
+                          <span className="text-primary font-bold">-৳{calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0).toFixed(2)}</span>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between px-4 py-3 text-sm">
                         <span className="text-muted-foreground">Fee</span>
                         <span className="font-bold text-foreground">Free</span>
                       </div>
                       <div className="flex items-center justify-between px-4 py-3 text-sm">
                         <span className="text-muted-foreground">Total</span>
-                        <span className="font-extrabold text-lg text-foreground">৳{((parseFloat(billAmount) || 0) + fee).toLocaleString()}</span>
+                        <span className="font-extrabold text-lg text-foreground">৳{Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
