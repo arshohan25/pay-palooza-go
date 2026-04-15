@@ -1029,9 +1029,15 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                   <div className="flex justify-between text-muted-foreground">
                     <span>{t("recipient")}</span><span className="text-foreground font-medium">{recipient?.name}</span>
                   </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>{t("mobileWallet")}</span><span className="text-foreground font-medium">{recipient?.phone}</span>
-                  </div>
+                  {matchedBy === "wallet" ? (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Wallet ID</span><span className="text-foreground font-medium">{resolvedWalletId}</span>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>{t("mobileWallet")}</span><span className="text-foreground font-medium">{recipient?.phone}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-muted-foreground">
                     <span>{t("amount")}</span><span className="text-foreground font-medium">৳{amtNum.toLocaleString()}</span>
                   </div>
@@ -1102,7 +1108,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
           txnId: txnId.current,
           rows: [
             { label: "Recipient", value: recipient?.name ?? "" },
-            { label: "Mobile / Wallet", value: recipient?.phone ?? "" },
+            { label: matchedBy === "wallet" ? "Wallet ID" : "Mobile / Wallet", value: matchedBy === "wallet" ? resolvedWalletId : (recipient?.phone ?? "") },
             { label: "Amount", value: `৳${amtNum.toLocaleString()}` },
             { label: "Fee", value: fee === 0 ? "Free" : `৳${fee}` },
             { label: "Date", value: txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) },
