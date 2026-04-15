@@ -73,8 +73,18 @@ export default function CouponsPage() {
   const handleUseNow = (coupon: Coupon) => {
     const flow = coupon.applicable_flow || "shop";
     const mapping = FLOW_MAP[flow] || FLOW_MAP.shop;
+    // Store coupon for the target flow to read
+    setPendingCoupon({
+      id: coupon.id,
+      code: coupon.code,
+      discount_type: coupon.discount_type as "percentage" | "flat",
+      discount_value: coupon.discount_value,
+      max_discount: coupon.max_discount,
+      min_order_amount: coupon.min_order_amount,
+      applicable_flow: flow,
+    });
     navigator.clipboard.writeText(coupon.code);
-    toast.success(`Coupon "${coupon.code}" copied! Redirecting…`);
+    toast.success(`Coupon "${coupon.code}" applied! Redirecting…`);
     setTimeout(() => navigate(mapping.route), 400);
   };
 
