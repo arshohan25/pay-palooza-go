@@ -50,17 +50,21 @@ const MOCK_STOCKS: { symbol: string; name: string; price: number; change: number
 ];
 
 // ─── Profit & Duration Config ────────────────────────────────────────
-// Returns vary by duration (months → annual %). Longer lock = higher return.
+// Returns vary by duration (months → annual %). Realistic 2%–6% range.
 const STRATEGY_RETURNS: Record<string, Record<number, number>> = {
-  gold:   { 6: 6, 12: 8, 24: 10, 36: 11, 60: 12, 120: 13 },
-  mixed:  { 6: 8, 12: 11, 24: 14, 36: 15, 60: 16, 120: 17 },
-  stocks: { 6: 10, 12: 14, 24: 18, 36: 20, 60: 22, 120: 24 },
+  gold:   { 6: 2.0, 12: 2.5, 24: 3.0, 36: 3.5, 60: 4.0, 120: 4.5 },
+  mixed:  { 6: 2.5, 12: 3.0, 24: 3.5, 36: 4.0, 60: 4.5, 120: 5.0 },
+  stocks: { 6: 3.0, 12: 3.5, 24: 4.0, 36: 4.5, 60: 5.0, 120: 6.0 },
 };
 
-function getEstReturn(strategyKey: string, durationMonths: number): number {
+const FREQ_BONUS: Record<string, number> = { daily: 0.5, weekly: 0.25, monthly: 0 };
+
+function getEstReturn(strategyKey: string, durationMonths: number, frequency?: string): number {
   const rates = STRATEGY_RETURNS[strategyKey];
   if (!rates) return 0;
-  return rates[durationMonths] ?? rates[12] ?? 0;
+  const base = rates[durationMonths] ?? rates[12] ?? 0;
+  const bonus = frequency ? (FREQ_BONUS[frequency] ?? 0) : 0;
+  return Math.min(base + bonus, 6.0);
 }
 
 const INVESTMENT_STRATEGIES = [
@@ -239,7 +243,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     else if (autoFreq === "weekly") totalDeposits = autoAmtNum * selectedDuration.months * 4;
     else totalDeposits = autoAmtNum * selectedDuration.months;
 
-    const estReturnPct = getEstReturn(selectedStrategyObj.key, selectedDuration.months);
+    const estReturnPct = getEstReturn(selectedStrategyObj.key, selectedDuration.months, autoFreq);
     const { totalValue, profit } = calcEstimatedProfit(totalDeposits, selectedDuration.months, estReturnPct);
     return { totalDeposits, totalValue, profit, returnPct: estReturnPct };
   }, [autoAmtNum, autoFreq, selectedDuration, selectedStrategyObj]);
@@ -744,7 +748,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                           <p className="text-[10px] text-muted-foreground">{strat.desc}</p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="text-[14px] font-black text-emerald-600">~{getEstReturn(strat.key, selectedDuration.months)}%</p>
+                          <p className="text-[14px] font-black text-emerald-600">~{getEstReturn(strat.key, selectedDuration.months, autoFreq)}%</p>
                           <p className="text-[9px] text-muted-foreground">est. annual</p>
                         </div>
                       </button>
