@@ -795,7 +795,7 @@ const FeeBreakdownSummary = ({ entries, totalFees }: { entries: [string, number]
           <span className="text-[12px] font-semibold text-foreground">Fee Breakdown</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="text-[12px] font-bold text-amber-600 dark:text-amber-400">৳{totalFees.toLocaleString()}</span>
+          <span className="text-[12px] font-bold text-amber-600 dark:text-amber-400">৳{totalFees.toLocaleString("en-IN")}</span>
           <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
             <ChevronDown size={14} className="text-muted-foreground" />
           </motion.div>
@@ -814,7 +814,7 @@ const FeeBreakdownSummary = ({ entries, totalFees }: { entries: [string, number]
               {entries.map(([label, amount]) => (
                 <div key={label} className="flex items-center justify-between">
                   <span className="text-[11px] text-muted-foreground">{label}</span>
-                  <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">৳{amount.toLocaleString()}</span>
+                  <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">৳{amount.toLocaleString("en-IN")}</span>
                 </div>
               ))}
             </div>
@@ -840,7 +840,7 @@ const CommissionBreakdownSummary = ({ entries, totalCommission }: { entries: [st
           <span className="text-[12px] font-semibold text-foreground">Commission Breakdown</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="text-[12px] font-bold text-emerald-600 dark:text-emerald-400">৳{totalCommission.toLocaleString()}</span>
+          <span className="text-[12px] font-bold text-emerald-600 dark:text-emerald-400">৳{totalCommission.toLocaleString("en-IN")}</span>
           <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
             <ChevronDown size={14} className="text-muted-foreground" />
           </motion.div>
@@ -859,7 +859,7 @@ const CommissionBreakdownSummary = ({ entries, totalCommission }: { entries: [st
               {entries.map(([label, amount]) => (
                 <div key={label} className="flex items-center justify-between">
                   <span className="text-[11px] text-muted-foreground">{label}</span>
-                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">+৳{amount.toLocaleString()}</span>
+                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">+৳{amount.toLocaleString("en-IN")}</span>
                 </div>
               ))}
             </div>
