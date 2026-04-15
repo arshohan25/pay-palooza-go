@@ -387,7 +387,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     const grams = parseFloat(goldGrams);
     if (!grams || grams <= 0) { setError("Enter valid grams"); return; }
     const cost = Math.round(grams * currentGoldPrice);
-    if (cost > balance) { setError("Insufficient balance"); return; }
+    const fee = Math.round(cost * 0.015);
+    const totalCost = cost + fee;
+    if (totalCost > balance) { setError("Insufficient balance"); return; }
     if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
     setProcessing(true); setPinError(""); setError("");
     try {
@@ -399,7 +401,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       await fetchBalance();
       loadGoldHoldings();
       fireSuccessConfetti();
-      toast.success(`🪙 Purchased ${grams}g gold for ৳${cost.toLocaleString()}`);
+      toast.success(`🪙 Purchased ${grams}g gold for ৳${totalCost.toLocaleString()} (fee ৳${fee})`);
       setGoldGrams(""); setGoldStep("portfolio"); setPin("");
     } catch (err: any) { setError(err.message || "Failed to buy gold"); }
     finally { setProcessing(false); }
@@ -419,7 +421,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       await fetchBalance();
       loadGoldHoldings();
       const revenue = Math.round(grams * currentGoldPrice);
-      toast.success(`💰 Sold ${grams}g gold for ৳${revenue.toLocaleString()}`);
+      const fee = Math.round(revenue * 0.015);
+      const netRevenue = revenue - fee;
+      toast.success(`💰 Sold ${grams}g gold — received ৳${netRevenue.toLocaleString()} (fee ৳${fee})`);
       setGoldGrams(""); setGoldStep("portfolio"); setPin("");
     } catch (err: any) { setError(err.message || "Failed to sell gold"); }
     finally { setProcessing(false); }
@@ -438,7 +442,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     const qty = parseInt(stockQty);
     if (!qty || qty <= 0) { setError("Enter valid quantity"); return; }
     const cost = Math.round(qty * selectedStock.price);
-    if (cost > balance) { setError("Insufficient balance"); return; }
+    const brokerage = 15;
+    const totalCost = cost + brokerage;
+    if (totalCost > balance) { setError("Insufficient balance"); return; }
     if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
     setProcessing(true); setPinError(""); setError("");
     try {
@@ -449,7 +455,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       await fetchBalance();
       loadStockHoldings();
       fireSuccessConfetti();
-      toast.success(`📈 Bought ${qty} ${selectedStock.symbol} for ৳${cost.toLocaleString()}`);
+      toast.success(`📈 Bought ${qty} ${selectedStock.symbol} for ৳${totalCost.toLocaleString()} (brokerage ৳${brokerage})`);
       setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setPin("");
     } catch (err: any) { setError(err.message || "Failed to buy stock"); }
     finally { setProcessing(false); }
@@ -471,7 +477,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       await fetchBalance();
       loadStockHoldings();
       const revenue = Math.round(qty * selectedStock.price);
-      toast.success(`💰 Sold ${qty} ${selectedStock.symbol} for ৳${revenue.toLocaleString()}`);
+      const brokerage = 15;
+      const netRevenue = revenue - brokerage;
+      toast.success(`💰 Sold ${qty} ${selectedStock.symbol} — received ৳${netRevenue.toLocaleString()} (brokerage ৳${brokerage})`);
       setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setPin("");
     } catch (err: any) { setError(err.message || "Failed to sell stock"); }
     finally { setProcessing(false); }
@@ -1112,18 +1120,32 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     ))}
                   </div>
                 </div>
-                {parseFloat(goldGrams) > 0 && (
-                  <div className="bg-muted/50 rounded-xl p-3 space-y-1">
-                    <div className="flex justify-between text-[12px]">
-                      <span className="text-muted-foreground">Total {goldStep === "buy" ? "Cost" : "Revenue"}</span>
-                      <span className="font-black text-foreground">৳{Math.round(parseFloat(goldGrams) * currentGoldPrice).toLocaleString()}</span>
+                {parseFloat(goldGrams) > 0 && (() => {
+                  const g = parseFloat(goldGrams);
+                  const subtotal = Math.round(g * currentGoldPrice);
+                  const fee = Math.round(subtotal * 0.015);
+                  const total = goldStep === "buy" ? subtotal + fee : subtotal - fee;
+                  return (
+                    <div className="bg-muted/50 rounded-xl p-3 space-y-1">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-muted-foreground">Rate</span>
+                        <span className="text-muted-foreground">৳{currentGoldPrice.toLocaleString()} × {goldGrams}g</span>
+                      </div>
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-muted-foreground">Subtotal</span>
+                        <span className="text-muted-foreground">৳{subtotal.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-amber-600 dark:text-amber-400">Platform fee (1.5%)</span>
+                        <span className="text-amber-600 dark:text-amber-400">{goldStep === "buy" ? "+" : "−"}৳{fee.toLocaleString()}</span>
+                      </div>
+                      <div className="border-t border-border/30 pt-1 flex justify-between text-[12px]">
+                        <span className="text-muted-foreground font-semibold">{goldStep === "buy" ? "You Pay" : "You Receive"}</span>
+                        <span className="font-black text-foreground">৳{total.toLocaleString()}</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between text-[11px]">
-                      <span className="text-muted-foreground">Rate</span>
-                      <span className="text-muted-foreground">৳{currentGoldPrice.toLocaleString()} × {goldGrams}g</span>
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
                 {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
               </div>
               <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
@@ -1304,31 +1326,45 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     ))}
                   </div>
                 </div>
-                {parseInt(stockQty) > 0 && (
-                  <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
-                    <div className="flex justify-between text-[12px]">
-                      <span className="text-muted-foreground">Total {stockAction === "buy" ? "Cost" : "Revenue"}</span>
-                      <span className="font-black text-foreground">৳{Math.round(parseInt(stockQty) * selectedStock.price).toLocaleString()}</span>
+                {parseInt(stockQty) > 0 && (() => {
+                  const qty = parseInt(stockQty);
+                  const subtotal = Math.round(qty * selectedStock.price);
+                  const brokerage = 15;
+                  const total = stockAction === "buy" ? subtotal + brokerage : subtotal - brokerage;
+                  return (
+                    <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-muted-foreground">Price per share</span>
+                        <span className="text-muted-foreground">৳{selectedStock.price.toLocaleString()} × {stockQty}</span>
+                      </div>
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-muted-foreground">Subtotal</span>
+                        <span className="text-muted-foreground">৳{subtotal.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-blue-600 dark:text-blue-400">Brokerage fee</span>
+                        <span className="text-blue-600 dark:text-blue-400">{stockAction === "buy" ? "+" : "−"}৳{brokerage}</span>
+                      </div>
+                      <div className="border-t border-border/30 pt-1 flex justify-between text-[12px]">
+                        <span className="text-muted-foreground font-semibold">{stockAction === "buy" ? "You Pay" : "You Receive"}</span>
+                        <span className="font-black text-foreground">৳{total.toLocaleString()}</span>
+                      </div>
+                      {stockAction === "sell" && (() => {
+                        const h = stockHoldings.find(x => x.symbol === selectedStock.symbol);
+                        if (!h) return null;
+                        const profit = (selectedStock.price - h.avgPrice) * qty;
+                        return (
+                          <div className="flex justify-between text-[11px]">
+                            <span className="text-muted-foreground">Estimated P/L</span>
+                            <span className={`font-bold ${profit >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                              {profit >= 0 ? "+" : ""}৳{Math.round(Math.abs(profit)).toLocaleString()}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
-                    <div className="flex justify-between text-[11px]">
-                      <span className="text-muted-foreground">Price per share</span>
-                      <span className="text-muted-foreground">৳{selectedStock.price.toLocaleString()} × {stockQty}</span>
-                    </div>
-                    {stockAction === "sell" && (() => {
-                      const h = stockHoldings.find(x => x.symbol === selectedStock.symbol);
-                      if (!h) return null;
-                      const profit = (selectedStock.price - h.avgPrice) * parseInt(stockQty);
-                      return (
-                        <div className="flex justify-between text-[11px]">
-                          <span className="text-muted-foreground">Estimated P/L</span>
-                          <span className={`font-bold ${profit >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                            {profit >= 0 ? "+" : ""}৳{Math.round(Math.abs(profit)).toLocaleString()}
-                          </span>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                )}
+                  );
+                })()}
                 {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
               </div>
               <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
