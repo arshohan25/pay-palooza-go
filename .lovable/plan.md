@@ -1,35 +1,20 @@
 
 
-# Add Coupon Input During Payment Flow (Merchant-Validated)
+# Fix: Remove Auto-Applied Coupon, Keep Manual Input Only
 
-## What Changes
+## Problem
+When a user visits the Coupons page and taps "Redeem", the coupon is stored in `sessionStorage` and auto-loaded into the Payment flow on mount (line 117). The user wants coupons to only be applied manually via the inline "Have a coupon?" input during payment.
 
-Users can enter a coupon code directly in the Payment flow's **Amount step** — no need to visit the Coupons page first. The coupon is validated in real-time against the selected merchant via the existing `apply-coupon` edge function.
+## Changes
 
-## Plan
+### 1. Remove auto-load from PaymentFlow.tsx
+- Change line 117 from `useState<PendingCoupon | null>(() => getPendingCoupon("payment"))` to `useState<PendingCoupon | null>(null)`
+- Remove the `getPendingCoupon` import if no longer needed
 
-### 1. Add inline coupon input to PaymentFlow.tsx (Amount step)
-
-Below the note/reference input, add a collapsible "Have a coupon?" section:
-- A text input for the coupon code + "Apply" button
-- On submit, call `supabase.functions.invoke("apply-coupon")` with `{ code, cart_total: amtNum, merchant_id: merchant?.id }` — using the resolved merchant's profile UUID
-- On success: set `pendingCoupon` state from the response (same shape as `PendingCoupon`)
-- On error: show inline error message (e.g. "Invalid code", "Not valid for this merchant")
-- If a coupon is already applied, show the existing `CouponBanner` instead of the input
-
-### 2. Resolve merchant profile UUID
-
-The current merchant object uses transaction-derived IDs. To validate coupons against `merchant_id` (UUID), look up the merchant's profile UUID when resolving via `resolve_transfer_recipient`. The RPC already returns enough data — store the resolved user UUID in state (e.g. `resolvedMerchantUserId`).
-
-### 3. UI details
-
-- "Have a coupon?" link toggles the input — keeps the flow clean by default
-- Input: dashed border style matching the coupon aesthetic, uppercase transform
-- Apply button: compact, primary variant
-- Loading state during validation
-- Error text below input
-- Once applied, input collapses and `CouponBanner` appears above
+### 2. Update CouponsPage.tsx "Redeem" button behavior
+- Instead of setting `pendingCoupon` in sessionStorage and navigating to the payment flow, the "Redeem" button should copy the coupon code to clipboard with a toast like "Code copied — paste it during payment" (or simply remove the auto-navigate behavior)
 
 ### Files Modified
-- `src/components/PaymentFlow.tsx` — add coupon input UI, merchant UUID resolution, apply-coupon invocation
+- `src/components/PaymentFlow.tsx` — remove auto-coupon initialization
+- `src/pages/CouponsPage.tsx` — change Redeem to copy code instead of auto-applying
 
