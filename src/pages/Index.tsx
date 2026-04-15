@@ -21,36 +21,38 @@ import { getCachedStatus, requestContacts, requestCamera } from "@/lib/permissio
 import { saveContacts } from "@/lib/contactStore";
 import { retryLazyImport } from "@/lib/cacheReset";
 
-// Lazy load below-fold / non-critical home components
-const AppHeader = lazy(() => retryLazyImport(() => import("@/components/AppHeader")));
-const BalanceCard = lazy(() => retryLazyImport(() => import("@/components/BalanceCard")));
-const QuickActions = lazy(() => retryLazyImport(() => import("@/components/QuickActions")));
-const PromoSlider = lazy(() => retryLazyImport(() => import("@/components/PromoSlider")));
-const TransactionList = lazy(() => retryLazyImport(() => import("@/components/TransactionList")));
-const SideNav = lazy(() => retryLazyImport(() => import("@/components/SideNav")));
-const PlatformBanner = lazy(() => retryLazyImport(() => import("@/components/PlatformBanner")));
-const FestivalOverlay = lazy(() => retryLazyImport(() => import("@/components/FestivalOverlay")));
-const SplashScreen = lazy(() => retryLazyImport(() => import("@/components/SplashScreen")));
-const OnboardingSlides = lazy(() => retryLazyImport(() => import("@/components/OnboardingSlides")));
+// ── Critical above-fold: eagerly imported for instant render ──
+import AppHeader from "@/components/AppHeader";
+import BalanceCard from "@/components/BalanceCard";
+import QuickActions from "@/components/QuickActions";
+import TransactionList from "@/components/TransactionList";
 
-// Lazy load heavy modal/flow components (only rendered on user interaction)
-const QrScannerModal = lazy(() => retryLazyImport(() => import("@/components/QrScannerModal")));
-const SendMoneyFlow = lazy(() => retryLazyImport(() => import("@/components/SendMoneyFlow")));
-const CashOutFlow = lazy(() => retryLazyImport(() => import("@/components/CashOutFlow")));
-const PaymentFlow = lazy(() => retryLazyImport(() => import("@/components/PaymentFlow")));
-const MobileRechargeFlow = lazy(() => retryLazyImport(() => import("@/components/MobileRechargeFlow")));
-const PayBillFlow = lazy(() => retryLazyImport(() => import("@/components/PayBillFlow")));
-const AddMoneyFlow = lazy(() => retryLazyImport(() => import("@/components/AddMoneyFlow")));
-const BankTransferFlow = lazy(() => retryLazyImport(() => import("@/components/BankTransferFlow")));
-const DynamicQrPaySheet = lazy(() => retryLazyImport(() => import("@/components/DynamicQrPaySheet")));
-const SavingsFlow = lazy(() => retryLazyImport(() => import("@/components/SavingsFlow")));
-const MerchantApplicationFlow = lazy(() => retryLazyImport(() => import("@/components/MerchantApplicationFlow")));
-const KycFlow = lazy(() => retryLazyImport(() => import("@/components/KycFlow")));
+// ── Below-fold / conditional home components ──
+const PromoSlider = lazy(() => import("@/components/PromoSlider"));
+const SideNav = lazy(() => import("@/components/SideNav"));
+const PlatformBanner = lazy(() => import("@/components/PlatformBanner"));
+const FestivalOverlay = lazy(() => import("@/components/FestivalOverlay"));
+const SplashScreen = lazy(() => import("@/components/SplashScreen"));
+const OnboardingSlides = lazy(() => import("@/components/OnboardingSlides"));
+
+// ── Flow overlays: lazy (prefetched during idle) ──
+const QrScannerModal = lazy(() => import("@/components/QrScannerModal"));
+const SendMoneyFlow = lazy(() => import("@/components/SendMoneyFlow"));
+const CashOutFlow = lazy(() => import("@/components/CashOutFlow"));
+const PaymentFlow = lazy(() => import("@/components/PaymentFlow"));
+const MobileRechargeFlow = lazy(() => import("@/components/MobileRechargeFlow"));
+const PayBillFlow = lazy(() => import("@/components/PayBillFlow"));
+const AddMoneyFlow = lazy(() => import("@/components/AddMoneyFlow"));
+const BankTransferFlow = lazy(() => import("@/components/BankTransferFlow"));
+const DynamicQrPaySheet = lazy(() => import("@/components/DynamicQrPaySheet"));
+const SavingsFlow = lazy(() => import("@/components/SavingsFlow"));
+const MerchantApplicationFlow = lazy(() => import("@/components/MerchantApplicationFlow"));
+const KycFlow = lazy(() => import("@/components/KycFlow"));
 
 const AuthPage = lazy(() => retryLazyImport(() => import("@/pages/AuthPage")));
-const InboxPage = lazy(() => retryLazyImport(() => import("@/pages/InboxPage")));
+const InboxPage = lazy(() => import("@/pages/InboxPage"));
 
-// Lazy load tab pages (only shown when tab is active)
+// ── Tab pages: lazy (prefetched during idle) ──
 const TransactionHistory = lazy(() => import("@/pages/TransactionHistory"));
 const AccountPage = lazy(() => import("@/pages/AccountPage"));
 const ReferPage = lazy(() => import("@/pages/ReferPage"));
@@ -239,10 +241,11 @@ const Index = () => {
     return () => clearTimeout(timeoutId);
   }, [isAuthenticated, user]);
 
-  // ── Prefetch flow chunks during idle time so they open instantly ──
+  // ── Prefetch all lazy chunks during idle time so everything opens instantly ──
   useEffect(() => {
     if (!isAuthenticated) return;
-    const prefetch = () => {
+    const prefetchFlows = () => {
+      // Flows
       import("@/components/SendMoneyFlow");
       import("@/components/CashOutFlow");
       import("@/components/PaymentFlow");
@@ -252,12 +255,24 @@ const Index = () => {
       import("@/components/BankTransferFlow");
       import("@/components/SavingsFlow");
       import("@/components/KycFlow");
+      import("@/components/QrScannerModal");
+      import("@/components/DynamicQrPaySheet");
+      import("@/components/MerchantApplicationFlow");
+      // Tabs
+      import("@/pages/TransactionHistory");
+      import("@/pages/AccountPage");
+      import("@/pages/ReferPage");
+      import("@/pages/InboxPage");
+      // Below-fold home
+      import("@/components/PromoSlider");
+      import("@/components/SideNav");
+      import("@/components/PlatformBanner");
     };
     if ("requestIdleCallback" in window) {
-      const id = (window as any).requestIdleCallback(prefetch, { timeout: 4000 });
+      const id = (window as any).requestIdleCallback(prefetchFlows, { timeout: 3000 });
       return () => (window as any).cancelIdleCallback(id);
     } else {
-      const t = setTimeout(prefetch, 2000);
+      const t = setTimeout(prefetchFlows, 1500);
       return () => clearTimeout(t);
     }
   }, [isAuthenticated]);
