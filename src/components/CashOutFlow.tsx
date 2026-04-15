@@ -659,6 +659,12 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       <span>Fee ({FEE_LABEL})</span>
                       <span className="text-destructive font-medium">− ৳{fee}</span>
                     </div>
+                    {couponDiscount > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-primary font-medium">🎟️ Coupon ({pendingCoupon?.code})</span>
+                        <span className="text-primary font-bold">-৳{couponDiscount.toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-xs text-muted-foreground/70">
                       <span>Fee source</span>
                       <span className="text-primary font-medium">
