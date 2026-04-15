@@ -989,6 +989,25 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
             ══════════════════════════════════════════════ */}
             {step === "amount" && operator && (
               <div className="px-4 pt-6 pb-10 space-y-5">
+                {/* Coupon applied banner */}
+                {pendingCoupon && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/10 border border-primary/20"
+                  >
+                    <span className="text-lg">🎟️</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-primary">{pendingCoupon.code} applied</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {pendingCoupon.discount_type === "percentage"
+                          ? `${pendingCoupon.discount_value}% off${pendingCoupon.max_discount ? ` (max ৳${pendingCoupon.max_discount})` : ""}`
+                          : `৳${pendingCoupon.discount_value} off`}
+                      </p>
+                    </div>
+                    <button onClick={() => { clearPendingCoupon(); window.location.reload(); }} className="text-xs text-destructive font-medium">Remove</button>
+                  </motion.div>
+                )}
 
                 {/* Operator + phone summary */}
                 <div className="rounded-2xl overflow-hidden border border-border shadow-sm">
