@@ -138,6 +138,8 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     }
   }, [step]);
 
+  const AGENT_GRADIENTS = ["gradient-cashout", "gradient-payment", "gradient-addmoney", "gradient-send", "gradient-accent"];
+
   // Fetch nearby agents via geolocation + RPC, fallback to recent txn agents
   useEffect(() => {
     let cancelled = false;
