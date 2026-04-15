@@ -1,14 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, Ticket, Copy, Clock, CheckCircle2, Sparkles,
-  ShoppingBag, CreditCard, Smartphone, FileText, Zap, Tag
+  ArrowLeft, Ticket, Copy, CheckCircle2,
+  ShoppingBag, CreditCard, Smartphone, FileText, Zap, Tag, Clock
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { setPendingCoupon } from "@/lib/couponStore";
@@ -32,12 +30,11 @@ interface Coupon {
 
 const FLOW_MAP: Record<string, { label: string; icon: typeof ShoppingBag; route: string }> = {
   shop:       { label: "Shop",        icon: ShoppingBag, route: "/shop" },
-  
   payment:    { label: "Payment",     icon: CreditCard,  route: "/?flow=payment" },
   cash_out:   { label: "Cash Out",    icon: Zap,         route: "/?flow=cash_out" },
   recharge:   { label: "Recharge",    icon: Smartphone,  route: "/?flow=recharge" },
   bill_pay:   { label: "Bill Pay",    icon: FileText,    route: "/?flow=bill_pay" },
-  all:        { label: "All Services", icon: Tag,         route: "/shop" },
+  all:        { label: "All",         icon: Tag,         route: "/shop" },
 };
 
 export default function CouponsPage() {
@@ -73,7 +70,6 @@ export default function CouponsPage() {
   const handleUseNow = (coupon: Coupon) => {
     const flow = coupon.applicable_flow || "shop";
     const mapping = FLOW_MAP[flow] || FLOW_MAP.shop;
-    // Store coupon for the target flow to read
     setPendingCoupon({
       id: coupon.id,
       code: coupon.code,
@@ -88,21 +84,8 @@ export default function CouponsPage() {
     setTimeout(() => navigate(mapping.route), 400);
   };
 
-  const formatDiscount = (c: Coupon) => {
-    if (c.discount_type === "percentage") return `${c.discount_value}%`;
-    return `৳${c.discount_value}`;
-  };
-
-  const getExpiryProgress = (c: Coupon) => {
-    if (!c.expires_at || !c.starts_at) return null;
-    const start = new Date(c.starts_at).getTime();
-    const end = new Date(c.expires_at).getTime();
-    const now = Date.now();
-    if (now >= end) return 0;
-    const total = end - start;
-    const remaining = end - now;
-    return Math.max(0, Math.min(100, (remaining / total) * 100));
-  };
+  const formatDiscount = (c: Coupon) =>
+    c.discount_type === "percentage" ? `${c.discount_value}%` : `৳${c.discount_value}`;
 
   const getDaysLeft = (expiresAt: string) => {
     const diff = new Date(expiresAt).getTime() - Date.now();
@@ -114,36 +97,18 @@ export default function CouponsPage() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-card/80 backdrop-blur-xl border-b border-border/50 flex items-center gap-3 px-4 py-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-xl">
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        <div className="flex items-center gap-2">
-          <Ticket className="w-5 h-5 text-primary" />
-          <h1 className="text-base font-bold text-foreground">Coupons & Offers</h1>
-        </div>
+      {/* Minimal header */}
+      <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/30 flex items-center gap-3 px-4 h-14">
+        <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-muted/60 transition-colors">
+          <ArrowLeft className="w-[18px] h-[18px] text-foreground" />
+        </button>
+        <h1 className="text-[15px] font-semibold text-foreground tracking-tight">Coupons</h1>
+        <span className="text-[11px] text-muted-foreground font-medium ml-auto">
+          {!loading && `${coupons.length} active`}
+        </span>
       </div>
 
-      <div className="px-4 pt-4 space-y-4">
-        {/* Hero Banner */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.97 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
-          className="relative overflow-hidden rounded-[19px] bg-gradient-to-br from-primary via-primary/90 to-primary/70 p-5 text-center"
-        >
-          <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/10 pointer-events-none" />
-          <div className="absolute -bottom-6 left-8 w-24 h-24 rounded-full bg-white/5 pointer-events-none" />
-          <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.15 }}>
-            <Sparkles className="w-8 h-8 text-primary-foreground mx-auto mb-2" />
-            <h2 className="text-lg font-extrabold text-primary-foreground">Exclusive Deals</h2>
-            <p className="text-xs text-primary-foreground/70 mt-1">
-              {coupons.length} active coupon{coupons.length !== 1 ? "s" : ""} — tap "Use Now" to apply instantly
-            </p>
-          </motion.div>
-        </motion.div>
-
+      <div className="px-4 pt-5 space-y-3">
         {/* AI Recommended */}
         {(aiCouponRewards.length > 0 || aiOfferRewards.length > 0) && (
           <AiRewardBanner rewards={[...aiCouponRewards, ...aiOfferRewards]} onClaim={(id) => {
@@ -152,131 +117,121 @@ export default function CouponsPage() {
           }} />
         )}
 
-        {/* Coupons List */}
+        {/* Loading */}
         {loading ? (
           <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-36 w-full rounded-[19px]" />
+            {[1, 2, 3].map(i => (
+              <Skeleton key={i} className="h-[120px] w-full rounded-2xl" />
             ))}
           </div>
         ) : coupons.length === 0 ? (
+          /* Empty state */
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center py-16 gap-3"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col items-center justify-center py-24 gap-3"
           >
-            <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center">
-              <Ticket className="w-8 h-8 text-muted-foreground/40" />
+            <div className="w-14 h-14 rounded-2xl bg-muted/40 flex items-center justify-center">
+              <Ticket className="w-6 h-6 text-muted-foreground/30" />
             </div>
-            <p className="text-muted-foreground text-sm font-medium">No active coupons right now</p>
-            <p className="text-xs text-muted-foreground/60">Check back later for new offers!</p>
+            <p className="text-sm text-muted-foreground font-medium">No coupons available</p>
+            <p className="text-xs text-muted-foreground/50">Check back later for offers</p>
           </motion.div>
         ) : (
+          /* Coupon cards */
           <AnimatePresence mode="popLayout">
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {coupons.map((coupon, i) => {
                 const isCopied = copiedId === coupon.id;
                 const flow = coupon.applicable_flow || "shop";
                 const flowInfo = FLOW_MAP[flow] || FLOW_MAP.shop;
                 const FlowIcon = flowInfo.icon;
-                const expiryProgress = getExpiryProgress(coupon);
                 const isExpiring = coupon.expires_at && new Date(coupon.expires_at).getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000;
-                const usageLeft = coupon.usage_limit ? coupon.usage_limit - coupon.used_count : null;
 
                 return (
                   <motion.div
                     key={coupon.id}
-                    initial={{ opacity: 0, y: 16 }}
+                    initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ delay: i * 0.04, duration: 0.35 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ delay: i * 0.03, duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
                     layout
-                    className="relative bg-card/80 backdrop-blur-sm rounded-[19px] border border-border/50 overflow-hidden shadow-sm"
+                    className="group bg-card rounded-2xl border border-border/40 overflow-hidden"
                   >
-                    {/* Ticket notch effect */}
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-background border border-border/50" />
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-5 h-5 rounded-full bg-background border border-border/50" />
-
-                    <div className="flex">
-                      <div className="w-1.5 bg-gradient-to-b from-primary to-primary/60 shrink-0 rounded-l-[19px]" />
-                      <div className="flex-1 p-4 pl-5">
-                        {/* Discount + flow badge */}
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <div>
-                            <div className="flex items-baseline gap-1.5">
-                              <span className="text-2xl font-black bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                                {formatDiscount(coupon)}
-                              </span>
-                              <span className="text-sm font-bold text-foreground/80">OFF</span>
-                            </div>
-                            {coupon.description && (
-                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{coupon.description}</p>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1.5 bg-primary/10 text-primary px-2.5 py-1 rounded-full shrink-0">
-                            <FlowIcon className="w-3 h-3" />
-                            <span className="text-[10px] font-bold">{flowInfo.label}</span>
-                          </div>
+                    <div className="p-4">
+                      {/* Top row: discount + flow */}
+                      <div className="flex items-center justify-between mb-2.5">
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-[22px] font-extrabold text-primary leading-none tracking-tight">
+                            {formatDiscount(coupon)}
+                          </span>
+                          <span className="text-[11px] font-semibold text-foreground/50 uppercase tracking-wide">off</span>
                         </div>
-
-                        {/* Badges */}
-                        <div className="flex flex-wrap gap-1.5 mb-3">
-                          {coupon.min_order_amount && (
-                            <Badge variant="secondary" className="text-[10px] rounded-lg px-2 py-0.5">Min ৳{coupon.min_order_amount}</Badge>
-                          )}
-                          {coupon.max_discount && coupon.discount_type === "percentage" && (
-                            <Badge variant="secondary" className="text-[10px] rounded-lg px-2 py-0.5">Max ৳{coupon.max_discount}</Badge>
-                          )}
-                          {isExpiring && (
-                            <Badge variant="destructive" className="text-[10px] gap-1 rounded-lg px-2 py-0.5">
-                              <Clock className="w-2.5 h-2.5" /> Expiring soon
-                            </Badge>
-                          )}
-                          {usageLeft !== null && usageLeft <= 10 && (
-                            <Badge variant="outline" className="text-[10px] rounded-lg px-2 py-0.5">{usageLeft} left</Badge>
-                          )}
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <FlowIcon className="w-3 h-3" />
+                          <span className="text-[10px] font-medium">{flowInfo.label}</span>
                         </div>
+                      </div>
 
-                        {/* Expiry progress */}
-                        {expiryProgress !== null && coupon.expires_at && (
-                          <div className="mb-3">
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="text-[10px] text-muted-foreground">Time remaining</span>
-                              <span className="text-[10px] font-medium text-muted-foreground">{getDaysLeft(coupon.expires_at)}</span>
-                            </div>
-                            <Progress value={expiryProgress} className="h-1.5" />
-                          </div>
+                      {/* Description */}
+                      {coupon.description && (
+                        <p className="text-[12px] text-muted-foreground leading-relaxed line-clamp-2 mb-3">
+                          {coupon.description}
+                        </p>
+                      )}
+
+                      {/* Meta chips */}
+                      <div className="flex flex-wrap items-center gap-1.5 mb-3.5">
+                        {coupon.min_order_amount && (
+                          <span className="text-[10px] font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md">
+                            Min ৳{coupon.min_order_amount}
+                          </span>
                         )}
-
-                        {/* Actions */}
-                        <div className="flex gap-2">
-                          <Button
-                            variant="default"
-                            size="sm"
-                            className="flex-1 gap-1.5 rounded-xl font-bold text-xs h-9"
-                            onClick={() => handleUseNow(coupon)}
-                          >
-                            <FlowIcon className="w-3.5 h-3.5" /> Use Now
-                          </Button>
-                          <Button
-                            variant={isCopied ? "secondary" : "outline"}
-                            size="sm"
-                            className="shrink-0 gap-1.5 rounded-xl text-xs h-9"
-                            onClick={() => handleCopy(coupon)}
-                          >
-                            {isCopied ? (
-                              <><CheckCircle2 className="w-3.5 h-3.5" /> Copied</>
-                            ) : (
-                              <><Copy className="w-3.5 h-3.5" /> {coupon.code}</>
-                            )}
-                          </Button>
-                        </div>
-
-                        {coupon.expires_at && !expiryProgress && (
-                          <p className="text-[10px] text-muted-foreground mt-2">
-                            Valid until {new Date(coupon.expires_at).toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric" })}
-                          </p>
+                        {coupon.max_discount && coupon.discount_type === "percentage" && (
+                          <span className="text-[10px] font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md">
+                            Max ৳{coupon.max_discount}
+                          </span>
                         )}
+                        {coupon.expires_at && (
+                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                            isExpiring
+                              ? "text-destructive bg-destructive/8"
+                              : "text-muted-foreground bg-muted/50"
+                          }`}>
+                            <Clock className="w-2.5 h-2.5" />
+                            {getDaysLeft(coupon.expires_at)}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Divider */}
+                      <div className="h-px bg-border/40 mb-3.5 -mx-4 px-4">
+                        <div className="h-full bg-border/40" />
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          className="flex-1 rounded-xl font-semibold text-[12px] h-9"
+                          onClick={() => handleUseNow(coupon)}
+                        >
+                          Apply & Use
+                        </Button>
+                        <button
+                          onClick={() => handleCopy(coupon)}
+                          className={`h-9 px-3 rounded-xl border text-[11px] font-semibold flex items-center gap-1.5 transition-all duration-200 ${
+                            isCopied
+                              ? "bg-primary/5 border-primary/20 text-primary"
+                              : "border-border/60 text-muted-foreground hover:border-border hover:text-foreground"
+                          }`}
+                        >
+                          {isCopied ? (
+                            <><CheckCircle2 className="w-3 h-3" /> Copied</>
+                          ) : (
+                            <><Copy className="w-3 h-3" /> {coupon.code}</>
+                          )}
+                        </button>
                       </div>
                     </div>
                   </motion.div>
