@@ -262,6 +262,7 @@ const Index = () => {
     }
   }, [isAuthenticated]);
 
+  const triggerRefresh = useCallback(() => {
     if (isPulling) return;
     setIsPulling(true);
     fetchBalance();
