@@ -1,40 +1,35 @@
 
 
-# Fix Coupon Discount Logic — Apply to Amount, Not Fee
+# Add Coupon Input During Payment Flow (Merchant-Validated)
 
-## Problem
-1. **Coupon discount reduces the fee instead of the amount** — e.g., ৳50 coupon on a ৳500 Send Money with Free fee = still ৳500 deducted. The discount line shows but has no effect.
-2. **Send Money should not accept coupons** — user wants coupons only for: Payment, Shop, Cash Out, Recharge, Bill Pay.
+## What Changes
 
-## Changes
+Users can enter a coupon code directly in the Payment flow's **Amount step** — no need to visit the Coupons page first. The coupon is validated in real-time against the selected merchant via the existing `apply-coupon` edge function.
 
-### 1. Remove coupon from SendMoneyFlow.tsx
-- Remove all coupon imports, state, and UI references
-- Keep the flow clean — no coupon logic at all
+## Plan
 
-### 2. Fix CashOutFlow.tsx — discount reduces amount, not fee
-- Change: `couponDiscount` subtracts from the **amount sent to RPC**, not the fee
-- Display: show original amount, coupon line, then "Total from balance" = amount - discount + fee
-- RPC call uses `effectiveAmount` (amount minus discount)
+### 1. Add inline coupon input to PaymentFlow.tsx (Amount step)
 
-### 3. Fix PaymentFlow.tsx — already reduces amount (verify correct)
-- PaymentFlow already does `effectiveAmount = max(0, amtNum - couponDiscount)` — this looks correct. Just verify the RPC call uses `effectiveAmtVal`.
+Below the note/reference input, add a collapsible "Have a coupon?" section:
+- A text input for the coupon code + "Apply" button
+- On submit, call `supabase.functions.invoke("apply-coupon")` with `{ code, cart_total: amtNum, merchant_id: merchant?.id }` — using the resolved merchant's profile UUID
+- On success: set `pendingCoupon` state from the response (same shape as `PendingCoupon`)
+- On error: show inline error message (e.g. "Invalid code", "Not valid for this merchant")
+- If a coupon is already applied, show the existing `CouponBanner` instead of the input
 
-### 4. Fix MobileRechargeFlow.tsx — discount reduces amount
-- Same pattern: subtract coupon from amount, not fee
+### 2. Resolve merchant profile UUID
 
-### 5. Fix PayBillFlow.tsx — discount reduces amount  
-- Same pattern: subtract coupon from bill amount
+The current merchant object uses transaction-derived IDs. To validate coupons against `merchant_id` (UUID), look up the merchant's profile UUID when resolving via `resolve_transfer_recipient`. The RPC already returns enough data — store the resolved user UUID in state (e.g. `resolvedMerchantUserId`).
 
-### 6. Update CouponsPage.tsx — remove send_money from flow options
-- Remove `send_money` mapping from the "Use Now" navigation
-- Only show coupon "Use Now" for: shop, payment, cash_out, recharge, bill_pay
+### 3. UI details
 
-### 7. Update couponStore.ts — no changes needed
-- The store logic is fine; the bug is in how flows consume the discount
+- "Have a coupon?" link toggles the input — keeps the flow clean by default
+- Input: dashed border style matching the coupon aesthetic, uppercase transform
+- Apply button: compact, primary variant
+- Loading state during validation
+- Error text below input
+- Once applied, input collapses and `CouponBanner` appears above
 
-## Summary
-- 6 files edited
-- Core fix: `totalFromBalance = (amount - couponDiscount) + fee` instead of `amount + (fee - couponDiscount)`
-- Remove coupon support from Send Money entirely
+### Files Modified
+- `src/components/PaymentFlow.tsx` — add coupon input UI, merchant UUID resolution, apply-coupon invocation
 
