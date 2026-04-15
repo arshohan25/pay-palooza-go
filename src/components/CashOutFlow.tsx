@@ -493,7 +493,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                                   agentId: a.territory_code || a.agent_id.slice(0, 8),
                                   address: a.address || "", distance: `${a.distance_km} km`,
                                   initials: (a.business_name || "AG").slice(0, 2).toUpperCase(),
-                                  gradient: AGENT_GRADIENTS[i % AGENT_GRADIENTS.length], rating: 0,
+                                  gradient: AGENT_GRADIENTS[i % AGENT_GRADIENTS.length], rating: Number(a.avg_rating) || 0,
                                 })));
                               }
                               setLoadingNearby(false);
@@ -557,11 +557,18 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-semibold text-foreground truncate">{a.name}</p>
-                          {a.distance && (
-                            <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-full whitespace-nowrap flex items-center gap-0.5">
-                              <MapPin size={9} /> {a.distance}
-                            </span>
-                          )}
+                          <div className="flex items-center gap-1.5">
+                            {a.rating > 0 && (
+                              <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                                <Star size={9} className="fill-amber-500 text-amber-500" /> {a.rating.toFixed(1)}
+                              </span>
+                            )}
+                            {a.distance && (
+                              <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-full whitespace-nowrap flex items-center gap-0.5">
+                                <MapPin size={9} /> {a.distance}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <p className="text-xs text-muted-foreground">{a.agentId}</p>
                         {a.address && <p className="text-[10px] text-muted-foreground/70 truncate">{a.address}</p>}
