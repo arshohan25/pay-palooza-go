@@ -59,107 +59,69 @@ function CouponCard({ coupon, index, copiedId, onCopy, onUse }: {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ delay: index * 0.05, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      exit={{ opacity: 0, scale: 0.97 }}
+      transition={{ delay: index * 0.03, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       layout
       className="relative"
     >
-      {/* Main card */}
-      <div className="relative bg-card rounded-[20px] border border-border/30 overflow-hidden shadow-[0_1px_3px_0_hsl(var(--foreground)/0.04)]">
+      <div className="relative bg-card rounded-2xl border border-border/30 overflow-hidden shadow-[0_1px_2px_0_hsl(var(--foreground)/0.03)]">
         {/* Ticket cutouts */}
-        <div className="absolute left-0 top-[72px] -translate-x-[9px] w-[18px] h-[18px] rounded-full bg-background z-10" />
-        <div className="absolute right-0 top-[72px] translate-x-[9px] w-[18px] h-[18px] rounded-full bg-background z-10" />
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[7px] w-[14px] h-[14px] rounded-full bg-background z-10" />
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-[7px] w-[14px] h-[14px] rounded-full bg-background z-10" />
 
-        {/* Top section — colored accent */}
-        <div className="relative px-5 pt-4 pb-5">
-          {/* Flow pill */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-1.5 bg-primary/[0.06] text-primary/80 px-2.5 py-1 rounded-full">
-              <FlowIcon className="w-3 h-3" />
-              <span className="text-[10px] font-semibold tracking-wide">{flowInfo.label}</span>
-            </div>
-            {coupon.expires_at && (
-              <span className={`text-[10px] font-medium flex items-center gap-1 ${
-                isExpiring ? "text-destructive" : "text-muted-foreground/60"
-              }`}>
-                <Clock className="w-2.5 h-2.5" />
-                {getDaysLeft(coupon.expires_at)}
-              </span>
-            )}
-          </div>
-
-          {/* Big discount */}
-          <div className="flex items-baseline gap-2">
-            <span className="text-[32px] font-black text-primary leading-none tracking-tighter">
+        <div className="flex items-center gap-0">
+          {/* Left: discount */}
+          <div className="shrink-0 w-[90px] flex flex-col items-center justify-center py-3 border-r border-dashed border-border/40">
+            <span className="text-[20px] font-black text-primary leading-none tracking-tight">
               {formatDiscount}
             </span>
-            <span className="text-[13px] font-bold text-foreground/40 uppercase tracking-wider">off</span>
-          </div>
-        </div>
-
-        {/* Dashed separator */}
-        <div className="px-7">
-          <div className="border-t border-dashed border-border/50" />
-        </div>
-
-        {/* Bottom section */}
-        <div className="px-5 pt-3.5 pb-4">
-          {/* Description */}
-          {coupon.description && (
-            <p className="text-[12px] text-muted-foreground/80 leading-[1.5] line-clamp-2 mb-2.5">
-              {coupon.description}
-            </p>
-          )}
-
-          {/* Conditions */}
-          <div className="flex flex-wrap items-center gap-1.5 mb-4">
-            {coupon.min_order_amount && (
-              <span className="text-[10px] font-medium text-foreground/50 bg-foreground/[0.03] border border-border/30 px-2 py-[3px] rounded-lg">
-                Min ৳{coupon.min_order_amount}
-              </span>
-            )}
-            {coupon.max_discount && coupon.discount_type === "percentage" && (
-              <span className="text-[10px] font-medium text-foreground/50 bg-foreground/[0.03] border border-border/30 px-2 py-[3px] rounded-lg">
-                Max ৳{coupon.max_discount}
-              </span>
-            )}
-            {coupon.usage_limit && (coupon.usage_limit - coupon.used_count) <= 10 && (
-              <span className="text-[10px] font-medium text-foreground/50 bg-foreground/[0.03] border border-border/30 px-2 py-[3px] rounded-lg">
-                {coupon.usage_limit - coupon.used_count} uses left
-              </span>
-            )}
+            <span className="text-[9px] font-bold text-foreground/30 uppercase tracking-widest mt-0.5">off</span>
           </div>
 
-          {/* Actions row */}
-          <div className="flex gap-2.5 items-center">
-            {/* Code + copy */}
-            <button
-              onClick={() => onCopy(coupon)}
-              className={`h-10 px-4 rounded-[14px] border-[1.5px] border-dashed flex items-center gap-2 transition-all duration-300 ${
-                isCopied
-                  ? "border-primary/30 bg-primary/[0.04]"
-                  : "border-border/60 hover:border-primary/30 hover:bg-primary/[0.02]"
-              }`}
-            >
-              <span className={`text-[12px] font-bold tracking-widest ${
-                isCopied ? "text-primary" : "text-foreground/70"
-              }`}>
-                {coupon.code}
-              </span>
-              <div className={`transition-all duration-200 ${isCopied ? "text-primary" : "text-muted-foreground/40"}`}>
-                {isCopied ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+          {/* Right: details + actions */}
+          <div className="flex-1 min-w-0 px-3 py-2.5">
+            {/* Top: description + flow */}
+            <div className="flex items-start justify-between gap-2 mb-1.5">
+              <p className="text-[11px] text-foreground/70 font-medium leading-snug line-clamp-1 flex-1">
+                {coupon.description || `${flowInfo.label} discount`}
+              </p>
+              <div className="flex items-center gap-1 text-muted-foreground/50 shrink-0">
+                <FlowIcon className="w-2.5 h-2.5" />
+                <span className="text-[9px] font-medium">{flowInfo.label}</span>
               </div>
-            </button>
+            </div>
 
-            {/* Use now */}
+            {/* Code + copy + expiry row */}
+            <div className="flex items-center gap-2 mb-2">
+              <button
+                onClick={() => onCopy(coupon)}
+                className={`h-6 px-2 rounded-md border border-dashed flex items-center gap-1 transition-all text-[10px] font-bold tracking-wider ${
+                  isCopied
+                    ? "border-primary/30 bg-primary/[0.04] text-primary"
+                    : "border-border/50 text-foreground/60 hover:border-primary/20"
+                }`}
+              >
+                {coupon.code}
+                {isCopied ? <CheckCircle2 className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5 text-muted-foreground/40" />}
+              </button>
+              {coupon.expires_at && (
+                <span className={`text-[9px] font-medium flex items-center gap-0.5 ${
+                  isExpiring ? "text-destructive" : "text-muted-foreground/40"
+                }`}>
+                  <Clock className="w-2 h-2" />
+                  {getDaysLeft(coupon.expires_at)}
+                </span>
+              )}
+            </div>
+
+            {/* Redeem button */}
             <Button
               size="sm"
-              className="flex-1 rounded-[14px] font-semibold text-[12px] h-10 shadow-none"
+              className="w-full rounded-xl font-semibold text-[11px] h-7 shadow-none"
               onClick={() => onUse(coupon)}
             >
-              <Scissors className="w-3.5 h-3.5 mr-1.5" />
               Redeem
             </Button>
           </div>
