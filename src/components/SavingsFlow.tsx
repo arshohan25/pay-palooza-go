@@ -1002,8 +1002,16 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
               <div className="bg-card rounded-[18px] border border-border/60 shadow-[var(--shadow-card)] p-4">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-[12px] font-bold text-foreground">Live Gold Price</p>
-                  <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-bold"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />Live</div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={refreshGoldPrice} className="p-1 rounded-lg hover:bg-muted transition-colors" disabled={goldPriceLoading}>
+                      <RefreshCw size={12} className={`text-muted-foreground ${goldPriceLoading ? "animate-spin" : ""}`} />
+                    </button>
+                    <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-bold"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />Live</div>
+                  </div>
                 </div>
+                {goldUpdatedAt && (
+                  <p className="text-[9px] text-muted-foreground mb-2">Updated: {new Date(goldUpdatedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</p>
+                )}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-muted/50 rounded-xl p-3">
                     <p className="text-[10px] text-muted-foreground font-semibold">22K Gold</p>
