@@ -753,8 +753,8 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
             open={showShare}
             onClose={() => setShowShare(false)}
             receipt={{
-              title: selectedTx.detail,
-              amount: `${selectedTx.amount > 0 ? "+" : "−"}৳${Math.abs(selectedTx.amount).toLocaleString()}`,
+              title: catLabel,
+              amount: `${selectedTx.amount > 0 ? "+" : "−"}৳${Math.abs(selectedTx.amount).toLocaleString("en-IN")}`,
               gradient: gradMap[selectedTx.category] ?? "gradient-primary",
               txnId: txId,
               rows: [
@@ -762,11 +762,11 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                 { label: "Category", value: catLabel },
                 { label: "Description", value: selectedTx.detail },
                 ...(agentView
-                   ? (selectedTx.commission > 0 ? [{ label: "Commission", value: `+৳${selectedTx.commission.toLocaleString()}` }] : [])
+                   ? (selectedTx.commission > 0 ? [{ label: "Commission", value: `+৳${selectedTx.commission.toLocaleString("en-IN")}` }] : [])
                    : (selectedTx.fee > 0
                      ? [
-                         { label: "Fee", value: `৳${selectedTx.fee.toLocaleString()} (from balance)` },
-                         { label: "Total Deducted", value: `৳${(Math.abs(selectedTx.amount) + selectedTx.fee).toLocaleString()}` },
+                         { label: "Fee", value: `৳${selectedTx.fee.toLocaleString("en-IN")} (from balance)` },
+                         { label: "Total Deducted", value: `৳${(Math.abs(selectedTx.amount) + selectedTx.fee).toLocaleString("en-IN")}` },
                        ]
                      : [{ label: "Fee", value: "Free" }])
                 ),
