@@ -232,9 +232,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     const holdings = (data as any[]) ?? [];
     const h22k = holdings.find((h: any) => h.karat === "22k");
     const h24k = holdings.find((h: any) => h.karat === "24k");
-    const active = goldKarat === "24k" ? h24k : h22k;
-    setGoldHolding({ grams: active?.grams ?? 0, avgBuyPrice: active?.avg_buy_price ?? 0 });
-  }, [user, goldKarat]);
+    setGoldHoldings22k({ grams: h22k?.grams ?? 0, avgBuyPrice: h22k?.avg_buy_price ?? 0 });
+    setGoldHoldings24k({ grams: h24k?.grams ?? 0, avgBuyPrice: h24k?.avg_buy_price ?? 0 });
+  }, [user]);
 
   const loadStockHoldings = useCallback(async () => {
     if (!user) return;
