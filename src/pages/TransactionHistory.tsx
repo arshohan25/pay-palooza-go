@@ -762,6 +762,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
               txnId: txId,
               rows: [
                 { label: "Party", value: selectedTx.name },
+                ...(selectedTx.recipient_phone ? [{ label: "Receiver", value: selectedTx.recipient_phone }] : []),
                 { label: "Category", value: catLabel },
                 { label: "Description", value: selectedTx.detail },
                 ...(agentView
