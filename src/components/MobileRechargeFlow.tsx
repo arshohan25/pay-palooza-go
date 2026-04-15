@@ -1128,6 +1128,12 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                         )}
                       </>
                     )}
+                    {pendingCoupon && calcCouponDiscount(pendingCoupon, effectivePrice) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-primary font-medium">🎟️ Coupon ({pendingCoupon.code})</span>
+                        <span className="text-primary font-bold">-৳{calcCouponDiscount(pendingCoupon, effectivePrice).toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-muted-foreground">
                       <span>Service fee</span>
                       <span className="font-semibold text-primary">Free</span>
@@ -1135,7 +1141,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                     <div className="h-px bg-border" />
                     <div className="flex justify-between font-bold text-foreground">
                       <span>Total from balance</span>
-                      <span>৳{effectivePrice}</span>
+                      <span>৳{Math.max(0, effectivePrice - (pendingCoupon ? calcCouponDiscount(pendingCoupon, effectivePrice) : 0))}</span>
                     </div>
                   </div>
                 </div>
