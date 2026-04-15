@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Ticket, Copy, Clock, CheckCircle2, Sparkles,
-  ShoppingBag, Send, CreditCard, Smartphone, FileText, Zap, Tag
+  ShoppingBag, CreditCard, Smartphone, FileText, Zap, Tag
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
