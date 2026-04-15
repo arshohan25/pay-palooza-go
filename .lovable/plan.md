@@ -1,36 +1,50 @@
-
-
-# Deduct Processing Fee at Approval, Disburse Net Amount
+# Show Wallet ID and Name in Send Money Summary & Receipt
 
 ## Problem
-Currently `disburse_loan` adds the full loan amount to user balance. The 3% processing fee should be deducted immediately when the loan is approved, and only the net amount (loan - fee) should be credited to the user's balance.
+
+- When sending by **phone number**: the confirm/success screens show the phone but not the recipient's wallet ID
+- When sending by **wallet ID**: the confirm/success screens show the resolved phone number, but the sender should only see the recipient's **name and wallet ID** (not their phone — privacy)
 
 ## Changes
 
-### 1. Update `disburse_loan` RPC (new migration)
+### 1. Update `resolve_transfer_recipient` RPC (new migration)
 
-Replace the current logic with:
+Add `recipient_wallet_id` to the response JSON for both phone and wallet lookups:
 
 ```sql
-v_fee := v_loan.amount * 0.03;          -- 3% processing fee
-v_net := v_loan.amount - v_fee;         -- net disbursement
+-- For wallet match: include the wallet ID that was searched
+'recipient_wallet_id', upper(v_input)
 
-UPDATE profiles SET balance = balance + v_net WHERE user_id = v_loan.user_id;
-
--- Transaction 1: Fee deduction record
-INSERT INTO transactions (...) VALUES
-  (..., 'payment', v_fee, 'Loan Processing Fee (3%)', ...);
-
--- Transaction 2: Net disbursement record  
-INSERT INTO transactions (...) VALUES
-  (..., 'addmoney', v_net, 'Qard Hasan Disbursement (after fee)', ...);
+-- For phone match: compute and include the wallet ID
+'recipient_wallet_id', generate_wallet_id_from_phone(v_profile.phone)
 ```
 
-This creates two transaction records: one for the fee and one for the net credit, both visible in history.
+### 2. Update `SendMoneyFlow.tsx` — capture wallet ID and `matched_by`
 
-### 2. Update `repay_loan` RPC
-Repayment should only require the original loan amount (not amount + fee, since fee was already deducted at disbursement). Update `v_total` to use `v_loan.amount` instead of `v_loan.emi_amount`.
+- Add state: `resolvedWalletId` and `matchedBy` (track how recipient was found)
+- In `validateRecipientExists`, return `walletId` and `matchedBy` from the RPC response
+- Store these in all resolution paths (`handleManualSend`, `handleSelectContact`, `handleQrScan`, auto-resolve)
 
-### 3. No frontend changes needed
-The admin panel already calls `disburse_loan` RPC — the fee logic is entirely server-side.
+### 3. Update confirm card, success receipt, and share receipt
 
+**When sent by phone (`matchedBy === 'phone'`):**
+
+- Show: Name AND Phone Number
+
+**When sent by wallet ID (`matchedBy === 'wallet'`):**
+
+- Show: Name and Wallet ID only (hide phone number for privacy)
+
+Affected UI sections:
+
+- **Amount step** recipient card (line ~754): add wallet ID below phone/instead of phone
+- **Confirm step** recipient card (line ~902): show wallet ID, conditionally hide phone
+- **Success receipt** (line ~1010): show wallet ID row, conditionally hide phone
+- **Share receipt** rows (line ~1086): adjust Mobile/Wallet row based on `matchedBy`
+
+### 4. Transaction history display
+
+The `transferMoney` call already stores `recipientName` and `recipientPhone` in the transactions table. The wallet ID will be included in the description or stored via the existing fields so it appears in `TransactionList`.
+
+- Update the `transferMoney` call to pass wallet ID in the description field: e.g. `"Wallet: EZP-XXXX-XXXX"` appended to note
+- In `TransactionList.tsx`, parse and display wallet ID from description when present
