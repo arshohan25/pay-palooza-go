@@ -593,48 +593,32 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
                   />
                 </div>
 
-                {/* Inline coupon input */}
-                {!pendingCoupon && (
-                  <div className="space-y-2">
-                    {!showCouponInput ? (
+                {/* bKash-style coupon input */}
+                {!pendingCoupon ? (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-border bg-muted/30">
+                      <Ticket size={18} className="text-muted-foreground/50 shrink-0" />
+                      <input
+                        placeholder="Enter promo code"
+                        value={couponCode}
+                        onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }}
+                        className="flex-1 bg-transparent text-sm font-medium tracking-wide uppercase placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground/60 outline-none text-foreground"
+                      />
                       <button
-                        onClick={() => setShowCouponInput(true)}
-                        className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                        onClick={handleApplyCoupon}
+                        disabled={couponLoading || !couponCode.trim()}
+                        className="text-primary font-bold text-sm px-1 disabled:opacity-40 transition-opacity shrink-0"
                       >
-                        <Ticket size={13} />
-                        Have a coupon?
+                        {couponLoading ? <Loader2 size={16} className="animate-spin" /> : "APPLY"}
                       </button>
-                    ) : (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        className="space-y-1.5"
-                      >
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder="Enter code"
-                            value={couponCode}
-                            onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }}
-                            className="flex-1 h-9 text-xs uppercase border-dashed bg-card border-border font-mono tracking-wider"
-                          />
-                          <Button
-                            size="sm"
-                            className="h-9 px-4 text-xs font-semibold"
-                            onClick={handleApplyCoupon}
-                            disabled={couponLoading || !couponCode.trim()}
-                          >
-                            {couponLoading ? <Loader2 size={14} className="animate-spin" /> : "Apply"}
-                          </Button>
-                        </div>
-                        {couponError && (
-                          <p className="text-[11px] text-destructive flex items-center gap-1">
-                            <AlertCircle size={11} /> {couponError}
-                          </p>
-                        )}
-                      </motion.div>
+                    </div>
+                    {couponError && (
+                      <p className="text-[11px] text-destructive flex items-center gap-1 px-1">
+                        <AlertCircle size={11} /> {couponError}
+                      </p>
                     )}
                   </div>
-                )}
+                ) : null}
 
                 {amtNum > 0 && (
                   <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2 text-sm">
