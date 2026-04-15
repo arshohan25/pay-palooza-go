@@ -469,27 +469,6 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     finally { setProcessing(false); }
   };
 
-  const handleSellStock = async () => {
-    if (!selectedStock) return;
-    const qty = parseInt(stockQty);
-    const holding = stockHoldings.find(h => h.symbol === selectedStock.symbol);
-    if (!qty || qty <= 0) { setError("Enter valid quantity"); return; }
-    if (!holding || qty > holding.qty) { setError("Insufficient shares"); return; }
-    if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
-    setProcessing(true); setPinError("");
-    const pinValid = await verifyPin(pin);
-    if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
-    setTimeout(() => {
-      setStockHoldings(prev => prev.map(h => {
-        if (h.symbol !== selectedStock.symbol) return h;
-        const newQty = h.qty - qty;
-        return newQty <= 0 ? null! : { ...h, qty: newQty, currentPrice: selectedStock.price, change: selectedStock.change };
-      }).filter(Boolean));
-      const revenue = Math.round(qty * selectedStock.price);
-      toast.success(`💰 Sold ${qty} ${selectedStock.symbol} for ৳${revenue.toLocaleString()}`);
-      setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setError(""); setProcessing(false); setPin("");
-    }, 1200);
-  };
 
   const totalStockValue = stockHoldings.reduce((s, h) => s + h.qty * h.currentPrice, 0);
   const totalStockCost = stockHoldings.reduce((s, h) => s + h.qty * h.avgPrice, 0);
