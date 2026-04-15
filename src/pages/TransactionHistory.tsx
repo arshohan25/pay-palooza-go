@@ -240,11 +240,11 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
         {/* Summary chips — strict 3-col grid */}
         <div className="grid grid-cols-3 gap-2 w-full">
           {[
-            { label: t("moneyIn"),  value: `+৳${totalIn.toLocaleString()}`,  color: "text-green-300" },
-            { label: t("moneyOut"), value: `-৳${totalOut.toLocaleString()}`, color: "text-rose-300"  },
+            { label: t("moneyIn"),  value: `+৳${totalIn.toLocaleString("en-IN")}`,  color: "text-green-300" },
+            { label: t("moneyOut"), value: `-৳${totalOut.toLocaleString("en-IN")}`, color: "text-rose-300"  },
             agentView
-              ? { label: "Commission", value: `৳${totalCommission.toLocaleString()}`, color: "text-emerald-300" }
-              : { label: "Fees",       value: `৳${totalFees.toLocaleString()}`,       color: "text-amber-300" },
+              ? { label: "Commission", value: `৳${totalCommission.toLocaleString("en-IN")}`, color: "text-emerald-300" }
+              : { label: "Fees",       value: `৳${totalFees.toLocaleString("en-IN")}`,       color: "text-amber-300" },
           ].map(({ label, value, color }) => (
             <div key={label} className="glass-hero rounded-2xl px-2 py-2.5 text-center min-w-0 overflow-hidden">
               <p className="text-[9px] font-semibold uppercase tracking-wide text-white/60 mb-0.5 truncate">{label}</p>
