@@ -1,23 +1,31 @@
 
 
-# Update Gold Prices to Real Market Rates
+# Fix Gold Holdings Persistence + Add One-Click Sell
 
 ## Problem
-The gold prices in the Gold Investment tab are using outdated mock values (22K: ৳9,850/g, 24K: ৳10,750/g). Current real market prices in Bangladesh (April 2026) are significantly higher.
-
-## Real Prices (source: goldrate24.com, BAJUS rates)
-- **22K Gold**: ~৳16,200/gram
-- **24K Gold**: ~৳19,500/gram
+1. **Gold disappears after refresh**: `loadGoldHoldings` depends on both `user` and `goldKarat` in its `useCallback`. On page refresh, `user` resolves as `null` initially (auth restoring from storage), causing `loadGoldHoldings` to return early. The data only loads for the "active" karat, meaning switching karats also loses the other karat's data.
+2. **No quick sell option**: User has to navigate through multiple steps to sell gold.
 
 ## Changes
 
 ### File: `src/components/SavingsFlow.tsx`
-1. Update `MOCK_GOLD_PRICE` from `9850` → `16200`
-2. Update `MOCK_GOLD_24K_PRICE` from `10750` → `19500`
 
-Also update the "Physical Gold Backed" badge text — the user highlighted it in the screenshot, likely wants it changed to something like "**BAJUS Certified**" or "**BAJUS Rate**" to indicate real pricing source.
+**Fix 1 — Store both karat holdings and derive the active one**
+- Change `goldHolding` state to store BOTH 22k and 24k holdings (e.g., `goldHoldings22k` and `goldHoldings24k`, or a map).
+- Remove `goldKarat` from the `loadGoldHoldings` dependency — load ALL holdings regardless of selected karat, then derive the active display from state.
+- This prevents data loss when switching karats and ensures the overview card always shows correct totals.
+
+**Fix 2 — Re-fetch when user becomes available**
+- Add a separate `useEffect` that watches `user` and calls `loadGoldHoldings()` when user transitions from null to a valid user object — ensuring auth restoration triggers a data load.
+
+**Fix 3 — One-click sell buttons on Gold portfolio**
+- Add "Sell All" and "Sell Half" quick-action buttons directly on the gold portfolio card (next to or below the existing Buy/Sell buttons).
+- "Sell All" pre-fills `goldGrams` with the user's full holding and jumps to the PIN confirmation step.
+- "Sell Half" pre-fills with half the holding.
+- Both buttons skip the manual gram entry step, going straight to confirm → PIN → execute.
 
 ### Summary
-- 2 constant value changes in one file
-- All dependent calculations (buy/sell cost, portfolio value, profit) will automatically use the new prices
+- 1 file changed: `src/components/SavingsFlow.tsx`
+- Gold data will persist across refreshes by fixing the auth timing and karat dependency issues
+- One-click "Sell All" / "Sell Half" buttons added to gold portfolio view
 
