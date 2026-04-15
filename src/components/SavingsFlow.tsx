@@ -50,10 +50,23 @@ const MOCK_STOCKS: { symbol: string; name: string; price: number; change: number
 ];
 
 // ─── Profit & Duration Config ────────────────────────────────────────
+// Returns vary by duration (months → annual %). Longer lock = higher return.
+const STRATEGY_RETURNS: Record<string, Record<number, number>> = {
+  gold:   { 6: 6, 12: 8, 24: 10, 36: 11, 60: 12, 120: 13 },
+  mixed:  { 6: 8, 12: 11, 24: 14, 36: 15, 60: 16, 120: 17 },
+  stocks: { 6: 10, 12: 14, 24: 18, 36: 20, 60: 22, 120: 24 },
+};
+
+function getEstReturn(strategyKey: string, durationMonths: number): number {
+  const rates = STRATEGY_RETURNS[strategyKey];
+  if (!rates) return 0;
+  return rates[durationMonths] ?? rates[12] ?? 0;
+}
+
 const INVESTMENT_STRATEGIES = [
-  { key: "gold", label: "Gold Investment", icon: "🪙", estReturn: 10, desc: "Auto-invest in 22K gold" },
-  { key: "mixed", label: "Mixed (Gold + Stocks)", icon: "📊", estReturn: 14, desc: "60% gold, 40% halal stocks" },
-  { key: "stocks", label: "Halal Stocks", icon: "📈", estReturn: 18, desc: "Auto-invest in Sharia-screened stocks" },
+  { key: "gold", label: "Gold Investment", icon: "🪙", desc: "Auto-invest in 22K gold" },
+  { key: "mixed", label: "Mixed (Gold + Stocks)", icon: "📊", desc: "60% gold, 40% halal stocks" },
+  { key: "stocks", label: "Halal Stocks", icon: "📈", desc: "Auto-invest in Sharia-screened stocks" },
 ] as const;
 
 type Strategy = typeof INVESTMENT_STRATEGIES[number]["key"];
@@ -226,8 +239,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     else if (autoFreq === "weekly") totalDeposits = autoAmtNum * selectedDuration.months * 4;
     else totalDeposits = autoAmtNum * selectedDuration.months;
 
-    const { totalValue, profit } = calcEstimatedProfit(totalDeposits, selectedDuration.months, selectedStrategyObj.estReturn);
-    return { totalDeposits, totalValue, profit, returnPct: selectedStrategyObj.estReturn };
+    const estReturnPct = getEstReturn(selectedStrategyObj.key, selectedDuration.months);
+    const { totalValue, profit } = calcEstimatedProfit(totalDeposits, selectedDuration.months, estReturnPct);
+    return { totalDeposits, totalValue, profit, returnPct: estReturnPct };
   }, [autoAmtNum, autoFreq, selectedDuration, selectedStrategyObj]);
 
   // ─── Savings handlers ────────
@@ -730,7 +744,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                           <p className="text-[10px] text-muted-foreground">{strat.desc}</p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="text-[14px] font-black text-emerald-600">~{strat.estReturn}%</p>
+                          <p className="text-[14px] font-black text-emerald-600">~{getEstReturn(strat.key, selectedDuration.months)}%</p>
                           <p className="text-[9px] text-muted-foreground">est. annual</p>
                         </div>
                       </button>
