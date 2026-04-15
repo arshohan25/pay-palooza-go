@@ -45,7 +45,7 @@ export default function CouponsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState("all");
+  
   const { rewards: aiCouponRewards, claimReward } = useAiRewards("coupon");
   const { rewards: aiOfferRewards, claimReward: claimOffer } = useAiRewards("offer");
 
@@ -64,10 +64,6 @@ export default function CouponsPage() {
     load();
   }, []);
 
-  const filtered = useMemo(() => {
-    if (activeFilter === "all") return coupons;
-    return coupons.filter(c => c.applicable_flow === activeFilter || c.applicable_flow === "all");
-  }, [coupons, activeFilter]);
 
   const handleCopy = (coupon: Coupon) => {
     navigator.clipboard.writeText(coupon.code);
