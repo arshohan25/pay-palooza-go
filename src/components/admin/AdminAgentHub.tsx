@@ -159,6 +159,9 @@ function AgentListTab() {
       max_float: String(a.max_float),
       nid_number: a.nid_number || "",
       trade_license: a.trade_license || "",
+      latitude: (a as any).latitude != null ? String((a as any).latitude) : "",
+      longitude: (a as any).longitude != null ? String((a as any).longitude) : "",
+      address: (a as any).address || "",
     });
   };
 
