@@ -642,7 +642,8 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     { icon: User,     label: "Name / Party",   value: selectedTx.name,                        copy: false },
                     ...(selectedTx.recipient_phone ? [{ icon: Phone, label: "Receiver Number", value: selectedTx.recipient_phone, copy: true }] : []),
                     { icon: Tag,      label: "Category",       value: catLabel,                               copy: false },
-                    { icon: FileText, label: "Description",    value: selectedTx.detail,                     copy: false },
+                    ...(selectedTx.detail && !selectedTx.detail.startsWith("[Wallet:") && selectedTx.detail !== catLabel
+                      ? [{ icon: FileText, label: "Description", value: selectedTx.detail, copy: false }] : []),
                     ...(agentView
                       ? (selectedTx.commission > 0 ? [{ icon: TrendingUp, label: "Commission Earned", value: `+৳${selectedTx.commission.toLocaleString("en-IN")}`, copy: false }] : [])
                       : (selectedTx.fee > 0 ? [{ icon: Coins, label: "Charge / Fee", value: `৳${selectedTx.fee.toLocaleString("en-IN")}`, copy: false }] : [])
@@ -764,7 +765,8 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                 { label: "Party", value: selectedTx.name },
                 ...(selectedTx.recipient_phone ? [{ label: "Receiver", value: selectedTx.recipient_phone }] : []),
                 { label: "Category", value: catLabel },
-                { label: "Description", value: selectedTx.detail },
+                ...(selectedTx.detail && !selectedTx.detail.startsWith("[Wallet:") && selectedTx.detail !== catLabel
+                  ? [{ label: "Note", value: selectedTx.detail }] : []),
                 ...(agentView
                    ? (selectedTx.commission > 0 ? [{ label: "Commission", value: `+৳${selectedTx.commission.toLocaleString("en-IN")}` }] : [])
                    : (selectedTx.fee > 0
