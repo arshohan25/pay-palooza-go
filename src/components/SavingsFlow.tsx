@@ -195,9 +195,13 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
 
   // ─── Gold state ────────
   const [goldStep, setGoldStep] = useState<GoldStep>("portfolio");
-  const [goldHolding, setGoldHolding] = useState<GoldHolding>({ grams: 0, avgBuyPrice: 0 });
+  const [goldHoldings22k, setGoldHoldings22k] = useState<GoldHolding>({ grams: 0, avgBuyPrice: 0 });
+  const [goldHoldings24k, setGoldHoldings24k] = useState<GoldHolding>({ grams: 0, avgBuyPrice: 0 });
   const [goldGrams, setGoldGrams] = useState("");
   const [goldKarat, setGoldKarat] = useState<"22k" | "24k">("22k");
+
+  // Derive active holding from karat selection
+  const goldHolding = goldKarat === "24k" ? goldHoldings24k : goldHoldings22k;
 
   // ─── Stock state ────────
   const [stockStep, setStockStep] = useState<StockStep>("market");
