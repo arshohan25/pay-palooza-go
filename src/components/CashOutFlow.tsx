@@ -157,7 +157,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
         distance: `${a.distance_km} km`,
         initials: (a.business_name || "AG").slice(0, 2).toUpperCase(),
         gradient: AGENT_GRADIENTS[i % AGENT_GRADIENTS.length],
-        rating: 0,
+        rating: Number(a.avg_rating) || 0,
       }));
       setNearbyAgents(agents);
       setLoadingNearby(false);
