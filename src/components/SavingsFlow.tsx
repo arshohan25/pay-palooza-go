@@ -425,9 +425,12 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     finally { setProcessing(false); }
   };
 
-  const goldValue = Math.round(goldHolding.grams * LIVE_GOLD_PRICE);
+  const totalGoldGrams = goldHoldings22k.grams + goldHoldings24k.grams;
+  const totalGoldValue = Math.round((goldHoldings22k.grams * LIVE_GOLD_PRICE) + (goldHoldings24k.grams * LIVE_GOLD_24K_PRICE));
+  const totalGoldCost = Math.round((goldHoldings22k.grams * goldHoldings22k.avgBuyPrice) + (goldHoldings24k.grams * goldHoldings24k.avgBuyPrice));
+  const goldValue = Math.round(goldHolding.grams * currentGoldPrice);
   const goldProfit = goldValue - Math.round(goldHolding.grams * goldHolding.avgBuyPrice);
-  const goldProfitPct = goldHolding.avgBuyPrice > 0 ? ((LIVE_GOLD_PRICE - goldHolding.avgBuyPrice) / goldHolding.avgBuyPrice * 100) : 0;
+  const goldProfitPct = goldHolding.avgBuyPrice > 0 ? ((currentGoldPrice - goldHolding.avgBuyPrice) / goldHolding.avgBuyPrice * 100) : 0;
 
   // ─── Stock handlers ────────
   const handleBuyStock = async () => {
@@ -579,10 +582,10 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 <button onClick={() => setMainTab("gold")} className="text-left p-3.5 rounded-[18px] border border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-amber-600/5 space-y-1.5">
                   <div className="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center"><Coins size={16} className="text-amber-600 dark:text-amber-400" /></div>
                   <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Gold</p>
-                  <p className="text-[16px] font-black text-foreground">{goldHolding.grams > 0 ? `${goldHolding.grams}g` : "—"}</p>
-                  {goldHolding.grams > 0 && (
-                    <p className={`text-[10px] font-bold flex items-center gap-0.5 ${goldProfit >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                      {goldProfit >= 0 ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}{goldProfit >= 0 ? "+" : ""}৳{goldProfit.toLocaleString()}
+                  <p className="text-[16px] font-black text-foreground">{totalGoldGrams > 0 ? `${totalGoldGrams}g` : "—"}</p>
+                  {totalGoldGrams > 0 && (
+                    <p className={`text-[10px] font-bold flex items-center gap-0.5 ${totalGoldValue - totalGoldCost >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                      {totalGoldValue - totalGoldCost >= 0 ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}{totalGoldValue - totalGoldCost >= 0 ? "+" : ""}৳{Math.abs(totalGoldValue - totalGoldCost).toLocaleString()}
                     </p>
                   )}
                 </button>
@@ -984,21 +987,23 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg"><Coins size={22} className="text-white" /></div>
                   <div>
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Your Gold</p>
-                    <p className="text-[28px] font-black text-foreground leading-tight">{goldHolding.grams > 0 ? `${goldHolding.grams}g` : "0g"}</p>
+                    <p className="text-[28px] font-black text-foreground leading-tight">{totalGoldGrams > 0 ? `${totalGoldGrams}g` : "0g"}</p>
+                    {goldHoldings22k.grams > 0 || goldHoldings24k.grams > 0 ? (
+                      <p className="text-[11px] text-muted-foreground">22K: {goldHoldings22k.grams}g • 24K: {goldHoldings24k.grams}g</p>
+                    ) : null}
                   </div>
                 </div>
-                {goldHolding.grams > 0 && (
+                {totalGoldGrams > 0 && (
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-card/60 backdrop-blur-sm rounded-xl p-3">
                       <p className="text-[10px] text-muted-foreground font-semibold">Current Value</p>
-                      <p className="text-[16px] font-black text-foreground">৳{goldValue.toLocaleString()}</p>
+                      <p className="text-[16px] font-black text-foreground">৳{totalGoldValue.toLocaleString()}</p>
                     </div>
                     <div className="bg-card/60 backdrop-blur-sm rounded-xl p-3">
                       <p className="text-[10px] text-muted-foreground font-semibold">Profit/Loss</p>
-                      <p className={`text-[16px] font-black flex items-center gap-0.5 ${goldProfit >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                        {goldProfit >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}৳{Math.abs(goldProfit).toLocaleString()}
+                      <p className={`text-[16px] font-black flex items-center gap-0.5 ${totalGoldValue - totalGoldCost >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                        {totalGoldValue - totalGoldCost >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}৳{Math.abs(totalGoldValue - totalGoldCost).toLocaleString()}
                       </p>
-                      <p className={`text-[10px] font-bold ${goldProfit >= 0 ? "text-emerald-600" : "text-destructive"}`}>({goldProfitPct >= 0 ? "+" : ""}{goldProfitPct.toFixed(1)}%)</p>
                     </div>
                   </div>
                 )}
@@ -1040,13 +1045,13 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   <ArrowUpRight size={16} /> Sell Gold
                 </motion.button>
               </div>
-              {goldHolding.grams > 0 && (
+              {totalGoldGrams > 0 && (
                 <div className="grid grid-cols-2 gap-3">
-                  <motion.button whileTap={{ scale: 0.96 }} onClick={() => { setGoldGrams(String(goldHolding.grams)); setGoldStep("sell"); setError(""); }}
+                  <motion.button whileTap={{ scale: 0.96 }} onClick={() => { const has24k = goldHoldings24k.grams > 0; setGoldKarat(has24k ? "24k" : "22k"); setGoldGrams(String(has24k ? goldHoldings24k.grams : goldHoldings22k.grams)); setGoldStep("sell"); setError(""); }}
                     className="h-12 rounded-2xl font-bold text-[13px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 flex items-center justify-center gap-2">
-                    <Wallet size={14} /> Sell All ({goldHolding.grams}g)
+                    <Wallet size={14} /> Sell All
                   </motion.button>
-                  <motion.button whileTap={{ scale: 0.96 }} onClick={() => { setGoldGrams(String(Math.round(goldHolding.grams * 50) / 100)); setGoldStep("sell"); setError(""); }}
+                  <motion.button whileTap={{ scale: 0.96 }} onClick={() => { const has24k = goldHoldings24k.grams > 0; const availableGrams = has24k ? goldHoldings24k.grams : goldHoldings22k.grams; setGoldKarat(has24k ? "24k" : "22k"); setGoldGrams(String(Math.round(availableGrams * 50) / 100)); setGoldStep("sell"); setError(""); }}
                     className="h-12 rounded-2xl font-bold text-[13px] bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 flex items-center justify-center gap-2">
                     <CircleDollarSign size={14} /> Sell Half
                   </motion.button>
