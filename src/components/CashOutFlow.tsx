@@ -122,6 +122,9 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const [showScanner, setShowScanner] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [recentAgents, setRecentAgents] = useState<Agent[]>([]);
+  const [nearbyAgents, setNearbyAgents] = useState<Agent[]>([]);
+  const [locationGranted, setLocationGranted] = useState(false);
+  const [loadingNearby, setLoadingNearby] = useState(true);
 
   const txnTime = useRef(new Date());
   const genId = () => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; };
@@ -135,19 +138,37 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     }
   }, [step]);
 
-  // Fetch recent cashout agents from real transactions
-  const AGENT_GRADIENTS = ["gradient-cashout", "gradient-payment", "gradient-addmoney", "gradient-send", "gradient-accent"];
+  // Fetch nearby agents via geolocation + RPC, fallback to recent txn agents
   useEffect(() => {
-    (async () => {
+    let cancelled = false;
+
+    const fetchNearby = async (lat: number, lng: number) => {
+      const { data } = await supabase.rpc("get_nearby_agents", { p_lat: lat, p_lng: lng, p_radius_km: 10 });
+      if (cancelled || !data) return;
+      const agents: Agent[] = (data as any[]).map((a, i) => ({
+        id: a.agent_id,
+        name: a.business_name || "Agent",
+        agentId: a.territory_code || a.agent_id.slice(0, 8),
+        address: a.address || "",
+        distance: `${a.distance_km} km`,
+        initials: (a.business_name || "AG").slice(0, 2).toUpperCase(),
+        gradient: AGENT_GRADIENTS[i % AGENT_GRADIENTS.length],
+        rating: 0,
+      }));
+      setNearbyAgents(agents);
+      setLoadingNearby(false);
+    };
+
+    const fetchRecent = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
+      if (!session?.user || cancelled) { setLoadingNearby(false); return; }
       const { data: trans } = await supabase
         .from("transactions")
         .select("*")
         .eq("user_id", session.user.id)
         .eq("type", "cashout")
         .order("created_at", { ascending: false });
-      if (!trans) return;
+      if (!trans || cancelled) { setLoadingNearby(false); return; }
       const seen = new Set<string>();
       const agents: Agent[] = [];
       for (const tx of trans) {
@@ -156,11 +177,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
         seen.add(aid);
         const name = tx.recipient_name || "Agent";
         agents.push({
-          id: tx.id,
-          name,
-          agentId: aid,
-          address: "",
-          distance: "",
+          id: tx.id, name, agentId: aid, address: "", distance: "",
           initials: name.slice(0, 2).toUpperCase(),
           gradient: AGENT_GRADIENTS[agents.length % AGENT_GRADIENTS.length],
           rating: 0,
@@ -168,7 +185,25 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
         if (agents.length >= 5) break;
       }
       setRecentAgents(agents);
-    })();
+      setLoadingNearby(false);
+    };
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (cancelled) return;
+          setLocationGranted(true);
+          fetchNearby(pos.coords.latitude, pos.coords.longitude);
+          fetchRecent(); // also load recent as fallback
+        },
+        () => { fetchRecent(); },
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+    } else {
+      fetchRecent();
+    }
+
+    return () => { cancelled = true; };
   }, []);
 
   const stepIndex = STEPS.indexOf(step);
