@@ -145,22 +145,20 @@ const LoanPage = () => {
 
   useEffect(() => {
     if (!user) return;
-    checkEligibility();
-    supabase.from("loan_applications").select("*").eq("user_id", user.id).order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setApplications(data || []);
-        setLoading(false);
-        if (data && data.some(a => ["disbursed", "approved"].includes(a.status))) {
-          setActiveTab("active");
-        }
-      });
+    const loadAll = async () => {
+      const [, appResult] = await Promise.all([
+        checkEligibility(),
+        supabase.from("loan_applications").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
+      ]);
+      const data = appResult.data || [];
+      setApplications(data);
+      setLoading(false);
+      if (data.some(a => ["disbursed", "approved"].includes(a.status))) {
+        setActiveTab("active");
+      }
+    };
+    loadAll();
   }, [user, checkEligibility]);
-
-  if (kycLoading) return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <Loader2 className="w-6 h-6 animate-spin text-primary" />
-    </div>
-  );
 
   const handleApply = () => {
     if (!user) { toast.error("Please sign in first"); return; }
