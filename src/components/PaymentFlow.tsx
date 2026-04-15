@@ -652,94 +652,138 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
                   />
                 </div>
 
-                {/* bKash-style coupon link + bottom sheet */}
+                {/* Coupon trigger — ticket-cut style */}
                 {!pendingCoupon ? (
-                  <button
+                  <motion.button
                     type="button"
                     onClick={openCouponSheet}
-                    className="flex items-center gap-2 text-primary font-semibold text-sm py-1"
+                    whileTap={{ scale: 0.97 }}
+                    className="w-full relative flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed border-primary/25 bg-gradient-to-r from-primary/[0.04] via-transparent to-primary/[0.04] overflow-hidden group"
                   >
-                    <Tag size={16} />
-                    <span>কুপন / প্রোমো কোড</span>
-                  </button>
+                    {/* Shimmer sweep */}
+                    <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-primary/[0.06] to-transparent pointer-events-none" />
+
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Ticket size={18} className="text-primary" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-semibold text-foreground leading-tight">কুপন / প্রোমো কোড</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">ট্যাপ করে কুপন যোগ করুন বা বেছে নিন</p>
+                    </div>
+                    <ChevronRight size={16} className="text-muted-foreground/50 shrink-0" />
+                  </motion.button>
                 ) : null}
 
-                {/* Coupon bottom sheet */}
+                {/* Coupon wallet sheet */}
                 <Sheet open={showCouponSheet} onOpenChange={setShowCouponSheet}>
-                  <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh] overflow-y-auto px-4 pb-6">
-                    <SheetHeader className="flex flex-row items-center justify-between pb-3 border-b border-border">
-                      <SheetTitle className="text-base font-bold">
-                        কুপন {availableCoupons.length > 0 && `(${availableCoupons.length})`}
-                      </SheetTitle>
-                    </SheetHeader>
+                  <SheetContent side="bottom" className="rounded-t-3xl max-h-[75vh] overflow-y-auto px-0 pb-8 pt-0">
+                    {/* Decorative header strip */}
+                    <div className="relative bg-gradient-to-br from-primary/15 via-primary/5 to-transparent px-5 pt-5 pb-4">
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
+                      <SheetHeader className="flex flex-row items-center justify-between p-0">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
+                            <Ticket size={16} className="text-primary" />
+                          </div>
+                          <SheetTitle className="text-base font-bold text-foreground">
+                            কুপন ওয়ালেট {availableCoupons.length > 0 && (
+                              <span className="ml-1.5 text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{availableCoupons.length}</span>
+                            )}
+                          </SheetTitle>
+                        </div>
+                      </SheetHeader>
 
-                    {/* Manual input row */}
-                    <div className="flex items-center gap-2 mt-4">
-                      <div className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border bg-muted/30">
-                        <Ticket size={16} className="text-muted-foreground/50 shrink-0" />
-                        <input
-                          placeholder="কুপন কোড লিখুন"
-                          value={couponCode}
-                          onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }}
-                          className="flex-1 bg-transparent text-sm font-medium tracking-wide uppercase placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground/60 outline-none text-foreground"
-                        />
+                      {/* Manual code input */}
+                      <div className="flex items-center gap-2 mt-4">
+                        <div className="flex-1 flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-background/80 backdrop-blur border border-border shadow-sm">
+                          <span className="text-sm text-muted-foreground/60">✂</span>
+                          <input
+                            placeholder="কুপন কোড লিখুন"
+                            value={couponCode}
+                            onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }}
+                            className="flex-1 bg-transparent text-sm font-mono font-semibold tracking-widest uppercase placeholder:font-sans placeholder:normal-case placeholder:tracking-normal placeholder:font-normal placeholder:text-muted-foreground/50 outline-none text-foreground"
+                          />
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={handleApplyCoupon}
+                          disabled={couponLoading || !couponCode.trim()}
+                          className="h-10 px-5 font-bold rounded-xl shadow-sm"
+                        >
+                          {couponLoading ? <Loader2 size={16} className="animate-spin" /> : "যোগ করুন"}
+                        </Button>
                       </div>
-                      <Button
-                        size="sm"
-                        onClick={handleApplyCoupon}
-                        disabled={couponLoading || !couponCode.trim()}
-                        className="h-10 px-4 font-bold"
-                      >
-                        {couponLoading ? <Loader2 size={16} className="animate-spin" /> : "যোগ করুন"}
-                      </Button>
+                      {couponError && (
+                        <p className="text-[11px] text-destructive flex items-center gap-1 px-1 mt-1.5">
+                          <AlertCircle size={11} /> {couponError}
+                        </p>
+                      )}
                     </div>
-                    {couponError && (
-                      <p className="text-[11px] text-destructive flex items-center gap-1 px-1 mt-1">
-                        <AlertCircle size={11} /> {couponError}
-                      </p>
-                    )}
 
-                    {/* Available coupons list */}
-                    <div className="mt-4 space-y-2.5">
+                    {/* Coupon list — ticket cards */}
+                    <div className="px-5 mt-4 space-y-3">
                       {couponsLoading ? (
-                        <div className="flex justify-center py-6">
+                        <div className="flex justify-center py-8">
                           <Loader2 size={22} className="animate-spin text-muted-foreground" />
                         </div>
                       ) : availableCoupons.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground text-sm">
-                          <Ticket size={32} className="mx-auto mb-2 opacity-30" />
-                          <p>কোনো কুপন পাওয়া যায়নি</p>
+                        <div className="text-center py-10 text-muted-foreground">
+                          <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-3">
+                            <Ticket size={28} className="opacity-30" />
+                          </div>
+                          <p className="text-sm font-medium">কোনো কুপন পাওয়া যায়নি</p>
+                          <p className="text-xs mt-1 opacity-60">উপরে ম্যানুয়ালি কোড যোগ করুন</p>
                         </div>
                       ) : (
-                        availableCoupons.map((c) => (
-                          <div
+                        availableCoupons.map((c, i) => (
+                          <motion.div
                             key={c.id}
-                            className="flex items-center justify-between p-3 rounded-xl border border-border bg-card"
+                            initial={{ opacity: 0, y: 12 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.06, duration: 0.25 }}
+                            className="relative flex rounded-2xl overflow-hidden border border-border bg-card shadow-sm"
                           >
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
-                                  {c.discount_type === "percentage" ? `${c.discount_value}% OFF` : `৳${c.discount_value} OFF`}
-                                </span>
-                                <span className="text-xs font-mono font-bold text-foreground tracking-wider">{c.code}</span>
+                            {/* Left discount strip */}
+                            <div className="w-[72px] shrink-0 bg-gradient-to-b from-primary to-primary/80 flex flex-col items-center justify-center text-primary-foreground relative">
+                              <span className="text-xl font-black leading-none">
+                                {c.discount_type === "percentage" ? `${c.discount_value}%` : `৳${c.discount_value}`}
+                              </span>
+                              <span className="text-[9px] font-bold uppercase tracking-wider mt-0.5 opacity-80">ছাড়</span>
+                              {/* Perforation circles */}
+                              <div className="absolute -right-[6px] top-1/2 -translate-y-1/2 flex flex-col gap-1.5">
+                                {[...Array(5)].map((_, j) => (
+                                  <div key={j} className="w-3 h-3 rounded-full bg-background" />
+                                ))}
                               </div>
-                              {c.description && (
-                                <p className="text-[11px] text-muted-foreground mt-1 truncate">{c.description}</p>
-                              )}
-                              {c.min_order_amount && (
-                                <p className="text-[10px] text-muted-foreground/70 mt-0.5">Min ৳{c.min_order_amount}</p>
-                              )}
                             </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleApplyCouponFromList(c.code)}
-                              disabled={couponLoading}
-                              className="h-8 text-xs font-bold border-primary text-primary hover:bg-primary hover:text-primary-foreground shrink-0 ml-2"
-                            >
-                              Apply
-                            </Button>
-                          </div>
+
+                            {/* Right content */}
+                            <div className="flex-1 flex items-center justify-between px-3.5 py-3 min-w-0">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[13px] font-mono font-bold text-foreground tracking-wider">{c.code}</p>
+                                {c.description && (
+                                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{c.description}</p>
+                                )}
+                                <div className="flex items-center gap-2 mt-1">
+                                  {c.min_order_amount && (
+                                    <span className="text-[10px] text-muted-foreground/70 bg-muted/50 px-1.5 py-0.5 rounded">Min ৳{c.min_order_amount}</span>
+                                  )}
+                                  {c.max_discount && c.discount_type === "percentage" && (
+                                    <span className="text-[10px] text-muted-foreground/70 bg-muted/50 px-1.5 py-0.5 rounded">Max ৳{c.max_discount}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleApplyCouponFromList(c.code)}
+                                disabled={couponLoading}
+                                className="h-8 px-3 text-xs font-bold text-primary hover:text-primary hover:bg-primary/10 shrink-0 ml-2 rounded-lg"
+                              >
+                                ব্যবহার করুন
+                              </Button>
+                            </div>
+                          </motion.div>
                         ))
                       )}
                     </div>
