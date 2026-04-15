@@ -110,7 +110,7 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
   const [note, setNote]           = useState("");
   const [pin, setPin]             = useState("");
   const [error, setError]         = useState("");
-  const [pendingCoupon] = useState<PendingCoupon | null>(() => getPendingCoupon("payment"));
+  const [pendingCoupon, setPendingCoupon] = useState<PendingCoupon | null>(() => getPendingCoupon("payment"));
   const [showScanner, setShowScanner] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [recentMerchants, setRecentMerchants] = useState<Merchant[]>([]);
@@ -491,7 +491,7 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
                           : `৳${pendingCoupon.discount_value} off`}
                       </p>
                     </div>
-                    <button onClick={() => { clearPendingCoupon(); window.location.reload(); }} className="text-xs text-destructive font-medium">Remove</button>
+                    <button onClick={() => { clearPendingCoupon(); setPendingCoupon(null); }} className="text-xs text-destructive font-medium">Remove</button>
                   </motion.div>
                 )}
                 {merchant && (
