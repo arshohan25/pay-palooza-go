@@ -611,7 +611,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                       <IconComp />
                     </div>
                     <p className="text-[26px] font-bold text-foreground">
-                      {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString()}
+                      {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString("en-IN")}
                     </p>
                     <p className="text-[12.5px] text-muted-foreground mt-0.5">{selectedTx.detail}</p>
                     {selectedTx.status === "pending" ? (
@@ -641,8 +641,8 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     { icon: Tag,      label: "Category",       value: catLabel,                               copy: false },
                     { icon: FileText, label: "Description",    value: selectedTx.detail,                     copy: false },
                     ...(agentView
-                      ? (selectedTx.commission > 0 ? [{ icon: TrendingUp, label: "Commission Earned", value: `+৳${selectedTx.commission.toLocaleString()}`, copy: false }] : [])
-                      : (selectedTx.fee > 0 ? [{ icon: Coins, label: "Charge / Fee", value: `৳${selectedTx.fee.toLocaleString()}`, copy: false }] : [])
+                      ? (selectedTx.commission > 0 ? [{ icon: TrendingUp, label: "Commission Earned", value: `+৳${selectedTx.commission.toLocaleString("en-IN")}`, copy: false }] : [])
+                      : (selectedTx.fee > 0 ? [{ icon: Coins, label: "Charge / Fee", value: `৳${selectedTx.fee.toLocaleString("en-IN")}`, copy: false }] : [])
                     ),
                     { icon: Clock,    label: "Date & Time",    value: format(txDate, "dd MMM yyyy, h:mm a"), copy: false },
                   ].map(({ icon: RowIcon, label, value, copy }) => (
@@ -671,18 +671,18 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     <div className="mt-4 rounded-2xl p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40">
                       <div className="flex items-center justify-between text-[12.5px]">
                         <span className="text-muted-foreground font-medium">Transaction Amount</span>
-                        <span className="font-semibold text-foreground">৳{Math.abs(selectedTx.amount).toLocaleString()}</span>
+                        <span className="font-semibold text-foreground">৳{Math.abs(selectedTx.amount).toLocaleString("en-IN")}</span>
                       </div>
                       <div className="flex items-center justify-between text-[12.5px] mt-1.5">
                         <span className="text-emerald-600 dark:text-emerald-400 font-medium">
                           Commission Earned
                         </span>
-                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">+৳{selectedTx.commission.toLocaleString()}</span>
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">+৳{selectedTx.commission.toLocaleString("en-IN")}</span>
                       </div>
                       <div className="h-px bg-emerald-200/60 dark:bg-emerald-800/40 my-2" />
                       <div className="flex items-center justify-between">
                         <span className="text-[13px] font-bold text-foreground">Net Earned</span>
-                        <span className="text-[18px] font-bold text-emerald-600 dark:text-emerald-400">+৳{selectedTx.commission.toLocaleString()}</span>
+                        <span className="text-[18px] font-bold text-emerald-600 dark:text-emerald-400">+৳{selectedTx.commission.toLocaleString("en-IN")}</span>
                       </div>
                     </div>
                   ) : agentView ? (
@@ -690,7 +690,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                       <div className="flex items-center justify-between">
                         <span className="text-[13px] font-semibold text-muted-foreground">Total Amount</span>
                         <span className={`text-[20px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
-                          {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString()}
+                          {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString("en-IN")}
                         </span>
                       </div>
                       <p className="text-[11px] text-muted-foreground mt-1 text-right font-medium">No commission</p>
@@ -699,16 +699,16 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     <div className="mt-4 rounded-2xl p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40">
                       <div className="flex items-center justify-between text-[12.5px]">
                         <span className="text-muted-foreground font-medium">Principal</span>
-                        <span className="font-semibold text-foreground">৳{Math.abs(selectedTx.amount).toLocaleString()}</span>
+                        <span className="font-semibold text-foreground">৳{Math.abs(selectedTx.amount).toLocaleString("en-IN")}</span>
                       </div>
                       <div className="flex items-center justify-between text-[12.5px] mt-1.5">
                         <span className="text-amber-600 dark:text-amber-400 font-medium">Fee (from balance)</span>
-                        <span className="font-semibold text-amber-600 dark:text-amber-400">৳{selectedTx.fee.toLocaleString()}</span>
+                        <span className="font-semibold text-amber-600 dark:text-amber-400">৳{selectedTx.fee.toLocaleString("en-IN")}</span>
                       </div>
                       <div className="h-px bg-amber-200/60 dark:bg-amber-800/40 my-2" />
                       <div className="flex items-center justify-between">
                         <span className="text-[13px] font-bold text-foreground">Total Deducted</span>
-                        <span className="text-[18px] font-bold text-foreground">৳{(Math.abs(selectedTx.amount) + selectedTx.fee).toLocaleString()}</span>
+                        <span className="text-[18px] font-bold text-foreground">৳{(Math.abs(selectedTx.amount) + selectedTx.fee).toLocaleString("en-IN")}</span>
                       </div>
                     </div>
                   ) : (
@@ -716,7 +716,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                       <div className="flex items-center justify-between">
                         <span className="text-[13px] font-semibold text-muted-foreground">Total Amount</span>
                         <span className={`text-[20px] font-bold ${isCredit ? "text-primary" : "text-foreground"}`}>
-                          {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString()}
+                          {isCredit ? "+" : "−"}৳{Math.abs(selectedTx.amount).toLocaleString("en-IN")}
                         </span>
                       </div>
                       <p className="text-[11px] text-primary mt-1 text-right font-medium">No fee charged</p>
