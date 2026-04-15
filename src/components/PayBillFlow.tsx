@@ -307,18 +307,22 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
     requestLocation().catch(() => {});
     haptics.success();
 
+    const couponDiscVal = pendingCoupon ? calcCouponDiscount(pendingCoupon, dueAmount) : 0;
+    const finalAmount = Math.max(0, dueAmount - couponDiscVal);
+
     await recordTransaction({
       type: "paybill",
-      amount: dueAmount,
+      amount: finalAmount,
       fee: 0,
       recipientName: `${provider?.name} - ${billType?.name}`,
-      description: `${billType?.name} bill - ${provider?.name} (${accountNo})`,
+      description: `${billType?.name} bill - ${provider?.name} (${accountNo})` + (pendingCoupon ? ` [Coupon: ${pendingCoupon.code}]` : ""),
       reference: txnId.current,
     });
 
+    if (pendingCoupon) clearPendingCoupon();
     showTxnToast({
       type: "Bill Payment",
-      amount: `৳${dueAmount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
+      amount: `৳${finalAmount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
       gradient: "gradient-primary",
     });
 

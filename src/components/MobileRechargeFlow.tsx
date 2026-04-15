@@ -474,19 +474,23 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
 
     const packDesc = selectedPack ? selectedPack.name : `Recharge ৳${effectivePrice}`;
 
+    const couponDiscVal = pendingCoupon ? calcCouponDiscount(pendingCoupon, effectivePrice) : 0;
+    const finalPrice = Math.max(0, effectivePrice - couponDiscVal);
+
     await recordTransaction({
       type: "recharge",
-      amount: effectivePrice,
+      amount: finalPrice,
       fee: 0,
       recipientPhone: phone,
       recipientName: detectedOp?.name,
       reference: txnId.current,
-      description: packDesc + " [API]",
+      description: packDesc + " [API]" + (pendingCoupon ? ` [Coupon: ${pendingCoupon.code}]` : ""),
     });
 
+    if (pendingCoupon) clearPendingCoupon();
     showTxnToast({
       type: "Live Recharge",
-      amount: `৳${effectivePrice.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
+      amount: `৳${finalPrice.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
       gradient: "gradient-accent",
     });
     setDirection(1);

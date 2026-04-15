@@ -315,14 +315,16 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
     requestLocation().catch(() => {});
     haptics.success();
     txnTime.current = new Date();
+    const couponDiscVal = pendingCoupon ? calcCouponDiscount(pendingCoupon, amtVal) : 0;
+    const effectiveAmtVal = Math.max(0, amtVal - couponDiscVal);
     try {
       await transferMoney({
         recipientPhone: (resolvedMerchantPhone || merchant?.merchantId) ?? "",
-        amount: amtVal,
+        amount: effectiveAmtVal,
         fee: 0,
         type: "payment",
         recipientName: merchant?.name,
-        description: note || `Payment to ${merchant?.name}`,
+        description: (pendingCoupon ? `[Coupon: ${pendingCoupon.code}] ` : "") + (note || `Payment to ${merchant?.name}`),
         reference: txnId.current,
       });
     } catch (e: any) {
@@ -330,12 +332,15 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
       setProcessing(false);
       return;
     }
-    showTxnToast({ type: "Payment", amount: `৳${amtVal.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-payment" });
+    if (pendingCoupon) clearPendingCoupon();
+    showTxnToast({ type: "Payment", amount: `৳${effectiveAmtVal.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-payment" });
     setDirection(1);
     setStep("success");
   };
 
   const amtNum = parseFloat(amount) || 0;
+  const couponDiscount = pendingCoupon ? calcCouponDiscount(pendingCoupon, amtNum) : 0;
+  const effectiveAmount = Math.max(0, amtNum - couponDiscount);
   // Payment is free (no charge)
 
   return (
