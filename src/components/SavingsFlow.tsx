@@ -425,9 +425,12 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     finally { setProcessing(false); }
   };
 
-  const goldValue = Math.round(goldHolding.grams * LIVE_GOLD_PRICE);
+  const totalGoldGrams = goldHoldings22k.grams + goldHoldings24k.grams;
+  const totalGoldValue = Math.round((goldHoldings22k.grams * LIVE_GOLD_PRICE) + (goldHoldings24k.grams * LIVE_GOLD_24K_PRICE));
+  const totalGoldCost = Math.round((goldHoldings22k.grams * goldHoldings22k.avgBuyPrice) + (goldHoldings24k.grams * goldHoldings24k.avgBuyPrice));
+  const goldValue = Math.round(goldHolding.grams * currentGoldPrice);
   const goldProfit = goldValue - Math.round(goldHolding.grams * goldHolding.avgBuyPrice);
-  const goldProfitPct = goldHolding.avgBuyPrice > 0 ? ((LIVE_GOLD_PRICE - goldHolding.avgBuyPrice) / goldHolding.avgBuyPrice * 100) : 0;
+  const goldProfitPct = goldHolding.avgBuyPrice > 0 ? ((currentGoldPrice - goldHolding.avgBuyPrice) / goldHolding.avgBuyPrice * 100) : 0;
 
   // ─── Stock handlers ────────
   const handleBuyStock = async () => {
