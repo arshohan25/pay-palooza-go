@@ -43,7 +43,7 @@ const PayBillFlow = lazy(() => retryLazyImport(() => import("@/components/PayBil
 const AddMoneyFlow = lazy(() => retryLazyImport(() => import("@/components/AddMoneyFlow")));
 const BankTransferFlow = lazy(() => retryLazyImport(() => import("@/components/BankTransferFlow")));
 const DynamicQrPaySheet = lazy(() => retryLazyImport(() => import("@/components/DynamicQrPaySheet")));
-const SavingsFlow = lazy(() => retryLazyImport(() => import("@/components/SavingsFlow")));
+import SavingsFlow from "@/components/SavingsFlow";
 const MerchantApplicationFlow = lazy(() => retryLazyImport(() => import("@/components/MerchantApplicationFlow")));
 const KycFlow = lazy(() => retryLazyImport(() => import("@/components/KycFlow")));
 
