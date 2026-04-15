@@ -485,6 +485,25 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
 
             {step === "bill" && billType && provider && (
               <div className="px-4 pt-6 pb-32 space-y-5">
+                {/* Coupon applied banner */}
+                {pendingCoupon && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/10 border border-primary/20"
+                  >
+                    <span className="text-lg">🎟️</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-primary">{pendingCoupon.code} applied</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {pendingCoupon.discount_type === "percentage"
+                          ? `${pendingCoupon.discount_value}% off${pendingCoupon.max_discount ? ` (max ৳${pendingCoupon.max_discount})` : ""}`
+                          : `৳${pendingCoupon.discount_value} off`}
+                      </p>
+                    </div>
+                    <button onClick={() => { clearPendingCoupon(); window.location.reload(); }} className="text-xs text-destructive font-medium">Remove</button>
+                  </motion.div>
+                )}
                 <div className="flex justify-end">
                   <div className="flex flex-col items-end gap-0.5">
                     <AvailableBalanceBadge />
@@ -621,14 +640,19 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                   <div className="rounded-3xl bg-card border border-border shadow-card overflow-hidden">
                     <div className={`${billType?.gradient ?? "gradient-primary"} p-5 text-white text-center`}>
                       <p className="text-xs uppercase tracking-[0.18em] text-white/75">Total Paid</p>
-                      <p className="text-4xl font-extrabold mt-1">৳{(parseFloat(billAmount) || 0).toLocaleString()}</p>
+                      <p className="text-4xl font-extrabold mt-1">৳{Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString()}</p>
                     </div>
 
                     <div className="p-4 divide-y divide-border/70">
-                      {[
+                     {[
                         { label: "Bill Type", value: `${billType?.name ?? ""} (${provider?.name ?? ""})` },
                         { label: "Account No.", value: accountNo },
+                        { label: "Bill Amount", value: `৳${(parseFloat(billAmount) || 0).toLocaleString()}` },
+                        ...(pendingCoupon && calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) > 0
+                          ? [{ label: `🎟️ Coupon (${pendingCoupon.code})`, value: `-৳${calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0).toFixed(2)}` }]
+                          : []),
                         { label: "Fee", value: "Free" },
+                        { label: "Total Paid", value: `৳${Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString()}` },
                         {
                           label: "Date",
                           value: txnTime.current.toLocaleDateString("en-GB", {
@@ -683,11 +707,15 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
           amount: `৳${(parseFloat(billAmount) || 0).toLocaleString()}`,
           gradient: billType?.gradient ?? "gradient-primary",
           txnId: txnId.current,
-          rows: [
+           rows: [
             { label: "Bill Type", value: `${billType?.name ?? ""} (${provider?.name ?? ""})` },
             { label: "Account No.", value: accountNo },
-            { label: "Amount", value: `৳${(parseFloat(billAmount) || 0).toLocaleString()}` },
+            { label: "Bill Amount", value: `৳${(parseFloat(billAmount) || 0).toLocaleString()}` },
+            ...(pendingCoupon && calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) > 0
+              ? [{ label: `🎟️ Coupon (${pendingCoupon.code})`, value: `-৳${calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0).toFixed(2)}` }]
+              : []),
             { label: "Fee", value: "Free" },
+            { label: "Total Paid", value: `৳${Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString()}` },
             {
               label: "Date",
               value: txnTime.current.toLocaleDateString("en-GB", {

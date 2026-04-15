@@ -590,6 +590,26 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
             {/* ── STEP 2: Amount ── */}
             {step === "amount" && (
               <div className="px-4 pt-6 pb-32 space-y-6">
+                {/* Coupon applied banner */}
+                {pendingCoupon && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/10 border border-primary/20"
+                  >
+                    <span className="text-lg">🎟️</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-primary">{pendingCoupon.code} applied</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {pendingCoupon.discount_type === "percentage"
+                          ? `${pendingCoupon.discount_value}% off${pendingCoupon.max_discount ? ` (max ৳${pendingCoupon.max_discount})` : ""}`
+                          : `৳${pendingCoupon.discount_value} off`}
+                      </p>
+                    </div>
+                    <button onClick={() => { clearPendingCoupon(); window.location.reload(); }} className="text-xs text-destructive font-medium">Remove</button>
+                  </motion.div>
+                )}
+
                 {agent && (
                   <div className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border shadow-card">
                     <div className={`${agent.gradient} w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0`}>
@@ -793,10 +813,16 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                     <span>Agent ID</span>
                     <span className="text-foreground font-medium">{agent?.agentId}</span>
                   </div>
-                  <div className="flex justify-between text-muted-foreground">
+                   <div className="flex justify-between text-muted-foreground">
                     <span>Amount</span>
                     <span className="text-foreground font-medium">৳{parseFloat(amount).toLocaleString()}</span>
                   </div>
+                  {couponDiscount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-primary font-medium">🎟️ Coupon ({pendingCoupon?.code})</span>
+                      <span className="text-primary font-bold">-৳{couponDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-muted-foreground">
                     <span>Fee ({FEE_LABEL})</span>
                     <span className="text-foreground font-medium">৳{fee}</span>
@@ -810,6 +836,12 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                     <div className="flex justify-between text-muted-foreground">
                       <span>You Received</span>
                       <span className="font-semibold text-primary">৳{parseFloat(receive).toLocaleString()}</span>
+                    </div>
+                  )}
+                  {couponDiscount > 0 && (
+                    <div className="flex justify-between font-bold text-foreground">
+                      <span>Total Deducted</span>
+                      <span>৳{(Math.max(0, parseFloat(amount) - couponDiscount) + feeNum).toLocaleString()}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-muted-foreground">
@@ -946,6 +978,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
             { label: "Agent", value: agent?.name ?? "" },
             { label: "Agent ID", value: agent?.agentId ?? "" },
             { label: "Amount", value: `৳${parseFloat(amount || "0").toLocaleString()}` },
+            ...(couponDiscount > 0 ? [{ label: `🎟️ Coupon (${pendingCoupon?.code})`, value: `-৳${couponDiscount.toFixed(2)}` }] : []),
             { label: `Fee (${FEE_LABEL})`, value: `৳${feeNum.toFixed(2)}` },
             { label: "You Received", value: `৳${parseFloat(receive).toLocaleString()}` },
             { label: "Date", value: txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) },
