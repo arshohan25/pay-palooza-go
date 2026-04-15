@@ -1,30 +1,29 @@
 
 
-# Add Hyphen Range in Marketing Text & Separate Review+PIN Page
+# Reset PIN on Back Navigation from Review Step
 
 ## Problem
-1. Marketing text shows a single percentage like "2.5%" — user wants it to display as a range "2-5%"
-2. PIN entry and Slide to Confirm are on the same crowded page as all settings — user wants a separate review & confirm page
+When the user presses back from the Review & Confirm page, the PIN input retains the previously entered digits. The PIN should reset every time the user navigates back, so they must re-enter it on each visit.
 
 ## Changes (1 file: `src/components/SavingsFlow.tsx`)
 
-### 1. Fix marketing text percentage to show "2-5%" range
-- Change line 829 from dynamic `{getEstReturn(...)}%` to a fixed range string `2-5%`
-- This applies to the emerald motivational banner in the Early Cancellation Policy section
+### Update `handleBack` to clear PIN and related state when leaving the review step
 
-### 2. Add a new "review" step before PIN confirmation
-- Add `"review"` to `SavingsStep` type: `"home" | "add" | "create" | "autosave" | "review" | "terms" | "detail"`
-- On the autosave page, replace the PIN + Slide to Confirm section with a **"Continue"** button that navigates to `step = "review"`
-- Create a new `step === "review"` page that shows:
-  - **Summary card**: frequency, amount, duration, strategy, linked goal, estimated profit
-  - **Early cancellation policy** (moved from autosave page)
-  - **Marketing motivational text** with "2-5%" range
-  - **T&C acceptance checkbox**
-  - **PIN entry** (`SavingsPinInput`)
-  - **Slide to Confirm** button
-  - **Back button** to return to autosave step
+In the `handleBack` function (line ~469), when stepping back from `"review"` to `"autosave"`, also reset:
+- `pin` → `""`
+- `pinError` → `""`
+- `termsAccepted` → `false`
 
-### 3. Clean up autosave page
-- Remove the early cancellation warning, T&C section, PIN input, and Slide to Confirm from the autosave page
-- Add a prominent "Continue to Review" button at the bottom instead
+This ensures every time the user enters the review page, the PIN field is empty and T&C checkbox is unchecked — requiring fresh confirmation each time.
+
+```typescript
+if (step === "review") {
+  setPin("");
+  setPinError("");
+  setTermsAccepted(false);
+  setStep("autosave");
+}
+```
+
+This same pattern should also apply to the other flows (gold buy/sell, stock buy/sell, manual deposit) — whenever the user navigates back from a confirmation step, reset PIN state. I'll audit all `handleBack`/navigation paths and add `setPin(""); setPinError("");` wherever a step transition occurs away from a PIN entry screen.
 
