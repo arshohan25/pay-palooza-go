@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Users, Search, MapPin, Eye, CheckCircle, XCircle, UserPlus, Loader2, Pencil, Trash2, PauseCircle, Save, X } from "lucide-react";
+import { Users, Search, MapPin, Eye, CheckCircle, XCircle, UserPlus, Loader2, Pencil, Trash2, PauseCircle, Save, X, Star, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { signUpWithPhonePassword, pinToPassword } from "@/lib/auth";
 import { toast } from "sonner";
@@ -45,13 +45,14 @@ export default function AdminAgentHub() {
         <Users className="w-5 h-5 text-primary" /> Agent Management Hub
       </h3>
       <Tabs defaultValue="list" className="w-full">
-        <TabsList className="w-full grid grid-cols-6 h-auto">
+        <TabsList className="w-full grid grid-cols-7 h-auto">
           <TabsTrigger value="list" className="text-xs">Agents</TabsTrigger>
           <TabsTrigger value="kyc" className="text-xs">KYC</TabsTrigger>
           <TabsTrigger value="wallets" className="text-xs">Wallets</TabsTrigger>
-          <TabsTrigger value="commission" className="text-xs">Commission</TabsTrigger>
+          <TabsTrigger value="commission" className="text-xs">Comm.</TabsTrigger>
           <TabsTrigger value="areas" className="text-xs">Areas</TabsTrigger>
           <TabsTrigger value="settlements" className="text-xs">Settle</TabsTrigger>
+          <TabsTrigger value="ratings" className="text-xs">Ratings</TabsTrigger>
         </TabsList>
         <TabsContent value="list"><AgentListTab /></TabsContent>
         <TabsContent value="kyc"><AgentKycTab /></TabsContent>
@@ -59,6 +60,7 @@ export default function AdminAgentHub() {
         <TabsContent value="commission"><AgentCommissionTab /></TabsContent>
         <TabsContent value="areas"><AgentAreasTab /></TabsContent>
         <TabsContent value="settlements"><AgentSettlementsTab /></TabsContent>
+        <TabsContent value="ratings"><AgentRatingsTab /></TabsContent>
       </Tabs>
     </div>
   );
@@ -700,6 +702,150 @@ function AgentSettlementsTab() {
           {!loading && settlements.length === 0 && <EmptyState text="No agent settlements" />}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function AgentRatingsTab() {
+  const [agents, setAgents] = useState<any[]>([]);
+  const [ratings, setRatings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<"highest" | "lowest" | "most">("highest");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data: agentData } = await supabase.from("agents").select("id, business_name, avg_rating, total_ratings, user_id");
+    const { data: ratingsData } = await supabase.from("agent_ratings").select("*").order("created_at", { ascending: false }).limit(500);
+    if (agentData) {
+      const uids = agentData.map(a => a.user_id);
+      const { data: profiles } = await supabase.from("profiles").select("user_id, name, phone").in("user_id", uids);
+      const pMap = Object.fromEntries((profiles ?? []).map(p => [p.user_id, p]));
+      setAgents(agentData.map(a => ({ ...a, profile: pMap[a.user_id] })));
+    }
+    if (ratingsData) {
+      const userIds = [...new Set(ratingsData.map(r => r.user_id))];
+      const { data: userProfiles } = await supabase.from("profiles").select("user_id, name, phone").in("user_id", userIds);
+      const upMap = Object.fromEntries((userProfiles ?? []).map(p => [p.user_id, p]));
+      setRatings(ratingsData.map(r => ({ ...r, user_profile: upMap[r.user_id] })));
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const sortedAgents = [...agents].sort((a, b) => {
+    if (sortBy === "highest") return (Number(b.avg_rating) || 0) - (Number(a.avg_rating) || 0);
+    if (sortBy === "lowest") return (Number(a.avg_rating) || 0) - (Number(b.avg_rating) || 0);
+    return (b.total_ratings || 0) - (a.total_ratings || 0);
+  });
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setDeleting(true);
+    await supabase.from("agent_ratings").delete().eq("id", deleteId);
+    toast.success("Rating deleted");
+    setDeleteId(null);
+    setDeleting(false);
+    load();
+  };
+
+  const avgAll = agents.length > 0 ? (agents.reduce((s, a) => s + (Number(a.avg_rating) || 0), 0) / agents.filter(a => (a.total_ratings || 0) > 0).length || 0) : 0;
+  const totalAll = agents.reduce((s, a) => s + (a.total_ratings || 0), 0);
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-2">
+        <Card className="border-0 shadow-[var(--shadow-card)]">
+          <CardContent className="p-3 text-center">
+            <p className="text-[10px] text-muted-foreground">Avg Rating</p>
+            <p className="text-lg font-bold text-foreground flex items-center justify-center gap-1">
+              <Star size={16} className="fill-amber-400 text-amber-400" /> {avgAll > 0 ? avgAll.toFixed(1) : "—"}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-[var(--shadow-card)]">
+          <CardContent className="p-3 text-center">
+            <p className="text-[10px] text-muted-foreground">Total Reviews</p>
+            <p className="text-lg font-bold text-foreground">{totalAll}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="flex gap-1.5">
+        {(["highest", "lowest", "most"] as const).map(s => (
+          <Button key={s} size="sm" variant={sortBy === s ? "default" : "outline"} className="text-xs h-7" onClick={() => setSortBy(s)}>
+            {s === "highest" ? "Top Rated" : s === "lowest" ? "Lowest" : "Most Reviews"}
+          </Button>
+        ))}
+      </div>
+
+      <div className="space-y-2">
+        {sortedAgents.map(a => {
+          const agentRatings = ratings.filter(r => r.agent_id === a.id);
+          const isExpanded = expandedAgent === a.id;
+          return (
+            <Card key={a.id} className="border-0 shadow-[var(--shadow-card)]">
+              <CardContent className="p-0">
+                <button onClick={() => setExpandedAgent(isExpanded ? null : a.id)} className="w-full flex items-center gap-3 p-3 text-left">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground">{a.business_name || a.profile?.name || "Agent"}</p>
+                    <p className="text-xs text-muted-foreground">{a.profile?.phone || "—"}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-1">
+                      <Star size={14} className="fill-amber-400 text-amber-400" />
+                      <span className="text-sm font-bold text-foreground">{Number(a.avg_rating) > 0 ? Number(a.avg_rating).toFixed(1) : "—"}</span>
+                    </div>
+                    <Badge variant="secondary" className="text-[10px]">{a.total_ratings || 0} reviews</Badge>
+                  </div>
+                </button>
+                {isExpanded && (
+                  <div className="border-t border-border px-3 pb-3 space-y-2 pt-2">
+                    {agentRatings.length === 0 && <p className="text-xs text-muted-foreground py-2 text-center">No reviews yet</p>}
+                    {agentRatings.map(r => (
+                      <div key={r.id} className="flex items-start gap-2 p-2 rounded-lg bg-muted/30">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-xs font-medium text-foreground">{r.user_profile?.name || r.user_profile?.phone || "User"}</p>
+                            <div className="flex">
+                              {[1,2,3,4,5].map(s => <Star key={s} size={10} className={s <= r.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/20"} />)}
+                            </div>
+                          </div>
+                          {r.comment && <p className="text-[11px] text-muted-foreground mt-0.5">{r.comment}</p>}
+                          <p className="text-[10px] text-muted-foreground/60 mt-0.5">{new Date(r.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteId(r.id); }}>
+                          <Trash2 size={12} />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+      {!loading && agents.length === 0 && <EmptyState text="No agents" />}
+
+      <AlertDialog open={!!deleteId} onOpenChange={v => { if (!v) setDeleteId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Review</AlertDialogTitle>
+            <AlertDialogDescription>Remove this review? The agent's average rating will be recalculated automatically.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

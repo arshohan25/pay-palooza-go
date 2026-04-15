@@ -11,6 +11,7 @@ import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
+import { Textarea } from "@/components/ui/textarea";
 
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
 import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
@@ -26,6 +27,7 @@ import {
   CheckCircle2,
   Landmark,
   Users,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -125,6 +127,10 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const [nearbyAgents, setNearbyAgents] = useState<Agent[]>([]);
   const [locationGranted, setLocationGranted] = useState(false);
   const [loadingNearby, setLoadingNearby] = useState(true);
+  const [ratingValue, setRatingValue] = useState(0);
+  const [ratingComment, setRatingComment] = useState("");
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [submittingRating, setSubmittingRating] = useState(false);
 
   const txnTime = useRef(new Date());
   const genId = () => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; };
@@ -155,7 +161,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
         distance: `${a.distance_km} km`,
         initials: (a.business_name || "AG").slice(0, 2).toUpperCase(),
         gradient: AGENT_GRADIENTS[i % AGENT_GRADIENTS.length],
-        rating: 0,
+        rating: Number(a.avg_rating) || 0,
       }));
       setNearbyAgents(agents);
       setLoadingNearby(false);
@@ -487,7 +493,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                                   agentId: a.territory_code || a.agent_id.slice(0, 8),
                                   address: a.address || "", distance: `${a.distance_km} km`,
                                   initials: (a.business_name || "AG").slice(0, 2).toUpperCase(),
-                                  gradient: AGENT_GRADIENTS[i % AGENT_GRADIENTS.length], rating: 0,
+                                  gradient: AGENT_GRADIENTS[i % AGENT_GRADIENTS.length], rating: Number(a.avg_rating) || 0,
                                 })));
                               }
                               setLoadingNearby(false);
@@ -551,11 +557,18 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-semibold text-foreground truncate">{a.name}</p>
-                          {a.distance && (
-                            <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-full whitespace-nowrap flex items-center gap-0.5">
-                              <MapPin size={9} /> {a.distance}
-                            </span>
-                          )}
+                          <div className="flex items-center gap-1.5">
+                            {a.rating > 0 && (
+                              <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                                <Star size={9} className="fill-amber-500 text-amber-500" /> {a.rating.toFixed(1)}
+                              </span>
+                            )}
+                            {a.distance && (
+                              <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-full whitespace-nowrap flex items-center gap-0.5">
+                                <MapPin size={9} /> {a.distance}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <p className="text-xs text-muted-foreground">{a.agentId}</p>
                         {a.address && <p className="text-[10px] text-muted-foreground/70 truncate">{a.address}</p>}
@@ -806,9 +819,80 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                 </motion.div>
 
                 <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.55 }}
+                  className="w-full rounded-2xl bg-card border border-border shadow-card p-4 space-y-3"
+                >
+                  <p className="text-sm font-semibold text-foreground text-center">
+                    {ratingSubmitted ? "Thanks for your feedback! ✨" : "Rate this agent"}
+                  </p>
+                  {!ratingSubmitted ? (
+                    <>
+                      <div className="flex justify-center gap-2">
+                        {[1,2,3,4,5].map((s) => (
+                          <button
+                            key={s}
+                            onClick={() => { haptics.light(); setRatingValue(s); }}
+                            className="p-1 active:scale-90 transition-transform"
+                          >
+                            <Star
+                              size={28}
+                              className={`transition-colors ${s <= ratingValue ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"}`}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                      {ratingValue > 0 && (
+                        <Textarea
+                          placeholder="How was your experience? (optional)"
+                          value={ratingComment}
+                          onChange={(e) => setRatingComment(e.target.value)}
+                          className="text-sm resize-none h-16"
+                          maxLength={200}
+                        />
+                      )}
+                      {ratingValue > 0 && (
+                        <Button
+                          size="sm"
+                          className="w-full gradient-cashout border-0 text-white"
+                          disabled={submittingRating}
+                          onClick={async () => {
+                            setSubmittingRating(true);
+                            const { data: { session } } = await supabase.auth.getSession();
+                            if (session?.user && agent) {
+                              await supabase.from("agent_ratings").insert({
+                                agent_id: agent.id,
+                                user_id: session.user.id,
+                                rating: ratingValue,
+                                comment: ratingComment.trim(),
+                                transaction_id: txnId.current,
+                              } as any);
+                            }
+                            setRatingSubmitted(true);
+                            setSubmittingRating(false);
+                            haptics.success();
+                          }}
+                        >
+                          {submittingRating ? "Submitting…" : "Submit Rating"}
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex justify-center">
+                      <div className="flex gap-1">
+                        {[1,2,3,4,5].map((s) => (
+                          <Star key={s} size={20} className={s <= ratingValue ? "fill-amber-400 text-amber-400" : "text-muted-foreground/20"} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+
+                <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6 }}
+                  transition={{ delay: 0.7 }}
                   className="w-full space-y-3"
                 >
                   <Button
