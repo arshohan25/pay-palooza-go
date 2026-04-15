@@ -241,10 +241,11 @@ const Index = () => {
     return () => clearTimeout(timeoutId);
   }, [isAuthenticated, user]);
 
-  // ── Prefetch flow chunks during idle time so they open instantly ──
+  // ── Prefetch all lazy chunks during idle time so everything opens instantly ──
   useEffect(() => {
     if (!isAuthenticated) return;
-    const prefetch = () => {
+    const prefetchFlows = () => {
+      // Flows
       import("@/components/SendMoneyFlow");
       import("@/components/CashOutFlow");
       import("@/components/PaymentFlow");
@@ -254,12 +255,24 @@ const Index = () => {
       import("@/components/BankTransferFlow");
       import("@/components/SavingsFlow");
       import("@/components/KycFlow");
+      import("@/components/QrScannerModal");
+      import("@/components/DynamicQrPaySheet");
+      import("@/components/MerchantApplicationFlow");
+      // Tabs
+      import("@/pages/TransactionHistory");
+      import("@/pages/AccountPage");
+      import("@/pages/ReferPage");
+      import("@/pages/InboxPage");
+      // Below-fold home
+      import("@/components/PromoSlider");
+      import("@/components/SideNav");
+      import("@/components/PlatformBanner");
     };
     if ("requestIdleCallback" in window) {
-      const id = (window as any).requestIdleCallback(prefetch, { timeout: 4000 });
+      const id = (window as any).requestIdleCallback(prefetchFlows, { timeout: 3000 });
       return () => (window as any).cancelIdleCallback(id);
     } else {
-      const t = setTimeout(prefetch, 2000);
+      const t = setTimeout(prefetchFlows, 1500);
       return () => clearTimeout(t);
     }
   }, [isAuthenticated]);
