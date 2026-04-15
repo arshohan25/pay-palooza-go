@@ -43,7 +43,7 @@ const PayBillFlow = lazy(() => retryLazyImport(() => import("@/components/PayBil
 const AddMoneyFlow = lazy(() => retryLazyImport(() => import("@/components/AddMoneyFlow")));
 const BankTransferFlow = lazy(() => retryLazyImport(() => import("@/components/BankTransferFlow")));
 const DynamicQrPaySheet = lazy(() => retryLazyImport(() => import("@/components/DynamicQrPaySheet")));
-import SavingsFlow from "@/components/SavingsFlow";
+const SavingsFlow = lazy(() => retryLazyImport(() => import("@/components/SavingsFlow")));
 const MerchantApplicationFlow = lazy(() => retryLazyImport(() => import("@/components/MerchantApplicationFlow")));
 const KycFlow = lazy(() => retryLazyImport(() => import("@/components/KycFlow")));
 
@@ -238,6 +238,29 @@ const Index = () => {
     }, 3000); // Defer 3s so UI is interactive first
     return () => clearTimeout(timeoutId);
   }, [isAuthenticated, user]);
+
+  // ── Prefetch flow chunks during idle time so they open instantly ──
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const prefetch = () => {
+      import("@/components/SendMoneyFlow");
+      import("@/components/CashOutFlow");
+      import("@/components/PaymentFlow");
+      import("@/components/MobileRechargeFlow");
+      import("@/components/PayBillFlow");
+      import("@/components/AddMoneyFlow");
+      import("@/components/BankTransferFlow");
+      import("@/components/SavingsFlow");
+      import("@/components/KycFlow");
+    };
+    if ("requestIdleCallback" in window) {
+      const id = (window as any).requestIdleCallback(prefetch, { timeout: 4000 });
+      return () => (window as any).cancelIdleCallback(id);
+    } else {
+      const t = setTimeout(prefetch, 2000);
+      return () => clearTimeout(t);
+    }
+  }, [isAuthenticated]);
 
   const triggerRefresh = useCallback(() => {
     if (isPulling) return;

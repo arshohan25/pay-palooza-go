@@ -2,7 +2,7 @@ const CACHE_VERSION = "8";
 const CACHE_VERSION_KEY = "app_cache_version";
 const CACHE_RECOVERY_PARAM = "cache_recovery";
 const CACHE_BUST_PARAM = "cache_bust";
-const RETRY_DELAY_MS = 1000;
+const RETRY_DELAY_MS = 300;
 
 const CHUNK_ERROR_SIGNATURES = [
   "failed to fetch dynamically imported module",
