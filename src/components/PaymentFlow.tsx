@@ -216,7 +216,7 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
   const [validating, setValidating] = useState(false);
   const [resolvedMerchantPhone, setResolvedMerchantPhone] = useState("");
 
-  const validateMerchantExists = async (merchantId: string): Promise<{ exists: boolean; name?: string; phone?: string }> => {
+  const validateMerchantExists = async (merchantId: string): Promise<{ exists: boolean; name?: string; phone?: string; userId?: string }> => {
     const { data, error } = await supabase.rpc("resolve_transfer_recipient", {
       p_identifier: merchantId,
       p_flow: "payment",
@@ -224,9 +224,44 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
     if (error) return { exists: false };
     const result = typeof data === "string" ? JSON.parse(data) : data;
     if (result?.found) {
-      return { exists: true, name: result.recipient_name || undefined, phone: result.recipient_phone };
+      return { exists: true, name: result.recipient_name || undefined, phone: result.recipient_phone, userId: result.recipient_id };
     }
     return { exists: false };
+  };
+
+  const handleApplyCoupon = async () => {
+    const code = couponCode.trim();
+    if (!code) return;
+    const currentAmt = parseFloat(amount) || 0;
+    if (currentAmt <= 0) { setCouponError("Enter an amount first"); return; }
+    setCouponLoading(true);
+    setCouponError("");
+    try {
+      const { data, error } = await supabase.functions.invoke("apply-coupon", {
+        body: { code, cart_total: currentAmt, merchant_id: resolvedMerchantUserId || null },
+      });
+      if (error) { setCouponError("Failed to validate coupon"); setCouponLoading(false); return; }
+      if (data?.valid === false) { setCouponError(data.error || "Invalid coupon"); setCouponLoading(false); return; }
+      const c = data?.coupon || data;
+      if (c?.id) {
+        setPendingCoupon({
+          id: c.id,
+          code: c.code || code,
+          discount_type: c.discount_type,
+          discount_value: c.discount_value,
+          max_discount: c.max_discount || null,
+          min_order_amount: c.min_order_amount || null,
+          applicable_flow: c.applicable_flow || "payment",
+        });
+        setShowCouponInput(false);
+        setCouponCode("");
+      } else {
+        setCouponError("Invalid coupon code");
+      }
+    } catch {
+      setCouponError("Something went wrong");
+    }
+    setCouponLoading(false);
   };
 
   const handleQrScan = async (rawResult: string) => {
