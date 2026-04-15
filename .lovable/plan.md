@@ -1,31 +1,38 @@
 
 
-# Fix Gold Holdings Persistence + Add One-Click Sell
+# Add Platform Fees on Gold & Stock Trading
 
-## Problem
-1. **Gold disappears after refresh**: `loadGoldHoldings` depends on both `user` and `goldKarat` in its `useCallback`. On page refresh, `user` resolves as `null` initially (auth restoring from storage), causing `loadGoldHoldings` to return early. The data only loads for the "active" karat, meaning switching karats also loses the other karat's data.
-2. **No quick sell option**: User has to navigate through multiple steps to sell gold.
+## Current State
+All 4 RPCs (`buy_gold`, `sell_gold`, `buy_stock`, `sell_stock`) charge **zero fees**. The `fee` column in transactions is hardcoded to `0`. Platform treasury receives nothing from investment trades.
+
+## Proposed Fee Structure
+
+### Gold Trading — 1.5% Spread
+- **Buy**: User pays `price × 1.015` (1.5% above market). Extra goes to treasury.
+- **Sell**: User receives `price × 0.985` (1.5% below market). Difference goes to treasury.
+- Effectively a 1.5% commission each way, shown transparently in UI.
+
+### Stock Trading — ৳15 Flat Brokerage
+- **Buy & Sell**: ৳15 flat fee deducted from wallet, recorded in `fee` column.
+- Fee credited to `platform_treasury`.
 
 ## Changes
 
-### File: `src/components/SavingsFlow.tsx`
+### 1. Database Migration — Update all 4 RPCs
+- **`buy_gold`**: Calculate `v_platform_fee := ROUND(v_cost * 0.015)`, add to `v_cost`, deduct extra from wallet, credit treasury.
+- **`sell_gold`**: Calculate `v_platform_fee := ROUND(v_revenue * 0.015)`, subtract from `v_revenue`, credit treasury.
+- **`buy_stock`**: Add `v_brokerage := 15`, deduct from wallet alongside cost, credit treasury.
+- **`sell_stock`**: Add `v_brokerage := 15`, deduct from revenue, credit treasury.
+- All RPCs update the `fee` column in the transaction record and insert a `treasury_ledger` entry.
 
-**Fix 1 — Store both karat holdings and derive the active one**
-- Change `goldHolding` state to store BOTH 22k and 24k holdings (e.g., `goldHoldings22k` and `goldHoldings24k`, or a map).
-- Remove `goldKarat` from the `loadGoldHoldings` dependency — load ALL holdings regardless of selected karat, then derive the active display from state.
-- This prevents data loss when switching karats and ensures the overview card always shows correct totals.
-
-**Fix 2 — Re-fetch when user becomes available**
-- Add a separate `useEffect` that watches `user` and calls `loadGoldHoldings()` when user transitions from null to a valid user object — ensuring auth restoration triggers a data load.
-
-**Fix 3 — One-click sell buttons on Gold portfolio**
-- Add "Sell All" and "Sell Half" quick-action buttons directly on the gold portfolio card (next to or below the existing Buy/Sell buttons).
-- "Sell All" pre-fills `goldGrams` with the user's full holding and jumps to the PIN confirmation step.
-- "Sell Half" pre-fills with half the holding.
-- Both buttons skip the manual gram entry step, going straight to confirm → PIN → execute.
+### 2. Frontend — `src/components/SavingsFlow.tsx`
+- Show fee breakdown before PIN confirmation:
+  - Gold: "Market: ৳X/g • Platform fee (1.5%): ৳Y • Total: ৳Z"
+  - Stock: "Cost: ৳X • Brokerage: ৳15 • Total: ৳Z"
+- Display fees in the success receipt.
 
 ### Summary
-- 1 file changed: `src/components/SavingsFlow.tsx`
-- Gold data will persist across refreshes by fixing the auth timing and karat dependency issues
-- One-click "Sell All" / "Sell Half" buttons added to gold portfolio view
+- 1 migration (update 4 RPCs with fee logic + treasury credits)
+- 1 file edit (`SavingsFlow.tsx` — fee display in confirm/receipt)
+- Treasury earns revenue from every investment trade
 
