@@ -239,7 +239,29 @@ const Index = () => {
     return () => clearTimeout(timeoutId);
   }, [isAuthenticated, user]);
 
-  const triggerRefresh = useCallback(() => {
+  // ── Prefetch flow chunks during idle time so they open instantly ──
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const prefetch = () => {
+      import("@/components/SendMoneyFlow");
+      import("@/components/CashOutFlow");
+      import("@/components/PaymentFlow");
+      import("@/components/MobileRechargeFlow");
+      import("@/components/PayBillFlow");
+      import("@/components/AddMoneyFlow");
+      import("@/components/BankTransferFlow");
+      import("@/components/SavingsFlow");
+      import("@/components/KycFlow");
+    };
+    if ("requestIdleCallback" in window) {
+      const id = (window as any).requestIdleCallback(prefetch, { timeout: 4000 });
+      return () => (window as any).cancelIdleCallback(id);
+    } else {
+      const t = setTimeout(prefetch, 2000);
+      return () => clearTimeout(t);
+    }
+  }, [isAuthenticated]);
+
     if (isPulling) return;
     setIsPulling(true);
     fetchBalance();
