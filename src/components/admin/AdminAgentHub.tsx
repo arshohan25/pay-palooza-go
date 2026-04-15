@@ -75,7 +75,7 @@ function AgentListTab() {
 
   // Edit
   const [editAgent, setEditAgent] = useState<Agent | null>(null);
-  const [editForm, setEditForm] = useState({ business_name: "", territory_code: "", max_float: "", nid_number: "", trade_license: "" });
+  const [editForm, setEditForm] = useState({ business_name: "", territory_code: "", max_float: "", nid_number: "", trade_license: "", latitude: "", longitude: "", address: "" });
   const [editSaving, setEditSaving] = useState(false);
 
   // Delete
