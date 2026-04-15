@@ -640,6 +640,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                   {[
                     { icon: Hash,     label: "Transaction ID", value: txId,                                   copy: true  },
                     { icon: User,     label: "Name / Party",   value: selectedTx.name,                        copy: false },
+                    ...(selectedTx.recipient_phone ? [{ icon: Phone, label: "Receiver Number", value: selectedTx.recipient_phone, copy: true }] : []),
                     { icon: Tag,      label: "Category",       value: catLabel,                               copy: false },
                     { icon: FileText, label: "Description",    value: selectedTx.detail,                     copy: false },
                     ...(agentView
