@@ -765,7 +765,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                 { label: "Party", value: selectedTx.name },
                 ...(selectedTx.recipient_phone ? [{ label: "Receiver", value: selectedTx.recipient_phone }] : []),
                 { label: "Category", value: catLabel },
-                ...(selectedTx.detail && !selectedTx.detail.startsWith("[Wallet:") && selectedTx.detail !== catLabel
+                ...(selectedTx.detail && !selectedTx.detail.includes("[Wallet:") && !selectedTx.detail.includes("Wallet:") && selectedTx.detail !== catLabel
                   ? [{ label: "Note", value: selectedTx.detail }] : []),
                 ...(agentView
                    ? (selectedTx.commission > 0 ? [{ label: "Commission", value: `+৳${selectedTx.commission.toLocaleString("en-IN")}` }] : [])
