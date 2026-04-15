@@ -1,45 +1,36 @@
-# Record All Loan Steps in Transaction History
+
+
+# Deduct Processing Fee at Approval, Disburse Net Amount
 
 ## Problem
+Currently `disburse_loan` adds the full loan amount to user balance. The 3% processing fee should be deducted immediately when the loan is approved, and only the net amount (loan - fee) should be credited to the user's balance.
 
-When admin approves, disburses, or marks a loan as repaid, no transaction records are created and no balance updates happen. The loan lifecycle is invisible in the user's transaction history.
+## Changes
 
-## Solution
+### 1. Update `disburse_loan` RPC (new migration)
 
-Create server-side RPCs for each loan lifecycle step that atomically update the loan status, user balance, and insert transaction records.
+Replace the current logic with:
 
-### 1. Database Migration — 3 new RPCs
+```sql
+v_fee := v_loan.amount * 0.03;          -- 3% processing fee
+v_net := v_loan.amount - v_fee;         -- net disbursement
 
-`**disburse_loan(p_loan_id, p_admin_id)**`
+UPDATE profiles SET balance = balance + v_net WHERE user_id = v_loan.user_id;
 
-- Validates loan is in "approved" status
-- Updates loan to "disbursed"
-- Adds loan amount to user's balance
-- Inserts transaction: type="Disbursement", description="Qard Hasan Disbursement", reference=loan ID
+-- Transaction 1: Fee deduction record
+INSERT INTO transactions (...) VALUES
+  (..., 'payment', v_fee, 'Loan Processing Fee (3%)', ...);
 
-`**repay_loan(p_loan_id)**`  
+-- Transaction 2: Net disbursement record  
+INSERT INTO transactions (...) VALUES
+  (..., 'addmoney', v_net, 'Qard Hasan Disbursement (after fee)', ...);
+```
 
-- Validates loan is in "disbursed" status
-- Calculates total payable (amount + service fee)
-- Deducts total from user's balance (fails if insufficient)
-- Updates loan to "repaid"
-- Inserts transaction: type="payment", description="Qard Hasan Repayment", reference=loan ID
+This creates two transaction records: one for the fee and one for the net credit, both visible in history.
 
-`**apply_loan(p_amount, p_tenure_days, p_interest_rate, p_emi_amount)**`
+### 2. Update `repay_loan` RPC
+Repayment should only require the original loan amount (not amount + fee, since fee was already deducted at disbursement). Update `v_total` to use `v_loan.amount` instead of `v_loan.emi_amount`.
 
-- Creates loan_application record
-- Inserts transaction: type="payment", amount=0, description="Loan Application Submitted", reference=loan ID, status="pending"
+### 3. No frontend changes needed
+The admin panel already calls `disburse_loan` RPC — the fee logic is entirely server-side.
 
-### 2. Update Admin Loan Management (`AdminLoanManagement.tsx`)
-
-- Replace direct `.update()` calls for "disburse" and "repaid" actions with RPC calls (`disburse_loan`, `repay_loan`)
-- Keep approve/reject as simple status updates (no balance change needed), but also record a transaction for visibility
-
-### 3. Update User Loan Page (`LoanPage.tsx`)
-
-- Replace direct `.insert()` in `handleConfirmLoan` with `apply_loan` RPC call
-- This ensures the application itself appears in transaction history
-
-### Result
-
-Every loan lifecycle event (Applied → Approved → Disbursed → Repaid / Rejected) creates a transaction record visible in the user's history with proper descriptions and references.
