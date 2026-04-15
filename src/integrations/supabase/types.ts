@@ -1679,6 +1679,36 @@ export type Database = {
         }
         Relationships: []
       }
+      gold_holdings: {
+        Row: {
+          avg_buy_price: number
+          created_at: string
+          grams: number
+          id: string
+          karat: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_buy_price?: number
+          created_at?: string
+          grams?: number
+          id?: string
+          karat?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_buy_price?: number
+          created_at?: string
+          grams?: number
+          id?: string
+          karat?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       insurance_policies: {
         Row: {
           coverage_amount: number
@@ -4142,6 +4172,39 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_holdings: {
+        Row: {
+          avg_buy_price: number
+          created_at: string
+          id: string
+          name: string
+          quantity: number
+          symbol: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_buy_price?: number
+          created_at?: string
+          id?: string
+          name?: string
+          quantity?: number
+          symbol: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_buy_price?: number
+          created_at?: string
+          id?: string
+          name?: string
+          quantity?: number
+          symbol?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       support_complaints: {
         Row: {
           assigned_to: string | null
@@ -4895,6 +4958,19 @@ export type Database = {
         Args: { p_action: string; p_milestone: number; p_referral_id: string }
         Returns: Json
       }
+      buy_gold: {
+        Args: { p_grams: number; p_karat?: string; p_price_per_gram: number }
+        Returns: Json
+      }
+      buy_stock: {
+        Args: {
+          p_name: string
+          p_price: number
+          p_quantity: number
+          p_symbol: string
+        }
+        Returns: Json
+      }
       calculate_commission: {
         Args: { p_amount: number; p_txn_type: string }
         Returns: Json
@@ -5121,6 +5197,14 @@ export type Database = {
       }
       savings_deposit: {
         Args: { p_amount: number; p_goal_id: string; p_source?: string }
+        Returns: Json
+      }
+      sell_gold: {
+        Args: { p_grams: number; p_karat?: string; p_price_per_gram: number }
+        Returns: Json
+      }
+      sell_stock: {
+        Args: { p_price: number; p_quantity: number; p_symbol: string }
         Returns: Json
       }
       set_kyc_exempt: {
