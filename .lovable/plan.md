@@ -1,53 +1,62 @@
 
 
-# Show Nearby Agents with Real Location & Distance
+# Agent Rating System — Rate After Cash Out + Admin Management
 
-## Problem
-The CashOut flow's "Nearby Agents" section currently shows recent transaction history agents with no real geolocation or distance data. The `agents` table has no latitude/longitude columns.
+## Overview
+Add a rating system where users rate agents (1-5 stars) after a successful cash out. Ratings are stored in a new table, averaged per agent, and displayed in the agent list cards. Admins can view, filter, and manage ratings from the Agent Hub.
 
-## Changes
+## Database Changes (1 migration)
 
-### 1. Add location columns to `agents` table (migration)
-
+### New `agent_ratings` table
 ```sql
-ALTER TABLE public.agents ADD COLUMN latitude double precision;
-ALTER TABLE public.agents ADD COLUMN longitude double precision;
-ALTER TABLE public.agents ADD COLUMN address text DEFAULT '';
+CREATE TABLE public.agent_ratings (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  agent_id uuid REFERENCES public.agents(id) ON DELETE CASCADE NOT NULL,
+  user_id uuid NOT NULL,
+  rating smallint NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  comment text DEFAULT '',
+  transaction_id text,
+  created_at timestamptz DEFAULT now()
+);
+-- Unique: one rating per user per agent per transaction
+CREATE UNIQUE INDEX idx_agent_ratings_unique ON public.agent_ratings(agent_id, user_id, transaction_id);
 ```
 
-### 2. Create `get_nearby_agents` RPC (same migration)
-
-A SECURITY DEFINER function that takes user's lat/lng and returns active agents sorted by distance using the Haversine formula:
-
+### Add `avg_rating` and `total_ratings` to `agents` table
 ```sql
-CREATE FUNCTION public.get_nearby_agents(p_lat double precision, p_lng double precision, p_radius_km double precision DEFAULT 10)
-RETURNS TABLE(agent_id uuid, business_name text, territory_code text, address text, latitude double precision, longitude double precision, distance_km double precision)
+ALTER TABLE public.agents ADD COLUMN avg_rating numeric DEFAULT 0;
+ALTER TABLE public.agents ADD COLUMN total_ratings integer DEFAULT 0;
 ```
 
-- Filters only `status = 'active'` agents with non-null lat/lng
-- Calculates distance using Haversine
-- Returns sorted by distance, limited to agents within `p_radius_km`
+### Trigger to auto-update agent averages
+A trigger on `agent_ratings` INSERT that recalculates `avg_rating` and `total_ratings` on the parent `agents` row.
 
-### 3. Update `CashOutFlow.tsx` — fetch nearby agents with real location
+### Update `get_nearby_agents` RPC
+Return `avg_rating` and `total_ratings` in the response so the CashOutFlow can display them.
 
-- On mount, call `navigator.geolocation.getCurrentPosition()` to get user's coordinates
-- If location granted, call `get_nearby_agents` RPC with user's lat/lng
-- Display returned agents in the "Nearby Agents" section with real distance (e.g. "0.8 km away", "2.3 km away")
-- Fall back to recent transaction agents if location is denied or no nearby agents found
-- Show a small location permission prompt/badge when geolocation is not yet granted
+### RLS
+- Users can INSERT their own ratings (`user_id = auth.uid()`)
+- Users can SELECT their own ratings
+- Admins (via `has_role`) can SELECT/UPDATE/DELETE all ratings
 
-### 4. Update agent card UI in the list
+## Frontend Changes
 
-Each agent card will show:
-- Agent initials avatar + business name
-- Territory code / agent ID
-- Distance badge (e.g. `📍 1.2 km`) — only when location data is available
-- Address line if available
+### 1. CashOutFlow.tsx — Show rating on agent cards + post-cashout rating prompt
 
-### 5. Admin: Allow setting agent location in AdminAgentHub
+**Agent list cards (Step 1):** Add star rating display (e.g., ★ 4.3) next to distance badge using `avg_rating` from the RPC response.
 
-Add lat/lng input fields to the agent edit form so admins can set agent coordinates. This provides the data source for nearby agent lookups.
+**Success screen (Step 4):** After the receipt, show a "Rate this agent" section with 5 tappable stars and an optional comment field. On submit, INSERT into `agent_ratings`. User can skip.
 
-## Result
-When location is enabled, users see real nearby agents sorted by distance. When location is off, they see their recent cashout agents as before.
+### 2. AdminAgentHub.tsx — New "Ratings" tab
+
+Add a 7th tab "Ratings" to the Agent Hub showing:
+- Agent name, avg rating, total ratings count
+- Expandable list of individual reviews (user, rating, comment, date)
+- Ability to delete inappropriate reviews
+- Sort by highest/lowest rated
+
+## Technical Details
+- The `Agent` interface in CashOutFlow already has a `rating` field (currently hardcoded to 0) — will be populated from real data
+- Star display component: inline SVG stars with partial fill for fractional ratings
+- Rating prompt only appears once per transaction (checked via `transaction_id` unique constraint)
 
