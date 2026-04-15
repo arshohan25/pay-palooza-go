@@ -1045,13 +1045,13 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   <ArrowUpRight size={16} /> Sell Gold
                 </motion.button>
               </div>
-              {goldHolding.grams > 0 && (
+              {totalGoldGrams > 0 && (
                 <div className="grid grid-cols-2 gap-3">
-                  <motion.button whileTap={{ scale: 0.96 }} onClick={() => { setGoldGrams(String(goldHolding.grams)); setGoldStep("sell"); setError(""); }}
+                  <motion.button whileTap={{ scale: 0.96 }} onClick={() => { const has24k = goldHoldings24k.grams > 0; setGoldKarat(has24k ? "24k" : "22k"); setGoldGrams(String(has24k ? goldHoldings24k.grams : goldHoldings22k.grams)); setGoldStep("sell"); setError(""); }}
                     className="h-12 rounded-2xl font-bold text-[13px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 flex items-center justify-center gap-2">
-                    <Wallet size={14} /> Sell All ({goldHolding.grams}g)
+                    <Wallet size={14} /> Sell All
                   </motion.button>
-                  <motion.button whileTap={{ scale: 0.96 }} onClick={() => { setGoldGrams(String(Math.round(goldHolding.grams * 50) / 100)); setGoldStep("sell"); setError(""); }}
+                  <motion.button whileTap={{ scale: 0.96 }} onClick={() => { const has24k = goldHoldings24k.grams > 0; const availableGrams = has24k ? goldHoldings24k.grams : goldHoldings22k.grams; setGoldKarat(has24k ? "24k" : "22k"); setGoldGrams(String(Math.round(availableGrams * 50) / 100)); setGoldStep("sell"); setError(""); }}
                     className="h-12 rounded-2xl font-bold text-[13px] bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 flex items-center justify-center gap-2">
                     <CircleDollarSign size={14} /> Sell Half
                   </motion.button>
