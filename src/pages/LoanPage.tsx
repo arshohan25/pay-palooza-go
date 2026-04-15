@@ -178,13 +178,12 @@ const LoanPage = () => {
     const pinValid = await verifyPin(loanPin);
     if (!pinValid) { setLoanPinError("Incorrect PIN. Please try again."); setLoanPin(""); setSubmitting(false); return; }
     setTermsOpen(false);
-    const { error } = await supabase.from("loan_applications").insert({
-      user_id: user!.id,
-      amount: amountNum,
-      tenure_days: tenureNum,
-      interest_rate: SERVICE_FEE_PERCENT,
-      emi_amount: calc.monthlyPayment,
-    } as any);
+    const { error } = await supabase.rpc("apply_loan", {
+      p_amount: amountNum,
+      p_tenure_days: tenureNum,
+      p_interest_rate: SERVICE_FEE_PERCENT,
+      p_emi_amount: calc.monthlyPayment,
+    });
     if (error) toast.error("Failed to submit application");
     else {
       haptics.success();

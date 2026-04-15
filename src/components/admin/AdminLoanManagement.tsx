@@ -68,21 +68,34 @@ export default function AdminLoanManagement() {
     if (action === "reject" && !note.trim()) { toast.error("Rejection reason is required"); return; }
     setSaving(true);
     const { data: { session } } = await supabase.auth.getSession();
-    const updates: Record<string, any> = {
-      status: action === "approve" ? "approved" : action === "reject" ? "rejected" : action === "disburse" ? "disbursed" : "repaid",
-    };
-    if (note.trim()) updates.admin_notes = note.trim();
-    if (["approve", "reject"].includes(action)) {
+
+    let error: any = null;
+
+    if (action === "disburse") {
+      const { error: rpcErr } = await supabase.rpc("disburse_loan", { p_loan_id: loan.id, p_admin_id: session?.user?.id });
+      error = rpcErr;
+    } else if (action === "repaid") {
+      const { error: rpcErr } = await supabase.rpc("repay_loan", { p_loan_id: loan.id });
+      error = rpcErr;
+    } else {
+      // approve / reject — simple status update + audit transaction
+      const updates: Record<string, any> = {
+        status: action === "approve" ? "approved" : "rejected",
+      };
+      if (note.trim()) updates.admin_notes = note.trim();
       updates.reviewed_by = session?.user?.id;
       updates.reviewed_at = new Date().toISOString();
+      const { error: updateErr } = await supabase.from("loan_applications").update(updates).eq("id", loan.id);
+      error = updateErr;
     }
-    const { error } = await supabase.from("loan_applications").update(updates).eq("id", loan.id);
+
     if (!error) {
-      await auditLog(`loan_${action}`, loan.id, { amount: loan.amount, previous_status: loan.status, new_status: updates.status, note: note.trim() || null });
+      const newStatus = action === "approve" ? "approved" : action === "reject" ? "rejected" : action === "disburse" ? "disbursed" : "repaid";
+      await auditLog(`loan_${action}`, loan.id, { amount: loan.amount, previous_status: loan.status, new_status: newStatus, note: note.trim() || null });
     }
     setSaving(false);
     if (error) { toast.error(error.message); return; }
-    toast.success(`Loan ${updates.status}`);
+    toast.success(`Loan ${action === "approve" ? "approved" : action === "reject" ? "rejected" : action === "disburse" ? "disbursed" : "repaid"}`);
     setActionDialog(null);
     fetch();
   };
