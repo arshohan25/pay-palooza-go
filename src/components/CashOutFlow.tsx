@@ -127,6 +127,10 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const [nearbyAgents, setNearbyAgents] = useState<Agent[]>([]);
   const [locationGranted, setLocationGranted] = useState(false);
   const [loadingNearby, setLoadingNearby] = useState(true);
+  const [ratingValue, setRatingValue] = useState(0);
+  const [ratingComment, setRatingComment] = useState("");
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [submittingRating, setSubmittingRating] = useState(false);
 
   const txnTime = useRef(new Date());
   const genId = () => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; };
