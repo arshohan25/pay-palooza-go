@@ -18,23 +18,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAiRewards } from "@/hooks/use-ai-rewards";
 import AiRewardBanner from "@/components/AiRewardBanner";
 
-import imgAll from "@/assets/giftcard/all.jpg";
-import imgShopping from "@/assets/giftcard/shopping.jpg";
-import imgFood from "@/assets/giftcard/food.jpg";
-import imgGaming from "@/assets/giftcard/gaming.jpg";
-import imgEntertainment from "@/assets/giftcard/entertainment.jpg";
-import imgStreaming from "@/assets/giftcard/streaming.jpg";
-import imgTravel from "@/assets/giftcard/travel.jpg";
-import imgHealth from "@/assets/giftcard/health.jpg";
-import imgEducation from "@/assets/giftcard/education.jpg";
-import imgFashion from "@/assets/giftcard/fashion.jpg";
-import imgFuel from "@/assets/giftcard/fuel.jpg";
-import imgMobile from "@/assets/giftcard/mobile.jpg";
-import imgBeauty from "@/assets/giftcard/beauty.jpg";
-import imgBooks from "@/assets/giftcard/books.jpg";
-import imgFitness from "@/assets/giftcard/fitness.jpg";
-import imgRestaurant from "@/assets/giftcard/restaurant.jpg";
-import imgArt from "@/assets/giftcard/art.jpg";
+const imgAll = new URL("@/assets/giftcard/all.jpg", import.meta.url).href;
+const imgShopping = new URL("@/assets/giftcard/shopping.jpg", import.meta.url).href;
+const imgFood = new URL("@/assets/giftcard/food.jpg", import.meta.url).href;
+const imgGaming = new URL("@/assets/giftcard/gaming.jpg", import.meta.url).href;
+const imgEntertainment = new URL("@/assets/giftcard/entertainment.jpg", import.meta.url).href;
+const imgStreaming = new URL("@/assets/giftcard/streaming.jpg", import.meta.url).href;
+const imgTravel = new URL("@/assets/giftcard/travel.jpg", import.meta.url).href;
+const imgHealth = new URL("@/assets/giftcard/health.jpg", import.meta.url).href;
+const imgEducation = new URL("@/assets/giftcard/education.jpg", import.meta.url).href;
+const imgFashion = new URL("@/assets/giftcard/fashion.jpg", import.meta.url).href;
+const imgFuel = new URL("@/assets/giftcard/fuel.jpg", import.meta.url).href;
+const imgMobile = new URL("@/assets/giftcard/mobile.jpg", import.meta.url).href;
+const imgBeauty = new URL("@/assets/giftcard/beauty.jpg", import.meta.url).href;
+const imgBooks = new URL("@/assets/giftcard/books.jpg", import.meta.url).href;
+const imgFitness = new URL("@/assets/giftcard/fitness.jpg", import.meta.url).href;
+const imgRestaurant = new URL("@/assets/giftcard/restaurant.jpg", import.meta.url).href;
+const imgArt = new URL("@/assets/giftcard/art.jpg", import.meta.url).href;
 
 const BRANDS = [
   { id: "all", name: "All Categories", icon: Layers, color: "from-slate-700 to-zinc-900", img: imgAll },
