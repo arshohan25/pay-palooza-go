@@ -18,7 +18,6 @@ import DailyLimitBadge from "@/components/DailyLimitBadge";
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
@@ -652,94 +651,142 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
                   />
                 </div>
 
-                {/* bKash-style coupon link + bottom sheet */}
+                {/* Scratch-card style coupon trigger */}
                 {!pendingCoupon ? (
-                  <button
+                  <motion.button
                     type="button"
                     onClick={openCouponSheet}
-                    className="flex items-center gap-2 text-primary font-semibold text-sm py-1"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="relative w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed border-amber-400/60 bg-gradient-to-r from-amber-50/80 via-yellow-50/50 to-orange-50/80 dark:from-amber-950/30 dark:via-yellow-950/20 dark:to-orange-950/30 overflow-hidden group"
                   >
-                    <Tag size={16} />
-                    <span>কুপন / প্রোমো কোড</span>
-                  </button>
-                ) : null}
+                    {/* Shimmer overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shrink-0 shadow-md">
+                      <Ticket size={18} className="text-white" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-bold text-amber-800 dark:text-amber-300">কুপন / প্রোমো কোড</p>
+                      <p className="text-[11px] text-amber-600/70 dark:text-amber-400/60">ট্যাপ করে ডিসকাউন্ট পান</p>
+                    </div>
+                    <div className="text-amber-500 dark:text-amber-400">
+                      <ChevronLeft size={18} className="rotate-180" />
+                    </div>
+                  </motion.button>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300/60 dark:border-emerald-700/40"
+                  >
+                    <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span className="flex-1 text-sm font-bold text-emerald-700 dark:text-emerald-300 tracking-wide">{pendingCoupon.code}</span>
+                    <span className="text-xs text-emerald-600 dark:text-emerald-400">
+                      {pendingCoupon.discount_type === "percentage" ? `${pendingCoupon.discount_value}% ছাড়` : `৳${pendingCoupon.discount_value} ছাড়`}
+                    </span>
+                    <button onClick={() => { setPendingCoupon(null); clearPendingCoupon(); }} className="ml-1 text-emerald-500 hover:text-destructive transition-colors">
+                      <X size={14} />
+                    </button>
+                  </motion.div>
+                )}
 
                 {/* Coupon bottom sheet */}
                 <Sheet open={showCouponSheet} onOpenChange={setShowCouponSheet}>
-                  <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh] overflow-y-auto px-4 pb-6">
-                    <SheetHeader className="flex flex-row items-center justify-between pb-3 border-b border-border">
-                      <SheetTitle className="text-base font-bold">
-                        কুপন {availableCoupons.length > 0 && `(${availableCoupons.length})`}
-                      </SheetTitle>
-                    </SheetHeader>
+                  <SheetContent side="bottom" className="rounded-t-3xl max-h-[75vh] overflow-y-auto px-0 pb-6 bg-gradient-to-b from-amber-50/50 via-background to-background dark:from-amber-950/20">
+                    {/* Header with golden accent */}
+                    <div className="px-5 pt-1 pb-3 border-b border-amber-200/50 dark:border-amber-800/30">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                            <Ticket size={14} className="text-white" />
+                          </div>
+                          <SheetTitle className="text-base font-bold text-foreground">
+                            কুপন ওয়ালেট {availableCoupons.length > 0 && <span className="text-xs font-normal text-amber-600 dark:text-amber-400 ml-1">({availableCoupons.length})</span>}
+                          </SheetTitle>
+                        </div>
+                      </div>
+                    </div>
 
-                    {/* Manual input row */}
-                    <div className="flex items-center gap-2 mt-4">
-                      <div className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border bg-muted/30">
-                        <Ticket size={16} className="text-muted-foreground/50 shrink-0" />
+                    {/* Manual input — scratch-card style */}
+                    <div className="px-4 mt-4">
+                      <div className="relative flex items-center gap-2 p-1 rounded-xl border-2 border-dashed border-amber-300/60 dark:border-amber-700/40 bg-gradient-to-r from-amber-50/60 to-orange-50/60 dark:from-amber-950/20 dark:to-orange-950/20">
                         <input
                           placeholder="কুপন কোড লিখুন"
                           value={couponCode}
                           onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }}
-                          className="flex-1 bg-transparent text-sm font-medium tracking-wide uppercase placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground/60 outline-none text-foreground"
+                          className="flex-1 bg-transparent px-3 py-2 text-sm font-bold tracking-widest uppercase placeholder:normal-case placeholder:tracking-normal placeholder:font-normal placeholder:text-muted-foreground/50 outline-none text-foreground"
                         />
+                        <Button
+                          size="sm"
+                          onClick={handleApplyCoupon}
+                          disabled={couponLoading || !couponCode.trim()}
+                          className="h-9 px-4 font-bold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 rounded-lg shadow-md"
+                        >
+                          {couponLoading ? <Loader2 size={16} className="animate-spin" /> : "যোগ করুন"}
+                        </Button>
                       </div>
-                      <Button
-                        size="sm"
-                        onClick={handleApplyCoupon}
-                        disabled={couponLoading || !couponCode.trim()}
-                        className="h-10 px-4 font-bold"
-                      >
-                        {couponLoading ? <Loader2 size={16} className="animate-spin" /> : "যোগ করুন"}
-                      </Button>
+                      {couponError && (
+                        <p className="text-[11px] text-destructive flex items-center gap-1 px-2 mt-1.5">
+                          <AlertCircle size={11} /> {couponError}
+                        </p>
+                      )}
                     </div>
-                    {couponError && (
-                      <p className="text-[11px] text-destructive flex items-center gap-1 px-1 mt-1">
-                        <AlertCircle size={11} /> {couponError}
-                      </p>
-                    )}
 
-                    {/* Available coupons list */}
-                    <div className="mt-4 space-y-2.5">
+                    {/* Available coupons — ticket style */}
+                    <div className="px-4 mt-5 space-y-3">
                       {couponsLoading ? (
-                        <div className="flex justify-center py-6">
-                          <Loader2 size={22} className="animate-spin text-muted-foreground" />
+                        <div className="flex justify-center py-8">
+                          <Loader2 size={24} className="animate-spin text-amber-500" />
                         </div>
                       ) : availableCoupons.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground text-sm">
-                          <Ticket size={32} className="mx-auto mb-2 opacity-30" />
-                          <p>কোনো কুপন পাওয়া যায়নি</p>
+                        <div className="text-center py-10">
+                          <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-950/40 dark:to-orange-950/40 flex items-center justify-center">
+                            <Ticket size={28} className="text-amber-400/60" />
+                          </div>
+                          <p className="text-sm font-medium text-muted-foreground">কোনো কুপন পাওয়া যায়নি</p>
+                          <p className="text-[11px] text-muted-foreground/60 mt-1">নতুন কুপন পেতে আমাদের সাথে থাকুন!</p>
                         </div>
                       ) : (
-                        availableCoupons.map((c) => (
-                          <div
+                        availableCoupons.map((c, idx) => (
+                          <motion.div
                             key={c.id}
-                            className="flex items-center justify-between p-3 rounded-xl border border-border bg-card"
+                            initial={{ opacity: 0, y: 12 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.05 }}
+                            className="flex rounded-xl overflow-hidden border border-border shadow-sm"
                           >
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
-                                  {c.discount_type === "percentage" ? `${c.discount_value}% OFF` : `৳${c.discount_value} OFF`}
-                                </span>
-                                <span className="text-xs font-mono font-bold text-foreground tracking-wider">{c.code}</span>
-                              </div>
-                              {c.description && (
-                                <p className="text-[11px] text-muted-foreground mt-1 truncate">{c.description}</p>
-                              )}
-                              {c.min_order_amount && (
-                                <p className="text-[10px] text-muted-foreground/70 mt-0.5">Min ৳{c.min_order_amount}</p>
-                              )}
+                            {/* Left — discount strip */}
+                            <div className="w-20 shrink-0 bg-gradient-to-b from-amber-400 to-orange-500 flex flex-col items-center justify-center text-white relative">
+                              <span className="text-lg font-black leading-none">
+                                {c.discount_type === "percentage" ? `${c.discount_value}%` : `৳${c.discount_value}`}
+                              </span>
+                              <span className="text-[9px] font-bold mt-0.5 opacity-90">OFF</span>
+                              {/* Perforation circles */}
+                              <div className="absolute -right-1.5 top-1/4 w-3 h-3 rounded-full bg-background" />
+                              <div className="absolute -right-1.5 bottom-1/4 w-3 h-3 rounded-full bg-background" />
                             </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleApplyCouponFromList(c.code)}
-                              disabled={couponLoading}
-                              className="h-8 text-xs font-bold border-primary text-primary hover:bg-primary hover:text-primary-foreground shrink-0 ml-2"
-                            >
-                              Apply
-                            </Button>
-                          </div>
+                            {/* Right — details */}
+                            <div className="flex-1 p-3 bg-card flex items-center justify-between gap-2 border-l-0">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-mono font-black tracking-widest text-foreground">{c.code}</p>
+                                {c.description && (
+                                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{c.description}</p>
+                                )}
+                                {c.min_order_amount && (
+                                  <p className="text-[10px] text-amber-600/80 dark:text-amber-400/60 mt-0.5">সর্বনিম্ন ৳{c.min_order_amount}</p>
+                                )}
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleApplyCouponFromList(c.code)}
+                                disabled={couponLoading}
+                                className="h-8 px-3 text-xs font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 shrink-0"
+                              >
+                                ব্যবহার করুন
+                              </Button>
+                            </div>
+                          </motion.div>
                         ))
                       )}
                     </div>
