@@ -66,12 +66,13 @@ const GiftCardsPage = () => {
   const [denomination, setDenomination] = useState(500);
   const [purchasing, setPurchasing] = useState(false);
   const [cards, setCards] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<"buy" | "my">("buy");
   const { rewards: aiGiftRewards, claimReward } = useAiRewards("gift_card");
 
   useEffect(() => {
     if (!user) return;
+    setLoading(true);
     supabase.from("gift_cards").select("*").eq("purchaser_id", user.id).order("created_at", { ascending: false })
       .then(({ data }) => { setCards(data || []); setLoading(false); });
   }, [user]);
