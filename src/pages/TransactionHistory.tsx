@@ -42,6 +42,7 @@ interface Transaction {
   commission: number;
   _isCashback?: boolean;
   status: string;
+  recipient_phone?: string | null;
 }
 
 const CATEGORIES: { id: TxCategory; label: string }[] = [
@@ -141,6 +142,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           commission: t.commission || 0,
           _isCashback: isCashback,
           status: t.status,
+          recipient_phone: t.recipient_phone,
         };
       }), [dbTxns, filterTypes]);
 
