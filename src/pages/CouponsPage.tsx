@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { setPendingCoupon } from "@/lib/couponStore";
+
 import { useAiRewards } from "@/hooks/use-ai-rewards";
 import AiRewardBanner from "@/components/AiRewardBanner";
 
@@ -162,20 +162,10 @@ export default function CouponsPage() {
   };
 
   const handleUseNow = (coupon: Coupon) => {
-    const flow = coupon.applicable_flow || "shop";
-    const mapping = FLOW_MAP[flow] || FLOW_MAP.shop;
-    setPendingCoupon({
-      id: coupon.id,
-      code: coupon.code,
-      discount_type: coupon.discount_type as "percentage" | "flat",
-      discount_value: coupon.discount_value,
-      max_discount: coupon.max_discount,
-      min_order_amount: coupon.min_order_amount,
-      applicable_flow: flow,
-    });
     navigator.clipboard.writeText(coupon.code);
-    toast.success(`Coupon "${coupon.code}" applied! Redirecting…`);
-    setTimeout(() => navigate(mapping.route), 400);
+    setCopiedId(coupon.id);
+    toast.success(`Code "${coupon.code}" copied — paste it during payment`);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   return (
