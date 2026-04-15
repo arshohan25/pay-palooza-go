@@ -582,10 +582,10 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 <button onClick={() => setMainTab("gold")} className="text-left p-3.5 rounded-[18px] border border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-amber-600/5 space-y-1.5">
                   <div className="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center"><Coins size={16} className="text-amber-600 dark:text-amber-400" /></div>
                   <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Gold</p>
-                  <p className="text-[16px] font-black text-foreground">{goldHolding.grams > 0 ? `${goldHolding.grams}g` : "—"}</p>
-                  {goldHolding.grams > 0 && (
-                    <p className={`text-[10px] font-bold flex items-center gap-0.5 ${goldProfit >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                      {goldProfit >= 0 ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}{goldProfit >= 0 ? "+" : ""}৳{goldProfit.toLocaleString()}
+                  <p className="text-[16px] font-black text-foreground">{totalGoldGrams > 0 ? `${totalGoldGrams}g` : "—"}</p>
+                  {totalGoldGrams > 0 && (
+                    <p className={`text-[10px] font-bold flex items-center gap-0.5 ${totalGoldValue - totalGoldCost >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                      {totalGoldValue - totalGoldCost >= 0 ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}{totalGoldValue - totalGoldCost >= 0 ? "+" : ""}৳{Math.abs(totalGoldValue - totalGoldCost).toLocaleString()}
                     </p>
                   )}
                 </button>
