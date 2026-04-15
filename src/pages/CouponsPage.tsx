@@ -39,14 +39,6 @@ const FLOW_MAP: Record<string, { label: string; icon: typeof ShoppingBag; route:
   all:        { label: "All Services",icon: Tag,         route: "/shop" },
 };
 
-const CATEGORIES = [
-  { key: "all", label: "All" },
-  { key: "shop", label: "Shop" },
-  { key: "send_money", label: "Send" },
-  { key: "payment", label: "Payment" },
-  { key: "recharge", label: "Recharge" },
-  { key: "bill_pay", label: "Bill Pay" },
-];
 
 export default function CouponsPage() {
   const navigate = useNavigate();
