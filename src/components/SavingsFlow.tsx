@@ -1266,7 +1266,16 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     onChange={e => { setStockQty(e.target.value); setError(""); }}
                     className="w-full px-4 py-3 text-[22px] font-bold bg-muted rounded-xl outline-none text-foreground placeholder:text-muted-foreground/40" />
                   <div className="flex gap-2">
-                    {[1, 5, 10, 25, 50].map(q => (
+                    {stockAction === "sell" ? (() => {
+                      const h = stockHoldings.find(x => x.symbol === selectedStock.symbol);
+                      const max = h?.qty || 0;
+                      return [max, Math.ceil(max / 2), Math.ceil(max / 4), 1].filter((v, i, a) => v > 0 && a.indexOf(v) === i).slice(0, 5).map(q => (
+                        <button key={q} onClick={() => setStockQty(String(q))}
+                          className={`flex-1 py-1.5 rounded-xl text-[11px] font-semibold transition-colors ${stockQty === String(q) ? "bg-destructive/20 text-destructive" : "bg-muted text-muted-foreground"}`}>
+                          {q === max ? "All" : q}
+                        </button>
+                      ));
+                    })() : [1, 5, 10, 25, 50].map(q => (
                       <button key={q} onClick={() => setStockQty(String(q))}
                         className={`flex-1 py-1.5 rounded-xl text-[11px] font-semibold transition-colors ${stockQty === String(q) ? "bg-blue-500/20 text-blue-700 dark:text-blue-300" : "bg-muted text-muted-foreground"}`}>
                         {q}
