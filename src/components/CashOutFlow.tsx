@@ -224,7 +224,8 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     if (step === "pin") { setPin(""); goTo("amount"); return; }
   };
 
-  const filteredAgents = recentAgents.filter(
+  const displayAgents = nearbyAgents.length > 0 ? nearbyAgents : recentAgents;
+  const filteredAgents = displayAgents.filter(
     (a) =>
       a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       a.agentId.toLowerCase().includes(searchQuery.toLowerCase()),
