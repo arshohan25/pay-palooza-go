@@ -275,6 +275,55 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
     setCouponLoading(false);
   };
 
+  const fetchAvailableCoupons = async () => {
+    setCouponsLoading(true);
+    try {
+      const now = new Date().toISOString();
+      const { data } = await supabase
+        .from("coupons")
+        .select("*")
+        .eq("is_active", true)
+        .or("applicable_flow.is.null,applicable_flow.eq.payment,applicable_flow.eq.all")
+        .or(`expires_at.is.null,expires_at.gt.${now}`)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      setAvailableCoupons(data || []);
+    } catch {
+      setAvailableCoupons([]);
+    }
+    setCouponsLoading(false);
+  };
+
+  const openCouponSheet = () => {
+    setShowCouponSheet(true);
+    fetchAvailableCoupons();
+  };
+
+  const handleApplyCouponFromList = (code: string) => {
+    setCouponCode(code);
+    const currentAmt = parseFloat(amount) || 0;
+    if (currentAmt <= 0) { setCouponError("Enter an amount first"); return; }
+    setCouponLoading(true);
+    setCouponError("");
+    supabase.functions.invoke("apply-coupon", {
+      body: { code, cart_total: currentAmt, merchant_id: resolvedMerchantUserId || null },
+    }).then(({ data, error }) => {
+      if (error) { setCouponError("Failed to validate coupon"); setCouponLoading(false); return; }
+      if (data?.valid === false) { setCouponError(data.error || "Invalid coupon"); setCouponLoading(false); return; }
+      const c = data?.coupon || data;
+      if (c?.id) {
+        setPendingCoupon({
+          id: c.id, code: c.code || code, discount_type: c.discount_type,
+          discount_value: c.discount_value, max_discount: c.max_discount || null,
+          min_order_amount: c.min_order_amount || null, applicable_flow: c.applicable_flow || "payment",
+        });
+        setShowCouponSheet(false);
+        setCouponCode("");
+      } else { setCouponError("Invalid coupon code"); }
+      setCouponLoading(false);
+    }).catch(() => { setCouponError("Something went wrong"); setCouponLoading(false); });
+  };
+
   const handleQrScan = async (rawResult: string) => {
     // Extract clean merchant ID from structured QR payloads
     const { parseQrData } = await import("@/lib/qrParser");
