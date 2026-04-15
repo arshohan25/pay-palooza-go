@@ -466,7 +466,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const handleBack = () => {
     setError("");
     if (mainTab === "savings") {
-      if (step === "review") setStep("autosave");
+      if (step === "review") { setPin(""); setPinError(""); setTermsAccepted(false); setStep("autosave"); }
       else if (step === "home") onClose();
       else setStep("home");
     } else if (mainTab === "gold") {
