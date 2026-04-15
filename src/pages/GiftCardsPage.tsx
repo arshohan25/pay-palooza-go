@@ -72,6 +72,7 @@ const GiftCardsPage = () => {
 
   useEffect(() => {
     if (!user) return;
+    setLoading(true);
     supabase.from("gift_cards").select("*").eq("purchaser_id", user.id).order("created_at", { ascending: false })
       .then(({ data }) => { setCards(data || []); setLoading(false); });
   }, [user]);
