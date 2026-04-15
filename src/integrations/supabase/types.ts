@@ -83,10 +83,49 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_ratings: {
+        Row: {
+          agent_id: string
+          comment: string | null
+          created_at: string | null
+          id: string
+          rating: number
+          transaction_id: string | null
+          user_id: string
+        }
+        Insert: {
+          agent_id: string
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          rating: number
+          transaction_id?: string | null
+          user_id: string
+        }
+        Update: {
+          agent_id?: string
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          rating?: number
+          transaction_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_ratings_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agents: {
         Row: {
           activated_at: string | null
           address: string | null
+          avg_rating: number | null
           business_name: string | null
           commission_earned: number
           created_at: string
@@ -99,6 +138,7 @@ export type Database = {
           nid_number: string | null
           status: Database["public"]["Enums"]["agent_status"]
           territory_code: string | null
+          total_ratings: number | null
           trade_license: string | null
           updated_at: string
           user_id: string
@@ -106,6 +146,7 @@ export type Database = {
         Insert: {
           activated_at?: string | null
           address?: string | null
+          avg_rating?: number | null
           business_name?: string | null
           commission_earned?: number
           created_at?: string
@@ -118,6 +159,7 @@ export type Database = {
           nid_number?: string | null
           status?: Database["public"]["Enums"]["agent_status"]
           territory_code?: string | null
+          total_ratings?: number | null
           trade_license?: string | null
           updated_at?: string
           user_id: string
@@ -125,6 +167,7 @@ export type Database = {
         Update: {
           activated_at?: string | null
           address?: string | null
+          avg_rating?: number | null
           business_name?: string | null
           commission_earned?: number
           created_at?: string
@@ -137,6 +180,7 @@ export type Database = {
           nid_number?: string | null
           status?: Database["public"]["Enums"]["agent_status"]
           territory_code?: string | null
+          total_ratings?: number | null
           trade_license?: string | null
           updated_at?: string
           user_id?: string
@@ -5074,11 +5118,13 @@ export type Database = {
         Returns: {
           address: string
           agent_id: string
+          avg_rating: number
           business_name: string
           distance_km: number
           latitude: number
           longitude: number
           territory_code: string
+          total_ratings: number
         }[]
       }
       get_public_merchants: {
