@@ -465,11 +465,45 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                 {/* Divider */}
                 <div className="flex items-center gap-3">
                   <div className="flex-1 h-px bg-border" />
-                  <span className="text-xs text-muted-foreground flex items-center gap-1"><MapPin size={11} /> {t("nearbyAgents")}</span>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <MapPin size={11} />
+                    {locationGranted && nearbyAgents.length > 0 ? t("nearbyAgents") : "Recent Agents"}
+                  </span>
                   <div className="flex-1 h-px bg-border" />
                 </div>
 
-                {recentAgents.length > 0 && (
+                {!locationGranted && !loadingNearby && (
+                  <button
+                    onClick={() => {
+                      navigator.geolocation?.getCurrentPosition(
+                        (pos) => {
+                          setLocationGranted(true);
+                          setLoadingNearby(true);
+                          supabase.rpc("get_nearby_agents", { p_lat: pos.coords.latitude, p_lng: pos.coords.longitude, p_radius_km: 10 })
+                            .then(({ data }) => {
+                              if (data) {
+                                setNearbyAgents((data as any[]).map((a, i) => ({
+                                  id: a.agent_id, name: a.business_name || "Agent",
+                                  agentId: a.territory_code || a.agent_id.slice(0, 8),
+                                  address: a.address || "", distance: `${a.distance_km} km`,
+                                  initials: (a.business_name || "AG").slice(0, 2).toUpperCase(),
+                                  gradient: AGENT_GRADIENTS[i % AGENT_GRADIENTS.length], rating: 0,
+                                })));
+                              }
+                              setLoadingNearby(false);
+                            });
+                        },
+                        () => {},
+                        { enableHighAccuracy: true, timeout: 5000 }
+                      );
+                    }}
+                    className="w-full flex items-center gap-2 p-2.5 rounded-xl bg-primary/5 border border-primary/20 text-xs text-primary font-medium"
+                  >
+                    <MapPin size={14} /> Enable location to find nearby agents
+                  </button>
+                )}
+
+                {displayAgents.length > 0 && (
                   <div className="relative">
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -483,7 +517,12 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
 
                 {/* Agent list */}
                 <div className="space-y-2">
-                  {recentAgents.length === 0 ? (
+                  {loadingNearby ? (
+                    <div className="flex flex-col items-center py-8">
+                      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-3" />
+                      <p className="text-xs text-muted-foreground">Finding nearby agents…</p>
+                    </div>
+                  ) : displayAgents.length === 0 ? (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.9, y: 12 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -497,8 +536,8 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       >
                         <Users className="w-7 h-7 text-muted-foreground" />
                       </motion.div>
-                      <p className="text-sm font-semibold text-foreground">No recent agents</p>
-                      <p className="text-xs text-muted-foreground mt-1">Your cash out history will appear here</p>
+                      <p className="text-sm font-semibold text-foreground">No agents found</p>
+                      <p className="text-xs text-muted-foreground mt-1">Enter an Agent ID above to continue</p>
                     </motion.div>
                   ) : filteredAgents.map((a) => (
                     <button
@@ -512,8 +551,14 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-semibold text-foreground truncate">{a.name}</p>
+                          {a.distance && (
+                            <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-full whitespace-nowrap flex items-center gap-0.5">
+                              <MapPin size={9} /> {a.distance}
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs text-muted-foreground">{a.agentId}</p>
+                        {a.address && <p className="text-[10px] text-muted-foreground/70 truncate">{a.address}</p>}
                       </div>
                       <ChevronLeft size={16} className="text-muted-foreground rotate-180 shrink-0" />
                     </button>
