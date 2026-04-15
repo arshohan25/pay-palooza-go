@@ -1196,21 +1196,35 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     const plPct = ((h.currentPrice - h.avgPrice) / h.avgPrice * 100);
                     const stock = MOCK_STOCKS.find(s => s.symbol === h.symbol);
                     return (
-                      <button key={h.symbol} onClick={() => {
-                        if (stock) { setSelectedStock(stock); setStockAction("sell"); setStockQty(""); setStockStep("trade"); setError(""); }
-                      }} className="w-full bg-card rounded-[16px] border border-border/60 shadow-[var(--shadow-xs)] p-3.5 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-[12px] font-black text-blue-600 dark:text-blue-400">{h.symbol.slice(0, 2)}</div>
-                        <div className="flex-1 min-w-0 text-left">
-                          <p className="text-[13px] font-bold text-foreground truncate">{h.name}</p>
-                          <p className="text-[11px] text-muted-foreground">{h.qty} shares @ ৳{h.avgPrice.toLocaleString()}</p>
+                      <div key={h.symbol} className="w-full bg-card rounded-[16px] border border-border/60 shadow-[var(--shadow-xs)] p-3.5 space-y-2">
+                        <button onClick={() => {
+                          if (stock) { setSelectedStock(stock); setStockAction("sell"); setStockQty(""); setStockStep("trade"); setError(""); }
+                        }} className="w-full flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-[12px] font-black text-blue-600 dark:text-blue-400">{h.symbol.slice(0, 2)}</div>
+                          <div className="flex-1 min-w-0 text-left">
+                            <p className="text-[13px] font-bold text-foreground truncate">{h.name}</p>
+                            <p className="text-[11px] text-muted-foreground">{h.qty} shares @ ৳{h.avgPrice.toLocaleString()}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[14px] font-black text-foreground">৳{Math.round(h.qty * h.currentPrice).toLocaleString()}</p>
+                            <p className={`text-[10px] font-bold ${pl >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                              {pl >= 0 ? "+" : ""}৳{Math.round(Math.abs(pl)).toLocaleString()} ({plPct >= 0 ? "+" : ""}{plPct.toFixed(1)}%)
+                            </p>
+                          </div>
+                        </button>
+                        <div className="flex gap-1.5">
+                          <button onClick={(e) => { e.stopPropagation(); if (stock) { setSelectedStock(stock); setStockAction("sell"); setStockQty(String(h.qty)); setStockStep("trade"); setError(""); } }}
+                            className="flex-1 py-2 rounded-xl bg-destructive/10 text-destructive text-[11px] font-bold hover:bg-destructive/20 transition-colors">
+                            Sell All ({h.qty})
+                          </button>
+                          {h.qty > 1 && (
+                            <button onClick={(e) => { e.stopPropagation(); if (stock) { setSelectedStock(stock); setStockAction("sell"); setStockQty(String(Math.ceil(h.qty / 2))); setStockStep("trade"); setError(""); } }}
+                              className="flex-1 py-2 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[11px] font-bold hover:bg-amber-500/20 transition-colors">
+                              Sell Half ({Math.ceil(h.qty / 2)})
+                            </button>
+                          )}
                         </div>
-                        <div className="text-right">
-                          <p className="text-[14px] font-black text-foreground">৳{Math.round(h.qty * h.currentPrice).toLocaleString()}</p>
-                          <p className={`text-[10px] font-bold ${pl >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                            {pl >= 0 ? "+" : ""}৳{Math.round(Math.abs(pl)).toLocaleString()} ({plPct >= 0 ? "+" : ""}{plPct.toFixed(1)}%)
-                          </p>
-                        </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -1252,7 +1266,16 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     onChange={e => { setStockQty(e.target.value); setError(""); }}
                     className="w-full px-4 py-3 text-[22px] font-bold bg-muted rounded-xl outline-none text-foreground placeholder:text-muted-foreground/40" />
                   <div className="flex gap-2">
-                    {[1, 5, 10, 25, 50].map(q => (
+                    {stockAction === "sell" ? (() => {
+                      const h = stockHoldings.find(x => x.symbol === selectedStock.symbol);
+                      const max = h?.qty || 0;
+                      return [max, Math.ceil(max / 2), Math.ceil(max / 4), 1].filter((v, i, a) => v > 0 && a.indexOf(v) === i).slice(0, 5).map(q => (
+                        <button key={q} onClick={() => setStockQty(String(q))}
+                          className={`flex-1 py-1.5 rounded-xl text-[11px] font-semibold transition-colors ${stockQty === String(q) ? "bg-destructive/20 text-destructive" : "bg-muted text-muted-foreground"}`}>
+                          {q === max ? "All" : q}
+                        </button>
+                      ));
+                    })() : [1, 5, 10, 25, 50].map(q => (
                       <button key={q} onClick={() => setStockQty(String(q))}
                         className={`flex-1 py-1.5 rounded-xl text-[11px] font-semibold transition-colors ${stockQty === String(q) ? "bg-blue-500/20 text-blue-700 dark:text-blue-300" : "bg-muted text-muted-foreground"}`}>
                         {q}
