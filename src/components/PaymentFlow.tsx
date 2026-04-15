@@ -264,7 +264,7 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
           min_order_amount: c.min_order_amount || null,
           applicable_flow: c.applicable_flow || "payment",
         });
-        setShowCouponInput(false);
+        setShowCouponSheet(false);
         setCouponCode("");
       } else {
         setCouponError("Invalid coupon code");
