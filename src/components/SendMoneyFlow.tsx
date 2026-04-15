@@ -766,7 +766,11 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-muted-foreground">{t("sendingTo")}</p>
                       <p className="text-sm font-bold text-foreground truncate">{recipient.name}</p>
-                      <p className="text-xs text-muted-foreground">{recipient.phone}</p>
+                      {matchedBy === "wallet" ? (
+                        <p className="text-xs text-muted-foreground">{resolvedWalletId}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">{recipient.phone}</p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -914,7 +918,11 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                     </div>
                     <div>
                       <p className="font-bold text-foreground">{recipient?.name}</p>
-                      <p className="text-sm text-muted-foreground">{recipient?.phone}</p>
+                      {matchedBy === "wallet" ? (
+                        <p className="text-sm text-muted-foreground">{resolvedWalletId}</p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">{recipient?.phone}</p>
+                      )}
                     </div>
                   </div>
                   {note && (
