@@ -973,7 +973,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
             <motion.div key="g-port" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-3">
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
                 <ShieldCheck size={14} className="text-amber-600 dark:text-amber-400" />
-                <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300"><p className="text-[11px] font-bold text-amber-700 dark:text-amber-300">Sharia Compliant • BAJUS Certified Rate</p></p>
+                <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300">Sharia Compliant • BAJUS Certified Rate</p>
               </div>
               <div className="rounded-[20px] p-5 border border-amber-500/20 bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-transparent">
                 <div className="flex items-center gap-3 mb-4">
