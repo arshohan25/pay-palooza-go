@@ -442,7 +442,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     const qty = parseInt(stockQty);
     if (!qty || qty <= 0) { setError("Enter valid quantity"); return; }
     const cost = Math.round(qty * selectedStock.price);
-    if (cost > balance) { setError("Insufficient balance"); return; }
+    const brokerage = 15;
+    const totalCost = cost + brokerage;
+    if (totalCost > balance) { setError("Insufficient balance"); return; }
     if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
     setProcessing(true); setPinError(""); setError("");
     try {
@@ -453,7 +455,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       await fetchBalance();
       loadStockHoldings();
       fireSuccessConfetti();
-      toast.success(`📈 Bought ${qty} ${selectedStock.symbol} for ৳${cost.toLocaleString()}`);
+      toast.success(`📈 Bought ${qty} ${selectedStock.symbol} for ৳${totalCost.toLocaleString()} (brokerage ৳${brokerage})`);
       setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setPin("");
     } catch (err: any) { setError(err.message || "Failed to buy stock"); }
     finally { setProcessing(false); }
@@ -475,7 +477,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       await fetchBalance();
       loadStockHoldings();
       const revenue = Math.round(qty * selectedStock.price);
-      toast.success(`💰 Sold ${qty} ${selectedStock.symbol} for ৳${revenue.toLocaleString()}`);
+      const brokerage = 15;
+      const netRevenue = revenue - brokerage;
+      toast.success(`💰 Sold ${qty} ${selectedStock.symbol} — received ৳${netRevenue.toLocaleString()} (brokerage ৳${brokerage})`);
       setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setPin("");
     } catch (err: any) { setError(err.message || "Failed to sell stock"); }
     finally { setProcessing(false); }
