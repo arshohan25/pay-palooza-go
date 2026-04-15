@@ -1,4 +1,7 @@
-import { corsHeaders } from '@supabase/supabase-js/cors'
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 let cachedData: { price22k: number; price24k: number; updatedAt: string } | null = null;
