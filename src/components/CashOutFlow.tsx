@@ -819,9 +819,80 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                 </motion.div>
 
                 <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.55 }}
+                  className="w-full rounded-2xl bg-card border border-border shadow-card p-4 space-y-3"
+                >
+                  <p className="text-sm font-semibold text-foreground text-center">
+                    {ratingSubmitted ? "Thanks for your feedback! ✨" : "Rate this agent"}
+                  </p>
+                  {!ratingSubmitted ? (
+                    <>
+                      <div className="flex justify-center gap-2">
+                        {[1,2,3,4,5].map((s) => (
+                          <button
+                            key={s}
+                            onClick={() => { haptics.light(); setRatingValue(s); }}
+                            className="p-1 active:scale-90 transition-transform"
+                          >
+                            <Star
+                              size={28}
+                              className={`transition-colors ${s <= ratingValue ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"}`}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                      {ratingValue > 0 && (
+                        <Textarea
+                          placeholder="How was your experience? (optional)"
+                          value={ratingComment}
+                          onChange={(e) => setRatingComment(e.target.value)}
+                          className="text-sm resize-none h-16"
+                          maxLength={200}
+                        />
+                      )}
+                      {ratingValue > 0 && (
+                        <Button
+                          size="sm"
+                          className="w-full gradient-cashout border-0 text-white"
+                          disabled={submittingRating}
+                          onClick={async () => {
+                            setSubmittingRating(true);
+                            const { data: { session } } = await supabase.auth.getSession();
+                            if (session?.user && agent) {
+                              await supabase.from("agent_ratings").insert({
+                                agent_id: agent.id,
+                                user_id: session.user.id,
+                                rating: ratingValue,
+                                comment: ratingComment.trim(),
+                                transaction_id: txnId.current,
+                              } as any);
+                            }
+                            setRatingSubmitted(true);
+                            setSubmittingRating(false);
+                            haptics.success();
+                          }}
+                        >
+                          {submittingRating ? "Submitting…" : "Submit Rating"}
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex justify-center">
+                      <div className="flex gap-1">
+                        {[1,2,3,4,5].map((s) => (
+                          <Star key={s} size={20} className={s <= ratingValue ? "fill-amber-400 text-amber-400" : "text-muted-foreground/20"} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+
+                <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6 }}
+                  transition={{ delay: 0.7 }}
                   className="w-full space-y-3"
                 >
                   <Button
