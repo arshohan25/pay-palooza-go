@@ -37,6 +37,8 @@ import { useI18n } from "@/lib/i18n";
 import { useFeatureLocks } from "@/hooks/use-feature-locks";
 import FeatureGuard from "@/components/FeatureGuard";
 import FeatureLockedOverlay from "@/components/FeatureLockedOverlay";
+import CouponBanner from "@/components/CouponBanner";
+import CouponSummaryLine from "@/components/CouponSummaryLine";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Step = "agent" | "amount" | "pin" | "success";

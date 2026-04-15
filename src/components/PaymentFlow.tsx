@@ -29,6 +29,8 @@ import { Input } from "@/components/ui/input";
 import QrScannerModal from "@/components/QrScannerModal";
 import { useI18n } from "@/lib/i18n";
 import FeatureGuard from "@/components/FeatureGuard";
+import CouponBanner from "@/components/CouponBanner";
+import CouponSummaryLine from "@/components/CouponSummaryLine";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = "merchant" | "amount" | "pin" | "success";

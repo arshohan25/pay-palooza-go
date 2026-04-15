@@ -30,6 +30,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n";
 import FeatureGuard from "@/components/FeatureGuard";
+import CouponBanner from "@/components/CouponBanner";
+import CouponSummaryLine from "@/components/CouponSummaryLine";
 
 type Step = "type" | "account" | "bill" | "pin" | "success";
 

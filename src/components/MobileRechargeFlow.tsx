@@ -37,6 +37,8 @@ import FeatureGuard from "@/components/FeatureGuard";
 import PermissionGate from "@/components/PermissionGate";
 import { Contact2, RefreshCw } from "lucide-react";
 import { loadContacts, saveContacts, mapStoredContactsToUI, getContactsWithFallback, type ContactUI } from "@/lib/contactStore";
+import CouponBanner from "@/components/CouponBanner";
+import CouponSummaryLine from "@/components/CouponSummaryLine";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Step = "number" | "packs" | "amount" | "pin" | "success";
