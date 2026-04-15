@@ -16,6 +16,12 @@ import ShareReceiptSheet from "@/components/ShareReceiptSheet";
 import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
 import DailyLimitBadge from "@/components/DailyLimitBadge";
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
   ChevronLeft,
   CheckCircle2,
   AlertCircle,
@@ -25,6 +31,8 @@ import {
   Loader2,
   QrCode,
   ShoppingBag,
+  Tag,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -122,7 +130,9 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
   const [couponCode, setCouponCode] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState("");
-  const [showCouponInput, setShowCouponInput] = useState(false);
+  const [showCouponSheet, setShowCouponSheet] = useState(false);
+  const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
+  const [couponsLoading, setCouponsLoading] = useState(false);
   const txnTime = useRef(new Date());
   const genId = () => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; };
   const txnId   = useRef(genId());
