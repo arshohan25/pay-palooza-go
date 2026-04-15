@@ -76,12 +76,12 @@ const INVESTMENT_STRATEGIES = [
 type Strategy = typeof INVESTMENT_STRATEGIES[number]["key"];
 
 const DURATION_OPTIONS = [
-  { value: "6m", label: "6 Months", months: 6, minLock: 3, penaltyPct: 5 },
-  { value: "1y", label: "1 Year", months: 12, minLock: 6, penaltyPct: 3 },
-  { value: "2y", label: "2 Years", months: 24, minLock: 12, penaltyPct: 2 },
-  { value: "3y", label: "3 Years", months: 36, minLock: 18, penaltyPct: 1.5 },
-  { value: "5y", label: "5 Years", months: 60, minLock: 24, penaltyPct: 1 },
-  { value: "10y", label: "10 Years", months: 120, minLock: 36, penaltyPct: 0.5 },
+  { value: "6m", label: "6 Months", months: 6, minLock: 3, penaltyPct: 2 },
+  { value: "1y", label: "1 Year", months: 12, minLock: 3, penaltyPct: 1.5 },
+  { value: "2y", label: "2 Years", months: 24, minLock: 3, penaltyPct: 1.5 },
+  { value: "3y", label: "3 Years", months: 36, minLock: 3, penaltyPct: 1 },
+  { value: "5y", label: "5 Years", months: 60, minLock: 3, penaltyPct: 1 },
+  { value: "10y", label: "10 Years", months: 120, minLock: 3, penaltyPct: 1 },
 ];
 
 function calcEndsAt(duration: string): string {
@@ -286,13 +286,26 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   };
 
   const handleDeleteGoal = async (goalId: string) => {
+    // Check 3-month lock-in
+    const goal = goals.find(g => g.id === goalId);
+    if (goal) {
+      const createdAt = new Date((goal as any).created_at || Date.now());
+      const threeMonthsLater = new Date(createdAt);
+      threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
+      if (Date.now() < threeMonthsLater.getTime()) {
+        const daysLeft = Math.ceil((threeMonthsLater.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+        toast.error(`Cannot cancel before 3-month lock-in period. ${daysLeft} days remaining.`);
+        setDeleteTarget(null); setDeletePin(""); setDeleting(false);
+        return;
+      }
+    }
     if (deletePin.length < 4) { setDeletePinError("Enter your 4-digit PIN"); return; }
     setDeleting(true); setDeletePinError("");
     const pinValid = await verifyPin(deletePin);
     if (!pinValid) { setDeletePinError("Incorrect PIN"); setDeletePin(""); setDeleting(false); return; }
     const { error } = await supabase.from("savings_goals").delete().eq("id", goalId);
     if (error) { toast.error("Failed to delete goal"); setDeleting(false); return; }
-    toast.success("Goal deleted"); loadGoals();
+    toast.success("Goal cancelled"); loadGoals();
     setDeleteTarget(null); setDeletePin(""); setDeleting(false);
   };
 
@@ -588,7 +601,12 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                         <div className="h-2 rounded-full bg-muted overflow-hidden">
                           <motion.div className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-500" initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8 }} />
                         </div>
-                        <p className="text-[11px] font-bold text-primary">{pct.toFixed(0)}% complete</p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-[11px] font-bold text-primary">{pct.toFixed(0)}% complete</p>
+                          <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-0.5">
+                            <Sparkles size={10} /> Complete goal & withdraw with profit! 💰
+                          </p>
+                        </div>
                       </motion.div>
                     );
                   })}
@@ -797,16 +815,20 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 )}
 
                 {/* Early cancellation warning */}
-                <div className="rounded-[14px] px-3.5 py-3 bg-amber-500/8 border border-amber-500/20 space-y-1.5">
+                <div className="rounded-[14px] px-3.5 py-3 bg-amber-500/8 border border-amber-500/20 space-y-2">
                   <div className="flex items-center gap-2">
                     <AlertTriangle size={14} className="text-amber-600 dark:text-amber-400 shrink-0" />
                     <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300">Early Cancellation Policy</p>
                   </div>
                   <p className="text-[10px] text-muted-foreground leading-relaxed">
-                    Minimum lock-in period: <strong>{selectedDuration.minLock} months</strong>. 
-                    Cancelling before lock-in expires incurs a <strong>{selectedDuration.penaltyPct}% penalty</strong> on total saved amount. 
-                    After lock-in, you can cancel anytime with no penalty.
+                    🔒 <strong>3-month mandatory lock-in</strong> — you cannot cancel within the first 3 months. 
+                    Early cancellation after lock-in incurs a <strong>{selectedDuration.penaltyPct}% penalty</strong> ({selectedDuration.penaltyPct <= 1 ? "1%" : "1–2%"}) on total saved amount.
                   </p>
+                  <div className="rounded-xl px-3 py-2 bg-emerald-500/10 border border-emerald-500/20">
+                    <p className="text-[10px] text-emerald-700 dark:text-emerald-300 font-semibold leading-relaxed">
+                      💰 Stay invested to earn up to {getEstReturn(selectedStrategyObj.key, selectedDuration.months, autoFreq)}% profit! Complete your goal and withdraw your full savings + profit!
+                    </p>
+                  </div>
                 </div>
 
                 {/* T&C acceptance */}
@@ -1229,7 +1251,8 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 </div>
                 <div className="space-y-2">
                   <p className="text-[13px] font-bold text-foreground">4. Early Cancellation</p>
-                  <p>If you cancel your plan <strong>before the lock-in period ends</strong>, a penalty fee will be deducted from your total saved amount:</p>
+                  <p>All plans have a <strong>mandatory 3-month lock-in period</strong>. You <strong>cannot cancel</strong> within the first 3 months under any circumstances.</p>
+                  <p>If you cancel your plan <strong>after the 3-month lock-in but before the selected duration ends</strong>, a penalty fee (1–2%) will be deducted from your total saved amount:</p>
                   <div className="bg-destructive/8 rounded-xl p-3 space-y-1">
                     {DURATION_OPTIONS.map(d => (
                       <div key={d.value} className="flex justify-between text-[11px]">
@@ -1238,7 +1261,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                       </div>
                     ))}
                   </div>
-                  <p>After the lock-in period, you may cancel at any time with <strong>no penalty</strong>. You will receive your full savings plus any accrued profits.</p>
+                  <p>After the full plan duration, you may withdraw at any time with <strong>no penalty</strong>. You will receive your full savings plus any accrued profits. 💰</p>
                 </div>
                 <div className="space-y-2">
                   <p className="text-[13px] font-bold text-foreground">5. Profit Distribution</p>
@@ -1267,38 +1290,100 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
 
       {/* ─── Delete confirmation overlay ─── */}
       <AnimatePresence>
-        {deleteTarget && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/50 flex items-end justify-center" onClick={() => setDeleteTarget(null)}>
-            <motion.div initial={{ y: 200 }} animate={{ y: 0 }} exit={{ y: 200 }}
-              transition={{ type: "spring", stiffness: 340, damping: 28 }}
-              className="w-full max-w-md bg-card rounded-t-3xl p-5 space-y-4 pb-8" onClick={(e) => e.stopPropagation()}>
-              <div className="w-10 h-1 rounded-full bg-muted mx-auto" />
-              <div className="text-center space-y-1">
-                <div className="w-12 h-12 mx-auto rounded-2xl bg-destructive/10 flex items-center justify-center">
-                  <Trash2 className="w-6 h-6 text-destructive" />
+        {deleteTarget && (() => {
+          // Calculate lock-in and penalty info for the delete sheet
+          const isGoal = deleteTarget.type === "goal";
+          const goalForDelete = isGoal ? goals.find(g => g.id === deleteTarget.id) : null;
+          const autoForDelete = !isGoal ? autoSaves.find(a => a.id === deleteTarget.id) : null;
+          const createdAt = goalForDelete ? new Date((goalForDelete as any).created_at || Date.now()) : autoForDelete ? new Date((autoForDelete as any).created_at || Date.now()) : new Date();
+          const threeMonthsLater = new Date(createdAt);
+          threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
+          const isWithinLockIn = Date.now() < threeMonthsLater.getTime();
+          const lockInDaysLeft = isWithinLockIn ? Math.ceil((threeMonthsLater.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
+
+          // Calculate penalty
+          const savedAmt = goalForDelete ? Number(goalForDelete.saved_amount) : 0;
+          const durOpt = autoForDelete ? DURATION_OPTIONS.find(d => d.value === autoForDelete.duration) : DURATION_OPTIONS[0];
+          const penaltyPct = durOpt?.penaltyPct ?? 2;
+          const penaltyAmt = Math.round(savedAmt * penaltyPct / 100);
+          const goalPct = goalForDelete && goalForDelete.target_amount > 0 ? Math.min(100, (savedAmt / Number(goalForDelete.target_amount)) * 100) : 0;
+
+          return (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] bg-black/50 flex items-end justify-center" onClick={() => setDeleteTarget(null)}>
+              <motion.div initial={{ y: 200 }} animate={{ y: 0 }} exit={{ y: 200 }}
+                transition={{ type: "spring", stiffness: 340, damping: 28 }}
+                className="w-full max-w-md bg-card rounded-t-3xl p-5 space-y-4 pb-8" onClick={(e) => e.stopPropagation()}>
+                <div className="w-10 h-1 rounded-full bg-muted mx-auto" />
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 mx-auto rounded-2xl bg-destructive/10 flex items-center justify-center">
+                    {isWithinLockIn ? <Lock className="w-6 h-6 text-destructive" /> : <Trash2 className="w-6 h-6 text-destructive" />}
+                  </div>
+                  {isWithinLockIn ? (
+                    <>
+                      <h3 className="text-lg font-bold text-foreground">Cannot Cancel Yet</h3>
+                      <p className="text-sm text-muted-foreground">
+                        🔒 Your plan has a <strong>3-month lock-in period</strong>. You have <strong>{lockInDaysLeft} days</strong> remaining before you can cancel.
+                      </p>
+                      <div className="rounded-xl px-3 py-2.5 bg-emerald-500/10 border border-emerald-500/20 mt-2">
+                        <p className="text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold">
+                          💰 Stay invested! Complete your goal and withdraw your savings with profit!
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-lg font-bold text-foreground">Cancel Plan</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Cancel <span className="font-semibold text-foreground">"{deleteTarget.label}"</span>?
+                      </p>
+                      {savedAmt > 0 && (
+                        <div className="rounded-xl px-3 py-2.5 bg-amber-500/10 border border-amber-500/20 text-left space-y-1.5">
+                          <p className="text-[11px] text-amber-700 dark:text-amber-300 font-bold flex items-center gap-1">
+                            <AlertTriangle size={12} /> Early Cancellation Penalty
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">
+                            A <strong>{penaltyPct}% penalty (৳{penaltyAmt.toLocaleString()})</strong> will be deducted from your saved amount of ৳{savedAmt.toLocaleString()}.
+                          </p>
+                        </div>
+                      )}
+                      {goalPct > 0 && (
+                        <div className="rounded-xl px-3 py-2.5 bg-emerald-500/10 border border-emerald-500/20 text-left">
+                          <p className="text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold">
+                            🎯 You're {goalPct.toFixed(0)}% towards your goal! Stay invested to earn profit on completion! 💰
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
-                <h3 className="text-lg font-bold text-foreground">Confirm Deletion</h3>
-                <p className="text-sm text-muted-foreground">
-                  Delete <span className="font-semibold text-foreground">"{deleteTarget.label}"</span>? This cannot be undone.
-                </p>
-              </div>
-              <SavingsPinInput pin={deletePin} onChange={(p) => { setDeletePin(p); setDeletePinError(""); }} error={deletePinError} />
-              <div className="flex gap-3">
-                <motion.button whileTap={{ scale: 0.96 }} onClick={() => setDeleteTarget(null)}
-                  className="flex-1 h-12 rounded-2xl border-2 border-border font-bold text-sm text-muted-foreground">
-                  Cancel
-                </motion.button>
-                <motion.button whileTap={{ scale: 0.96 }}
-                  disabled={deletePin.length < 4 || deleting}
-                  onClick={() => deleteTarget.type === "goal" ? handleDeleteGoal(deleteTarget.id) : deleteAutoSave(deleteTarget.id)}
-                  className="flex-1 h-12 rounded-2xl bg-destructive text-destructive-foreground font-bold text-sm disabled:opacity-40">
-                  {deleting ? "Deleting…" : "Delete"}
-                </motion.button>
-              </div>
+                {isWithinLockIn ? (
+                  <motion.button whileTap={{ scale: 0.96 }} onClick={() => setDeleteTarget(null)}
+                    className="w-full h-12 rounded-2xl font-bold text-sm text-white"
+                    style={{ background: "linear-gradient(135deg, hsl(162 72% 32%), hsl(178 62% 22%))" }}>
+                    Got it, Keep Saving 💪
+                  </motion.button>
+                ) : (
+                  <>
+                    <SavingsPinInput pin={deletePin} onChange={(p) => { setDeletePin(p); setDeletePinError(""); }} error={deletePinError} />
+                    <div className="flex gap-3">
+                      <motion.button whileTap={{ scale: 0.96 }} onClick={() => setDeleteTarget(null)}
+                        className="flex-1 h-12 rounded-2xl border-2 border-border font-bold text-sm text-muted-foreground">
+                        Keep Saving
+                      </motion.button>
+                      <motion.button whileTap={{ scale: 0.96 }}
+                        disabled={deletePin.length < 4 || deleting}
+                        onClick={() => deleteTarget.type === "goal" ? handleDeleteGoal(deleteTarget.id) : deleteAutoSave(deleteTarget.id)}
+                        className="flex-1 h-12 rounded-2xl bg-destructive text-destructive-foreground font-bold text-sm disabled:opacity-40">
+                        {deleting ? "Cancelling…" : savedAmt > 0 ? `Cancel (৳${penaltyAmt} penalty)` : "Cancel Plan"}
+                      </motion.button>
+                    </div>
+                  </>
+                )}
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
+          );
+        })()}
       </AnimatePresence>
     </motion.div>
   );
