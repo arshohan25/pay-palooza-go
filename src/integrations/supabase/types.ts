@@ -789,6 +789,7 @@ export type Database = {
       }
       coupons: {
         Row: {
+          applicable_flow: string | null
           code: string
           created_at: string
           description: string | null
@@ -806,6 +807,7 @@ export type Database = {
           used_count: number
         }
         Insert: {
+          applicable_flow?: string | null
           code: string
           created_at?: string
           description?: string | null
@@ -823,6 +825,7 @@ export type Database = {
           used_count?: number
         }
         Update: {
+          applicable_flow?: string | null
           code?: string
           created_at?: string
           description?: string | null
