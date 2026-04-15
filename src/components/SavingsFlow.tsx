@@ -864,6 +864,84 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
             </motion.div>
           )}
 
+          {/* ══════════ SAVINGS: REVIEW & CONFIRM ══════════ */}
+          {mainTab === "savings" && step === "review" && (
+            <motion.div key="s-review" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+              {/* Summary card */}
+              <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-3">
+                <p className="text-[14px] font-bold text-foreground flex items-center gap-2"><FileText size={16} className="text-primary" /> Plan Summary</p>
+                <div className="space-y-2">
+                  {[
+                    { label: "Frequency", value: autoFreq.charAt(0).toUpperCase() + autoFreq.slice(1) },
+                    { label: "Amount", value: `৳${autoAmtNum.toLocaleString()} / ${autoFreq === "daily" ? "day" : autoFreq === "weekly" ? "week" : "month"}` },
+                    { label: "Duration", value: selectedDuration.label },
+                    { label: "Strategy", value: `${selectedStrategyObj.icon} ${selectedStrategyObj.label}` },
+                    { label: "Linked Goal", value: autoGoalId === "general" ? "General Savings" : (goals.find(g => g.id === autoGoalId)?.name ?? "General Savings") },
+                  ].map((row, i) => (
+                    <div key={i} className="flex justify-between items-center text-[12px]">
+                      <span className="text-muted-foreground">{row.label}</span>
+                      <span className="font-semibold text-foreground">{row.value}</span>
+                    </div>
+                  ))}
+                </div>
+                {estimatedProfit && (
+                  <div className="grid grid-cols-3 gap-2 mt-2 p-3 rounded-xl bg-primary/5 border border-primary/15">
+                    <div className="text-center">
+                      <p className="text-[9px] text-muted-foreground font-semibold uppercase">Total Deposits</p>
+                      <p className="text-[13px] font-black text-foreground">৳{estimatedProfit.totalDeposits.toLocaleString()}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[9px] text-muted-foreground font-semibold uppercase">Est. Profit</p>
+                      <p className="text-[13px] font-black text-emerald-600">+৳{estimatedProfit.profit.toLocaleString()}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[9px] text-muted-foreground font-semibold uppercase">Est. Return</p>
+                      <p className="text-[13px] font-black text-primary">{estimatedProfit.returnPct}%</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Early cancellation warning */}
+              <div className="rounded-[14px] px-3.5 py-3 bg-amber-500/8 border border-amber-500/20 space-y-2">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle size={14} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                  <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300">Early Cancellation Policy</p>
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                  🔒 <strong>3-month mandatory lock-in</strong> — you cannot cancel within the first 3 months. 
+                  Early cancellation after lock-in incurs a <strong>{selectedDuration.penaltyPct}% penalty</strong> ({selectedDuration.penaltyPct <= 1 ? "1%" : "1–2%"}) on total saved amount.
+                </p>
+                <div className="rounded-xl px-3 py-2 bg-emerald-500/10 border border-emerald-500/20">
+                  <p className="text-[10px] text-emerald-700 dark:text-emerald-300 font-semibold leading-relaxed">
+                    💰 Stay invested to earn up to 2-5% profit! Complete your goal and withdraw your full savings + profit!
+                  </p>
+                </div>
+              </div>
+
+              {/* T&C acceptance */}
+              <div className="space-y-2">
+                <button onClick={() => setShowTermsSheet(true)} className="flex items-center gap-2 text-[11px] font-medium text-primary">
+                  <FileText size={13} /> Read Terms & Conditions
+                </button>
+                <button onClick={() => setTermsAccepted(!termsAccepted)}
+                  className="flex items-center gap-2.5 w-full text-left">
+                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0 ${termsAccepted ? "bg-primary border-primary" : "border-border"}`}>
+                    {termsAccepted && <CheckCircle2 size={12} className="text-white" />}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    I agree to the <span className="text-foreground font-semibold">Terms & Conditions</span>, lock-in period, and cancellation policy
+                  </p>
+                </button>
+              </div>
+
+              {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
+
+              <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
+              <SlideToConfirm onConfirm={handleCreateAutoSave} label={processing ? "Creating…" : "Slide to Start Plan"} disabled={pin.length < 4 || processing || !termsAccepted} pinComplete={pin.length === 4 && termsAccepted} />
+            </motion.div>
+          )}
+
           {/* ══════════ GOLD TAB ══════════ */}
           {mainTab === "gold" && goldStep === "portfolio" && (
             <motion.div key="g-port" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-3">
