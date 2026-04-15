@@ -20,7 +20,14 @@ document.addEventListener("keydown", (e) => {
 });
 
 async function bootstrap() {
-  await syncClientCacheVersion();
+  // Only run cache sync on published builds, never in preview (prevents refresh loops)
+  const isPreview =
+    window.location.hostname.includes("id-preview--") ||
+    window.location.hostname.includes("lovableproject.com");
+
+  if (!isPreview) {
+    await syncClientCacheVersion();
+  }
   cleanupCacheRecoveryParams();
 
   createRoot(document.getElementById("root")!).render(<App />);
