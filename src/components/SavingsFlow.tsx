@@ -466,7 +466,8 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const handleBack = () => {
     setError("");
     if (mainTab === "savings") {
-      if (step === "home") onClose();
+      if (step === "review") setStep("autosave");
+      else if (step === "home") onClose();
       else setStep("home");
     } else if (mainTab === "gold") {
       if (goldStep === "portfolio") setMainTab("savings");
@@ -814,43 +815,14 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   </motion.div>
                 )}
 
-                {/* Early cancellation warning */}
-                <div className="rounded-[14px] px-3.5 py-3 bg-amber-500/8 border border-amber-500/20 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle size={14} className="text-amber-600 dark:text-amber-400 shrink-0" />
-                    <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300">Early Cancellation Policy</p>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground leading-relaxed">
-                    🔒 <strong>3-month mandatory lock-in</strong> — you cannot cancel within the first 3 months. 
-                    Early cancellation after lock-in incurs a <strong>{selectedDuration.penaltyPct}% penalty</strong> ({selectedDuration.penaltyPct <= 1 ? "1%" : "1–2%"}) on total saved amount.
-                  </p>
-                  <div className="rounded-xl px-3 py-2 bg-emerald-500/10 border border-emerald-500/20">
-                    <p className="text-[10px] text-emerald-700 dark:text-emerald-300 font-semibold leading-relaxed">
-                      💰 Stay invested to earn up to {getEstReturn(selectedStrategyObj.key, selectedDuration.months, autoFreq)}% profit! Complete your goal and withdraw your full savings + profit!
-                    </p>
-                  </div>
-                </div>
-
-                {/* T&C acceptance */}
-                <div className="space-y-2">
-                  <button onClick={() => setShowTermsSheet(true)} className="flex items-center gap-2 text-[11px] font-medium text-primary">
-                    <FileText size={13} /> Read Terms & Conditions
-                  </button>
-                  <button onClick={() => setTermsAccepted(!termsAccepted)}
-                    className="flex items-center gap-2.5 w-full text-left">
-                    <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0 ${termsAccepted ? "bg-primary border-primary" : "border-border"}`}>
-                      {termsAccepted && <CheckCircle2 size={12} className="text-white" />}
-                    </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      I agree to the <span className="text-foreground font-semibold">Terms & Conditions</span>, lock-in period, and cancellation policy
-                    </p>
-                  </button>
-                </div>
-
                 {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
 
-                <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
-                <SlideToConfirm onConfirm={handleCreateAutoSave} label={processing ? "Creating…" : "Slide to Start Plan"} disabled={pin.length < 4 || processing || !termsAccepted} pinComplete={pin.length === 4 && termsAccepted} />
+                <motion.button whileTap={{ scale: 0.96 }} 
+                  onClick={() => { if (!autoAmtNum || autoAmtNum <= 0) { setError("Select or enter an amount"); return; } setStep("review"); setError(""); }}
+                  className="w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg"
+                  style={{ background: "linear-gradient(135deg, hsl(162 72% 32%), hsl(178 62% 22%))" }}>
+                  Continue to Review →
+                </motion.button>
               </div>
 
               {/* Existing schedules */}
