@@ -377,7 +377,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   };
 
   // ─── Gold handlers ────────
-  const currentGoldPrice = goldKarat === "24k" ? MOCK_GOLD_24K_PRICE : MOCK_GOLD_PRICE;
+  const currentGoldPrice = goldKarat === "24k" ? LIVE_GOLD_24K_PRICE : LIVE_GOLD_PRICE;
 
   const handleBuyGold = async () => {
     const grams = parseFloat(goldGrams);
@@ -421,9 +421,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     finally { setProcessing(false); }
   };
 
-  const goldValue = Math.round(goldHolding.grams * MOCK_GOLD_PRICE);
+  const goldValue = Math.round(goldHolding.grams * LIVE_GOLD_PRICE);
   const goldProfit = goldValue - Math.round(goldHolding.grams * goldHolding.avgBuyPrice);
-  const goldProfitPct = goldHolding.avgBuyPrice > 0 ? ((MOCK_GOLD_PRICE - goldHolding.avgBuyPrice) / goldHolding.avgBuyPrice * 100) : 0;
+  const goldProfitPct = goldHolding.avgBuyPrice > 0 ? ((LIVE_GOLD_PRICE - goldHolding.avgBuyPrice) / goldHolding.avgBuyPrice * 100) : 0;
 
   // ─── Stock handlers ────────
   const handleBuyStock = async () => {
@@ -486,7 +486,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const headerTitle = mainTab === "savings" ? "Savings & Goals" : mainTab === "gold" ? "Gold Investment" : "Stock Market";
   const headerSub = mainTab === "savings"
     ? `Total Saved: ৳${totalSaved.toLocaleString()}`
-    : mainTab === "gold" ? `Gold Price: ৳${MOCK_GOLD_PRICE.toLocaleString()}/g`
+    : mainTab === "gold" ? `Gold Price: ৳${LIVE_GOLD_PRICE.toLocaleString()}/g`
     : `Portfolio: ৳${Math.round(totalStockValue).toLocaleString()}`;
 
   const handleBack = () => {
@@ -1007,12 +1007,12 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-muted/50 rounded-xl p-3">
                     <p className="text-[10px] text-muted-foreground font-semibold">22K Gold</p>
-                    <p className="text-[18px] font-black text-amber-600 dark:text-amber-400">৳{MOCK_GOLD_PRICE.toLocaleString()}</p>
+                    <p className="text-[18px] font-black text-amber-600 dark:text-amber-400">৳{LIVE_GOLD_PRICE.toLocaleString()}</p>
                     <p className="text-[10px] text-muted-foreground">per gram</p>
                   </div>
                   <div className="bg-muted/50 rounded-xl p-3">
                     <p className="text-[10px] text-muted-foreground font-semibold">24K Gold</p>
-                    <p className="text-[18px] font-black text-amber-600 dark:text-amber-400">৳{MOCK_GOLD_24K_PRICE.toLocaleString()}</p>
+                    <p className="text-[18px] font-black text-amber-600 dark:text-amber-400">৳{LIVE_GOLD_24K_PRICE.toLocaleString()}</p>
                     <p className="text-[10px] text-muted-foreground">per gram</p>
                   </div>
                 </div>
@@ -1064,7 +1064,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     {(["22k", "24k"] as const).map(k => (
                       <button key={k} onClick={() => setGoldKarat(k)}
                         className={`flex-1 py-2.5 rounded-xl text-[13px] font-bold transition-all ${goldKarat === k ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 ring-1 ring-amber-500/30" : "bg-muted text-muted-foreground"}`}>
-                        {k.toUpperCase()} — ৳{(k === "22k" ? MOCK_GOLD_PRICE : MOCK_GOLD_24K_PRICE).toLocaleString()}/g
+                        {k.toUpperCase()} — ৳{(k === "22k" ? LIVE_GOLD_PRICE : LIVE_GOLD_24K_PRICE).toLocaleString()}/g
                       </button>
                     ))}
                   </div>
