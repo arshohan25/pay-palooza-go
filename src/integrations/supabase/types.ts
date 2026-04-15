@@ -4958,6 +4958,15 @@ export type Database = {
         Args: { p_action: string; p_milestone: number; p_referral_id: string }
         Returns: Json
       }
+      apply_loan: {
+        Args: {
+          p_amount: number
+          p_emi_amount: number
+          p_interest_rate: number
+          p_tenure_days: number
+        }
+        Returns: string
+      }
       buy_gold: {
         Args: { p_grams: number; p_karat?: string; p_price_per_gram: number }
         Returns: Json
@@ -4999,6 +5008,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      disburse_loan: {
+        Args: { p_admin_id: string; p_loan_id: string }
+        Returns: undefined
       }
       donation_leaderboard: {
         Args: { p_cause?: string }
@@ -5186,6 +5199,7 @@ export type Database = {
             Returns: Json
           }
       release_escrow: { Args: { p_order_id: string }; Returns: Json }
+      repay_loan: { Args: { p_loan_id: string }; Returns: undefined }
       require_kyc_verified: { Args: { p_user_id: string }; Returns: undefined }
       resolve_payment_merchant: {
         Args: { p_identifier: string }
