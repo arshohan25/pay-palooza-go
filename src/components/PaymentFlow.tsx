@@ -593,6 +593,49 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
                   />
                 </div>
 
+                {/* Inline coupon input */}
+                {!pendingCoupon && (
+                  <div className="space-y-2">
+                    {!showCouponInput ? (
+                      <button
+                        onClick={() => setShowCouponInput(true)}
+                        className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                      >
+                        <Ticket size={13} />
+                        Have a coupon?
+                      </button>
+                    ) : (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        className="space-y-1.5"
+                      >
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Enter code"
+                            value={couponCode}
+                            onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }}
+                            className="flex-1 h-9 text-xs uppercase border-dashed bg-card border-border font-mono tracking-wider"
+                          />
+                          <Button
+                            size="sm"
+                            className="h-9 px-4 text-xs font-semibold"
+                            onClick={handleApplyCoupon}
+                            disabled={couponLoading || !couponCode.trim()}
+                          >
+                            {couponLoading ? <Loader2 size={14} className="animate-spin" /> : "Apply"}
+                          </Button>
+                        </div>
+                        {couponError && (
+                          <p className="text-[11px] text-destructive flex items-center gap-1">
+                            <AlertCircle size={11} /> {couponError}
+                          </p>
+                        )}
+                      </motion.div>
+                    )}
+                  </div>
+                )}
+
                 {amtNum > 0 && (
                   <div className="rounded-2xl bg-muted/50 border border-border p-4 space-y-2 text-sm">
                     <div className="flex justify-between text-muted-foreground">
