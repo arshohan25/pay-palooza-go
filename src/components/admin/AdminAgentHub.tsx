@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Users, Search, MapPin, Eye, CheckCircle, XCircle, UserPlus, Loader2, Pencil, Trash2, PauseCircle, Save, X } from "lucide-react";
+import { Users, Search, MapPin, Eye, CheckCircle, XCircle, UserPlus, Loader2, Pencil, Trash2, PauseCircle, Save, X, Star, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { signUpWithPhonePassword, pinToPassword } from "@/lib/auth";
 import { toast } from "sonner";
@@ -45,13 +45,14 @@ export default function AdminAgentHub() {
         <Users className="w-5 h-5 text-primary" /> Agent Management Hub
       </h3>
       <Tabs defaultValue="list" className="w-full">
-        <TabsList className="w-full grid grid-cols-6 h-auto">
+        <TabsList className="w-full grid grid-cols-7 h-auto">
           <TabsTrigger value="list" className="text-xs">Agents</TabsTrigger>
           <TabsTrigger value="kyc" className="text-xs">KYC</TabsTrigger>
           <TabsTrigger value="wallets" className="text-xs">Wallets</TabsTrigger>
-          <TabsTrigger value="commission" className="text-xs">Commission</TabsTrigger>
+          <TabsTrigger value="commission" className="text-xs">Comm.</TabsTrigger>
           <TabsTrigger value="areas" className="text-xs">Areas</TabsTrigger>
           <TabsTrigger value="settlements" className="text-xs">Settle</TabsTrigger>
+          <TabsTrigger value="ratings" className="text-xs">Ratings</TabsTrigger>
         </TabsList>
         <TabsContent value="list"><AgentListTab /></TabsContent>
         <TabsContent value="kyc"><AgentKycTab /></TabsContent>
@@ -59,6 +60,7 @@ export default function AdminAgentHub() {
         <TabsContent value="commission"><AgentCommissionTab /></TabsContent>
         <TabsContent value="areas"><AgentAreasTab /></TabsContent>
         <TabsContent value="settlements"><AgentSettlementsTab /></TabsContent>
+        <TabsContent value="ratings"><AgentRatingsTab /></TabsContent>
       </Tabs>
     </div>
   );
