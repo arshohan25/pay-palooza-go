@@ -1,62 +1,55 @@
 
 
-# Agent Rating System — Rate After Cash Out + Admin Management
+# Redesign Coupons Page — Premium UI + Flow Linking
 
 ## Overview
-Add a rating system where users rate agents (1-5 stars) after a successful cash out. Ratings are stored in a new table, averaged per agent, and displayed in the agent list cards. Admins can view, filter, and manage ratings from the Agent Hub.
+Rebuild CouponsPage with a premium glassmorphism aesthetic, add an `applicable_flow` column to coupons so each coupon links to its related flow (Shop, Send Money, Payment, etc.), and add a "Use Now" button that navigates the user directly into the relevant flow.
 
-## Database Changes (1 migration)
+## Database Changes
 
-### New `agent_ratings` table
+### Add `applicable_flow` column to `coupons` table
 ```sql
-CREATE TABLE public.agent_ratings (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  agent_id uuid REFERENCES public.agents(id) ON DELETE CASCADE NOT NULL,
-  user_id uuid NOT NULL,
-  rating smallint NOT NULL CHECK (rating BETWEEN 1 AND 5),
-  comment text DEFAULT '',
-  transaction_id text,
-  created_at timestamptz DEFAULT now()
-);
--- Unique: one rating per user per agent per transaction
-CREATE UNIQUE INDEX idx_agent_ratings_unique ON public.agent_ratings(agent_id, user_id, transaction_id);
+ALTER TABLE public.coupons ADD COLUMN applicable_flow text DEFAULT 'shop';
 ```
-
-### Add `avg_rating` and `total_ratings` to `agents` table
-```sql
-ALTER TABLE public.agents ADD COLUMN avg_rating numeric DEFAULT 0;
-ALTER TABLE public.agents ADD COLUMN total_ratings integer DEFAULT 0;
-```
-
-### Trigger to auto-update agent averages
-A trigger on `agent_ratings` INSERT that recalculates `avg_rating` and `total_ratings` on the parent `agents` row.
-
-### Update `get_nearby_agents` RPC
-Return `avg_rating` and `total_ratings` in the response so the CashOutFlow can display them.
-
-### RLS
-- Users can INSERT their own ratings (`user_id = auth.uid()`)
-- Users can SELECT their own ratings
-- Admins (via `has_role`) can SELECT/UPDATE/DELETE all ratings
+Allowed values: `shop`, `send_money`, `payment`, `cash_out`, `recharge`, `bill_pay`, `all`. Defaults to `shop`.
 
 ## Frontend Changes
 
-### 1. CashOutFlow.tsx — Show rating on agent cards + post-cashout rating prompt
+### CouponsPage.tsx — Full Redesign
 
-**Agent list cards (Step 1):** Add star rating display (e.g., ★ 4.3) next to distance badge using `avg_rating` from the RPC response.
+**New Features:**
+1. **Category filter tabs** — Horizontal scrollable chips: All, Shop, Send Money, Payment, Recharge, Bill Pay. Filter coupons by `applicable_flow`.
+2. **Premium coupon cards** — Glassmorphism card with:
+   - Dashed ticket-cut effect on left edge (CSS circle notch)
+   - Large discount value with gradient text
+   - Flow icon badge showing which service the coupon applies to (ShoppingBag, Send, CreditCard, etc.)
+   - Expiry countdown bar (progress indicator of time remaining)
+   - "Use Now" primary button + "Copy Code" secondary button
+3. **"Use Now" action** — Navigates to the related flow. Mapping:
+   - `shop` → `/shop`
+   - `send_money` → opens SendMoneyFlow on Index
+   - `payment` → opens PaymentFlow on Index
+   - `cash_out` → opens CashOutFlow on Index
+   - `recharge` → opens MobileRechargeFlow on Index
+   - `bill_pay` → opens PayBillFlow on Index
+   - For Index flows, navigate to `/?flow=send_money` (or similar) and handle in Index.tsx
+4. **Hero section** — Animated gradient banner with confetti sparkle effect, total savings counter
+5. **Empty state** — Illustrated with category-specific message
 
-**Success screen (Step 4):** After the receipt, show a "Rate this agent" section with 5 tappable stars and an optional comment field. On submit, INSERT into `agent_ratings`. User can skip.
+### Index.tsx — Handle `?flow=` query param
+Read `flow` query param on mount. If present, auto-open the corresponding sheet (e.g., `setShowSendMoney(true)`). This enables deep-linking from the coupons page.
 
-### 2. AdminAgentHub.tsx — New "Ratings" tab
-
-Add a 7th tab "Ratings" to the Agent Hub showing:
-- Agent name, avg rating, total ratings count
-- Expandable list of individual reviews (user, rating, comment, date)
-- Ability to delete inappropriate reviews
-- Sort by highest/lowest rated
+### Visual Design
+- 19px border radius, glassmorphism cards (`bg-card/80 backdrop-blur-sm`)
+- Gradient accent on discount text
+- Framer Motion stagger animations
+- Ticket notch CSS effect using `radial-gradient` pseudo-elements
+- Category tabs use glass pill style
 
 ## Technical Details
-- The `Agent` interface in CashOutFlow already has a `rating` field (currently hardcoded to 0) — will be populated from real data
-- Star display component: inline SVG stars with partial fill for fractional ratings
-- Rating prompt only appears once per transaction (checked via `transaction_id` unique constraint)
+- Coupon interface updated to include `applicable_flow: string`
+- Flow mapping object maps flow names to icons + routes
+- Filter state managed with `useState<string>("all")`
+- Copy and Use Now are separate buttons per card
+- AI Reward banner preserved at top
 
