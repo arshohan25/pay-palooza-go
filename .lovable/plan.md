@@ -1,40 +1,33 @@
 
 
-# Add PIN Confirmation + Slide to Confirm to Loan & Savings Flows
+# Fix Investment Return Percentages to 2%–6% Range
 
-## Overview
-Both the Loan and Savings flows currently use simple buttons for confirmation. Other wallet flows (Send Money, Cash Out, Payment, etc.) require a 4-digit PIN entry + SlideToConfirm slider before processing. We need to add the same security pattern to these two flows.
+## Problem
+Current `STRATEGY_RETURNS` has unrealistically high percentages (6%–24%). User wants all returns capped within **2%–6%** range, varying by strategy, frequency, and duration. Estimated profit must be calculated based on the actual selected amount × frequency × duration.
 
-## What Changes
+## Changes (1 file)
 
-### 1. SavingsFlow.tsx — Add PIN + Slide to 4 actions
-Currently these actions use plain `<motion.button>` with no PIN verification:
-- **Save to Goal** (`handleSave`)
-- **Create Auto-Save Plan** (`handleCreateAutoSave`)
-- **Buy/Sell Gold** (`handleBuyGold` / `handleSellGold`)
-- **Buy/Sell Stock** (`handleBuyStock` / `handleSellStock`)
+### `src/components/SavingsFlow.tsx`
 
-For each, replace the confirm button with:
-1. A `PinInput` component (4-digit masked input with error display)
-2. A `SlideToConfirm` slider that only enables when PIN is 4 digits
-3. On slide confirm: call `verifyPin(pin)` → if valid, proceed with original handler; if invalid, show error and clear PIN
+**1. Update `STRATEGY_RETURNS` table** — realistic 2%–6% range:
 
-### 2. LoanPage.tsx — Add PIN + Slide to loan application
-Currently `handleConfirmLoan` fires from a plain `<Button>` inside the T&C sheet. Replace with:
-1. After terms accepted, show PIN input step
-2. `SlideToConfirm` slider labeled "Slide to Apply Loan"
-3. On slide: verify PIN → submit loan application
-
-### Technical Pattern (from existing flows)
 ```
-- Import verifyPin, SlideToConfirm, PIN state (pin, pinError)
-- PIN input: masked, 4-digit, clears on error
-- SlideToConfirm disabled={pin.length < 4 || processing}
-- On confirm: verify PIN server-side → proceed or show error
-- 5 failed attempts → lockout (matching existing security model)
+gold:   { 6: 2.0, 12: 2.5, 24: 3.0, 36: 3.5, 60: 4.0, 120: 4.5 }
+mixed:  { 6: 2.5, 12: 3.0, 24: 3.5, 36: 4.0, 60: 4.5, 120: 5.0 }
+stocks: { 6: 3.0, 12: 3.5, 24: 4.0, 36: 4.5, 60: 5.0, 120: 6.0 }
 ```
 
-### Files Modified
-- `src/components/SavingsFlow.tsx` — Add PIN + Slide for all 4 transaction types
-- `src/pages/LoanPage.tsx` — Add PIN + Slide for loan application confirmation
+**2. Add frequency multiplier** — higher frequency = slight bonus (daily savers get rewarded):
+
+| Frequency | Bonus |
+|-----------|-------|
+| Daily     | +0.5% |
+| Weekly    | +0.25% |
+| Monthly   | +0.0% |
+
+The `getEstReturn` function will accept frequency and add the bonus to the base rate (capped at 6%).
+
+**3. Profit calculation stays the same** — `calcEstimatedProfit` already uses total deposits (amount × frequency × duration) and the return percentage correctly. The only fix needed is feeding it the corrected percentages.
+
+**4. Update strategy card display** — show the frequency-adjusted percentage on each strategy card instead of only duration-based.
 
