@@ -1,29 +1,27 @@
 
 
-# Reset PIN on Back Navigation from Review Step
+# Show Return Range Instead of Single Percentage on Strategy Cards
 
 ## Problem
-When the user presses back from the Review & Confirm page, the PIN input retains the previously entered digits. The PIN should reset every time the user navigates back, so they must re-enter it on each visit.
+Strategy cards currently display a single computed percentage like "~2.5%" based on selected duration. User wants each strategy to show its full **range** (min–max across all durations), e.g., "~2–4.5%".
 
 ## Changes (1 file: `src/components/SavingsFlow.tsx`)
 
-### Update `handleBack` to clear PIN and related state when leaving the review step
+### 1. Add a helper to compute min–max range per strategy
+Create a small function that extracts the lowest and highest values from `STRATEGY_RETURNS[key]` (including frequency bonus):
+- Gold: `~2–5%`
+- Mixed: `~2.5–5.5%`  
+- Stocks: `~3–6%`
 
-In the `handleBack` function (line ~469), when stepping back from `"review"` to `"autosave"`, also reset:
-- `pin` → `""`
-- `pinError` → `""`
-- `termsAccepted` → `false`
-
-This ensures every time the user enters the review page, the PIN field is empty and T&C checkbox is unchecked — requiring fresh confirmation each time.
-
-```typescript
-if (step === "review") {
-  setPin("");
-  setPinError("");
-  setTermsAccepted(false);
-  setStep("autosave");
-}
+### 2. Update strategy card display (line ~770)
+Replace:
+```
+~{getEstReturn(strat.key, selectedDuration.months, autoFreq)}%
+```
+With the range string, e.g.:
+```
+~{min}–{max}%
 ```
 
-This same pattern should also apply to the other flows (gold buy/sell, stock buy/sell, manual deposit) — whenever the user navigates back from a confirmation step, reset PIN state. I'll audit all `handleBack`/navigation paths and add `setPin(""); setPinError("");` wherever a step transition occurs away from a PIN entry screen.
+This shows the full earning potential regardless of which duration is currently selected.
 
