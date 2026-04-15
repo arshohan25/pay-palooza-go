@@ -194,25 +194,17 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
 
   // ─── Gold state ────────
   const [goldStep, setGoldStep] = useState<GoldStep>("portfolio");
-  const [goldHolding, setGoldHolding] = useState<GoldHolding>(() => {
-    try { const s = localStorage.getItem("mfs_gold_holding"); return s ? JSON.parse(s) : { grams: 0, avgBuyPrice: 0 }; }
-    catch { return { grams: 0, avgBuyPrice: 0 }; }
-  });
+  const [goldHolding, setGoldHolding] = useState<GoldHolding>({ grams: 0, avgBuyPrice: 0 });
   const [goldGrams, setGoldGrams] = useState("");
   const [goldKarat, setGoldKarat] = useState<"22k" | "24k">("22k");
 
   // ─── Stock state ────────
   const [stockStep, setStockStep] = useState<StockStep>("market");
-  const [stockHoldings, setStockHoldings] = useState<StockHolding[]>(() => {
-    try { const s = localStorage.getItem("mfs_stock_holdings"); return s ? JSON.parse(s) : []; }
-    catch { return []; }
-  });
+  const [stockHoldings, setStockHoldings] = useState<StockHolding[]>([]);
   const [selectedStock, setSelectedStock] = useState<typeof MOCK_STOCKS[0] | null>(null);
   const [stockQty, setStockQty] = useState("");
   const [stockAction, setStockAction] = useState<"buy" | "sell">("buy");
 
-  useEffect(() => { localStorage.setItem("mfs_gold_holding", JSON.stringify(goldHolding)); }, [goldHolding]);
-  useEffect(() => { localStorage.setItem("mfs_stock_holdings", JSON.stringify(stockHoldings)); }, [stockHoldings]);
   useEffect(() => { const unsub = onBalanceChange(setBalance); return () => { unsub(); }; }, []);
 
   const loadGoals = useCallback(async () => {
@@ -229,16 +221,39 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     setAutoSaves((data as any[]) ?? []);
   }, [user]);
 
-  useEffect(() => { loadGoals(); loadAutoSaves(); }, [loadGoals, loadAutoSaves]);
+  const loadGoldHoldings = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase.from("gold_holdings" as any).select("*").eq("user_id", user.id);
+    const holdings = (data as any[]) ?? [];
+    const h22k = holdings.find((h: any) => h.karat === "22k");
+    const h24k = holdings.find((h: any) => h.karat === "24k");
+    const active = goldKarat === "24k" ? h24k : h22k;
+    setGoldHolding({ grams: active?.grams ?? 0, avgBuyPrice: active?.avg_buy_price ?? 0 });
+  }, [user, goldKarat]);
+
+  const loadStockHoldings = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase.from("stock_holdings" as any).select("*").eq("user_id", user.id);
+    const holdings = (data as any[]) ?? [];
+    setStockHoldings(holdings.map((h: any) => ({
+      symbol: h.symbol, name: h.name, qty: h.quantity,
+      avgPrice: Number(h.avg_buy_price), currentPrice: MOCK_STOCKS.find(s => s.symbol === h.symbol)?.price ?? Number(h.avg_buy_price),
+      change: MOCK_STOCKS.find(s => s.symbol === h.symbol)?.change ?? 0,
+    })));
+  }, [user]);
+
+  useEffect(() => { loadGoals(); loadAutoSaves(); loadGoldHoldings(); loadStockHoldings(); }, [loadGoals, loadAutoSaves, loadGoldHoldings, loadStockHoldings]);
 
   useEffect(() => {
     if (!user) return;
     const ch = supabase.channel("savings-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "savings_goals", filter: `user_id=eq.${user.id}` }, () => loadGoals())
       .on("postgres_changes", { event: "*", schema: "public", table: "savings_deposits", filter: `user_id=eq.${user.id}` }, () => loadGoals())
+      .on("postgres_changes", { event: "*", schema: "public", table: "gold_holdings", filter: `user_id=eq.${user.id}` }, () => loadGoldHoldings())
+      .on("postgres_changes", { event: "*", schema: "public", table: "stock_holdings", filter: `user_id=eq.${user.id}` }, () => loadStockHoldings())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [user, loadGoals]);
+  }, [user, loadGoals, loadGoldHoldings, loadStockHoldings]);
 
   // ─── Computed profit estimation for auto-save ────────
   const autoAmtNum = parseFloat(autoAmount) || 0;
