@@ -21,6 +21,8 @@ import {
   AlertCircle,
   CreditCard,
   Hash,
+  Ticket,
+  Loader2,
   QrCode,
   ShoppingBag,
 } from "lucide-react";
