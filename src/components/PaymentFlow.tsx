@@ -29,6 +29,8 @@ import { Input } from "@/components/ui/input";
 import QrScannerModal from "@/components/QrScannerModal";
 import { useI18n } from "@/lib/i18n";
 import FeatureGuard from "@/components/FeatureGuard";
+import CouponBanner from "@/components/CouponBanner";
+import CouponSummaryLine from "@/components/CouponSummaryLine";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = "merchant" | "amount" | "pin" | "success";
@@ -477,22 +479,7 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
               <div className="px-4 pt-6 pb-32 space-y-6">
                 {/* Coupon applied banner */}
                 {pendingCoupon && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/10 border border-primary/20"
-                  >
-                    <span className="text-lg">🎟️</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-primary">{pendingCoupon.code} applied</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {pendingCoupon.discount_type === "percentage"
-                          ? `${pendingCoupon.discount_value}% off${pendingCoupon.max_discount ? ` (max ৳${pendingCoupon.max_discount})` : ""}`
-                          : `৳${pendingCoupon.discount_value} off`}
-                      </p>
-                    </div>
-                    <button onClick={() => { clearPendingCoupon(); setPendingCoupon(null); }} className="text-xs text-destructive font-medium">Remove</button>
-                  </motion.div>
+                  <CouponBanner coupon={pendingCoupon} discount={couponDiscount} onRemove={() => { clearPendingCoupon(); setPendingCoupon(null); }} />
                 )}
                 {merchant && (
                   <div className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border shadow-card">
@@ -567,11 +554,8 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
                       <span>{t("paymentAmount")}</span>
                       <span className="text-foreground font-medium">৳{amtNum.toLocaleString()}</span>
                     </div>
-                    {couponDiscount > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-primary font-medium">🎟️ Coupon ({pendingCoupon?.code})</span>
-                        <span className="text-primary font-bold">-৳{couponDiscount.toFixed(2)}</span>
-                      </div>
+                    {couponDiscount > 0 && pendingCoupon && (
+                      <CouponSummaryLine code={pendingCoupon.code} discount={couponDiscount} />
                     )}
                     <div className="flex justify-between text-muted-foreground">
                       <span>{t("fee")}</span>
@@ -674,11 +658,8 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
                   <div className="flex justify-between text-muted-foreground">
                     <span>Amount</span><span className="text-foreground font-medium">৳{amtNum.toLocaleString()}</span>
                   </div>
-                  {couponDiscount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-primary font-medium">🎟️ Coupon ({pendingCoupon?.code})</span>
-                      <span className="text-primary font-bold">-৳{couponDiscount.toFixed(2)}</span>
-                    </div>
+                  {couponDiscount > 0 && pendingCoupon && (
+                    <CouponSummaryLine code={pendingCoupon.code} discount={couponDiscount} />
                   )}
                   <div className="flex justify-between text-muted-foreground">
                     <span>Fee</span><span className="text-primary font-semibold">Free</span>

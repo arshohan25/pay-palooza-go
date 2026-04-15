@@ -37,6 +37,8 @@ import FeatureGuard from "@/components/FeatureGuard";
 import PermissionGate from "@/components/PermissionGate";
 import { Contact2, RefreshCw } from "lucide-react";
 import { loadContacts, saveContacts, mapStoredContactsToUI, getContactsWithFallback, type ContactUI } from "@/lib/contactStore";
+import CouponBanner from "@/components/CouponBanner";
+import CouponSummaryLine from "@/components/CouponSummaryLine";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Step = "number" | "packs" | "amount" | "pin" | "success";
@@ -991,22 +993,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
               <div className="px-4 pt-6 pb-10 space-y-5">
                 {/* Coupon applied banner */}
                 {pendingCoupon && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/10 border border-primary/20"
-                  >
-                    <span className="text-lg">🎟️</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-primary">{pendingCoupon.code} applied</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {pendingCoupon.discount_type === "percentage"
-                          ? `${pendingCoupon.discount_value}% off${pendingCoupon.max_discount ? ` (max ৳${pendingCoupon.max_discount})` : ""}`
-                          : `৳${pendingCoupon.discount_value} off`}
-                      </p>
-                    </div>
-                    <button onClick={() => { clearPendingCoupon(); window.location.reload(); }} className="text-xs text-destructive font-medium">Remove</button>
-                  </motion.div>
+                  <CouponBanner coupon={pendingCoupon} discount={calcCouponDiscount(pendingCoupon, effectivePrice)} onRemove={() => { clearPendingCoupon(); window.location.reload(); }} />
                 )}
 
                 {/* Operator + phone summary */}
@@ -1148,10 +1135,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       </>
                     )}
                     {pendingCoupon && calcCouponDiscount(pendingCoupon, effectivePrice) > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-primary font-medium">🎟️ Coupon ({pendingCoupon.code})</span>
-                        <span className="text-primary font-bold">-৳{calcCouponDiscount(pendingCoupon, effectivePrice).toFixed(2)}</span>
-                      </div>
+                      <CouponSummaryLine code={pendingCoupon.code} discount={calcCouponDiscount(pendingCoupon, effectivePrice)} />
                     )}
                     <div className="flex justify-between text-muted-foreground">
                       <span>Service fee</span>
@@ -1275,10 +1259,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                       <span className="font-semibold text-primary">Free</span>
                     </div>
                     {pendingCoupon && calcCouponDiscount(pendingCoupon, effectivePrice) > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-primary font-medium">🎟️ Coupon ({pendingCoupon.code})</span>
-                        <span className="text-primary font-bold">-৳{calcCouponDiscount(pendingCoupon, effectivePrice).toFixed(2)}</span>
-                      </div>
+                      <CouponSummaryLine code={pendingCoupon.code} discount={calcCouponDiscount(pendingCoupon, effectivePrice)} />
                     )}
                     <div className="h-px bg-border" />
                     <div className="flex justify-between font-bold text-foreground">
