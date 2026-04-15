@@ -143,6 +143,7 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
         return;
       }
       setResolvedMerchantPhone(validation.phone || "");
+      setResolvedMerchantUserId(validation.userId || null);
       setMerchant({ id: "prefilled", name: validation.name || "Merchant", merchantId: prefilledMerchantId, category: "Payment", initials: "MR", gradient: "gradient-payment" });
       goTo("amount");
     };
