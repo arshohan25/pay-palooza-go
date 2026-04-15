@@ -1040,6 +1040,18 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   <ArrowUpRight size={16} /> Sell Gold
                 </motion.button>
               </div>
+              {goldHolding.grams > 0 && (
+                <div className="grid grid-cols-2 gap-3">
+                  <motion.button whileTap={{ scale: 0.96 }} onClick={() => { setGoldGrams(String(goldHolding.grams)); setGoldStep("sell"); setError(""); }}
+                    className="h-12 rounded-2xl font-bold text-[13px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 flex items-center justify-center gap-2">
+                    <Wallet size={14} /> Sell All ({goldHolding.grams}g)
+                  </motion.button>
+                  <motion.button whileTap={{ scale: 0.96 }} onClick={() => { setGoldGrams(String(Math.round(goldHolding.grams * 50) / 100)); setGoldStep("sell"); setError(""); }}
+                    className="h-12 rounded-2xl font-bold text-[13px] bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 flex items-center justify-center gap-2">
+                    <CircleDollarSign size={14} /> Sell Half
+                  </motion.button>
+                </div>
+              )}
               <div className="bg-card rounded-[18px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-3">
                 <p className="text-[12px] font-bold text-foreground flex items-center gap-1.5"><Sparkles size={14} className="text-amber-500" /> Why Invest in Gold?</p>
                 {[
