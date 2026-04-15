@@ -1270,14 +1270,20 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                         )}
                       </>
                     )}
-                    <div className="flex justify-between text-muted-foreground">
+                     <div className="flex justify-between text-muted-foreground">
                       <span>Service fee</span>
                       <span className="font-semibold text-primary">Free</span>
                     </div>
+                    {pendingCoupon && calcCouponDiscount(pendingCoupon, effectivePrice) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-primary font-medium">🎟️ Coupon ({pendingCoupon.code})</span>
+                        <span className="text-primary font-bold">-৳{calcCouponDiscount(pendingCoupon, effectivePrice).toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="h-px bg-border" />
                     <div className="flex justify-between font-bold text-foreground">
                       <span>Deducted from balance</span>
-                      <span>৳{effectivePrice}</span>
+                      <span>৳{Math.max(0, effectivePrice - (pendingCoupon ? calcCouponDiscount(pendingCoupon, effectivePrice) : 0))}</span>
                     </div>
                   </div>
 
@@ -1321,7 +1327,9 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
               { label: "Validity", value: selectedPack.validity },
               ...(selectedPack.cashback ? [{ label: "Cashback", value: `+৳${selectedPack.cashback}` }] : []),
             ] : []),
+            ...(pendingCoupon && calcCouponDiscount(pendingCoupon, effectivePrice) > 0 ? [{ label: `🎟️ Coupon (${pendingCoupon.code})`, value: `-৳${calcCouponDiscount(pendingCoupon, effectivePrice).toFixed(2)}` }] : []),
             { label: "Fee",      value: "Free" },
+            { label: "Deducted", value: `৳${Math.max(0, effectivePrice - (pendingCoupon ? calcCouponDiscount(pendingCoupon, effectivePrice) : 0))}` },
             { label: "Date",     value: txnTime.current.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) },
             { label: "Time",     value: txnTime.current.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) },
           ],
