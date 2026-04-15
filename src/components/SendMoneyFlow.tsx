@@ -164,8 +164,8 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   const txnTime = useRef(new Date());
   const genId = () => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; };
   const txnId   = useRef(genId());
+  const [pendingCoupon] = useState<PendingCoupon | null>(() => getPendingCoupon("send_money"));
 
-  // Fetch real recent transaction recipients
   useEffect(() => {
     const fetchRecent = async () => {
       const { data: { session } } = await supabase.auth.getSession();
