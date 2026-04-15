@@ -403,7 +403,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       fireSuccessConfetti();
       toast.success(`🪙 Purchased ${grams}g gold for ৳${totalCost.toLocaleString()} (fee ৳${fee})`);
       setGoldGrams(""); setGoldStep("portfolio"); setPin("");
-    } catch (err: any) { setError(err.message || "Failed to buy gold"); }
+    } catch (err: any) { setPin(""); setError(err.message || "Failed to buy gold"); }
     finally { setProcessing(false); }
   };
 
@@ -425,7 +425,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       const netRevenue = revenue - fee;
       toast.success(`💰 Sold ${grams}g gold — received ৳${netRevenue.toLocaleString()} (fee ৳${fee})`);
       setGoldGrams(""); setGoldStep("portfolio"); setPin("");
-    } catch (err: any) { setError(err.message || "Failed to sell gold"); }
+    } catch (err: any) { setPin(""); setError(err.message || "Failed to sell gold"); }
     finally { setProcessing(false); }
   };
 
@@ -457,7 +457,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       fireSuccessConfetti();
       toast.success(`📈 Bought ${qty} ${selectedStock.symbol} for ৳${totalCost.toLocaleString()} (brokerage ৳${brokerage})`);
       setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setPin("");
-    } catch (err: any) { setError(err.message || "Failed to buy stock"); }
+    } catch (err: any) { setPin(""); setError(err.message || "Failed to buy stock"); }
     finally { setProcessing(false); }
   };
 
@@ -481,7 +481,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       const netRevenue = revenue - brokerage;
       toast.success(`💰 Sold ${qty} ${selectedStock.symbol} — received ৳${netRevenue.toLocaleString()} (brokerage ৳${brokerage})`);
       setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setPin("");
-    } catch (err: any) { setError(err.message || "Failed to sell stock"); }
+    } catch (err: any) { setPin(""); setError(err.message || "Failed to sell stock"); }
     finally { setProcessing(false); }
   };
 
