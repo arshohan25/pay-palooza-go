@@ -109,7 +109,7 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
     { icon: User,     label: t("nameParty"),      value: display.name,                          copy: false },
     ...(tx.recipient_phone ? [{ icon: Phone, label: "Receiver Number", value: tx.recipient_phone, copy: true }] : []),
     { icon: Tag,      label: t("type"),            value: display.label,                         copy: false },
-    ...(tx.description && !tx.description.startsWith("[Wallet:") && tx.description !== display.label
+    ...(tx.description && !tx.description.includes("[Wallet:") && !tx.description.includes("Wallet:") && tx.description !== display.label
       ? [{ icon: FileText, label: t("description"), value: tx.description, copy: false }] : []),
     ...(tx.fee > 0 ? [{ icon: Coins, label: "Charge / Fee", value: `৳${fmtDec(tx.fee)}`, copy: false, accent: "text-amber-600 dark:text-amber-400" }] : []),
     { icon: Clock,    label: t("dateTime"),        value: format(txDate, "dd MMM yyyy, h:mm a"), copy: false },

@@ -642,7 +642,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     { icon: User,     label: "Name / Party",   value: selectedTx.name,                        copy: false },
                     ...(selectedTx.recipient_phone ? [{ icon: Phone, label: "Receiver Number", value: selectedTx.recipient_phone, copy: true }] : []),
                     { icon: Tag,      label: "Category",       value: catLabel,                               copy: false },
-                    ...(selectedTx.detail && !selectedTx.detail.startsWith("[Wallet:") && selectedTx.detail !== catLabel
+                    ...(selectedTx.detail && !selectedTx.detail.includes("[Wallet:") && !selectedTx.detail.includes("Wallet:") && selectedTx.detail !== catLabel
                       ? [{ icon: FileText, label: "Description", value: selectedTx.detail, copy: false }] : []),
                     ...(agentView
                       ? (selectedTx.commission > 0 ? [{ icon: TrendingUp, label: "Commission Earned", value: `+৳${selectedTx.commission.toLocaleString("en-IN")}`, copy: false }] : [])
