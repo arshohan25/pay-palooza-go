@@ -540,16 +540,19 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     const cashOutExtra = addCashOutCharge ? calcCashOutFee(amtVal) : 0;
     const actualSendAmount = parseFloat((amtVal + cashOutExtra).toFixed(2));
     const feeVal = calcFee("send", actualSendAmount);
+    const couponDiscVal = pendingCoupon ? calcCouponDiscount(pendingCoupon, actualSendAmount) : 0;
+    const effectiveFeeVal = Math.max(0, feeVal - couponDiscVal);
     try {
       await transferMoney({
         recipientPhone: (resolvedPhone || recipient?.phone) ?? "",
         amount: actualSendAmount,
-        fee: feeVal,
+        fee: effectiveFeeVal,
         type: "send",
         recipientName: recipient?.name,
         reference: txnId.current,
-        description: (addCashOutCharge ? "[+Cash Out Charge] " : "") + (note || "") + (resolvedWalletId ? ` [Wallet: ${resolvedWalletId}]` : ""),
+        description: (addCashOutCharge ? "[+Cash Out Charge] " : "") + (pendingCoupon ? `[Coupon: ${pendingCoupon.code}] ` : "") + (note || "") + (resolvedWalletId ? ` [Wallet: ${resolvedWalletId}]` : ""),
       });
+      if (pendingCoupon) clearPendingCoupon();
       onSuccess?.(actualSendAmount);
       showTxnToast({ type: "Send Money", amount: `৳${actualSendAmount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-send" });
       setDirection(1);
