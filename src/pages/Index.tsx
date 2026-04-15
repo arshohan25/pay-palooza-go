@@ -77,6 +77,26 @@ const Index = () => {
       setActiveTab(tabParam);
     }
   }, [searchParams]);
+
+  // Handle ?flow= deep-link from Coupons page
+  useEffect(() => {
+    const flow = searchParams.get("flow");
+    if (!flow) return;
+    const flowMap: Record<string, () => void> = {
+      send_money: () => setShowSendMoney(true),
+      cash_out: () => setShowCashOut(true),
+      payment: () => setShowPayment(true),
+      recharge: () => setShowRecharge(true),
+      bill_pay: () => setShowPayBill(true),
+      add_money: () => setShowAddMoney(true),
+    };
+    if (flowMap[flow]) {
+      flowMap[flow]();
+      // Clean the param so it doesn't re-trigger
+      searchParams.delete("flow");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
   const handleTabChange = useCallback((tab: string) => {
     if (tab === "scan") {
       setShowScanPay(true);
