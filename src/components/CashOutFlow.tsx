@@ -11,6 +11,7 @@ import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
+import { Textarea } from "@/components/ui/textarea";
 
 import ShareReceiptSheet from "@/components/ShareReceiptSheet";
 import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
@@ -26,6 +27,7 @@ import {
   CheckCircle2,
   Landmark,
   Users,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
