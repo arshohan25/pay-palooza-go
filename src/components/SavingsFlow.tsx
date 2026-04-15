@@ -384,17 +384,20 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     const cost = Math.round(grams * currentGoldPrice);
     if (cost > balance) { setError("Insufficient balance"); return; }
     if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
-    setProcessing(true); setPinError("");
-    const pinValid = await verifyPin(pin);
-    if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
-    setTimeout(() => {
-      const totalGrams = goldHolding.grams + grams;
-      const totalCost = (goldHolding.grams * goldHolding.avgBuyPrice) + cost;
-      setGoldHolding({ grams: totalGrams, avgBuyPrice: Math.round(totalCost / totalGrams) });
+    setProcessing(true); setPinError(""); setError("");
+    try {
+      const pinValid = await verifyPin(pin);
+      if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
+      const { data, error: rpcErr } = await supabase.rpc("buy_gold" as any, { p_grams: grams, p_price_per_gram: currentGoldPrice, p_karat: goldKarat });
+      if (rpcErr) throw rpcErr;
+      const result = typeof data === "string" ? JSON.parse(data) : data;
+      await fetchBalance();
+      loadGoldHoldings();
       fireSuccessConfetti();
       toast.success(`🪙 Purchased ${grams}g gold for ৳${cost.toLocaleString()}`);
-      setGoldGrams(""); setGoldStep("portfolio"); setError(""); setProcessing(false); setPin("");
-    }, 1200);
+      setGoldGrams(""); setGoldStep("portfolio"); setPin("");
+    } catch (err: any) { setError(err.message || "Failed to buy gold"); }
+    finally { setProcessing(false); }
   };
 
   const handleSellGold = async () => {
@@ -402,16 +405,19 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     if (!grams || grams <= 0) { setError("Enter valid grams"); return; }
     if (grams > goldHolding.grams) { setError("Insufficient gold balance"); return; }
     if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
-    setProcessing(true); setPinError("");
-    const pinValid = await verifyPin(pin);
-    if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
-    setTimeout(() => {
+    setProcessing(true); setPinError(""); setError("");
+    try {
+      const pinValid = await verifyPin(pin);
+      if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
+      const { data, error: rpcErr } = await supabase.rpc("sell_gold" as any, { p_grams: grams, p_price_per_gram: currentGoldPrice, p_karat: goldKarat });
+      if (rpcErr) throw rpcErr;
+      await fetchBalance();
+      loadGoldHoldings();
       const revenue = Math.round(grams * currentGoldPrice);
-      const remaining = goldHolding.grams - grams;
-      setGoldHolding({ grams: remaining, avgBuyPrice: remaining > 0 ? goldHolding.avgBuyPrice : 0 });
       toast.success(`💰 Sold ${grams}g gold for ৳${revenue.toLocaleString()}`);
-      setGoldGrams(""); setGoldStep("portfolio"); setError(""); setProcessing(false); setPin("");
-    }, 1200);
+      setGoldGrams(""); setGoldStep("portfolio"); setPin("");
+    } catch (err: any) { setError(err.message || "Failed to sell gold"); }
+    finally { setProcessing(false); }
   };
 
   const goldValue = Math.round(goldHolding.grams * MOCK_GOLD_PRICE);
@@ -426,25 +432,41 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     const cost = Math.round(qty * selectedStock.price);
     if (cost > balance) { setError("Insufficient balance"); return; }
     if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
-    setProcessing(true); setPinError("");
-    const pinValid = await verifyPin(pin);
-    if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
-    setTimeout(() => {
-      setStockHoldings(prev => {
-        const existing = prev.find(h => h.symbol === selectedStock.symbol);
-        if (existing) {
-          const newQty = existing.qty + qty;
-          const newAvg = Math.round(((existing.qty * existing.avgPrice) + cost) / newQty);
-          return prev.map(h => h.symbol === selectedStock.symbol
-            ? { ...h, qty: newQty, avgPrice: newAvg, currentPrice: selectedStock.price, change: selectedStock.change }
-            : h);
-        }
-        return [...prev, { symbol: selectedStock.symbol, name: selectedStock.name, qty, avgPrice: selectedStock.price, currentPrice: selectedStock.price, change: selectedStock.change }];
-      });
+    setProcessing(true); setPinError(""); setError("");
+    try {
+      const pinValid = await verifyPin(pin);
+      if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
+      const { data, error: rpcErr } = await supabase.rpc("buy_stock" as any, { p_symbol: selectedStock.symbol, p_name: selectedStock.name, p_quantity: qty, p_price: selectedStock.price });
+      if (rpcErr) throw rpcErr;
+      await fetchBalance();
+      loadStockHoldings();
       fireSuccessConfetti();
       toast.success(`📈 Bought ${qty} ${selectedStock.symbol} for ৳${cost.toLocaleString()}`);
-      setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setError(""); setProcessing(false); setPin("");
-    }, 1200);
+      setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setPin("");
+    } catch (err: any) { setError(err.message || "Failed to buy stock"); }
+    finally { setProcessing(false); }
+  };
+
+  const handleSellStock = async () => {
+    if (!selectedStock) return;
+    const qty = parseInt(stockQty);
+    const holding = stockHoldings.find(h => h.symbol === selectedStock.symbol);
+    if (!qty || qty <= 0) { setError("Enter valid quantity"); return; }
+    if (!holding || qty > holding.qty) { setError("Insufficient shares"); return; }
+    if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
+    setProcessing(true); setPinError(""); setError("");
+    try {
+      const pinValid = await verifyPin(pin);
+      if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
+      const { data, error: rpcErr } = await supabase.rpc("sell_stock" as any, { p_symbol: selectedStock.symbol, p_quantity: qty, p_price: selectedStock.price });
+      if (rpcErr) throw rpcErr;
+      await fetchBalance();
+      loadStockHoldings();
+      const revenue = Math.round(qty * selectedStock.price);
+      toast.success(`💰 Sold ${qty} ${selectedStock.symbol} for ৳${revenue.toLocaleString()}`);
+      setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setPin("");
+    } catch (err: any) { setError(err.message || "Failed to sell stock"); }
+    finally { setProcessing(false); }
   };
 
   const handleSellStock = async () => {
