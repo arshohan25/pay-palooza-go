@@ -987,21 +987,23 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg"><Coins size={22} className="text-white" /></div>
                   <div>
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Your Gold</p>
-                    <p className="text-[28px] font-black text-foreground leading-tight">{goldHolding.grams > 0 ? `${goldHolding.grams}g` : "0g"}</p>
+                    <p className="text-[28px] font-black text-foreground leading-tight">{totalGoldGrams > 0 ? `${totalGoldGrams}g` : "0g"}</p>
+                    {goldHoldings22k.grams > 0 || goldHoldings24k.grams > 0 ? (
+                      <p className="text-[11px] text-muted-foreground">22K: {goldHoldings22k.grams}g • 24K: {goldHoldings24k.grams}g</p>
+                    ) : null}
                   </div>
                 </div>
-                {goldHolding.grams > 0 && (
+                {totalGoldGrams > 0 && (
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-card/60 backdrop-blur-sm rounded-xl p-3">
                       <p className="text-[10px] text-muted-foreground font-semibold">Current Value</p>
-                      <p className="text-[16px] font-black text-foreground">৳{goldValue.toLocaleString()}</p>
+                      <p className="text-[16px] font-black text-foreground">৳{totalGoldValue.toLocaleString()}</p>
                     </div>
                     <div className="bg-card/60 backdrop-blur-sm rounded-xl p-3">
                       <p className="text-[10px] text-muted-foreground font-semibold">Profit/Loss</p>
-                      <p className={`text-[16px] font-black flex items-center gap-0.5 ${goldProfit >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                        {goldProfit >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}৳{Math.abs(goldProfit).toLocaleString()}
+                      <p className={`text-[16px] font-black flex items-center gap-0.5 ${totalGoldValue - totalGoldCost >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                        {totalGoldValue - totalGoldCost >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}৳{Math.abs(totalGoldValue - totalGoldCost).toLocaleString()}
                       </p>
-                      <p className={`text-[10px] font-bold ${goldProfit >= 0 ? "text-emerald-600" : "text-destructive"}`}>({goldProfitPct >= 0 ? "+" : ""}{goldProfitPct.toFixed(1)}%)</p>
                     </div>
                   </div>
                 )}
