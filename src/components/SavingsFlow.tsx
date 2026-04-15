@@ -36,8 +36,7 @@ interface AutoSaveSchedule {
 interface GoldHolding { grams: number; avgBuyPrice: number; }
 interface StockHolding { symbol: string; name: string; qty: number; avgPrice: number; currentPrice: number; change: number; }
 
-const MOCK_GOLD_PRICE = 16200;
-const MOCK_GOLD_24K_PRICE = 19500;
+// Gold prices fetched live via useGoldPrice hook
 
 const MOCK_STOCKS: { symbol: string; name: string; price: number; change: number; sector: string }[] = [
   { symbol: "GRPH", name: "Grameenphone", price: 385.50, change: 2.4, sector: "Telecom" },
@@ -158,6 +157,7 @@ const SavingsPinInput = ({ pin, onChange, error }: { pin: string; onChange: (p: 
 const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const { t } = useI18n();
   const { user } = useAuth();
+  const { price22k: LIVE_GOLD_PRICE, price24k: LIVE_GOLD_24K_PRICE, updatedAt: goldUpdatedAt, loading: goldPriceLoading, refresh: refreshGoldPrice } = useGoldPrice();
 
   const [mainTab, setMainTab] = useState<MainTab>("savings");
 
