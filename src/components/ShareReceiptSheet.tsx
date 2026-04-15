@@ -1,6 +1,6 @@
 import { useState, useRef, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Share2, Copy, CheckCheck, X, Download } from "lucide-react";
+import { Share2, Copy, CheckCheck, X, Download, Shield } from "lucide-react";
 import { haptics } from "@/lib/haptics";
 import { useI18n } from "@/lib/i18n";
 
@@ -163,35 +163,54 @@ const ShareReceiptSheet = forwardRef<HTMLDivElement, ShareReceiptSheetProps>(
                   <p className="text-xs text-muted-foreground mt-0.5">{t("copyShareSave")}</p>
                 </div>
 
+                {/* Premium receipt card */}
                 <div
                   ref={receiptRef}
-                  className="rounded-2xl border border-border overflow-hidden shadow-card bg-card"
+                  className="rounded-2xl overflow-hidden shadow-lg border border-border/40 bg-card"
                 >
-                  <div className={`${receipt.gradient} px-4 py-4 text-white text-center`}>
-                    <p className="text-xs font-semibold opacity-80 mb-0.5">{receipt.title}</p>
-                    <p className="text-3xl font-extrabold">{receipt.amount}</p>
+                  {/* Gradient header with pattern */}
+                  <div className={`${receipt.gradient} relative px-4 py-5 text-white text-center`}>
+                    <div className="absolute inset-0 opacity-10" style={{
+                      backgroundImage: "radial-gradient(circle at 25% 60%, white 1px, transparent 1px), radial-gradient(circle at 75% 30%, white 1px, transparent 1px)",
+                      backgroundSize: "24px 24px, 32px 32px",
+                    }} />
+                    <div className="relative z-10">
+                      <p className="text-[11px] font-semibold opacity-80 mb-1 tracking-wide uppercase">{receipt.title}</p>
+                      <p className="text-[36px] font-extrabold leading-none tracking-tight">{receipt.amount}</p>
+                    </div>
                   </div>
 
-                  <div className="divide-y divide-border/60">
-                    {receipt.rows.map((row) => (
-                      <div key={row.label} className="flex items-center justify-between px-4 py-2.5 gap-2">
-                        <span className="text-xs text-muted-foreground shrink-0">{row.label}</span>
-                        <span className="text-xs font-semibold text-foreground text-right break-all max-w-[60%]">
+                  {/* Rows with subtle separators */}
+                  <div className="divide-y divide-border/40">
+                    {receipt.rows.map((row, idx) => (
+                      <motion.div
+                        key={row.label}
+                        initial={{ opacity: 0, x: -6 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.03 * idx }}
+                        className="flex items-center justify-between px-4 py-2.5 gap-2"
+                      >
+                        <span className="text-[11px] text-muted-foreground shrink-0 font-medium">{row.label}</span>
+                        <span className="text-[12px] font-semibold text-foreground text-right break-all max-w-[60%]">
                           {row.value}
                         </span>
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
 
-                  <div className="flex items-center justify-between px-4 py-3 border-t border-border/60 bg-muted/30">
+                  {/* Transaction ID section — premium mono styling */}
+                  <div className="flex items-center justify-between px-4 py-3.5 border-t border-border/40 bg-muted/20">
                     <div className="min-w-0">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-semibold">{t("transactionId")}</p>
-                      <p className="text-xs font-mono font-bold text-primary break-all mt-0.5 leading-snug">{receipt.txnId}</p>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <Shield size={10} className="text-primary/60" />
+                        <p className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">{t("transactionId")}</p>
+                      </div>
+                      <p className="text-[13px] font-mono font-bold text-primary break-all leading-snug">{receipt.txnId}</p>
                     </div>
                     <motion.button
                       whileTap={{ scale: 0.85 }}
                       onClick={handleCopyId}
-                      className="ml-2 shrink-0 w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                      className="ml-2 shrink-0 w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
                     >
                       <AnimatePresence mode="wait" initial={false}>
                         <MotionIcon
@@ -201,22 +220,24 @@ const ShareReceiptSheet = forwardRef<HTMLDivElement, ShareReceiptSheetProps>(
                           exit={{ scale: 0.6, opacity: 0 }}
                           transition={{ duration: 0.15 }}
                         >
-                          {copiedId ? <CheckCheck size={13} className="text-primary" /> : <Copy size={13} />}
+                          {copiedId ? <CheckCheck size={14} className="text-primary" /> : <Copy size={14} />}
                         </MotionIcon>
                       </AnimatePresence>
                     </motion.button>
                   </div>
 
-                  <div className="px-4 py-2 bg-muted/20 text-center">
-                    <p className="text-[9px] text-muted-foreground font-semibold tracking-widest uppercase">{t("poweredByEasyPay")}</p>
+                  {/* Branding footer */}
+                  <div className="px-4 py-2 bg-muted/10 text-center border-t border-border/30">
+                    <p className="text-[9px] text-muted-foreground/60 font-semibold tracking-widest uppercase">{t("poweredByEasyPay")}</p>
                   </div>
                 </div>
 
+                {/* Action buttons — pill style with shadows */}
                 <div className="grid grid-cols-3 gap-2">
                   <motion.button
                     whileTap={{ scale: 0.96 }}
                     onClick={handleCopyText}
-                    className="flex flex-col items-center justify-center gap-1.5 h-14 rounded-2xl bg-muted border border-border text-[11px] font-semibold text-foreground hover:bg-muted/80 transition-colors"
+                    className="flex flex-col items-center justify-center gap-1.5 h-14 rounded-2xl bg-muted/80 border border-border/50 text-[11px] font-semibold text-foreground hover:bg-muted transition-colors shadow-sm"
                   >
                     <AnimatePresence mode="wait" initial={false}>
                       <MotionIcon
@@ -240,7 +261,7 @@ const ShareReceiptSheet = forwardRef<HTMLDivElement, ShareReceiptSheetProps>(
                     whileTap={{ scale: 0.96 }}
                     onClick={handleDownload}
                     disabled={downloading}
-                    className="flex flex-col items-center justify-center gap-1.5 h-14 rounded-2xl bg-muted border border-border text-[11px] font-semibold text-foreground hover:bg-muted/80 transition-colors disabled:opacity-60"
+                    className="flex flex-col items-center justify-center gap-1.5 h-14 rounded-2xl bg-muted/80 border border-border/50 text-[11px] font-semibold text-foreground hover:bg-muted transition-colors disabled:opacity-60 shadow-sm"
                   >
                     <AnimatePresence mode="wait" initial={false}>
                       <MotionIcon
@@ -263,7 +284,7 @@ const ShareReceiptSheet = forwardRef<HTMLDivElement, ShareReceiptSheetProps>(
                   <motion.button
                     whileTap={{ scale: 0.96 }}
                     onClick={handleNativeShare}
-                    className={`flex flex-col items-center justify-center gap-1.5 h-14 rounded-2xl ${receipt.gradient} text-white text-[11px] font-semibold shadow-card active:opacity-90 transition-opacity`}
+                    className={`flex flex-col items-center justify-center gap-1.5 h-14 rounded-2xl ${receipt.gradient} text-white text-[11px] font-semibold shadow-md active:opacity-90 transition-opacity`}
                   >
                     <Share2 size={16} />
                     <span>{t("share")}</span>
