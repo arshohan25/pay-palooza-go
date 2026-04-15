@@ -8,6 +8,7 @@ import { verifyPin } from "@/lib/verifyPin";
 import { checkDailyLimit } from "@/lib/dailyLimits";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
+import { getPendingCoupon, calcCouponDiscount, clearPendingCoupon, type PendingCoupon } from "@/lib/couponStore";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 
@@ -109,6 +110,7 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
   const [note, setNote]           = useState("");
   const [pin, setPin]             = useState("");
   const [error, setError]         = useState("");
+  const [pendingCoupon] = useState<PendingCoupon | null>(() => getPendingCoupon("payment"));
   const [showScanner, setShowScanner] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [recentMerchants, setRecentMerchants] = useState<Merchant[]>([]);
@@ -313,14 +315,16 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
     requestLocation().catch(() => {});
     haptics.success();
     txnTime.current = new Date();
+    const couponDiscVal = pendingCoupon ? calcCouponDiscount(pendingCoupon, amtVal) : 0;
+    const effectiveAmtVal = Math.max(0, amtVal - couponDiscVal);
     try {
       await transferMoney({
         recipientPhone: (resolvedMerchantPhone || merchant?.merchantId) ?? "",
-        amount: amtVal,
+        amount: effectiveAmtVal,
         fee: 0,
         type: "payment",
         recipientName: merchant?.name,
-        description: note || `Payment to ${merchant?.name}`,
+        description: (pendingCoupon ? `[Coupon: ${pendingCoupon.code}] ` : "") + (note || `Payment to ${merchant?.name}`),
         reference: txnId.current,
       });
     } catch (e: any) {
@@ -328,12 +332,15 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
       setProcessing(false);
       return;
     }
-    showTxnToast({ type: "Payment", amount: `৳${amtVal.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-payment" });
+    if (pendingCoupon) clearPendingCoupon();
+    showTxnToast({ type: "Payment", amount: `৳${effectiveAmtVal.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-payment" });
     setDirection(1);
     setStep("success");
   };
 
   const amtNum = parseFloat(amount) || 0;
+  const couponDiscount = pendingCoupon ? calcCouponDiscount(pendingCoupon, amtNum) : 0;
+  const effectiveAmount = Math.max(0, amtNum - couponDiscount);
   // Payment is free (no charge)
 
   return (
@@ -642,9 +649,20 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
                   <div className="flex justify-between text-muted-foreground">
                     <span>Amount</span><span className="text-foreground font-medium">৳{amtNum.toLocaleString()}</span>
                   </div>
+                  {couponDiscount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-primary font-medium">🎟️ Coupon ({pendingCoupon?.code})</span>
+                      <span className="text-primary font-bold">-৳{couponDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-muted-foreground">
                     <span>Fee</span><span className="text-primary font-semibold">Free</span>
                   </div>
+                  {couponDiscount > 0 && (
+                    <div className="flex justify-between font-bold text-foreground">
+                      <span>You Pay</span><span>৳{effectiveAmount.toLocaleString()}</span>
+                    </div>
+                  )}
                   {note && (
                     <div className="flex justify-between text-muted-foreground">
                       <span>Note</span><span className="text-foreground font-medium">{note}</span>

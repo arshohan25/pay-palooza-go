@@ -7,6 +7,7 @@ import { verifyPin } from "@/lib/verifyPin";
 import { checkDailyLimit } from "@/lib/dailyLimits";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
+import { getPendingCoupon, calcCouponDiscount, clearPendingCoupon, type PendingCoupon } from "@/lib/couponStore";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 
@@ -209,6 +210,7 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
   const [billAmount, setBillAmount] = useState("");
   const [showShare, setShowShare] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [pendingCoupon] = useState<PendingCoupon | null>(() => getPendingCoupon("bill_pay"));
 
   const txnTime = useRef(new Date());
   const txnId = useRef(generateTxnId());
@@ -305,18 +307,22 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
     requestLocation().catch(() => {});
     haptics.success();
 
+    const couponDiscVal = pendingCoupon ? calcCouponDiscount(pendingCoupon, dueAmount) : 0;
+    const finalAmount = Math.max(0, dueAmount - couponDiscVal);
+
     await recordTransaction({
       type: "paybill",
-      amount: dueAmount,
+      amount: finalAmount,
       fee: 0,
       recipientName: `${provider?.name} - ${billType?.name}`,
-      description: `${billType?.name} bill - ${provider?.name} (${accountNo})`,
+      description: `${billType?.name} bill - ${provider?.name} (${accountNo})` + (pendingCoupon ? ` [Coupon: ${pendingCoupon.code}]` : ""),
       reference: txnId.current,
     });
 
+    if (pendingCoupon) clearPendingCoupon();
     showTxnToast({
       type: "Bill Payment",
-      amount: `৳${dueAmount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
+      amount: `৳${finalAmount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
       gradient: "gradient-primary",
     });
 
@@ -532,13 +538,19 @@ const PayBillFlow = forwardRef<HTMLDivElement, PayBillFlowProps>(({ onClose }, r
                         <span className="text-muted-foreground">Bill Amount</span>
                         <span className="font-bold text-foreground">৳{(parseFloat(billAmount) || 0).toLocaleString()}</span>
                       </div>
+                      {pendingCoupon && calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) > 0 && (
+                        <div className="flex items-center justify-between px-4 py-3 text-sm">
+                          <span className="text-primary font-medium">🎟️ Coupon ({pendingCoupon.code})</span>
+                          <span className="text-primary font-bold">-৳{calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0).toFixed(2)}</span>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between px-4 py-3 text-sm">
                         <span className="text-muted-foreground">Fee</span>
                         <span className="font-bold text-foreground">Free</span>
                       </div>
                       <div className="flex items-center justify-between px-4 py-3 text-sm">
                         <span className="text-muted-foreground">Total</span>
-                        <span className="font-extrabold text-lg text-foreground">৳{((parseFloat(billAmount) || 0) + fee).toLocaleString()}</span>
+                        <span className="font-extrabold text-lg text-foreground">৳{Math.max(0, (parseFloat(billAmount) || 0) - (pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(billAmount) || 0) : 0)).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>

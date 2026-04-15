@@ -8,6 +8,7 @@ import { verifyPin } from "@/lib/verifyPin";
 import { checkDailyLimit } from "@/lib/dailyLimits";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
+import { getPendingCoupon, calcCouponDiscount, clearPendingCoupon, type PendingCoupon } from "@/lib/couponStore";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import { supabase } from "@/integrations/supabase/client";
@@ -218,6 +219,7 @@ interface MobileRechargeFlowProps { onClose: () => void; }
 const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
   const { t } = useI18n();
   const [step, setStep]               = useState<Step>("number");
+  const [pendingCoupon] = useState<PendingCoupon | null>(() => getPendingCoupon("recharge"));
   const [direction, setDirection]     = useState(1);
   const [phone, setPhone]             = useState("");
   const [selectedOp, setSelectedOp]   = useState<OperatorDef | null>(null);
@@ -472,19 +474,23 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
 
     const packDesc = selectedPack ? selectedPack.name : `Recharge ৳${effectivePrice}`;
 
+    const couponDiscVal = pendingCoupon ? calcCouponDiscount(pendingCoupon, effectivePrice) : 0;
+    const finalPrice = Math.max(0, effectivePrice - couponDiscVal);
+
     await recordTransaction({
       type: "recharge",
-      amount: effectivePrice,
+      amount: finalPrice,
       fee: 0,
       recipientPhone: phone,
       recipientName: detectedOp?.name,
       reference: txnId.current,
-      description: packDesc + " [API]",
+      description: packDesc + " [API]" + (pendingCoupon ? ` [Coupon: ${pendingCoupon.code}]` : ""),
     });
 
+    if (pendingCoupon) clearPendingCoupon();
     showTxnToast({
       type: "Live Recharge",
-      amount: `৳${effectivePrice.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
+      amount: `৳${finalPrice.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`,
       gradient: "gradient-accent",
     });
     setDirection(1);
@@ -1122,6 +1128,12 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                         )}
                       </>
                     )}
+                    {pendingCoupon && calcCouponDiscount(pendingCoupon, effectivePrice) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-primary font-medium">🎟️ Coupon ({pendingCoupon.code})</span>
+                        <span className="text-primary font-bold">-৳{calcCouponDiscount(pendingCoupon, effectivePrice).toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-muted-foreground">
                       <span>Service fee</span>
                       <span className="font-semibold text-primary">Free</span>
@@ -1129,7 +1141,7 @@ const MobileRechargeFlow = ({ onClose }: MobileRechargeFlowProps) => {
                     <div className="h-px bg-border" />
                     <div className="flex justify-between font-bold text-foreground">
                       <span>Total from balance</span>
-                      <span>৳{effectivePrice}</span>
+                      <span>৳{Math.max(0, effectivePrice - (pendingCoupon ? calcCouponDiscount(pendingCoupon, effectivePrice) : 0))}</span>
                     </div>
                   </div>
                 </div>

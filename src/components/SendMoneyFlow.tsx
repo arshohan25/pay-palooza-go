@@ -10,6 +10,7 @@ import { verifyPin } from "@/lib/verifyPin";
 import { checkDailyLimit } from "@/lib/dailyLimits";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
+import { getPendingCoupon, calcCouponDiscount, clearPendingCoupon, type PendingCoupon } from "@/lib/couponStore";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 
@@ -163,8 +164,8 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   const txnTime = useRef(new Date());
   const genId = () => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; };
   const txnId   = useRef(genId());
+  const [pendingCoupon] = useState<PendingCoupon | null>(() => getPendingCoupon("send_money"));
 
-  // Fetch real recent transaction recipients
   useEffect(() => {
     const fetchRecent = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -539,16 +540,19 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     const cashOutExtra = addCashOutCharge ? calcCashOutFee(amtVal) : 0;
     const actualSendAmount = parseFloat((amtVal + cashOutExtra).toFixed(2));
     const feeVal = calcFee("send", actualSendAmount);
+    const couponDiscVal = pendingCoupon ? calcCouponDiscount(pendingCoupon, actualSendAmount) : 0;
+    const effectiveFeeVal = Math.max(0, feeVal - couponDiscVal);
     try {
       await transferMoney({
         recipientPhone: (resolvedPhone || recipient?.phone) ?? "",
         amount: actualSendAmount,
-        fee: feeVal,
+        fee: effectiveFeeVal,
         type: "send",
         recipientName: recipient?.name,
         reference: txnId.current,
-        description: (addCashOutCharge ? "[+Cash Out Charge] " : "") + (note || "") + (resolvedWalletId ? ` [Wallet: ${resolvedWalletId}]` : ""),
+        description: (addCashOutCharge ? "[+Cash Out Charge] " : "") + (pendingCoupon ? `[Coupon: ${pendingCoupon.code}] ` : "") + (note || "") + (resolvedWalletId ? ` [Wallet: ${resolvedWalletId}]` : ""),
       });
+      if (pendingCoupon) clearPendingCoupon();
       onSuccess?.(actualSendAmount);
       showTxnToast({ type: "Send Money", amount: `৳${actualSendAmount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-send" });
       setDirection(1);
@@ -565,8 +569,10 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   const cashOutExtra = addCashOutCharge ? calcCashOutFee(amtNum) : 0;
   const sendAmount = parseFloat((amtNum + cashOutExtra).toFixed(2));
   const fee    = calcFee("send", sendAmount);
-  const feeFromBalance = Math.min(fee, BALANCE);
-  const feeFromAmount  = parseFloat((fee - feeFromBalance).toFixed(2));
+  const couponDiscount = pendingCoupon ? calcCouponDiscount(pendingCoupon, sendAmount) : 0;
+  const effectiveFee = Math.max(0, fee - couponDiscount);
+  const feeFromBalance = Math.min(effectiveFee, BALANCE);
+  const feeFromAmount  = parseFloat((effectiveFee - feeFromBalance).toFixed(2));
   const totalFromBalance = sendAmount + feeFromBalance;
   const recipientReceives = parseFloat((sendAmount - feeFromAmount).toFixed(2));
 
@@ -945,9 +951,15 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                         {fee === 0 ? <span className="text-primary font-semibold">{t("free")}</span> : `৳${fee}`}
                       </span>
                     </div>
+                    {couponDiscount > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-primary font-medium">🎟️ Coupon ({pendingCoupon?.code})</span>
+                        <span className="text-primary font-bold">-৳{couponDiscount.toFixed(2)}</span>
+                      </div>
+                    )}
                     {fee > 0 && (
                       <p className="text-[11px] text-muted-foreground text-right">
-                        ৳{amtNum.toLocaleString()} + ৳{fee} fee ({feeFromBalance >= fee ? "from balance" : feeFromBalance > 0 ? "balance + amount" : "from amount"})
+                        ৳{amtNum.toLocaleString()} + ৳{effectiveFee} fee ({feeFromBalance >= effectiveFee ? "from balance" : feeFromBalance > 0 ? "balance + amount" : "from amount"})
                       </p>
                     )}
                     <div className="h-px bg-border" />

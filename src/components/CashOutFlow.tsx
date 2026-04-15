@@ -9,6 +9,7 @@ import { verifyPin } from "@/lib/verifyPin";
 import { checkDailyLimit } from "@/lib/dailyLimits";
 import { addTxnNotif } from "@/lib/txnNotifStore";
 import { showTxnToast } from "@/components/TxnToast";
+import { getPendingCoupon, calcCouponDiscount, clearPendingCoupon, type PendingCoupon } from "@/lib/couponStore";
 import { motion, AnimatePresence } from "framer-motion";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import { Textarea } from "@/components/ui/textarea";
@@ -121,6 +122,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const [amount, setAmount] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
+  const [pendingCoupon] = useState<PendingCoupon | null>(() => getPendingCoupon("cash_out"));
   const [showScanner, setShowScanner] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [recentAgents, setRecentAgents] = useState<Agent[]>([]);
@@ -335,15 +337,17 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     haptics.success();
     txnTime.current = new Date();
     const feeVal = calcCashOutFee(amtVal);
+    const couponDiscVal = pendingCoupon ? calcCouponDiscount(pendingCoupon, amtVal) : 0;
+    const effectiveFeeVal = Math.max(0, feeVal - couponDiscVal);
     const commissionVal = getAgentCommission("cashout", amtVal);
     try {
       await transferMoney({
         recipientPhone: (resolvedAgentPhone || agent?.agentId) ?? "",
         amount: amtVal,
-        fee: feeVal,
+        fee: effectiveFeeVal,
         type: "cashout",
         recipientName: agent?.name,
-        description: `Cash Out at ${agent?.name}`,
+        description: `Cash Out at ${agent?.name}` + (pendingCoupon ? ` [Coupon: ${pendingCoupon.code}]` : ""),
         reference: txnId.current,
         recipientType: "cashin",
         commission: commissionVal,
@@ -353,6 +357,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
       setProcessing(false);
       return;
     }
+    if (pendingCoupon) clearPendingCoupon();
     showTxnToast({ type: "Cash Out", amount: `৳${amtVal.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`, gradient: "gradient-cashout" });
     setDirection(1);
     setStep("success");
@@ -361,9 +366,11 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const FEE_LABEL = getFeeLabel("cashout");
   const BALANCE = getBalance();
   const feeNum = parseFloat(amount) > 0 ? calcCashOutFee(parseFloat(amount)) : 0;
-  const fee = feeNum.toFixed(2);
-  const feeFromBalance = Math.min(feeNum, BALANCE);
-  const feeFromAmount  = parseFloat((feeNum - feeFromBalance).toFixed(2));
+  const couponDiscount = pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(amount) || 0) : 0;
+  const effectiveFeeNum = Math.max(0, feeNum - couponDiscount);
+  const fee = effectiveFeeNum.toFixed(2);
+  const feeFromBalance = Math.min(effectiveFeeNum, BALANCE);
+  const feeFromAmount  = parseFloat((effectiveFeeNum - feeFromBalance).toFixed(2));
   const receive = parseFloat(amount) > 0
     ? (parseFloat(amount) - feeFromAmount).toFixed(2)
     : "0.00";
@@ -652,6 +659,12 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       <span>Fee ({FEE_LABEL})</span>
                       <span className="text-destructive font-medium">− ৳{fee}</span>
                     </div>
+                    {couponDiscount > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-primary font-medium">🎟️ Coupon ({pendingCoupon?.code})</span>
+                        <span className="text-primary font-bold">-৳{couponDiscount.toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-xs text-muted-foreground/70">
                       <span>Fee source</span>
                       <span className="text-primary font-medium">
