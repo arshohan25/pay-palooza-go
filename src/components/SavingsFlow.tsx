@@ -239,8 +239,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     else if (autoFreq === "weekly") totalDeposits = autoAmtNum * selectedDuration.months * 4;
     else totalDeposits = autoAmtNum * selectedDuration.months;
 
-    const { totalValue, profit } = calcEstimatedProfit(totalDeposits, selectedDuration.months, selectedStrategyObj.estReturn);
-    return { totalDeposits, totalValue, profit, returnPct: selectedStrategyObj.estReturn };
+    const estReturnPct = getEstReturn(selectedStrategyObj.key, selectedDuration.months);
+    const { totalValue, profit } = calcEstimatedProfit(totalDeposits, selectedDuration.months, estReturnPct);
+    return { totalDeposits, totalValue, profit, returnPct: estReturnPct };
   }, [autoAmtNum, autoFreq, selectedDuration, selectedStrategyObj]);
 
   // ─── Savings handlers ────────
@@ -743,7 +744,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                           <p className="text-[10px] text-muted-foreground">{strat.desc}</p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="text-[14px] font-black text-emerald-600">~{strat.estReturn}%</p>
+                          <p className="text-[14px] font-black text-emerald-600">~{getEstReturn(strat.key, selectedDuration.months)}%</p>
                           <p className="text-[9px] text-muted-foreground">est. annual</p>
                         </div>
                       </button>
