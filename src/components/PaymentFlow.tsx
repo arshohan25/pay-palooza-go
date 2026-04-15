@@ -296,6 +296,7 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
     }
 
     setResolvedMerchantPhone(validation.phone || "");
+    setResolvedMerchantUserId(validation.userId || null);
     const found = recentMerchants.find((m) => m.merchantId.toLowerCase() === result.toLowerCase());
     if (found) {
       setMerchant(found);
