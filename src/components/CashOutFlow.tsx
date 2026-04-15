@@ -338,13 +338,13 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     txnTime.current = new Date();
     const feeVal = calcCashOutFee(amtVal);
     const couponDiscVal = pendingCoupon ? calcCouponDiscount(pendingCoupon, amtVal) : 0;
-    const effectiveFeeVal = Math.max(0, feeVal - couponDiscVal);
+    const effectiveAmtVal = Math.max(0, amtVal - couponDiscVal);
     const commissionVal = getAgentCommission("cashout", amtVal);
     try {
       await transferMoney({
         recipientPhone: (resolvedAgentPhone || agent?.agentId) ?? "",
-        amount: amtVal,
-        fee: effectiveFeeVal,
+        amount: effectiveAmtVal,
+        fee: feeVal,
         type: "cashout",
         recipientName: agent?.name,
         description: `Cash Out at ${agent?.name}` + (pendingCoupon ? ` [Coupon: ${pendingCoupon.code}]` : ""),
@@ -367,15 +367,15 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const BALANCE = getBalance();
   const feeNum = parseFloat(amount) > 0 ? calcCashOutFee(parseFloat(amount)) : 0;
   const couponDiscount = pendingCoupon ? calcCouponDiscount(pendingCoupon, parseFloat(amount) || 0) : 0;
-  const effectiveFeeNum = Math.max(0, feeNum - couponDiscount);
-  const fee = effectiveFeeNum.toFixed(2);
-  const feeFromBalance = Math.min(effectiveFeeNum, BALANCE);
-  const feeFromAmount  = parseFloat((effectiveFeeNum - feeFromBalance).toFixed(2));
-  const receive = parseFloat(amount) > 0
-    ? (parseFloat(amount) - feeFromAmount).toFixed(2)
+  const fee = feeNum.toFixed(2);
+  const feeFromBalance = Math.min(feeNum, BALANCE);
+  const feeFromAmount  = parseFloat((feeNum - feeFromBalance).toFixed(2));
+  const effectiveAmount = parseFloat(amount) > 0 ? Math.max(0, parseFloat(amount) - couponDiscount) : 0;
+  const receive = effectiveAmount > 0
+    ? (effectiveAmount - feeFromAmount).toFixed(2)
     : "0.00";
-  const totalFromBalance = parseFloat(amount) > 0
-    ? parseFloat((parseFloat(amount) + feeFromBalance).toFixed(2))
+  const totalFromBalance = effectiveAmount > 0
+    ? parseFloat((effectiveAmount + feeFromBalance).toFixed(2))
     : 0;
 
   if (cashOutLock.locked) {

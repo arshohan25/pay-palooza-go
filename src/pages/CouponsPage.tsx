@@ -32,7 +32,7 @@ interface Coupon {
 
 const FLOW_MAP: Record<string, { label: string; icon: typeof ShoppingBag; route: string }> = {
   shop:       { label: "Shop",        icon: ShoppingBag, route: "/shop" },
-  send_money: { label: "Send Money",  icon: Send,        route: "/?flow=send_money" },
+  
   payment:    { label: "Payment",     icon: CreditCard,  route: "/?flow=payment" },
   cash_out:   { label: "Cash Out",    icon: Zap,         route: "/?flow=cash_out" },
   recharge:   { label: "Recharge",    icon: Smartphone,  route: "/?flow=recharge" },
