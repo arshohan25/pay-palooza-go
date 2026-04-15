@@ -566,8 +566,10 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   const cashOutExtra = addCashOutCharge ? calcCashOutFee(amtNum) : 0;
   const sendAmount = parseFloat((amtNum + cashOutExtra).toFixed(2));
   const fee    = calcFee("send", sendAmount);
-  const feeFromBalance = Math.min(fee, BALANCE);
-  const feeFromAmount  = parseFloat((fee - feeFromBalance).toFixed(2));
+  const couponDiscount = pendingCoupon ? calcCouponDiscount(pendingCoupon, sendAmount) : 0;
+  const effectiveFee = Math.max(0, fee - couponDiscount);
+  const feeFromBalance = Math.min(effectiveFee, BALANCE);
+  const feeFromAmount  = parseFloat((effectiveFee - feeFromBalance).toFixed(2));
   const totalFromBalance = sendAmount + feeFromBalance;
   const recipientReceives = parseFloat((sendAmount - feeFromAmount).toFixed(2));
 
