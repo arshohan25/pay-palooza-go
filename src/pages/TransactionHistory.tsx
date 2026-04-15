@@ -490,7 +490,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                     </div>
                     <p className="text-[11px] text-muted-foreground truncate mt-0.5">{tx.detail}</p>
                     {agentView && tx.commission > 0 && (
-                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">Commission: ৳{tx.commission.toLocaleString()}</p>
+                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">Commission: ৳{tx.commission.toLocaleString("en-IN")}</p>
                     )}
                     <div className="flex items-center gap-2 mt-0.5">
                       <p className="text-[10.5px] text-muted-foreground/60">{relativeDate(tx.date)}</p>
@@ -518,7 +518,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                                 <TrendingUp size={12} className="text-emerald-500/70 dark:text-emerald-400/70 cursor-help" />
                               </TooltipTrigger>
                               <TooltipContent side="left" className="text-xs">
-                                Commission: ৳{tx.commission.toLocaleString()}
+                                Commission: ৳{tx.commission.toLocaleString("en-IN")}
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -531,14 +531,14 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                                 <BadgeDollarSign size={12} className="text-amber-500/70 dark:text-amber-400/70 cursor-help" />
                               </TooltipTrigger>
                               <TooltipContent side="left" className="text-xs">
-                                Fee: ৳{tx.fee.toLocaleString()}
+                                Fee: ৳{tx.fee.toLocaleString("en-IN")}
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
                         )
                       )}
                       <span className={`text-[13px] font-bold ${isCB ? "text-amber-600 dark:text-amber-400" : isCredit ? "text-primary" : "text-foreground"}`}>
-                        {isCredit ? "+" : "−"}৳{Math.abs(tx.amount).toLocaleString()}
+                        {isCredit ? "+" : "−"}৳{Math.abs(tx.amount).toLocaleString("en-IN")}
                       </span>
                     </div>
                   </div>
