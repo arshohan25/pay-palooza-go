@@ -951,9 +951,15 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
                         {fee === 0 ? <span className="text-primary font-semibold">{t("free")}</span> : `৳${fee}`}
                       </span>
                     </div>
+                    {couponDiscount > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-primary font-medium">🎟️ Coupon ({pendingCoupon?.code})</span>
+                        <span className="text-primary font-bold">-৳{couponDiscount.toFixed(2)}</span>
+                      </div>
+                    )}
                     {fee > 0 && (
                       <p className="text-[11px] text-muted-foreground text-right">
-                        ৳{amtNum.toLocaleString()} + ৳{fee} fee ({feeFromBalance >= fee ? "from balance" : feeFromBalance > 0 ? "balance + amount" : "from amount"})
+                        ৳{amtNum.toLocaleString()} + ৳{effectiveFee} fee ({feeFromBalance >= effectiveFee ? "from balance" : feeFromBalance > 0 ? "balance + amount" : "from amount"})
                       </p>
                     )}
                     <div className="h-px bg-border" />
