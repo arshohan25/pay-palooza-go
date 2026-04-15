@@ -352,8 +352,10 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
   const [validating, setValidating] = useState(false);
   // Track resolved phone separately from display value (important for wallet IDs)
   const [resolvedPhone, setResolvedPhone] = useState<string>("");
+  const [resolvedWalletId, setResolvedWalletId] = useState<string>("");
+  const [matchedBy, setMatchedBy] = useState<"phone" | "wallet" | "">("");
 
-  const validateRecipientExists = async (identifier: string): Promise<{ exists: boolean; name?: string; phone?: string }> => {
+  const validateRecipientExists = async (identifier: string): Promise<{ exists: boolean; name?: string; phone?: string; walletId?: string; matchedBy?: string }> => {
     const { data, error } = await supabase.rpc("resolve_transfer_recipient", {
       p_identifier: identifier,
       p_flow: "send",
@@ -361,7 +363,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     if (error) return { exists: false };
     const result = typeof data === "string" ? JSON.parse(data) : data;
     if (result?.found) {
-      return { exists: true, name: result.recipient_name || undefined, phone: result.recipient_phone };
+      return { exists: true, name: result.recipient_name || undefined, phone: result.recipient_phone, walletId: result.recipient_wallet_id || "", matchedBy: result.matched_by || "phone" };
     }
     return { exists: false };
   };
@@ -378,6 +380,8 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     const updated = { ...c, name: result.name || c.name };
     setRecipient(updated);
     setResolvedPhone(result.phone || c.phone);
+    setResolvedWalletId(result.walletId || "");
+    setMatchedBy((result.matchedBy as "phone" | "wallet") || "phone");
     setInputVal(c.phone);
     setInputType("phone");
     goTo("amount");
@@ -436,6 +440,8 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
 
     // Store the canonical phone returned by the resolver
     setResolvedPhone(result.phone || "");
+    setResolvedWalletId(result.walletId || "");
+    setMatchedBy((result.matchedBy as "phone" | "wallet") || (type === "walletId" ? "wallet" : "phone"));
 
     const found = allContacts.find((c) => {
       if (type === "phone") return normalizePhone(c.phone) === normalizePhone(val);
@@ -479,6 +485,8 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
     }
 
     setResolvedPhone(validationResult.phone || "");
+    setResolvedWalletId(validationResult.walletId || "");
+    setMatchedBy((validationResult.matchedBy as "phone" | "wallet") || (type === "walletId" ? "wallet" : "phone"));
 
     const found = allContacts.find((c) => normalizePhone(c.phone) === normalizePhone(result));
     if (found) {
