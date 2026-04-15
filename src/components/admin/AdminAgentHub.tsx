@@ -71,11 +71,11 @@ function AgentListTab() {
   const [detail, setDetail] = useState<Agent | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ phone: "", name: "", business_name: "", territory_code: "", nid_number: "", trade_license: "", max_float: "500000" });
+  const [form, setForm] = useState({ phone: "", name: "", business_name: "", territory_code: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
 
   // Edit
   const [editAgent, setEditAgent] = useState<Agent | null>(null);
-  const [editForm, setEditForm] = useState({ business_name: "", territory_code: "", max_float: "", nid_number: "", trade_license: "" });
+  const [editForm, setEditForm] = useState({ business_name: "", territory_code: "", max_float: "", nid_number: "", trade_license: "", latitude: "", longitude: "", address: "" });
   const [editSaving, setEditSaving] = useState(false);
 
   // Delete
@@ -137,14 +137,17 @@ function AgentListTab() {
         user_id: userId, business_name: form.business_name || null, territory_code: form.territory_code || null,
         nid_number: form.nid_number || null, trade_license: form.trade_license || null,
         max_float: parseInt(form.max_float) || 500000, status: "active",
-      });
+        latitude: form.latitude ? parseFloat(form.latitude) : null,
+        longitude: form.longitude ? parseFloat(form.longitude) : null,
+        address: form.address || "",
+      } as any);
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         supabase.from("audit_logs").insert({ actor_id: session.user.id, action: "agent_created", entity_type: "agent", entity_id: userId, details: { phone, business_name: form.business_name } }).then();
       }
       toast.success(`Agent created! Temp PIN: ${pin}`, { duration: 10000 });
       setCreateOpen(false);
-      setForm({ phone: "", name: "", business_name: "", territory_code: "", nid_number: "", trade_license: "", max_float: "500000" });
+      setForm({ phone: "", name: "", business_name: "", territory_code: "", nid_number: "", trade_license: "", max_float: "500000", latitude: "", longitude: "", address: "" });
       load();
     } catch (err: any) { toast.error(err.message || "Failed to create agent"); }
     finally { setCreating(false); }
@@ -159,6 +162,9 @@ function AgentListTab() {
       max_float: String(a.max_float),
       nid_number: a.nid_number || "",
       trade_license: a.trade_license || "",
+      latitude: (a as any).latitude != null ? String((a as any).latitude) : "",
+      longitude: (a as any).longitude != null ? String((a as any).longitude) : "",
+      address: (a as any).address || "",
     });
   };
 
@@ -171,7 +177,10 @@ function AgentListTab() {
       max_float: parseInt(editForm.max_float) || editAgent.max_float,
       nid_number: editForm.nid_number || null,
       trade_license: editForm.trade_license || null,
-    }).eq("id", editAgent.id);
+      latitude: editForm.latitude ? parseFloat(editForm.latitude) : null,
+      longitude: editForm.longitude ? parseFloat(editForm.longitude) : null,
+      address: editForm.address || "",
+    } as any).eq("id", editAgent.id);
     if (error) { toast.error("Failed to update"); } else {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
@@ -330,6 +339,11 @@ function AgentListTab() {
             </div>
             <div><Label>NID Number</Label><Input placeholder="National ID" value={form.nid_number} onChange={e => setForm(f => ({ ...f, nid_number: e.target.value }))} /></div>
             <div><Label>Trade License</Label><Input placeholder="Trade license number" value={form.trade_license} onChange={e => setForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
+            <div><Label>Address</Label><Input placeholder="Shop address" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} /></div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>Latitude</Label><Input type="number" step="any" placeholder="23.8103" value={form.latitude} onChange={e => setForm(f => ({ ...f, latitude: e.target.value }))} /></div>
+              <div><Label>Longitude</Label><Input type="number" step="any" placeholder="90.4125" value={form.longitude} onChange={e => setForm(f => ({ ...f, longitude: e.target.value }))} /></div>
+            </div>
             <Button className="w-full" onClick={handleCreateAgent} disabled={creating || !form.phone}>
               {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : "Create Agent"}
             </Button>
@@ -349,6 +363,11 @@ function AgentListTab() {
             </div>
             <div><Label>NID Number</Label><Input value={editForm.nid_number} onChange={e => setEditForm(f => ({ ...f, nid_number: e.target.value }))} /></div>
             <div><Label>Trade License</Label><Input value={editForm.trade_license} onChange={e => setEditForm(f => ({ ...f, trade_license: e.target.value }))} /></div>
+            <div><Label>Address</Label><Input placeholder="Shop address" value={editForm.address} onChange={e => setEditForm(f => ({ ...f, address: e.target.value }))} /></div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>Latitude</Label><Input type="number" step="any" placeholder="e.g. 23.8103" value={editForm.latitude} onChange={e => setEditForm(f => ({ ...f, latitude: e.target.value }))} /></div>
+              <div><Label>Longitude</Label><Input type="number" step="any" placeholder="e.g. 90.4125" value={editForm.longitude} onChange={e => setEditForm(f => ({ ...f, longitude: e.target.value }))} /></div>
+            </div>
             <Button className="w-full" onClick={saveEdit} disabled={editSaving}>
               {editSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</> : <><Save className="w-4 h-4 mr-2" />Save Changes</>}
             </Button>

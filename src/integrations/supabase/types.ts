@@ -86,12 +86,15 @@ export type Database = {
       agents: {
         Row: {
           activated_at: string | null
+          address: string | null
           business_name: string | null
           commission_earned: number
           created_at: string
           customers_onboarded: number
           distributor_id: string | null
           id: string
+          latitude: number | null
+          longitude: number | null
           max_float: number
           nid_number: string | null
           status: Database["public"]["Enums"]["agent_status"]
@@ -102,12 +105,15 @@ export type Database = {
         }
         Insert: {
           activated_at?: string | null
+          address?: string | null
           business_name?: string | null
           commission_earned?: number
           created_at?: string
           customers_onboarded?: number
           distributor_id?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           max_float?: number
           nid_number?: string | null
           status?: Database["public"]["Enums"]["agent_status"]
@@ -118,12 +124,15 @@ export type Database = {
         }
         Update: {
           activated_at?: string | null
+          address?: string | null
           business_name?: string | null
           commission_earned?: number
           created_at?: string
           customers_onboarded?: number
           distributor_id?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           max_float?: number
           nid_number?: string | null
           status?: Database["public"]["Enums"]["agent_status"]
@@ -5058,6 +5067,18 @@ export type Database = {
           order_count: number
           tier: string
           total_spent: number
+        }[]
+      }
+      get_nearby_agents: {
+        Args: { p_lat: number; p_lng: number; p_radius_km?: number }
+        Returns: {
+          address: string
+          agent_id: string
+          business_name: string
+          distance_km: number
+          latitude: number
+          longitude: number
+          territory_code: string
         }[]
       }
       get_public_merchants: {

@@ -122,6 +122,9 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
   const [showScanner, setShowScanner] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [recentAgents, setRecentAgents] = useState<Agent[]>([]);
+  const [nearbyAgents, setNearbyAgents] = useState<Agent[]>([]);
+  const [locationGranted, setLocationGranted] = useState(false);
+  const [loadingNearby, setLoadingNearby] = useState(true);
 
   const txnTime = useRef(new Date());
   const genId = () => { const C = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r = ""; for (let i = 0; i < 12; i++) r += C[Math.floor(Math.random() * 36)]; return r; };
@@ -135,19 +138,39 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     }
   }, [step]);
 
-  // Fetch recent cashout agents from real transactions
   const AGENT_GRADIENTS = ["gradient-cashout", "gradient-payment", "gradient-addmoney", "gradient-send", "gradient-accent"];
+
+  // Fetch nearby agents via geolocation + RPC, fallback to recent txn agents
   useEffect(() => {
-    (async () => {
+    let cancelled = false;
+
+    const fetchNearby = async (lat: number, lng: number) => {
+      const { data } = await supabase.rpc("get_nearby_agents", { p_lat: lat, p_lng: lng, p_radius_km: 10 });
+      if (cancelled || !data) return;
+      const agents: Agent[] = (data as any[]).map((a, i) => ({
+        id: a.agent_id,
+        name: a.business_name || "Agent",
+        agentId: a.territory_code || a.agent_id.slice(0, 8),
+        address: a.address || "",
+        distance: `${a.distance_km} km`,
+        initials: (a.business_name || "AG").slice(0, 2).toUpperCase(),
+        gradient: AGENT_GRADIENTS[i % AGENT_GRADIENTS.length],
+        rating: 0,
+      }));
+      setNearbyAgents(agents);
+      setLoadingNearby(false);
+    };
+
+    const fetchRecent = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
+      if (!session?.user || cancelled) { setLoadingNearby(false); return; }
       const { data: trans } = await supabase
         .from("transactions")
         .select("*")
         .eq("user_id", session.user.id)
         .eq("type", "cashout")
         .order("created_at", { ascending: false });
-      if (!trans) return;
+      if (!trans || cancelled) { setLoadingNearby(false); return; }
       const seen = new Set<string>();
       const agents: Agent[] = [];
       for (const tx of trans) {
@@ -156,11 +179,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
         seen.add(aid);
         const name = tx.recipient_name || "Agent";
         agents.push({
-          id: tx.id,
-          name,
-          agentId: aid,
-          address: "",
-          distance: "",
+          id: tx.id, name, agentId: aid, address: "", distance: "",
           initials: name.slice(0, 2).toUpperCase(),
           gradient: AGENT_GRADIENTS[agents.length % AGENT_GRADIENTS.length],
           rating: 0,
@@ -168,7 +187,25 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
         if (agents.length >= 5) break;
       }
       setRecentAgents(agents);
-    })();
+      setLoadingNearby(false);
+    };
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (cancelled) return;
+          setLocationGranted(true);
+          fetchNearby(pos.coords.latitude, pos.coords.longitude);
+          fetchRecent(); // also load recent as fallback
+        },
+        () => { fetchRecent(); },
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+    } else {
+      fetchRecent();
+    }
+
+    return () => { cancelled = true; };
   }, []);
 
   const stepIndex = STEPS.indexOf(step);
@@ -187,7 +224,8 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
     if (step === "pin") { setPin(""); goTo("amount"); return; }
   };
 
-  const filteredAgents = recentAgents.filter(
+  const displayAgents = nearbyAgents.length > 0 ? nearbyAgents : recentAgents;
+  const filteredAgents = displayAgents.filter(
     (a) =>
       a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       a.agentId.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -427,11 +465,45 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                 {/* Divider */}
                 <div className="flex items-center gap-3">
                   <div className="flex-1 h-px bg-border" />
-                  <span className="text-xs text-muted-foreground flex items-center gap-1"><MapPin size={11} /> {t("nearbyAgents")}</span>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <MapPin size={11} />
+                    {locationGranted && nearbyAgents.length > 0 ? t("nearbyAgents") : "Recent Agents"}
+                  </span>
                   <div className="flex-1 h-px bg-border" />
                 </div>
 
-                {recentAgents.length > 0 && (
+                {!locationGranted && !loadingNearby && (
+                  <button
+                    onClick={() => {
+                      navigator.geolocation?.getCurrentPosition(
+                        (pos) => {
+                          setLocationGranted(true);
+                          setLoadingNearby(true);
+                          supabase.rpc("get_nearby_agents", { p_lat: pos.coords.latitude, p_lng: pos.coords.longitude, p_radius_km: 10 })
+                            .then(({ data }) => {
+                              if (data) {
+                                setNearbyAgents((data as any[]).map((a, i) => ({
+                                  id: a.agent_id, name: a.business_name || "Agent",
+                                  agentId: a.territory_code || a.agent_id.slice(0, 8),
+                                  address: a.address || "", distance: `${a.distance_km} km`,
+                                  initials: (a.business_name || "AG").slice(0, 2).toUpperCase(),
+                                  gradient: AGENT_GRADIENTS[i % AGENT_GRADIENTS.length], rating: 0,
+                                })));
+                              }
+                              setLoadingNearby(false);
+                            });
+                        },
+                        () => {},
+                        { enableHighAccuracy: true, timeout: 5000 }
+                      );
+                    }}
+                    className="w-full flex items-center gap-2 p-2.5 rounded-xl bg-primary/5 border border-primary/20 text-xs text-primary font-medium"
+                  >
+                    <MapPin size={14} /> Enable location to find nearby agents
+                  </button>
+                )}
+
+                {displayAgents.length > 0 && (
                   <div className="relative">
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -445,7 +517,12 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
 
                 {/* Agent list */}
                 <div className="space-y-2">
-                  {recentAgents.length === 0 ? (
+                  {loadingNearby ? (
+                    <div className="flex flex-col items-center py-8">
+                      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-3" />
+                      <p className="text-xs text-muted-foreground">Finding nearby agents…</p>
+                    </div>
+                  ) : displayAgents.length === 0 ? (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.9, y: 12 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -459,8 +536,8 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       >
                         <Users className="w-7 h-7 text-muted-foreground" />
                       </motion.div>
-                      <p className="text-sm font-semibold text-foreground">No recent agents</p>
-                      <p className="text-xs text-muted-foreground mt-1">Your cash out history will appear here</p>
+                      <p className="text-sm font-semibold text-foreground">No agents found</p>
+                      <p className="text-xs text-muted-foreground mt-1">Enter an Agent ID above to continue</p>
                     </motion.div>
                   ) : filteredAgents.map((a) => (
                     <button
@@ -474,8 +551,14 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-semibold text-foreground truncate">{a.name}</p>
+                          {a.distance && (
+                            <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-full whitespace-nowrap flex items-center gap-0.5">
+                              <MapPin size={9} /> {a.distance}
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs text-muted-foreground">{a.agentId}</p>
+                        {a.address && <p className="text-[10px] text-muted-foreground/70 truncate">{a.address}</p>}
                       </div>
                       <ChevronLeft size={16} className="text-muted-foreground rotate-180 shrink-0" />
                     </button>
