@@ -78,27 +78,26 @@ const fireBrowserNotification = (title: string, body: string) => {
 async function fetchKycState(userId?: string): Promise<KycState> {
   if (!userId) return EMPTY_KYC_STATE;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("kyc_exempt")
-    .eq("user_id", userId)
-    .maybeSingle();
+  const [profileResult, kycResult] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("kyc_exempt")
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase
+      .from("kyc_verifications")
+      .select("status, reviewer_notes")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
-  if (profile?.kyc_exempt) {
-    return {
-      status: "verified",
-      rejectionReason: null,
-    };
+  if (profileResult.data?.kyc_exempt) {
+    return { status: "verified", rejectionReason: null };
   }
 
-  const { data } = await supabase
-    .from("kyc_verifications")
-    .select("status, reviewer_notes")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
+  const data = kycResult.data;
   if (!data) return EMPTY_KYC_STATE;
 
   const status = data.status as string;
@@ -109,10 +108,7 @@ async function fetchKycState(userId?: string): Promise<KycState> {
     };
   }
 
-  return {
-    status: "pending",
-    rejectionReason: null,
-  };
+  return { status: "pending", rejectionReason: null };
 }
 
 export function useKycStatus() {

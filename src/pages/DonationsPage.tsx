@@ -123,7 +123,7 @@ const DonationsPage = () => {
     }
   }, [kycLoading, kycStatus, navigate]);
 
-  if (kycLoading) return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
+  
 
   const handleSelectCause = (cause: typeof CAUSES[0]) => { setSelectedCause(cause); setStep("amount"); localStorage.setItem("mfs_fav_donation_cause", cause.id); };
 
