@@ -11,51 +11,43 @@ import FestivalBodyEffect from "@/components/FestivalBodyEffect";
 import AppLayout from "@/components/AppLayout";
 import RoleGuardLayout from "@/components/RoleGuardLayout";
 import RoleGuard from "@/components/RoleGuard";
-const retryImport = <T,>(fn: () => Promise<T>, retries = 2): Promise<T> =>
-  fn().catch((err) => {
-    if (retries > 0) return new Promise<T>((res) => setTimeout(() => res(retryImport(fn, retries - 1)), 1000));
-    if (!sessionStorage.getItem("chunk_reload")) {
-      sessionStorage.setItem("chunk_reload", "1");
-      window.location.reload();
-    }
-    throw err;
-  });
+import { retryLazyImport } from "@/lib/cacheReset";
 
-const Index = lazy(() => retryImport(() => import("./pages/Index")));
-const AdminDashboard = lazy(() => retryImport(() => import("./pages/AdminDashboard")));
-const AgentDashboard = lazy(() => retryImport(() => import("./pages/AgentDashboard")));
-const AgentCashIn = lazy(() => retryImport(() => import("./pages/AgentCashIn")));
-const AgentB2B = lazy(() => retryImport(() => import("./pages/AgentB2B")));
-const AgentRegister = lazy(() => retryImport(() => import("./pages/AgentRegister")));
-const AgentBillPay = lazy(() => import("./pages/AgentBillPay"));
-const AgentTransactionHistory = lazy(() => import("./pages/AgentTransactionHistory"));
-const AgentBankTransfer = lazy(() => import("./pages/AgentBankTransfer"));
-const AgentAnalyticsPage = lazy(() => import("./pages/AgentAnalyticsPage"));
-const DistributorDashboard = lazy(() => import("./pages/DistributorDashboard"));
-const DistributorCreateAgent = lazy(() => import("./pages/DistributorCreateAgent"));
-const SuperDistributorDashboard = lazy(() => import("./pages/SuperDistributorDashboard"));
-const SuperDistributorCreateDistributor = lazy(() => import("./pages/SuperDistributorCreateDistributor"));
-const MerchantDashboard = lazy(() => import("./pages/MerchantDashboard"));
-const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
-const DynamicQrPage = lazy(() => import("./pages/DynamicQrPage"));
-const PayPage = lazy(() => import("./pages/PayPage"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const TeamLoginPage = lazy(() => import("./pages/TeamLoginPage"));
-const RoleInstallPage = lazy(() => import("./pages/RoleInstallPage"));
-const ShopPage = lazy(() => import("./pages/ShopPage"));
-const ShopCheckoutPage = lazy(() => import("./pages/ShopCheckoutPage"));
-const ProductDetailPage = lazy(() => import("./pages/ProductDetailPage"));
-const VendorStorePage = lazy(() => import("./pages/VendorStorePage"));
-const WishlistPage = lazy(() => import("./pages/WishlistPage"));
-const CustomerOrdersPage = lazy(() => import("./pages/CustomerOrdersPage"));
-const OrderDetailPage = lazy(() => import("./pages/OrderDetailPage"));
-const CareersPage = lazy(() => import("./pages/CareersPage"));
-const CouponsPage = lazy(() => import("./pages/CouponsPage"));
-const DonationsPage = lazy(() => import("./pages/DonationsPage"));
-const LoanPage = lazy(() => import("./pages/LoanPage"));
-const InsurancePage = lazy(() => import("./pages/InsurancePage"));
-const GiftCardsPage = lazy(() => import("./pages/GiftCardsPage"));
-const DeveloperPortal = lazy(() => import("./pages/DeveloperPortal"));
+const Index = lazy(() => retryLazyImport(() => import("./pages/Index")));
+const AdminDashboard = lazy(() => retryLazyImport(() => import("./pages/AdminDashboard")));
+const AgentDashboard = lazy(() => retryLazyImport(() => import("./pages/AgentDashboard")));
+const AgentCashIn = lazy(() => retryLazyImport(() => import("./pages/AgentCashIn")));
+const AgentB2B = lazy(() => retryLazyImport(() => import("./pages/AgentB2B")));
+const AgentRegister = lazy(() => retryLazyImport(() => import("./pages/AgentRegister")));
+const AgentBillPay = lazy(() => retryLazyImport(() => import("./pages/AgentBillPay")));
+const AgentTransactionHistory = lazy(() => retryLazyImport(() => import("./pages/AgentTransactionHistory")));
+const AgentBankTransfer = lazy(() => retryLazyImport(() => import("./pages/AgentBankTransfer")));
+const AgentAnalyticsPage = lazy(() => retryLazyImport(() => import("./pages/AgentAnalyticsPage")));
+const DistributorDashboard = lazy(() => retryLazyImport(() => import("./pages/DistributorDashboard")));
+const DistributorCreateAgent = lazy(() => retryLazyImport(() => import("./pages/DistributorCreateAgent")));
+const SuperDistributorDashboard = lazy(() => retryLazyImport(() => import("./pages/SuperDistributorDashboard")));
+const SuperDistributorCreateDistributor = lazy(() => retryLazyImport(() => import("./pages/SuperDistributorCreateDistributor")));
+const MerchantDashboard = lazy(() => retryLazyImport(() => import("./pages/MerchantDashboard")));
+const CheckoutPage = lazy(() => retryLazyImport(() => import("./pages/CheckoutPage")));
+const DynamicQrPage = lazy(() => retryLazyImport(() => import("./pages/DynamicQrPage")));
+const PayPage = lazy(() => retryLazyImport(() => import("./pages/PayPage")));
+const NotFound = lazy(() => retryLazyImport(() => import("./pages/NotFound")));
+const TeamLoginPage = lazy(() => retryLazyImport(() => import("./pages/TeamLoginPage")));
+const RoleInstallPage = lazy(() => retryLazyImport(() => import("./pages/RoleInstallPage")));
+const ShopPage = lazy(() => retryLazyImport(() => import("./pages/ShopPage")));
+const ShopCheckoutPage = lazy(() => retryLazyImport(() => import("./pages/ShopCheckoutPage")));
+const ProductDetailPage = lazy(() => retryLazyImport(() => import("./pages/ProductDetailPage")));
+const VendorStorePage = lazy(() => retryLazyImport(() => import("./pages/VendorStorePage")));
+const WishlistPage = lazy(() => retryLazyImport(() => import("./pages/WishlistPage")));
+const CustomerOrdersPage = lazy(() => retryLazyImport(() => import("./pages/CustomerOrdersPage")));
+const OrderDetailPage = lazy(() => retryLazyImport(() => import("./pages/OrderDetailPage")));
+const CareersPage = lazy(() => retryLazyImport(() => import("./pages/CareersPage")));
+const CouponsPage = lazy(() => retryLazyImport(() => import("./pages/CouponsPage")));
+const DonationsPage = lazy(() => retryLazyImport(() => import("./pages/DonationsPage")));
+const LoanPage = lazy(() => retryLazyImport(() => import("./pages/LoanPage")));
+const InsurancePage = lazy(() => retryLazyImport(() => import("./pages/InsurancePage")));
+const GiftCardsPage = lazy(() => retryLazyImport(() => import("./pages/GiftCardsPage")));
+const DeveloperPortal = lazy(() => retryLazyImport(() => import("./pages/DeveloperPortal")));
 
 const queryClient = new QueryClient({
   defaultOptions: {
