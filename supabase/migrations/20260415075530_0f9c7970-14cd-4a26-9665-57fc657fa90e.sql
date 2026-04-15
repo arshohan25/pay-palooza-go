@@ -1,0 +1,1 @@
+DROP FUNCTION public.transfer_money(text, numeric, numeric, numeric, text, text, text, text, text);
