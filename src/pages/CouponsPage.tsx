@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Ticket, Copy, Clock, CheckCircle2, Sparkles,
@@ -36,24 +36,14 @@ const FLOW_MAP: Record<string, { label: string; icon: typeof ShoppingBag; route:
   cash_out:   { label: "Cash Out",    icon: Zap,         route: "/?flow=cash_out" },
   recharge:   { label: "Recharge",    icon: Smartphone,  route: "/?flow=recharge" },
   bill_pay:   { label: "Bill Pay",    icon: FileText,    route: "/?flow=bill_pay" },
-  all:        { label: "All Services",icon: Tag,         route: "/shop" },
+  all:        { label: "All Services", icon: Tag,         route: "/shop" },
 };
-
-const CATEGORIES = [
-  { key: "all", label: "All" },
-  { key: "shop", label: "Shop" },
-  { key: "send_money", label: "Send" },
-  { key: "payment", label: "Payment" },
-  { key: "recharge", label: "Recharge" },
-  { key: "bill_pay", label: "Bill Pay" },
-];
 
 export default function CouponsPage() {
   const navigate = useNavigate();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState("all");
   const { rewards: aiCouponRewards, claimReward } = useAiRewards("coupon");
   const { rewards: aiOfferRewards, claimReward: claimOffer } = useAiRewards("offer");
 
@@ -72,11 +62,6 @@ export default function CouponsPage() {
     load();
   }, []);
 
-  const filtered = useMemo(() => {
-    if (activeFilter === "all") return coupons;
-    return coupons.filter(c => c.applicable_flow === activeFilter || c.applicable_flow === "all");
-  }, [coupons, activeFilter]);
-
   const handleCopy = (coupon: Coupon) => {
     navigator.clipboard.writeText(coupon.code);
     setCopiedId(coupon.id);
@@ -87,16 +72,13 @@ export default function CouponsPage() {
   const handleUseNow = (coupon: Coupon) => {
     const flow = coupon.applicable_flow || "shop";
     const mapping = FLOW_MAP[flow] || FLOW_MAP.shop;
-    // Copy code to clipboard automatically
     navigator.clipboard.writeText(coupon.code);
     toast.success(`Coupon "${coupon.code}" copied! Redirecting…`);
     setTimeout(() => navigate(mapping.route), 400);
   };
 
   const formatDiscount = (c: Coupon) => {
-    if (c.discount_type === "percentage") {
-      return `${c.discount_value}%`;
-    }
+    if (c.discount_type === "percentage") return `${c.discount_value}%`;
     return `৳${c.discount_value}`;
   };
 
@@ -142,11 +124,7 @@ export default function CouponsPage() {
         >
           <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/10 pointer-events-none" />
           <div className="absolute -bottom-6 left-8 w-24 h-24 rounded-full bg-white/5 pointer-events-none" />
-          <motion.div
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.15 }}
-          >
+          <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.15 }}>
             <Sparkles className="w-8 h-8 text-primary-foreground mx-auto mb-2" />
             <h2 className="text-lg font-extrabold text-primary-foreground">Exclusive Deals</h2>
             <p className="text-xs text-primary-foreground/70 mt-1">
@@ -155,30 +133,13 @@ export default function CouponsPage() {
           </motion.div>
         </motion.div>
 
-        {/* AI Recommended Coupons & Offers */}
+        {/* AI Recommended */}
         {(aiCouponRewards.length > 0 || aiOfferRewards.length > 0) && (
           <AiRewardBanner rewards={[...aiCouponRewards, ...aiOfferRewards]} onClaim={(id) => {
             const isCoupon = aiCouponRewards.some(r => r.id === id);
             return isCoupon ? claimReward(id) : claimOffer(id);
           }} />
         )}
-
-        {/* Category Filter Chips */}
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-4 px-4">
-          {CATEGORIES.map(cat => (
-            <button
-              key={cat.key}
-              onClick={() => setActiveFilter(cat.key)}
-              className={`shrink-0 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 ${
-                activeFilter === cat.key
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : "bg-card/80 backdrop-blur-sm text-muted-foreground border border-border/50 hover:bg-accent"
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
 
         {/* Coupons List */}
         {loading ? (
@@ -187,7 +148,7 @@ export default function CouponsPage() {
               <Skeleton key={i} className="h-36 w-full rounded-[19px]" />
             ))}
           </div>
-        ) : filtered.length === 0 ? (
+        ) : coupons.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -196,15 +157,13 @@ export default function CouponsPage() {
             <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center">
               <Ticket className="w-8 h-8 text-muted-foreground/40" />
             </div>
-            <p className="text-muted-foreground text-sm font-medium">
-              {activeFilter === "all" ? "No active coupons right now" : `No ${CATEGORIES.find(c => c.key === activeFilter)?.label} coupons`}
-            </p>
+            <p className="text-muted-foreground text-sm font-medium">No active coupons right now</p>
             <p className="text-xs text-muted-foreground/60">Check back later for new offers!</p>
           </motion.div>
         ) : (
           <AnimatePresence mode="popLayout">
             <div className="space-y-3">
-              {filtered.map((coupon, i) => {
+              {coupons.map((coupon, i) => {
                 const isCopied = copiedId === coupon.id;
                 const flow = coupon.applicable_flow || "shop";
                 const flowInfo = FLOW_MAP[flow] || FLOW_MAP.shop;
@@ -228,11 +187,9 @@ export default function CouponsPage() {
                     <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-5 h-5 rounded-full bg-background border border-border/50" />
 
                     <div className="flex">
-                      {/* Left accent strip */}
                       <div className="w-1.5 bg-gradient-to-b from-primary to-primary/60 shrink-0 rounded-l-[19px]" />
-
                       <div className="flex-1 p-4 pl-5">
-                        {/* Top row: discount + flow badge */}
+                        {/* Discount + flow badge */}
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <div>
                             <div className="flex items-baseline gap-1.5">
@@ -251,17 +208,13 @@ export default function CouponsPage() {
                           </div>
                         </div>
 
-                        {/* Badges row */}
+                        {/* Badges */}
                         <div className="flex flex-wrap gap-1.5 mb-3">
                           {coupon.min_order_amount && (
-                            <Badge variant="secondary" className="text-[10px] rounded-lg px-2 py-0.5">
-                              Min ৳{coupon.min_order_amount}
-                            </Badge>
+                            <Badge variant="secondary" className="text-[10px] rounded-lg px-2 py-0.5">Min ৳{coupon.min_order_amount}</Badge>
                           )}
                           {coupon.max_discount && coupon.discount_type === "percentage" && (
-                            <Badge variant="secondary" className="text-[10px] rounded-lg px-2 py-0.5">
-                              Max ৳{coupon.max_discount}
-                            </Badge>
+                            <Badge variant="secondary" className="text-[10px] rounded-lg px-2 py-0.5">Max ৳{coupon.max_discount}</Badge>
                           )}
                           {isExpiring && (
                             <Badge variant="destructive" className="text-[10px] gap-1 rounded-lg px-2 py-0.5">
@@ -269,13 +222,11 @@ export default function CouponsPage() {
                             </Badge>
                           )}
                           {usageLeft !== null && usageLeft <= 10 && (
-                            <Badge variant="outline" className="text-[10px] rounded-lg px-2 py-0.5">
-                              {usageLeft} left
-                            </Badge>
+                            <Badge variant="outline" className="text-[10px] rounded-lg px-2 py-0.5">{usageLeft} left</Badge>
                           )}
                         </div>
 
-                        {/* Expiry progress bar */}
+                        {/* Expiry progress */}
                         {expiryProgress !== null && coupon.expires_at && (
                           <div className="mb-3">
                             <div className="flex justify-between items-center mb-1">
@@ -286,7 +237,7 @@ export default function CouponsPage() {
                           </div>
                         )}
 
-                        {/* Action buttons */}
+                        {/* Actions */}
                         <div className="flex gap-2">
                           <Button
                             variant="default"
@@ -310,7 +261,6 @@ export default function CouponsPage() {
                           </Button>
                         </div>
 
-                        {/* Valid until */}
                         {coupon.expires_at && !expiryProgress && (
                           <p className="text-[10px] text-muted-foreground mt-2">
                             Valid until {new Date(coupon.expires_at).toLocaleDateString("en-BD", { day: "numeric", month: "short", year: "numeric" })}
