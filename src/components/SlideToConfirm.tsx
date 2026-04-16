@@ -59,6 +59,19 @@ const SlideToConfirm = forwardRef<HTMLDivElement, SlideToConfirmProps>(({
     }
   }, [disabled, x]);
 
+  // Safety reset: when processing finishes without success, reset confirmed + thumb
+  const prevProcessingRef = useRef(false);
+  useEffect(() => {
+    // Detect processing → not-processing transition while not disabled (i.e. txn failed)
+    if (prevProcessingRef.current && !disabled && !confirmed) {
+      animate(x, 0, { type: "spring", stiffness: 380, damping: 28 });
+    }
+  });
+  // Track disabled as proxy for "processing" — when disabled turns off after being on
+  useEffect(() => {
+    prevProcessingRef.current = disabled;
+  }, [disabled]);
+
   // Fire attention bounce + icon pulse 200ms after PIN complete
   useEffect(() => {
     if (!pinComplete || disabled || confirmed) return;

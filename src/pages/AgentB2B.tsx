@@ -105,6 +105,7 @@ const AgentB2B = () => {
       toast({ title: "Transfer Successful", description: `৳${amount} sent to ${transferType}` });
     } catch (err: any) {
       toast({ title: "Failed", description: err.message, variant: "destructive" });
+      setPin("");
     } finally {
       setProcessing(false);
     }

@@ -2826,6 +2826,7 @@ const MerchantSendMoneySheet = ({ open, onClose, onSuccess }: { open: boolean; o
       onSuccess?.();
     } catch (e: any) {
       toast({ title: "Failed", description: e.message || "Something went wrong", variant: "destructive" });
+      setPin(""); setPinVerified(false);
     } finally {
       setProcessing(false);
     }
@@ -3048,6 +3049,7 @@ const MerchantCashOutSheet = ({ open, onClose, onSuccess }: { open: boolean; onC
       onSuccess?.();
     } catch (e: any) {
       toast({ title: "Failed", description: e.message || "Something went wrong", variant: "destructive" });
+      setPin(""); setPinVerified(false);
     } finally {
       setProcessing(false);
     }

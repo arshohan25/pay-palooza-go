@@ -181,6 +181,7 @@ const DonationsPage = () => {
       if (isRecurring) fetchRecurring();
     } catch (e: any) {
       toast.error(e.message || "Donation failed");
+      setPin("");
     } finally {
       setLoading(false);
     }

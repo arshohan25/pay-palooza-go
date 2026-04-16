@@ -212,6 +212,7 @@ export default function ShopCheckoutPage() {
       setSuccess(true);
     } catch (e: any) {
       toast.error(e.message ?? "Payment failed");
+      setPin("");
     }
     setProcessing(false);
   };

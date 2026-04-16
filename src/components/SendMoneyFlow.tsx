@@ -556,6 +556,7 @@ const SendMoneyFlow = ({ onClose, prefilledPhone, onSuccess }: SendMoneyFlowProp
       setStep("success");
     } catch (err: any) {
       setError(err?.message || "Transaction failed. Please try again.");
+      setPin("");
       setProcessing(false);
       return;
     }
