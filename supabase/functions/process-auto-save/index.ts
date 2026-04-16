@@ -149,6 +149,18 @@ Deno.serve(async (req) => {
         source: "auto",
       });
 
+      // Record in transactions table so it appears in history
+      await supabase.from("transactions").insert({
+        user_id: schedule.user_id,
+        type: "payment",
+        amount: schedule.amount,
+        fee: 0,
+        description: `DPS Installment: ${goal.name} (#${(schedule.total_paid ?? 0) + 1})`,
+        reference: `DPS-INST-${schedule.id.substring(0, 8)}`,
+        status: "completed",
+        balance_after: newBalance,
+      });
+
       // Update schedule with next run + increment total_paid
       await supabase.from("savings_auto_save").update({
         next_run_at: nextRun.toISOString(),

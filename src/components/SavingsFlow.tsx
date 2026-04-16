@@ -447,12 +447,13 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       if (insertErr) throw insertErr;
 
       // Deduct 1st installment from wallet
+      const goalLabel = linkedGoalId ? goals.find(g => g.id === linkedGoalId)?.name : newName;
       await recordTransaction({
         type: "payment",
         amount: amt,
         fee: 0,
-        description: `DPS 1st installment (${autoFreq})`,
-        reference: `dps-opening-${Date.now()}`,
+        description: `DPS Installment: ${goalLabel || "DPS Plan"} (#1)`,
+        reference: `DPS-INST-${Date.now().toString(36).toUpperCase()}`,
       });
       await fetchBalance();
 
