@@ -818,7 +818,13 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                       <motion.div key={goal.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05, type: "spring", stiffness: 350, damping: 28 }}
                         className="bg-card rounded-[20px] border border-border/50 shadow-[var(--shadow-card)] p-4 space-y-3 backdrop-blur-sm">
                         <div className="flex items-center justify-between">
-                          <button onClick={() => { setSelectedGoal(goal); setStep("add"); }} className="flex items-center gap-3 flex-1 min-w-0">
+                          <button onClick={async () => {
+                            setSelectedGoal(goal);
+                            // Fetch deposit history
+                            const { data: deps } = await supabase.from("savings_deposits").select("id, amount, source, created_at").eq("goal_id", goal.id).order("created_at", { ascending: true });
+                            setGoalDeposits((deps as any[]) ?? []);
+                            setStep("goal-detail");
+                          }} className="flex items-center gap-3 flex-1 min-w-0">
                             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center">
                               <span className="text-[24px]">{goal.emoji}</span>
                             </div>
@@ -829,7 +835,12 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                           </button>
                           <div className="flex items-center gap-1.5">
                             {goal.status === "completed" ? <CheckCircle2 size={20} className="text-primary shrink-0" />
-                              : <button onClick={() => { setSelectedGoal(goal); setStep("add"); }}><ChevronRight size={16} className="text-muted-foreground/50 shrink-0" /></button>}
+                              : <button onClick={async () => {
+                                  setSelectedGoal(goal);
+                                  const { data: deps } = await supabase.from("savings_deposits").select("id, amount, source, created_at").eq("goal_id", goal.id).order("created_at", { ascending: true });
+                                  setGoalDeposits((deps as any[]) ?? []);
+                                  setStep("goal-detail");
+                                }}><ChevronRight size={16} className="text-muted-foreground/50 shrink-0" /></button>}
                             <button onClick={() => { setDeleteTarget({ type: "goal", id: goal.id, label: goal.name }); setDeletePin(""); setDeletePinError(""); }} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 size={14} /></button>
                           </div>
                         </div>
