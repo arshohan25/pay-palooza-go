@@ -734,6 +734,7 @@ const ShopFlow = ({ onClose }: ShopFlowProps) => {
       setScreen("success");
     } catch (e: any) {
       toast.error(e.message ?? "Payment failed");
+      setCheckoutPin("");
       setCheckoutProcessing(false);
     }
   };

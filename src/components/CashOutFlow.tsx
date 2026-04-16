@@ -356,6 +356,7 @@ const CashOutFlow = ({ onClose }: CashOutFlowProps) => {
       });
     } catch (e: any) {
       setError(e.message || "Cash out failed");
+      setPin("");
       setProcessing(false);
       return;
     }

@@ -436,6 +436,7 @@ const PaymentFlow = ({ onClose, onDynamicQr, prefilledMerchantId }: PaymentFlowP
       });
     } catch (e: any) {
       setError(e.message ?? "Payment failed");
+      setPin("");
       setProcessing(false);
       return;
     }
