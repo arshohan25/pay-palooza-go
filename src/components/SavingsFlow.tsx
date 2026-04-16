@@ -6,7 +6,7 @@ import {
   Trash2, Clock, CalendarClock, Power, Gem, BarChart3, Wallet,
   ArrowUpRight, ArrowDownRight, ShieldCheck, Coins, LineChart,
   RefreshCw, Sparkles, Target, CircleDollarSign, FileText, Lock,
-  AlertTriangle, X, ChevronDown, Gift, AlertCircle
+  AlertTriangle, X, ChevronDown, ChevronLeft, Gift, AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { getBalance, onBalanceChange, fetchBalance } from "@/lib/balanceStore";
@@ -140,7 +140,7 @@ const LIFE_GOAL_PRESETS = [
 const GOLD_PRESETS = [0.5, 1, 2, 5, 10];
 
 type MainTab = "savings" | "goals" | "gold" | "stocks";
-type SavingsStep = "home" | "add" | "create" | "autosave" | "review" | "goal-review" | "terms" | "detail";
+type SavingsStep = "home" | "add" | "create" | "autosave" | "review" | "goal-review" | "terms" | "detail" | "pick-goal";
 type GoldStep = "portfolio" | "buy" | "sell";
 type StockStep = "market" | "portfolio" | "trade";
 
@@ -698,28 +698,23 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
           {/* ══════════ GOALS TAB HOME ══════════ */}
           {mainTab === "goals" && step === "home" && (
             <motion.div key="g-home" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
-              {/* Life Goal Presets — Quick Create */}
-              <div className="space-y-2.5">
-                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-1">Quick Start a Goal</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {LIFE_GOAL_PRESETS.map((preset, i) => (
-                    <motion.button key={preset.name}
-                      initial={{ opacity: 0, y: 16, scale: 0.92 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      transition={{ delay: i * 0.04, type: "spring", stiffness: 350, damping: 28 }}
-                      whileTap={{ scale: 0.93 }}
-                      onClick={() => {
-                        if (preset.name === "Custom") { setNewEmoji("✏️"); setNewName(""); }
-                        else { setNewEmoji(preset.emoji); setNewName(preset.name); }
-                        setNewTarget(""); setError(""); setStep("create");
-                      }}
-                      className={`relative flex flex-col items-center gap-1.5 p-3.5 rounded-[18px] border backdrop-blur-sm transition-all bg-gradient-to-br ${preset.gradient} ${preset.border} hover:shadow-lg hover:scale-[1.02]`}>
-                      <span className="text-[28px] drop-shadow-sm">{preset.emoji}</span>
-                      <p className="text-[10px] font-bold text-foreground leading-tight text-center">{preset.name}</p>
-                    </motion.button>
-                  ))}
+              {/* Start a Goal Button */}
+              <motion.button
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => setStep("pick-goal")}
+                className="w-full flex items-center gap-3.5 p-4 rounded-[20px] border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent hover:shadow-lg hover:border-primary/50 transition-all"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-primary/15 flex items-center justify-center shrink-0">
+                  <Target size={24} className="text-primary" />
                 </div>
-              </div>
+                <div className="flex-1 text-left">
+                  <p className="text-[14px] font-bold text-foreground">Start a Goal to Save Money</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Choose from 12 categories or create your own</p>
+                </div>
+                <ChevronRight size={18} className="text-muted-foreground shrink-0" />
+              </motion.button>
 
               {/* Existing Goals List */}
               {loading ? (
@@ -776,7 +771,36 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
             </motion.div>
           )}
 
-          {/* ══════════ SAVINGS: ADD MONEY ══════════ */}
+          {/* ══════════ PICK GOAL CATEGORY ══════════ */}
+          {mainTab === "goals" && step === "pick-goal" && (
+            <motion.div key="pick-goal" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+              <div className="flex items-center gap-2 mb-1">
+                <button onClick={() => setStep("home")} className="p-1.5 rounded-xl hover:bg-muted/60 transition-colors">
+                  <ChevronLeft size={18} className="text-muted-foreground" />
+                </button>
+                <p className="text-[13px] font-bold text-foreground">Choose a Goal Category</p>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {LIFE_GOAL_PRESETS.map((preset, i) => (
+                  <motion.button key={preset.name}
+                    initial={{ opacity: 0, y: 16, scale: 0.92 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ delay: i * 0.04, type: "spring", stiffness: 350, damping: 28 }}
+                    whileTap={{ scale: 0.93 }}
+                    onClick={() => {
+                      if (preset.name === "Custom") { setNewEmoji("✏️"); setNewName(""); }
+                      else { setNewEmoji(preset.emoji); setNewName(preset.name); }
+                      setNewTarget(""); setNewInitialDeposit(""); setError(""); setStep("create");
+                    }}
+                    className={`relative flex flex-col items-center gap-1.5 p-3.5 rounded-[18px] border backdrop-blur-sm transition-all bg-gradient-to-br ${preset.gradient} ${preset.border} hover:shadow-lg hover:scale-[1.02]`}>
+                    <span className="text-[28px] drop-shadow-sm">{preset.emoji}</span>
+                    <p className="text-[10px] font-bold text-foreground leading-tight text-center">{preset.name}</p>
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
           {(mainTab === "savings" || mainTab === "goals") && step === "add" && (
             <motion.div key="s-add" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
               {selectedGoal && (
