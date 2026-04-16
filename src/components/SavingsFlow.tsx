@@ -735,14 +735,24 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 </button>
               </div>
 
-              {/* Quick actions */}
-              {autoSaves.filter(a => a.is_active).length === 0 && (
-                <motion.button whileTap={{ scale: 0.96 }} onClick={() => setStep("autosave")}
-                  className="w-full h-14 rounded-2xl text-white font-bold text-[14px] shadow-lg flex items-center justify-center gap-2"
+              {/* Start a DPS Plan — premium action button */}
+              <motion.button
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => setStep("autosave")}
+                className="w-full flex items-center gap-3.5 p-4 rounded-[20px] border border-primary/30 bg-gradient-to-r from-primary/12 via-primary/5 to-transparent hover:shadow-lg hover:border-primary/50 transition-all"
+              >
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
                   style={{ background: "linear-gradient(135deg, hsl(162 72% 32%), hsl(178 62% 22%))" }}>
-                  <CalendarClock size={16} /> Start Auto-Save & Invest
-                </motion.button>
-              )}
+                  <CalendarClock size={22} className="text-white" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-[14px] font-bold text-foreground">Start a DPS Plan</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Auto-collect from wallet • Earn 2-5% profit</p>
+                </div>
+                <ChevronRight size={18} className="text-muted-foreground shrink-0" />
+              </motion.button>
 
               {goals.length > 0 && (
                 <button onClick={() => { setMainTab("goals"); setStep("home"); }}
