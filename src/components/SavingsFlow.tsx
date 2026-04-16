@@ -187,6 +187,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const [processing, setProcessing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState("");
+  const [newInitialDeposit, setNewInitialDeposit] = useState("");
   const [newEmoji, setNewEmoji] = useState("🎯");
   const [newTarget, setNewTarget] = useState("");
   const [autoSaves, setAutoSaves] = useState<AutoSaveSchedule[]>([]);
