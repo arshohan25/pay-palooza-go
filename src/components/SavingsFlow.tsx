@@ -146,7 +146,7 @@ const LIFE_GOAL_PRESETS = [
 const GOLD_PRESETS = [0.5, 1, 2, 5, 10];
 
 type MainTab = "savings" | "goals" | "gold" | "stocks";
-type SavingsStep = "home" | "add" | "create" | "autosave" | "review" | "goal-review" | "terms" | "detail" | "pick-goal" | "repay-missed" | "goal-detail" | "dps-detail";
+type SavingsStep = "home" | "add" | "create" | "autosave" | "dps-create" | "review" | "goal-review" | "terms" | "detail" | "pick-goal" | "repay-missed" | "goal-detail" | "dps-detail";
 type GoldStep = "portfolio" | "buy" | "sell";
 type StockStep = "market" | "portfolio" | "trade";
 
