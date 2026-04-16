@@ -642,10 +642,12 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       if (step === "review") { setPin(""); setPinError(""); setTermsAccepted(false); setStep(enableAutoSaveInCreate ? "create" : "autosave"); }
       else if (step === "goal-review") { setPin(""); setPinError(""); setStep("create"); }
       else if (step === "repay-missed") { setPin(""); setPinError(""); setSelectedMissedIds([]); setStep("autosave"); }
+      else if (step === "dps-detail") { setStep("autosave"); setSelectedSchedule(null); }
       else if (step === "home") onClose();
       else setStep("home");
     } else if (mainTab === "goals") {
-      if (step === "home") setMainTab("savings");
+      if (step === "goal-detail") { setStep("home"); setSelectedGoal(null); }
+      else if (step === "home") setMainTab("savings");
       else setStep("home");
     } else if (mainTab === "gold") {
       if (goldStep === "portfolio") setMainTab("savings");
