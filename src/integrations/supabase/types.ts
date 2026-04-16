@@ -5026,7 +5026,7 @@ export type Database = {
       buy_gold: {
         Args: {
           p_grams: number
-          p_karat?: string
+          p_karat: string
           p_pin?: string
           p_price_per_gram: number
         }
@@ -5046,6 +5046,15 @@ export type Database = {
             Args: {
               p_name: string
               p_pin?: string
+              p_price: number
+              p_quantity: number
+              p_symbol: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_name?: string
               p_price: number
               p_quantity: number
               p_symbol: string
@@ -5302,7 +5311,7 @@ export type Database = {
       sell_gold: {
         Args: {
           p_grams: number
-          p_karat?: string
+          p_karat: string
           p_pin?: string
           p_price_per_gram: number
         }
