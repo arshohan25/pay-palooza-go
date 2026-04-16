@@ -1,40 +1,27 @@
 
 
-# Restructure DPS Page: Active Plans First, Create Button Below
+# Enforce Minimum Balance for DPS Opening (1st Installment Deposit)
 
 ## What Changes
-Reorganize the `step === "autosave"` section in `SavingsFlow.tsx` so that:
-1. **Active DPS plans are shown first** at the top (the existing plan cards)
-2. **A prominent "Open New DPS" button** appears below the active plans list
-3. Tapping "Open New DPS" navigates to a **new step** (e.g. `"dps-create"`) which contains the current create form (Sharia badge, frequency, amount, duration, strategy, etc.)
-
-## Current Flow
-`autosave` step = Create form on top → Active plans listed below
-
-## New Flow
-- `autosave` step = Active DPS plans list → "Open New DPS" button at bottom
-- `dps-create` step (new) = The existing create form (moved here)
+When a user tries to open a new DPS, validate that their wallet balance covers at least 1 installment amount. The 1st installment is mandatory at opening time — block creation if balance is insufficient.
 
 ## Changes (single file: `src/components/SavingsFlow.tsx`)
 
-### 1. Add `"dps-create"` to `SavingsStep` type (line 149)
+### 1. Add balance check in "Continue to Review" button (line ~1476)
+Currently only checks `autoAmtNum > 0`. Add: if `autoAmtNum > balance`, show error "Insufficient balance. You need at least ৳{amount} to open a DPS (1st installment is deposited immediately)."
 
-### 2. Update back navigation (around line 644)
-- `dps-create` → goes back to `autosave`
-- `autosave` → goes back to `home`
+### 2. Add balance check in `handleCreateAutoSave` (line ~412)
+After validating amount, add: `if (amt > balance) { setError("Insufficient balance for 1st installment"); return; }`
 
-### 3. Restructure `step === "autosave"` section (lines ~1230-1460)
-- Keep only the **Active Plans list** (currently at bottom, lines ~1374+)
-- Show empty state if no active plans ("No active DPS plans yet")
-- Add a premium "Open New DPS" button at the bottom that sets `step` to `"dps-create"`
+### 3. Deduct 1st installment on creation (inside `handleCreateAutoSave`, after insert succeeds ~line 444)
+- Call `recordTransaction()` or `supabase.rpc("savings_deposit")` to deduct the 1st installment amount from wallet
+- Update `total_paid` to `1` in the insert (line 442) instead of `0`
+- Refresh balance via `fetchBalance()`
 
-### 4. Create new `step === "dps-create"` section
-- Move the entire create form (Sharia badge, frequency, amount, duration, strategy, link-to-goal, estimated profit, "Continue to Review" button) into this new step
-- No changes to form logic — just relocated
-
-### 5. Update `review` step back navigation
-- When pressing back from `review`, go to `dps-create` instead of `autosave`
+### 4. Show balance indicator on the DPS create form
+- Add `<AvailableBalanceBadge />` at the top of the `dps-create` step so users can see their current balance before selecting an amount
+- Visually disable amount options that exceed the current balance (gray out + "Insufficient" label)
 
 ## Result
-Users land on a clean list of their active DPS plans with a clear CTA to create new ones — matching a senior-level product layout where the primary view is the portfolio, not the creation form.
+Users cannot open a DPS without sufficient funds. The 1st installment is collected immediately upon creation, matching real-world DPS behavior.
 
