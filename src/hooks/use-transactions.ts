@@ -27,10 +27,13 @@ const TXN_GRADIENTS: Record<string, string> = {
   addmoney: "bg-gradient-to-b from-blue-500 to-indigo-500",
 };
 
+type SupportedTxnType = "send" | "receive" | "cashout" | "cashin" | "banktransfer" | "payment" | "recharge" | "paybill" | "addmoney";
+type RawTxnType = SupportedTxnType | "deposit";
+
 export interface DbTransaction {
   id: string;
   short_id: string;
-  type: "send" | "receive" | "cashout" | "cashin" | "banktransfer" | "payment" | "recharge" | "paybill" | "addmoney";
+  type: SupportedTxnType;
   amount: number;
   fee: number;
   commission: number;
@@ -41,6 +44,47 @@ export interface DbTransaction {
   reference: string | null;
   status: "pending" | "completed" | "failed" | "reversed";
   created_at: string;
+}
+
+interface RawDbTransaction extends Omit<DbTransaction, "type"> {
+  type: RawTxnType;
+}
+
+const INVESTMENT_FIX_DEPLOYED_AT = Date.parse("2026-04-16T07:14:45Z");
+
+function normalizeTransaction(tx: RawDbTransaction): DbTransaction {
+  const description = tx.description ?? "";
+  const reference = tx.reference ?? "";
+  const createdAt = Date.parse(tx.created_at);
+  const isLegacyRow = Number.isFinite(createdAt) && createdAt < INVESTMENT_FIX_DEPLOYED_AT;
+
+  const isInvestmentBuy =
+    description.startsWith("Gold Purchase:") ||
+    description.startsWith("Stock Purchase:") ||
+    reference.startsWith("GOLD-BUY-") ||
+    reference.startsWith("STOCK-BUY-");
+
+  const isInvestmentSell =
+    description.startsWith("Gold Sale:") ||
+    description.startsWith("Stock Sale:") ||
+    reference.startsWith("GOLD-SELL-") ||
+    reference.startsWith("STOCK-SELL-");
+
+  let amount = Number(tx.amount) || 0;
+
+  if ((Number(tx.fee) || 0) > 0 && isLegacyRow && isInvestmentBuy) {
+    amount = Math.max(0, amount - (Number(tx.fee) || 0));
+  }
+
+  if ((Number(tx.fee) || 0) > 0 && isLegacyRow && isInvestmentSell) {
+    amount = amount + (Number(tx.fee) || 0);
+  }
+
+  return {
+    ...tx,
+    amount,
+    type: tx.type === "deposit" ? "addmoney" : tx.type,
+  };
 }
 
 export function useTransactions(limit?: number, refreshKey?: number) {
@@ -67,19 +111,21 @@ export function useTransactions(limit?: number, refreshKey?: number) {
     if (limit) query = query.limit(limit);
 
     const { data } = await query;
-    const txns = (data as DbTransaction[]) ?? [];
-    // Seed known IDs on first load so we don't toast existing transactions
+    const txns = ((data as RawDbTransaction[]) ?? []).map(normalizeTransaction);
+
     if (initialLoad.current) {
       txns.forEach((t) => knownIds.current.add(t.id));
       initialLoad.current = false;
     }
+
     setTransactions(txns);
     setLoading(false);
   }, [limit]);
 
-  useEffect(() => { fetchTxns(); }, [fetchTxns, refreshKey]);
+  useEffect(() => {
+    fetchTxns();
+  }, [fetchTxns, refreshKey]);
 
-  // Realtime subscription — auto-refetch + toast on new inserts
   useEffect(() => {
     const setup = async () => {
       const session = await getCachedSession();
@@ -97,8 +143,7 @@ export function useTransactions(limit?: number, refreshKey?: number) {
             filter: `user_id=eq.${userId}`,
           },
           (payload) => {
-            const newTxn = payload.new as DbTransaction;
-            // Only toast if we haven't seen this ID before
+            const newTxn = normalizeTransaction(payload.new as RawDbTransaction);
             if (!knownIds.current.has(newTxn.id)) {
               knownIds.current.add(newTxn.id);
               haptics.notify();
@@ -114,7 +159,9 @@ export function useTransactions(limit?: number, refreshKey?: number) {
             table: "transactions",
             filter: `user_id=eq.${userId}`,
           },
-          () => { fetchTxns(); }
+          () => {
+            fetchTxns();
+          }
         )
         .subscribe();
 
@@ -122,7 +169,9 @@ export function useTransactions(limit?: number, refreshKey?: number) {
     };
 
     let channel: ReturnType<typeof supabase.channel> | undefined;
-    setup().then((ch) => { channel = ch; });
+    setup().then((ch) => {
+      channel = ch;
+    });
 
     return () => {
       if (channel) supabase.removeChannel(channel);

@@ -564,6 +564,11 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           const ringStyle = isCredit ? cfg.receiveRing : cfg.ring;
           const txDate    = new Date(selectedTx.date);
           const txId      = selectedTx.short_id;
+          const baseAmount = Math.abs(selectedTx.amount);
+          const summaryBaseLabel = isCredit ? "Gross Amount" : "Principal";
+          const summaryFeeLabel = isCredit ? "Fee Deducted" : "Fee (from balance)";
+          const summaryTotalLabel = isCredit ? "Net Credited" : "Total Deducted";
+          const summaryTotalAmount = isCredit ? Math.max(0, baseAmount - selectedTx.fee) : baseAmount + selectedTx.fee;
           const catLabel  = CATEGORIES.find((c) => c.id === selectedTx.category)?.label ?? selectedTx.category;
 
           return (
@@ -702,17 +707,17 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                   ) : selectedTx.fee > 0 ? (
                     <div className="mt-4 rounded-2xl p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40">
                       <div className="flex items-center justify-between text-[12.5px]">
-                        <span className="text-muted-foreground font-medium">Principal</span>
-                        <span className="font-semibold text-foreground">৳{Math.abs(selectedTx.amount).toLocaleString("en-IN")}</span>
+                        <span className="text-muted-foreground font-medium">{summaryBaseLabel}</span>
+                        <span className="font-semibold text-foreground">৳{baseAmount.toLocaleString("en-IN")}</span>
                       </div>
                       <div className="flex items-center justify-between text-[12.5px] mt-1.5">
-                        <span className="text-amber-600 dark:text-amber-400 font-medium">Fee (from balance)</span>
+                        <span className="text-amber-600 dark:text-amber-400 font-medium">{summaryFeeLabel}</span>
                         <span className="font-semibold text-amber-600 dark:text-amber-400">৳{selectedTx.fee.toLocaleString("en-IN")}</span>
                       </div>
                       <div className="h-px bg-amber-200/60 dark:bg-amber-800/40 my-2" />
                       <div className="flex items-center justify-between">
-                        <span className="text-[13px] font-bold text-foreground">Total Deducted</span>
-                        <span className="text-[18px] font-bold text-foreground">৳{(Math.abs(selectedTx.amount) + selectedTx.fee).toLocaleString("en-IN")}</span>
+                        <span className="text-[13px] font-bold text-foreground">{summaryTotalLabel}</span>
+                        <span className="text-[18px] font-bold text-foreground">৳{summaryTotalAmount.toLocaleString("en-IN")}</span>
                       </div>
                     </div>
                   ) : (
@@ -769,11 +774,12 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
                   ? [{ label: "Note", value: selectedTx.detail }] : []),
                 ...(agentView
                    ? (selectedTx.commission > 0 ? [{ label: "Commission", value: `+৳${selectedTx.commission.toLocaleString("en-IN")}` }] : [])
-                   : (selectedTx.fee > 0
-                     ? [
-                         { label: "Fee", value: `৳${selectedTx.fee.toLocaleString("en-IN")} (from balance)` },
-                         { label: "Total Deducted", value: `৳${(Math.abs(selectedTx.amount) + selectedTx.fee).toLocaleString("en-IN")}` },
-                       ]
+                    : (selectedTx.fee > 0
+                      ? [
+                          { label: summaryBaseLabel, value: `৳${baseAmount.toLocaleString("en-IN")}` },
+                          { label: summaryFeeLabel, value: `৳${selectedTx.fee.toLocaleString("en-IN")}` },
+                          { label: summaryTotalLabel, value: `৳${summaryTotalAmount.toLocaleString("en-IN")}` },
+                        ]
                      : [{ label: "Fee", value: "Free" }])
                 ),
                 { label: "Date & Time", value: format(txDate, "dd MMM yyyy, h:mm a") },

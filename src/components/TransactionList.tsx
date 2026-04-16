@@ -97,6 +97,11 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
   const isCredit = display.amount > 0;
   const txDate = new Date(tx.created_at);
   const txId = tx.short_id || tx.id.slice(0, 12).toUpperCase();
+  const baseAmount = Math.abs(display.amount);
+  const summaryBaseLabel = isCredit ? "Gross Amount" : "Principal";
+  const summaryFeeLabel = isCredit ? "Fee Deducted" : "Fee (from balance)";
+  const summaryTotalLabel = isCredit ? "Net Credited" : "Total Deducted";
+  const summaryTotalAmount = isCredit ? Math.max(0, baseAmount - tx.fee) : baseAmount + tx.fee;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(tx.short_id || tx.id).catch(() => {});
@@ -233,20 +238,20 @@ const TransactionDetailSheet = ({ tx, onClose }: { tx: DbTransaction; onClose: (
           {tx.fee > 0 ? (
             <div className="mt-4 rounded-2xl p-4 bg-gradient-to-br from-amber-50 to-orange-50/50 dark:from-amber-950/40 dark:to-orange-950/20 border border-amber-200/60 dark:border-amber-800/30 shadow-sm">
               <div className="flex items-center justify-between text-[12.5px]">
-                <span className="text-muted-foreground font-medium">Principal</span>
-                <span className="font-semibold text-foreground">৳{fmt(Math.abs(display.amount))}</span>
+                <span className="text-muted-foreground font-medium">{summaryBaseLabel}</span>
+                <span className="font-semibold text-foreground">৳{fmt(baseAmount)}</span>
               </div>
               <div className="flex items-center justify-between text-[12.5px] mt-1.5">
-                <span className="text-amber-600 dark:text-amber-400 font-medium">Fee (from balance)</span>
+                <span className="text-amber-600 dark:text-amber-400 font-medium">{summaryFeeLabel}</span>
                 <span className="font-semibold text-amber-600 dark:text-amber-400">৳{fmt(tx.fee)}</span>
               </div>
               <div className="h-px bg-amber-200/60 dark:bg-amber-800/40 my-2.5" />
               <div className="flex items-center justify-between">
                 <span className="text-[13px] font-bold text-foreground flex items-center gap-1.5">
                   <Shield size={13} className="text-amber-600 dark:text-amber-400" />
-                  Total Deducted
+                  {summaryTotalLabel}
                 </span>
-                <span className="text-[20px] font-extrabold text-foreground">৳{fmt(Math.abs(display.amount) + tx.fee)}</span>
+                <span className="text-[20px] font-extrabold text-foreground">৳{fmt(summaryTotalAmount)}</span>
               </div>
             </div>
           ) : (
