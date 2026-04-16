@@ -559,6 +559,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     setError("");
     if (mainTab === "savings") {
       if (step === "review") { setPin(""); setPinError(""); setTermsAccepted(false); setStep(enableAutoSaveInCreate ? "create" : "autosave"); }
+      else if (step === "goal-review") { setPin(""); setPinError(""); setStep("create"); }
       else if (step === "home") onClose();
       else setStep("home");
     } else if (mainTab === "goals") {
@@ -1002,13 +1003,18 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     setError("");
                     setStep("review");
                   } else {
-                    handleCreateGoal();
+                    // Goal-only: validate then go to goal-review
+                    if (!newName.trim()) { setError("Select or enter a goal name"); return; }
+                    const target = parseFloat(newTarget);
+                    if (!target || target <= 0) { setError("Enter a valid target amount"); return; }
+                    setError("");
+                    setStep("goal-review");
                   }
                 }}
                 disabled={processing}
                 className="w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg disabled:opacity-60"
                 style={{ background: "linear-gradient(135deg, hsl(162 72% 32%), hsl(178 62% 22%))" }}>
-                {processing ? "Creating…" : enableAutoSaveInCreate ? "Continue to Review →" : "Create Goal"}
+                {processing ? "Creating…" : enableAutoSaveInCreate ? "Continue to Review →" : "Continue to Review →"}
               </motion.button>
             </motion.div>
           )}
