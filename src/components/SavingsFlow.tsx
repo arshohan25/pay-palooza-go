@@ -201,9 +201,6 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
    const [enableAutoSaveInCreate, setEnableAutoSaveInCreate] = useState(false);
    const [tradeTermsAccepted, setTradeTermsAccepted] = useState(false);
 
-   // ─── Mandatory T&C gate state ────────
-  const [tcAccepted, setTcAccepted] = useState(() => localStorage.getItem("mfs_savings_tc_accepted") === "1");
-  const [tcChecked, setTcChecked] = useState(false);
 
   // ─── PIN state (shared across all confirm actions) ────────
   const [pin, setPin] = useState("");
@@ -554,188 +551,6 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     }
   };
 
-  // ─── T&C Gate ─────────────────────────────────────────────────────
-  if (!tcAccepted) {
-    return (
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-background flex flex-col overflow-hidden max-w-md mx-auto">
-        {/* Header */}
-        <motion.div className="px-4 pt-3 pb-3 text-white relative overflow-hidden"
-          initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 320, damping: 28 }}
-          style={{ background: "linear-gradient(135deg, hsl(217 80% 45%), hsl(230 70% 35%))" }}>
-          <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-white/8 blur-xl" />
-          <div className="flex items-center gap-3 relative z-10">
-            <motion.button whileTap={{ scale: 0.88 }} onClick={onClose}
-              className="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
-              <ArrowLeft size={18} strokeWidth={2.5} />
-            </motion.button>
-            <div className="flex-1 min-w-0">
-              <p className="text-[17px] font-bold leading-tight">Investment Terms & Conditions</p>
-              <p className="text-[11px] opacity-70">Please read and accept to continue</p>
-            </div>
-            <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center">
-              <ShieldCheck size={18} />
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Scrollable T&C Content */}
-        <ScrollArea className="flex-1 px-4 pt-4 pb-4">
-          <div className="space-y-4 text-sm text-foreground pb-6">
-            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-3 flex items-start gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
-                Investments carry risk. Please read all terms carefully before proceeding. Past performance does not guarantee future returns.
-              </p>
-            </div>
-
-            {/* Section 1 */}
-            <div className="space-y-1.5">
-              <h3 className="text-[13px] font-extrabold text-foreground flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center text-[10px] font-black text-primary">1</span>
-                Investment Products & Services
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed pl-6">
-                EasyPay provides access to Gold Investment (22K and 24K digital gold), Sharia-compliant Halal Stock trading
-                (DSE-listed securities), and automated savings plans. All investment products are offered on a best-effort basis
-                and are subject to market conditions.
-              </p>
-            </div>
-
-            {/* Section 2 */}
-            <div className="space-y-1.5">
-              <h3 className="text-[13px] font-extrabold text-foreground flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center text-[10px] font-black text-primary">2</span>
-                Platform Fees & Charges
-              </h3>
-              <div className="pl-6 space-y-2">
-                <div className="rounded-xl bg-muted/60 p-2.5 space-y-1.5">
-                  <p className="text-xs font-bold text-foreground">🪙 Gold Trading — 1.5% Spread</p>
-                  <p className="text-[11px] text-muted-foreground">Buy price includes a 1.5% platform fee above market rate. Sell price deducts 1.5% below market rate. This spread covers custody, insurance, and platform operating costs.</p>
-                </div>
-                <div className="rounded-xl bg-muted/60 p-2.5 space-y-1.5">
-                  <p className="text-xs font-bold text-foreground">📈 Stock Trading — ৳15 Flat Brokerage</p>
-                  <p className="text-[11px] text-muted-foreground">A flat brokerage fee of ৳15 is charged per stock transaction (buy or sell), regardless of order size. Additional regulatory levies (CDBL, DSE fees) may apply.</p>
-                </div>
-                <div className="rounded-xl bg-muted/60 p-2.5 space-y-1.5">
-                  <p className="text-xs font-bold text-foreground">🎯 Savings Goals — No Fees</p>
-                  <p className="text-[11px] text-muted-foreground">Manual deposits into savings goals incur no platform fee. Auto-save plan creation is free.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Section 3 */}
-            <div className="space-y-1.5">
-              <h3 className="text-[13px] font-extrabold text-foreground flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center text-[10px] font-black text-primary">3</span>
-                Risk Disclosures
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed pl-6">
-                Gold and stock prices are subject to market fluctuations. The value of your investments can go down as well as up.
-                There is no guarantee of returns. EasyPay does not provide financial advice. You are solely responsible for your
-                investment decisions.
-              </p>
-            </div>
-
-            {/* Section 4 */}
-            <div className="space-y-1.5">
-              <h3 className="text-[13px] font-extrabold text-foreground flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center text-[10px] font-black text-primary">4</span>
-                Lock-in Period & Early Withdrawal
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed pl-6">
-                Auto-save investment plans have a mandatory 3-month lock-in period. Early cancellation within this period is not
-                permitted. After the lock-in period, a penalty of 1–2% (based on plan duration) will be deducted from the saved
-                amount upon early withdrawal.
-              </p>
-            </div>
-
-            {/* Section 5 */}
-            <div className="space-y-1.5">
-              <h3 className="text-[13px] font-extrabold text-foreground flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center text-[10px] font-black text-primary">5</span>
-                Sharia Compliance
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed pl-6">
-                All stock investments are screened against Sharia compliance criteria. EasyPay follows a trade-based profit-sharing
-                (Mudarabah) model. No interest (Riba) is involved. Returns are based on actual market performance.
-              </p>
-            </div>
-
-            {/* Section 6 */}
-            <div className="space-y-1.5">
-              <h3 className="text-[13px] font-extrabold text-foreground flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center text-[10px] font-black text-primary">6</span>
-                Account Security & PIN
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed pl-6">
-                All transactions require 4-digit PIN verification. You are responsible for keeping your PIN confidential.
-                EasyPay will never ask for your PIN via phone, SMS, or email. Unauthorized transactions should be reported
-                immediately to customer support.
-              </p>
-            </div>
-
-            {/* Section 7 */}
-            <div className="space-y-1.5">
-              <h3 className="text-[13px] font-extrabold text-foreground flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center text-[10px] font-black text-primary">7</span>
-                Regulatory Compliance
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed pl-6">
-                EasyPay operates under the guidelines of Bangladesh Bank and the Bangladesh Securities and Exchange Commission (BSEC).
-                KYC verification is mandatory for all investment activities. Your data is processed in accordance with applicable
-                privacy and data protection regulations.
-              </p>
-            </div>
-
-            {/* Section 8 */}
-            <div className="space-y-1.5">
-              <h3 className="text-[13px] font-extrabold text-foreground flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center text-[10px] font-black text-primary">8</span>
-                Limitation of Liability
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed pl-6">
-                EasyPay shall not be liable for any losses arising from market movements, system outages beyond our control,
-                or force majeure events. Maximum liability is limited to the fees collected for the relevant transaction.
-                By using these services, you acknowledge and accept all associated risks.
-              </p>
-            </div>
-          </div>
-        </ScrollArea>
-
-        {/* Accept Footer */}
-        <div className="border-t border-border px-4 py-4 space-y-3 bg-background">
-          <label className="flex items-start gap-3 cursor-pointer">
-            <Checkbox checked={tcChecked} onCheckedChange={(v) => setTcChecked(v === true)}
-              className="mt-0.5 shrink-0" />
-            <span className="text-xs text-muted-foreground leading-relaxed">
-              I have read, understood, and agree to all <span className="font-bold text-foreground">Terms & Conditions</span>,{" "}
-              <span className="font-bold text-foreground">Risk Disclosures</span>, and{" "}
-              <span className="font-bold text-foreground">Fee Structures</span> described above.
-            </span>
-          </label>
-          <motion.button
-            whileTap={tcChecked ? { scale: 0.97 } : undefined}
-            disabled={!tcChecked}
-            onClick={() => {
-              localStorage.setItem("mfs_savings_tc_accepted", "1");
-              setTcAccepted(true);
-              haptics.medium();
-            }}
-            className={`w-full h-12 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
-              tcChecked
-                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
-                : "bg-muted text-muted-foreground cursor-not-allowed"
-            }`}
-          >
-            <ShieldCheck size={16} />
-            Accept & Continue
-          </motion.button>
-        </div>
-      </motion.div>
-    );
-  }
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-background flex flex-col overflow-hidden">
@@ -1352,20 +1167,45 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 </div>
               </div>
 
-              {/* T&C acceptance */}
-              <div className="space-y-2">
-                <button onClick={() => setShowTermsSheet(true)} className="flex items-center gap-2 text-[11px] font-medium text-primary">
-                  <FileText size={13} /> Read Terms & Conditions
-                </button>
-                <button onClick={() => setTermsAccepted(!termsAccepted)}
-                  className="flex items-center gap-2.5 w-full text-left">
-                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0 ${termsAccepted ? "bg-primary border-primary" : "border-border"}`}>
-                    {termsAccepted && <CheckCircle2 size={12} className="text-white" />}
+              {/* T&C acceptance — inline */}
+              <div className="space-y-3">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+                  <ShieldCheck size={13} className="text-primary" /> Investment Terms & Conditions
+                </p>
+                <ScrollArea className="h-40 rounded-[14px] border border-border/60 bg-muted/30 p-3">
+                  <div className="space-y-3 text-[11px] text-muted-foreground pr-2">
+                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-2.5 flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                      <p className="text-[10px] text-amber-700 dark:text-amber-400 font-medium leading-relaxed">
+                        Investments carry risk. Past performance does not guarantee future returns.
+                      </p>
+                    </div>
+                    {[
+                      { n: 1, title: "Investment Products & Services", body: "EasyPay provides access to Gold Investment (22K and 24K digital gold), Sharia-compliant Halal Stock trading (DSE-listed securities), and automated savings plans. All investment products are offered on a best-effort basis and are subject to market conditions." },
+                      { n: 2, title: "Platform Fees & Charges", body: "Gold Trading — 1.5% spread (buy/sell). Stock Trading — ৳15 flat brokerage per trade. Savings Goals — no platform fee." },
+                      { n: 3, title: "Risk Disclosures", body: "Gold and stock prices are subject to market fluctuations. The value of your investments can go down as well as up. There is no guarantee of returns. EasyPay does not provide financial advice." },
+                      { n: 4, title: "Lock-in Period & Early Withdrawal", body: "Auto-save investment plans have a mandatory 3-month lock-in period. Early cancellation after lock-in incurs a 1–2% penalty on total saved amount." },
+                      { n: 5, title: "Sharia Compliance", body: "All stock investments are screened against Sharia compliance criteria. EasyPay follows a trade-based profit-sharing (Mudarabah) model. No interest (Riba) is involved." },
+                      { n: 6, title: "Account Security & PIN", body: "All transactions require 4-digit PIN verification. You are responsible for keeping your PIN confidential." },
+                      { n: 7, title: "Regulatory Compliance", body: "EasyPay operates under the guidelines of Bangladesh Bank and BSEC. KYC verification is mandatory for all investment activities." },
+                      { n: 8, title: "Limitation of Liability", body: "EasyPay shall not be liable for any losses arising from market movements, system outages beyond our control, or force majeure events." },
+                    ].map(s => (
+                      <div key={s.n} className="space-y-0.5">
+                        <p className="text-[10px] font-extrabold text-foreground flex items-center gap-1">
+                          <span className="w-4 h-4 rounded-full bg-primary/15 flex items-center justify-center text-[8px] font-black text-primary shrink-0">{s.n}</span>
+                          {s.title}
+                        </p>
+                        <p className="text-[10px] leading-relaxed pl-5">{s.body}</p>
+                      </div>
+                    ))}
                   </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    I agree to the <span className="text-foreground font-semibold">Terms & Conditions</span>, lock-in period, and cancellation policy
-                  </p>
-                </button>
+                </ScrollArea>
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <Checkbox checked={termsAccepted} onCheckedChange={(v) => setTermsAccepted(v === true)} className="mt-0.5 shrink-0" />
+                  <span className="text-[11px] text-muted-foreground leading-relaxed">
+                    I have read and agree to the <span className="font-bold text-foreground">Terms & Conditions</span>, <span className="font-bold text-foreground">Risk Disclosures</span>, and <span className="font-bold text-foreground">Fee Structures</span>
+                  </span>
+                </label>
               </div>
 
               {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
