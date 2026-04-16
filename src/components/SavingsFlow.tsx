@@ -654,45 +654,101 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 </button>
               </div>
 
-              {/* Goals */}
+              {/* Quick actions */}
+              {autoSaves.filter(a => a.is_active).length === 0 && (
+                <motion.button whileTap={{ scale: 0.96 }} onClick={() => setStep("autosave")}
+                  className="w-full h-14 rounded-2xl text-white font-bold text-[14px] shadow-lg flex items-center justify-center gap-2"
+                  style={{ background: "linear-gradient(135deg, hsl(162 72% 32%), hsl(178 62% 22%))" }}>
+                  <CalendarClock size={16} /> Start Auto-Save & Invest
+                </motion.button>
+              )}
+
+              {goals.length > 0 && (
+                <button onClick={() => { setMainTab("goals"); setStep("home"); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-muted/50 border border-border/40 hover:bg-muted/70 transition-colors">
+                  <Target size={16} className="text-primary shrink-0" />
+                  <div className="flex-1 text-left">
+                    <p className="text-[12px] font-bold text-foreground">{goals.length} Saving Goal{goals.length !== 1 ? "s" : ""}</p>
+                    <p className="text-[10px] text-muted-foreground">View & manage your goals</p>
+                  </div>
+                  <ChevronRight size={14} className="text-muted-foreground/50" />
+                </button>
+              )}
+            </motion.div>
+          )}
+
+          {/* ══════════ GOALS TAB HOME ══════════ */}
+          {mainTab === "goals" && step === "home" && (
+            <motion.div key="g-home" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+              {/* Life Goal Presets — Quick Create */}
+              <div className="space-y-2.5">
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-1">Quick Start a Goal</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {LIFE_GOAL_PRESETS.map((preset, i) => (
+                    <motion.button key={preset.name}
+                      initial={{ opacity: 0, y: 16, scale: 0.92 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ delay: i * 0.04, type: "spring", stiffness: 350, damping: 28 }}
+                      whileTap={{ scale: 0.93 }}
+                      onClick={() => {
+                        if (preset.name === "Custom") { setNewEmoji("✏️"); setNewName(""); }
+                        else { setNewEmoji(preset.emoji); setNewName(preset.name); }
+                        setNewTarget(""); setError(""); setStep("create");
+                      }}
+                      className={`relative flex flex-col items-center gap-1.5 p-3.5 rounded-[18px] border backdrop-blur-sm transition-all bg-gradient-to-br ${preset.gradient} ${preset.border} hover:shadow-lg hover:scale-[1.02]`}>
+                      <span className="text-[28px] drop-shadow-sm">{preset.emoji}</span>
+                      <p className="text-[10px] font-bold text-foreground leading-tight text-center">{preset.name}</p>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Existing Goals List */}
               {loading ? (
                 <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
               ) : goals.length === 0 ? (
-                <div className="text-center py-10 space-y-3">
-                  <p className="text-4xl">🎯</p>
-                  <p className="text-sm text-muted-foreground">No savings goals yet</p>
-                  <button onClick={() => setStep("create")} className="text-sm font-semibold text-primary">Create your first goal →</button>
-                </div>
+                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                  className="text-center py-8 space-y-3 rounded-[20px] border border-dashed border-border/60 bg-muted/20">
+                  <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
+                    <Target size={28} className="text-primary" />
+                  </div>
+                  <p className="text-[14px] font-bold text-foreground">No goals yet</p>
+                  <p className="text-[12px] text-muted-foreground max-w-[220px] mx-auto">Tap any category above to create your first savings goal</p>
+                </motion.div>
               ) : (
                 <div className="space-y-2.5">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1">Your Goals</p>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1">Your Goals ({goals.length})</p>
                   {goals.map((goal, i) => {
                     const pct = goal.target_amount > 0 ? Math.min(100, (Number(goal.saved_amount) / Number(goal.target_amount)) * 100) : 0;
                     return (
-                      <motion.div key={goal.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                        className="bg-card rounded-[18px] border border-border/60 shadow-[var(--shadow-card)] p-3.5 space-y-2.5">
+                      <motion.div key={goal.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05, type: "spring", stiffness: 350, damping: 28 }}
+                        className="bg-card rounded-[20px] border border-border/50 shadow-[var(--shadow-card)] p-4 space-y-3 backdrop-blur-sm">
                         <div className="flex items-center justify-between">
-                          <button onClick={() => { setSelectedGoal(goal); setStep("add"); }} className="flex items-center gap-2.5 flex-1 min-w-0">
-                            <span className="text-2xl">{goal.emoji}</span>
+                          <button onClick={() => { setSelectedGoal(goal); setStep("add"); }} className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center">
+                              <span className="text-[24px]">{goal.emoji}</span>
+                            </div>
                             <div className="min-w-0">
-                              <p className="text-[13px] font-bold text-foreground truncate">{goal.name}</p>
+                              <p className="text-[14px] font-bold text-foreground truncate">{goal.name}</p>
                               <p className="text-[11px] text-muted-foreground">৳{Number(goal.saved_amount).toLocaleString()} / ৳{Number(goal.target_amount).toLocaleString()}</p>
                             </div>
                           </button>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5">
                             {goal.status === "completed" ? <CheckCircle2 size={20} className="text-primary shrink-0" />
                               : <button onClick={() => { setSelectedGoal(goal); setStep("add"); }}><ChevronRight size={16} className="text-muted-foreground/50 shrink-0" /></button>}
                             <button onClick={() => { setDeleteTarget({ type: "goal", id: goal.id, label: goal.name }); setDeletePin(""); setDeletePinError(""); }} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 size={14} /></button>
                           </div>
                         </div>
-                        <div className="h-2 rounded-full bg-muted overflow-hidden">
-                          <motion.div className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-500" initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8 }} />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <p className="text-[11px] font-bold text-primary">{pct.toFixed(0)}% complete</p>
-                          <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-0.5">
-                            <Sparkles size={10} /> Complete goal & withdraw with profit! 💰
-                          </p>
+                        <div className="space-y-1.5">
+                          <div className="h-2.5 rounded-full bg-muted/80 overflow-hidden">
+                            <motion.div className="h-full rounded-full bg-gradient-to-r from-primary via-emerald-500 to-emerald-400" initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1, ease: "easeOut" }} />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <p className="text-[11px] font-bold text-primary">{pct.toFixed(0)}%</p>
+                            <p className="text-[10px] text-muted-foreground font-medium">
+                              ৳{(Number(goal.target_amount) - Number(goal.saved_amount)).toLocaleString()} remaining
+                            </p>
+                          </div>
                         </div>
                       </motion.div>
                     );
