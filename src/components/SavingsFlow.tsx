@@ -839,36 +839,39 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
           {/* ══════════ SAVINGS: CREATE GOAL ══════════ */}
           {(mainTab === "savings" || mainTab === "goals") && step === "create" && (
             <motion.div key="s-create" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
-              {/* Life Goal Presets */}
-              <div className="space-y-2.5">
-                <p className="text-[15px] font-black text-foreground px-1">What are you saving for?</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {LIFE_GOAL_PRESETS.map((preset, i) => {
-                    const isSelected = preset.name === "Custom" ? !LIFE_GOAL_PRESETS.slice(0, -1).some(p => p.name === newName && p.emoji === newEmoji) && newName !== "" || (newEmoji === "✏️")
-                      : newName === preset.name && newEmoji === preset.emoji;
-                    return (
-                      <motion.button key={preset.name} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.03, type: "spring", stiffness: 400, damping: 30 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => {
-                          if (preset.name === "Custom") { setNewEmoji("✏️"); setNewName(""); }
-                          else { setNewEmoji(preset.emoji); setNewName(preset.name); }
-                          setError("");
-                        }}
-                        className={`relative flex flex-col items-center gap-1.5 p-3 rounded-[16px] border transition-all bg-gradient-to-br ${preset.gradient} ${
-                          isSelected ? `${preset.border} ring-2 ring-primary/30 shadow-lg scale-[1.02]` : `${preset.border} hover:shadow-md`
-                        }`}>
-                        <span className="text-2xl">{preset.emoji}</span>
-                        <p className="text-[10px] font-bold text-foreground leading-tight text-center">{preset.name}</p>
-                        {isSelected && (
-                          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-md">
-                            <CheckCircle2 size={12} className="text-white" />
-                          </motion.div>
-                        )}
-                      </motion.button>
-                    );
-                  })}
-                </div>
+              {/* Selected Goal Category (dropdown) */}
+              <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-3">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Savings Goal</p>
+                <Select
+                  value={newEmoji === "✏️" ? "Custom" : newName}
+                  onValueChange={(val) => {
+                    if (val === "Custom") { setNewEmoji("✏️"); setNewName(""); }
+                    else {
+                      const preset = LIFE_GOAL_PRESETS.find(p => p.name === val);
+                      if (preset) { setNewEmoji(preset.emoji); setNewName(preset.name); }
+                    }
+                    setError("");
+                  }}
+                >
+                  <SelectTrigger className="rounded-xl h-12 text-[14px] font-semibold">
+                    <SelectValue placeholder="Select a category">
+                      <span className="flex items-center gap-2">
+                        <span className="text-lg">{newEmoji}</span>
+                        <span>{newEmoji === "✏️" ? "Custom Goal" : newName || "Select a category"}</span>
+                      </span>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LIFE_GOAL_PRESETS.map((preset) => (
+                      <SelectItem key={preset.name} value={preset.name}>
+                        <span className="flex items-center gap-2">
+                          <span className="text-lg">{preset.emoji}</span>
+                          <span className="font-medium">{preset.name}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Custom name input — shown when Custom is selected */}
@@ -900,7 +903,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
 
               {/* Initial Deposit */}
               <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-3">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Initial Deposit (Optional)</p>
+                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Initial Deposit <span className="text-destructive">*</span></p>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[20px] font-bold text-muted-foreground">৳</span>
                   <input type="number" inputMode="decimal" placeholder="0" value={newInitialDeposit} onChange={e => { setNewInitialDeposit(e.target.value); setError(""); }}
@@ -1062,6 +1065,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     if (!newName.trim()) { setError("Select or enter a goal name"); return; }
                     const target = parseFloat(newTarget);
                     if (!target || target <= 0) { setError("Enter a valid target amount"); return; }
+                    const initialAmt = parseFloat(newInitialDeposit);
+                    if (!initialAmt || initialAmt <= 0) { setError("Enter an initial deposit amount"); return; }
+                    if (initialAmt > balance) { setError("Initial deposit exceeds wallet balance"); return; }
                     setError("");
                     setStep("goal-review");
                   }
@@ -1097,7 +1103,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   {[
                     { label: "Goal Name", value: `${newEmoji} ${newName}` },
                     { label: "Target Amount", value: `৳${parseFloat(newTarget).toLocaleString()}` },
-                    { label: "Initial Deposit", value: parseFloat(newInitialDeposit) > 0 ? `৳${parseFloat(newInitialDeposit).toLocaleString()}` : "No initial deposit" },
+                    { label: "Initial Deposit", value: `৳${parseFloat(newInitialDeposit).toLocaleString()}` },
                     { label: "Auto-Save", value: "Not enabled" },
                     { label: "Lock-in Period", value: "3 months minimum" },
                   ].map((row, i) => (
