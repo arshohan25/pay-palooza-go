@@ -140,7 +140,7 @@ const LIFE_GOAL_PRESETS = [
 const GOLD_PRESETS = [0.5, 1, 2, 5, 10];
 
 type MainTab = "savings" | "goals" | "gold" | "stocks";
-type SavingsStep = "home" | "add" | "create" | "autosave" | "review" | "terms" | "detail";
+type SavingsStep = "home" | "add" | "create" | "autosave" | "review" | "goal-review" | "terms" | "detail";
 type GoldStep = "portfolio" | "buy" | "sell";
 type StockStep = "market" | "portfolio" | "trade";
 
@@ -331,14 +331,18 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     if (!newName.trim()) { setError("Enter a goal name"); return; }
     const target = parseFloat(newTarget);
     if (!target || target <= 0) { setError("Enter a valid target amount"); return; }
+    if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
     if (!user) return;
-    setProcessing(true); setError("");
+    setProcessing(true); setError(""); setPinError("");
     try {
+      const pinValid = await verifyPin(pin);
+      if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
       const { error: insertErr } = await supabase.from("savings_goals").insert({ user_id: user.id, name: newName.trim(), emoji: newEmoji, target_amount: target } as any);
       if (insertErr) throw insertErr;
+      fireSuccessConfetti();
       toast.success(`Goal "${newName}" created!`);
-      setStep("home"); setNewName(""); setNewEmoji("🎯"); setNewTarget(""); loadGoals();
-    } catch (err: any) { setError(err.message || "Failed to create goal"); }
+      setStep("home"); setNewName(""); setNewEmoji("🎯"); setNewTarget(""); setPin(""); loadGoals();
+    } catch (err: any) { setPin(""); setError(err.message || "Failed to create goal"); }
     finally { setProcessing(false); }
   };
 
@@ -555,6 +559,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     setError("");
     if (mainTab === "savings") {
       if (step === "review") { setPin(""); setPinError(""); setTermsAccepted(false); setStep(enableAutoSaveInCreate ? "create" : "autosave"); }
+      else if (step === "goal-review") { setPin(""); setPinError(""); setStep("create"); }
       else if (step === "home") onClose();
       else setStep("home");
     } else if (mainTab === "goals") {
@@ -998,14 +1003,72 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     setError("");
                     setStep("review");
                   } else {
-                    handleCreateGoal();
+                    // Goal-only: validate then go to goal-review
+                    if (!newName.trim()) { setError("Select or enter a goal name"); return; }
+                    const target = parseFloat(newTarget);
+                    if (!target || target <= 0) { setError("Enter a valid target amount"); return; }
+                    setError("");
+                    setStep("goal-review");
                   }
                 }}
                 disabled={processing}
                 className="w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg disabled:opacity-60"
                 style={{ background: "linear-gradient(135deg, hsl(162 72% 32%), hsl(178 62% 22%))" }}>
-                {processing ? "Creating…" : enableAutoSaveInCreate ? "Continue to Review →" : "Create Goal"}
+                {processing ? "Creating…" : enableAutoSaveInCreate ? "Continue to Review →" : "Continue to Review →"}
               </motion.button>
+            </motion.div>
+          )}
+
+          {/* ══════════ GOAL-ONLY: REVIEW & CONFIRM ══════════ */}
+          {(mainTab === "savings" || mainTab === "goals") && step === "goal-review" && (
+            <motion.div key="g-review" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+              {/* Goal Summary Card */}
+              <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-5 space-y-4">
+                <p className="text-[14px] font-bold text-foreground flex items-center gap-2"><FileText size={16} className="text-primary" /> Goal Summary</p>
+                
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center">
+                    <span className="text-[36px]">{newEmoji}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[18px] font-black text-foreground">{newName}</p>
+                    <p className="text-[12px] text-muted-foreground">Savings Goal</p>
+                  </div>
+                </div>
+
+                <div className="h-px bg-border/60" />
+
+                <div className="space-y-2.5">
+                  {[
+                    { label: "Goal Name", value: `${newEmoji} ${newName}` },
+                    { label: "Target Amount", value: `৳${parseFloat(newTarget).toLocaleString()}` },
+                    { label: "Auto-Save", value: "Not enabled" },
+                    { label: "Lock-in Period", value: "3 months minimum" },
+                  ].map((row, i) => (
+                    <div key={i} className="flex justify-between items-center text-[12px]">
+                      <span className="text-muted-foreground">{row.label}</span>
+                      <span className="font-semibold text-foreground">{row.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Policy notice */}
+              <div className="rounded-[14px] px-3.5 py-3 bg-amber-500/8 border border-amber-500/20 space-y-2">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle size={14} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                  <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300">Important Notice</p>
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                  🔒 <strong>3-month mandatory lock-in</strong> — you cannot cancel this goal within the first 3 months after creation. 
+                  You can add money to this goal anytime. Enable auto-save later from the Goals tab.
+                </p>
+              </div>
+
+              {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
+
+              <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
+              <SlideToConfirm onConfirm={handleCreateGoal} label={processing ? "Creating…" : "Slide to Create Goal"} disabled={pin.length < 4 || processing} pinComplete={pin.length === 4} />
             </motion.div>
           )}
 
