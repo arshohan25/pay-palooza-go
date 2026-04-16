@@ -206,6 +206,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
 
+
   // ─── Delete confirmation state ────────
   const [deleteTarget, setDeleteTarget] = useState<{ type: "goal" | "auto"; id: string; label: string } | null>(null);
   const [deletePin, setDeletePin] = useState("");
@@ -230,6 +231,14 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const [stockAction, setStockAction] = useState<"buy" | "sell">("buy");
 
   useEffect(() => { const unsub = onBalanceChange(setBalance); return () => { unsub(); }; }, []);
+
+  // Reset PIN & acceptance whenever user navigates between steps
+  useEffect(() => {
+    setPin("");
+    setPinError("");
+    setTermsAccepted(false);
+    setTradeTermsAccepted(false);
+  }, [step, goldStep, stockStep]);
 
   const loadGoals = useCallback(async () => {
     if (!user) return;
