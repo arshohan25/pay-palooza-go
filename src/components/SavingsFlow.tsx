@@ -9,7 +9,8 @@ import {
   AlertTriangle, X, ChevronDown, ChevronLeft, Gift, AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
-import { getBalance, onBalanceChange, fetchBalance } from "@/lib/balanceStore";
+import { getBalance, onBalanceChange, fetchBalance, recordTransaction } from "@/lib/balanceStore";
+import AvailableBalanceBadge from "@/components/AvailableBalanceBadge";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
@@ -410,6 +411,8 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const handleCreateAutoSave = async () => {
     const amt = parseFloat(autoAmount);
     if (!amt || amt <= 0) { setError("Select or enter an amount"); return; }
+    const currentBal = getBalance();
+    if (amt > currentBal) { setError(`Insufficient balance. You need at least ৳${amt.toLocaleString()} for the 1st installment.`); return; }
     if (!termsAccepted) { setError("Please accept Terms & Conditions"); return; }
     if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
     if (!user) return;
@@ -439,11 +442,22 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       const { error: insertErr } = await supabase.from("savings_auto_save").insert({
         user_id: user.id, goal_id: linkedGoalId,
         frequency: autoFreq, amount: amt, next_run_at: nextRun.toISOString(), duration: autoDuration, ends_at: endsAt,
-        strategy: autoStrategy, total_installments: totalInstallments, total_paid: 0, missed_count: 0,
+        strategy: autoStrategy, total_installments: totalInstallments, total_paid: 1, missed_count: 0,
       } as any);
       if (insertErr) throw insertErr;
+
+      // Deduct 1st installment from wallet
+      await recordTransaction({
+        type: "payment",
+        amount: amt,
+        fee: 0,
+        description: `DPS 1st installment (${autoFreq})`,
+        reference: `dps-opening-${Date.now()}`,
+      });
+      await fetchBalance();
+
       fireSuccessConfetti();
-      toast.success(enableAutoSaveInCreate ? `Goal "${newName}" created with auto-save plan!` : "Auto-save + investment plan activated!");
+      toast.success(enableAutoSaveInCreate ? `Goal "${newName}" created with auto-save plan!` : "Auto-save + investment plan activated! 1st installment deposited.");
       setAutoAmount(""); setAutoCustom(false); setTermsAccepted(false); setPin(""); setEnableAutoSaveInCreate(false);
       setNewName(""); setNewEmoji("🎯"); setNewTarget("");
       setStep("home"); loadAutoSaves();
@@ -1346,7 +1360,10 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
           {(mainTab === "savings" || mainTab === "goals") && step === "dps-create" && (
             <motion.div key="s-dps-create" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
               <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-4">
-                <p className="text-[14px] font-bold text-foreground">Create Savings + Investment Plan</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-[14px] font-bold text-foreground">Create Savings + Investment Plan</p>
+                  <AvailableBalanceBadge />
+                </div>
 
                 {/* Frequency */}
                 <div className="space-y-1.5">
@@ -1365,12 +1382,17 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 <div className="space-y-1.5">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Amount per {autoFreq === "daily" ? "Day" : autoFreq === "weekly" ? "Week" : "Month"}</p>
                   <div className="flex gap-2 flex-wrap">
-                    {PRESET_AMOUNTS.map(q => (
-                      <button key={q} onClick={() => { setAutoAmount(String(q)); setAutoCustom(false); }}
-                        className={`flex-1 min-w-[55px] py-2 rounded-xl text-[12px] font-semibold transition-colors ${!autoCustom && autoAmount === String(q) ? "bg-primary/20 text-primary ring-1 ring-primary/30" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}>
-                        ৳{q >= 1000 ? `${q / 1000}k` : q}
-                      </button>
-                    ))}
+                    {PRESET_AMOUNTS.map(q => {
+                      const bal = getBalance();
+                      const insufficient = q > bal;
+                      return (
+                        <button key={q} onClick={() => { if (!insufficient) { setAutoAmount(String(q)); setAutoCustom(false); } }}
+                          disabled={insufficient}
+                          className={`flex-1 min-w-[55px] py-2 rounded-xl text-[12px] font-semibold transition-colors ${insufficient ? "bg-muted/40 text-muted-foreground/40 cursor-not-allowed" : !autoCustom && autoAmount === String(q) ? "bg-primary/20 text-primary ring-1 ring-primary/30" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}>
+                          {insufficient ? <span className="text-[10px]">৳{q >= 1000 ? `${q / 1000}k` : q}<br/><span className="text-destructive/60">Low</span></span> : <>৳{q >= 1000 ? `${q / 1000}k` : q}</>}
+                        </button>
+                      );
+                    })}
                     <button onClick={() => { setAutoCustom(true); setAutoAmount(""); }}
                       className={`flex-1 min-w-[55px] py-2 rounded-xl text-[12px] font-semibold transition-colors ${autoCustom ? "bg-primary/20 text-primary ring-1 ring-primary/30" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}>Custom</button>
                   </div>
@@ -1473,7 +1495,12 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
 
                 <motion.button whileTap={{ scale: 0.96 }} 
-                  onClick={() => { if (!autoAmtNum || autoAmtNum <= 0) { setError("Select or enter an amount"); return; } setStep("review"); setError(""); }}
+                  onClick={() => {
+                    if (!autoAmtNum || autoAmtNum <= 0) { setError("Select or enter an amount"); return; }
+                    const bal = getBalance();
+                    if (autoAmtNum > bal) { setError(`Insufficient balance. You need at least ৳${autoAmtNum.toLocaleString()} to open a DPS (1st installment is deposited immediately).`); return; }
+                    setStep("review"); setError("");
+                  }}
                   className="w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg"
                   style={{ background: "linear-gradient(135deg, hsl(162 72% 32%), hsl(178 62% 22%))" }}>
                   Continue to Review →
