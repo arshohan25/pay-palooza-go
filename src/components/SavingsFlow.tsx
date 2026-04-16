@@ -206,7 +206,12 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const [termsAccepted, setTermsAccepted] = useState(false);
    const [showTermsSheet, setShowTermsSheet] = useState(false);
    const [enableAutoSaveInCreate, setEnableAutoSaveInCreate] = useState(false);
-   const [tradeTermsAccepted, setTradeTermsAccepted] = useState(false);
+   const [tradeTermsAccepted, setTradeTermsAccepted] = false);
+
+  // ─── DPS missed payments state ────────
+  const [missedPayments, setMissedPayments] = useState<MissedPayment[]>([]);
+  const [repayScheduleId, setRepayScheduleId] = useState<string | null>(null);
+  const [selectedMissedIds, setSelectedMissedIds] = useState<string[]>([]);
 
 
   // ─── PIN state (shared across all confirm actions) ────────
