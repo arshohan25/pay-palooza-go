@@ -331,14 +331,18 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     if (!newName.trim()) { setError("Enter a goal name"); return; }
     const target = parseFloat(newTarget);
     if (!target || target <= 0) { setError("Enter a valid target amount"); return; }
+    if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
     if (!user) return;
-    setProcessing(true); setError("");
+    setProcessing(true); setError(""); setPinError("");
     try {
+      const pinValid = await verifyPin(pin);
+      if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
       const { error: insertErr } = await supabase.from("savings_goals").insert({ user_id: user.id, name: newName.trim(), emoji: newEmoji, target_amount: target } as any);
       if (insertErr) throw insertErr;
+      fireSuccessConfetti();
       toast.success(`Goal "${newName}" created!`);
-      setStep("home"); setNewName(""); setNewEmoji("🎯"); setNewTarget(""); loadGoals();
-    } catch (err: any) { setError(err.message || "Failed to create goal"); }
+      setStep("home"); setNewName(""); setNewEmoji("🎯"); setNewTarget(""); setPin(""); loadGoals();
+    } catch (err: any) { setPin(""); setError(err.message || "Failed to create goal"); }
     finally { setProcessing(false); }
   };
 
