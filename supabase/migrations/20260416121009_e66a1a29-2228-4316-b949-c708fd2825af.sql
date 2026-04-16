@@ -1,0 +1,1 @@
+ALTER TYPE txn_type ADD VALUE IF NOT EXISTS 'deposit';
