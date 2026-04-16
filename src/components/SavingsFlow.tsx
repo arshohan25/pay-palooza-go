@@ -32,6 +32,12 @@ interface AutoSaveSchedule {
   id: string; goal_id: string | null; frequency: string; amount: number;
   is_active: boolean; next_run_at: string; duration: string | null;
   ends_at: string | null; settled: boolean;
+  missed_count?: number; total_paid?: number; total_installments?: number;
+  strategy?: string; last_missed_at?: string;
+}
+interface MissedPayment {
+  id: string; schedule_id: string; user_id: string; amount: number;
+  due_date: string; repaid: boolean; repaid_at: string | null; created_at: string;
 }
 
 // ─── Mock investment data ────────────────────────────────────────────
@@ -140,7 +146,7 @@ const LIFE_GOAL_PRESETS = [
 const GOLD_PRESETS = [0.5, 1, 2, 5, 10];
 
 type MainTab = "savings" | "goals" | "gold" | "stocks";
-type SavingsStep = "home" | "add" | "create" | "autosave" | "review" | "goal-review" | "terms" | "detail" | "pick-goal";
+type SavingsStep = "home" | "add" | "create" | "autosave" | "review" | "goal-review" | "terms" | "detail" | "pick-goal" | "repay-missed";
 type GoldStep = "portfolio" | "buy" | "sell";
 type StockStep = "market" | "portfolio" | "trade";
 
@@ -202,6 +208,11 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
    const [enableAutoSaveInCreate, setEnableAutoSaveInCreate] = useState(false);
    const [tradeTermsAccepted, setTradeTermsAccepted] = useState(false);
 
+  // ─── DPS missed payments state ────────
+  const [missedPayments, setMissedPayments] = useState<MissedPayment[]>([]);
+  const [repayScheduleId, setRepayScheduleId] = useState<string | null>(null);
+  const [selectedMissedIds, setSelectedMissedIds] = useState<string[]>([]);
+
 
   // ─── PIN state (shared across all confirm actions) ────────
   const [pin, setPin] = useState("");
@@ -256,6 +267,12 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     setAutoSaves((data as any[]) ?? []);
   }, [user]);
 
+  const loadMissedPayments = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase.from("dps_missed_payments" as any).select("*").eq("user_id", user.id).eq("repaid", false).order("due_date", { ascending: false });
+    setMissedPayments((data as any[]) ?? []);
+  }, [user]);
+
   const loadGoldHoldings = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase.from("gold_holdings" as any).select("*").eq("user_id", user.id);
@@ -277,7 +294,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     })));
   }, [user]);
 
-  useEffect(() => { loadGoals(); loadAutoSaves(); loadGoldHoldings(); loadStockHoldings(); }, [loadGoals, loadAutoSaves, loadGoldHoldings, loadStockHoldings]);
+  useEffect(() => { loadGoals(); loadAutoSaves(); loadGoldHoldings(); loadStockHoldings(); loadMissedPayments(); }, [loadGoals, loadAutoSaves, loadGoldHoldings, loadStockHoldings, loadMissedPayments]);
 
   useEffect(() => {
     if (!user) return;
@@ -286,9 +303,11 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       .on("postgres_changes", { event: "*", schema: "public", table: "savings_deposits", filter: `user_id=eq.${user.id}` }, () => loadGoals())
       .on("postgres_changes", { event: "*", schema: "public", table: "gold_holdings", filter: `user_id=eq.${user.id}` }, () => loadGoldHoldings())
       .on("postgres_changes", { event: "*", schema: "public", table: "stock_holdings", filter: `user_id=eq.${user.id}` }, () => loadStockHoldings())
+      .on("postgres_changes", { event: "*", schema: "public", table: "dps_missed_payments", filter: `user_id=eq.${user.id}` }, () => loadMissedPayments())
+      .on("postgres_changes", { event: "*", schema: "public", table: "savings_auto_save", filter: `user_id=eq.${user.id}` }, () => loadAutoSaves())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [user, loadGoals, loadGoldHoldings, loadStockHoldings]);
+  }, [user, loadGoals, loadGoldHoldings, loadStockHoldings, loadMissedPayments, loadAutoSaves]);
 
   // ─── Computed profit estimation for auto-save ────────
   const autoAmtNum = parseFloat(autoAmount) || 0;
@@ -409,9 +428,13 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       else if (autoFreq === "weekly") nextRun.setDate(nextRun.getDate() + 7);
       else nextRun.setMonth(nextRun.getMonth() + 1);
       const endsAt = calcEndsAt(autoDuration);
+      // Calculate total installments for DPS tracking
+      const totalInstallments = autoFreq === "daily" ? selectedDuration.months * 30
+        : autoFreq === "weekly" ? selectedDuration.months * 4 : selectedDuration.months;
       const { error: insertErr } = await supabase.from("savings_auto_save").insert({
         user_id: user.id, goal_id: linkedGoalId,
         frequency: autoFreq, amount: amt, next_run_at: nextRun.toISOString(), duration: autoDuration, ends_at: endsAt,
+        strategy: autoStrategy, total_installments: totalInstallments, total_paid: 0, missed_count: 0,
       } as any);
       if (insertErr) throw insertErr;
       fireSuccessConfetti();
@@ -426,6 +449,46 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const toggleAutoSave = async (id: string, current: boolean) => {
     await supabase.from("savings_auto_save").update({ is_active: !current } as any).eq("id", id);
     loadAutoSaves();
+  };
+
+  // ─── Repay missed DPS payments handler ────────
+  const handleRepayMissed = async () => {
+    if (selectedMissedIds.length === 0) { setError("Select at least one missed payment"); return; }
+    if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
+    if (!user) return;
+    const toRepay = missedPayments.filter(m => selectedMissedIds.includes(m.id));
+    const totalAmount = toRepay.reduce((s, m) => s + Number(m.amount), 0);
+    if (totalAmount > balance) { setError("Insufficient balance for repayment"); return; }
+    setProcessing(true); setError(""); setPinError("");
+    try {
+      const pinValid = await verifyPin(pin);
+      if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
+      for (const mp of toRepay) {
+        const schedule = autoSaves.find(a => a.id === mp.schedule_id);
+        if (schedule?.goal_id) {
+          await supabase.rpc("savings_deposit", { p_goal_id: schedule.goal_id, p_amount: mp.amount, p_source: "dps_repay" });
+        } else {
+          const { data: prof } = await supabase.from("profiles").select("balance").eq("user_id", user.id).single();
+          if (prof) await supabase.from("profiles").update({ balance: Number(prof.balance) - Number(mp.amount) } as any).eq("user_id", user.id);
+        }
+        await supabase.from("dps_missed_payments" as any).update({ repaid: true, repaid_at: new Date().toISOString() }).eq("id", mp.id);
+      }
+      if (repayScheduleId) {
+        const schedule = autoSaves.find(a => a.id === repayScheduleId);
+        if (schedule) {
+          await supabase.from("savings_auto_save").update({
+            total_paid: (schedule.total_paid ?? 0) + toRepay.length,
+            missed_count: Math.max(0, (schedule.missed_count ?? 0) - toRepay.length),
+          } as any).eq("id", repayScheduleId);
+        }
+      }
+      await fetchBalance();
+      loadMissedPayments(); loadAutoSaves();
+      fireSuccessConfetti();
+      toast.success(`৳${totalAmount.toLocaleString()} repaid for ${toRepay.length} missed installment(s)`);
+      setStep("autosave"); setPin(""); setSelectedMissedIds([]);
+    } catch (err: any) { setPin(""); setError(err.message || "Repayment failed"); }
+    finally { setProcessing(false); }
   };
 
   const deleteAutoSave = async (id: string) => {
@@ -573,6 +636,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     if (mainTab === "savings") {
       if (step === "review") { setPin(""); setPinError(""); setTermsAccepted(false); setStep(enableAutoSaveInCreate ? "create" : "autosave"); }
       else if (step === "goal-review") { setPin(""); setPinError(""); setStep("create"); }
+      else if (step === "repay-missed") { setPin(""); setPinError(""); setSelectedMissedIds([]); setStep("autosave"); }
       else if (step === "home") onClose();
       else setStep("home");
     } else if (mainTab === "goals") {
@@ -672,14 +736,24 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 </button>
               </div>
 
-              {/* Quick actions */}
-              {autoSaves.filter(a => a.is_active).length === 0 && (
-                <motion.button whileTap={{ scale: 0.96 }} onClick={() => setStep("autosave")}
-                  className="w-full h-14 rounded-2xl text-white font-bold text-[14px] shadow-lg flex items-center justify-center gap-2"
+              {/* Start a DPS Plan — premium action button */}
+              <motion.button
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => setStep("autosave")}
+                className="w-full flex items-center gap-3.5 p-4 rounded-[20px] border border-primary/30 bg-gradient-to-r from-primary/12 via-primary/5 to-transparent hover:shadow-lg hover:border-primary/50 transition-all"
+              >
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
                   style={{ background: "linear-gradient(135deg, hsl(162 72% 32%), hsl(178 62% 22%))" }}>
-                  <CalendarClock size={16} /> Start Auto-Save & Invest
-                </motion.button>
-              )}
+                  <CalendarClock size={22} className="text-white" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-[14px] font-bold text-foreground">Start a DPS Plan</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Auto-collect from wallet • Earn 2-5% profit</p>
+                </div>
+                <ChevronRight size={18} className="text-muted-foreground shrink-0" />
+              </motion.button>
 
               {goals.length > 0 && (
                 <button onClick={() => { setMainTab("goals"); setStep("home"); }}
@@ -1285,18 +1359,38 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   {autoSaves.map(schedule => {
                     const linkedGoal = goals.find(g => g.id === schedule.goal_id);
                     const durOpt = DURATION_OPTIONS.find(d => d.value === schedule.duration);
+                    const scheduleMissed = missedPayments.filter(m => m.schedule_id === schedule.id);
+                    const totalInst = schedule.total_installments ?? 0;
+                    const paid = schedule.total_paid ?? 0;
+                    const missed = schedule.missed_count ?? 0;
+                    const stratObj = INVESTMENT_STRATEGIES.find(s => s.key === schedule.strategy);
                     return (
-                      <div key={schedule.id} className={`bg-card rounded-[16px] border p-3.5 space-y-2 ${schedule.settled ? "border-primary/40 bg-primary/5" : "border-border/60"}`}>
+                      <div key={schedule.id} className={`bg-card rounded-[16px] border p-3.5 space-y-2.5 ${schedule.settled ? "border-primary/40 bg-primary/5" : "border-border/60"}`}>
                         <div className="flex items-center gap-3">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <p className="text-[13px] font-semibold text-foreground">৳{Number(schedule.amount).toLocaleString()} / {schedule.frequency}</p>
                               {schedule.settled && <span className="px-1.5 py-0.5 rounded-md bg-primary/20 text-primary text-[9px] font-bold uppercase">Completed</span>}
+                              {stratObj && <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground font-semibold">{stratObj.icon} {stratObj.label}</span>}
                             </div>
                             <p className="text-[11px] text-muted-foreground">
                               {linkedGoal ? `${linkedGoal.emoji} ${linkedGoal.name}` : "General Savings"}
                               {durOpt && ` • ${durOpt.label}`}
                             </p>
+                            {/* Installment progress */}
+                            {totalInst > 0 && !schedule.settled && (
+                              <div className="mt-1.5 space-y-1">
+                                <div className="flex items-center justify-between text-[10px]">
+                                  <span className="text-muted-foreground font-medium">{paid}/{totalInst} installments paid</span>
+                                  <span className="font-bold text-primary">{totalInst > 0 ? Math.round((paid / totalInst) * 100) : 0}%</span>
+                                </div>
+                                <div className="h-1.5 rounded-full bg-muted/80 overflow-hidden">
+                                  <motion.div className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-500"
+                                    initial={{ width: 0 }} animate={{ width: `${totalInst > 0 ? (paid / totalInst) * 100 : 0}%` }}
+                                    transition={{ duration: 0.8, ease: "easeOut" }} />
+                                </div>
+                              </div>
+                            )}
                             {schedule.ends_at && !schedule.settled && (
                               <div className="flex items-center gap-2 mt-1">
                                 <p className="text-[10px] text-muted-foreground"><Clock size={10} className="inline mr-0.5 -mt-0.5" />{remainingTime(schedule.ends_at)}</p>
@@ -1304,6 +1398,27 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                                   <Lock size={8} /> {durOpt.minLock}m lock
                                 </span>}
                               </div>
+                            )}
+                            {/* Missed payments badge + repay */}
+                            {missed > 0 && scheduleMissed.length > 0 && !schedule.settled && (
+                              <div className="flex items-center gap-2 mt-1.5">
+                                <span className="text-[9px] px-2 py-0.5 rounded-md bg-destructive/10 text-destructive font-bold flex items-center gap-1">
+                                  <AlertTriangle size={9} /> {missed} missed
+                                </span>
+                                <button onClick={() => {
+                                  setRepayScheduleId(schedule.id);
+                                  setSelectedMissedIds(scheduleMissed.map(m => m.id));
+                                  setStep("repay-missed"); setError(""); setPin(""); setPinError("");
+                                }} className="text-[10px] font-bold text-primary underline underline-offset-2">
+                                  Repay Now
+                                </button>
+                              </div>
+                            )}
+                            {/* Next collection date */}
+                            {schedule.is_active && !schedule.settled && schedule.next_run_at && (
+                              <p className="text-[9px] text-muted-foreground mt-1">
+                                Next collection: {new Date(schedule.next_run_at).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
+                              </p>
                             )}
                           </div>
                           {!schedule.settled && <Switch checked={schedule.is_active} onCheckedChange={() => toggleAutoSave(schedule.id, schedule.is_active)} />}
@@ -1314,6 +1429,65 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   })}
                 </div>
               )}
+            </motion.div>
+          )}
+
+          {/* ══════════ REPAY MISSED PAYMENTS ══════════ */}
+          {mainTab === "savings" && step === "repay-missed" && (
+            <motion.div key="repay-missed" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+              <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-destructive/10 flex items-center justify-center">
+                    <AlertTriangle size={20} className="text-destructive" />
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-bold text-foreground">Repay Missed Installments</p>
+                    <p className="text-[11px] text-muted-foreground">Select payments to repay from your wallet</p>
+                  </div>
+                </div>
+              </div>
+
+              {(() => {
+                const scheduleMissed = missedPayments.filter(m => m.schedule_id === repayScheduleId);
+                const totalSelected = scheduleMissed.filter(m => selectedMissedIds.includes(m.id)).reduce((s, m) => s + Number(m.amount), 0);
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between px-1">
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{scheduleMissed.length} Missed Payment(s)</p>
+                      <button onClick={() => {
+                        if (selectedMissedIds.length === scheduleMissed.length) setSelectedMissedIds([]);
+                        else setSelectedMissedIds(scheduleMissed.map(m => m.id));
+                      }} className="text-[11px] font-bold text-primary">
+                        {selectedMissedIds.length === scheduleMissed.length ? "Deselect All" : "Select All"}
+                      </button>
+                    </div>
+                    {scheduleMissed.map(mp => (
+                      <label key={mp.id} className={`flex items-center gap-3 p-3 rounded-[14px] border cursor-pointer transition-all ${selectedMissedIds.includes(mp.id) ? "border-primary/50 bg-primary/5" : "border-border/60 bg-card"}`}>
+                        <Checkbox checked={selectedMissedIds.includes(mp.id)} onCheckedChange={(v) => {
+                          if (v) setSelectedMissedIds(prev => [...prev, mp.id]);
+                          else setSelectedMissedIds(prev => prev.filter(id => id !== mp.id));
+                        }} />
+                        <div className="flex-1">
+                          <p className="text-[13px] font-semibold text-foreground">৳{Number(mp.amount).toLocaleString()}</p>
+                          <p className="text-[10px] text-muted-foreground">Due: {new Date(mp.due_date).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}</p>
+                        </div>
+                      </label>
+                    ))}
+                    <div className="rounded-[14px] p-3 bg-muted/50 border border-border/40 flex items-center justify-between">
+                      <span className="text-[12px] font-bold text-muted-foreground">Total to Repay</span>
+                      <span className="text-[16px] font-black text-foreground">৳{totalSelected.toLocaleString()}</span>
+                    </div>
+                    {totalSelected > balance && (
+                      <p className="text-[10px] text-destructive font-medium flex items-center gap-1 px-1"><AlertCircle size={10} /> Insufficient wallet balance (৳{balance.toLocaleString()})</p>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
+
+              <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
+              <SlideToConfirm onConfirm={handleRepayMissed} label={processing ? "Processing…" : "Slide to Repay"} disabled={pin.length < 4 || processing || selectedMissedIds.length === 0} pinComplete={pin.length === 4 && selectedMissedIds.length > 0} />
             </motion.div>
           )}
 

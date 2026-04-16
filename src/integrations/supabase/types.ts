@@ -1265,6 +1265,47 @@ export type Database = {
           },
         ]
       }
+      dps_missed_payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          due_date: string
+          id: string
+          repaid: boolean | null
+          repaid_at: string | null
+          schedule_id: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          due_date: string
+          id?: string
+          repaid?: boolean | null
+          repaid_at?: string | null
+          schedule_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          due_date?: string
+          id?: string
+          repaid?: boolean | null
+          repaid_at?: string | null
+          schedule_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dps_missed_payments_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "savings_auto_save"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feature_locks: {
         Row: {
           created_at: string
@@ -4006,9 +4047,14 @@ export type Database = {
           goal_id: string | null
           id: string
           is_active: boolean
+          last_missed_at: string | null
           last_run_at: string | null
+          missed_count: number | null
           next_run_at: string
           settled: boolean
+          strategy: string | null
+          total_installments: number | null
+          total_paid: number | null
           updated_at: string
           user_id: string
         }
@@ -4021,9 +4067,14 @@ export type Database = {
           goal_id?: string | null
           id?: string
           is_active?: boolean
+          last_missed_at?: string | null
           last_run_at?: string | null
+          missed_count?: number | null
           next_run_at?: string
           settled?: boolean
+          strategy?: string | null
+          total_installments?: number | null
+          total_paid?: number | null
           updated_at?: string
           user_id: string
         }
@@ -4036,9 +4087,14 @@ export type Database = {
           goal_id?: string | null
           id?: string
           is_active?: boolean
+          last_missed_at?: string | null
           last_run_at?: string | null
+          missed_count?: number | null
           next_run_at?: string
           settled?: boolean
+          strategy?: string | null
+          total_installments?: number | null
+          total_paid?: number | null
           updated_at?: string
           user_id?: string
         }

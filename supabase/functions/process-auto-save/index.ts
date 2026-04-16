@@ -25,6 +25,7 @@ Deno.serve(async (req) => {
     let processed = 0;
     let skipped = 0;
     let settled = 0;
+    let missed = 0;
 
     for (const schedule of schedules ?? []) {
       // Check if schedule has expired (duration ended)
@@ -37,8 +38,8 @@ Deno.serve(async (req) => {
 
         await supabase.from("notifications").insert({
           user_id: schedule.user_id,
-          title: "✅ Auto-Save Completed",
-          body: `Your ৳${schedule.amount}/${schedule.frequency} auto-save schedule has completed its ${schedule.duration || ""} duration.`,
+          title: "✅ DPS Plan Completed",
+          body: `Your ৳${schedule.amount}/${schedule.frequency} DPS plan has completed its ${schedule.duration || ""} duration. Total paid: ${schedule.total_paid ?? 0} installments.`,
           category: "savings",
         });
 
@@ -58,10 +59,11 @@ Deno.serve(async (req) => {
           .limit(1);
 
         if (!goals || goals.length === 0) {
-          skipped++;
-          continue;
+          // No goal — still track as missed if no balance
+          goalId = null;
+        } else {
+          goalId = goals[0].id;
         }
-        goalId = goals[0].id;
       }
 
       // Check balance
@@ -71,18 +73,49 @@ Deno.serve(async (req) => {
         .eq("user_id", schedule.user_id)
         .single();
 
+      // Calculate next run regardless of success/failure
+      const nextRun = new Date();
+      if (schedule.frequency === "daily") nextRun.setDate(nextRun.getDate() + 1);
+      else if (schedule.frequency === "weekly") nextRun.setDate(nextRun.getDate() + 7);
+      else nextRun.setMonth(nextRun.getMonth() + 1);
+
       if (!profile || Number(profile.balance) < Number(schedule.amount)) {
+        // ═══ MISSED PAYMENT ═══
+        // Record missed payment
+        await supabase.from("dps_missed_payments").insert({
+          schedule_id: schedule.id,
+          user_id: schedule.user_id,
+          amount: schedule.amount,
+          due_date: new Date().toISOString(),
+        });
+
+        // Update schedule counters
+        await supabase.from("savings_auto_save").update({
+          missed_count: (schedule.missed_count ?? 0) + 1,
+          last_missed_at: new Date().toISOString(),
+          next_run_at: nextRun.toISOString(),
+          last_run_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }).eq("id", schedule.id);
+
+        // Notify user about missed payment
         await supabase.from("notifications").insert({
           user_id: schedule.user_id,
-          title: "Auto-Save Skipped",
-          body: `Insufficient balance for ৳${schedule.amount} auto-save. Please top up your wallet.`,
+          title: "⚠️ DPS Installment Missed",
+          body: `Insufficient balance for ৳${schedule.amount} DPS installment. You can repay later from Savings > Active Plans.`,
           category: "savings",
         });
+
+        missed++;
+        continue;
+      }
+
+      // ═══ SUCCESSFUL PAYMENT ═══
+      if (!goalId) {
         skipped++;
         continue;
       }
 
-      // Perform deposit atomically
       const { data: goal } = await supabase
         .from("savings_goals")
         .select("*")
@@ -116,30 +149,26 @@ Deno.serve(async (req) => {
         source: "auto",
       });
 
-      // Calculate next run
-      const nextRun = new Date();
-      if (schedule.frequency === "daily") nextRun.setDate(nextRun.getDate() + 1);
-      else if (schedule.frequency === "weekly") nextRun.setDate(nextRun.getDate() + 7);
-      else nextRun.setMonth(nextRun.getMonth() + 1);
-
+      // Update schedule with next run + increment total_paid
       await supabase.from("savings_auto_save").update({
         next_run_at: nextRun.toISOString(),
         last_run_at: new Date().toISOString(),
+        total_paid: (schedule.total_paid ?? 0) + 1,
         updated_at: new Date().toISOString(),
       }).eq("id", schedule.id);
 
       // Notify user
       await supabase.from("notifications").insert({
         user_id: schedule.user_id,
-        title: completed ? "🎉 Goal Completed!" : "Auto-Save Successful",
-        body: `৳${schedule.amount} saved to "${goal.name}"${completed ? " — Goal completed!" : ""}`,
+        title: completed ? "🎉 Goal Completed!" : "✅ DPS Installment Collected",
+        body: `৳${schedule.amount} auto-collected to "${goal.name}"${completed ? " — Goal completed!" : `. Installment ${(schedule.total_paid ?? 0) + 1}/${schedule.total_installments ?? "∞"}`}`,
         category: "savings",
       });
 
       processed++;
     }
 
-    return new Response(JSON.stringify({ processed, skipped, settled }), {
+    return new Response(JSON.stringify({ processed, skipped, settled, missed }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
