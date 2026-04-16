@@ -183,9 +183,10 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const [autoDuration, setAutoDuration] = useState("1y");
   const [autoStrategy, setAutoStrategy] = useState<Strategy>("gold");
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [showTermsSheet, setShowTermsSheet] = useState(false);
+   const [showTermsSheet, setShowTermsSheet] = useState(false);
+   const [tradeTermsAccepted, setTradeTermsAccepted] = useState(false);
 
-  // ─── Mandatory T&C gate state ────────
+   // ─── Mandatory T&C gate state ────────
   const [tcAccepted, setTcAccepted] = useState(() => localStorage.getItem("mfs_savings_tc_accepted") === "1");
   const [tcChecked, setTcChecked] = useState(false);
 
@@ -408,7 +409,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       loadGoldHoldings();
       fireSuccessConfetti();
       toast.success(`🪙 Purchased ${grams}g gold for ৳${totalCost.toLocaleString()} (fee ৳${fee})`);
-      setGoldGrams(""); setGoldStep("portfolio"); setPin("");
+       setGoldGrams(""); setGoldStep("portfolio"); setPin(""); setTradeTermsAccepted(false);
     } catch (err: any) { setPin(""); setError(err.message || "Failed to buy gold"); }
     finally { setProcessing(false); }
   };
@@ -430,7 +431,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       const fee = Math.round(revenue * 0.015);
       const netRevenue = revenue - fee;
       toast.success(`💰 Sold ${grams}g gold — received ৳${netRevenue.toLocaleString()} (fee ৳${fee})`);
-      setGoldGrams(""); setGoldStep("portfolio"); setPin("");
+       setGoldGrams(""); setGoldStep("portfolio"); setPin(""); setTradeTermsAccepted(false);
     } catch (err: any) { setPin(""); setError(err.message || "Failed to sell gold"); }
     finally { setProcessing(false); }
   };
@@ -462,7 +463,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       loadStockHoldings();
       fireSuccessConfetti();
       toast.success(`📈 Bought ${qty} ${selectedStock.symbol} for ৳${totalCost.toLocaleString()} (brokerage ৳${brokerage})`);
-      setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setPin("");
+       setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setPin(""); setTradeTermsAccepted(false);
     } catch (err: any) { setPin(""); setError(err.message || "Failed to buy stock"); }
     finally { setProcessing(false); }
   };
@@ -486,7 +487,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       const brokerage = 15;
       const netRevenue = revenue - brokerage;
       toast.success(`💰 Sold ${qty} ${selectedStock.symbol} — received ৳${netRevenue.toLocaleString()} (brokerage ৳${brokerage})`);
-      setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setPin("");
+       setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setPin(""); setTradeTermsAccepted(false);
     } catch (err: any) { setPin(""); setError(err.message || "Failed to sell stock"); }
     finally { setProcessing(false); }
   };
@@ -1336,9 +1337,23 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   );
                 })()}
                 {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
-              </div>
-              <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
-              <SlideToConfirm onConfirm={goldStep === "buy" ? handleBuyGold : handleSellGold} label={processing ? "Processing…" : goldStep === "buy" ? "Slide to Buy Gold" : "Slide to Sell Gold"} disabled={pin.length < 4 || processing} pinComplete={pin.length === 4} />
+               </div>
+               <div className="space-y-2">
+                 <button onClick={() => setShowTermsSheet(true)} className="flex items-center gap-2 text-[11px] font-medium text-primary">
+                   <FileText size={13} /> Read Terms & Conditions
+                 </button>
+                 <button onClick={() => setTradeTermsAccepted(!tradeTermsAccepted)}
+                   className="flex items-center gap-2.5 w-full text-left">
+                   <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0 ${tradeTermsAccepted ? "bg-primary border-primary" : "border-border"}`}>
+                     {tradeTermsAccepted && <CheckCircle2 size={12} className="text-white" />}
+                   </div>
+                   <p className="text-[11px] text-muted-foreground">
+                     I agree to the <span className="text-foreground font-semibold">Terms & Conditions</span>, risk disclosures, and fee structures
+                   </p>
+                 </button>
+               </div>
+               <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
+               <SlideToConfirm onConfirm={goldStep === "buy" ? handleBuyGold : handleSellGold} label={processing ? "Processing…" : goldStep === "buy" ? "Slide to Buy Gold" : "Slide to Sell Gold"} disabled={pin.length < 4 || processing || !tradeTermsAccepted} pinComplete={pin.length === 4 && tradeTermsAccepted} />
             </motion.div>
           )}
 
@@ -1555,9 +1570,23 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   );
                 })()}
                 {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
-              </div>
-              <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
-              <SlideToConfirm onConfirm={stockAction === "buy" ? handleBuyStock : handleSellStock} label={processing ? "Processing…" : stockAction === "buy" ? "Slide to Buy" : "Slide to Sell"} disabled={pin.length < 4 || processing} pinComplete={pin.length === 4} />
+               </div>
+               <div className="space-y-2">
+                 <button onClick={() => setShowTermsSheet(true)} className="flex items-center gap-2 text-[11px] font-medium text-primary">
+                   <FileText size={13} /> Read Terms & Conditions
+                 </button>
+                 <button onClick={() => setTradeTermsAccepted(!tradeTermsAccepted)}
+                   className="flex items-center gap-2.5 w-full text-left">
+                   <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0 ${tradeTermsAccepted ? "bg-primary border-primary" : "border-border"}`}>
+                     {tradeTermsAccepted && <CheckCircle2 size={12} className="text-white" />}
+                   </div>
+                   <p className="text-[11px] text-muted-foreground">
+                     I agree to the <span className="text-foreground font-semibold">Terms & Conditions</span>, risk disclosures, and fee structures
+                   </p>
+                 </button>
+               </div>
+               <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
+               <SlideToConfirm onConfirm={stockAction === "buy" ? handleBuyStock : handleSellStock} label={processing ? "Processing…" : stockAction === "buy" ? "Slide to Buy" : "Slide to Sell"} disabled={pin.length < 4 || processing || !tradeTermsAccepted} pinComplete={pin.length === 4 && tradeTermsAccepted} />
             </motion.div>
           )}
         </AnimatePresence>
