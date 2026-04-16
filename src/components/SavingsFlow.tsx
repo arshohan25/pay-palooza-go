@@ -451,6 +451,46 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     loadAutoSaves();
   };
 
+  // ─── Repay missed DPS payments handler ────────
+  const handleRepayMissed = async () => {
+    if (selectedMissedIds.length === 0) { setError("Select at least one missed payment"); return; }
+    if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
+    if (!user) return;
+    const toRepay = missedPayments.filter(m => selectedMissedIds.includes(m.id));
+    const totalAmount = toRepay.reduce((s, m) => s + Number(m.amount), 0);
+    if (totalAmount > balance) { setError("Insufficient balance for repayment"); return; }
+    setProcessing(true); setError(""); setPinError("");
+    try {
+      const pinValid = await verifyPin(pin);
+      if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
+      for (const mp of toRepay) {
+        const schedule = autoSaves.find(a => a.id === mp.schedule_id);
+        if (schedule?.goal_id) {
+          await supabase.rpc("savings_deposit", { p_goal_id: schedule.goal_id, p_amount: mp.amount, p_source: "dps_repay" });
+        } else {
+          const { data: prof } = await supabase.from("profiles").select("balance").eq("user_id", user.id).single();
+          if (prof) await supabase.from("profiles").update({ balance: Number(prof.balance) - Number(mp.amount) } as any).eq("user_id", user.id);
+        }
+        await supabase.from("dps_missed_payments" as any).update({ repaid: true, repaid_at: new Date().toISOString() }).eq("id", mp.id);
+      }
+      if (repayScheduleId) {
+        const schedule = autoSaves.find(a => a.id === repayScheduleId);
+        if (schedule) {
+          await supabase.from("savings_auto_save").update({
+            total_paid: (schedule.total_paid ?? 0) + toRepay.length,
+            missed_count: Math.max(0, (schedule.missed_count ?? 0) - toRepay.length),
+          } as any).eq("id", repayScheduleId);
+        }
+      }
+      await fetchBalance();
+      loadMissedPayments(); loadAutoSaves();
+      fireSuccessConfetti();
+      toast.success(`৳${totalAmount.toLocaleString()} repaid for ${toRepay.length} missed installment(s)`);
+      setStep("autosave"); setPin(""); setSelectedMissedIds([]);
+    } catch (err: any) { setPin(""); setError(err.message || "Repayment failed"); }
+    finally { setProcessing(false); }
+  };
+
   const deleteAutoSave = async (id: string) => {
     if (deletePin.length < 4) { setDeletePinError("Enter your 4-digit PIN"); return; }
     setDeleting(true); setDeletePinError("");
