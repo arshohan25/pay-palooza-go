@@ -428,9 +428,13 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       else if (autoFreq === "weekly") nextRun.setDate(nextRun.getDate() + 7);
       else nextRun.setMonth(nextRun.getMonth() + 1);
       const endsAt = calcEndsAt(autoDuration);
+      // Calculate total installments for DPS tracking
+      const totalInstallments = autoFreq === "daily" ? selectedDuration.months * 30
+        : autoFreq === "weekly" ? selectedDuration.months * 4 : selectedDuration.months;
       const { error: insertErr } = await supabase.from("savings_auto_save").insert({
         user_id: user.id, goal_id: linkedGoalId,
         frequency: autoFreq, amount: amt, next_run_at: nextRun.toISOString(), duration: autoDuration, ends_at: endsAt,
+        strategy: autoStrategy, total_installments: totalInstallments, total_paid: 0, missed_count: 0,
       } as any);
       if (insertErr) throw insertErr;
       fireSuccessConfetti();
