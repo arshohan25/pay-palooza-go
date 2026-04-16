@@ -370,19 +370,32 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     try {
       const pinValid = await verifyPin(pin);
       if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
+
+      // If coming from combined create flow, create the goal first
+      let linkedGoalId: string | null = autoGoalId === "general" ? null : autoGoalId;
+      if (enableAutoSaveInCreate && newName.trim()) {
+        const target = parseFloat(newTarget);
+        const { data: goalData, error: goalErr } = await supabase.from("savings_goals").insert({ user_id: user.id, name: newName.trim(), emoji: newEmoji, target_amount: target || 0 } as any).select("id").single();
+        if (goalErr) throw goalErr;
+        linkedGoalId = goalData?.id ?? null;
+        loadGoals();
+      }
+
       const nextRun = new Date();
       if (autoFreq === "daily") nextRun.setDate(nextRun.getDate() + 1);
       else if (autoFreq === "weekly") nextRun.setDate(nextRun.getDate() + 7);
       else nextRun.setMonth(nextRun.getMonth() + 1);
       const endsAt = calcEndsAt(autoDuration);
       const { error: insertErr } = await supabase.from("savings_auto_save").insert({
-        user_id: user.id, goal_id: autoGoalId === "general" ? null : autoGoalId,
+        user_id: user.id, goal_id: linkedGoalId,
         frequency: autoFreq, amount: amt, next_run_at: nextRun.toISOString(), duration: autoDuration, ends_at: endsAt,
       } as any);
       if (insertErr) throw insertErr;
       fireSuccessConfetti();
-      toast.success("Auto-save + investment plan activated!");
-      setAutoAmount(""); setAutoCustom(false); setTermsAccepted(false); setPin(""); loadAutoSaves();
+      toast.success(enableAutoSaveInCreate ? `Goal "${newName}" created with auto-save plan!` : "Auto-save + investment plan activated!");
+      setAutoAmount(""); setAutoCustom(false); setTermsAccepted(false); setPin(""); setEnableAutoSaveInCreate(false);
+      setNewName(""); setNewEmoji("🎯"); setNewTarget("");
+      setStep("home"); loadAutoSaves();
     } catch (err: any) { setPin(""); setError(err.message || "Failed to create schedule"); }
     finally { setProcessing(false); }
   };
