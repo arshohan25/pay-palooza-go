@@ -1358,18 +1358,38 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   {autoSaves.map(schedule => {
                     const linkedGoal = goals.find(g => g.id === schedule.goal_id);
                     const durOpt = DURATION_OPTIONS.find(d => d.value === schedule.duration);
+                    const scheduleMissed = missedPayments.filter(m => m.schedule_id === schedule.id);
+                    const totalInst = schedule.total_installments ?? 0;
+                    const paid = schedule.total_paid ?? 0;
+                    const missed = schedule.missed_count ?? 0;
+                    const stratObj = INVESTMENT_STRATEGIES.find(s => s.key === schedule.strategy);
                     return (
-                      <div key={schedule.id} className={`bg-card rounded-[16px] border p-3.5 space-y-2 ${schedule.settled ? "border-primary/40 bg-primary/5" : "border-border/60"}`}>
+                      <div key={schedule.id} className={`bg-card rounded-[16px] border p-3.5 space-y-2.5 ${schedule.settled ? "border-primary/40 bg-primary/5" : "border-border/60"}`}>
                         <div className="flex items-center gap-3">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <p className="text-[13px] font-semibold text-foreground">৳{Number(schedule.amount).toLocaleString()} / {schedule.frequency}</p>
                               {schedule.settled && <span className="px-1.5 py-0.5 rounded-md bg-primary/20 text-primary text-[9px] font-bold uppercase">Completed</span>}
+                              {stratObj && <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground font-semibold">{stratObj.icon} {stratObj.label}</span>}
                             </div>
                             <p className="text-[11px] text-muted-foreground">
                               {linkedGoal ? `${linkedGoal.emoji} ${linkedGoal.name}` : "General Savings"}
                               {durOpt && ` • ${durOpt.label}`}
                             </p>
+                            {/* Installment progress */}
+                            {totalInst > 0 && !schedule.settled && (
+                              <div className="mt-1.5 space-y-1">
+                                <div className="flex items-center justify-between text-[10px]">
+                                  <span className="text-muted-foreground font-medium">{paid}/{totalInst} installments paid</span>
+                                  <span className="font-bold text-primary">{totalInst > 0 ? Math.round((paid / totalInst) * 100) : 0}%</span>
+                                </div>
+                                <div className="h-1.5 rounded-full bg-muted/80 overflow-hidden">
+                                  <motion.div className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-500"
+                                    initial={{ width: 0 }} animate={{ width: `${totalInst > 0 ? (paid / totalInst) * 100 : 0}%` }}
+                                    transition={{ duration: 0.8, ease: "easeOut" }} />
+                                </div>
+                              </div>
+                            )}
                             {schedule.ends_at && !schedule.settled && (
                               <div className="flex items-center gap-2 mt-1">
                                 <p className="text-[10px] text-muted-foreground"><Clock size={10} className="inline mr-0.5 -mt-0.5" />{remainingTime(schedule.ends_at)}</p>
@@ -1377,6 +1397,27 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                                   <Lock size={8} /> {durOpt.minLock}m lock
                                 </span>}
                               </div>
+                            )}
+                            {/* Missed payments badge + repay */}
+                            {missed > 0 && scheduleMissed.length > 0 && !schedule.settled && (
+                              <div className="flex items-center gap-2 mt-1.5">
+                                <span className="text-[9px] px-2 py-0.5 rounded-md bg-destructive/10 text-destructive font-bold flex items-center gap-1">
+                                  <AlertTriangle size={9} /> {missed} missed
+                                </span>
+                                <button onClick={() => {
+                                  setRepayScheduleId(schedule.id);
+                                  setSelectedMissedIds(scheduleMissed.map(m => m.id));
+                                  setStep("repay-missed"); setError(""); setPin(""); setPinError("");
+                                }} className="text-[10px] font-bold text-primary underline underline-offset-2">
+                                  Repay Now
+                                </button>
+                              </div>
+                            )}
+                            {/* Next collection date */}
+                            {schedule.is_active && !schedule.settled && schedule.next_run_at && (
+                              <p className="text-[9px] text-muted-foreground mt-1">
+                                Next collection: {new Date(schedule.next_run_at).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
+                              </p>
                             )}
                           </div>
                           {!schedule.settled && <Switch checked={schedule.is_active} onCheckedChange={() => toggleAutoSave(schedule.id, schedule.is_active)} />}
@@ -1387,6 +1428,65 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   })}
                 </div>
               )}
+            </motion.div>
+          )}
+
+          {/* ══════════ REPAY MISSED PAYMENTS ══════════ */}
+          {mainTab === "savings" && step === "repay-missed" && (
+            <motion.div key="repay-missed" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+              <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-destructive/10 flex items-center justify-center">
+                    <AlertTriangle size={20} className="text-destructive" />
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-bold text-foreground">Repay Missed Installments</p>
+                    <p className="text-[11px] text-muted-foreground">Select payments to repay from your wallet</p>
+                  </div>
+                </div>
+              </div>
+
+              {(() => {
+                const scheduleMissed = missedPayments.filter(m => m.schedule_id === repayScheduleId);
+                const totalSelected = scheduleMissed.filter(m => selectedMissedIds.includes(m.id)).reduce((s, m) => s + Number(m.amount), 0);
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between px-1">
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{scheduleMissed.length} Missed Payment(s)</p>
+                      <button onClick={() => {
+                        if (selectedMissedIds.length === scheduleMissed.length) setSelectedMissedIds([]);
+                        else setSelectedMissedIds(scheduleMissed.map(m => m.id));
+                      }} className="text-[11px] font-bold text-primary">
+                        {selectedMissedIds.length === scheduleMissed.length ? "Deselect All" : "Select All"}
+                      </button>
+                    </div>
+                    {scheduleMissed.map(mp => (
+                      <label key={mp.id} className={`flex items-center gap-3 p-3 rounded-[14px] border cursor-pointer transition-all ${selectedMissedIds.includes(mp.id) ? "border-primary/50 bg-primary/5" : "border-border/60 bg-card"}`}>
+                        <Checkbox checked={selectedMissedIds.includes(mp.id)} onCheckedChange={(v) => {
+                          if (v) setSelectedMissedIds(prev => [...prev, mp.id]);
+                          else setSelectedMissedIds(prev => prev.filter(id => id !== mp.id));
+                        }} />
+                        <div className="flex-1">
+                          <p className="text-[13px] font-semibold text-foreground">৳{Number(mp.amount).toLocaleString()}</p>
+                          <p className="text-[10px] text-muted-foreground">Due: {new Date(mp.due_date).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}</p>
+                        </div>
+                      </label>
+                    ))}
+                    <div className="rounded-[14px] p-3 bg-muted/50 border border-border/40 flex items-center justify-between">
+                      <span className="text-[12px] font-bold text-muted-foreground">Total to Repay</span>
+                      <span className="text-[16px] font-black text-foreground">৳{totalSelected.toLocaleString()}</span>
+                    </div>
+                    {totalSelected > balance && (
+                      <p className="text-[10px] text-destructive font-medium flex items-center gap-1 px-1"><AlertCircle size={10} /> Insufficient wallet balance (৳{balance.toLocaleString()})</p>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
+
+              <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
+              <SlideToConfirm onConfirm={handleRepayMissed} label={processing ? "Processing…" : "Slide to Repay"} disabled={pin.length < 4 || processing || selectedMissedIds.length === 0} pinComplete={pin.length === 4 && selectedMissedIds.length > 0} />
             </motion.div>
           )}
 
