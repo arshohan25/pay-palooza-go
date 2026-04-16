@@ -409,7 +409,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       loadGoldHoldings();
       fireSuccessConfetti();
       toast.success(`🪙 Purchased ${grams}g gold for ৳${totalCost.toLocaleString()} (fee ৳${fee})`);
-      setGoldGrams(""); setGoldStep("portfolio"); setPin("");
+       setGoldGrams(""); setGoldStep("portfolio"); setPin(""); setTradeTermsAccepted(false);
     } catch (err: any) { setPin(""); setError(err.message || "Failed to buy gold"); }
     finally { setProcessing(false); }
   };
@@ -431,7 +431,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       const fee = Math.round(revenue * 0.015);
       const netRevenue = revenue - fee;
       toast.success(`💰 Sold ${grams}g gold — received ৳${netRevenue.toLocaleString()} (fee ৳${fee})`);
-      setGoldGrams(""); setGoldStep("portfolio"); setPin("");
+       setGoldGrams(""); setGoldStep("portfolio"); setPin(""); setTradeTermsAccepted(false);
     } catch (err: any) { setPin(""); setError(err.message || "Failed to sell gold"); }
     finally { setProcessing(false); }
   };
@@ -463,7 +463,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       loadStockHoldings();
       fireSuccessConfetti();
       toast.success(`📈 Bought ${qty} ${selectedStock.symbol} for ৳${totalCost.toLocaleString()} (brokerage ৳${brokerage})`);
-      setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setPin("");
+       setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setPin(""); setTradeTermsAccepted(false);
     } catch (err: any) { setPin(""); setError(err.message || "Failed to buy stock"); }
     finally { setProcessing(false); }
   };
@@ -487,7 +487,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       const brokerage = 15;
       const netRevenue = revenue - brokerage;
       toast.success(`💰 Sold ${qty} ${selectedStock.symbol} — received ৳${netRevenue.toLocaleString()} (brokerage ৳${brokerage})`);
-      setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setPin("");
+       setStockQty(""); setSelectedStock(null); setStockStep("portfolio"); setPin(""); setTradeTermsAccepted(false);
     } catch (err: any) { setPin(""); setError(err.message || "Failed to sell stock"); }
     finally { setProcessing(false); }
   };
