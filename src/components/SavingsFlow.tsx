@@ -636,6 +636,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     if (mainTab === "savings") {
       if (step === "review") { setPin(""); setPinError(""); setTermsAccepted(false); setStep(enableAutoSaveInCreate ? "create" : "autosave"); }
       else if (step === "goal-review") { setPin(""); setPinError(""); setStep("create"); }
+      else if (step === "repay-missed") { setPin(""); setPinError(""); setSelectedMissedIds([]); setStep("autosave"); }
       else if (step === "home") onClose();
       else setStep("home");
     } else if (mainTab === "goals") {
