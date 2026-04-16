@@ -20,6 +20,8 @@ import { Switch } from "@/components/ui/switch";
 import { verifyPin } from "@/lib/verifyPin";
 import SlideToConfirm from "@/components/SlideToConfirm";
 import { haptics } from "@/lib/haptics";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // ─── Types ───────────────────────────────────────────────────────────
 interface SavingsGoal {
@@ -182,6 +184,10 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const [autoStrategy, setAutoStrategy] = useState<Strategy>("gold");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTermsSheet, setShowTermsSheet] = useState(false);
+
+  // ─── Mandatory T&C gate state ────────
+  const [tcAccepted, setTcAccepted] = useState(() => localStorage.getItem("mfs_savings_tc_accepted") === "1");
+  const [tcChecked, setTcChecked] = useState(false);
 
   // ─── PIN state (shared across all confirm actions) ────────
   const [pin, setPin] = useState("");
