@@ -267,6 +267,12 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     setAutoSaves((data as any[]) ?? []);
   }, [user]);
 
+  const loadMissedPayments = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase.from("dps_missed_payments" as any).select("*").eq("user_id", user.id).eq("repaid", false).order("due_date", { ascending: false });
+    setMissedPayments((data as any[]) ?? []);
+  }, [user]);
+
   const loadGoldHoldings = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase.from("gold_holdings" as any).select("*").eq("user_id", user.id);
