@@ -1103,7 +1103,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   {[
                     { label: "Goal Name", value: `${newEmoji} ${newName}` },
                     { label: "Target Amount", value: `৳${parseFloat(newTarget).toLocaleString()}` },
-                    { label: "Initial Deposit", value: parseFloat(newInitialDeposit) > 0 ? `৳${parseFloat(newInitialDeposit).toLocaleString()}` : "No initial deposit" },
+                    { label: "Initial Deposit", value: `৳${parseFloat(newInitialDeposit).toLocaleString()}` },
                     { label: "Auto-Save", value: "Not enabled" },
                     { label: "Lock-in Period", value: "3 months minimum" },
                   ].map((row, i) => (
