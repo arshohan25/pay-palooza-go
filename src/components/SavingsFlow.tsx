@@ -140,7 +140,7 @@ const LIFE_GOAL_PRESETS = [
 const GOLD_PRESETS = [0.5, 1, 2, 5, 10];
 
 type MainTab = "savings" | "goals" | "gold" | "stocks";
-type SavingsStep = "home" | "add" | "create" | "autosave" | "review" | "goal-review" | "terms" | "detail";
+type SavingsStep = "home" | "add" | "create" | "autosave" | "review" | "goal-review" | "terms" | "detail" | "pick-goal";
 type GoldStep = "portfolio" | "buy" | "sell";
 type StockStep = "market" | "portfolio" | "trade";
 
