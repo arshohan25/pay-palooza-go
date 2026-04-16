@@ -206,7 +206,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const [termsAccepted, setTermsAccepted] = useState(false);
    const [showTermsSheet, setShowTermsSheet] = useState(false);
    const [enableAutoSaveInCreate, setEnableAutoSaveInCreate] = useState(false);
-   const [tradeTermsAccepted, setTradeTermsAccepted] = false);
+   const [tradeTermsAccepted, setTradeTermsAccepted] = useState(false);
 
   // ─── DPS missed payments state ────────
   const [missedPayments, setMissedPayments] = useState<MissedPayment[]>([]);
