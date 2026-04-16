@@ -1,27 +1,46 @@
 
 
-# Enforce Minimum Balance for DPS Opening (1st Installment Deposit)
+# Fix: DPS/Goal Deposits Not Appearing in Transaction History
 
-## What Changes
-When a user tries to open a new DPS, validate that their wallet balance covers at least 1 installment amount. The 1st installment is mandatory at opening time — block creation if balance is insufficient.
+## Problem
+Goal deposits (via `savings_deposit` RPC) and DPS auto-installments (via `process-auto-save` edge function) deduct wallet balance but never insert a record into the `transactions` table. This means these operations are invisible in the user's transaction history.
 
-## Changes (single file: `src/components/SavingsFlow.tsx`)
+## Root Cause
+1. **`savings_deposit` RPC** -- deducts from `profiles.balance`, inserts into `savings_deposits`, but skips `transactions`
+2. **`process-auto-save` edge function** -- same pattern: deducts balance, inserts into `savings_deposits`, no `transactions` record
+3. **DPS 1st installment** (client-side) -- calls `recordTransaction()` so it DOES appear, but uses type `"payment"` which is generic
 
-### 1. Add balance check in "Continue to Review" button (line ~1476)
-Currently only checks `autoAmtNum > 0`. Add: if `autoAmtNum > balance`, show error "Insufficient balance. You need at least ৳{amount} to open a DPS (1st installment is deposited immediately)."
+## Changes
 
-### 2. Add balance check in `handleCreateAutoSave` (line ~412)
-After validating amount, add: `if (amt > balance) { setError("Insufficient balance for 1st installment"); return; }`
+### 1. Update `savings_deposit` RPC (DB migration)
+Add a transaction record insert after the balance deduction:
+```sql
+INSERT INTO transactions (user_id, type, amount, fee, description, reference, status, balance_after, short_id)
+VALUES (v_user_id, 'payment', p_amount, 0,
+  'Savings Goal: ' || v_goal.name,
+  'GOAL-DEP-' || substring(gen_random_uuid()::text, 1, 8),
+  'completed', v_new_balance,
+  upper(substring(gen_random_uuid()::text, 1, 12)));
+```
 
-### 3. Deduct 1st installment on creation (inside `handleCreateAutoSave`, after insert succeeds ~line 444)
-- Call `recordTransaction()` or `supabase.rpc("savings_deposit")` to deduct the 1st installment amount from wallet
-- Update `total_paid` to `1` in the insert (line 442) instead of `0`
-- Refresh balance via `fetchBalance()`
+### 2. Update `process-auto-save` edge function
+After the successful payment block (line ~150), insert a transaction record:
+```typescript
+await supabase.from("transactions").insert({
+  user_id: schedule.user_id,
+  type: "payment",
+  amount: schedule.amount,
+  fee: 0,
+  description: `DPS Installment: ${goal.name} (#${(schedule.total_paid ?? 0) + 1})`,
+  reference: `DPS-INST-${schedule.id.substring(0, 8)}`,
+  status: "completed",
+  balance_after: newBalance,
+});
+```
 
-### 4. Show balance indicator on the DPS create form
-- Add `<AvailableBalanceBadge />` at the top of the `dps-create` step so users can see their current balance before selecting an amount
-- Visually disable amount options that exceed the current balance (gray out + "Insufficient" label)
+### 3. Update client-side DPS 1st installment description (SavingsFlow.tsx ~line 450)
+Change `recordTransaction` description from `DPS 1st installment (weekly)` to include the plan/goal name for consistency.
 
 ## Result
-Users cannot open a DPS without sufficient funds. The 1st installment is collected immediately upon creation, matching real-world DPS behavior.
+All savings operations -- manual goal deposits, DPS 1st installment, and auto-collected installments -- will appear in the transaction history with clear descriptions like "Savings Goal: Dream Bike" or "DPS Installment: Dream Bike (#3)".
 
