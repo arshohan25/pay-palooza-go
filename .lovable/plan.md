@@ -1,41 +1,24 @@
 
 
-# Premium Savings Goal Creation — Combined Flow Redesign
+# Remove T&C Gate Screen, Move Acceptance Into Creation Flow
 
 ## Problem
-The current "Create Goal" screen is basic (emoji grid + text input + number input). The auto-save/investment plan is a separate step. The flow feels disconnected and unprofessional.
+The full-page T&C gate blocks users from even browsing the Savings dashboard. User wants it removed as an entry barrier and instead shown only during goal/auto-save creation.
 
-## Solution
-Merge goal creation and auto-save investment plan into a single, premium multi-step wizard with life-goal presets.
+## Plan
 
-### Step 1: Goal Selection (replaces emoji picker + name input)
-- Add **preset life-goal cards** in a scrollable grid: Dream Bike 🏍️, Dream House 🏠, Dream Car 🚗, Education 🎓, Wedding 💍, Vacation ✈️, Gadget 📱, Emergency Fund 🛡️, Business 💼, Hajj 🕋, Health 💊, Custom ✏️
-- Each card: emoji icon, title, subtle gradient background
-- Tapping a preset auto-fills emoji + name; tapping "Custom" reveals the text input
-- Target amount input stays below the grid
-- Section title: **"What are you saving for?"**
+### Changes to `src/components/SavingsFlow.tsx`
 
-### Step 2: Investment Plan (currently separate "autosave" step, now integrated)
-- After goal details, show an optional toggle: **"Auto-Save & Invest"**
-- When enabled, the existing frequency / amount / duration / strategy / estimated profit section appears inline — no separate navigation step
-- The "Link to Goal" dropdown is removed since it auto-links to the goal being created
-- Review summary card appears at bottom before the CTA
+1. **Remove the T&C gate block** (lines 557–735 approx) — delete the entire `if (!tcAccepted)` early return and all related state (`tcAccepted`, `tcChecked`, `localStorage` flag).
 
-### Step 3: Confirm & Create
-- Single "Create Goal" button handles both goal creation and optional auto-save setup in one action
-- If auto-save is enabled, the review/PIN/T&C flow triggers; otherwise, goal is created directly
+2. **Move T&C acceptance into the "review" step** — before the PIN input on the auto-save review/confirmation screen, embed the T&C content (risk warning, fees, sections 1–8) in a collapsible `ScrollArea` with the checkbox. The existing `termsAccepted` state already gates submission — just enhance it with the full T&C content instead of the current minimal checkbox.
 
-### UI Enhancements
-- Life-goal cards use glassmorphism with subtle gradient borders
-- Staggered entrance animations via Framer Motion
-- Section transitions use smooth slide/fade
-- Premium card shadows matching existing `--shadow-card` system
+3. **For standalone goal creation (no auto-save)** — goals without auto-save don't involve investment, so no T&C is needed. They create directly on button tap (current behavior).
 
-### File Changes
-- **`src/components/SavingsFlow.tsx`**:
-  - Replace `EMOJI_LIST` with `LIFE_GOAL_PRESETS` array containing `{ emoji, name, gradient }` objects
-  - Redesign `step === "create"` section with preset grid + optional auto-save toggle
-  - When auto-save toggle is on, embed the frequency/amount/duration/strategy UI inline
-  - Merge `handleCreateGoal` + `handleCreateAutoSave` into a single flow when both are configured
-  - Keep the standalone "autosave" step accessible from the home screen for users who already have goals
+4. **Keep per-trade T&C checkbox** on Gold/Stock confirmation screens (`tradeTermsAccepted`) as-is — these already show inline acceptance.
+
+### Result
+- Users can freely browse Savings tabs (Gold, Stocks, Goals)
+- T&C acceptance is required only when committing to an auto-save plan (review step) or executing a trade (already done)
+- No localStorage gate — acceptance is per-action
 
