@@ -239,6 +239,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     setPinError("");
     setTermsAccepted(false);
     setTradeTermsAccepted(false);
+    if (step === "home") setNewInitialDeposit("");
   }, [step, goldStep, stockStep]);
 
   const loadGoals = useCallback(async () => {
@@ -332,17 +333,28 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     if (!newName.trim()) { setError("Enter a goal name"); return; }
     const target = parseFloat(newTarget);
     if (!target || target <= 0) { setError("Enter a valid target amount"); return; }
+    const initialAmt = parseFloat(newInitialDeposit) || 0;
+    if (initialAmt > balance) { setError("Initial deposit exceeds wallet balance"); return; }
     if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
     if (!user) return;
     setProcessing(true); setError(""); setPinError("");
     try {
       const pinValid = await verifyPin(pin);
       if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
-      const { error: insertErr } = await supabase.from("savings_goals").insert({ user_id: user.id, name: newName.trim(), emoji: newEmoji, target_amount: target } as any);
+      const { data: newGoal, error: insertErr } = await supabase.from("savings_goals").insert({ user_id: user.id, name: newName.trim(), emoji: newEmoji, target_amount: target } as any).select("id").single();
       if (insertErr) throw insertErr;
+
+      // Perform initial deposit if specified
+      if (newGoal && initialAmt > 0) {
+        const { error: depositErr } = await supabase.rpc("savings_deposit", { p_goal_id: newGoal.id, p_amount: initialAmt, p_source: "manual" });
+        if (depositErr) throw depositErr;
+      }
+
+      await fetchBalance();
+      await loadGoals();
       fireSuccessConfetti();
-      toast.success(`Goal "${newName}" created!`);
-      setStep("home"); setNewName(""); setNewEmoji("🎯"); setNewTarget(""); setPin(""); loadGoals();
+      toast.success(initialAmt > 0 ? `Goal "${newName}" created with ৳${initialAmt.toLocaleString()} deposit!` : `Goal "${newName}" created!`);
+      setStep("home"); setNewName(""); setNewEmoji("🎯"); setNewTarget(""); setNewInitialDeposit(""); setPin("");
     } catch (err: any) { setPin(""); setError(err.message || "Failed to create goal"); }
     finally { setProcessing(false); }
   };
@@ -862,6 +874,28 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 </div>
               </div>
 
+              {/* Initial Deposit */}
+              <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-3">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Initial Deposit (Optional)</p>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[20px] font-bold text-muted-foreground">৳</span>
+                  <input type="number" inputMode="decimal" placeholder="0" value={newInitialDeposit} onChange={e => { setNewInitialDeposit(e.target.value); setError(""); }}
+                    className="w-full pl-10 pr-4 py-3 text-[20px] font-bold bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/40" />
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {[100, 500, 1000, 2000, 5000].map(q => (
+                    <button key={q} onClick={() => setNewInitialDeposit(String(q))}
+                      className={`flex-1 min-w-[55px] py-1.5 rounded-xl text-[11px] font-semibold transition-colors ${newInitialDeposit === String(q) ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}>
+                      ৳{q >= 1000 ? `${q / 1000}k` : q}
+                    </button>
+                  ))}
+                </div>
+                {parseFloat(newInitialDeposit) > balance && (
+                  <p className="text-[10px] text-destructive font-medium flex items-center gap-1"><AlertCircle size={10} /> Exceeds wallet balance (৳{balance.toLocaleString()})</p>
+                )}
+                <p className="text-[10px] text-muted-foreground px-1">Wallet: ৳{balance.toLocaleString()}</p>
+              </div>
+
               {/* ═══ Inline Auto-Save Toggle ═══ */}
               <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-3">
                 <div className="flex items-center justify-between">
@@ -1039,6 +1073,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   {[
                     { label: "Goal Name", value: `${newEmoji} ${newName}` },
                     { label: "Target Amount", value: `৳${parseFloat(newTarget).toLocaleString()}` },
+                    { label: "Initial Deposit", value: parseFloat(newInitialDeposit) > 0 ? `৳${parseFloat(newInitialDeposit).toLocaleString()}` : "No initial deposit" },
                     { label: "Auto-Save", value: "Not enabled" },
                     { label: "Lock-in Period", value: "3 months minimum" },
                   ].map((row, i) => (
