@@ -213,6 +213,11 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const [repayScheduleId, setRepayScheduleId] = useState<string | null>(null);
   const [selectedMissedIds, setSelectedMissedIds] = useState<string[]>([]);
 
+  // ─── Detail view state ────────
+  const [selectedSchedule, setSelectedSchedule] = useState<AutoSaveSchedule | null>(null);
+  const [goalDeposits, setGoalDeposits] = useState<Array<{ id: string; amount: number; source: string; created_at: string }>>([]);
+  const [dpsTimeline, setDpsTimeline] = useState<Array<{ id: string; date: string; amount: number; type: "paid" | "missed"; repaid?: boolean }>>([]);
+
 
   // ─── PIN state (shared across all confirm actions) ────────
   const [pin, setPin] = useState("");
