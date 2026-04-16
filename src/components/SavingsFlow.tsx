@@ -232,6 +232,14 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
 
   useEffect(() => { const unsub = onBalanceChange(setBalance); return () => { unsub(); }; }, []);
 
+  // Reset PIN & acceptance whenever user navigates between steps
+  useEffect(() => {
+    setPin("");
+    setPinError("");
+    setTermsAccepted(false);
+    setTradeTermsAccepted(false);
+  }, [step, goldStep, stockStep]);
+
   const loadGoals = useCallback(async () => {
     if (!user) return;
     setLoading(true);
