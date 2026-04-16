@@ -32,6 +32,12 @@ interface AutoSaveSchedule {
   id: string; goal_id: string | null; frequency: string; amount: number;
   is_active: boolean; next_run_at: string; duration: string | null;
   ends_at: string | null; settled: boolean;
+  missed_count?: number; total_paid?: number; total_installments?: number;
+  strategy?: string; last_missed_at?: string;
+}
+interface MissedPayment {
+  id: string; schedule_id: string; user_id: string; amount: number;
+  due_date: string; repaid: boolean; repaid_at: string | null; created_at: string;
 }
 
 // ─── Mock investment data ────────────────────────────────────────────
@@ -140,7 +146,7 @@ const LIFE_GOAL_PRESETS = [
 const GOLD_PRESETS = [0.5, 1, 2, 5, 10];
 
 type MainTab = "savings" | "goals" | "gold" | "stocks";
-type SavingsStep = "home" | "add" | "create" | "autosave" | "review" | "goal-review" | "terms" | "detail" | "pick-goal";
+type SavingsStep = "home" | "add" | "create" | "autosave" | "review" | "goal-review" | "terms" | "detail" | "pick-goal" | "repay-missed";
 type GoldStep = "portfolio" | "buy" | "sell";
 type StockStep = "market" | "portfolio" | "trade";
 
