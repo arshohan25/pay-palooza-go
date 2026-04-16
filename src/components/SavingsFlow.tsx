@@ -1308,7 +1308,8 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     { label: "Amount", value: `৳${autoAmtNum.toLocaleString()} / ${autoFreq === "daily" ? "day" : autoFreq === "weekly" ? "week" : "month"}` },
                     { label: "Duration", value: selectedDuration.label },
                     { label: "Strategy", value: `${selectedStrategyObj.icon} ${selectedStrategyObj.label}` },
-                    { label: "Linked Goal", value: autoGoalId === "general" ? "General Savings" : (goals.find(g => g.id === autoGoalId)?.name ?? "General Savings") },
+                    { label: "Linked Goal", value: enableAutoSaveInCreate ? `${newEmoji} ${newName} (new)` : autoGoalId === "general" ? "General Savings" : (goals.find(g => g.id === autoGoalId)?.name ?? "General Savings") },
+                    ...(enableAutoSaveInCreate && newTarget ? [{ label: "Goal Target", value: `৳${parseFloat(newTarget).toLocaleString()}` }] : []),
                   ].map((row, i) => (
                     <div key={i} className="flex justify-between items-center text-[12px]">
                       <span className="text-muted-foreground">{row.label}</span>
