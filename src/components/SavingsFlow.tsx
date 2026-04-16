@@ -146,7 +146,7 @@ const LIFE_GOAL_PRESETS = [
 const GOLD_PRESETS = [0.5, 1, 2, 5, 10];
 
 type MainTab = "savings" | "goals" | "gold" | "stocks";
-type SavingsStep = "home" | "add" | "create" | "autosave" | "review" | "goal-review" | "terms" | "detail" | "pick-goal" | "repay-missed" | "goal-detail" | "dps-detail";
+type SavingsStep = "home" | "add" | "create" | "autosave" | "dps-create" | "review" | "goal-review" | "terms" | "detail" | "pick-goal" | "repay-missed" | "goal-detail" | "dps-detail";
 type GoldStep = "portfolio" | "buy" | "sell";
 type StockStep = "market" | "portfolio" | "trade";
 
@@ -639,8 +639,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const handleBack = () => {
     setError("");
     if (mainTab === "savings") {
-      if (step === "review") { setPin(""); setPinError(""); setTermsAccepted(false); setStep(enableAutoSaveInCreate ? "create" : "autosave"); }
+      if (step === "review") { setPin(""); setPinError(""); setTermsAccepted(false); setStep(enableAutoSaveInCreate ? "create" : "dps-create"); }
       else if (step === "goal-review") { setPin(""); setPinError(""); setStep("create"); }
+      else if (step === "dps-create") { setStep("autosave"); }
       else if (step === "repay-missed") { setPin(""); setPinError(""); setSelectedMissedIds([]); setStep("autosave"); }
       else if (step === "dps-detail") { setStep("autosave"); setSelectedSchedule(null); }
       else if (step === "home") onClose();
@@ -1226,7 +1227,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
             </motion.div>
           )}
 
-          {/* ══════════ SAVINGS: AUTO-SAVE + INVEST ══════════ */}
+          {/* ══════════ SAVINGS: ACTIVE DPS PLANS ══════════ */}
           {(mainTab === "savings" || mainTab === "goals") && step === "autosave" && (
             <motion.div key="s-auto" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
               {/* Sharia badge */}
@@ -1235,6 +1236,115 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 <p className="text-[11px] font-bold text-primary">100% Halal • No Interest • Trade-Based Profit</p>
               </div>
 
+              {/* Active Plans */}
+              {autoSaves.length > 0 ? (
+                <div className="space-y-2">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1">Active Plans</p>
+                  {autoSaves.map(schedule => {
+                    const linkedGoal = goals.find(g => g.id === schedule.goal_id);
+                    const durOpt = DURATION_OPTIONS.find(d => d.value === schedule.duration);
+                    const scheduleMissed = missedPayments.filter(m => m.schedule_id === schedule.id);
+                    const totalInst = schedule.total_installments ?? 0;
+                    const paid = schedule.total_paid ?? 0;
+                    const missed = schedule.missed_count ?? 0;
+                    const stratObj = INVESTMENT_STRATEGIES.find(s => s.key === schedule.strategy);
+                    return (
+                      <div key={schedule.id} className={`bg-card rounded-[16px] border p-3.5 space-y-2.5 cursor-pointer hover:shadow-md transition-shadow ${schedule.settled ? "border-primary/40 bg-primary/5" : "border-border/60"}`}
+                        onClick={async () => {
+                          setSelectedSchedule(schedule);
+                          const linkedGoal = goals.find(g => g.id === schedule.goal_id);
+                          const { data: deps } = await supabase.from("savings_deposits").select("id, amount, source, created_at").eq("goal_id", schedule.goal_id || "").order("created_at", { ascending: true });
+                          const scheduleMissed = missedPayments.filter(m => m.schedule_id === schedule.id);
+                          const timeline: Array<{ id: string; date: string; amount: number; type: "paid" | "missed"; repaid?: boolean }> = [];
+                          (deps as any[] ?? []).forEach((d: any) => timeline.push({ id: d.id, date: d.created_at, amount: Number(d.amount), type: "paid" }));
+                          scheduleMissed.forEach(m => timeline.push({ id: m.id, date: m.due_date, amount: Number(m.amount), type: "missed", repaid: m.repaid }));
+                          timeline.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                          setDpsTimeline(timeline);
+                          setStep("dps-detail");
+                        }}>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p className="text-[13px] font-semibold text-foreground">৳{Number(schedule.amount).toLocaleString()} / {schedule.frequency}</p>
+                              {schedule.settled && <span className="px-1.5 py-0.5 rounded-md bg-primary/20 text-primary text-[9px] font-bold uppercase">Completed</span>}
+                              {stratObj && <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground font-semibold">{stratObj.icon} {stratObj.label}</span>}
+                            </div>
+                            <p className="text-[11px] text-muted-foreground">
+                              {linkedGoal ? `${linkedGoal.emoji} ${linkedGoal.name}` : "General Savings"}
+                              {durOpt && ` • ${durOpt.label}`}
+                            </p>
+                            {totalInst > 0 && !schedule.settled && (
+                              <div className="mt-1.5 space-y-1">
+                                <div className="flex items-center justify-between text-[10px]">
+                                  <span className="text-muted-foreground font-medium">{paid}/{totalInst} installments paid</span>
+                                  <span className="font-bold text-primary">{totalInst > 0 ? Math.round((paid / totalInst) * 100) : 0}%</span>
+                                </div>
+                                <div className="h-1.5 rounded-full bg-muted/80 overflow-hidden">
+                                  <motion.div className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-500"
+                                    initial={{ width: 0 }} animate={{ width: `${totalInst > 0 ? (paid / totalInst) * 100 : 0}%` }}
+                                    transition={{ duration: 0.8, ease: "easeOut" }} />
+                                </div>
+                              </div>
+                            )}
+                            {schedule.ends_at && !schedule.settled && (
+                              <div className="flex items-center gap-2 mt-1">
+                                <p className="text-[10px] text-muted-foreground"><Clock size={10} className="inline mr-0.5 -mt-0.5" />{remainingTime(schedule.ends_at)}</p>
+                                {durOpt && <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold flex items-center gap-0.5">
+                                  <Lock size={8} /> {durOpt.minLock}m lock
+                                </span>}
+                              </div>
+                            )}
+                            {missed > 0 && scheduleMissed.length > 0 && !schedule.settled && (
+                              <div className="flex items-center gap-2 mt-1.5">
+                                <span className="text-[9px] px-2 py-0.5 rounded-md bg-destructive/10 text-destructive font-bold flex items-center gap-1">
+                                  <AlertTriangle size={9} /> {missed} missed
+                                </span>
+                                <button onClick={(e) => {
+                                  e.stopPropagation();
+                                  setRepayScheduleId(schedule.id);
+                                  setSelectedMissedIds(scheduleMissed.map(m => m.id));
+                                  setStep("repay-missed"); setError(""); setPin(""); setPinError("");
+                                }} className="text-[10px] font-bold text-primary underline underline-offset-2">
+                                  Repay Now
+                                </button>
+                              </div>
+                            )}
+                            {schedule.is_active && !schedule.settled && schedule.next_run_at && (
+                              <p className="text-[9px] text-muted-foreground mt-1">
+                                Next collection: {new Date(schedule.next_run_at).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
+                              </p>
+                            )}
+                          </div>
+                          {!schedule.settled && <Switch checked={schedule.is_active} onCheckedChange={() => toggleAutoSave(schedule.id, schedule.is_active)} />}
+                          <button onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "auto", id: schedule.id, label: `৳${Number(schedule.amount).toLocaleString()} ${schedule.frequency}` }); setDeletePin(""); setDeletePinError(""); }} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 size={14} /></button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-8 flex flex-col items-center gap-3 text-center">
+                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+                    <TrendingUp size={24} className="text-primary" />
+                  </div>
+                  <p className="text-[14px] font-bold text-foreground">No Active DPS Plans Yet</p>
+                  <p className="text-[12px] text-muted-foreground max-w-[240px]">Start your first savings & investment plan to grow your wealth with Sharia-compliant returns.</p>
+                </div>
+              )}
+
+              {/* Open New DPS Button */}
+              <motion.button whileTap={{ scale: 0.96 }}
+                onClick={() => { setStep("dps-create"); setError(""); }}
+                className="w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg flex items-center justify-center gap-2"
+                style={{ background: "linear-gradient(135deg, hsl(162 72% 32%), hsl(178 62% 22%))" }}>
+                <Plus size={18} /> Open New DPS
+              </motion.button>
+            </motion.div>
+          )}
+
+          {/* ══════════ SAVINGS: DPS CREATE FORM ══════════ */}
+          {(mainTab === "savings" || mainTab === "goals") && step === "dps-create" && (
+            <motion.div key="s-dps-create" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
               <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-4">
                 <p className="text-[14px] font-bold text-foreground">Create Savings + Investment Plan</p>
 
@@ -1332,7 +1442,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   </Select>
                 </div>
 
-                {/* ═══ Estimated Profit Card ═══ */}
+                {/* Estimated Profit Card */}
                 {estimatedProfit && estimatedProfit.totalDeposits > 0 && (
                   <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
                     className="rounded-[16px] p-4 bg-gradient-to-br from-emerald-500/12 to-emerald-600/5 border border-emerald-500/25 space-y-3">
@@ -1369,97 +1479,6 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   Continue to Review →
                 </motion.button>
               </div>
-
-              {/* Existing schedules */}
-              {autoSaves.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1">Active Plans</p>
-                  {autoSaves.map(schedule => {
-                    const linkedGoal = goals.find(g => g.id === schedule.goal_id);
-                    const durOpt = DURATION_OPTIONS.find(d => d.value === schedule.duration);
-                    const scheduleMissed = missedPayments.filter(m => m.schedule_id === schedule.id);
-                    const totalInst = schedule.total_installments ?? 0;
-                    const paid = schedule.total_paid ?? 0;
-                    const missed = schedule.missed_count ?? 0;
-                    const stratObj = INVESTMENT_STRATEGIES.find(s => s.key === schedule.strategy);
-                    return (
-                      <div key={schedule.id} className={`bg-card rounded-[16px] border p-3.5 space-y-2.5 cursor-pointer hover:shadow-md transition-shadow ${schedule.settled ? "border-primary/40 bg-primary/5" : "border-border/60"}`}
-                        onClick={async () => {
-                          setSelectedSchedule(schedule);
-                          // Build timeline from deposits + missed payments
-                          const linkedGoal = goals.find(g => g.id === schedule.goal_id);
-                          const { data: deps } = await supabase.from("savings_deposits").select("id, amount, source, created_at").eq("goal_id", schedule.goal_id || "").order("created_at", { ascending: true });
-                          const scheduleMissed = missedPayments.filter(m => m.schedule_id === schedule.id);
-                          const timeline: Array<{ id: string; date: string; amount: number; type: "paid" | "missed"; repaid?: boolean }> = [];
-                          (deps as any[] ?? []).forEach((d: any) => timeline.push({ id: d.id, date: d.created_at, amount: Number(d.amount), type: "paid" }));
-                          scheduleMissed.forEach(m => timeline.push({ id: m.id, date: m.due_date, amount: Number(m.amount), type: "missed", repaid: m.repaid }));
-                          timeline.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-                          setDpsTimeline(timeline);
-                          setStep("dps-detail");
-                        }}>
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <p className="text-[13px] font-semibold text-foreground">৳{Number(schedule.amount).toLocaleString()} / {schedule.frequency}</p>
-                              {schedule.settled && <span className="px-1.5 py-0.5 rounded-md bg-primary/20 text-primary text-[9px] font-bold uppercase">Completed</span>}
-                              {stratObj && <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground font-semibold">{stratObj.icon} {stratObj.label}</span>}
-                            </div>
-                            <p className="text-[11px] text-muted-foreground">
-                              {linkedGoal ? `${linkedGoal.emoji} ${linkedGoal.name}` : "General Savings"}
-                              {durOpt && ` • ${durOpt.label}`}
-                            </p>
-                            {/* Installment progress */}
-                            {totalInst > 0 && !schedule.settled && (
-                              <div className="mt-1.5 space-y-1">
-                                <div className="flex items-center justify-between text-[10px]">
-                                  <span className="text-muted-foreground font-medium">{paid}/{totalInst} installments paid</span>
-                                  <span className="font-bold text-primary">{totalInst > 0 ? Math.round((paid / totalInst) * 100) : 0}%</span>
-                                </div>
-                                <div className="h-1.5 rounded-full bg-muted/80 overflow-hidden">
-                                  <motion.div className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-500"
-                                    initial={{ width: 0 }} animate={{ width: `${totalInst > 0 ? (paid / totalInst) * 100 : 0}%` }}
-                                    transition={{ duration: 0.8, ease: "easeOut" }} />
-                                </div>
-                              </div>
-                            )}
-                            {schedule.ends_at && !schedule.settled && (
-                              <div className="flex items-center gap-2 mt-1">
-                                <p className="text-[10px] text-muted-foreground"><Clock size={10} className="inline mr-0.5 -mt-0.5" />{remainingTime(schedule.ends_at)}</p>
-                                {durOpt && <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold flex items-center gap-0.5">
-                                  <Lock size={8} /> {durOpt.minLock}m lock
-                                </span>}
-                              </div>
-                            )}
-                            {/* Missed payments badge + repay */}
-                            {missed > 0 && scheduleMissed.length > 0 && !schedule.settled && (
-                              <div className="flex items-center gap-2 mt-1.5">
-                                <span className="text-[9px] px-2 py-0.5 rounded-md bg-destructive/10 text-destructive font-bold flex items-center gap-1">
-                                  <AlertTriangle size={9} /> {missed} missed
-                                </span>
-                                <button onClick={() => {
-                                  setRepayScheduleId(schedule.id);
-                                  setSelectedMissedIds(scheduleMissed.map(m => m.id));
-                                  setStep("repay-missed"); setError(""); setPin(""); setPinError("");
-                                }} className="text-[10px] font-bold text-primary underline underline-offset-2">
-                                  Repay Now
-                                </button>
-                              </div>
-                            )}
-                            {/* Next collection date */}
-                            {schedule.is_active && !schedule.settled && schedule.next_run_at && (
-                              <p className="text-[9px] text-muted-foreground mt-1">
-                                Next collection: {new Date(schedule.next_run_at).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
-                              </p>
-                            )}
-                          </div>
-                          {!schedule.settled && <Switch checked={schedule.is_active} onCheckedChange={() => toggleAutoSave(schedule.id, schedule.is_active)} />}
-                          <button onClick={() => { setDeleteTarget({ type: "auto", id: schedule.id, label: `৳${Number(schedule.amount).toLocaleString()} ${schedule.frequency}` }); setDeletePin(""); setDeletePinError(""); }} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 size={14} /></button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </motion.div>
           )}
 
