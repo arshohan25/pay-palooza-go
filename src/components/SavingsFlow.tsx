@@ -759,7 +759,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
           )}
 
           {/* ══════════ SAVINGS: ADD MONEY ══════════ */}
-          {mainTab === "savings" && step === "add" && (
+          {(mainTab === "savings" || mainTab === "goals") && step === "add" && (
             <motion.div key="s-add" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
               <div className="space-y-2">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1">Select Goal</p>
