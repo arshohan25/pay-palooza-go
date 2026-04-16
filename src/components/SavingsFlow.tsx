@@ -294,7 +294,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     })));
   }, [user]);
 
-  useEffect(() => { loadGoals(); loadAutoSaves(); loadGoldHoldings(); loadStockHoldings(); }, [loadGoals, loadAutoSaves, loadGoldHoldings, loadStockHoldings]);
+  useEffect(() => { loadGoals(); loadAutoSaves(); loadGoldHoldings(); loadStockHoldings(); loadMissedPayments(); }, [loadGoals, loadAutoSaves, loadGoldHoldings, loadStockHoldings, loadMissedPayments]);
 
   useEffect(() => {
     if (!user) return;
