@@ -903,7 +903,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
 
               {/* Initial Deposit */}
               <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-3">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Initial Deposit (Optional)</p>
+                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Initial Deposit <span className="text-destructive">*</span></p>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[20px] font-bold text-muted-foreground">৳</span>
                   <input type="number" inputMode="decimal" placeholder="0" value={newInitialDeposit} onChange={e => { setNewInitialDeposit(e.target.value); setError(""); }}
@@ -1065,6 +1065,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     if (!newName.trim()) { setError("Select or enter a goal name"); return; }
                     const target = parseFloat(newTarget);
                     if (!target || target <= 0) { setError("Enter a valid target amount"); return; }
+                    const initialAmt = parseFloat(newInitialDeposit);
+                    if (!initialAmt || initialAmt <= 0) { setError("Enter an initial deposit amount"); return; }
+                    if (initialAmt > balance) { setError("Initial deposit exceeds wallet balance"); return; }
                     setError("");
                     setStep("goal-review");
                   }
