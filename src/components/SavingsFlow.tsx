@@ -766,20 +766,16 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
           {/* ══════════ SAVINGS: ADD MONEY ══════════ */}
           {(mainTab === "savings" || mainTab === "goals") && step === "add" && (
             <motion.div key="s-add" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
-              <div className="space-y-2">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1">Select Goal</p>
-                {goals.filter(g => g.status === "active").map(goal => (
-                  <motion.button key={goal.id} whileTap={{ scale: 0.98 }} onClick={() => setSelectedGoal(goal)}
-                    className={`w-full flex items-center gap-3 p-3.5 rounded-[18px] border transition-all ${selectedGoal?.id === goal.id ? "border-primary/60 bg-primary/10" : "border-border/60 bg-card hover:bg-muted/30"}`}>
-                    <span className="text-2xl">{goal.emoji}</span>
-                    <div className="flex-1 text-left">
-                      <p className="text-[13px] font-semibold text-foreground">{goal.name}</p>
-                      <p className="text-[11px] text-muted-foreground">৳{(Number(goal.target_amount) - Number(goal.saved_amount)).toLocaleString()} remaining</p>
-                    </div>
-                    {selectedGoal?.id === goal.id && <CheckCircle2 size={16} className="text-primary shrink-0" />}
-                  </motion.button>
-                ))}
-              </div>
+              {selectedGoal && (
+                <div className="flex items-center gap-3 p-3.5 rounded-[18px] border border-primary/60 bg-primary/10">
+                  <span className="text-2xl">{selectedGoal.emoji}</span>
+                  <div className="flex-1 text-left">
+                    <p className="text-[13px] font-semibold text-foreground">{selectedGoal.name}</p>
+                    <p className="text-[11px] text-muted-foreground">৳{(Number(selectedGoal.target_amount) - Number(selectedGoal.saved_amount)).toLocaleString()} remaining</p>
+                  </div>
+                  <CheckCircle2 size={16} className="text-primary shrink-0" />
+                </div>
+              )}
               <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-3">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Amount</p>
                 <div className="relative">
