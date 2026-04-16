@@ -1,68 +1,33 @@
 
 
-# Restructure Savings Tabs — Add "Goals" Tab Between Savings & Gold
+# Add Initial Deposit to Goal Creation & Fix Realtime Sync
 
 ## Problem
-The auto-save settings (CalendarClock) and create goal (+) buttons are crammed in the header. The user wants a cleaner layout where Goals are a dedicated tab, and Savings focuses on auto-DPS by default.
+1. Goal deposits don't sync instantly after creation
+2. Goal creation flow lacks an initial deposit step — user should set target amount AND an initial first deposit amount
 
 ## Plan
 
-### 1. Add "Goals" tab to the tab bar
+### 1. Add "Initial Deposit" field to Create Goal screen
+In `src/components/SavingsFlow.tsx`, add a new state `newInitialDeposit` (string, default `""`). Below the Target Amount card in the `step === "create"` section, add an "Initial Deposit (Optional)" card with amount input and quick-pick buttons (e.g. ৳100, ৳500, ৳1000, ৳2000, ৳5000). Validate that initial deposit does not exceed user balance.
 
-Change the 3-tab layout (Savings | Gold | Stocks) to 4 tabs:
+### 2. Update Goal Review screen to show initial deposit
+In the `step === "goal-review"` summary card, add an "Initial Deposit" row showing `৳{amount}` or "No initial deposit". Update the summary to be clearer about what will happen on confirmation.
 
-```text
-[ Savings ]  [ Goals ]  [ Gold ]  [ Stocks ]
-```
+### 3. Update `handleCreateGoal` to perform deposit after creation
+After inserting the goal into `savings_goals`, if `newInitialDeposit > 0`:
+- Call `supabase.rpc("savings_deposit", { p_goal_id: newGoalId, p_amount: initialAmt, p_source: "manual" })`
+- Call `fetchBalance()` to sync wallet balance
+- Show combined success toast
 
-- **Savings tab** — Shows total saved, active auto-save plans, and quick "Create Auto-Save" CTA. This is the DPS/auto system.
-- **Goals tab** — Shows the life-goal presets grid, existing goals list, and "Create Goal" button. Contains the current `step === "create"` and `step === "add"` flows.
+This requires changing the insert to use `.select("id").single()` to get the new goal ID.
 
-### 2. Remove header buttons
+### 4. Fix realtime sync
+The realtime channel already listens to `savings_goals` and `savings_deposits` changes and calls `loadGoals()`. The issue is likely that `loadGoals()` is called but the UI doesn't reflect changes because the goal was just created locally. After `handleCreateGoal` succeeds, explicitly call `loadGoals()` (already done) and ensure `fetchBalance()` is called to update the wallet display.
 
-Delete the CalendarClock and + buttons from the header (lines 582–589). The header becomes clean — just back arrow, title, and subtitle.
-
-### 3. Restructure `MainTab` type
-
-```typescript
-type MainTab = "savings" | "goals" | "gold" | "stocks";
-```
-
-### 4. Goals tab home screen (new section)
-
-When `mainTab === "goals" && step === "home"`:
-- Show the life-goal presets grid as quick-create cards (tap to start creating)
-- Below, show existing goals list with progress bars (currently in Savings home)
-- "Create Custom Goal" button at bottom
-
-When user taps a preset or custom, transition to `step === "create"` (existing flow).
-
-### 5. Savings tab home (simplified)
-
-Remove the goals list from Savings home. Keep:
-- Total Saved summary card
-- Active auto-save plans banner (with manage button)
-- Gold & Stocks overview cards
-- "Start Auto-Save" CTA if no active plans
-
-### 6. Header dynamic updates
-
-- Goals tab header: gradient matches emerald/teal, title "My Goals", subtitle shows goal count
-- Tab icon: use `Target` icon for Goals tab
-
-### 7. Premium aesthetic for Goals tab
-
-- Life-goal preset cards with glassmorphism and staggered Framer Motion entrance
-- Goals list cards with gradient progress bars and completion percentage
-- Empty state with premium illustration text
+### 5. Reset new state on navigation
+Add `newInitialDeposit` to the `useEffect` that resets PIN/terms on step changes. Reset it when returning to home.
 
 ### File Changes
-- **`src/components/SavingsFlow.tsx`** — All changes in this single file:
-  - Add `"goals"` to `MainTab` union
-  - Remove header action buttons (CalendarClock, Plus)
-  - Add Goals tab button between Savings and Gold in tab bar
-  - Move goals list rendering from Savings home to Goals tab home
-  - Add life-goal preset quick-create grid to Goals tab
-  - Update `handleBack` for goals tab navigation
-  - Update `headerGradient`, `headerTitle`, `headerSub` for goals tab
+- **`src/components/SavingsFlow.tsx`** — All changes in this single file
 
