@@ -1660,38 +1660,72 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
               {goalDeposits.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1">Deposit History</p>
-                  <div className="relative pl-6">
-                    {/* Vertical line */}
-                    <div className="absolute left-[11px] top-3 bottom-3 w-0.5 bg-gradient-to-b from-primary/40 via-primary/20 to-transparent" />
-                    {goalDeposits.map((dep, i) => (
-                      <motion.div key={dep.id}
-                        initial={{ opacity: 0, x: i % 2 === 0 ? -20 : 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.06, type: "spring", stiffness: 350, damping: 28 }}
-                        className="relative mb-3 last:mb-0"
-                      >
-                        {/* Circle marker */}
-                        <div className="absolute -left-[15px] top-3 w-3 h-3 rounded-full border-2 border-primary bg-card z-10" />
-                        {/* Content card */}
-                        <div className={`bg-card rounded-[14px] border border-border/50 p-3 shadow-[var(--shadow-xs)] ${i % 2 === 0 ? "ml-2" : "ml-2"}`}>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-[14px] font-bold text-foreground">৳{Number(dep.amount).toLocaleString()}</p>
-                              <p className="text-[10px] text-muted-foreground">
+                  <div className="relative py-4">
+                    {/* Center trunk line */}
+                    <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary/50 via-primary/20 to-transparent" />
+                    {goalDeposits.map((dep, i) => {
+                      const isRight = (i * 7 + 3) % 2 === 1;
+                      const nodeColor = dep.source === "auto" ? "border-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.4)]"
+                        : dep.source === "dps_repay" ? "border-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.4)]"
+                        : "border-primary shadow-[0_0_6px_hsl(var(--primary)/0.4)]";
+                      const branchColor = dep.source === "auto" ? "bg-blue-500/50" : dep.source === "dps_repay" ? "bg-amber-500/50" : "bg-primary/50";
+
+                      return (
+                        <motion.div key={dep.id}
+                          initial={{ opacity: 0, x: isRight ? 20 : -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.08, type: "spring", stiffness: 350, damping: 28 }}
+                          className="relative flex items-center mb-5 last:mb-0"
+                        >
+                          {/* Left side */}
+                          <div className={`w-[45%] ${isRight ? "text-right pr-3" : "pr-3"}`}>
+                            {isRight ? (
+                              <p className="text-[10px] font-bold text-muted-foreground">
                                 {new Date(dep.created_at).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
                               </p>
-                            </div>
-                            <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase ${
-                              dep.source === "auto" ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                              : dep.source === "dps_repay" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                              : "bg-primary/10 text-primary"
-                            }`}>
-                              {dep.source === "auto" ? "Auto" : dep.source === "dps_repay" ? "Repay" : "Manual"}
-                            </span>
+                            ) : (
+                              <div className="ml-auto w-fit bg-card/80 backdrop-blur-sm rounded-[14px] border border-border/50 p-2.5 shadow-[var(--shadow-xs)]">
+                                <p className="text-[14px] font-bold text-foreground">৳{Number(dep.amount).toLocaleString()}</p>
+                                <span className={`inline-block mt-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase ${
+                                  dep.source === "auto" ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                  : dep.source === "dps_repay" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                  : "bg-primary/10 text-primary"
+                                }`}>
+                                  {dep.source === "auto" ? "Auto" : dep.source === "dps_repay" ? "Repay" : "Manual"}
+                                </span>
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      </motion.div>
-                    ))}
+
+                          {/* Center node */}
+                          <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center z-10">
+                            <div className={`w-3.5 h-3.5 rounded-full border-2 bg-card ${nodeColor}`} />
+                          </div>
+                          {/* Branch line */}
+                          <div className={`absolute top-1/2 -translate-y-1/2 h-[2px] w-2 ${branchColor} ${isRight ? "left-[calc(50%+7px)]" : "right-[calc(50%+7px)]"}`} />
+
+                          {/* Right side */}
+                          <div className={`w-[45%] ${isRight ? "pl-3" : "pl-3 text-left"}`}>
+                            {isRight ? (
+                              <div className="w-fit bg-card/80 backdrop-blur-sm rounded-[14px] border border-border/50 p-2.5 shadow-[var(--shadow-xs)]">
+                                <p className="text-[14px] font-bold text-foreground">৳{Number(dep.amount).toLocaleString()}</p>
+                                <span className={`inline-block mt-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase ${
+                                  dep.source === "auto" ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                  : dep.source === "dps_repay" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                  : "bg-primary/10 text-primary"
+                                }`}>
+                                  {dep.source === "auto" ? "Auto" : dep.source === "dps_repay" ? "Repay" : "Manual"}
+                                </span>
+                              </div>
+                            ) : (
+                              <p className="text-[10px] font-bold text-muted-foreground">
+                                {new Date(dep.created_at).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
+                              </p>
+                            )}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -1823,46 +1857,80 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
               {dpsTimeline.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1">Installment History</p>
-                  <div className="relative pl-6">
-                    {/* Vertical line */}
-                    <div className="absolute left-[11px] top-3 bottom-3 w-0.5 bg-gradient-to-b from-primary/40 via-primary/20 to-transparent" />
-                    {dpsTimeline.map((item, i) => (
-                      <motion.div key={item.id}
-                        initial={{ opacity: 0, x: i % 2 === 0 ? -20 : 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.06, type: "spring", stiffness: 350, damping: 28 }}
-                        className="relative mb-3 last:mb-0"
-                      >
-                        {/* Circle marker */}
-                        <div className={`absolute -left-[15px] top-3 w-3 h-3 rounded-full border-2 bg-card z-10 ${
-                          item.type === "paid" ? "border-emerald-500" : item.repaid ? "border-amber-500" : "border-destructive"
-                        }`} />
-                        {/* Content card */}
-                        <div className={`ml-2 rounded-[14px] border p-3 shadow-[var(--shadow-xs)] ${
-                          item.type === "paid" ? "border-emerald-500/20 bg-emerald-500/5"
-                          : item.repaid ? "border-amber-500/20 bg-amber-500/5"
-                          : "border-destructive/20 bg-destructive/5"
-                        }`}>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-[14px] font-bold text-foreground">৳{item.amount.toLocaleString()}</p>
-                              <p className="text-[10px] text-muted-foreground">
+                  <div className="relative py-4">
+                    {/* Center trunk line */}
+                    <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary/50 via-primary/20 to-transparent" />
+                    {dpsTimeline.map((item, i) => {
+                      const isRight = (i * 7 + 3) % 2 === 1;
+                      const statusColor = item.type === "paid" ? "emerald" : item.repaid ? "amber" : "destructive";
+                      const nodeColor = item.type === "paid" ? "border-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)]"
+                        : item.repaid ? "border-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.4)]"
+                        : "border-destructive shadow-[0_0_6px_hsl(var(--destructive)/0.4)]";
+                      const branchColor = item.type === "paid" ? "bg-emerald-500/50" : item.repaid ? "bg-amber-500/50" : "bg-destructive/50";
+                      const cardBorder = item.type === "paid" ? "border-emerald-500/20 bg-emerald-500/5"
+                        : item.repaid ? "border-amber-500/20 bg-amber-500/5"
+                        : "border-destructive/20 bg-destructive/5";
+
+                      return (
+                        <motion.div key={item.id}
+                          initial={{ opacity: 0, x: isRight ? 20 : -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.08, type: "spring", stiffness: 350, damping: 28 }}
+                          className="relative flex items-center mb-5 last:mb-0"
+                        >
+                          {/* Left side */}
+                          <div className={`w-[45%] ${isRight ? "text-right pr-3" : "pr-3"}`}>
+                            {isRight ? (
+                              <p className="text-[10px] font-bold text-muted-foreground">
                                 {new Date(item.date).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
                               </p>
-                            </div>
-                            <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase flex items-center gap-1 ${
-                              item.type === "paid" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                              : item.repaid ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                              : "bg-destructive/10 text-destructive"
-                            }`}>
-                              {item.type === "paid" ? <><CheckCircle2 size={10} /> Paid</> 
-                              : item.repaid ? <><RefreshCw size={10} /> Repaid</>
-                              : <><AlertTriangle size={10} /> Missed</>}
-                            </span>
+                            ) : (
+                              <div className={`ml-auto w-fit backdrop-blur-sm rounded-[14px] border p-2.5 shadow-[var(--shadow-xs)] ${cardBorder}`}>
+                                <p className="text-[14px] font-bold text-foreground">৳{item.amount.toLocaleString()}</p>
+                                <span className={`inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase ${
+                                  item.type === "paid" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                  : item.repaid ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                  : "bg-destructive/10 text-destructive"
+                                }`}>
+                                  {item.type === "paid" ? <><CheckCircle2 size={10} /> Paid</> 
+                                  : item.repaid ? <><RefreshCw size={10} /> Repaid</>
+                                  : <><AlertTriangle size={10} /> Missed</>}
+                                </span>
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      </motion.div>
-                    ))}
+
+                          {/* Center node */}
+                          <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center z-10">
+                            <div className={`w-3.5 h-3.5 rounded-full border-2 bg-card ${nodeColor}`} />
+                          </div>
+                          {/* Branch line */}
+                          <div className={`absolute top-1/2 -translate-y-1/2 h-[2px] w-2 ${branchColor} ${isRight ? "left-[calc(50%+7px)]" : "right-[calc(50%+7px)]"}`} />
+
+                          {/* Right side */}
+                          <div className={`w-[45%] ${isRight ? "pl-3" : "pl-3 text-left"}`}>
+                            {isRight ? (
+                              <div className={`w-fit backdrop-blur-sm rounded-[14px] border p-2.5 shadow-[var(--shadow-xs)] ${cardBorder}`}>
+                                <p className="text-[14px] font-bold text-foreground">৳{item.amount.toLocaleString()}</p>
+                                <span className={`inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase ${
+                                  item.type === "paid" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                  : item.repaid ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                  : "bg-destructive/10 text-destructive"
+                                }`}>
+                                  {item.type === "paid" ? <><CheckCircle2 size={10} /> Paid</> 
+                                  : item.repaid ? <><RefreshCw size={10} /> Repaid</>
+                                  : <><AlertTriangle size={10} /> Missed</>}
+                                </span>
+                              </div>
+                            ) : (
+                              <p className="text-[10px] font-bold text-muted-foreground">
+                                {new Date(item.date).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
+                              </p>
+                            )}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
