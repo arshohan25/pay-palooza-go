@@ -752,6 +752,13 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
         const txDate = new Date(selectedTx.date);
         const txId   = selectedTx.short_id;
         const catLabel = CATEGORIES.find((c) => c.id === selectedTx.category)?.label ?? selectedTx.category;
+        const baseAmount = Math.abs(selectedTx.amount);
+        const summaryBaseLabel = selectedTx.amount > 0 ? "Gross Amount" : "Principal";
+        const summaryFeeLabel = selectedTx.amount > 0 ? "Fee Deducted" : "Fee (from balance)";
+        const summaryTotalLabel = selectedTx.amount > 0 ? "Net Credited" : "Total Deducted";
+        const summaryTotalAmount = selectedTx.amount > 0
+          ? Math.max(0, baseAmount - selectedTx.fee)
+          : baseAmount + selectedTx.fee;
         const gradMap: Record<string, string> = {
           send: "gradient-send", cashout: "gradient-cashout",
           payment: "gradient-payment", recharge: "gradient-accent",
