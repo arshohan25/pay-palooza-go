@@ -1091,15 +1091,29 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 </div>
 
                 {/* Link to goal */}
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Link to Goal (optional)</p>
-                  <Select value={autoGoalId} onValueChange={setAutoGoalId}>
-                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="general">General Savings</SelectItem>
-                      {goals.filter(g => g.status === "active").map(g => <SelectItem key={g.id} value={g.id}>{g.emoji} {g.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
+                    <button onClick={() => setAutoGoalId("general")}
+                      className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold transition-all border ${autoGoalId === "general" ? "border-primary/50 bg-primary/10 text-primary ring-1 ring-primary/20" : "border-border/50 bg-muted/40 text-muted-foreground hover:bg-muted/60"}`}>
+                      <Wallet size={13} /> General
+                    </button>
+                    {goals.filter(g => g.status === "active").map(g => (
+                      <button key={g.id} onClick={() => setAutoGoalId(g.id)}
+                        className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold transition-all border ${autoGoalId === g.id ? "border-primary/50 bg-primary/10 text-primary ring-1 ring-primary/20" : "border-border/50 bg-muted/40 text-muted-foreground hover:bg-muted/60"}`}>
+                        <span className="text-sm">{g.emoji}</span> {g.name}
+                      </button>
+                    ))}
+                    {LIFE_GOAL_PRESETS.filter(p => p.name !== "Custom" && !goals.some(g => g.name === p.name)).map(preset => (
+                      <button key={preset.name} onClick={() => {
+                        setNewEmoji(preset.emoji); setNewName(preset.name); setNewTarget("");
+                        setEnableAutoSaveInCreate(true); setStep("create");
+                      }}
+                        className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold border border-dashed border-border/50 bg-muted/20 text-muted-foreground hover:bg-muted/40 transition-all">
+                        <span className="text-sm">{preset.emoji}</span> <Plus size={10} className="opacity-50" /> {preset.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* ═══ Estimated Profit Card ═══ */}
