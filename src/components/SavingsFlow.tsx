@@ -1853,9 +1853,6 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
               {dpsTimeline.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1">Installment History</p>
-                  <div className="relative py-4">
-                    {/* Center trunk line */}
-                    <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary/50 via-primary/20 to-transparent" />
                   <div className="relative py-6 px-2">
                     {/* Center trunk line */}
                     <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary/60 via-primary/25 to-transparent rounded-full" />
