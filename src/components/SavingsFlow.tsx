@@ -1383,7 +1383,20 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     const missed = schedule.missed_count ?? 0;
                     const stratObj = INVESTMENT_STRATEGIES.find(s => s.key === schedule.strategy);
                     return (
-                      <div key={schedule.id} className={`bg-card rounded-[16px] border p-3.5 space-y-2.5 ${schedule.settled ? "border-primary/40 bg-primary/5" : "border-border/60"}`}>
+                      <div key={schedule.id} className={`bg-card rounded-[16px] border p-3.5 space-y-2.5 cursor-pointer hover:shadow-md transition-shadow ${schedule.settled ? "border-primary/40 bg-primary/5" : "border-border/60"}`}
+                        onClick={async () => {
+                          setSelectedSchedule(schedule);
+                          // Build timeline from deposits + missed payments
+                          const linkedGoal = goals.find(g => g.id === schedule.goal_id);
+                          const { data: deps } = await supabase.from("savings_deposits").select("id, amount, source, created_at").eq("goal_id", schedule.goal_id || "").order("created_at", { ascending: true });
+                          const scheduleMissed = missedPayments.filter(m => m.schedule_id === schedule.id);
+                          const timeline: Array<{ id: string; date: string; amount: number; type: "paid" | "missed"; repaid?: boolean }> = [];
+                          (deps as any[] ?? []).forEach((d: any) => timeline.push({ id: d.id, date: d.created_at, amount: Number(d.amount), type: "paid" }));
+                          scheduleMissed.forEach(m => timeline.push({ id: m.id, date: m.due_date, amount: Number(m.amount), type: "missed", repaid: m.repaid }));
+                          timeline.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                          setDpsTimeline(timeline);
+                          setStep("dps-detail");
+                        }}>
                         <div className="flex items-center gap-3">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
