@@ -1,31 +1,30 @@
 
 
-# Fix "UPDATE requires a WHERE clause" + PIN Reset
+# Add Mandatory T&C Gate Before Savings Access
 
-## Problem 1: SQL Error
-All 4 investment RPCs (`buy_gold`, `sell_gold`, `buy_stock`, `sell_stock`) have this bug in the treasury credit section:
-```sql
-UPDATE platform_treasury SET balance = balance + v_fee ... updated_at = now();
--- Missing: WHERE id = v_treasury.id
-```
-PostgreSQL rejects the UPDATE without a WHERE clause, causing the entire transaction to fail with "UPDATE requires a WHERE clause".
+## Current State
+T&C exists but is only shown as an optional checkbox during auto-save plan creation (the "review" step). Users can freely browse Gold, Stocks, and Savings tabs and even trade without ever accepting the T&C.
 
-## Problem 2: PIN Not Clearing on Error
-When the RPC fails (due to bug #1), the `catch` block sets the error message but does NOT clear the PIN input. `setPin("")` only runs in the success path. The user is stuck with a filled PIN and an error message.
+## Plan
 
-## Fix
+### 1. Add persistent T&C acceptance tracking
+- Store acceptance in `localStorage` key `mfs_savings_tc_accepted` (consistent with existing patterns like `mfs_onboarding_done`).
+- Add state: `const [tcAccepted, setTcAccepted] = useState(() => localStorage.getItem("mfs_savings_tc_accepted") === "1")`.
 
-### 1. Database Migration — Add WHERE clause to all 4 RPCs
-Recreate `buy_gold`, `sell_gold`, `buy_stock`, `sell_stock` with the corrected line:
-```sql
-UPDATE platform_treasury SET ... WHERE id = v_treasury.id;
-```
-This is the same one-line fix applied to each of the 4 RPCs.
+### 2. Create a full-screen T&C gate
+- When `tcAccepted` is `false`, render a mandatory T&C screen instead of the savings dashboard.
+- This screen will display:
+  - A shield/lock icon header with "Investment Terms & Conditions"
+  - All 7 existing T&C sections (already written in the terms sheet)
+  - Additional clauses: platform fee disclosure (1.5% gold spread, ৳15 stock brokerage), no guaranteed returns disclaimer, regulatory compliance note
+  - A scrollable content area with a "scroll to bottom" indicator
+  - A checkbox: "I have read and agree to all Terms & Conditions, risk disclosures, and fee structures"
+  - A disabled-until-checked "Accept & Continue" button
+- On acceptance: set `localStorage` flag and proceed to savings dashboard.
 
-### 2. Frontend — `src/components/SavingsFlow.tsx`
-In `handleBuyGold`, `handleSellGold`, `handleBuyStock`, `handleSellStock`: add `setPin("")` in the `catch` block so the PIN clears on any error, allowing the user to retry.
+### 3. Keep existing per-trade T&C checkbox
+- The auto-save review step T&C checkbox stays as-is for double confirmation on plan creation.
 
-### Summary
-- 1 migration (fix WHERE clause in 4 RPCs)
-- 1 file edit (`SavingsFlow.tsx` — clear PIN on error in 4 handlers)
+### File Changes
+- **`src/components/SavingsFlow.tsx`** — Add `tcAccepted` state, render the gate screen when false, enhance T&C content with fee disclosures.
 
