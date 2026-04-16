@@ -303,9 +303,11 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
       .on("postgres_changes", { event: "*", schema: "public", table: "savings_deposits", filter: `user_id=eq.${user.id}` }, () => loadGoals())
       .on("postgres_changes", { event: "*", schema: "public", table: "gold_holdings", filter: `user_id=eq.${user.id}` }, () => loadGoldHoldings())
       .on("postgres_changes", { event: "*", schema: "public", table: "stock_holdings", filter: `user_id=eq.${user.id}` }, () => loadStockHoldings())
+      .on("postgres_changes", { event: "*", schema: "public", table: "dps_missed_payments", filter: `user_id=eq.${user.id}` }, () => loadMissedPayments())
+      .on("postgres_changes", { event: "*", schema: "public", table: "savings_auto_save", filter: `user_id=eq.${user.id}` }, () => loadAutoSaves())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [user, loadGoals, loadGoldHoldings, loadStockHoldings]);
+  }, [user, loadGoals, loadGoldHoldings, loadStockHoldings, loadMissedPayments, loadAutoSaves]);
 
   // ─── Computed profit estimation for auto-save ────────
   const autoAmtNum = parseFloat(autoAmount) || 0;
