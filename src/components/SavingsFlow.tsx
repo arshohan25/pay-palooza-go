@@ -122,7 +122,21 @@ function calcEstimatedProfit(amount: number, durationMonths: number, estReturnPc
 }
 
 const PRESET_AMOUNTS = [100, 200, 500, 1000, 5000];
-const EMOJI_LIST = ["🎯", "🛡️", "📱", "✈️", "🏠", "🎓", "💍", "🚗", "💊", "🎁"];
+
+const LIFE_GOAL_PRESETS = [
+  { emoji: "🏍️", name: "Dream Bike", gradient: "from-orange-500/15 to-red-500/10", border: "border-orange-500/25" },
+  { emoji: "🏠", name: "Dream House", gradient: "from-blue-500/15 to-indigo-500/10", border: "border-blue-500/25" },
+  { emoji: "🚗", name: "Dream Car", gradient: "from-emerald-500/15 to-teal-500/10", border: "border-emerald-500/25" },
+  { emoji: "🎓", name: "Education", gradient: "from-violet-500/15 to-purple-500/10", border: "border-violet-500/25" },
+  { emoji: "💍", name: "Wedding", gradient: "from-pink-500/15 to-rose-500/10", border: "border-pink-500/25" },
+  { emoji: "✈️", name: "Vacation", gradient: "from-sky-500/15 to-cyan-500/10", border: "border-sky-500/25" },
+  { emoji: "📱", name: "Gadget", gradient: "from-slate-500/15 to-gray-500/10", border: "border-slate-500/25" },
+  { emoji: "🛡️", name: "Emergency Fund", gradient: "from-amber-500/15 to-yellow-500/10", border: "border-amber-500/25" },
+  { emoji: "💼", name: "Business", gradient: "from-indigo-500/15 to-blue-500/10", border: "border-indigo-500/25" },
+  { emoji: "🕋", name: "Hajj", gradient: "from-emerald-600/15 to-green-500/10", border: "border-emerald-600/25" },
+  { emoji: "💊", name: "Health", gradient: "from-red-500/15 to-pink-500/10", border: "border-red-500/25" },
+  { emoji: "✏️", name: "Custom", gradient: "from-muted/60 to-muted/30", border: "border-border/60" },
+];
 const GOLD_PRESETS = [0.5, 1, 2, 5, 10];
 
 type MainTab = "savings" | "gold" | "stocks";
@@ -184,6 +198,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const [autoStrategy, setAutoStrategy] = useState<Strategy>("gold");
   const [termsAccepted, setTermsAccepted] = useState(false);
    const [showTermsSheet, setShowTermsSheet] = useState(false);
+   const [enableAutoSaveInCreate, setEnableAutoSaveInCreate] = useState(false);
    const [tradeTermsAccepted, setTradeTermsAccepted] = useState(false);
 
    // ─── Mandatory T&C gate state ────────
@@ -355,19 +370,32 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     try {
       const pinValid = await verifyPin(pin);
       if (!pinValid) { setPinError("Incorrect PIN. Please try again."); setPin(""); setProcessing(false); return; }
+
+      // If coming from combined create flow, create the goal first
+      let linkedGoalId: string | null = autoGoalId === "general" ? null : autoGoalId;
+      if (enableAutoSaveInCreate && newName.trim()) {
+        const target = parseFloat(newTarget);
+        const { data: goalData, error: goalErr } = await supabase.from("savings_goals").insert({ user_id: user.id, name: newName.trim(), emoji: newEmoji, target_amount: target || 0 } as any).select("id").single();
+        if (goalErr) throw goalErr;
+        linkedGoalId = goalData?.id ?? null;
+        loadGoals();
+      }
+
       const nextRun = new Date();
       if (autoFreq === "daily") nextRun.setDate(nextRun.getDate() + 1);
       else if (autoFreq === "weekly") nextRun.setDate(nextRun.getDate() + 7);
       else nextRun.setMonth(nextRun.getMonth() + 1);
       const endsAt = calcEndsAt(autoDuration);
       const { error: insertErr } = await supabase.from("savings_auto_save").insert({
-        user_id: user.id, goal_id: autoGoalId === "general" ? null : autoGoalId,
+        user_id: user.id, goal_id: linkedGoalId,
         frequency: autoFreq, amount: amt, next_run_at: nextRun.toISOString(), duration: autoDuration, ends_at: endsAt,
       } as any);
       if (insertErr) throw insertErr;
       fireSuccessConfetti();
-      toast.success("Auto-save + investment plan activated!");
-      setAutoAmount(""); setAutoCustom(false); setTermsAccepted(false); setPin(""); loadAutoSaves();
+      toast.success(enableAutoSaveInCreate ? `Goal "${newName}" created with auto-save plan!` : "Auto-save + investment plan activated!");
+      setAutoAmount(""); setAutoCustom(false); setTermsAccepted(false); setPin(""); setEnableAutoSaveInCreate(false);
+      setNewName(""); setNewEmoji("🎯"); setNewTarget("");
+      setStep("home"); loadAutoSaves();
     } catch (err: any) { setPin(""); setError(err.message || "Failed to create schedule"); }
     finally { setProcessing(false); }
   };
@@ -514,7 +542,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const handleBack = () => {
     setError("");
     if (mainTab === "savings") {
-      if (step === "review") { setPin(""); setPinError(""); setTermsAccepted(false); setStep("autosave"); }
+      if (step === "review") { setPin(""); setPinError(""); setTermsAccepted(false); setStep(enableAutoSaveInCreate ? "create" : "autosave"); }
       else if (step === "home") onClose();
       else setStep("home");
     } else if (mainTab === "gold") {
@@ -890,37 +918,210 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
           {/* ══════════ SAVINGS: CREATE GOAL ══════════ */}
           {mainTab === "savings" && step === "create" && (
             <motion.div key="s-create" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
-              <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-4">
-                <div className="space-y-2">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Pick an Emoji</p>
-                  <div className="flex gap-2 flex-wrap">
-                    {EMOJI_LIST.map(e => (
-                      <button key={e} onClick={() => setNewEmoji(e)}
-                        className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center transition-all ${newEmoji === e ? "bg-primary/20 ring-2 ring-primary/40 scale-110" : "bg-muted hover:bg-muted/70"}`}>
-                        {e}
-                      </button>
-                    ))}
-                  </div>
+              {/* Life Goal Presets */}
+              <div className="space-y-2.5">
+                <p className="text-[15px] font-black text-foreground px-1">What are you saving for?</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {LIFE_GOAL_PRESETS.map((preset, i) => {
+                    const isSelected = preset.name === "Custom" ? !LIFE_GOAL_PRESETS.slice(0, -1).some(p => p.name === newName && p.emoji === newEmoji) && newName !== "" || (newEmoji === "✏️")
+                      : newName === preset.name && newEmoji === preset.emoji;
+                    return (
+                      <motion.button key={preset.name} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.03, type: "spring", stiffness: 400, damping: 30 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => {
+                          if (preset.name === "Custom") { setNewEmoji("✏️"); setNewName(""); }
+                          else { setNewEmoji(preset.emoji); setNewName(preset.name); }
+                          setError("");
+                        }}
+                        className={`relative flex flex-col items-center gap-1.5 p-3 rounded-[16px] border transition-all bg-gradient-to-br ${preset.gradient} ${
+                          isSelected ? `${preset.border} ring-2 ring-primary/30 shadow-lg scale-[1.02]` : `${preset.border} hover:shadow-md`
+                        }`}>
+                        <span className="text-2xl">{preset.emoji}</span>
+                        <p className="text-[10px] font-bold text-foreground leading-tight text-center">{preset.name}</p>
+                        {isSelected && (
+                          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-md">
+                            <CheckCircle2 size={12} className="text-white" />
+                          </motion.div>
+                        )}
+                      </motion.button>
+                    );
+                  })}
                 </div>
-                <div className="space-y-1.5">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Goal Name</p>
-                  <input placeholder="e.g. New Phone, Vacation" value={newName} onChange={e => { setNewName(e.target.value); setError(""); }}
-                    className="w-full px-4 py-3 rounded-xl bg-muted text-foreground text-[14px] font-medium outline-none placeholder:text-muted-foreground/40" />
-                </div>
-                <div className="space-y-1.5">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Target Amount</p>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[18px] font-bold text-muted-foreground">৳</span>
-                    <input type="number" inputMode="decimal" placeholder="0" value={newTarget} onChange={e => { setNewTarget(e.target.value); setError(""); }}
-                      className="w-full pl-10 pr-4 py-3 text-[18px] font-bold bg-muted rounded-xl outline-none text-foreground placeholder:text-muted-foreground/40" />
-                  </div>
-                </div>
-                {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
               </div>
-              <motion.button whileTap={{ scale: 0.96 }} onClick={handleCreateGoal} disabled={processing}
+
+              {/* Custom name input — shown when Custom is selected */}
+              {newEmoji === "✏️" && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-1.5">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1">Custom Goal Name</p>
+                  <input placeholder="e.g. New Laptop, Family Trip" value={newName} onChange={e => { setNewName(e.target.value); setError(""); }}
+                    className="w-full px-4 py-3 rounded-xl bg-muted text-foreground text-[14px] font-medium outline-none placeholder:text-muted-foreground/40 border border-border/60" />
+                </motion.div>
+              )}
+
+              {/* Target Amount */}
+              <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-3">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Target Amount</p>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[20px] font-bold text-muted-foreground">৳</span>
+                  <input type="number" inputMode="decimal" placeholder="0" value={newTarget} onChange={e => { setNewTarget(e.target.value); setError(""); }}
+                    className="w-full pl-10 pr-4 py-3 text-[20px] font-bold bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/40" />
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {[5000, 10000, 25000, 50000, 100000].map(q => (
+                    <button key={q} onClick={() => setNewTarget(String(q))}
+                      className={`flex-1 min-w-[55px] py-1.5 rounded-xl text-[11px] font-semibold transition-colors ${newTarget === String(q) ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}>
+                      ৳{q >= 1000 ? `${q / 1000}k` : q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ═══ Inline Auto-Save Toggle ═══ */}
+              <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center">
+                      <CalendarClock size={16} className="text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-bold text-foreground">Auto-Save & Invest</p>
+                      <p className="text-[10px] text-muted-foreground">Set up automatic savings plan</p>
+                    </div>
+                  </div>
+                  <Switch checked={enableAutoSaveInCreate} onCheckedChange={setEnableAutoSaveInCreate} />
+                </div>
+
+                <AnimatePresence>
+                  {enableAutoSaveInCreate && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-3 overflow-hidden">
+                      {/* Sharia badge */}
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/8 border border-primary/20">
+                        <ShieldCheck size={14} className="text-primary" />
+                        <p className="text-[10px] font-bold text-primary">100% Halal • No Interest • Trade-Based Profit</p>
+                      </div>
+
+                      {/* Frequency */}
+                      <div className="space-y-1.5">
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Save Frequency</p>
+                        <Select value={autoFreq} onValueChange={setAutoFreq}>
+                          <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="daily">Daily</SelectItem>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Amount */}
+                      <div className="space-y-1.5">
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Amount per {autoFreq === "daily" ? "Day" : autoFreq === "weekly" ? "Week" : "Month"}</p>
+                        <div className="flex gap-2 flex-wrap">
+                          {PRESET_AMOUNTS.map(q => (
+                            <button key={q} onClick={() => { setAutoAmount(String(q)); setAutoCustom(false); }}
+                              className={`flex-1 min-w-[55px] py-2 rounded-xl text-[12px] font-semibold transition-colors ${!autoCustom && autoAmount === String(q) ? "bg-primary/20 text-primary ring-1 ring-primary/30" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}>
+                              ৳{q >= 1000 ? `${q / 1000}k` : q}
+                            </button>
+                          ))}
+                          <button onClick={() => { setAutoCustom(true); setAutoAmount(""); }}
+                            className={`flex-1 min-w-[55px] py-2 rounded-xl text-[12px] font-semibold transition-colors ${autoCustom ? "bg-primary/20 text-primary ring-1 ring-primary/30" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}>Custom</button>
+                        </div>
+                        {autoCustom && (
+                          <div className="relative mt-2">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[16px] font-bold text-muted-foreground">৳</span>
+                            <input type="number" inputMode="decimal" placeholder="Enter amount" value={autoAmount} onChange={e => setAutoAmount(e.target.value)}
+                              className="w-full pl-10 pr-4 py-2.5 text-[16px] font-bold bg-muted rounded-xl outline-none text-foreground placeholder:text-muted-foreground/40" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Duration */}
+                      <div className="space-y-1.5">
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Duration</p>
+                        <Select value={autoDuration} onValueChange={setAutoDuration}>
+                          <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                          <SelectContent>{DURATION_OPTIONS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <div className="flex items-center justify-between text-[10px] text-muted-foreground px-1">
+                          <span>Ends: {new Date(calcEndsAt(autoDuration)).toLocaleDateString("en-BD", { year: "numeric", month: "short", day: "numeric" })}</span>
+                          <span className="flex items-center gap-0.5"><Lock size={9} /> Min lock: {selectedDuration.minLock} months</span>
+                        </div>
+                      </div>
+
+                      {/* Strategy */}
+                      <div className="space-y-1.5">
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Investment Strategy</p>
+                        <div className="space-y-2">
+                          {INVESTMENT_STRATEGIES.map(strat => (
+                            <button key={strat.key} onClick={() => setAutoStrategy(strat.key)}
+                              className={`w-full flex items-center gap-3 p-3 rounded-[14px] border transition-all text-left ${autoStrategy === strat.key ? "border-primary/50 bg-primary/8 shadow-sm" : "border-border/60 bg-muted/30 hover:bg-muted/50"}`}>
+                              <span className="text-xl">{strat.icon}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[12px] font-bold text-foreground">{strat.label}</p>
+                                <p className="text-[10px] text-muted-foreground">{strat.desc}</p>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <p className="text-[14px] font-black text-emerald-600">~{getReturnRange(strat.key)}%</p>
+                                <p className="text-[9px] text-muted-foreground">est. annual</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Estimated Profit */}
+                      {estimatedProfit && estimatedProfit.totalDeposits > 0 && (
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                          className="rounded-[16px] p-4 bg-gradient-to-br from-emerald-500/12 to-emerald-600/5 border border-emerald-500/25 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <Gift size={16} className="text-emerald-600" />
+                            <p className="text-[12px] font-bold text-emerald-700 dark:text-emerald-300">Estimated Returns</p>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="bg-card/60 backdrop-blur-sm rounded-xl p-2.5 text-center">
+                              <p className="text-[9px] text-muted-foreground font-semibold uppercase">You Save</p>
+                              <p className="text-[14px] font-black text-foreground">৳{estimatedProfit.totalDeposits.toLocaleString()}</p>
+                            </div>
+                            <div className="bg-card/60 backdrop-blur-sm rounded-xl p-2.5 text-center">
+                              <p className="text-[9px] text-muted-foreground font-semibold uppercase">Est. Profit</p>
+                              <p className="text-[14px] font-black text-emerald-600">+৳{estimatedProfit.profit.toLocaleString()}</p>
+                            </div>
+                            <div className="bg-card/60 backdrop-blur-sm rounded-xl p-2.5 text-center">
+                              <p className="text-[9px] text-muted-foreground font-semibold uppercase">Total Value</p>
+                              <p className="text-[14px] font-black text-foreground">৳{estimatedProfit.totalValue.toLocaleString()}</p>
+                            </div>
+                          </div>
+                          <p className="text-[9px] text-muted-foreground text-center">
+                            *Based on ~{estimatedProfit.returnPct}% historical return. Not guaranteed.
+                          </p>
+                        </motion.div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {error && <p className="text-[12px] text-destructive font-medium px-1">{error}</p>}
+
+              <motion.button whileTap={{ scale: 0.96 }}
+                onClick={() => {
+                  if (enableAutoSaveInCreate) {
+                    // Validate goal + auto-save, then go to review
+                    if (!newName.trim()) { setError("Select or enter a goal name"); return; }
+                    const target = parseFloat(newTarget);
+                    if (!target || target <= 0) { setError("Enter a valid target amount"); return; }
+                    if (!autoAmtNum || autoAmtNum <= 0) { setError("Enter auto-save amount"); return; }
+                    setError("");
+                    setStep("review");
+                  } else {
+                    handleCreateGoal();
+                  }
+                }}
+                disabled={processing}
                 className="w-full h-14 rounded-2xl text-white font-bold text-[15px] shadow-lg disabled:opacity-60"
                 style={{ background: "linear-gradient(135deg, hsl(162 72% 32%), hsl(178 62% 22%))" }}>
-                {processing ? "Creating…" : "Create Goal"}
+                {processing ? "Creating…" : enableAutoSaveInCreate ? "Continue to Review →" : "Create Goal"}
               </motion.button>
             </motion.div>
           )}
@@ -1107,7 +1308,8 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                     { label: "Amount", value: `৳${autoAmtNum.toLocaleString()} / ${autoFreq === "daily" ? "day" : autoFreq === "weekly" ? "week" : "month"}` },
                     { label: "Duration", value: selectedDuration.label },
                     { label: "Strategy", value: `${selectedStrategyObj.icon} ${selectedStrategyObj.label}` },
-                    { label: "Linked Goal", value: autoGoalId === "general" ? "General Savings" : (goals.find(g => g.id === autoGoalId)?.name ?? "General Savings") },
+                    { label: "Linked Goal", value: enableAutoSaveInCreate ? `${newEmoji} ${newName} (new)` : autoGoalId === "general" ? "General Savings" : (goals.find(g => g.id === autoGoalId)?.name ?? "General Savings") },
+                    ...(enableAutoSaveInCreate && newTarget ? [{ label: "Goal Target", value: `৳${parseFloat(newTarget).toLocaleString()}` }] : []),
                   ].map((row, i) => (
                     <div key={i} className="flex justify-between items-center text-[12px]">
                       <span className="text-muted-foreground">{row.label}</span>
