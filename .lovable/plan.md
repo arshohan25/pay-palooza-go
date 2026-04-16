@@ -1,44 +1,54 @@
 
 
-# Goal & DPS Detail Views with Vertical Timeline
+# Tree-Style Centered Timeline with Random Left/Right Flip
 
-## What We're Building
-When a user taps a goal card (e.g. "Dream Bike") or a DPS plan card, they'll see a premium detail view featuring:
-- A **vertical alternating timeline** showing all deposit dates and amounts (left/right zigzag pattern)
-- **Goal detail**: deposit field + PIN at the bottom to add money directly
-- **DPS detail**: next installment date, total deposited amount, and repay button for missed payments
+## What Changes
+Replace both Goal and DPS detail timelines with a **centered vertical tree** — the trunk line runs down the exact middle of the page. Each node alternates randomly between showing the **date on the right & amount on the left**, or flipped. A seeded pseudo-random pattern based on index ensures consistent rendering.
 
-## Changes (all in `src/components/SavingsFlow.tsx`)
+## Design
 
-### 1. Add new steps to SavingsStep type
-Add `"goal-detail"` and `"dps-detail"` to the union type.
+```text
+   ৳500          │          Jan 5
+   ┌──────┐      ●      
+   │Manual│──────┤      
+   └──────┘      │      
+                 │      Feb 12
+                 ●──────┌──────┐
+                 │      │৳1000 │
+                 │      │ Auto │
+                 │      └──────┘
+   ৳500          │      
+   ┌──────┐      ●      Mar 1
+   │Repay │──────┤      
+   └──────┘      │      
+```
 
-### 2. Fetch deposit history for selected goal/schedule
-Add state: `goalDeposits` (array of `{id, amount, source, created_at}`). When entering goal-detail or dps-detail, query `savings_deposits` filtered by `goal_id` (for goals) or query `dps_missed_payments` + infer paid installments from schedule data for DPS. Sort by date ascending.
+Each row: two `w-[45%]` columns flanking a center trunk. Cards appear on one side, date label on the other. Side is determined by a simple hash of the index to feel random but stable.
 
-### 3. Goal Detail View (`step === "goal-detail"`)
-- **Header**: Goal emoji, name, progress bar, saved/target amounts
-- **Vertical Timeline**: A centered vertical line with deposits alternating left/right. Each node shows:
-  - Date (formatted short)
-  - Amount (৳X,XXX)
-  - Source badge (manual / auto / dps_repay)
-  - Connected by a dotted vertical line with circle markers
-- **Deposit Section** at bottom: Amount input with presets, PIN input, slide-to-confirm (reuses existing `handleSave` logic)
+## Changes (single file: `src/components/SavingsFlow.tsx`)
 
-### 4. DPS Detail View (`step === "dps-detail"`)
-- **Header**: Strategy icon, frequency, amount per installment
-- **Summary cards**: Total Deposited, Next Installment Date, Installments Paid/Total, Missed count
-- **Vertical Timeline**: Same alternating pattern showing each paid/missed installment with status indicators (green check for paid, red alert for missed)
-- **Repay button** if missed payments exist
+### 1. Goal Detail Timeline (lines ~1660-1696)
+Replace the left-aligned `pl-6` layout with:
+- Container: `relative` with centered gradient trunk line (`left-1/2 -translate-x-1/2`, 2px wide, gradient from primary)
+- Each item: `flex items-center` row with `justify-center`
+- Left half (`w-[45%]`): amount card OR date text (based on side)
+- Center: 14px circle node on the trunk with status-colored border and glow
+- Right half (`w-[45%]`): the opposite content
+- Horizontal branch line (8px) connecting node to card
+- Side logic: `(index * 7 + 3) % 2` for pseudo-random but deterministic alternation
+- Framer Motion: cards slide in from their side with stagger
 
-### 5. Navigation updates
-- Goal card's `ChevronRight` and name click → `setStep("goal-detail")` instead of `"add"`
-- DPS plan cards get a tap handler → `setStep("dps-detail")` with selected schedule stored in new state `selectedSchedule`
-- Back buttons on both detail views return to respective home tabs
+### 2. DPS Detail Timeline (lines ~1822-1867)
+Same centered tree pattern with status-colored nodes:
+- Emerald node + card border for paid
+- Amber for repaid  
+- Red for missed
+- Status badge inside card, date on opposite side
 
-### Technical Details
-- Query: `supabase.from("savings_deposits").select("*").eq("goal_id", goalId).order("created_at", { ascending: true })`
-- For DPS timeline, combine `savings_deposits` (source = "auto" or "dps_repay") with `dps_missed_payments` into a unified sorted list
-- Timeline uses Framer Motion staggered animations
-- Premium glassmorphism cards with gradient accents matching existing design patterns
+### 3. Visual Details
+- Trunk: `w-[2px] bg-gradient-to-b from-primary/50 via-primary/20 to-transparent`
+- Nodes: 14px circles with colored borders and subtle `shadow-[0_0_6px]` glow
+- Branch: 8px horizontal line from node to card, matching node color
+- Cards: glassmorphism, `rounded-[14px]`, `backdrop-blur-sm`
+- Date labels: `text-[10px] font-bold text-muted-foreground` on the empty side
 
