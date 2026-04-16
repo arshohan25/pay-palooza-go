@@ -198,6 +198,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const [autoStrategy, setAutoStrategy] = useState<Strategy>("gold");
   const [termsAccepted, setTermsAccepted] = useState(false);
    const [showTermsSheet, setShowTermsSheet] = useState(false);
+   const [enableAutoSaveInCreate, setEnableAutoSaveInCreate] = useState(false);
    const [tradeTermsAccepted, setTradeTermsAccepted] = useState(false);
 
    // ─── Mandatory T&C gate state ────────
