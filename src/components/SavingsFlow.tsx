@@ -1626,7 +1626,258 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
             </motion.div>
           )}
 
-          {/* ══════════ GOLD TAB ══════════ */}
+          {/* ══════════ GOAL DETAIL VIEW ══════════ */}
+          {mainTab === "goals" && step === "goal-detail" && selectedGoal && (
+            <motion.div key="goal-detail" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+              {/* Header Card */}
+              <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-5 space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center">
+                    <span className="text-[36px]">{selectedGoal.emoji}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[18px] font-black text-foreground">{selectedGoal.name}</p>
+                    <p className="text-[12px] text-muted-foreground">৳{Number(selectedGoal.saved_amount).toLocaleString()} / ৳{Number(selectedGoal.target_amount).toLocaleString()}</p>
+                  </div>
+                </div>
+                {(() => {
+                  const pct = selectedGoal.target_amount > 0 ? Math.min(100, (Number(selectedGoal.saved_amount) / Number(selectedGoal.target_amount)) * 100) : 0;
+                  return (
+                    <div className="space-y-1.5">
+                      <div className="h-3 rounded-full bg-muted/80 overflow-hidden">
+                        <motion.div className="h-full rounded-full bg-gradient-to-r from-primary via-emerald-500 to-emerald-400" initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1, ease: "easeOut" }} />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-[12px] font-bold text-primary">{pct.toFixed(0)}% complete</p>
+                        <p className="text-[11px] text-muted-foreground font-medium">৳{(Number(selectedGoal.target_amount) - Number(selectedGoal.saved_amount)).toLocaleString()} remaining</p>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Timeline */}
+              {goalDeposits.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1">Deposit History</p>
+                  <div className="relative pl-6">
+                    {/* Vertical line */}
+                    <div className="absolute left-[11px] top-3 bottom-3 w-0.5 bg-gradient-to-b from-primary/40 via-primary/20 to-transparent" />
+                    {goalDeposits.map((dep, i) => (
+                      <motion.div key={dep.id}
+                        initial={{ opacity: 0, x: i % 2 === 0 ? -20 : 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.06, type: "spring", stiffness: 350, damping: 28 }}
+                        className="relative mb-3 last:mb-0"
+                      >
+                        {/* Circle marker */}
+                        <div className="absolute -left-[15px] top-3 w-3 h-3 rounded-full border-2 border-primary bg-card z-10" />
+                        {/* Content card */}
+                        <div className={`bg-card rounded-[14px] border border-border/50 p-3 shadow-[var(--shadow-xs)] ${i % 2 === 0 ? "ml-2" : "ml-2"}`}>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-[14px] font-bold text-foreground">৳{Number(dep.amount).toLocaleString()}</p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {new Date(dep.created_at).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
+                              </p>
+                            </div>
+                            <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase ${
+                              dep.source === "auto" ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                              : dep.source === "dps_repay" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                              : "bg-primary/10 text-primary"
+                            }`}>
+                              {dep.source === "auto" ? "Auto" : dep.source === "dps_repay" ? "Repay" : "Manual"}
+                            </span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {goalDeposits.length === 0 && (
+                <div className="text-center py-6 rounded-[18px] border border-dashed border-border/60 bg-muted/20">
+                  <p className="text-[13px] font-bold text-muted-foreground">No deposits yet</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">Add your first deposit below</p>
+                </div>
+              )}
+
+              {/* Deposit Section */}
+              <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-3">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Add Deposit</p>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[20px] font-bold text-muted-foreground">৳</span>
+                  <input type="number" inputMode="decimal" placeholder="0.00" value={amount}
+                    onChange={e => { setAmount(e.target.value); setError(""); }}
+                    className="w-full pl-10 pr-4 py-3 text-[22px] font-bold bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/40" />
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {PRESET_AMOUNTS.map(q => (
+                    <button key={q} onClick={() => setAmount(String(q))}
+                      className={`flex-1 min-w-[60px] py-1.5 rounded-xl text-[11px] font-semibold transition-colors ${amount === String(q) ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}>
+                      ৳{q >= 1000 ? `${q / 1000}k` : q}
+                    </button>
+                  ))}
+                </div>
+                {error && <p className="text-[12px] text-destructive font-medium">{error}</p>}
+              </div>
+
+              <SavingsPinInput pin={pin} onChange={(p) => { setPin(p); setPinError(""); }} error={pinError} />
+              <SlideToConfirm onConfirm={handleSave} label={processing ? "Processing…" : "Slide to Save"} disabled={pin.length < 4 || processing} pinComplete={pin.length === 4} />
+            </motion.div>
+          )}
+
+          {/* ══════════ DPS DETAIL VIEW ══════════ */}
+          {mainTab === "savings" && step === "dps-detail" && selectedSchedule && (
+            <motion.div key="dps-detail" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+              {/* Header */}
+              {(() => {
+                const stratObj = INVESTMENT_STRATEGIES.find(s => s.key === selectedSchedule.strategy);
+                const linkedGoal = goals.find(g => g.id === selectedSchedule.goal_id);
+                const totalInst = selectedSchedule.total_installments ?? 0;
+                const paid = selectedSchedule.total_paid ?? 0;
+                const missed = selectedSchedule.missed_count ?? 0;
+                const totalDeposited = paid * Number(selectedSchedule.amount);
+                const paidPct = totalInst > 0 ? Math.round((paid / totalInst) * 100) : 0;
+
+                return (
+                  <>
+                    <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-5 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
+                          style={{ background: "linear-gradient(135deg, hsl(162 72% 32%), hsl(178 62% 22%))" }}>
+                          <CalendarClock size={24} className="text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[16px] font-black text-foreground">৳{Number(selectedSchedule.amount).toLocaleString()} / {selectedSchedule.frequency}</p>
+                          <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                            {stratObj && <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground font-semibold">{stratObj.icon} {stratObj.label}</span>}
+                            {linkedGoal && <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-primary/10 text-primary font-semibold">{linkedGoal.emoji} {linkedGoal.name}</span>}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Summary Cards */}
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div className="bg-muted/50 rounded-[14px] p-3 text-center">
+                          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Total Deposited</p>
+                          <p className="text-[18px] font-black text-foreground mt-1">৳{totalDeposited.toLocaleString()}</p>
+                        </div>
+                        <div className="bg-muted/50 rounded-[14px] p-3 text-center">
+                          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Next Installment</p>
+                          <p className="text-[13px] font-black text-foreground mt-1">
+                            {selectedSchedule.is_active && selectedSchedule.next_run_at
+                              ? new Date(selectedSchedule.next_run_at).toLocaleDateString("en-BD", { month: "short", day: "numeric" })
+                              : "—"}
+                          </p>
+                        </div>
+                        <div className="bg-muted/50 rounded-[14px] p-3 text-center">
+                          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Installments</p>
+                          <p className="text-[14px] font-black text-foreground mt-1">{paid}/{totalInst}</p>
+                        </div>
+                        <div className="bg-muted/50 rounded-[14px] p-3 text-center">
+                          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Missed</p>
+                          <p className={`text-[14px] font-black mt-1 ${missed > 0 ? "text-destructive" : "text-foreground"}`}>{missed}</p>
+                        </div>
+                      </div>
+
+                      {/* Progress Bar */}
+                      {totalInst > 0 && (
+                        <div className="space-y-1.5">
+                          <div className="h-2.5 rounded-full bg-muted/80 overflow-hidden">
+                            <motion.div className="h-full rounded-full bg-gradient-to-r from-primary via-emerald-500 to-emerald-400"
+                              initial={{ width: 0 }} animate={{ width: `${paidPct}%` }}
+                              transition={{ duration: 1, ease: "easeOut" }} />
+                          </div>
+                          <p className="text-[10px] font-bold text-primary text-center">{paidPct}% complete</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Repay button if missed */}
+                    {missed > 0 && (
+                      <motion.button whileTap={{ scale: 0.96 }}
+                        onClick={() => {
+                          const scheduleMissed = missedPayments.filter(m => m.schedule_id === selectedSchedule.id);
+                          setRepayScheduleId(selectedSchedule.id);
+                          setSelectedMissedIds(scheduleMissed.map(m => m.id));
+                          setStep("repay-missed"); setError(""); setPin(""); setPinError("");
+                        }}
+                        className="w-full flex items-center gap-3 p-3.5 rounded-[16px] border border-destructive/30 bg-destructive/5 hover:bg-destructive/10 transition-colors">
+                        <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center">
+                          <AlertTriangle size={18} className="text-destructive" />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <p className="text-[13px] font-bold text-destructive">{missed} Missed Installment{missed !== 1 ? "s" : ""}</p>
+                          <p className="text-[10px] text-muted-foreground">Tap to repay overdue payments</p>
+                        </div>
+                        <ChevronRight size={16} className="text-destructive/50" />
+                      </motion.button>
+                    )}
+                  </>
+                );
+              })()}
+
+              {/* Timeline */}
+              {dpsTimeline.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1">Installment History</p>
+                  <div className="relative pl-6">
+                    {/* Vertical line */}
+                    <div className="absolute left-[11px] top-3 bottom-3 w-0.5 bg-gradient-to-b from-primary/40 via-primary/20 to-transparent" />
+                    {dpsTimeline.map((item, i) => (
+                      <motion.div key={item.id}
+                        initial={{ opacity: 0, x: i % 2 === 0 ? -20 : 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.06, type: "spring", stiffness: 350, damping: 28 }}
+                        className="relative mb-3 last:mb-0"
+                      >
+                        {/* Circle marker */}
+                        <div className={`absolute -left-[15px] top-3 w-3 h-3 rounded-full border-2 bg-card z-10 ${
+                          item.type === "paid" ? "border-emerald-500" : item.repaid ? "border-amber-500" : "border-destructive"
+                        }`} />
+                        {/* Content card */}
+                        <div className={`ml-2 rounded-[14px] border p-3 shadow-[var(--shadow-xs)] ${
+                          item.type === "paid" ? "border-emerald-500/20 bg-emerald-500/5"
+                          : item.repaid ? "border-amber-500/20 bg-amber-500/5"
+                          : "border-destructive/20 bg-destructive/5"
+                        }`}>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-[14px] font-bold text-foreground">৳{item.amount.toLocaleString()}</p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {new Date(item.date).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
+                              </p>
+                            </div>
+                            <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase flex items-center gap-1 ${
+                              item.type === "paid" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                              : item.repaid ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                              : "bg-destructive/10 text-destructive"
+                            }`}>
+                              {item.type === "paid" ? <><CheckCircle2 size={10} /> Paid</> 
+                              : item.repaid ? <><RefreshCw size={10} /> Repaid</>
+                              : <><AlertTriangle size={10} /> Missed</>}
+                            </span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {dpsTimeline.length === 0 && (
+                <div className="text-center py-6 rounded-[18px] border border-dashed border-border/60 bg-muted/20">
+                  <CalendarClock size={28} className="text-muted-foreground mx-auto mb-2" />
+                  <p className="text-[13px] font-bold text-muted-foreground">No installments yet</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">Auto-collection will start on the next cycle date</p>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+
           {mainTab === "gold" && goldStep === "portfolio" && (
             <motion.div key="g-port" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-3">
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
