@@ -5023,24 +5023,15 @@ export type Database = {
         }
         Returns: string
       }
-      buy_gold:
-        | {
-            Args: {
-              p_grams: number
-              p_karat?: string
-              p_price_per_gram: number
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_grams: number
-              p_karat?: string
-              p_pin?: string
-              p_price_per_gram: number
-            }
-            Returns: Json
-          }
+      buy_gold: {
+        Args: {
+          p_grams: number
+          p_karat?: string
+          p_pin?: string
+          p_price_per_gram: number
+        }
+        Returns: Json
+      }
       buy_stock:
         | {
             Args: {
@@ -5308,38 +5299,24 @@ export type Database = {
         Args: { p_amount: number; p_goal_id: string; p_source?: string }
         Returns: Json
       }
-      sell_gold:
-        | {
-            Args: {
-              p_grams: number
-              p_karat?: string
-              p_price_per_gram: number
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_grams: number
-              p_karat?: string
-              p_pin?: string
-              p_price_per_gram: number
-            }
-            Returns: Json
-          }
-      sell_stock:
-        | {
-            Args: { p_price: number; p_quantity: number; p_symbol: string }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_pin?: string
-              p_price: number
-              p_quantity: number
-              p_symbol: string
-            }
-            Returns: Json
-          }
+      sell_gold: {
+        Args: {
+          p_grams: number
+          p_karat?: string
+          p_pin?: string
+          p_price_per_gram: number
+        }
+        Returns: Json
+      }
+      sell_stock: {
+        Args: {
+          p_pin?: string
+          p_price: number
+          p_quantity: number
+          p_symbol: string
+        }
+        Returns: Json
+      }
       set_kyc_exempt: {
         Args: { exempt: boolean; target_user_id: string }
         Returns: undefined
