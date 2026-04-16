@@ -1660,57 +1660,61 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
               {goalDeposits.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1">Deposit History</p>
-                  <div className="relative py-4">
+                  <div className="relative py-6 px-2">
                     {/* Center trunk line */}
-                    <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary/50 via-primary/20 to-transparent" />
+                    <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary/60 via-primary/25 to-transparent rounded-full" />
                     {goalDeposits.map((dep, i) => {
                       const isRight = (i * 7 + 3) % 2 === 1;
-                      const nodeColor = dep.source === "auto" ? "border-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.4)]"
-                        : dep.source === "dps_repay" ? "border-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.4)]"
-                        : "border-primary shadow-[0_0_6px_hsl(var(--primary)/0.4)]";
-                      const branchColor = dep.source === "auto" ? "bg-blue-500/40" : dep.source === "dps_repay" ? "bg-amber-500/40" : "bg-primary/40";
+                      const nodeColor = dep.source === "auto" ? "border-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.35)]"
+                        : dep.source === "dps_repay" ? "border-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.35)]"
+                        : "border-primary shadow-[0_0_8px_hsl(var(--primary)/0.35)]";
+                      const branchColor = dep.source === "auto" ? "bg-blue-500/30" : dep.source === "dps_repay" ? "bg-amber-500/30" : "bg-primary/30";
                       const amountColor = dep.source === "auto" ? "text-blue-600 dark:text-blue-400" : dep.source === "dps_repay" ? "text-amber-600 dark:text-amber-400" : "text-primary";
 
                       return (
                         <motion.div key={dep.id}
-                          initial={{ opacity: 0, x: isRight ? 16 : -16 }}
+                          initial={{ opacity: 0, x: isRight ? 20 : -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: i * 0.08, type: "spring", stiffness: 350, damping: 28 }}
-                          className="relative flex items-center mb-6 last:mb-0"
+                          className="relative flex items-center mb-8 last:mb-0 min-h-[36px]"
                         >
                           {/* Left side */}
-                          <div className={`w-[45%] ${isRight ? "text-right pr-4" : "text-right pr-4"}`}>
+                          <div className="w-[42%] text-right pr-6">
                             {isRight ? (
-                              <p className="text-[10px] font-bold text-muted-foreground">
+                              <p className="text-[11px] font-semibold text-muted-foreground leading-tight">
                                 {new Date(dep.created_at).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
                               </p>
                             ) : (
-                              <div className="inline-flex flex-col items-end">
-                                <p className={`text-[13px] font-black ${amountColor}`}>৳{Number(dep.amount).toLocaleString()}</p>
-                                <p className="text-[9px] font-bold text-muted-foreground uppercase mt-0.5">
+                              <div className="inline-flex flex-col items-end gap-0.5">
+                                <p className={`text-[15px] font-black tracking-tight ${amountColor}`}>৳{Number(dep.amount).toLocaleString()}</p>
+                                <p className="text-[9px] font-bold text-muted-foreground/70 uppercase tracking-wider">
                                   {dep.source === "auto" ? "Auto" : dep.source === "dps_repay" ? "Repay" : "Manual"}
                                 </p>
                               </div>
                             )}
                           </div>
 
-                          {/* Center node + branches */}
-                          <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center z-10">
-                            <div className={`w-3 h-3 rounded-full border-2 bg-card ${nodeColor}`} />
+                          {/* Center: node */}
+                          <div className="absolute left-1/2 -translate-x-1/2 z-10">
+                            <div className={`w-3.5 h-3.5 rounded-full border-[2.5px] bg-card ${nodeColor}`} />
                           </div>
-                          <div className={`absolute top-1/2 -translate-y-1/2 h-[1.5px] w-3 ${branchColor} ${isRight ? "left-[calc(50%+6px)]" : "right-[calc(50%+6px)]"}`} />
+
+                          {/* Branch line from node to content side */}
+                          <div className={`absolute top-1/2 -translate-y-1/2 h-[1.5px] ${branchColor} ${
+                            isRight ? "left-[calc(50%+8px)] w-6" : "right-[calc(50%+8px)] w-6"
+                          }`} />
 
                           {/* Right side */}
-                          <div className={`w-[45%] ${isRight ? "pl-4" : "pl-4 text-left"}`}>
+                          <div className="w-[42%] ml-auto pl-6">
                             {isRight ? (
-                              <div className="inline-flex flex-col items-start">
-                                <p className={`text-[13px] font-black ${amountColor}`}>৳{Number(dep.amount).toLocaleString()}</p>
-                                <p className="text-[9px] font-bold text-muted-foreground uppercase mt-0.5">
+                              <div className="inline-flex flex-col items-start gap-0.5">
+                                <p className={`text-[15px] font-black tracking-tight ${amountColor}`}>৳{Number(dep.amount).toLocaleString()}</p>
+                                <p className="text-[9px] font-bold text-muted-foreground/70 uppercase tracking-wider">
                                   {dep.source === "auto" ? "Auto" : dep.source === "dps_repay" ? "Repay" : "Manual"}
                                 </p>
                               </div>
                             ) : (
-                              <p className="text-[10px] font-bold text-muted-foreground">
+                              <p className="text-[11px] font-semibold text-muted-foreground leading-tight">
                                 {new Date(dep.created_at).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
                               </p>
                             )}
@@ -1852,31 +1856,34 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   <div className="relative py-4">
                     {/* Center trunk line */}
                     <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary/50 via-primary/20 to-transparent" />
+                  <div className="relative py-6 px-2">
+                    {/* Center trunk line */}
+                    <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary/60 via-primary/25 to-transparent rounded-full" />
                     {dpsTimeline.map((item, i) => {
                       const isRight = (i * 7 + 3) % 2 === 1;
-                      const nodeColor = item.type === "paid" ? "border-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)]"
-                        : item.repaid ? "border-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.4)]"
-                        : "border-destructive shadow-[0_0_6px_hsl(var(--destructive)/0.4)]";
-                      const branchColor = item.type === "paid" ? "bg-emerald-500/40" : item.repaid ? "bg-amber-500/40" : "bg-destructive/40";
+                      const nodeColor = item.type === "paid" ? "border-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.35)]"
+                        : item.repaid ? "border-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.35)]"
+                        : "border-destructive shadow-[0_0_8px_hsl(var(--destructive)/0.35)]";
+                      const branchColor = item.type === "paid" ? "bg-emerald-500/30" : item.repaid ? "bg-amber-500/30" : "bg-destructive/30";
                       const amountColor = item.type === "paid" ? "text-emerald-600 dark:text-emerald-400" : item.repaid ? "text-amber-600 dark:text-amber-400" : "text-destructive";
 
                       return (
                         <motion.div key={item.id}
-                          initial={{ opacity: 0, x: isRight ? 16 : -16 }}
+                          initial={{ opacity: 0, x: isRight ? 20 : -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: i * 0.08, type: "spring", stiffness: 350, damping: 28 }}
-                          className="relative flex items-center mb-6 last:mb-0"
+                          className="relative flex items-center mb-8 last:mb-0 min-h-[36px]"
                         >
                           {/* Left side */}
-                          <div className={`w-[45%] ${isRight ? "text-right pr-4" : "text-right pr-4"}`}>
+                          <div className="w-[42%] text-right pr-6">
                             {isRight ? (
-                              <p className="text-[10px] font-bold text-muted-foreground">
+                              <p className="text-[11px] font-semibold text-muted-foreground leading-tight">
                                 {new Date(item.date).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
                               </p>
                             ) : (
-                              <div className="inline-flex flex-col items-end">
-                                <p className={`text-[13px] font-black ${amountColor}`}>৳{item.amount.toLocaleString()}</p>
-                                <p className="text-[9px] font-bold text-muted-foreground uppercase mt-0.5 inline-flex items-center gap-0.5">
+                              <div className="inline-flex flex-col items-end gap-0.5">
+                                <p className={`text-[15px] font-black tracking-tight ${amountColor}`}>৳{item.amount.toLocaleString()}</p>
+                                <p className="text-[9px] font-bold text-muted-foreground/70 uppercase tracking-wider inline-flex items-center gap-0.5">
                                   {item.type === "paid" ? <><CheckCircle2 size={8} /> Paid</> 
                                   : item.repaid ? <><RefreshCw size={8} /> Repaid</>
                                   : <><AlertTriangle size={8} /> Missed</>}
@@ -1885,25 +1892,29 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                             )}
                           </div>
 
-                          {/* Center node + branches */}
-                          <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center z-10">
-                            <div className={`w-3 h-3 rounded-full border-2 bg-card ${nodeColor}`} />
+                          {/* Center: node */}
+                          <div className="absolute left-1/2 -translate-x-1/2 z-10">
+                            <div className={`w-3.5 h-3.5 rounded-full border-[2.5px] bg-card ${nodeColor}`} />
                           </div>
-                          <div className={`absolute top-1/2 -translate-y-1/2 h-[1.5px] w-3 ${branchColor} ${isRight ? "left-[calc(50%+6px)]" : "right-[calc(50%+6px)]"}`} />
+
+                          {/* Branch line */}
+                          <div className={`absolute top-1/2 -translate-y-1/2 h-[1.5px] ${branchColor} ${
+                            isRight ? "left-[calc(50%+8px)] w-6" : "right-[calc(50%+8px)] w-6"
+                          }`} />
 
                           {/* Right side */}
-                          <div className={`w-[45%] ${isRight ? "pl-4" : "pl-4 text-left"}`}>
+                          <div className="w-[42%] ml-auto pl-6">
                             {isRight ? (
-                              <div className="inline-flex flex-col items-start">
-                                <p className={`text-[13px] font-black ${amountColor}`}>৳{item.amount.toLocaleString()}</p>
-                                <p className="text-[9px] font-bold text-muted-foreground uppercase mt-0.5 inline-flex items-center gap-0.5">
+                              <div className="inline-flex flex-col items-start gap-0.5">
+                                <p className={`text-[15px] font-black tracking-tight ${amountColor}`}>৳{item.amount.toLocaleString()}</p>
+                                <p className="text-[9px] font-bold text-muted-foreground/70 uppercase tracking-wider inline-flex items-center gap-0.5">
                                   {item.type === "paid" ? <><CheckCircle2 size={8} /> Paid</> 
                                   : item.repaid ? <><RefreshCw size={8} /> Repaid</>
                                   : <><AlertTriangle size={8} /> Missed</>}
                                 </p>
                               </div>
                             ) : (
-                              <p className="text-[10px] font-bold text-muted-foreground">
+                              <p className="text-[11px] font-semibold text-muted-foreground leading-tight">
                                 {new Date(item.date).toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}
                               </p>
                             )}
