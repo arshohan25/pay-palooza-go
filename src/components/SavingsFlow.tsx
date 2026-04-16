@@ -122,7 +122,21 @@ function calcEstimatedProfit(amount: number, durationMonths: number, estReturnPc
 }
 
 const PRESET_AMOUNTS = [100, 200, 500, 1000, 5000];
-const EMOJI_LIST = ["🎯", "🛡️", "📱", "✈️", "🏠", "🎓", "💍", "🚗", "💊", "🎁"];
+
+const LIFE_GOAL_PRESETS = [
+  { emoji: "🏍️", name: "Dream Bike", gradient: "from-orange-500/15 to-red-500/10", border: "border-orange-500/25" },
+  { emoji: "🏠", name: "Dream House", gradient: "from-blue-500/15 to-indigo-500/10", border: "border-blue-500/25" },
+  { emoji: "🚗", name: "Dream Car", gradient: "from-emerald-500/15 to-teal-500/10", border: "border-emerald-500/25" },
+  { emoji: "🎓", name: "Education", gradient: "from-violet-500/15 to-purple-500/10", border: "border-violet-500/25" },
+  { emoji: "💍", name: "Wedding", gradient: "from-pink-500/15 to-rose-500/10", border: "border-pink-500/25" },
+  { emoji: "✈️", name: "Vacation", gradient: "from-sky-500/15 to-cyan-500/10", border: "border-sky-500/25" },
+  { emoji: "📱", name: "Gadget", gradient: "from-slate-500/15 to-gray-500/10", border: "border-slate-500/25" },
+  { emoji: "🛡️", name: "Emergency Fund", gradient: "from-amber-500/15 to-yellow-500/10", border: "border-amber-500/25" },
+  { emoji: "💼", name: "Business", gradient: "from-indigo-500/15 to-blue-500/10", border: "border-indigo-500/25" },
+  { emoji: "🕋", name: "Hajj", gradient: "from-emerald-600/15 to-green-500/10", border: "border-emerald-600/25" },
+  { emoji: "💊", name: "Health", gradient: "from-red-500/15 to-pink-500/10", border: "border-red-500/25" },
+  { emoji: "✏️", name: "Custom", gradient: "from-muted/60 to-muted/30", border: "border-border/60" },
+];
 const GOLD_PRESETS = [0.5, 1, 2, 5, 10];
 
 type MainTab = "savings" | "gold" | "stocks";
