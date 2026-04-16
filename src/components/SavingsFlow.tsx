@@ -799,7 +799,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
           )}
 
           {/* ══════════ SAVINGS: CREATE GOAL ══════════ */}
-          {mainTab === "savings" && step === "create" && (
+          {(mainTab === "savings" || mainTab === "goals") && step === "create" && (
             <motion.div key="s-create" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
               {/* Life Goal Presets */}
               <div className="space-y-2.5">
@@ -1010,7 +1010,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
           )}
 
           {/* ══════════ SAVINGS: AUTO-SAVE + INVEST ══════════ */}
-          {mainTab === "savings" && step === "autosave" && (
+          {(mainTab === "savings" || mainTab === "goals") && step === "autosave" && (
             <motion.div key="s-auto" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
               {/* Sharia badge */}
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/8 border border-primary/20">
@@ -1180,7 +1180,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
           )}
 
           {/* ══════════ SAVINGS: REVIEW & CONFIRM ══════════ */}
-          {mainTab === "savings" && step === "review" && (
+          {(mainTab === "savings" || mainTab === "goals") && step === "review" && (
             <motion.div key="s-review" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
               {/* Summary card */}
               <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-4 space-y-3">
