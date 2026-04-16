@@ -139,7 +139,7 @@ const LIFE_GOAL_PRESETS = [
 ];
 const GOLD_PRESETS = [0.5, 1, 2, 5, 10];
 
-type MainTab = "savings" | "gold" | "stocks";
+type MainTab = "savings" | "goals" | "gold" | "stocks";
 type SavingsStep = "home" | "add" | "create" | "autosave" | "review" | "terms" | "detail";
 type GoldStep = "portfolio" | "buy" | "sell";
 type StockStep = "market" | "portfolio" | "trade";
@@ -535,13 +535,19 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   // ─── Header config ────────
   const headerGradient = mainTab === "savings"
     ? "linear-gradient(135deg, hsl(162 72% 32%), hsl(178 62% 22%))"
+    : mainTab === "goals"
+    ? "linear-gradient(135deg, hsl(160 60% 28%), hsl(172 55% 24%))"
     : mainTab === "gold"
     ? "linear-gradient(135deg, hsl(43 90% 48%), hsl(35 85% 38%))"
     : "linear-gradient(135deg, hsl(217 80% 45%), hsl(230 70% 35%))";
 
-  const headerTitle = mainTab === "savings" ? "Savings & Goals" : mainTab === "gold" ? "Gold Investment" : "Stock Market";
+  const headerTitle = mainTab === "savings" ? "Savings & DPS"
+    : mainTab === "goals" ? "My Goals"
+    : mainTab === "gold" ? "Gold Investment" : "Stock Market";
   const headerSub = mainTab === "savings"
     ? `Total Saved: ৳${totalSaved.toLocaleString()}`
+    : mainTab === "goals"
+    ? `${goals.length} goal${goals.length !== 1 ? "s" : ""} • ৳${totalSaved.toLocaleString()} saved`
     : mainTab === "gold" ? `Gold Price: ৳${LIVE_GOLD_PRICE.toLocaleString()}/g`
     : `Portfolio: ৳${Math.round(totalStockValue).toLocaleString()}`;
 
@@ -550,6 +556,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     if (mainTab === "savings") {
       if (step === "review") { setPin(""); setPinError(""); setTermsAccepted(false); setStep(enableAutoSaveInCreate ? "create" : "autosave"); }
       else if (step === "home") onClose();
+      else setStep("home");
+    } else if (mainTab === "goals") {
+      if (step === "home") setMainTab("savings");
       else setStep("home");
     } else if (mainTab === "gold") {
       if (goldStep === "portfolio") setMainTab("savings");
@@ -579,24 +588,18 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
             <p className="text-[17px] font-bold leading-tight">{headerTitle}</p>
             <p className="text-[11px] opacity-70">{headerSub}</p>
           </div>
-          {mainTab === "savings" && step === "home" && (
-            <div className="flex gap-1.5">
-              <motion.button whileTap={{ scale: 0.88 }} onClick={() => setStep("autosave")}
-                className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center"><CalendarClock size={16} /></motion.button>
-              <motion.button whileTap={{ scale: 0.88 }} onClick={() => setStep("create")}
-                className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center"><Plus size={18} /></motion.button>
-            </div>
-          )}
+{/* Clean header — no action buttons */}
         </div>
-        <div className="flex gap-1.5 mt-3 relative z-10">
+        <div className="flex gap-1 mt-3 relative z-10">
           {([
-            { key: "savings" as MainTab, icon: Target, label: "Savings" },
+            { key: "savings" as MainTab, icon: Wallet, label: "Savings" },
+            { key: "goals" as MainTab, icon: Target, label: "Goals" },
             { key: "gold" as MainTab, icon: Coins, label: "Gold" },
             { key: "stocks" as MainTab, icon: LineChart, label: "Stocks" },
           ]).map(tab => (
-            <button key={tab.key} onClick={() => { setMainTab(tab.key); setError(""); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[12px] font-bold transition-all ${mainTab === tab.key ? "bg-white/25 text-white shadow-sm" : "bg-white/8 text-white/60 hover:bg-white/12"}`}>
-              <tab.icon size={14} />{tab.label}
+            <button key={tab.key} onClick={() => { setMainTab(tab.key); setStep("home"); setError(""); }}
+              className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-[11px] font-bold transition-all ${mainTab === tab.key ? "bg-white/25 text-white shadow-sm" : "bg-white/8 text-white/60 hover:bg-white/12"}`}>
+              <tab.icon size={13} />{tab.label}
             </button>
           ))}
         </div>
