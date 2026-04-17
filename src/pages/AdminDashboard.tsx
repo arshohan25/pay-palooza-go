@@ -455,6 +455,78 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [userSubTab, setUserSubTab] = useState<"users" | "agents" | "merchants">("users");
+  const [metricFilter, setMetricFilter] = useState<{ key: string; label: string } | null>(null);
+  const [metricFilterUserIds, setMetricFilterUserIds] = useState<Set<string> | null>(null);
+  const [metricFilterLoading, setMetricFilterLoading] = useState(false);
+
+  const METRIC_LABELS: Record<string, string> = {
+    all: "All Users",
+    active: "Active Users",
+    suspended: "Suspended",
+    new_today: "New Today",
+    new_7d: "New (7 days)",
+    new_30d: "New (30 days)",
+    dau: "Active Today (DAU)",
+    wau: "Active This Week (WAU)",
+    mau: "Active This Month (MAU)",
+    inactive_30d: "Inactive 30+ days",
+    dormant_90d: "Dormant 90+ days",
+    high_balance: "Top Balance Holders",
+    kyc_verified: "KYC Verified",
+    kyc_pending: "KYC Pending",
+    kyc_rejected: "KYC Rejected",
+    kyc_exempt: "KYC Exempt",
+    "txn:send": "Send Money users (30d)",
+    "txn:cashout": "Cash Out users (30d)",
+    "txn:cashin": "Cash In users (30d)",
+    "txn:addmoney": "Add Money users (30d)",
+    "txn:payment": "Payment users (30d)",
+    "txn:recharge": "Recharge users (30d)",
+    "txn:paybill": "Bill Pay users (30d)",
+    "txn:banktransfer": "Bank Transfer users (30d)",
+  };
+
+  const handleMetricCardClick = async (key: string) => {
+    // Cross-tab navigation
+    if (key.startsWith("tab:")) {
+      const target = key.slice(4);
+      setActiveTab(target);
+      return;
+    }
+    if (key === "all") {
+      setMetricFilter(null);
+      setMetricFilterUserIds(null);
+      return;
+    }
+    setMetricFilter({ key, label: METRIC_LABELS[key] || key });
+
+    // Transaction-type filters → fetch user_ids that performed that txn type in last 30d
+    if (key.startsWith("txn:")) {
+      const type = key.slice(4);
+      setMetricFilterLoading(true);
+      const day30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const r = await supabase.from("transactions").select("user_id").eq("type", type).gte("created_at", day30);
+      setMetricFilterUserIds(new Set((r.data ?? []).map((x: any) => x.user_id)));
+      setMetricFilterLoading(false);
+      return;
+    }
+    // Activity windows
+    if (key === "dau" || key === "wau" || key === "mau" || key === "inactive_30d" || key === "dormant_90d") {
+      setMetricFilterLoading(true);
+      const days = key === "dau" ? 1 : key === "wau" ? 7 : key === "mau" ? 30 : key === "inactive_30d" ? 30 : 90;
+      const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+      const r = await supabase.from("transactions").select("user_id").gte("created_at", since);
+      setMetricFilterUserIds(new Set((r.data ?? []).map((x: any) => x.user_id)));
+      setMetricFilterLoading(false);
+      return;
+    }
+    setMetricFilterUserIds(null);
+  };
+
+  const clearMetricFilter = () => {
+    setMetricFilter(null);
+    setMetricFilterUserIds(null);
+  };
   const [lockTarget, setLockTarget] = useState<{ userId: string; label: string } | null>(null);
   const [chargebackTarget, setChargebackTarget] = useState<any>(null);
   const [showNavMenu, setShowNavMenu] = useState(false);
