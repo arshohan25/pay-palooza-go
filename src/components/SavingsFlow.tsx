@@ -550,11 +550,12 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
 
   const handleBuyGold = async () => {
     const grams = parseFloat(goldGrams);
-    if (!grams || grams <= 0) { setError("Enter valid grams"); return; }
+    const fail = (msg: string) => { setError(msg); setPin(""); setPinError(""); };
+    if (!grams || grams <= 0) return fail("Enter valid grams");
     const cost = Math.round(grams * currentGoldPrice);
     const fee = Math.round(cost * 0.015);
     const totalCost = cost + fee;
-    if (totalCost > balance) { setError("Insufficient balance"); return; }
+    if (totalCost > balance) return fail("Insufficient balance");
     if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
     setProcessing(true); setPinError(""); setError("");
     try {
@@ -574,8 +575,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
 
   const handleSellGold = async () => {
     const grams = parseFloat(goldGrams);
-    if (!grams || grams <= 0) { setError("Enter valid grams"); return; }
-    if (grams > goldHolding.grams) { setError("Insufficient gold balance"); return; }
+    const fail = (msg: string) => { setError(msg); setPin(""); setPinError(""); };
+    if (!grams || grams <= 0) return fail("Enter valid grams");
+    if (grams > goldHolding.grams) return fail("Insufficient gold balance");
     if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
     setProcessing(true); setPinError(""); setError("");
     try {
@@ -605,11 +607,12 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const handleBuyStock = async () => {
     if (!selectedStock) return;
     const qty = parseInt(stockQty);
-    if (!qty || qty <= 0) { setError("Enter valid quantity"); return; }
+    const fail = (msg: string) => { setError(msg); setPin(""); setPinError(""); };
+    if (!qty || qty <= 0) return fail("Enter valid quantity");
     const cost = Math.round(qty * selectedStock.price);
     const brokerage = 15;
     const totalCost = cost + brokerage;
-    if (totalCost > balance) { setError("Insufficient balance"); return; }
+    if (totalCost > balance) return fail("Insufficient balance");
     if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
     setProcessing(true); setPinError(""); setError("");
     try {
@@ -630,8 +633,9 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     if (!selectedStock) return;
     const qty = parseInt(stockQty);
     const holding = stockHoldings.find(h => h.symbol === selectedStock.symbol);
-    if (!qty || qty <= 0) { setError("Enter valid quantity"); return; }
-    if (!holding || qty > holding.qty) { setError("Insufficient shares"); return; }
+    const fail = (msg: string) => { setError(msg); setPin(""); setPinError(""); };
+    if (!qty || qty <= 0) return fail("Enter valid quantity");
+    if (!holding || qty > holding.qty) return fail("Insufficient shares");
     if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
     setProcessing(true); setPinError(""); setError("");
     try {
