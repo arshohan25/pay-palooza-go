@@ -1,0 +1,3 @@
+ALTER TABLE public.stock_holdings
+  ADD COLUMN IF NOT EXISTS current_price NUMERIC NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS last_price_update TIMESTAMPTZ;
