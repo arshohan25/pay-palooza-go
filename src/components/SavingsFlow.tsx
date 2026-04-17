@@ -951,7 +951,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 </motion.div>
               ) : (
                 <div className="space-y-2.5">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1">Your Goals ({goals.length})</p>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1">Your Goals ({activeGoals.length})</p>
                   {goals.map((goal, i) => {
                     const saved = Number(goal.saved_amount);
                     const target = Number(goal.target_amount);
