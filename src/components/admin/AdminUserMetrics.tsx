@@ -10,10 +10,11 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 
 type Metric = {
+  key: string;
   label: string;
   value: number | string;
   icon: LucideIcon;
-  color: string; // tailwind class for top border + icon
+  color: string;
   hint?: string;
 };
 
@@ -22,10 +23,19 @@ type Section = {
   metrics: Metric[];
 };
 
-function MetricCard({ m }: { m: Metric }) {
+function MetricCard({ m, onClick }: { m: Metric; onClick?: (key: string) => void }) {
   const Icon = m.icon;
+  const clickable = !!onClick;
   return (
-    <Card className={`relative overflow-hidden border-0 shadow-[var(--shadow-card)] hover:shadow-lg transition-all p-3 sm:p-4 group`}>
+    <Card
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onClick={clickable ? () => onClick!(m.key) : undefined}
+      onKeyDown={clickable ? (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick!(m.key); }
+      } : undefined}
+      className={`relative overflow-hidden border-0 shadow-[var(--shadow-card)] hover:shadow-lg hover:ring-2 hover:ring-primary/40 hover:-translate-y-0.5 transition-all p-3 sm:p-4 group ${clickable ? "cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary" : ""}`}
+    >
       <div className={`absolute top-0 left-0 right-0 h-1 ${m.color}`} />
       <div className="flex items-start gap-3">
         <div className={`shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-xl ${m.color} bg-opacity-10 grid place-items-center group-hover:scale-110 transition-transform`}>
@@ -41,7 +51,7 @@ function MetricCard({ m }: { m: Metric }) {
   );
 }
 
-function SectionBlock({ section, loading }: { section: Section; loading: boolean }) {
+function SectionBlock({ section, loading, onCardClick }: { section: Section; loading: boolean; onCardClick?: (key: string) => void }) {
   return (
     <div className="space-y-2">
       <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase tracking-wider px-1">
@@ -52,7 +62,7 @@ function SectionBlock({ section, loading }: { section: Section; loading: boolean
           loading ? (
             <Skeleton key={i} className="h-[72px] sm:h-[88px] rounded-lg" />
           ) : (
-            <MetricCard key={i} m={m} />
+            <MetricCard key={i} m={m} onClick={onCardClick} />
           )
         )}
       </div>
@@ -60,7 +70,7 @@ function SectionBlock({ section, loading }: { section: Section; loading: boolean
   );
 }
 
-export function AdminUserMetrics() {
+export function AdminUserMetrics({ onCardClick }: { onCardClick?: (key: string) => void } = {}) {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
 
@@ -161,70 +171,70 @@ export function AdminUserMetrics() {
     {
       title: "👥 User Base",
       metrics: [
-        { label: "Total Users", value: fmt(d.totalUsers), icon: Users, color: "bg-primary" },
-        { label: "Active", value: fmt(d.activeUsers), icon: UserCheck, color: "bg-emerald-500" },
-        { label: "Suspended", value: fmt(d.suspendedUsers), icon: UserX, color: "bg-rose-500" },
-        { label: "New Today", value: fmt(d.newToday), icon: UserPlus, color: "bg-cyan-500" },
-        { label: "New (7d)", value: fmt(d.new7d), icon: UserPlus, color: "bg-blue-500" },
-        { label: "New (30d)", value: fmt(d.new30d), icon: UserPlus, color: "bg-indigo-500" },
+        { key: "all", label: "Total Users", value: fmt(d.totalUsers), icon: Users, color: "bg-primary" },
+        { key: "active", label: "Active", value: fmt(d.activeUsers), icon: UserCheck, color: "bg-emerald-500" },
+        { key: "suspended", label: "Suspended", value: fmt(d.suspendedUsers), icon: UserX, color: "bg-rose-500" },
+        { key: "new_today", label: "New Today", value: fmt(d.newToday), icon: UserPlus, color: "bg-cyan-500" },
+        { key: "new_7d", label: "New (7d)", value: fmt(d.new7d), icon: UserPlus, color: "bg-blue-500" },
+        { key: "new_30d", label: "New (30d)", value: fmt(d.new30d), icon: UserPlus, color: "bg-indigo-500" },
       ],
     },
     {
       title: "📊 Activity & Engagement",
       metrics: [
-        { label: "DAU", value: fmt(d.dau), icon: Activity, color: "bg-emerald-500", hint: "Daily Active" },
-        { label: "WAU", value: fmt(d.wau), icon: Activity, color: "bg-teal-500", hint: "Weekly Active" },
-        { label: "MAU", value: fmt(d.mau), icon: Activity, color: "bg-blue-500", hint: "Monthly Active" },
-        { label: "Inactive 30d", value: fmt(d.inactive30), icon: Clock, color: "bg-amber-500" },
-        { label: "Dormant 90d", value: fmt(d.dormant90), icon: Clock, color: "bg-orange-500" },
-        { label: "Avg Balance", value: tk(d.avgBalance), icon: Wallet, color: "bg-violet-500" },
+        { key: "dau", label: "DAU", value: fmt(d.dau), icon: Activity, color: "bg-emerald-500", hint: "Daily Active" },
+        { key: "wau", label: "WAU", value: fmt(d.wau), icon: Activity, color: "bg-teal-500", hint: "Weekly Active" },
+        { key: "mau", label: "MAU", value: fmt(d.mau), icon: Activity, color: "bg-blue-500", hint: "Monthly Active" },
+        { key: "inactive_30d", label: "Inactive 30d", value: fmt(d.inactive30), icon: Clock, color: "bg-amber-500" },
+        { key: "dormant_90d", label: "Dormant 90d", value: fmt(d.dormant90), icon: Clock, color: "bg-orange-500" },
+        { key: "high_balance", label: "Avg Balance", value: tk(d.avgBalance), icon: Wallet, color: "bg-violet-500", hint: "Click: top balances" },
       ],
     },
     {
       title: "🔐 KYC & Verification",
       metrics: [
-        { label: "Verified", value: fmt(d.kycVerified), icon: ShieldCheck, color: "bg-emerald-500" },
-        { label: "Pending", value: fmt(d.kycPending), icon: Clock, color: "bg-amber-500" },
-        { label: "Rejected", value: fmt(d.kycRejected), icon: ShieldAlert, color: "bg-rose-500" },
-        { label: "Exempt", value: fmt(d.kycExempt), icon: Star, color: "bg-violet-500" },
-        { label: "Devices", value: fmt(d.devices), icon: Smartphone, color: "bg-cyan-500" },
-        { label: "PIN Changes", value: fmt(d.pinChanges), icon: Fingerprint, color: "bg-blue-500", hint: "Last 30d" },
+        { key: "kyc_verified", label: "Verified", value: fmt(d.kycVerified), icon: ShieldCheck, color: "bg-emerald-500" },
+        { key: "kyc_pending", label: "Pending", value: fmt(d.kycPending), icon: Clock, color: "bg-amber-500" },
+        { key: "kyc_rejected", label: "Rejected", value: fmt(d.kycRejected), icon: ShieldAlert, color: "bg-rose-500" },
+        { key: "kyc_exempt", label: "Exempt", value: fmt(d.kycExempt), icon: Star, color: "bg-violet-500" },
+        { key: "tab:devices", label: "Devices", value: fmt(d.devices), icon: Smartphone, color: "bg-cyan-500" },
+        { key: "tab:pin-history", label: "PIN Changes", value: fmt(d.pinChanges), icon: Fingerprint, color: "bg-blue-500", hint: "Last 30d" },
       ],
     },
     {
       title: "💸 Feature Usage (30d)",
       metrics: [
-        { label: "Send Money", value: fmt(d.sendMoney), icon: Send, color: "bg-emerald-500" },
-        { label: "Cash Out", value: fmt(d.cashOut), icon: Banknote, color: "bg-rose-500" },
-        { label: "Cash In", value: fmt(d.cashIn), icon: Wallet, color: "bg-blue-500" },
-        { label: "Add Money", value: fmt(d.addMoney), icon: CreditCard, color: "bg-cyan-500" },
-        { label: "Payment", value: fmt(d.payment), icon: Receipt, color: "bg-indigo-500" },
-        { label: "Recharge", value: fmt(d.recharge), icon: Phone, color: "bg-orange-500" },
-        { label: "Bill Pay", value: fmt(d.billPay), icon: Zap, color: "bg-amber-500" },
-        { label: "Bank Transfer", value: fmt(d.bankTransfer), icon: ArrowLeftRight, color: "bg-violet-500" },
-        { label: "Shop Orders", value: fmt(d.shopOrders), icon: ShoppingBag, color: "bg-pink-500" },
-        { label: "Gift Cards", value: fmt(d.giftCards), icon: Gift, color: "bg-fuchsia-500" },
-        { label: "Donations", value: fmt(d.donations), icon: Heart, color: "bg-red-500" },
-        { label: "Savings/Gold", value: fmt(d.savings), icon: Coins, color: "bg-yellow-500" },
+        { key: "txn:send", label: "Send Money", value: fmt(d.sendMoney), icon: Send, color: "bg-emerald-500" },
+        { key: "txn:cashout", label: "Cash Out", value: fmt(d.cashOut), icon: Banknote, color: "bg-rose-500" },
+        { key: "txn:cashin", label: "Cash In", value: fmt(d.cashIn), icon: Wallet, color: "bg-blue-500" },
+        { key: "txn:addmoney", label: "Add Money", value: fmt(d.addMoney), icon: CreditCard, color: "bg-cyan-500" },
+        { key: "txn:payment", label: "Payment", value: fmt(d.payment), icon: Receipt, color: "bg-indigo-500" },
+        { key: "txn:recharge", label: "Recharge", value: fmt(d.recharge), icon: Phone, color: "bg-orange-500" },
+        { key: "txn:paybill", label: "Bill Pay", value: fmt(d.billPay), icon: Zap, color: "bg-amber-500" },
+        { key: "txn:banktransfer", label: "Bank Transfer", value: fmt(d.bankTransfer), icon: ArrowLeftRight, color: "bg-violet-500" },
+        { key: "tab:ecommerce", label: "Shop Orders", value: fmt(d.shopOrders), icon: ShoppingBag, color: "bg-pink-500" },
+        { key: "tab:gift-cards", label: "Gift Cards", value: fmt(d.giftCards), icon: Gift, color: "bg-fuchsia-500" },
+        { key: "tab:donations", label: "Donations", value: fmt(d.donations), icon: Heart, color: "bg-red-500" },
+        { key: "tab:savings", label: "Savings/Gold", value: fmt(d.savings), icon: Coins, color: "bg-yellow-500" },
       ],
     },
     {
       title: "🎁 Rewards & Marketing",
       metrics: [
-        { label: "Coupons Used", value: fmt(d.couponsUsed), icon: Ticket, color: "bg-pink-500", hint: "Last 30d" },
-        { label: "Referrals", value: fmt(d.referralsCount), icon: UserPlus, color: "bg-emerald-500" },
-        { label: "AI Rewards", value: fmt(d.rewardsClaimed), icon: Star, color: "bg-amber-500", hint: "Claimed" },
-        { label: "Total Txns", value: fmt(d.totalTxn), icon: ArrowLeftRight, color: "bg-blue-500" },
-        { label: "Txn Today", value: fmt(d.txnToday), icon: TrendingUp, color: "bg-cyan-500" },
-        { label: "Txn (7d)", value: fmt(d.txn7d), icon: TrendingUp, color: "bg-indigo-500" },
+        { key: "tab:marketing", label: "Coupons Used", value: fmt(d.couponsUsed), icon: Ticket, color: "bg-pink-500", hint: "Last 30d" },
+        { key: "tab:referrals", label: "Referrals", value: fmt(d.referralsCount), icon: UserPlus, color: "bg-emerald-500" },
+        { key: "tab:user-tracker", label: "AI Rewards", value: fmt(d.rewardsClaimed), icon: Star, color: "bg-amber-500", hint: "Claimed" },
+        { key: "tab:transactions", label: "Total Txns", value: fmt(d.totalTxn), icon: ArrowLeftRight, color: "bg-blue-500" },
+        { key: "tab:transactions", label: "Txn Today", value: fmt(d.txnToday), icon: TrendingUp, color: "bg-cyan-500" },
+        { key: "tab:transactions", label: "Txn (7d)", value: fmt(d.txn7d), icon: TrendingUp, color: "bg-indigo-500" },
       ],
     },
     {
       title: "🛡️ Risk & Safety",
       metrics: [
-        { label: "Locked Features", value: fmt(d.featureLocks), icon: Lock, color: "bg-rose-500" },
-        { label: "Open Alerts", value: fmt(d.fraudAlerts), icon: AlertTriangle, color: "bg-orange-500" },
-        { label: "Open Disputes", value: fmt(d.complaints), icon: Bell, color: "bg-amber-500" },
+        { key: "tab:feature-locks", label: "Locked Features", value: fmt(d.featureLocks), icon: Lock, color: "bg-rose-500" },
+        { key: "tab:alerts", label: "Open Alerts", value: fmt(d.fraudAlerts), icon: AlertTriangle, color: "bg-orange-500" },
+        { key: "tab:complaints", label: "Open Disputes", value: fmt(d.complaints), icon: Bell, color: "bg-amber-500" },
       ],
     },
   ];
@@ -232,7 +242,7 @@ export function AdminUserMetrics() {
   return (
     <div className="space-y-5">
       {sections.map((s, i) => (
-        <SectionBlock key={i} section={s} loading={loading} />
+        <SectionBlock key={i} section={s} loading={loading} onCardClick={onCardClick} />
       ))}
     </div>
   );
