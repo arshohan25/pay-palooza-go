@@ -2007,6 +2007,7 @@ export type Database = {
           id: string
           interest_rate: number
           notes: string | null
+          repaid_amount: number
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
@@ -2023,6 +2024,7 @@ export type Database = {
           id?: string
           interest_rate?: number
           notes?: string | null
+          repaid_amount?: number
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
@@ -2039,6 +2041,7 @@ export type Database = {
           id?: string
           interest_rate?: number
           notes?: string | null
+          repaid_amount?: number
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
@@ -4154,6 +4157,8 @@ export type Database = {
           target_amount: number
           updated_at: string
           user_id: string
+          withdrawn_amount: number | null
+          withdrawn_at: string | null
         }
         Insert: {
           created_at?: string
@@ -4165,6 +4170,8 @@ export type Database = {
           target_amount?: number
           updated_at?: string
           user_id: string
+          withdrawn_amount?: number | null
+          withdrawn_at?: string | null
         }
         Update: {
           created_at?: string
@@ -4176,6 +4183,8 @@ export type Database = {
           target_amount?: number
           updated_at?: string
           user_id?: string
+          withdrawn_amount?: number | null
+          withdrawn_at?: string | null
         }
         Relationships: []
       }
@@ -5358,6 +5367,10 @@ export type Database = {
           }
       release_escrow: { Args: { p_order_id: string }; Returns: Json }
       repay_loan: { Args: { p_loan_id: string }; Returns: undefined }
+      repay_loan_partial: {
+        Args: { p_amount: number; p_loan_id: string }
+        Returns: Json
+      }
       require_kyc_verified: { Args: { p_user_id: string }; Returns: undefined }
       resolve_payment_merchant: {
         Args: { p_identifier: string }
