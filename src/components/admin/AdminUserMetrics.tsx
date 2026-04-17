@@ -23,9 +23,28 @@ type Section = {
   metrics: Metric[];
 };
 
+// Map bg-* color to a matching gradient + ring + glow tone using arbitrary opacity classes
+const COLOR_TONES: Record<string, { grad: string; ring: string; text: string; glow: string }> = {
+  "bg-primary":      { grad: "from-primary/30 to-primary/5",          ring: "ring-primary/40",        text: "text-primary",        glow: "shadow-primary/20" },
+  "bg-emerald-500":  { grad: "from-emerald-500/30 to-emerald-500/5",  ring: "ring-emerald-500/40",    text: "text-emerald-500",    glow: "shadow-emerald-500/20" },
+  "bg-rose-500":     { grad: "from-rose-500/30 to-rose-500/5",        ring: "ring-rose-500/40",       text: "text-rose-500",       glow: "shadow-rose-500/20" },
+  "bg-cyan-500":     { grad: "from-cyan-500/30 to-cyan-500/5",        ring: "ring-cyan-500/40",       text: "text-cyan-500",       glow: "shadow-cyan-500/20" },
+  "bg-blue-500":     { grad: "from-blue-500/30 to-blue-500/5",        ring: "ring-blue-500/40",       text: "text-blue-500",       glow: "shadow-blue-500/20" },
+  "bg-indigo-500":   { grad: "from-indigo-500/30 to-indigo-500/5",    ring: "ring-indigo-500/40",     text: "text-indigo-500",     glow: "shadow-indigo-500/20" },
+  "bg-teal-500":     { grad: "from-teal-500/30 to-teal-500/5",        ring: "ring-teal-500/40",       text: "text-teal-500",       glow: "shadow-teal-500/20" },
+  "bg-amber-500":    { grad: "from-amber-500/30 to-amber-500/5",      ring: "ring-amber-500/40",      text: "text-amber-500",      glow: "shadow-amber-500/20" },
+  "bg-orange-500":   { grad: "from-orange-500/30 to-orange-500/5",    ring: "ring-orange-500/40",     text: "text-orange-500",     glow: "shadow-orange-500/20" },
+  "bg-violet-500":   { grad: "from-violet-500/30 to-violet-500/5",    ring: "ring-violet-500/40",     text: "text-violet-500",     glow: "shadow-violet-500/20" },
+  "bg-pink-500":     { grad: "from-pink-500/30 to-pink-500/5",        ring: "ring-pink-500/40",       text: "text-pink-500",       glow: "shadow-pink-500/20" },
+  "bg-fuchsia-500":  { grad: "from-fuchsia-500/30 to-fuchsia-500/5",  ring: "ring-fuchsia-500/40",    text: "text-fuchsia-500",    glow: "shadow-fuchsia-500/20" },
+  "bg-red-500":      { grad: "from-red-500/30 to-red-500/5",          ring: "ring-red-500/40",        text: "text-red-500",        glow: "shadow-red-500/20" },
+  "bg-yellow-500":   { grad: "from-yellow-500/30 to-yellow-500/5",    ring: "ring-yellow-500/40",     text: "text-yellow-500",     glow: "shadow-yellow-500/20" },
+};
+
 function MetricCard({ m, onClick }: { m: Metric; onClick?: (key: string) => void }) {
   const Icon = m.icon;
   const clickable = !!onClick;
+  const tone = COLOR_TONES[m.color] ?? COLOR_TONES["bg-primary"];
   return (
     <Card
       role={clickable ? "button" : undefined}
@@ -34,33 +53,47 @@ function MetricCard({ m, onClick }: { m: Metric; onClick?: (key: string) => void
       onKeyDown={clickable ? (e) => {
         if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick!(m.key); }
       } : undefined}
-      className={`relative overflow-hidden border-0 shadow-[var(--shadow-card)] hover:shadow-lg hover:ring-2 hover:ring-primary/40 hover:-translate-y-0.5 transition-all p-3 sm:p-4 group ${clickable ? "cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary" : ""}`}
+      className={`group relative overflow-hidden rounded-2xl border border-border/40 bg-card/60 backdrop-blur-xl shadow-sm transition-all duration-300 p-3 sm:p-4 ${clickable ? `cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:${tone.glow} hover:ring-2 hover:${tone.ring} focus:outline-none focus:ring-2 focus:${tone.ring}` : ""}`}
     >
-      <div className={`absolute top-0 left-0 right-0 h-1 ${m.color}`} />
-      <div className="flex items-start gap-3">
-        <div className={`shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-xl ${m.color} bg-opacity-10 grid place-items-center group-hover:scale-110 transition-transform`}>
-          <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+      {/* Gradient accent strip */}
+      <div className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${tone.grad} opacity-80`} />
+      {/* Radial glow behind icon */}
+      <div className={`absolute -top-8 -left-8 w-24 h-24 rounded-full bg-gradient-to-br ${tone.grad} blur-2xl opacity-50 group-hover:opacity-80 transition-opacity`} />
+
+      <div className="relative flex items-start gap-3">
+        <div className={`shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br ${tone.grad} ring-1 ring-inset ring-border/40 grid place-items-center group-hover:scale-110 transition-transform duration-300`}>
+          <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${tone.text}`} />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide truncate">{m.label}</div>
-          <div className="text-base sm:text-xl font-bold text-foreground tabular-nums">{m.value}</div>
-          {m.hint && <div className="text-[10px] text-muted-foreground/70 mt-0.5 truncate">{m.hint}</div>}
+          <div className="text-[10px] sm:text-xs text-muted-foreground/80 uppercase tracking-wider font-medium truncate">{m.label}</div>
+          <div className="text-lg sm:text-2xl font-bold text-foreground tabular-nums leading-tight mt-0.5">{m.value}</div>
+          {m.hint && <div className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">{m.hint}</div>}
         </div>
       </div>
+
+      {clickable && (
+        <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-[9px] uppercase tracking-wider font-semibold text-muted-foreground/70">
+          Click ↗
+        </div>
+      )}
     </Card>
   );
 }
 
 function SectionBlock({ section, loading, onCardClick }: { section: Section; loading: boolean; onCardClick?: (key: string) => void }) {
   return (
-    <div className="space-y-2">
-      <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase tracking-wider px-1">
-        {section.title}
-      </h3>
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 px-1">
+        <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
+        <h3 className="text-xs sm:text-sm font-semibold text-foreground/80 uppercase tracking-[0.15em]">
+          {section.title}
+        </h3>
+        <div className="flex-1 h-px bg-gradient-to-r from-border/60 to-transparent" />
+      </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 sm:gap-3">
         {section.metrics.map((m, i) =>
           loading ? (
-            <Skeleton key={i} className="h-[72px] sm:h-[88px] rounded-lg" />
+            <Skeleton key={i} className="h-[84px] sm:h-[100px] rounded-2xl" />
           ) : (
             <MetricCard key={i} m={m} onClick={onCardClick} />
           )

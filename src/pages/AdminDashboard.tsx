@@ -486,11 +486,23 @@ export default function AdminDashboard() {
     "txn:banktransfer": "Bank Transfer users (30d)",
   };
 
+  // Map shorthand metric tab keys → actual admin tab IDs
+  const TAB_KEY_MAP: Record<string, string> = {
+    "user-tracker": "user_performance",
+    "feature-locks": "locks",
+    "pin-history": "pin_history",
+    "gift-cards": "gift_cards_mgmt",
+    donations: "donation_funds",
+  };
+
   const handleMetricCardClick = async (key: string) => {
     // Cross-tab navigation
     if (key.startsWith("tab:")) {
-      const target = key.slice(4);
+      const raw = key.slice(4);
+      const target = TAB_KEY_MAP[raw] || raw;
       setActiveTab(target);
+      try { window.location.hash = target; } catch {}
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     if (key === "all") {
@@ -499,6 +511,11 @@ export default function AdminDashboard() {
       return;
     }
     setMetricFilter({ key, label: METRIC_LABELS[key] || key });
+
+    // Smooth scroll user list into view after state settles
+    setTimeout(() => {
+      document.getElementById("admin-users-table")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
 
     // Transaction-type filters → fetch user_ids that performed that txn type in last 30d
     if (key.startsWith("txn:")) {
@@ -1298,13 +1315,16 @@ export default function AdminDashboard() {
           <div className="space-y-4">
             <AdminUserMetrics onCardClick={handleMetricCardClick} />
             {metricFilter && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-                <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                  Filter: {metricFilter.label}
-                  {metricFilterLoading ? " (loading…)" : ` · ${filteredUsers.length} users`}
+              <div id="admin-users-table" className="sticky top-2 z-20 flex items-center gap-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-emerald-500/10 to-transparent border border-emerald-500/40 shadow-lg shadow-emerald-500/10 backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-300">
+                <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                  {metricFilter.label}
                 </span>
-                <Button size="sm" variant="ghost" className="h-6 px-2 text-xs ml-auto" onClick={clearMetricFilter}>
-                  Clear
+                <span className="text-xs text-emerald-700/70 dark:text-emerald-300/70 tabular-nums">
+                  {metricFilterLoading ? "loading…" : `${filteredUsers.length} match${filteredUsers.length === 1 ? "" : "es"}`}
+                </span>
+                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs ml-auto text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20" onClick={clearMetricFilter}>
+                  ✕ Clear
                 </Button>
               </div>
             )}
