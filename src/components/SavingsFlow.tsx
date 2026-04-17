@@ -174,6 +174,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const { t } = useI18n();
   const { user } = useAuth();
   const { price22k: LIVE_GOLD_PRICE, price24k: LIVE_GOLD_24K_PRICE, updatedAt: goldUpdatedAt, loading: goldPriceLoading, refresh: refreshGoldPrice } = useGoldPrice();
+  const { stocks: liveStocks, updatedAt: stockUpdatedAt, source: stockSource, loading: stockPriceLoading, refresh: refreshStockPrices } = useStockPrices();
 
   const [mainTab, setMainTab] = useState<MainTab>("savings");
 
@@ -237,7 +238,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   // ─── Stock state ────────
   const [stockStep, setStockStep] = useState<StockStep>("market");
   const [stockHoldings, setStockHoldings] = useState<StockHolding[]>([]);
-  const [selectedStock, setSelectedStock] = useState<typeof MOCK_STOCKS[0] | null>(null);
+  const [selectedStock, setSelectedStock] = useState<StockQuote | null>(null);
   const [stockQty, setStockQty] = useState("");
   const [stockAction, setStockAction] = useState<"buy" | "sell">("buy");
 
