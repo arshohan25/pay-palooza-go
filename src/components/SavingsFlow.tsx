@@ -746,14 +746,6 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
               </div>
 
               {/* Premium 2×2 portfolio grid: DPS · Goals · Gold · Stocks */}
-              {(() => {
-                const activePlans = autoSaves.filter(a => a.is_active);
-                const dpsSaved = activePlans.reduce((s, a) => s + Number(a.amount) * Number(a.total_paid ?? 0), 0);
-                const goalsTarget = goals.reduce((s, g) => s + Number(g.target_amount), 0);
-                const goalsSaved = goals.reduce((s, g) => s + Number(g.saved_amount), 0);
-                const fmt = (n: number) => n >= 1000 ? `৳${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : `৳${Math.round(n)}`;
-                return null;
-              })()}
               <div className="grid grid-cols-2 gap-2.5">
                 {/* DPS PLANS tile */}
                 <button onClick={() => setStep("autosave")} className="text-left p-3.5 rounded-[18px] border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 space-y-1.5 hover:shadow-md hover:border-emerald-500/40 hover:-translate-y-0.5 transition-all">
