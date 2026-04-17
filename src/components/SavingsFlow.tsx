@@ -15,6 +15,7 @@ import { fireSuccessConfetti } from "@/lib/confetti";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { useGoldPrice } from "@/hooks/use-gold-price";
+import { useStockPrices } from "@/hooks/use-stock-prices";
 import { useAuth } from "@/hooks/use-auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -47,16 +48,8 @@ interface StockHolding { symbol: string; name: string; qty: number; avgPrice: nu
 
 // Gold prices fetched live via useGoldPrice hook
 
-const MOCK_STOCKS: { symbol: string; name: string; price: number; change: number; sector: string }[] = [
-  { symbol: "GRPH", name: "Grameenphone", price: 385.50, change: 2.4, sector: "Telecom" },
-  { symbol: "SQPH", name: "Square Pharma", price: 218.30, change: -0.8, sector: "Pharma" },
-  { symbol: "BRAC", name: "BRAC Bank", price: 42.10, change: 1.2, sector: "Banking" },
-  { symbol: "BATB", name: "BAT Bangladesh", price: 550.00, change: 3.1, sector: "FMCG" },
-  { symbol: "LHBL", name: "LafargeHolcim BD", price: 68.90, change: -1.5, sector: "Cement" },
-  { symbol: "RENP", name: "Renata Pharma", price: 1320.00, change: 0.6, sector: "Pharma" },
-  { symbol: "ISLB", name: "Islami Bank BD", price: 28.50, change: 4.2, sector: "Banking" },
-  { symbol: "WALP", name: "Walton Hi-Tech", price: 1250.00, change: -2.1, sector: "Tech" },
-];
+// Live stock list fetched via useStockPrices hook (DSE source w/ fallback)
+type StockQuote = { symbol: string; name: string; price: number; change: number; sector: string };
 
 // ─── Profit & Duration Config ────────────────────────────────────────
 // Returns vary by duration (months → annual %). Realistic 2%–6% range.
@@ -181,6 +174,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   const { t } = useI18n();
   const { user } = useAuth();
   const { price22k: LIVE_GOLD_PRICE, price24k: LIVE_GOLD_24K_PRICE, updatedAt: goldUpdatedAt, loading: goldPriceLoading, refresh: refreshGoldPrice } = useGoldPrice();
+  const { stocks: liveStocks, updatedAt: stockUpdatedAt, source: stockSource, loading: stockPriceLoading, refresh: refreshStockPrices } = useStockPrices();
 
   const [mainTab, setMainTab] = useState<MainTab>("savings");
 
@@ -244,7 +238,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
   // ─── Stock state ────────
   const [stockStep, setStockStep] = useState<StockStep>("market");
   const [stockHoldings, setStockHoldings] = useState<StockHolding[]>([]);
-  const [selectedStock, setSelectedStock] = useState<typeof MOCK_STOCKS[0] | null>(null);
+  const [selectedStock, setSelectedStock] = useState<StockQuote | null>(null);
   const [stockQty, setStockQty] = useState("");
   const [stockAction, setStockAction] = useState<"buy" | "sell">("buy");
 
@@ -293,12 +287,36 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     if (!user) return;
     const { data } = await supabase.from("stock_holdings" as any).select("*").eq("user_id", user.id);
     const holdings = (data as any[]) ?? [];
-    setStockHoldings(holdings.map((h: any) => ({
-      symbol: h.symbol, name: h.name, qty: h.quantity,
-      avgPrice: Number(h.avg_buy_price), currentPrice: MOCK_STOCKS.find(s => s.symbol === h.symbol)?.price ?? Number(h.avg_buy_price),
-      change: MOCK_STOCKS.find(s => s.symbol === h.symbol)?.change ?? 0,
-    })));
-  }, [user]);
+    setStockHoldings(holdings.map((h: any) => {
+      const live = liveStocks.find(s => s.symbol === h.symbol);
+      const stored = Number(h.current_price);
+      const currentPrice = live?.price ?? (stored > 0 ? stored : Number(h.avg_buy_price));
+      return {
+        symbol: h.symbol, name: h.name, qty: h.quantity,
+        avgPrice: Number(h.avg_buy_price), currentPrice,
+        change: live?.change ?? 0,
+      };
+    }));
+  }, [user, liveStocks]);
+
+  // Persist live prices into stock_holdings so cross-session P/L stays accurate.
+  useEffect(() => {
+    if (!user || liveStocks.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.from("stock_holdings" as any).select("id, symbol").eq("user_id", user.id);
+      if (cancelled || !data) return;
+      const now = new Date().toISOString();
+      await Promise.all((data as any[]).map((row) => {
+        const live = liveStocks.find(s => s.symbol === row.symbol);
+        if (!live) return Promise.resolve();
+        return supabase.from("stock_holdings" as any)
+          .update({ current_price: live.price, last_price_update: now })
+          .eq("id", row.id);
+      }));
+    })();
+    return () => { cancelled = true; };
+  }, [user, liveStocks]);
 
   useEffect(() => { loadGoals(); loadAutoSaves(); loadGoldHoldings(); loadStockHoldings(); loadMissedPayments(); }, [loadGoals, loadAutoSaves, loadGoldHoldings, loadStockHoldings, loadMissedPayments]);
 
@@ -2188,8 +2206,24 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 </button>
               )}
               <div className="space-y-1.5">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1">DSE Market — Top Halal Stocks</p>
-                {MOCK_STOCKS.map((stock, i) => {
+                <div className="flex items-center justify-between px-1">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">DSE Market — Top Halal Stocks</p>
+                  <div className="flex items-center gap-1.5">
+                    <button onClick={refreshStockPrices} className="p-1 rounded-lg hover:bg-muted transition-colors" disabled={stockPriceLoading} aria-label="Refresh prices">
+                      <RefreshCw size={11} className={`text-muted-foreground ${stockPriceLoading ? "animate-spin" : ""}`} />
+                    </button>
+                    <div className="flex items-center gap-1 text-[9px] font-bold">
+                      <div className={`w-1.5 h-1.5 rounded-full ${stockSource === "dse_live" ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
+                      <span className={stockSource === "dse_live" ? "text-emerald-600" : "text-amber-600"}>
+                        {stockSource === "dse_live" ? "Live" : "Indicative"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                {stockUpdatedAt && (
+                  <p className="text-[9px] text-muted-foreground px-1">Updated: {new Date(stockUpdatedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</p>
+                )}
+                {liveStocks.map((stock, i) => {
                   const holding = stockHoldings.find(h => h.symbol === stock.symbol);
                   return (
                     <motion.button key={stock.symbol} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
@@ -2248,7 +2282,7 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                   {stockHoldings.map(h => {
                     const pl = (h.currentPrice - h.avgPrice) * h.qty;
                     const plPct = ((h.currentPrice - h.avgPrice) / h.avgPrice * 100);
-                    const stock = MOCK_STOCKS.find(s => s.symbol === h.symbol);
+                    const stock = liveStocks.find(s => s.symbol === h.symbol);
                     return (
                       <div key={h.symbol} className="w-full bg-card rounded-[16px] border border-border/60 shadow-[var(--shadow-xs)] p-3.5 space-y-2">
                         <button onClick={() => {

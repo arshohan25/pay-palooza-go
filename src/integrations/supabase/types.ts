@@ -4288,7 +4288,9 @@ export type Database = {
         Row: {
           avg_buy_price: number
           created_at: string
+          current_price: number
           id: string
+          last_price_update: string | null
           name: string
           quantity: number
           symbol: string
@@ -4298,7 +4300,9 @@ export type Database = {
         Insert: {
           avg_buy_price?: number
           created_at?: string
+          current_price?: number
           id?: string
+          last_price_update?: string | null
           name?: string
           quantity?: number
           symbol: string
@@ -4308,7 +4312,9 @@ export type Database = {
         Update: {
           avg_buy_price?: number
           created_at?: string
+          current_price?: number
           id?: string
+          last_price_update?: string | null
           name?: string
           quantity?: number
           symbol?: string
