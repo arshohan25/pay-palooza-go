@@ -901,14 +901,20 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                 <div className="space-y-2.5">
                   <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1">Your Goals ({goals.length})</p>
                   {goals.map((goal, i) => {
-                    const pct = goal.target_amount > 0 ? Math.min(100, (Number(goal.saved_amount) / Number(goal.target_amount)) * 100) : 0;
+                    const saved = Number(goal.saved_amount);
+                    const target = Number(goal.target_amount);
+                    const isCompleted = goal.status === "completed" || (target > 0 && saved >= target);
+                    const isWithdrawn = goal.status === "withdrawn";
+                    const pct = target > 0 ? Math.min(100, (saved / target) * 100) : 0;
+                    const displaySaved = Math.min(saved, target);
+                    const bonus = Math.max(0, saved - target);
+                    const remaining = Math.max(0, target - saved);
                     return (
                       <motion.div key={goal.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05, type: "spring", stiffness: 350, damping: 28 }}
-                        className="bg-card rounded-[20px] border border-border/50 shadow-[var(--shadow-card)] p-4 space-y-3 backdrop-blur-sm">
+                        className={`bg-card rounded-[20px] border shadow-[var(--shadow-card)] p-4 space-y-3 backdrop-blur-sm ${isCompleted && !isWithdrawn ? "border-primary/60 ring-1 ring-primary/30" : "border-border/50"}`}>
                         <div className="flex items-center justify-between">
                           <button onClick={async () => {
                             setSelectedGoal(goal);
-                            // Fetch deposit history
                             const { data: deps } = await supabase.from("savings_deposits").select("id, amount, source, created_at").eq("goal_id", goal.id).order("created_at", { ascending: true });
                             setGoalDeposits((deps as any[]) ?? []);
                             setStep("goal-detail");
@@ -918,11 +924,21 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                             </div>
                             <div className="min-w-0">
                               <p className="text-[14px] font-bold text-foreground truncate">{goal.name}</p>
-                              <p className="text-[11px] text-muted-foreground">৳{Number(goal.saved_amount).toLocaleString()} / ৳{Number(goal.target_amount).toLocaleString()}</p>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <p className="text-[11px] text-muted-foreground">৳{displaySaved.toLocaleString()} / ৳{target.toLocaleString()}</p>
+                                {bonus > 0 && (
+                                  <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold">
+                                    +৳{bonus.toLocaleString()} bonus
+                                  </span>
+                                )}
+                                {isWithdrawn && (
+                                  <span className="px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground text-[9px] font-bold uppercase">Withdrawn</span>
+                                )}
+                              </div>
                             </div>
                           </button>
                           <div className="flex items-center gap-1.5">
-                            {goal.status === "completed" ? <CheckCircle2 size={20} className="text-primary shrink-0" />
+                            {isCompleted ? <CheckCircle2 size={20} className="text-primary shrink-0" />
                               : <button onClick={async () => {
                                   setSelectedGoal(goal);
                                   const { data: deps } = await supabase.from("savings_deposits").select("id, amount, source, created_at").eq("goal_id", goal.id).order("created_at", { ascending: true });
@@ -934,15 +950,32 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                         </div>
                         <div className="space-y-1.5">
                           <div className="h-2.5 rounded-full bg-muted/80 overflow-hidden">
-                            <motion.div className="h-full rounded-full bg-gradient-to-r from-primary via-emerald-500 to-emerald-400" initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1, ease: "easeOut" }} />
+                            <motion.div
+                              key={`${goal.id}-${saved}`}
+                              className={`h-full rounded-full ${isCompleted ? "bg-gradient-to-r from-amber-400 via-emerald-400 to-emerald-500" : "bg-gradient-to-r from-primary via-emerald-500 to-emerald-400"}`}
+                              initial={{ width: 0 }}
+                              animate={{ width: `${pct}%` }}
+                              transition={{ duration: 0.9, ease: "easeOut" }}
+                            />
                           </div>
                           <div className="flex items-center justify-between">
-                            <p className="text-[11px] font-bold text-primary">{pct.toFixed(0)}%</p>
+                            <p className="text-[11px] font-bold text-primary">{pct.toFixed(0)}%{isCompleted ? " 🎉" : ""}</p>
                             <p className="text-[10px] text-muted-foreground font-medium">
-                              ৳{(Number(goal.target_amount) - Number(goal.saved_amount)).toLocaleString()} remaining
+                              {isCompleted ? "Goal achieved" : `৳${remaining.toLocaleString()} remaining`}
                             </p>
                           </div>
                         </div>
+                        {isCompleted && !isWithdrawn && saved > 0 && (
+                          <motion.button
+                            initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                            whileTap={{ scale: 0.97 }}
+                            disabled={processing}
+                            onClick={(e) => { e.stopPropagation(); handleWithdrawGoal(goal.id, goal.name, saved); }}
+                            className="w-full h-10 rounded-xl text-white font-bold text-[12px] shadow-md flex items-center justify-center gap-1.5 disabled:opacity-60"
+                            style={{ background: "linear-gradient(135deg, hsl(162 72% 32%), hsl(178 62% 22%))" }}>
+                            <CheckCircle2 size={14} /> Withdraw ৳{saved.toLocaleString()} to Wallet
+                          </motion.button>
+                        )}
                       </motion.div>
                     );
                   })}
