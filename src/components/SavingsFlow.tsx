@@ -2046,15 +2046,19 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
               {(() => {
                 const _saved = Number(selectedGoal.saved_amount);
                 const _target = Number(selectedGoal.target_amount);
-                const _isWithdrawn = selectedGoal.status === "withdrawn";
+                const _isWithdrawn = selectedGoal.status === "withdrawn" || selectedGoal.status === "cancelled";
                 const _isCompleted = !_isWithdrawn && (selectedGoal.status === "completed" || (_target > 0 && _saved >= _target));
+                const _locked = !_isWithdrawn && isGoalLocked(selectedGoal);
+                const _unlock = goalUnlockDate(selectedGoal);
 
                 if (_isWithdrawn) {
                   return (
                     <div className="bg-muted/40 border border-border/60 rounded-[20px] p-5 text-center">
                       <CheckCircle2 className="mx-auto text-muted-foreground mb-2" size={28} />
                       <p className="text-[13px] font-bold text-foreground">Goal Closed</p>
-                      <p className="text-[11px] text-muted-foreground mt-1">Funds withdrawn to your wallet. This goal is archived.</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        {selectedGoal.status === "cancelled" ? "Funds refunded to your wallet. This goal is archived." : "Funds withdrawn to your wallet. This goal is archived."}
+                      </p>
                     </div>
                   );
                 }
@@ -2065,13 +2069,16 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                       <CheckCircle2 className="mx-auto text-emerald-500" size={36} />
                       <p className="text-[15px] font-black text-foreground">Goal Completed 🎉</p>
                       <p className="text-[12px] text-muted-foreground">
-                        You've reached your ৳{_target.toLocaleString()} target. Withdraw your savings to your wallet.
+                        {_locked
+                          ? `Your funds are locked until ${_unlock?.toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}. You can withdraw after the 60-day minimum.`
+                          : `You've reached your ৳${_target.toLocaleString()} target. Withdraw your savings to your wallet.`}
                       </p>
                       <button
                         onClick={() => handleWithdrawGoal(selectedGoal.id, selectedGoal.name, _saved)}
-                        disabled={processing}
-                        className="w-full py-3 rounded-[14px] bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold text-[13px] shadow-md disabled:opacity-60">
-                        {processing ? "Processing…" : `Withdraw ৳${_saved.toLocaleString()} to Wallet`}
+                        disabled={processing || _locked}
+                        className="w-full py-3 rounded-[14px] bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold text-[13px] shadow-md disabled:opacity-60 inline-flex items-center justify-center gap-2">
+                        {_locked && <Lock size={14} />}
+                        {processing ? "Processing…" : _locked ? `Withdrawable ${_unlock?.toLocaleDateString("en-BD", { month: "short", day: "numeric" })}` : `Withdraw ৳${_saved.toLocaleString()} to Wallet`}
                       </button>
                     </div>
                   );
