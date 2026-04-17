@@ -1438,6 +1438,32 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
                           {!schedule.settled && <Switch checked={schedule.is_active} onCheckedChange={() => toggleAutoSave(schedule.id, schedule.is_active)} />}
                           <button onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "auto", id: schedule.id, label: `৳${Number(schedule.amount).toLocaleString()} ${schedule.frequency}` }); setDeletePin(""); setDeletePinError(""); }} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 size={14} /></button>
                         </div>
+                        {(() => {
+                          const isMatured = schedule.ends_at && new Date(schedule.ends_at) <= new Date();
+                          if (!isMatured || schedule.settled) return null;
+                          const principal = Number(schedule.amount) * (schedule.total_paid ?? 0);
+                          const profit = Math.round(principal * 0.05 * 100) / 100;
+                          const total = principal + profit;
+                          if (principal <= 0) return null;
+                          return (
+                            <motion.button
+                              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                              whileTap={{ scale: 0.97 }}
+                              disabled={processing}
+                              onClick={(e) => { e.stopPropagation(); handleClaimMaturedDps(schedule.id); }}
+                              className="w-full mt-1 rounded-xl px-3 py-2.5 text-white shadow-md flex items-center justify-between gap-2 disabled:opacity-60"
+                              style={{ background: "linear-gradient(135deg, hsl(35 92% 48%), hsl(20 88% 42%))" }}>
+                              <div className="text-left">
+                                <p className="text-[11px] font-bold uppercase tracking-wide">🎉 Matured · Claim Now</p>
+                                <p className="text-[10px] opacity-90">Principal ৳{principal.toLocaleString()} + Profit ৳{profit.toLocaleString()}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-[9px] opacity-80">Total</p>
+                                <p className="text-[14px] font-extrabold leading-none">৳{total.toLocaleString()}</p>
+                              </div>
+                            </motion.button>
+                          );
+                        })()}
                       </div>
                     );
                   })}
