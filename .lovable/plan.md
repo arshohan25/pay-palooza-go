@@ -1,63 +1,45 @@
 
-## Redesign Savings Page Header Cards — Premium 2x2 Grid
+The previous edit was cancelled mid-flight. The screenshot still shows the OLD layout: thin "1 active auto-save plan(s)" pill above Gold/Stocks, and a flat "2 Saving Goals" row below the DPS CTA. Need to re-apply the redesign cleanly.
 
-The user wants the "1 active auto-save plan(s)" pill and the "2 Saving Goals" row redesigned to match the premium card aesthetic of the Gold & Stocks tiles — turning them into a unified, balanced 2×2 grid showing balance + count.
+## Redesign Savings Header — Premium 2×2 Grid (re-apply)
 
-### Current state (from screenshot)
-- Total Saved hero card ✅ keep
-- Thin emerald pill: "1 active auto-save plan(s)" — feels like an afterthought
-- Gold tile (amber) + Stocks tile (blue) — premium look ✅ reference style
-- "Start a DPS Plan" CTA banner ✅ keep
-- Flat "2 Saving Goals" row at bottom — doesn't match
+Replace the thin emerald pill and the flat "Saving Goals" row with two new premium tiles matching the Gold/Stocks aesthetic, forming a balanced 2×2 grid.
 
-### Redesign
-
-Replace the thin pill + flat goals row with **two new premium tiles** styled identically to Gold/Stocks, arranged in a 2×2 grid:
-
+### Final layout
 ```text
-┌──────── Total Saved hero ────────┐
-│   icon   TOTAL SAVED  ৳1,000     │
-└──────────────────────────────────┘
+┌──────── TOTAL SAVED hero ────────┐  (keep)
 
-┌──── DPS ────┐  ┌──── GOALS ────┐
-│ 📅 emerald  │  │ 🎯 violet     │
-│ DPS PLANS   │  │ SAVING GOALS  │
-│ 1 active    │  │ 2 active      │
-│ ৳500 saved  │  │ ৳1,200 / ৳5k  │
-└─────────────┘  └───────────────┘
+┌── DPS PLANS ──┐  ┌── SAVING GOALS ──┐   ← NEW row
+│ 📅 emerald    │  │ 🎯 violet        │
+│ 1 active      │  │ 2 active         │
+│ ৳500 saved    │  │ ৳1,200 / ৳5k     │
+└───────────────┘  └──────────────────┘
 
-┌──── GOLD ────┐  ┌──── STOCKS ──┐
-│ (existing)   │  │ (existing)   │
-└──────────────┘  └──────────────┘
+┌── GOLD ──┐  ┌── STOCKS ──┐  (keep existing)
 
-┌──── Start a DPS Plan CTA ───────┐ (keep)
+┌──────── Start a DPS Plan CTA ────────┐  (keep)
 ```
 
-### Tile spec (matches Gold/Stocks)
-- `rounded-2xl`, soft tinted gradient bg (`from-{accent}/15 to-{accent}/5`), border `border-{accent}/20`
-- Top-left: gradient icon tile (52px, `rounded-xl`, accent gradient, white icon)
-- Uppercase tracked label (`text-xs text-muted-foreground`)
-- Big value (`text-2xl font-bold tabular-nums`) — count or amount
-- Sub-line (`text-xs`) — supporting metric (saved total / progress)
-- Whole tile clickable → opens existing drawer (active plans / goals manager)
-- Hover: subtle lift + ring in accent color
+### Tile spec (mirrors Gold/Stocks)
+- `rounded-[18px]`, gradient bg `from-{accent}/15 to-{accent}/5`, border `border-{accent}/20`
+- 36px gradient icon chip (rounded-xl, white icon)
+- Uppercase label `text-[10px] font-bold tracking-wide text-muted-foreground`
+- Value `text-base font-black tabular-nums`
+- Sub `text-[10px] font-bold` in accent color
+- Hover: `-translate-y-0.5`, ring in accent
+- Whole tile clickable
 
-### Accent colors
-- DPS: emerald (matches existing brand savings color)
-- Goals: violet/indigo (Target icon — note: Target only, never PiggyBank)
-- Gold: amber (existing)
-- Stocks: blue (existing)
+### Accent + click target
+- **DPS** (emerald, `CalendarClock`) → opens active plans drawer (`setStep("autosave")`)
+- **Goals** (violet, `Target` — never PiggyBank) → switches to Goals tab (`setMainTab("goals")`)
 
-### Data wiring
-Reuse what `SavingsFlow.tsx` already loads:
-- DPS active count + total saved → from existing `auto_save_plans` query
-- Goals count + total progress → from existing `savings_goals` query  
-- No new queries, no schema changes
+### Data wiring (reuse existing state)
+- DPS: `autoSaves.filter(active).length` for count, sum of `amount * total_paid` for saved
+- Goals: `goals.length` for count, sum of `current_amount` / sum of `target_amount` for progress
 
 ### Files touched
-- `src/components/SavingsFlow.tsx` — replace the thin "active plans" pill + flat "Saving Goals" row with two new premium tiles in the same 2-col grid as Gold/Stocks. Keep hero card, Gold/Stocks tiles, and DPS CTA banner unchanged.
+- `src/components/SavingsFlow.tsx` — remove the thin pill block + the bottom "Saving Goals" row; insert new DPS/Goals tiles into the same 2-col grid as Gold/Stocks (so it becomes a 2×2 of tiles).
 
 ### Out of scope
-- No changes to Gold/Stocks tiles
-- No changes to drawers / detail screens
-- No new data fetches
+- No changes to Gold/Stocks tiles, drawers, CTA banner, hero card
+- No new queries, no schema changes
