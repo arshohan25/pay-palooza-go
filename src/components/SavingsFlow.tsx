@@ -1839,31 +1839,59 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
           {mainTab === "goals" && step === "goal-detail" && selectedGoal && (
             <motion.div key="goal-detail" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-4">
               {/* Header Card */}
-              <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-5 space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center">
-                    <span className="text-[36px]">{selectedGoal.emoji}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[18px] font-black text-foreground">{selectedGoal.name}</p>
-                    <p className="text-[12px] text-muted-foreground">৳{Number(selectedGoal.saved_amount).toLocaleString()} / ৳{Number(selectedGoal.target_amount).toLocaleString()}</p>
-                  </div>
-                </div>
-                {(() => {
-                  const pct = selectedGoal.target_amount > 0 ? Math.min(100, (Number(selectedGoal.saved_amount) / Number(selectedGoal.target_amount)) * 100) : 0;
-                  return (
-                    <div className="space-y-1.5">
-                      <div className="h-3 rounded-full bg-muted/80 overflow-hidden">
-                        <motion.div className="h-full rounded-full bg-gradient-to-r from-primary via-emerald-500 to-emerald-400" initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1, ease: "easeOut" }} />
+              {(() => {
+                const isWithdrawn = selectedGoal.status === "withdrawn";
+                const savedNum = Number(selectedGoal.saved_amount);
+                const targetNum = Number(selectedGoal.target_amount);
+                const isCompleted = !isWithdrawn && (selectedGoal.status === "completed" || (targetNum > 0 && savedNum >= targetNum));
+                const wAmount = Number((selectedGoal as any).withdrawn_amount ?? 0);
+                const wAtRaw = (selectedGoal as any).withdrawn_at ?? selectedGoal.updated_at;
+                const wAt = wAtRaw ? new Date(wAtRaw) : null;
+                const pct = targetNum > 0 ? Math.min(100, (savedNum / targetNum) * 100) : 0;
+                return (
+                  <div className="bg-card rounded-[20px] border border-border/60 shadow-[var(--shadow-card)] p-5 space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center ${isWithdrawn ? "bg-muted/40 border-border/60 grayscale opacity-80" : "bg-gradient-to-br from-primary/15 to-primary/5 border-primary/20"}`}>
+                        <span className="text-[36px]">{selectedGoal.emoji}</span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-[12px] font-bold text-primary">{pct.toFixed(0)}% complete</p>
-                        <p className="text-[11px] text-muted-foreground font-medium">৳{(Number(selectedGoal.target_amount) - Number(selectedGoal.saved_amount)).toLocaleString()} remaining</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[18px] font-black text-foreground">{selectedGoal.name}</p>
+                        {isWithdrawn ? (
+                          <p className="text-[12px] text-muted-foreground">Goal of ৳{targetNum.toLocaleString()} • Closed</p>
+                        ) : (
+                          <p className="text-[12px] text-muted-foreground">৳{savedNum.toLocaleString()} / ৳{targetNum.toLocaleString()}</p>
+                        )}
                       </div>
                     </div>
-                  );
-                })()}
-              </div>
+                    {isWithdrawn ? (
+                      <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-[14px] p-3 text-center space-y-0.5">
+                        <p className="text-[13px] font-bold text-emerald-600 dark:text-emerald-400">✓ Withdrawn ৳{(wAmount || targetNum).toLocaleString()}</p>
+                        {wAt && <p className="text-[11px] text-muted-foreground">on {wAt.toLocaleDateString("en-BD", { month: "short", day: "numeric", year: "numeric" })}</p>}
+                      </div>
+                    ) : isCompleted ? (
+                      <div className="space-y-1.5">
+                        <div className="h-3 rounded-full bg-muted/80 overflow-hidden">
+                          <motion.div className="h-full rounded-full bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-500" initial={{ width: 0 }} animate={{ width: "100%" }} transition={{ duration: 1, ease: "easeOut" }} />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <p className="text-[12px] font-bold text-amber-600 dark:text-amber-400">100% complete 🎉</p>
+                          <p className="text-[11px] text-muted-foreground font-medium">Ready to withdraw</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <div className="h-3 rounded-full bg-muted/80 overflow-hidden">
+                          <motion.div className="h-full rounded-full bg-gradient-to-r from-primary via-emerald-500 to-emerald-400" initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1, ease: "easeOut" }} />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <p className="text-[12px] font-bold text-primary">{pct.toFixed(0)}% complete</p>
+                          <p className="text-[11px] text-muted-foreground font-medium">৳{(targetNum - savedNum).toLocaleString()} remaining</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Timeline */}
               {goalDeposits.length > 0 && (
