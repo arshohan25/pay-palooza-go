@@ -505,7 +505,7 @@ export default function AdminDashboard() {
       const type = key.slice(4);
       setMetricFilterLoading(true);
       const day30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      const r = await supabase.from("transactions").select("user_id").eq("type", type).gte("created_at", day30);
+      const r = await supabase.from("transactions").select("user_id").eq("type", type as any).gte("created_at", day30);
       setMetricFilterUserIds(new Set((r.data ?? []).map((x: any) => x.user_id)));
       setMetricFilterLoading(false);
       return;
