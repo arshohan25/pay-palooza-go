@@ -85,6 +85,30 @@ const LoanPage = () => {
   const { rewards: aiLoanRewards, claimReward: claimLoanReward } = useAiRewards("loan");
   const [loanPin, setLoanPin] = useState("");
   const [loanPinError, setLoanPinError] = useState("");
+  const [repayLoan, setRepayLoan] = useState<any | null>(null);
+  const [repayAmount, setRepayAmount] = useState("");
+  const [repayPin, setRepayPin] = useState("");
+  const [repayPinError, setRepayPinError] = useState("");
+  const [repayProcessing, setRepayProcessing] = useState(false);
+
+  const handleRepayLoan = async () => {
+    if (!repayLoan) return;
+    const amt = parseFloat(repayAmount);
+    if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
+    if (repayPin.length < 4) { setRepayPinError("Enter your 4-digit PIN"); return; }
+    setRepayProcessing(true); setRepayPinError("");
+    const pinValid = await verifyPin(repayPin);
+    if (!pinValid) { setRepayPinError("Incorrect PIN"); setRepayPin(""); setRepayProcessing(false); return; }
+    const { data, error } = await supabase.rpc("repay_loan_partial" as any, { p_loan_id: repayLoan.id, p_amount: amt });
+    if (error) { toast.error(error.message || "Repayment failed"); setRepayProcessing(false); return; }
+    haptics.success();
+    const result = data as any;
+    if (result?.status === "repaid") toast.success("🎉 Loan fully settled!");
+    else toast.success(`✓ ৳${result?.paid?.toLocaleString()} repaid · ৳${result?.outstanding?.toLocaleString()} remaining`);
+    const { data: refreshed } = await supabase.from("loan_applications").select("*").eq("user_id", user!.id).order("created_at", { ascending: false });
+    setApplications(refreshed || []);
+    setRepayLoan(null); setRepayAmount(""); setRepayPin(""); setRepayProcessing(false);
+  };
 
   useEffect(() => {
     if (!kycLoading && kycStatus !== "verified") {
@@ -204,13 +228,16 @@ const LoanPage = () => {
     const now = new Date();
     const elapsed = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     const totalDays = app.tenure_days || 90;
-    const progress = Math.min(100, Math.round((elapsed / totalDays) * 100));
-    const installmentsPaid = Math.floor(elapsed / 30);
     const totalInstallments = Math.ceil(totalDays / 30);
     const fee = Number(app.amount) * ((app.interest_rate || SERVICE_FEE_PERCENT) / 100);
     const totalAmount = Number(app.amount) + fee;
-    const paidAmount = Math.min(totalAmount, (totalAmount / totalInstallments) * installmentsPaid);
+    // Real repaid amount from DB takes precedence; falls back to time-based estimate.
+    const dbRepaid = Number(app.repaid_amount ?? 0);
+    const timeRepaid = Math.min(totalAmount, (totalAmount / totalInstallments) * Math.floor(elapsed / 30));
+    const paidAmount = Math.max(dbRepaid, timeRepaid);
     const remaining = Math.max(0, totalAmount - paidAmount);
+    const progress = totalAmount > 0 ? Math.min(100, Math.round((paidAmount / totalAmount) * 100)) : 0;
+    const installmentsPaid = Math.min(totalInstallments, Math.floor((paidAmount / totalAmount) * totalInstallments));
     const nextDueDate = new Date(startDate);
     nextDueDate.setDate(nextDueDate.getDate() + (installmentsPaid + 1) * 30);
     const daysUntilDue = Math.max(0, Math.floor((nextDueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
@@ -705,6 +732,18 @@ const LoanPage = () => {
                                   <span className="font-bold text-emerald-600 dark:text-emerald-400">0% Interest</span> — Service fee ৳{lp.fee.toLocaleString()} already included
                                 </span>
                               </div>
+
+                              {/* Repay button */}
+                              {lp.remaining > 0 && (
+                                <button
+                                  onClick={() => { setRepayLoan(app); setRepayAmount(String(lp.remaining)); setRepayPin(""); setRepayPinError(""); }}
+                                  className="w-full h-11 rounded-xl text-primary-foreground font-bold text-[12px] flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-transform"
+                                  style={{ background: "var(--gradient-primary)" }}
+                                >
+                                  <HandCoins className="w-4 h-4" />
+                                  Repay Loan · ৳{lp.remaining.toLocaleString()} due
+                                </button>
+                              )}
                             </div>
                           )}
 
@@ -912,6 +951,91 @@ const LoanPage = () => {
               icon={Lock}
             />
           </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* ═════════ REPAY LOAN SHEET ═════════ */}
+      <Sheet open={!!repayLoan} onOpenChange={(o) => { if (!o) { setRepayLoan(null); setRepayAmount(""); setRepayPin(""); setRepayPinError(""); } }}>
+        <SheetContent side="bottom" className="rounded-t-3xl max-h-[88vh] overflow-y-auto">
+          <SheetHeader className="text-left mb-3">
+            <SheetTitle className="flex items-center gap-2 text-base">
+              <HandCoins className="w-5 h-5 text-primary" /> Repay Qard Hasan
+            </SheetTitle>
+          </SheetHeader>
+          {repayLoan && (() => {
+            const lp = getLoanProgress(repayLoan);
+            const amt = parseFloat(repayAmount) || 0;
+            const newOutstanding = Math.max(0, lp.remaining - amt);
+            const isFull = amt >= lp.remaining && amt > 0;
+            return (
+              <div className="space-y-4 pb-4">
+                <div className="rounded-2xl bg-muted/30 ring-1 ring-border/40 p-4 grid grid-cols-3 gap-2">
+                  <div>
+                    <p className="text-[9px] text-muted-foreground uppercase">Total Due</p>
+                    <p className="text-sm font-bold text-foreground tabular-nums">৳{lp.totalAmount.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] text-muted-foreground uppercase">Repaid</p>
+                    <p className="text-sm font-bold text-emerald-600 tabular-nums">৳{lp.paidAmount.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] text-muted-foreground uppercase">Outstanding</p>
+                    <p className="text-sm font-bold text-amber-600 tabular-nums">৳{lp.remaining.toLocaleString()}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Repay Amount</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-muted-foreground">৳</span>
+                    <input
+                      type="number" inputMode="decimal" min={1} max={lp.remaining}
+                      value={repayAmount}
+                      onChange={(e) => setRepayAmount(e.target.value)}
+                      className="w-full h-14 pl-10 pr-24 rounded-2xl bg-card border-2 border-border focus:border-primary text-xl font-bold tabular-nums focus:outline-none transition-colors"
+                      placeholder="0"
+                    />
+                    <button
+                      onClick={() => setRepayAmount(String(lp.remaining))}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-[11px] font-bold"
+                    >Pay All</button>
+                  </div>
+                  {amt > lp.remaining && (
+                    <p className="text-[11px] text-destructive mt-1.5 flex items-center gap-1"><AlertCircle size={11} /> Exceeds outstanding</p>
+                  )}
+                </div>
+
+                {amt > 0 && amt <= lp.remaining && (
+                  <div className="rounded-2xl bg-primary/[0.06] ring-1 ring-primary/15 p-3 space-y-1">
+                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Paying now</span><span className="font-bold text-foreground">৳{amt.toLocaleString()}</span></div>
+                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">After payment</span><span className={`font-bold ${isFull ? "text-emerald-600" : "text-foreground"}`}>{isFull ? "✓ Fully Settled" : `৳${newOutstanding.toLocaleString()} left`}</span></div>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Confirm with PIN</label>
+                  {repayPinError && (
+                    <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {repayPinError}</p>
+                  )}
+                  <input
+                    type="password" inputMode="numeric" pattern="[0-9]*" maxLength={4}
+                    value={repayPin}
+                    onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); setRepayPin(v); setRepayPinError(""); }}
+                    className="w-full h-14 text-center text-3xl font-bold tracking-[1rem] bg-card border-2 border-border rounded-2xl focus:outline-none focus:border-primary transition-colors"
+                    placeholder="••••"
+                  />
+                </div>
+
+                <SlideToConfirm
+                  onConfirm={handleRepayLoan}
+                  label={repayProcessing ? "Processing…" : `Slide to Repay ৳${amt.toLocaleString()}`}
+                  disabled={repayProcessing || amt <= 0 || amt > lp.remaining || repayPin.length < 4}
+                  pinComplete={repayPin.length === 4 && amt > 0 && amt <= lp.remaining}
+                  icon={Lock}
+                />
+              </div>
+            );
+          })()}
         </SheetContent>
       </Sheet>
     </div>
