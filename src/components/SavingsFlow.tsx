@@ -496,12 +496,13 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
 
   // ─── Repay missed DPS payments handler ────────
   const handleRepayMissed = async () => {
-    if (selectedMissedIds.length === 0) { setError("Select at least one missed payment"); return; }
+    const fail = (msg: string) => { setError(msg); setPin(""); setPinError(""); };
+    if (selectedMissedIds.length === 0) return fail("Select at least one missed payment");
     if (pin.length < 4) { setPinError("Enter your 4-digit PIN"); return; }
     if (!user) return;
     const toRepay = missedPayments.filter(m => selectedMissedIds.includes(m.id));
     const totalAmount = toRepay.reduce((s, m) => s + Number(m.amount), 0);
-    if (totalAmount > balance) { setError("Insufficient balance for repayment"); return; }
+    if (totalAmount > balance) return fail("Insufficient balance for repayment");
     setProcessing(true); setError(""); setPinError("");
     try {
       const pinValid = await verifyPin(pin);
