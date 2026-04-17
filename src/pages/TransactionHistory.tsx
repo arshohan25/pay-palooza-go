@@ -41,6 +41,7 @@ interface Transaction {
   fee: number;
   commission: number;
   _isCashback?: boolean;
+  _isInvestment?: boolean;
   status: string;
   recipient_phone?: string | null;
 }
@@ -118,6 +119,15 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
       .map((t) => {
         const cfg = TX_ICON_MAP[t.type as Exclude<TxCategory, "all">];
         const isCashback = t.type === "addmoney" && (t.description?.startsWith("Drive Cashback:") || t.reference?.startsWith("CB-") || false);
+        const isInvestment =
+          (t.description?.startsWith("Gold Purchase:") ||
+            t.description?.startsWith("Gold Sale:") ||
+            t.description?.startsWith("Stock Purchase:") ||
+            t.description?.startsWith("Stock Sale:") ||
+            t.reference?.startsWith("GOLD-BUY-") ||
+            t.reference?.startsWith("GOLD-SELL-") ||
+            t.reference?.startsWith("STOCK-BUY-") ||
+            t.reference?.startsWith("STOCK-SELL-")) ?? false;
         const label = isCashback ? "Drive Cashback" : (CATEGORIES.find((c) => c.id === t.type)?.label ?? t.type);
         const isCredit = agentView
           ? t.type === "cashout"
@@ -141,6 +151,7 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
           fee: t.fee,
           commission: t.commission || 0,
           _isCashback: isCashback,
+          _isInvestment: isInvestment,
           status: t.status,
           recipient_phone: t.recipient_phone,
         };
@@ -261,7 +272,9 @@ const TransactionHistory = ({ onClose, onRefresh, filterTypes, agentView, custom
         const feeByType: Record<string, number> = {};
         filtered.forEach((tx) => {
           if (tx.fee > 0) {
-            const label = CATEGORIES.find((c) => c.id === tx.category)?.label ?? tx.category;
+            const label = tx._isInvestment
+              ? "Brokerage Fee"
+              : (CATEGORIES.find((c) => c.id === tx.category)?.label ?? tx.category);
             feeByType[label] = (feeByType[label] || 0) + tx.fee;
           }
         });
