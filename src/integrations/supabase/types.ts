@@ -5076,6 +5076,7 @@ export type Database = {
         Args: { p_action: string; p_milestone: number; p_referral_id: string }
         Returns: Json
       }
+      admin_user_metrics: { Args: never; Returns: Json }
       apply_loan: {
         Args: {
           p_amount: number

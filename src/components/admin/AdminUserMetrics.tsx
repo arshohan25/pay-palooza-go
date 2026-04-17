@@ -118,41 +118,22 @@ export function AdminUserMetrics({ onCardClick }: { onCardClick?: (key: string) 
     const c = (q: any) => q.then((r: any) => r.count ?? 0);
 
     const [
-      totalUsers, activeUsers, suspendedUsers, kycVerified, kycPending, kycRejected, kycExempt,
+      totalUsers, activeUsers, suspendedUsers, kycExempt,
       newToday, new7d, new30d,
-      dau, wau, mau, inactive30, dormant90,
       totalTxn, txnToday, txn7d,
       sendMoney, cashOut, cashIn, addMoney, payment, recharge, billPay, bankTransfer,
       shopOrders, giftCards, donations, savings,
-      couponsUsed, referralsCount, rewardsClaimed,
+      referralsCount, rewardsClaimed,
       featureLocks, fraudAlerts, devices, pinChanges, complaints,
-      avgBalance,
+      rpcRes,
     ] = await Promise.all([
       c(supabase.from("profiles").select("id", { count: "exact", head: true }).not("phone", "like", "staff-%")),
       c(supabase.from("profiles").select("id", { count: "exact", head: true }).eq("status", "active").not("phone", "like", "staff-%")),
       c(supabase.from("profiles").select("id", { count: "exact", head: true }).eq("status", "suspended").not("phone", "like", "staff-%")),
-      c(supabase.from("kyc_verifications").select("id", { count: "exact", head: true }).eq("status", "approved")),
-      c(supabase.from("kyc_verifications").select("id", { count: "exact", head: true }).eq("status", "pending")),
-      c(supabase.from("kyc_verifications").select("id", { count: "exact", head: true }).eq("status", "rejected")),
       c(supabase.from("profiles").select("id", { count: "exact", head: true }).eq("kyc_exempt", true)),
       c(supabase.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", day1).not("phone", "like", "staff-%")),
       c(supabase.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", day7).not("phone", "like", "staff-%")),
       c(supabase.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", day30).not("phone", "like", "staff-%")),
-      supabase.from("transactions").select("user_id").gte("created_at", day1).then((r: any) => new Set((r.data ?? []).map((x: any) => x.user_id)).size),
-      supabase.from("transactions").select("user_id").gte("created_at", day7).then((r: any) => new Set((r.data ?? []).map((x: any) => x.user_id)).size),
-      supabase.from("transactions").select("user_id").gte("created_at", day30).then((r: any) => new Set((r.data ?? []).map((x: any) => x.user_id)).size),
-      supabase.from("profiles").select("user_id").lt("created_at", day30).not("phone", "like", "staff-%").then(async (r: any) => {
-        const allOldUsers = new Set((r.data ?? []).map((x: any) => x.user_id));
-        const active = await supabase.from("transactions").select("user_id").gte("created_at", day30);
-        const activeSet = new Set((active.data ?? []).map((x: any) => x.user_id));
-        return [...allOldUsers].filter(u => !activeSet.has(u)).length;
-      }),
-      supabase.from("profiles").select("user_id").lt("created_at", day90).not("phone", "like", "staff-%").then(async (r: any) => {
-        const allOld = new Set((r.data ?? []).map((x: any) => x.user_id));
-        const active = await supabase.from("transactions").select("user_id").gte("created_at", day90);
-        const activeSet = new Set((active.data ?? []).map((x: any) => x.user_id));
-        return [...allOld].filter(u => !activeSet.has(u)).length;
-      }),
       c(supabase.from("transactions").select("id", { count: "exact", head: true })),
       c(supabase.from("transactions").select("id", { count: "exact", head: true }).gte("created_at", day1)),
       c(supabase.from("transactions").select("id", { count: "exact", head: true }).gte("created_at", day7)),
@@ -168,7 +149,6 @@ export function AdminUserMetrics({ onCardClick }: { onCardClick?: (key: string) 
       c(supabase.from("gift_cards").select("id", { count: "exact", head: true }).gte("created_at", day30)),
       c(supabase.from("donations").select("id", { count: "exact", head: true }).gte("created_at", day30)),
       c(supabase.from("gold_holdings").select("id", { count: "exact", head: true })),
-      c(supabase.from("transactions").select("id", { count: "exact", head: true }).not("metadata->>coupon_code", "is", null).gte("created_at", day30)),
       c(supabase.from("referrals").select("id", { count: "exact", head: true })),
       c(supabase.from("ai_auto_rewards").select("id", { count: "exact", head: true }).eq("status", "claimed")),
       c(supabase.from("feature_locks").select("id", { count: "exact", head: true }).eq("is_active", true)),
@@ -176,20 +156,29 @@ export function AdminUserMetrics({ onCardClick }: { onCardClick?: (key: string) 
       c(supabase.from("device_registrations").select("id", { count: "exact", head: true })),
       c(supabase.from("audit_logs").select("id", { count: "exact", head: true }).eq("action", "pin_changed").gte("created_at", day30)),
       c(supabase.from("disputes").select("id", { count: "exact", head: true }).eq("status", "open")),
-      supabase.from("profiles").select("balance").not("phone", "like", "staff-%").then((r: any) => {
-        const arr = (r.data ?? []).map((x: any) => Number(x.balance || 0));
-        return arr.length ? Math.round(arr.reduce((a: number, b: number) => a + b, 0) / arr.length) : 0;
-      }),
+      (supabase.rpc as any)("admin_user_metrics").then((r: any) => r.data ?? {}),
     ]);
 
+    const m = rpcRes || {};
     setData({
-      totalUsers, activeUsers, suspendedUsers, kycVerified, kycPending, kycRejected, kycExempt,
-      newToday, new7d, new30d, dau, wau, mau, inactive30, dormant90,
+      totalUsers, activeUsers, suspendedUsers,
+      kycVerified: Number(m.kyc_verified ?? 0),
+      kycPending: Number(m.kyc_pending ?? 0),
+      kycRejected: Number(m.kyc_rejected ?? 0),
+      kycExempt,
+      newToday, new7d, new30d,
+      dau: Number(m.dau ?? 0),
+      wau: Number(m.wau ?? 0),
+      mau: Number(m.mau ?? 0),
+      inactive30: Number(m.inactive_30d ?? 0),
+      dormant90: Number(m.dormant_90d ?? 0),
       totalTxn, txnToday, txn7d,
       sendMoney, cashOut, cashIn, addMoney, payment, recharge, billPay, bankTransfer,
       shopOrders, giftCards, donations, savings,
-      couponsUsed, referralsCount, rewardsClaimed,
-      featureLocks, fraudAlerts, devices, pinChanges, complaints, avgBalance,
+      couponsUsed: Number(m.coupons_used ?? 0),
+      referralsCount, rewardsClaimed,
+      featureLocks, fraudAlerts, devices, pinChanges, complaints,
+      avgBalance: Number(m.avg_balance ?? 0),
     });
     setLoading(false);
   };
