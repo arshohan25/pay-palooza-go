@@ -545,6 +545,37 @@ const SavingsFlow = ({ onClose }: SavingsFlowProps) => {
     setDeleteTarget(null); setDeletePin(""); setDeleting(false);
   };
 
+  // ─── Withdraw completed goal → wallet ────────
+  const handleWithdrawGoal = async (goalId: string, goalName: string, amt: number) => {
+    setProcessing(true);
+    try {
+      const { data, error: rpcErr } = await supabase.rpc("withdraw_completed_goal" as any, { p_goal_id: goalId });
+      if (rpcErr) throw rpcErr;
+      await fetchBalance();
+      loadGoals();
+      fireSuccessConfetti();
+      toast.success(`🎉 ৳${Number((data as any)?.amount ?? amt).toLocaleString()} from "${goalName}" added to wallet!`);
+    } catch (err: any) {
+      toast.error(err.message || "Withdrawal failed");
+    } finally { setProcessing(false); }
+  };
+
+  // ─── Claim matured DPS payout → wallet ────────
+  const handleClaimMaturedDps = async (planId: string) => {
+    setProcessing(true);
+    try {
+      const { data, error: rpcErr } = await supabase.rpc("settle_matured_dps" as any, { p_plan_id: planId });
+      if (rpcErr) throw rpcErr;
+      const result = data as any;
+      await fetchBalance();
+      loadAutoSaves();
+      fireSuccessConfetti();
+      toast.success(`🎉 ৳${Number(result?.total ?? 0).toLocaleString()} credited (incl. ৳${Number(result?.profit ?? 0).toLocaleString()} profit)`);
+    } catch (err: any) {
+      toast.error(err.message || "Claim failed");
+    } finally { setProcessing(false); }
+  };
+
   // ─── Gold handlers ────────
   const currentGoldPrice = goldKarat === "24k" ? LIVE_GOLD_24K_PRICE : LIVE_GOLD_PRICE;
 
