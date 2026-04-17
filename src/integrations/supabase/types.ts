@@ -5393,6 +5393,7 @@ export type Database = {
         Args: { exempt: boolean; target_user_id: string }
         Returns: undefined
       }
+      settle_matured_dps: { Args: { p_plan_id: string }; Returns: Json }
       submit_addmoney_request: {
         Args: {
           p_amount: number
@@ -5433,6 +5434,7 @@ export type Database = {
         Args: { p_cart_total: number; p_code: string; p_merchant_id?: string }
         Returns: Json
       }
+      withdraw_completed_goal: { Args: { p_goal_id: string }; Returns: Json }
     }
     Enums: {
       agent_status: "pending" | "active" | "suspended" | "terminated"
